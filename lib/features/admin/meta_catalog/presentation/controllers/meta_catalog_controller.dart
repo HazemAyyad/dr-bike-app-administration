@@ -13,6 +13,8 @@ class MetaCatalogController extends GetxController {
   final actionLoading = false.obs;
   final error = RxnString();
   final accounts = <MetaCatalogAccount>[].obs;
+  final categories = <MetaCatalogSyncSource>[].obs;
+  final subCategories = <MetaCatalogSyncSource>[].obs;
   final selectedAccountId = RxnInt();
   final status = Rxn<MetaCatalogStatus>();
   final settings = Rxn<MetaCatalogSettings>();
@@ -25,8 +27,9 @@ class MetaCatalogController extends GetxController {
   final logStatus = 'all'.obs;
   final logAction = 'all'.obs;
   final bulkSourceType = 'all'.obs;
+  final selectedCategoryId = RxnInt();
+  final selectedSubCategoryId = RxnInt();
   final search = TextEditingController();
-  final bulkSourceId = TextEditingController();
   final productsScrollController = ScrollController();
   final loadingMoreProducts = false.obs;
   int _productsPage = 1;
@@ -36,7 +39,8 @@ class MetaCatalogController extends GetxController {
   void onInit() {
     super.onInit();
     productsScrollController.addListener(_onProductsScroll);
-    loadAccounts().then((_) => refreshCurrent());
+    Future.wait([loadAccounts(), loadSyncSources()])
+        .then((_) => refreshCurrent());
   }
 
   Future<void> setTab(int value) async {
@@ -82,6 +86,24 @@ class MetaCatalogController extends GetxController {
       selectedAccountId.value ??=
           _firstAccountWhere((account) => account.isActive)?.id ??
               (accounts.isNotEmpty ? accounts.first.id : null);
+    } catch (e) {
+      error.value = _message(e);
+    }
+  }
+
+  Future<void> loadSyncSources() async {
+    try {
+      final result = await api.getSyncSources();
+      final categoryData = result['categories'] is List
+          ? result['categories'] as List
+          : const [];
+      final subCategoryData = result['sub_categories'] is List
+          ? result['sub_categories'] as List
+          : const [];
+      categories.assignAll(categoryData.whereType<Map>().map((item) =>
+          MetaCatalogSyncSource.fromJson(Map<String, dynamic>.from(item))));
+      subCategories.assignAll(subCategoryData.whereType<Map>().map((item) =>
+          MetaCatalogSyncSource.fromJson(Map<String, dynamic>.from(item))));
     } catch (e) {
       error.value = _message(e);
     }
@@ -216,9 +238,9 @@ class MetaCatalogController extends GetxController {
       ],
     ));
     if (confirmed != true) return;
-    final sourceId = int.tryParse(bulkSourceId.text.trim());
+    final sourceId = selectedBulkSourceId;
     if (bulkSourceType.value != 'all' && sourceId == null) {
-      Get.snackbar('تنبيه', 'أدخل رقم التصنيف المطلوب للمزامنة',
+      Get.snackbar('تنبيه', 'اختر التصنيف المطلوب للمزامنة',
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -274,6 +296,14 @@ class MetaCatalogController extends GetxController {
     return 'مزامنة كل المنتجات';
   }
 
+  int? get selectedBulkSourceId {
+    if (bulkSourceType.value == 'category') return selectedCategoryId.value;
+    if (bulkSourceType.value == 'sub_category') {
+      return selectedSubCategoryId.value;
+    }
+    return null;
+  }
+
   MetaCatalogAccount? _firstAccountWhere(
       bool Function(MetaCatalogAccount account) test) {
     for (final account in accounts) {
@@ -285,7 +315,6 @@ class MetaCatalogController extends GetxController {
   @override
   void onClose() {
     search.dispose();
-    bulkSourceId.dispose();
     productsScrollController
       ..removeListener(_onProductsScroll)
       ..dispose();

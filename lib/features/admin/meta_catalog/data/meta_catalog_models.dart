@@ -15,6 +15,28 @@ class MetaCatalogAccount {
         isVerified = json['is_verified'] == true || json['is_verified'] == 1;
 }
 
+class MetaCatalogSyncSource {
+  final int id;
+  final String name;
+  final int? parentId;
+  final String? parentName;
+  final bool isShow;
+  final int productsCount;
+
+  MetaCatalogSyncSource.fromJson(Map<String, dynamic> json)
+      : id = _int(json['id']),
+        name = json['name']?.toString() ?? '',
+        parentId = json['parent_id'] == null ? null : _int(json['parent_id']),
+        parentName = json['parent_name']?.toString(),
+        isShow = json['is_show'] == true || json['is_show'] == 1,
+        productsCount = _int(json['products_count']);
+
+  String get label {
+    final base = parentName?.isNotEmpty == true ? '$parentName / $name' : name;
+    return '$base ($productsCount)';
+  }
+}
+
 class MetaCatalogStatus {
   final bool configured;
   final String? configurationError;

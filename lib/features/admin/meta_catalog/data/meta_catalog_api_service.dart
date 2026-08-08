@@ -8,6 +8,7 @@ class MetaCatalogApiService {
   static const _base = '/meta/catalog';
 
   Future<Map<String, dynamic>> getAccounts() => _get('$_base/accounts');
+  Future<Map<String, dynamic>> getSyncSources() => _get('$_base/sync-sources');
   Future<Map<String, dynamic>> getStatus({int? accountId}) =>
       _get('$_base/status', query: _accountQuery(accountId));
   Future<Map<String, dynamic>> getProducts(

@@ -121,7 +121,7 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
         content: SizedBox(
             width: 420,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Obx(() => _WhatsAppAccountPicker(controller: controller)),
+              _WhatsAppAccountPicker(controller: controller),
               const SizedBox(height: 12),
               TextField(
                   controller: phone,
@@ -1240,7 +1240,7 @@ class _SettingsTab extends StatelessWidget {
         );
       }),
       const SizedBox(height: 16),
-      Obx(() => _WhatsAppAccountPicker(controller: controller)),
+      _WhatsAppAccountPicker(controller: controller),
       const SizedBox(height: 12),
       Text('رسالة تجربة', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 10),
@@ -1437,30 +1437,32 @@ class _WhatsAppAccountPicker extends StatelessWidget {
   const _WhatsAppAccountPicker({required this.controller});
 
   @override
-  Widget build(BuildContext context) {
-    final channels = controller.whatsAppAccountChannels;
-    if (channels.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context) => Obx(() {
+        final selected = controller.selectedWhatsAppAccountId.value;
+        final channels = controller.whatsAppAccountChannels;
+        if (channels.isEmpty) return const SizedBox.shrink();
 
-    return DropdownButtonFormField<int>(
-      initialValue: controller.selectedWhatsAppAccountId.value,
-      isDense: true,
-      decoration: const InputDecoration(
-        labelText: 'الإرسال من رقم واتساب',
-        border: OutlineInputBorder(),
-      ),
-      items: channels
-          .map((channel) => DropdownMenuItem<int>(
-                value: _channelAccountId(channel),
-                child: Text(
-                  '${channel.displayName} • ${channel.identifier ?? ''}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ))
-          .where((item) => item.value != null)
-          .toList(),
-      onChanged: controller.selectWhatsAppAccount,
-    );
-  }
+        return DropdownButtonFormField<int>(
+          initialValue: selected,
+          isDense: true,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'الإرسال من رقم واتساب',
+            border: OutlineInputBorder(),
+          ),
+          items: channels
+              .map((channel) => DropdownMenuItem<int>(
+                    value: _channelAccountId(channel),
+                    child: Text(
+                      '${channel.displayName} • ${channel.identifier ?? ''}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
+              .where((item) => item.value != null)
+              .toList(),
+          onChanged: controller.selectWhatsAppAccount,
+        );
+      });
 }
 
 class _HealthChip extends StatelessWidget {

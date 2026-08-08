@@ -114,6 +114,7 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
           child: DropdownButtonFormField<int>(
             initialValue: selected,
             isDense: true,
+            isExpanded: true,
             decoration: InputDecoration(
               labelText: 'رقم واتساب / الكتالوج',
               border:
@@ -269,14 +270,15 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('كل المنتجات')),
                   DropdownMenuItem(
-                      value: 'category', child: Text('تصنيف رئيسي حسب ID')),
+                      value: 'category', child: Text('تصنيف رئيسي')),
                   DropdownMenuItem(
-                      value: 'sub_category', child: Text('تصنيف فرعي حسب ID')),
+                      value: 'sub_category', child: Text('تصنيف فرعي')),
                 ],
                 onChanged: (value) {
                   controller.bulkSourceType.value = value ?? 'all';
                   if (controller.bulkSourceType.value == 'all') {
-                    controller.bulkSourceId.clear();
+                    controller.selectedCategoryId.value = null;
+                    controller.selectedSubCategoryId.value = null;
                   }
                 },
               )),
@@ -284,20 +286,43 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
               ? const SizedBox.shrink()
               : Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: TextField(
-                    controller: controller.bulkSourceId,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      labelText: controller.bulkSourceType.value == 'category'
-                          ? 'Category ID'
-                          : 'Sub category ID',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
+                  child: _syncSourceDropdown(),
                 )),
         ]),
       );
+
+  Widget _syncSourceDropdown() {
+    final isCategory = controller.bulkSourceType.value == 'category';
+    final sources =
+        isCategory ? controller.categories : controller.subCategories;
+    final selected = isCategory
+        ? controller.selectedCategoryId
+        : controller.selectedSubCategoryId;
+    if (sources.isEmpty) {
+      return const Text('لا توجد تصنيفات متاحة',
+          style: TextStyle(color: Colors.black54));
+    }
+
+    return DropdownButtonFormField<int>(
+      initialValue: selected.value,
+      isDense: true,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: isCategory ? 'اختر التصنيف الرئيسي' : 'اختر التصنيف الفرعي',
+        border: const OutlineInputBorder(),
+      ),
+      items: sources
+          .map((source) => DropdownMenuItem<int>(
+                value: source.id,
+                child: Text(
+                  source.label,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ))
+          .toList(),
+      onChanged: (value) => selected.value = value,
+    );
+  }
 
   Widget _products() => Column(children: [
         Padding(
