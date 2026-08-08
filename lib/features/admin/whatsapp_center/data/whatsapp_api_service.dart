@@ -126,20 +126,27 @@ class WhatsAppApiService {
     return List<int>.from(response.data as List);
   }
 
-  Future<List<int>> getQr() async {
+  Future<List<int>> getQr({int? accountId}) async {
     final response = await _api.get('$_base/qr',
+        queryParameters: _accountQuery(accountId),
         options: Options(responseType: ResponseType.bytes));
     return List<int>.from(response.data as List);
   }
 
-  Future<List<int>> getQrPdf() async {
+  Future<List<int>> getQrPdf({int? accountId}) async {
     final response = await _api.get('$_base/qr/a4',
+        queryParameters: _accountQuery(accountId),
         options: Options(responseType: ResponseType.bytes));
     return List<int>.from(response.data as List);
   }
 
-  Future<Map<String, dynamic>> sendWhatsAppText(String phone, String message) =>
-      _post('$_base/send-text', {'phone': phone, 'message': message});
+  Future<Map<String, dynamic>> sendWhatsAppText(String phone, String message,
+          {int? accountId}) =>
+      _post('$_base/send-text', {
+        'phone': phone,
+        'message': message,
+        ..._accountQuery(accountId),
+      });
 
   Future<Map<String, dynamic>> getWhatsAppTemplates() =>
       _get('$_base/templates');
@@ -169,8 +176,13 @@ class WhatsAppApiService {
       _post('$_base/settings/employees', {'employee_ids': employeeIds});
 
   Future<Map<String, dynamic>> sendWhatsAppTestMessage(
-          String phone, String message) =>
-      _post('$_base/test-message', {'phone': phone, 'message': message});
+          String phone, String message,
+          {int? accountId}) =>
+      _post('$_base/test-message', {
+        'phone': phone,
+        'message': message,
+        ..._accountQuery(accountId),
+      });
 
   Future<Map<String, dynamic>> _get(String path,
       {Map<String, dynamic>? query}) async {
@@ -186,4 +198,9 @@ class WhatsAppApiService {
 
   Map<String, dynamic> _map(dynamic data) =>
       data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+
+  Map<String, dynamic> _accountQuery(int? accountId) => {
+        if (accountId != null && accountId > 0)
+          'whatsapp_account_id': accountId,
+      };
 }

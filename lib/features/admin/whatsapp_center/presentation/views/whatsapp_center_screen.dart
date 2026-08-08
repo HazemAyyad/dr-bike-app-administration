@@ -121,6 +121,8 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
         content: SizedBox(
             width: 420,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Obx(() => _WhatsAppAccountPicker(controller: controller)),
+              const SizedBox(height: 12),
               TextField(
                   controller: phone,
                   keyboardType: TextInputType.phone,
@@ -1107,7 +1109,8 @@ class _SettingsTab extends StatelessWidget {
         final visibleChannels = selectedChannel == 'all'
             ? settings.channels
             : settings.channels
-                .where((channel) => channel.id == selectedChannel)
+                .where(
+                    (channel) => _sameChannelGroup(channel.id, selectedChannel))
                 .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1237,6 +1240,8 @@ class _SettingsTab extends StatelessWidget {
         );
       }),
       const SizedBox(height: 16),
+      Obx(() => _WhatsAppAccountPicker(controller: controller)),
+      const SizedBox(height: 12),
       Text('رسالة تجربة', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 10),
       TextField(
@@ -1427,6 +1432,37 @@ class _SocialChannelSettingsCard extends StatelessWidget {
   }
 }
 
+class _WhatsAppAccountPicker extends StatelessWidget {
+  final WhatsAppCenterController controller;
+  const _WhatsAppAccountPicker({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final channels = controller.whatsAppAccountChannels;
+    if (channels.isEmpty) return const SizedBox.shrink();
+
+    return DropdownButtonFormField<int>(
+      initialValue: controller.selectedWhatsAppAccountId.value,
+      isDense: true,
+      decoration: const InputDecoration(
+        labelText: 'الإرسال من رقم واتساب',
+        border: OutlineInputBorder(),
+      ),
+      items: channels
+          .map((channel) => DropdownMenuItem<int>(
+                value: _channelAccountId(channel),
+                child: Text(
+                  '${channel.displayName} • ${channel.identifier ?? ''}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ))
+          .where((item) => item.value != null)
+          .toList(),
+      onChanged: controller.selectWhatsAppAccount,
+    );
+  }
+}
+
 class _HealthChip extends StatelessWidget {
   final String label;
   final bool ok;
@@ -1580,29 +1616,32 @@ Color _statusColor(String status) => status == 'open'
         ? Colors.orange
         : Colors.grey;
 
-String _channelLabel(String channel) =>
-    const {
-      'whatsapp': 'واتساب',
-      'facebook': 'فيسبوك',
-      'instagram': 'إنستغرام',
-    }[channel] ??
-    channel;
+String _channelLabel(String channel) => channel.startsWith('whatsapp:')
+    ? 'واتساب'
+    : const {
+          'whatsapp': 'واتساب',
+          'facebook': 'فيسبوك',
+          'instagram': 'إنستغرام',
+        }[channel] ??
+        channel;
 
-IconData _channelIcon(String channel) =>
-    const {
-      'whatsapp': Icons.chat,
-      'facebook': Icons.facebook,
-      'instagram': Icons.camera_alt_outlined,
-    }[channel] ??
-    Icons.forum_outlined;
+IconData _channelIcon(String channel) => channel.startsWith('whatsapp:')
+    ? Icons.chat
+    : const {
+          'whatsapp': Icons.chat,
+          'facebook': Icons.facebook,
+          'instagram': Icons.camera_alt_outlined,
+        }[channel] ??
+        Icons.forum_outlined;
 
-Color _channelColor(String channel) =>
-    const {
-      'whatsapp': Color(0xFF075E54),
-      'facebook': Color(0xFF1877F2),
-      'instagram': Color(0xFFE4405F),
-    }[channel] ??
-    const Color(0xFF455A64);
+Color _channelColor(String channel) => channel.startsWith('whatsapp:')
+    ? const Color(0xFF075E54)
+    : const {
+          'whatsapp': Color(0xFF075E54),
+          'facebook': Color(0xFF1877F2),
+          'instagram': Color(0xFFE4405F),
+        }[channel] ??
+        const Color(0xFF455A64);
 
 String _avatarInitial(String value) {
   final trimmed = value.trim();
@@ -1623,6 +1662,7 @@ String _healthLabel(String key) =>
       'webhook': 'Webhook',
       'profile': 'البروفايل',
       'public_url': 'الرابط العام',
+      'catalog': 'الكتالوج',
     }[key] ??
     key;
 
@@ -1630,7 +1670,19 @@ String _detailLabel(String key) =>
     const {
       'phone_number_id': 'Phone number ID',
       'business_account_id': 'Business account ID',
+      'account_id': 'Account ID',
+      'catalog_id': 'Catalog ID',
       'page_id': 'Page ID',
       'instagram_business_account_id': 'Instagram business ID',
     }[key] ??
     key;
+
+bool _sameChannelGroup(String id, String selected) {
+  if (selected == 'whatsapp') {
+    return id == 'whatsapp' || id.startsWith('whatsapp:');
+  }
+  return id == selected;
+}
+
+int? _channelAccountId(SocialChannelSetting channel) =>
+    int.tryParse(channel.details['account_id']?.toString() ?? '');

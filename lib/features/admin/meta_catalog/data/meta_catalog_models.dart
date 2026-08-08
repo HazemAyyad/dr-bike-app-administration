@@ -1,3 +1,20 @@
+class MetaCatalogAccount {
+  final int id;
+  final String name;
+  final String? displayPhoneNumber;
+  final String? catalogId;
+  final bool isActive;
+  final bool isVerified;
+
+  MetaCatalogAccount.fromJson(Map<String, dynamic> json)
+      : id = _int(json['id']),
+        name = json['name']?.toString() ?? '',
+        displayPhoneNumber = json['display_phone_number']?.toString(),
+        catalogId = json['catalog_id']?.toString(),
+        isActive = json['is_active'] == true || json['is_active'] == 1,
+        isVerified = json['is_verified'] == true || json['is_verified'] == 1;
+}
+
 class MetaCatalogStatus {
   final bool configured;
   final String? configurationError;

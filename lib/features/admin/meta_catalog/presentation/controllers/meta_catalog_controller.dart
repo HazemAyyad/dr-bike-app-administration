@@ -12,6 +12,8 @@ class MetaCatalogController extends GetxController {
   final loading = false.obs;
   final actionLoading = false.obs;
   final error = RxnString();
+  final accounts = <MetaCatalogAccount>[].obs;
+  final selectedAccountId = RxnInt();
   final status = Rxn<MetaCatalogStatus>();
   final settings = Rxn<MetaCatalogSettings>();
   final products = <MetaCatalogProduct>[].obs;
@@ -22,7 +24,9 @@ class MetaCatalogController extends GetxController {
   final productSetType = 'all'.obs;
   final logStatus = 'all'.obs;
   final logAction = 'all'.obs;
+  final bulkSourceType = 'all'.obs;
   final search = TextEditingController();
+  final bulkSourceId = TextEditingController();
   final productsScrollController = ScrollController();
   final loadingMoreProducts = false.obs;
   int _productsPage = 1;
@@ -32,7 +36,7 @@ class MetaCatalogController extends GetxController {
   void onInit() {
     super.onInit();
     productsScrollController.addListener(_onProductsScroll);
-    refreshCurrent();
+    loadAccounts().then((_) => refreshCurrent());
   }
 
   Future<void> setTab(int value) async {
@@ -48,6 +52,14 @@ class MetaCatalogController extends GetxController {
     return loadStatus();
   }
 
+  int? get selectedAccountIdValue => selectedAccountId.value;
+
+  MetaCatalogAccount? get selectedAccount {
+    final id = selectedAccountId.value;
+    if (id == null) return null;
+    return _firstAccountWhere((account) => account.id == id);
+  }
+
   Future<void> _load(Future<void> Function() callback) async {
     loading.value = true;
     error.value = null;
@@ -60,8 +72,31 @@ class MetaCatalogController extends GetxController {
     }
   }
 
+  Future<void> loadAccounts() async {
+    try {
+      final result = await api.getAccounts();
+      final data =
+          result['accounts'] is List ? result['accounts'] as List : const [];
+      accounts.assignAll(data.whereType<Map>().map(
+          (e) => MetaCatalogAccount.fromJson(Map<String, dynamic>.from(e))));
+      selectedAccountId.value ??=
+          _firstAccountWhere((account) => account.isActive)?.id ??
+              (accounts.isNotEmpty ? accounts.first.id : null);
+    } catch (e) {
+      error.value = _message(e);
+    }
+  }
+
+  Future<void> selectAccount(int? id) async {
+    selectedAccountId.value = id;
+    products.clear();
+    productSets.clear();
+    logs.clear();
+    await refreshCurrent();
+  }
+
   Future<void> loadStatus() => _load(() async {
-        final result = await api.getStatus();
+        final result = await api.getStatus(accountId: selectedAccountIdValue);
         status.value = MetaCatalogStatus.fromJson(
             Map<String, dynamic>.from(result['catalog'] as Map? ?? {}));
       });
@@ -71,7 +106,8 @@ class MetaCatalogController extends GetxController {
         final result = await api.getProducts(
             page: _productsPage,
             search: search.text,
-            status: productStatus.value);
+            status: productStatus.value,
+            accountId: selectedAccountIdValue);
         final block = result['products'];
         final data =
             block is Map && block['data'] is List ? block['data'] as List : [];
@@ -89,7 +125,10 @@ class MetaCatalogController extends GetxController {
     try {
       final nextPage = _productsPage + 1;
       final result = await api.getProducts(
-          page: nextPage, search: search.text, status: productStatus.value);
+          page: nextPage,
+          search: search.text,
+          status: productStatus.value,
+          accountId: selectedAccountIdValue);
       final block = result['products'];
       final data =
           block is Map && block['data'] is List ? block['data'] as List : [];
@@ -119,8 +158,10 @@ class MetaCatalogController extends GetxController {
   }
 
   Future<void> loadLogs() => _load(() async {
-        final result =
-            await api.getLogs(status: logStatus.value, action: logAction.value);
+        final result = await api.getLogs(
+            status: logStatus.value,
+            action: logAction.value,
+            accountId: selectedAccountIdValue);
         final block = result['logs'];
         final data =
             block is Map && block['data'] is List ? block['data'] as List : [];
@@ -130,7 +171,9 @@ class MetaCatalogController extends GetxController {
 
   Future<void> loadProductSets() => _load(() async {
         final result = await api.getProductSets(
-            status: productSetStatus.value, type: productSetType.value);
+            status: productSetStatus.value,
+            type: productSetType.value,
+            accountId: selectedAccountIdValue);
         final block = result['product_sets'];
         final data =
             block is Map && block['data'] is List ? block['data'] as List : [];
@@ -146,18 +189,23 @@ class MetaCatalogController extends GetxController {
 
   Future<void> productAction(MetaCatalogProduct product, String action) async {
     await _action(() {
-      if (action == 'disable') return api.disableProduct(product.id);
-      if (action == 'resync') return api.resyncProduct(product.id);
-      return api.syncProduct(product.id);
+      if (action == 'disable') {
+        return api.disableProduct(product.id,
+            accountId: selectedAccountIdValue);
+      }
+      if (action == 'resync') {
+        return api.resyncProduct(product.id, accountId: selectedAccountIdValue);
+      }
+      return api.syncProduct(product.id, accountId: selectedAccountIdValue);
     }, 'تم تنفيذ العملية');
     await loadProducts();
   }
 
   Future<void> bulkSync() async {
     final confirmed = await Get.dialog<bool>(AlertDialog(
-      title: const Text('مزامنة كل المنتجات'),
-      content: const Text(
-          'ستتم إضافة المنتجات إلى قائمة الانتظار وقد تستغرق العملية بعض الوقت.'),
+      title: Text(_bulkDialogTitle()),
+      content: Text(
+          'ستتم إضافة المنتجات إلى قائمة الانتظار لحساب ${selectedAccount?.name ?? 'الكتالوج الحالي'} وقد تستغرق العملية بعض الوقت.'),
       actions: [
         TextButton(
             onPressed: () => Get.back(result: false),
@@ -168,12 +216,25 @@ class MetaCatalogController extends GetxController {
       ],
     ));
     if (confirmed != true) return;
-    await _action(api.bulkSync, 'بدأت مزامنة المنتجات');
+    final sourceId = int.tryParse(bulkSourceId.text.trim());
+    if (bulkSourceType.value != 'all' && sourceId == null) {
+      Get.snackbar('تنبيه', 'أدخل رقم التصنيف المطلوب للمزامنة',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    await _action(
+        () => api.bulkSync(
+              accountId: selectedAccountIdValue,
+              sourceType: bulkSourceType.value,
+              sourceId: bulkSourceType.value == 'all' ? null : sourceId,
+            ),
+        'بدأت مزامنة المنتجات');
     await loadStatus();
   }
 
   Future<void> syncHierarchy() async {
-    await _action(api.syncHierarchy, 'تمت مزامنة التصنيفات ومجموعات المنتجات');
+    await _action(() => api.syncHierarchy(accountId: selectedAccountIdValue),
+        'تمت مزامنة التصنيفات ومجموعات المنتجات');
     await Future.wait([loadStatus(), loadProductSets()]);
   }
 
@@ -207,9 +268,24 @@ class MetaCatalogController extends GetxController {
   int _asInt(dynamic value, {required int fallback}) =>
       int.tryParse(value?.toString() ?? '') ?? fallback;
 
+  String _bulkDialogTitle() {
+    if (bulkSourceType.value == 'category') return 'مزامنة تصنيف رئيسي';
+    if (bulkSourceType.value == 'sub_category') return 'مزامنة تصنيف فرعي';
+    return 'مزامنة كل المنتجات';
+  }
+
+  MetaCatalogAccount? _firstAccountWhere(
+      bool Function(MetaCatalogAccount account) test) {
+    for (final account in accounts) {
+      if (test(account)) return account;
+    }
+    return null;
+  }
+
   @override
   void onClose() {
     search.dispose();
+    bulkSourceId.dispose();
     productsScrollController
       ..removeListener(_onProductsScroll)
       ..dispose();

@@ -31,6 +31,7 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
           ),
           body: Column(children: [
             Obx(() => _tabs(controller.tabIndex.value)),
+            Obx(_accountSelector),
             Expanded(child: Obx(_content)),
           ]),
         ),
@@ -95,6 +96,58 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
       default:
         return _dashboard();
     }
+  }
+
+  Widget _accountSelector() {
+    if (controller.accounts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final selected = controller.selectedAccountId.value;
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF3F8F7),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      child: Row(children: [
+        const Icon(Icons.chat_outlined, color: _green),
+        const SizedBox(width: 8),
+        Expanded(
+          child: DropdownButtonFormField<int>(
+            initialValue: selected,
+            isDense: true,
+            decoration: InputDecoration(
+              labelText: 'رقم واتساب / الكتالوج',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            ),
+            items: controller.accounts
+                .map((account) => DropdownMenuItem<int>(
+                      value: account.id,
+                      child: Text(
+                        '${account.name} • ${account.displayPhoneNumber ?? '-'}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ))
+                .toList(),
+            onChanged: controller.selectAccount,
+          ),
+        ),
+        const SizedBox(width: 8),
+        _accountStateChip(controller.selectedAccount),
+      ]),
+    );
+  }
+
+  Widget _accountStateChip(MetaCatalogAccount? account) {
+    final ready = account?.isActive == true && account?.isVerified == true;
+    return Tooltip(
+      message: ready ? 'جاهز للمزامنة والإرسال' : 'بانتظار تفعيل Meta',
+      child: Icon(
+        ready ? Icons.verified_outlined : Icons.pending_actions_outlined,
+        color: ready ? Colors.green : Colors.orange,
+      ),
+    );
   }
 
   Widget _dashboard() {
@@ -172,6 +225,8 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
             ]),
           ),
           const SizedBox(height: 8),
+          _bulkScopeCard(),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: controller.syncHierarchy,
             icon: const Icon(Icons.account_tree_outlined),
@@ -188,6 +243,61 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
       ),
     );
   }
+
+  Widget _bulkScopeCard() => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.tune_outlined, color: _green),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('نطاق مزامنة المنتجات',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Obx(() => DropdownButtonFormField<String>(
+                initialValue: controller.bulkSourceType.value,
+                isDense: true,
+                decoration: const InputDecoration(
+                    labelText: 'طريقة المزامنة', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 'all', child: Text('كل المنتجات')),
+                  DropdownMenuItem(
+                      value: 'category', child: Text('تصنيف رئيسي حسب ID')),
+                  DropdownMenuItem(
+                      value: 'sub_category', child: Text('تصنيف فرعي حسب ID')),
+                ],
+                onChanged: (value) {
+                  controller.bulkSourceType.value = value ?? 'all';
+                  if (controller.bulkSourceType.value == 'all') {
+                    controller.bulkSourceId.clear();
+                  }
+                },
+              )),
+          Obx(() => controller.bulkSourceType.value == 'all'
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: TextField(
+                    controller: controller.bulkSourceId,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      labelText: controller.bulkSourceType.value == 'category'
+                          ? 'Category ID'
+                          : 'Sub category ID',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                )),
+        ]),
+      );
 
   Widget _products() => Column(children: [
         Padding(

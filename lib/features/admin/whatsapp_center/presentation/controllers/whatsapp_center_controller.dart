@@ -30,6 +30,7 @@ class WhatsAppCenterController extends GetxController {
   final settings = Rxn<WhatsAppSettings>();
   final whatsAppEmployees = <WhatsAppEmployeeAccess>[].obs;
   final selectedWhatsAppEmployeeIds = <int>{}.obs;
+  final selectedWhatsAppAccountId = RxnInt();
   final canManageWhatsAppEmployees = false.obs;
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
@@ -138,6 +139,7 @@ class WhatsAppCenterController extends GetxController {
   Future<void> loadSettings() => _load(() async {
         final result = await api.getWhatsAppSettings();
         settings.value = WhatsAppSettings.fromJson(result);
+        selectedWhatsAppAccountId.value ??= _firstConfiguredWhatsAppAccountId();
         canManageWhatsAppEmployees.value =
             result['can_manage_employees'] == true;
         final employees = result['employees'] is List
@@ -149,11 +151,28 @@ class WhatsAppCenterController extends GetxController {
             .where((employee) => employee.hasAccess)
             .map((employee) => employee.id));
         try {
-          qrBytes.value = Uint8List.fromList(await api.getQr());
+          qrBytes.value = Uint8List.fromList(
+              await api.getQr(accountId: selectedWhatsAppAccountId.value));
         } catch (_) {
           qrBytes.value = null;
         }
       });
+
+  List<SocialChannelSetting> get whatsAppAccountChannels =>
+      settings.value?.channels
+          .where((channel) =>
+              channel.id == 'whatsapp' || channel.id.startsWith('whatsapp:'))
+          .toList() ??
+      const [];
+
+  Future<void> selectWhatsAppAccount(int? accountId) async {
+    selectedWhatsAppAccountId.value = accountId;
+    try {
+      qrBytes.value = Uint8List.fromList(await api.getQr(accountId: accountId));
+    } catch (_) {
+      qrBytes.value = null;
+    }
+  }
 
   void toggleWhatsAppEmployee(int id, bool selected) {
     final values = Set<int>.from(selectedWhatsAppEmployeeIds);
@@ -182,12 +201,14 @@ class WhatsAppCenterController extends GetxController {
   }
 
   Future<void> printQrA4() async {
-    final bytes = Uint8List.fromList(await api.getQrPdf());
+    final bytes = Uint8List.fromList(
+        await api.getQrPdf(accountId: selectedWhatsAppAccountId.value));
     await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   Future<File> _saveQrPdf() async {
-    final bytes = await api.getQrPdf();
+    final bytes =
+        await api.getQrPdf(accountId: selectedWhatsAppAccountId.value);
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/dr-bike-whatsapp-qr.pdf');
     await file.writeAsBytes(bytes, flush: true);
@@ -200,7 +221,9 @@ class WhatsAppCenterController extends GetxController {
   }
 
   Future<void> shareQrA4() async {
-    final source = qrBytes.value ?? Uint8List.fromList(await api.getQr());
+    final source = qrBytes.value ??
+        Uint8List.fromList(
+            await api.getQr(accountId: selectedWhatsAppAccountId.value));
     final picture = await svg.vg.loadPicture(svg.SvgBytesLoader(source), null);
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -287,8 +310,10 @@ class WhatsAppCenterController extends GetxController {
     actionLoading.value = true;
     try {
       final result = test
-          ? await api.sendWhatsAppTestMessage(phone.trim(), message.trim())
-          : await api.sendWhatsAppText(phone.trim(), message.trim());
+          ? await api.sendWhatsAppTestMessage(phone.trim(), message.trim(),
+              accountId: selectedWhatsAppAccountId.value)
+          : await api.sendWhatsAppText(phone.trim(), message.trim(),
+              accountId: selectedWhatsAppAccountId.value);
       if (result['status'] != 'success') {
         throw Exception(result['message'] ?? 'تعذر الإرسال');
       }
@@ -334,6 +359,21 @@ class WhatsAppCenterController extends GetxController {
       actionLoading.value = false;
     }
   }
+
+  int? _firstConfiguredWhatsAppAccountId() {
+    for (final channel in whatsAppAccountChannels) {
+      final id = _accountIdFromChannel(channel);
+      if (id != null && channel.configured) return id;
+    }
+    for (final channel in whatsAppAccountChannels) {
+      final id = _accountIdFromChannel(channel);
+      if (id != null) return id;
+    }
+    return null;
+  }
+
+  int? _accountIdFromChannel(SocialChannelSetting channel) =>
+      int.tryParse(channel.details['account_id']?.toString() ?? '');
 
   String _message(Object error) =>
       error.toString().replaceFirst('Exception: ', '');
