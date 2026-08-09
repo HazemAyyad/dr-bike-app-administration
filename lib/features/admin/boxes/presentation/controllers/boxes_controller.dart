@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
@@ -7,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/all_boxes_logs_model.dart';
@@ -76,6 +78,7 @@ class BoxesController extends GetxController {
   final TextEditingController editAppearController = TextEditingController();
   final TextEditingController editCurrencyController = TextEditingController();
   final List<BoxLog> boxDetailsLogs = [];
+  final RxString boxDetailsDebugMessage = ''.obs;
 
   final List<String> appears = ['visible', 'notVisible'];
 
@@ -95,20 +98,45 @@ class BoxesController extends GetxController {
   Future<void> pullToRefresh() => getAllBoxes(showLoading: true);
 
   Future<void> getAllBoxes({bool showLoading = false}) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesController] getAllBoxes start '
+        'userType=$userType permissionIds=$employeePermissions '
+        'permissionNames=$employeePermissionNames '
+        'cachedShown=${BoxesServes().shownBoxes.length}',
+      );
+    }
     if (showLoading || BoxesServes().shownBoxes.isEmpty) {
       isLoading(true);
     } else {
       isLoading(false);
     }
     final shownBoxesList = await getShownBoxUsecase.call(screen: 0);
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesController] fetched shown boxes count=${shownBoxesList.length} '
+        'boxes=${shownBoxesList.map((b) => '${b.boxId}:${b.boxName}:${b.type}').join('|')}',
+      );
+    }
     BoxesServes().shownBoxes.assignAll(shownBoxesList);
     filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
 
     final boxesLogsList = await allBoxesLogsUsecase.call();
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesController] fetched box logs count=${boxesLogsList.length}',
+      );
+    }
     BoxesServes().allBoxesLogs.assignAll(boxesLogsList);
     filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
 
     final boxesArchiveList = await getShownBoxUsecase.call(screen: 2);
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesController] fetched archive boxes count=${boxesArchiveList.length} '
+        'boxes=${boxesArchiveList.map((b) => '${b.boxId}:${b.boxName}:${b.type}').join('|')}',
+      );
+    }
     BoxesServes().shownBoxesArchive.assignAll(boxesArchiveList);
     filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
     isLoading(false);
@@ -121,7 +149,14 @@ class BoxesController extends GetxController {
     isLoading(true);
     update();
     boxDetailsId = boxId;
+    boxDetailsDebugMessage.value = '';
     try {
+      if (kDebugMode) {
+        debugPrint('[BoxesController.getboxDetails] start boxId=$boxId');
+      }
+      if (boxId.isEmpty) {
+        throw Exception('Missing box id from navigation arguments');
+      }
       final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
 
       editBoxNameController.text = boxDetails.boxName;
@@ -130,7 +165,20 @@ class BoxesController extends GetxController {
           boxDetails.isShown == 1.toString() ? 'visible' : 'notVisible';
       editCurrencyController.text = boxDetails.currency;
       boxDetailsLogs.assignAll(boxDetails.boxLogs);
-    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[BoxesController.getboxDetails] success '
+          'name=${boxDetails.boxName} total=${boxDetails.totalBalance} '
+          'shown=${boxDetails.isShown} currency=${boxDetails.currency} '
+          'logs=${boxDetails.boxLogs.length}',
+        );
+      }
+    } catch (e, stackTrace) {
+      boxDetailsDebugMessage.value = e.toString();
+      if (kDebugMode) {
+        debugPrint('[BoxesController.getboxDetails] error: $e');
+        debugPrintStack(stackTrace: stackTrace);
+      }
       Get.snackbar(
         'error'.tr,
         e.toString(),
@@ -533,6 +581,13 @@ class BoxesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesController] onInit userType=$userType '
+        'permissionIds=$employeePermissions permissionNames=$employeePermissionNames '
+        'cachedShown=${BoxesServes().shownBoxes.length}',
+      );
+    }
     getAllBoxes();
     filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
     filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../data/models/all_boxes_logs_model.dart';
@@ -14,4 +15,17 @@ class BoxesServes {
   static final BoxesServes _instance = BoxesServes._internal();
   factory BoxesServes() => _instance;
   BoxesServes._internal();
+
+  void clear() {
+    if (kDebugMode) {
+      debugPrint(
+        '[BoxesServes] clear cache '
+        'shown=${shownBoxes.length} logs=${allBoxesLogs.length} '
+        'archive=${shownBoxesArchive.length}',
+      );
+    }
+    shownBoxes.clear();
+    allBoxesLogs.clear();
+    shownBoxesArchive.clear();
+  }
 }

@@ -5,6 +5,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 import '../../features/admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
+import '../../features/admin/boxes/presentation/controllers/boxes_controller.dart';
+import '../../features/admin/boxes/presentation/controllers/boxes_serves.dart';
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../features/auth/data/models/login_response_parser.dart';
 import '../../features/auth/data/models/user_model.dart';
@@ -42,6 +44,7 @@ class ImpersonationService {
   }
 
   static Future<void> startFromLoginResponse(Map<String, dynamic> raw) async {
+    debugPrint('[Impersonation] startFromLoginResponse begin');
     if (await isActive) {
       throw Exception('impersonationAlreadyActive'.tr);
     }
@@ -55,6 +58,7 @@ class ImpersonationService {
     if (token == null || token.isEmpty) {
       throw Exception('impersonationFailed'.tr);
     }
+    debugPrint('[Impersonation] received impersonation token');
 
     final originalToken = UserData.userToken.isNotEmpty
         ? UserData.userToken
@@ -63,6 +67,10 @@ class ImpersonationService {
     if (originalToken.isEmpty || originalUser == null) {
       throw Exception('impersonationFailed'.tr);
     }
+    debugPrint(
+      '[Impersonation] original user id=${originalUser.user.id} '
+      'type=${originalUser.user.type} name=${originalUser.user.name}',
+    );
 
     await FinalClasses.getStorage.write(_originalTokenKey, originalToken);
     await FinalClasses.getStorage.write(
@@ -99,6 +107,11 @@ class ImpersonationService {
     }
 
     final role = userModel.user.type.toLowerCase();
+    debugPrint(
+      '[Impersonation] target user id=${userModel.user.id} '
+      'type=${userModel.user.type} employeeId=${userModel.user.employee.id} '
+      'permissions=${userModel.employeePermissions.map((p) => '${p.permissionId}:${p.permissionNameEn}').join(',')}',
+    );
     if (role != 'employee') {
       await UserData.saveToken(originalToken);
       UserData.userToken = originalToken;
@@ -115,8 +128,13 @@ class ImpersonationService {
       permissionNamesEn:
           userModel.employeePermissions.map((p) => p.permissionNameEn).toList(),
     );
+    debugPrint(
+      '[Impersonation] session synced userType=$userType '
+      'permissionIds=$employeePermissions permissionNames=$employeePermissionNames',
+    );
 
     await SessionService.hydrateToken();
+    debugPrint('[Impersonation] token hydrated, navigating to shell');
     await _navigateToShell(registerEmployeeShell: true);
   }
 
@@ -135,6 +153,14 @@ class ImpersonationService {
   }
 
   static Future<void> _resetShellControllers() async {
+    debugPrint(
+      '[Impersonation] reset shell: clearing boxes cache, '
+      'boxesControllerRegistered=${Get.isRegistered<BoxesController>()}',
+    );
+    BoxesServes().clear();
+    if (Get.isRegistered<BoxesController>()) {
+      await Get.delete<BoxesController>(force: true);
+    }
     if (Get.isRegistered<BottomNavBarController>()) {
       await Get.delete<BottomNavBarController>(force: true);
     }
