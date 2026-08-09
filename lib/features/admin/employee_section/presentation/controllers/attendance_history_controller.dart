@@ -168,8 +168,28 @@ class AttendanceHistoryController extends GetxController {
         );
         return false;
       }
-      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'تمت الإضافة',
-          snackPosition: SnackPosition.BOTTOM);
+      final advance = raw['advance'];
+      final advanceMap =
+          advance is Map ? Map<String, dynamic>.from(advance) : {};
+      final boxLogId =
+          int.tryParse((advanceMap['box_log_id'] ?? '').toString());
+      final approvedBoxId =
+          int.tryParse((advanceMap['approved_box_id'] ?? '').toString());
+      final String message;
+      if (boxId == null) {
+        message = 'تمت إضافة السلفة بدون خصم من صندوق.';
+      } else if ((boxLogId ?? 0) > 0) {
+        message = 'تمت إضافة السلفة وخصمها من الصندوق.';
+      } else if ((approvedBoxId ?? 0) > 0) {
+        message = 'تمت إضافة السلفة على الصندوق، لكن لم يرجع رقم حركة الصندوق.';
+      } else {
+        message = 'تمت إضافة السلفة، لكن لم يرجع من السيرفر تأكيد الصندوق.';
+      }
+      Get.snackbar(
+        'success'.tr,
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       await loadAdvances(silent: true);
       return true;
     } catch (e) {

@@ -479,10 +479,19 @@ Future<void> _showAddAdvanceDialog(
         snackPosition: SnackPosition.BOTTOM);
     return;
   }
+  final selectedBoxId = box == null ? null : boxId(box);
+  if (box != null && (selectedBoxId == null || selectedBoxId <= 0)) {
+    Get.snackbar(
+      'error'.tr,
+      'تعذر قراءة رقم الصندوق المختار. أعد تحميل الصفحة وجرب مرة ثانية.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+    return;
+  }
 
   await controller.createAdvance(
     loanValue: amountController.text.trim(),
-    boxId: box == null || boxId(box) <= 0 ? null : boxId(box),
+    boxId: selectedBoxId,
     note: noteController.text.trim(),
   );
 }
