@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../../checks/data/models/check_model.dart';
 import '../../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../controllers/sales_controller.dart';
@@ -162,48 +161,36 @@ class InstantSalePaymentSection extends StatelessWidget {
                   ],
                 );
               }
-              return Row(
-                children: [
-                  Expanded(
-                    child: CustomDropdownFieldWithSearch(
-                      tital: 'boxName'.tr,
-                      hint: 'boxNameExample',
-                      isRequired: true,
-                      items: controller.selectableBoxes,
-                      value: controller.selectedBox.value,
-                      onChanged: (value) {
-                        controller.onBoxSelected(
-                          value is ShownBoxesModel ? value : null,
-                        );
-                      },
-                      itemAsString: (item) => item.boxName,
-                      compareFn: (a, b) => a.boxId == b.boxId,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: CustomTextField(
-                      label: 'cashValue',
-                      hintText: 'totalExample',
-                      controller: controller.cashValueController,
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) {
-                        if (paymentTag == kInstantSalePaymentTag) {
-                          sales.markInstantSalePaymentAmountTouched();
-                        } else {
-                          sales.refreshInstantSalePaymentSummaryForTag(
-                              paymentTag);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              );
+              return const _MissingDailySalesBoxNotice();
             },
           ),
         if (showPaymentFields)
           InstantSalePaymentSummary(extraTotal: extraTotal),
       ],
+    );
+  }
+}
+
+class _MissingDailySalesBoxNotice extends StatelessWidget {
+  const _MissingDailySalesBoxNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        'salesDailyNoSessionOpen'.tr,
+        style: TextStyle(
+          fontSize: 13.sp,
+          fontWeight: FontWeight.w600,
+          color: Colors.red.shade700,
+        ),
+      ),
     );
   }
 }

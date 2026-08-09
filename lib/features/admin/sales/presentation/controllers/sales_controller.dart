@@ -615,7 +615,12 @@ class SalesController extends GetxController
     String currency = 'شيكل',
   }) {
     final row = dailySessionPayload.value?.rowForCurrency(currency);
-    if (row == null) return;
+    if (row == null) {
+      payment.clearDailySalesBox();
+      payment.boxIdController.clear();
+      payment.selectedBox.value = null;
+      return;
+    }
     payment.applyDailySalesBox(
       boxId: row.dailyBoxId,
       boxName: row.dailyBoxName,
@@ -716,6 +721,26 @@ class SalesController extends GetxController
     final payload = dailySessionPayload.value;
 
     if (payload != null && payload.allowsSales) {
+      final payment = _instantSalePayment;
+      final dailyBox = payload.rowForCurrency('شيكل');
+      if (dailyBox == null || dailyBox.dailyBoxId <= 0) {
+        payment?.clearDailySalesBox();
+        payment?.boxIdController.clear();
+        payment?.selectedBox.value = null;
+        Get.snackbar(
+          'error'.tr,
+          'salesDailyNoSessionOpen'.tr,
+          backgroundColor: Colors.red,
+        );
+        return false;
+      }
+      if (payment != null) {
+        payment.applyDailySalesBox(
+          boxId: dailyBox.dailyBoxId,
+          boxName: dailyBox.dailyBoxName,
+          currency: dailyBox.currency,
+        );
+      }
       if (!payload.shouldWarnPreviousDaySale) {
         return true;
       }
