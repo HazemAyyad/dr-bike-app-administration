@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/show_net_image.dart';
@@ -31,15 +29,8 @@ Future<void> openLedgerReceiptMedia(
   bool isLocal = false,
 }) async {
   if (isLedgerReceiptVideo(path)) {
-    if (isLocal) {
-      await OpenFilex.open(path);
-      return;
-    }
-    final url = ShowNetImage.getPhoto(path);
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    FullScreenZoomImage.open(
+        context, isLocal ? path : ShowNetImage.getPhoto(path));
     return;
   }
 
