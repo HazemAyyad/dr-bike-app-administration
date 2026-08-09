@@ -335,6 +335,107 @@ class _AttendanceDaysTable extends StatelessWidget {
     );
   }
 
+  static String _timeValue(Map<String, dynamic> data, String key) {
+    final value = _value(data, key);
+    if (value == '-' || value.length < 5) return value;
+    return value.substring(0, 5);
+  }
+
+  static String _rangeValue(Map<String, dynamic> data) {
+    return 'من ${_timeValue(data, 'arrived_at')} إلى ${_timeValue(data, 'left_at')}';
+  }
+
+  static Widget _timeStateRow({
+    required String title,
+    required Map<String, dynamic> values,
+    required bool isLatest,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isLatest
+            ? AppColors.primaryColor.withValues(alpha: 0.08)
+            : const Color(0xFFF8FAFC),
+        border: Border.all(
+          color: isLatest ? AppColors.primaryColor : const Color(0xFFE5E7EB),
+        ),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isLatest ? Icons.check_circle_outline : Icons.history,
+            size: 18.sp,
+            color:
+                isLatest ? AppColors.primaryColor : AppColors.customGreyColor5,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w900,
+                    color: isLatest
+                        ? AppColors.primaryColor
+                        : AppColors.operationalNavy,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _rangeValue(values),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isLatest)
+            Text(
+              'المعتمد',
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryColor,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _adjustmentsTimeline(
+      List<EmployeeAttendanceAdjustmentRow> adjustments) {
+    final widgets = <Widget>[];
+    final first = adjustments.first;
+    widgets.add(_timeStateRow(
+      title: 'الوقت الأصلي',
+      values: first.beforeValues,
+      isLatest: false,
+    ));
+
+    for (var i = 0; i < adjustments.length; i++) {
+      final adjustment = adjustments[i];
+      final isLatest = i == adjustments.length - 1;
+      widgets.add(_timeStateRow(
+        title: 'بعد تعديل #${adjustment.id}',
+        values: adjustment.afterValues,
+        isLatest: isLatest,
+      ));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: widgets,
+    );
+  }
+
   void _showAdjustments(EmployeeAttendanceDay day) {
     if (day.adjustments.isEmpty) return;
     Get.dialog<void>(
@@ -345,79 +446,115 @@ class _AttendanceDaysTable extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: day.adjustments.map((adjustment) {
-                final before = adjustment.beforeValues;
-                final after = adjustment.afterValues;
-                return Container(
-                  margin: EdgeInsets.only(bottom: 10.h),
-                  padding: EdgeInsets.all(10.w),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    borderRadius: BorderRadius.circular(8.r),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _adjustmentsTimeline(day.adjustments),
+                SizedBox(height: 8.h),
+                Text(
+                  'تفاصيل التعديلات',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        adjustment.createdAt == null
-                            ? 'تعديل #${adjustment.id}'
-                            : 'تعديل #${adjustment.id} - ${_time(adjustment.createdAt)}',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'بواسطة: ${adjustment.editedByName ?? adjustment.editedBy?.toString() ?? '-'}   المصدر: ${_sourceLabel(adjustment.source)}',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: AppColors.customGreyColor5,
-                        ),
-                      ),
-                      if ((adjustment.note ?? '').isNotEmpty) ...[
-                        SizedBox(height: 3.h),
+                ),
+                SizedBox(height: 6.h),
+                ...day.adjustments.map((adjustment) {
+                  final before = adjustment.beforeValues;
+                  final after = adjustment.afterValues;
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 10.h),
+                    padding: EdgeInsets.all(10.w),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                         Text(
-                          adjustment.note!,
-                          style: TextStyle(fontSize: 11.sp),
+                          adjustment.createdAt == null
+                              ? 'تعديل #${adjustment.id}'
+                              : 'تعديل #${adjustment.id} - ${_time(adjustment.createdAt)}',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'بواسطة: ${adjustment.editedByName ?? adjustment.editedBy?.toString() ?? '-'}   المصدر: ${_sourceLabel(adjustment.source)}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: AppColors.customGreyColor5,
+                          ),
+                        ),
+                        if ((adjustment.note ?? '').isNotEmpty) ...[
+                          SizedBox(height: 3.h),
+                          Text(
+                            adjustment.note!,
+                            style: TextStyle(fontSize: 11.sp),
+                          ),
+                        ],
+                        SizedBox(height: 8.h),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'قبل: ${_rangeValue(before)}',
+                                style: TextStyle(fontSize: 12.sp),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                'بعد: ${_rangeValue(after)}',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'الصافي: ${_durationValue(after, 'worked_minutes')}   '
+                          'العادي: ${_durationValue(after, 'normal_minutes')}   '
+                          'الأوفر: ${_durationValue(after, 'overtime_minutes')}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: AppColors.customGreyColor5,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          childrenPadding: EdgeInsets.zero,
+                          title: Text(
+                            'حركات الدخول والخروج قبل/بعد',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                    child:
+                                        _scanList('حركات اليوم قبل', before)),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                    child: _scanList('حركات اليوم بعد', after)),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
-                      SizedBox(height: 8.h),
-                      DataTable(
-                        columnSpacing: 14.w,
-                        horizontalMargin: 6.w,
-                        columns: const [
-                          DataColumn(label: Text('الحقل')),
-                          DataColumn(label: Text('قبل')),
-                          DataColumn(label: Text('بعد')),
-                        ],
-                        rows: [
-                          _adjustmentRow('الدخول', before, after, 'arrived_at'),
-                          _adjustmentRow('الخروج', before, after, 'left_at'),
-                          _adjustmentRow(
-                              'الصافي المحتسب', before, after, 'worked_minutes',
-                              duration: true),
-                          _adjustmentRow(
-                              'الدوام العادي', before, after, 'normal_minutes',
-                              duration: true),
-                          _adjustmentRow('الأوفر تايم المعتمد', before, after,
-                              'overtime_minutes',
-                              duration: true),
-                        ],
-                      ),
-                      SizedBox(height: 8.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _scanList('حركات اليوم قبل', before)),
-                          SizedBox(width: 12.w),
-                          Expanded(child: _scanList('حركات اليوم بعد', after)),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         ),
@@ -428,24 +565,6 @@ class _AttendanceDaysTable extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  static DataRow _adjustmentRow(
-    String label,
-    Map<String, dynamic> before,
-    Map<String, dynamic> after,
-    String key, {
-    bool duration = false,
-  }) {
-    return DataRow(
-      cells: [
-        DataCell(Text(label)),
-        DataCell(
-            Text(duration ? _durationValue(before, key) : _value(before, key))),
-        DataCell(
-            Text(duration ? _durationValue(after, key) : _value(after, key))),
-      ],
     );
   }
 
