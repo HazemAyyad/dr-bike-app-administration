@@ -552,16 +552,25 @@ class AddEmployeeController extends GetxController {
 
   bool get hasSelectedBoxSectionPermission {
     return permissionsList.any((permission) {
-      final id = permission['id'].toString();
-      return (id == '11' || id == '48') &&
+      return isBoxesSectionPermission(permission) &&
           permission['permission'].value == true;
     });
   }
 
-  List<String> get selectedVisibleBoxIds => assignableBoxes
-      .where((box) => box['selected'].value == true)
-      .map<String>((box) => box['id'].toString())
-      .toList();
+  bool isBoxesSectionPermission(Map<String, dynamic> permission) {
+    return permission['id'].toString() == '11';
+  }
+
+  List<String> get selectedVisibleBoxIds {
+    if (!hasSelectedBoxSectionPermission) {
+      return [];
+    }
+
+    return assignableBoxes
+        .where((box) => box['selected'].value == true)
+        .map<String>((box) => box['id'].toString())
+        .toList();
+  }
 
   void setVisibleBoxValue(Map<String, dynamic> box, bool? value) {
     if (!canEditPermissionAssignments.value) return;

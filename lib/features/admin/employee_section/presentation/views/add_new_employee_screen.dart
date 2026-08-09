@@ -278,25 +278,6 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 ),
               ],
             ),
-            Obx(
-              () => controller.hasSelectedBoxSectionPermission &&
-                      controller.assignableBoxes.isNotEmpty
-                  ? Column(
-                      children: [
-                        SizedBox(height: 8.h),
-                        _EmployeeFormSection(
-                          icon: Icons.account_balance_wallet_outlined,
-                          title: 'صناديق الموظف',
-                          collapsible: true,
-                          initiallyExpanded: true,
-                          children: [
-                            _VisibleBoxesSection(controller: controller),
-                          ],
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
             SizedBox(height: 10.h),
             AppButton(
               isLoading: controller.isLoading,
@@ -530,38 +511,56 @@ class _PermissionGroupCard extends StatelessWidget {
                                       group,
                                     )
                                 : null,
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: CustomCheckBox(
-                                    title: permission['name'],
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          color: isDark
-                                              ? AppColors.customGreyColor6
-                                              : AppColors.customGreyColor2,
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w600,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: CustomCheckBox(
+                                        title: permission['name'],
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: isDark
+                                                  ? AppColors.customGreyColor6
+                                                  : AppColors.customGreyColor2,
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                        value: permission['permission'],
+                                        onChanged: (value) {
+                                          controller.setPermissionValue(
+                                            permission,
+                                            value,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    if (permission['adminOnly'] == true) ...[
+                                      SizedBox(width: 4.w),
+                                      Tooltip(
+                                        message: 'adminOnlyPermission'.tr,
+                                        child: Icon(
+                                          Icons.lock_outline_rounded,
+                                          size: 14.sp,
+                                          color: AppColors.customOrange3,
                                         ),
-                                    value: permission['permission'],
-                                    onChanged: (value) {
-                                      controller.setPermissionValue(
-                                        permission,
-                                        value,
-                                      );
-                                    },
-                                  ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                if (permission['adminOnly'] == true) ...[
-                                  SizedBox(width: 4.w),
-                                  Tooltip(
-                                    message: 'adminOnlyPermission'.tr,
-                                    child: Icon(
-                                      Icons.lock_outline_rounded,
-                                      size: 14.sp,
-                                      color: AppColors.customOrange3,
+                                if (controller
+                                        .isBoxesSectionPermission(permission) &&
+                                    permission['permission'].value == true &&
+                                    controller.assignableBoxes.isNotEmpty) ...[
+                                  SizedBox(height: 4.h),
+                                  Padding(
+                                    padding:
+                                        EdgeInsetsDirectional.only(start: 26.w),
+                                    child: _VisibleBoxesSection(
+                                      controller: controller,
                                     ),
                                   ),
                                 ],
