@@ -329,41 +329,45 @@ class _VisibleBoxesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     return Obx(
-      () => LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth >= 680
-              ? (constraints.maxWidth - 10.w) / 2
-              : constraints.maxWidth;
-          return Wrap(
-            spacing: 10.w,
-            runSpacing: 2.h,
-            children: [
-              for (final box in controller.assignableBoxes)
-                SizedBox(
-                  width: itemWidth,
-                  child: CustomCheckBox(
-                    title: [
-                      box['name']?.toString() ?? '',
-                      if ((box['currency']?.toString() ?? '').isNotEmpty)
-                        box['currency'].toString(),
-                    ].join(' - '),
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: isDark
-                              ? AppColors.customGreyColor6
-                              : AppColors.customGreyColor2,
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                    value: box['selected'],
-                    onChanged: (value) {
-                      controller.setVisibleBoxValue(box, value);
-                    },
+      () {
+        final boxes = controller.assignableBoxes.toList();
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth >= 680
+                ? (constraints.maxWidth - 10.w) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: 10.w,
+              runSpacing: 2.h,
+              children: [
+                for (final box in boxes)
+                  SizedBox(
+                    width: itemWidth,
+                    child: CustomCheckBox(
+                      title: [
+                        box['name']?.toString() ?? '',
+                        if ((box['currency']?.toString() ?? '').isNotEmpty)
+                          box['currency'].toString(),
+                      ].join(' - '),
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: isDark
+                                ? AppColors.customGreyColor6
+                                : AppColors.customGreyColor2,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      value: box['selected'],
+                      onChanged: (value) {
+                        controller.setVisibleBoxValue(box, value);
+                      },
+                    ),
                   ),
-                ),
-            ],
-          );
-        },
-      ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
