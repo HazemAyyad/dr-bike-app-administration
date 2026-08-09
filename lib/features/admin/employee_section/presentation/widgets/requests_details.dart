@@ -113,6 +113,8 @@ class RequestsDetails extends StatelessWidget {
         (box['box_name'] ?? box['name'] ?? '').toString();
     String boxBalance(Map<String, dynamic> box) =>
         (box['total_balance'] ?? box['total'] ?? '0').toString();
+    String boxLabel(Map<String, dynamic> box) =>
+        '${boxName(box)} - ${boxBalance(box)}';
 
     return Column(
       children: [
@@ -219,6 +221,20 @@ class RequestsDetails extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8.r),
                           ),
                         ),
+                        selectedItemBuilder: (ctx) => [
+                          const Text(
+                            'بدون صندوق',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          ...controller.loanApprovalBoxes.map(
+                            (box) => Text(
+                              boxLabel(box),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                         items: [
                           const DropdownMenuItem<Map<String, dynamic>>(
                             value: null,
@@ -228,7 +244,8 @@ class RequestsDetails extends StatelessWidget {
                             (box) => DropdownMenuItem(
                               value: box,
                               child: Text(
-                                '${boxName(box)} - ${boxBalance(box)}',
+                                boxLabel(box),
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

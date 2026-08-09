@@ -238,7 +238,7 @@ class EmployeeSectionController extends GetxController
   int? get selectedLoanApprovalBoxId {
     final box = selectedLoanApprovalBox.value;
     if (box == null) return null;
-    return int.tryParse((box['id'] ?? '').toString());
+    return int.tryParse((box['box_id'] ?? box['id'] ?? '').toString());
   }
 
   // متغير للتحكم في قائمة الإضافة
@@ -359,6 +359,18 @@ class EmployeeSectionController extends GetxController
     required BuildContext context,
     required String employeeOrderId,
   }) async {
+    final selectedBox = selectedLoanApprovalBox.value;
+    final selectedBoxId = selectedLoanApprovalBoxId;
+    if (loanValue.value && selectedBox != null && (selectedBoxId ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message:
+            'تعذر قراءة رقم الصندوق المختار. أعد تحميل الصفحة وجرب مرة ثانية.',
+      );
+      return;
+    }
+
     isPaymentLoading(true);
     final result = await approveEmployeeOrderUsecase.call(
       employeeOrderId: employeeOrderId,
@@ -370,7 +382,7 @@ class EmployeeSectionController extends GetxController
       extraWorkHoursValue: extraWorkHoursController.text.isEmpty
           ? ''
           : extraWorkHoursController.text,
-      boxId: selectedLoanApprovalBoxId,
+      boxId: selectedBoxId,
     );
     result.fold(
       (failure) {
