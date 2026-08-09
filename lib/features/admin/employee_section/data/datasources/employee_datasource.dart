@@ -192,6 +192,10 @@ class EmployeeDatasource {
         },
         isFormData: true,
       );
+      debugPrint(
+        '[EmployeeDatasource.creatEmployee] posted '
+        'employeeId=$employeeId permissions=$permissions visibleBoxIds=$visibleBoxIds',
+      );
       final data = response.data;
       // print('Response data: $response');
       return data;

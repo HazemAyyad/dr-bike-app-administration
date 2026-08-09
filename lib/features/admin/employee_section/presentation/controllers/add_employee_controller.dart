@@ -794,6 +794,17 @@ class AddEmployeeController extends GetxController {
         isLoading(true);
         String formattedTime =
             '${selectedTime.value.hour.toString().padLeft(2, '0')}:${selectedTime.value.minute.toString().padLeft(2, '0')}';
+        final selectedPermissionIds = permissionsList
+            .where((e) => e['permission'].value)
+            .map<String>((e) => e['id'])
+            .toList();
+        final selectedBoxIds = selectedVisibleBoxIds;
+        debugPrint(
+          '[AddEmployeeController] submit employee '
+          'isEdit=$isEditEmployee employeeId=${isEditEmployee ? employeeService.employeeDetails.value!.id : null} '
+          'selectedPermissions=$selectedPermissionIds selectedVisibleBoxIds=$selectedBoxIds '
+          'hasBoxesPermission=$hasSelectedBoxSectionPermission',
+        );
         final result = await employeeUsecase.call(
           employeeId: isEditEmployee
               ? employeeService.employeeDetails.value!.id.toString()
@@ -810,11 +821,8 @@ class AddEmployeeController extends GetxController {
           startWorkTime: formattedTime,
           documentImg: documentsImageList,
           employeeImg: employeeImageList,
-          permissions: permissionsList
-              .where((e) => e['permission'].value)
-              .map<String>((e) => e['id'])
-              .toList(),
-          visibleBoxIds: selectedVisibleBoxIds,
+          permissions: selectedPermissionIds,
+          visibleBoxIds: selectedBoxIds,
           weeklyDaysOff: selectedWeeklyDaysOff,
           fingerprintEnabled: fingerprintEnabled.value,
           deviceUserId: deviceUserIdController.text.trim().isEmpty
