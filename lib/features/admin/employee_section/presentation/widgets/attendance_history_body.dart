@@ -524,6 +524,97 @@ class _AttendanceDaysTable extends StatelessWidget {
     return 'من ${_timeValue(data, 'arrived_at')} إلى ${_timeValue(data, 'left_at')}';
   }
 
+  static String _countedCheckoutValue(Map<String, dynamic> data) {
+    final arrived = _timeValue(data, 'arrived_at');
+    final worked = data['worked_minutes'];
+    final minutes =
+        worked is num ? worked.toInt() : int.tryParse(worked?.toString() ?? '');
+    if (arrived == '-' || minutes == null) return _timeValue(data, 'left_at');
+
+    final parts = arrived.split(':');
+    if (parts.length < 2) return _timeValue(data, 'left_at');
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return _timeValue(data, 'left_at');
+
+    final total = (hour * 60 + minute + minutes) % (24 * 60);
+    return '${(total ~/ 60).toString().padLeft(2, '0')}:${(total % 60).toString().padLeft(2, '0')}';
+  }
+
+  static String _timeBundleValue(Map<String, dynamic> data) {
+    return 'دخول ${_timeValue(data, 'arrived_at')} | فعلي ${_timeValue(data, 'left_at')} | محسوب ${_countedCheckoutValue(data)}';
+  }
+
+  static Widget _dayTimeHistory(EmployeeAttendanceDay day) {
+    final rows = <Widget>[];
+
+    if (day.adjustments.isNotEmpty) {
+      rows.add(_tableTimeLine(
+        title: 'الأصلي',
+        values: day.adjustments.first.beforeValues,
+        isLatest: false,
+      ));
+      for (var i = 0; i < day.adjustments.length; i++) {
+        final adjustment = day.adjustments[i];
+        rows.add(_tableTimeLine(
+          title: i == day.adjustments.length - 1 ? 'المعتمد' : 'تعديل ${i + 1}',
+          values: adjustment.afterValues,
+          isLatest: i == day.adjustments.length - 1,
+        ));
+      }
+    } else {
+      rows.add(_plainTimeLine(
+        title: 'المعتمد',
+        value:
+            'دخول ${_time(day.firstCheckIn)} | فعلي ${_time(day.actualCheckOut ?? day.lastCheckOut)} | محسوب ${_time(day.calculatedCheckOut ?? day.lastCheckOut)}',
+      ));
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: 190.w, maxWidth: 280.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: rows,
+      ),
+    );
+  }
+
+  static Widget _plainTimeLine({
+    required String title,
+    required String value,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 2.h),
+      child: Text(
+        '$title: $value',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  static Widget _tableTimeLine({
+    required String title,
+    required Map<String, dynamic> values,
+    required bool isLatest,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 3.h),
+      child: Text(
+        '$title: ${_timeBundleValue(values)}',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: isLatest ? FontWeight.w900 : FontWeight.w700,
+          color: isLatest ? AppColors.primaryColor : null,
+        ),
+      ),
+    );
+  }
+
   static Widget _timeStateRow({
     required String title,
     required Map<String, dynamic> values,
@@ -767,6 +858,8 @@ class _AttendanceDaysTable extends StatelessWidget {
         child: DataTable(
           columnSpacing: 18.w,
           horizontalMargin: 10.w,
+          dataRowMinHeight: 46.h,
+          dataRowMaxHeight: 128.h,
           headingRowColor: WidgetStateProperty.resolveWith(
             (_) => AppColors.primaryColor,
           ),
@@ -777,9 +870,7 @@ class _AttendanceDaysTable extends StatelessWidget {
           columns: [
             const DataColumn(label: Text('التاريخ')),
             const DataColumn(label: Text('الحالة')),
-            const DataColumn(label: Text('دخول')),
-            const DataColumn(label: Text('خروج فعلي')),
-            const DataColumn(label: Text('خروج محسوب')),
+            const DataColumn(label: Text('حركات اليوم')),
             const DataColumn(label: Text('الصافي')),
             const DataColumn(label: Text('أوفر تايم')),
             const DataColumn(label: Text('تعديلات')),
@@ -794,10 +885,7 @@ class _AttendanceDaysTable extends StatelessWidget {
               cells: [
                 DataCell(Text(_compactDayTitle(day.date))),
                 DataCell(Text(day.attendanceStatusLabel ?? '-')),
-                DataCell(Text(_time(day.firstCheckIn))),
-                DataCell(Text(_time(day.actualCheckOut ?? day.lastCheckOut))),
-                DataCell(
-                    Text(_time(day.calculatedCheckOut ?? day.lastCheckOut))),
+                DataCell(_dayTimeHistory(day)),
                 DataCell(Text(
                   day.workedHours ??
                       AttendanceHistoryController.formatMinutes(

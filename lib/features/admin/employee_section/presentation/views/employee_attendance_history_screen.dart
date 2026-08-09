@@ -1143,8 +1143,11 @@ class _MonthYearPicker extends StatelessWidget {
     );
   }
 
-  static String _fmtDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static String _fmtDate(DateTime d) {
+    final monthNumber = d.month.toString().padLeft(2, '0');
+    final monthName = AttendanceHistoryController.monthNames[d.month - 1];
+    return '${d.day.toString().padLeft(2, '0')} $monthName $monthNumber ${d.year}';
+  }
 
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
