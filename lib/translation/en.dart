@@ -1252,10 +1252,14 @@ const Map<String, String> en = {
   'employeeAllowedWifiSsidsSetting': 'Employee Wi-Fi networks',
   'employeeAllowedWifiSsidsSettingDesc':
       'Networks that make the employee status dot green in the employees list',
-  'employeeAllowedWifiSsidsHint':
-      'Enter one network name per line or separate with commas',
+  'employeeAllowedWifiSsidsHint': 'Allowed Wi-Fi network names',
   'employeeAllowedWifiSsidsDesc':
-      'Example: DoctorBike or DoctorBike-5G. The name must match the Wi-Fi name shown on the employee device.',
+      'Enter each network on a separate line. The name must match the Wi-Fi name shown on the employee device.',
+  'employeeAllowedWifiSsidsHelp':
+      'Only these networks make the employee dot green. Internet on another network appears orange, and no internet appears red.',
+  'employeeAllowedWifiSsidsExample': 'DoctorBike\nDoctorBike-5G\nOffice WiFi',
+  'employeeAllowedWifiSsidsColorGuide':
+      'Green = allowed network, orange = internet on another network, red = no internet.',
   'adminFabOptionsSetting': 'Add button shortcuts',
   'adminFabOptionsSettingDesc':
       'Choose which shortcuts appear inside the admin + button',

@@ -883,35 +883,101 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     if (!mounted) return;
     final saved = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: dialogBg,
         surfaceTintColor: Colors.transparent,
-        title: Text(
-          'employeeAllowedWifiSsidsSetting'.tr,
-          style: const TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
+        titlePadding: EdgeInsetsDirectional.only(
+          start: 24.w,
+          end: 8.w,
+          top: 18.h,
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: TextField(
-            controller: controller,
-            minLines: 4,
-            maxLines: 8,
-            style: const TextStyle(color: textPrimary),
-            decoration: InputDecoration(
-              labelText: 'employeeAllowedWifiSsidsHint'.tr,
-              helperText: 'employeeAllowedWifiSsidsDesc'.tr,
-              helperMaxLines: 3,
-              labelStyle: const TextStyle(color: textSecondary),
-              helperStyle: const TextStyle(color: textSecondary),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'employeeAllowedWifiSsidsSetting'.tr,
+                style: const TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
+            IconButton(
+              tooltip: 'close'.tr,
+              onPressed: () => Navigator.pop(ctx, false),
+              icon: const Icon(Icons.close_rounded, color: textSecondary),
+            ),
+          ],
+        ),
+        contentPadding: EdgeInsetsDirectional.fromSTEB(24.w, 12.h, 24.w, 0),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: const Color(0xFF2563EB),
+                      size: 18.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'employeeAllowedWifiSsidsHelp'.tr,
+                        style: TextStyle(
+                          color: const Color(0xFF1E3A8A),
+                          fontSize: 12.sp,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 12.h),
+              TextField(
+                controller: controller,
+                minLines: 5,
+                maxLines: 8,
+                style: const TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'employeeAllowedWifiSsidsHint'.tr,
+                  hintText: 'employeeAllowedWifiSsidsExample'.tr,
+                  helperText: 'employeeAllowedWifiSsidsDesc'.tr,
+                  helperMaxLines: 3,
+                  labelStyle: const TextStyle(color: textSecondary),
+                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                  helperStyle: const TextStyle(color: textSecondary),
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.wifi_rounded),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'employeeAllowedWifiSsidsColorGuide'.tr,
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 11.sp,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
         actions: [

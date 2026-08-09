@@ -1239,10 +1239,14 @@ const Map<String, String> ar = {
   'employeeAllowedWifiSsidsSetting': 'شبكات دوام الموظفين',
   'employeeAllowedWifiSsidsSettingDesc':
       'الشبكات التي تجعل نقطة الموظف خضراء في قائمة الموظفين',
-  'employeeAllowedWifiSsidsHint':
-      'اكتب اسم كل شبكة في سطر أو افصل بينها بفواصل',
+  'employeeAllowedWifiSsidsHint': 'أسماء شبكات الواي فاي المسموحة',
   'employeeAllowedWifiSsidsDesc':
-      'مثال: DoctorBike أو DoctorBike-5G. يجب أن يطابق الاسم اسم شبكة الواي فاي كما يظهر على جهاز الموظف.',
+      'اكتب كل شبكة بسطر منفصل. لازم الاسم يطابق اسم الشبكة كما يظهر على جهاز الموظف.',
+  'employeeAllowedWifiSsidsHelp':
+      'هذه الشبكات فقط تجعل نقطة الموظف خضراء. إذا كان الموظف متصل بالإنترنت على شبكة أخرى تظهر برتقالية، وإذا لا يوجد إنترنت تظهر حمراء.',
+  'employeeAllowedWifiSsidsExample': 'DoctorBike\nDoctorBike-5G\nOffice WiFi',
+  'employeeAllowedWifiSsidsColorGuide':
+      'الأخضر = شبكة مسموحة، البرتقالي = إنترنت على شبكة أخرى، الأحمر = بدون إنترنت.',
   'fingerprintDefaultDevice': 'الجهاز الافتراضي للبصمة',
   'fingerprintDefaultDeviceHint': 'اختر الجهاز الافتراضي (اختياري)',
   'fingerprintDefaultDeviceNone': 'بدون',

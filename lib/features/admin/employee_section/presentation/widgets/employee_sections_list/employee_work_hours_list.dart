@@ -541,28 +541,47 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                   padding: const EdgeInsets.all(5),
                   child: GestureDetector(
                     onTap: () => _openImageViewer(context),
-                    child: Container(
-                      height: 54.h,
-                      width: 54.w,
-                      decoration: const BoxDecoration(shape: BoxShape.circle),
-                      clipBehavior: Clip.antiAlias,
-                      child: CachedNetworkImage(
-                        cacheManager: CacheManager(
-                          Config(
-                            'imagesCache',
-                            stalePeriod: const Duration(days: 7),
-                            maxNrOfCacheObjects: 100,
+                    child: SizedBox(
+                      height: 58.h,
+                      width: 58.w,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fill(
+                            child: Container(
+                              decoration:
+                                  const BoxDecoration(shape: BoxShape.circle),
+                              clipBehavior: Clip.antiAlias,
+                              child: CachedNetworkImage(
+                                cacheManager: CacheManager(
+                                  Config(
+                                    'imagesCache',
+                                    stalePeriod: const Duration(days: 7),
+                                    maxNrOfCacheObjects: 100,
+                                  ),
+                                ),
+                                imageUrl: widget.employee.employeeImg,
+                                fit: BoxFit.cover,
+                                fadeInDuration:
+                                    const Duration(milliseconds: 200),
+                                fadeOutDuration:
+                                    const Duration(milliseconds: 200),
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              ),
+                            ),
                           ),
-                        ),
-                        imageUrl: widget.employee.employeeImg,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 200),
-                        fadeOutDuration: const Duration(milliseconds: 200),
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
+                          PositionedDirectional(
+                            end: -1.w,
+                            bottom: 1.h,
+                            child: _WifiStatusDot(
+                              employee: widget.employee,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -795,6 +814,52 @@ class _IconChip extends StatelessWidget {
           border: Border.all(color: color, width: 0.5),
         ),
         child: Icon(icon, size: 13.sp, color: color),
+      ),
+    );
+  }
+}
+
+class _WifiStatusDot extends StatelessWidget {
+  const _WifiStatusDot({required this.employee});
+
+  final EmployeeEntity employee;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = employee.wifiPresenceState;
+    final color = state == 'green'
+        ? const Color(0xFF16A34A)
+        : state == 'orange'
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFFDC2626);
+    final ssid = employee.wifiSsid?.trim();
+    final message = state == 'green'
+        ? (ssid == null || ssid.isEmpty
+            ? 'متصل بشبكة العمل'
+            : 'متصل بشبكة العمل: $ssid')
+        : state == 'orange'
+            ? (ssid == null || ssid.isEmpty
+                ? 'متصل بشبكة أخرى'
+                : 'متصل بشبكة أخرى: $ssid')
+            : 'غير متصل بالإنترنت الآن';
+
+    return Tooltip(
+      message: message,
+      child: Container(
+        width: 17.w,
+        height: 17.w,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2.w),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 4.r,
+              offset: Offset(0, 1.h),
+            ),
+          ],
+        ),
       ),
     );
   }
