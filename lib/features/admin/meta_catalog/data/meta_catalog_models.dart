@@ -74,6 +74,12 @@ class MetaCatalogProductSet {
   final String name;
   final String status;
   final String? metaProductSetId;
+  final bool setUploaded;
+  final int totalProducts;
+  final int syncedProducts;
+  final int failedProducts;
+  final int pendingProducts;
+  final int disabledProducts;
   final String? lastSyncedAt;
   final String? error;
 
@@ -87,6 +93,12 @@ class MetaCatalogProductSet {
         name = json['name']?.toString() ?? '',
         status = json['sync_status']?.toString() ?? 'pending',
         metaProductSetId = json['meta_product_set_id']?.toString(),
+        setUploaded = json['set_uploaded'] == true || json['set_uploaded'] == 1,
+        totalProducts = _int(json['total_products']),
+        syncedProducts = _int(json['synced_products']),
+        failedProducts = _int(json['failed_products']),
+        pendingProducts = _int(json['pending_products']),
+        disabledProducts = _int(json['disabled_products']),
         lastSyncedAt = json['last_synced_at']?.toString(),
         error = json['last_error']?.toString();
 }

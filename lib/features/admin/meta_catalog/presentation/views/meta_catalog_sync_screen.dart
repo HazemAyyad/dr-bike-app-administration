@@ -461,12 +461,38 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
                           title: Text(set.name,
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            '${set.sourceType == 'category' ? 'تصنيف رئيسي' : 'تصنيف فرعي'}'
-                            '${set.metaProductSetId == null ? '' : ' • Meta ID: ${set.metaProductSetId}'}'
-                            '${set.error == null ? '' : '\n${set.error}'}',
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${set.sourceType == 'category' ? 'تصنيف رئيسي' : 'تصنيف فرعي'}'
+                                ' • ${set.setUploaded ? 'موجود في Meta' : 'غير مرفوع بعد'}'
+                                '${set.metaProductSetId == null ? '' : ' • Meta ID: ${set.metaProductSetId}'}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 5),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  _miniStat('المنتجات', set.totalProducts,
+                                      Colors.blueGrey),
+                                  _miniStat(
+                                      'تمت', set.syncedProducts, Colors.green),
+                                  _miniStat(
+                                      'فشلت', set.failedProducts, Colors.red),
+                                  _miniStat('انتظار', set.pendingProducts,
+                                      Colors.orange),
+                                ],
+                              ),
+                              if (set.error != null)
+                                Text(set.error!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.red, fontSize: 12)),
+                            ],
                           ),
                           trailing: _badge(set.status),
                         ),
@@ -770,6 +796,18 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
       child: Text(label, style: TextStyle(fontSize: 10, color: color)),
     );
   }
+
+  Widget _miniStat(String label, int value, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: .2)),
+        ),
+        child: Text('$label $value',
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+      );
 
   Widget _imagePlaceholder() => Container(
       width: 58,
