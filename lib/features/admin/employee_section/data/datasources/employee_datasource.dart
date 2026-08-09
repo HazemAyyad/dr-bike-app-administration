@@ -59,6 +59,31 @@ class EmployeeDatasource {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getAssignableBoxes() async {
+    try {
+      final response = await api.get(EndPoints.allPermissions);
+      final data = asMap(response.data);
+      final raw = data['boxes'];
+      if (raw is! List) return <Map<String, dynamic>>[];
+
+      return raw
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> updatePermissionGrantPolicy({
     required int permissionId,
     required String grantPolicy,
@@ -92,6 +117,7 @@ class EmployeeDatasource {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
     String? deviceUserId,
@@ -161,6 +187,7 @@ class EmployeeDatasource {
           ...employeeImgList,
           ...documentsImageList,
           'permissions[]': permissions,
+          'visible_box_ids[]': visibleBoxIds,
           ...weeklyDaysOffFields,
         },
         isFormData: true,

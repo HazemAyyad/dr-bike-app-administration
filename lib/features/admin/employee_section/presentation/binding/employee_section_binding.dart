@@ -15,6 +15,7 @@ import '../../domain/usecases/employee_advances_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
 import '../../domain/usecases/get_logs_usecase.dart';
+import '../../domain/usecases/get_assignable_boxes_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
 import '../../domain/usecases/overtime_and_loan_usecase.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
@@ -115,6 +116,9 @@ class EmployeeSectionBinding extends Bindings {
     Get.lazyPut(
       () => AddEmployeeController(
         employeeUsecase: AddEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getAssignableBoxesUsecase: GetAssignableBoxesUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         getPermissionsUsecase: GetPermissionsUsecase(

@@ -32,6 +32,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required List<String> documentImg,
     required List<String> weeklyDaysOff,
     required List<PermissionEntity> permissions,
+    required List<EmployeeVisibleBoxEntity> visibleBoxes,
   }) : super(
           id: id,
           name: name,
@@ -52,6 +53,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           documentImg: documentImg,
           weeklyDaysOff: weeklyDaysOff,
           permissions: permissions,
+          visibleBoxes: visibleBoxes,
         );
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -86,6 +88,10 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
         j[ApiKey.permissions],
         (Map<String, dynamic> m) => PermissionModel.fromJson(m),
       ),
+      visibleBoxes: mapList(
+        j['visible_boxes'],
+        (Map<String, dynamic> m) => EmployeeVisibleBoxModel.fromJson(m),
+      ),
     );
   }
 }
@@ -107,6 +113,24 @@ class PermissionModel extends PermissionEntity {
       permissionId: asInt(j[ApiKey.permission_id]),
       permissionName: asString(j[ApiKey.permission_name]),
       permissionNameEn: asString(j[ApiKey.permission_name_en]),
+    );
+  }
+}
+
+class EmployeeVisibleBoxModel extends EmployeeVisibleBoxEntity {
+  const EmployeeVisibleBoxModel({
+    required int boxId,
+    required String boxName,
+  }) : super(
+          boxId: boxId,
+          boxName: boxName,
+        );
+
+  factory EmployeeVisibleBoxModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return EmployeeVisibleBoxModel(
+      boxId: asInt(j['box_id']),
+      boxName: asString(j['box_name']),
     );
   }
 }

@@ -21,6 +21,8 @@ import '../../data/models/admin_user_model.dart';
 abstract class EmployeeRepository {
   Future<List<Map<String, dynamic>>> getAllPermissions();
 
+  Future<List<Map<String, dynamic>>> getAssignableBoxes();
+
   Future<Either<Failure, String>> updatePermissionGrantPolicy({
     required int permissionId,
     required String grantPolicy,
@@ -79,6 +81,7 @@ abstract class EmployeeRepository {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
     String? deviceUserId,

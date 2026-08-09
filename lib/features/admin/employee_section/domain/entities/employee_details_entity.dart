@@ -18,6 +18,7 @@ class EmployeeDetailsEntity {
   final List<String> documentImg;
   final List<String> weeklyDaysOff;
   final List<PermissionEntity> permissions;
+  final List<EmployeeVisibleBoxEntity> visibleBoxes;
 
   const EmployeeDetailsEntity({
     required this.id,
@@ -39,6 +40,7 @@ class EmployeeDetailsEntity {
     required this.documentImg,
     required this.weeklyDaysOff,
     required this.permissions,
+    required this.visibleBoxes,
   });
 }
 
@@ -51,5 +53,15 @@ class PermissionEntity {
     required this.permissionId,
     required this.permissionName,
     required this.permissionNameEn,
+  });
+}
+
+class EmployeeVisibleBoxEntity {
+  final int boxId;
+  final String boxName;
+
+  const EmployeeVisibleBoxEntity({
+    required this.boxId,
+    required this.boxName,
   });
 }

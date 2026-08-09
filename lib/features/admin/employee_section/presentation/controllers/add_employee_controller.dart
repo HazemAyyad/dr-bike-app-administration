@@ -9,6 +9,7 @@ import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
+import '../../domain/usecases/get_assignable_boxes_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
 import '../../domain/usecases/update_permission_grant_policy_usecase.dart';
 import 'employee_section_controller.dart';
@@ -31,12 +32,14 @@ class AddEmployeeController extends GetxController {
   static const String grantPolicyPermissionsManage = 'permissions_manage';
 
   AddEmployeeUsecase employeeUsecase;
+  GetAssignableBoxesUsecase getAssignableBoxesUsecase;
   GetPermissionsUsecase getPermissionsUsecase;
   UpdatePermissionGrantPolicyUsecase updatePermissionGrantPolicyUsecase;
   EmployeeService employeeService;
 
   AddEmployeeController({
     required this.employeeUsecase,
+    required this.getAssignableBoxesUsecase,
     required this.getPermissionsUsecase,
     required this.updatePermissionGrantPolicyUsecase,
     required this.employeeService,
@@ -99,6 +102,7 @@ class AddEmployeeController extends GetxController {
       weeklyDaysOff['friday']!.value = true;
     }
     _loadPermissionsFromServer();
+    _loadAssignableBoxesFromServer();
   }
 
   final formKey = GlobalKey<FormState>();
@@ -389,6 +393,8 @@ class AddEmployeeController extends GetxController {
   final RxBool isAllPermissionsSelected = false.obs;
   final RxBool canEditPermissionAssignments = true.obs;
   final RxMap<String, bool> expandedPermissionGroups = <String, bool>{}.obs;
+  final RxList<Map<String, dynamic>> assignableBoxes =
+      <Map<String, dynamic>>[].obs;
 
   bool isPermissionGroupExpanded(String groupKey) =>
       expandedPermissionGroups[groupKey] ?? false;
@@ -436,6 +442,20 @@ class AddEmployeeController extends GetxController {
     _expandGroupsWithSelectedPermissions();
   }
 
+  void _applyEditedEmployeeBoxSelection() {
+    if (!isEditEmployee || employeeService.employeeDetails.value == null) {
+      return;
+    }
+
+    final selectedIds = employeeService.employeeDetails.value!.visibleBoxes
+        .map((box) => box.boxId)
+        .toSet();
+    for (final box in assignableBoxes) {
+      box['selected'].value =
+          selectedIds.contains(int.tryParse(box['id'].toString()) ?? -1);
+    }
+  }
+
   Future<void> _loadPermissionsFromServer() async {
     try {
       final rows = await getPermissionsUsecase.call();
@@ -445,6 +465,16 @@ class AddEmployeeController extends GetxController {
       _applyEditedEmployeePermissionSelection();
     } catch (_) {
       _applyEditedEmployeePermissionSelection();
+    }
+  }
+
+  Future<void> _loadAssignableBoxesFromServer() async {
+    try {
+      final rows = await getAssignableBoxesUsecase.call();
+      assignableBoxes.assignAll(rows.map(_boxFromApi));
+      _applyEditedEmployeeBoxSelection();
+    } catch (_) {
+      _applyEditedEmployeeBoxSelection();
     }
   }
 
@@ -506,6 +536,36 @@ class AddEmployeeController extends GetxController {
       'adminOnly': adminOnly,
       'grantPolicy': grantPolicy,
     };
+  }
+
+  Map<String, dynamic> _boxFromApi(Map<String, dynamic> row) {
+    final id = row['box_id'] ?? row['id'];
+    final name = row['box_name'] ?? row['name'] ?? '';
+    final currency = row['currency']?.toString() ?? '';
+    return {
+      'id': id.toString(),
+      'name': name.toString(),
+      'currency': currency,
+      'selected': false.obs,
+    };
+  }
+
+  bool get hasSelectedBoxSectionPermission {
+    return permissionsList.any((permission) {
+      final id = permission['id'].toString();
+      return (id == '11' || id == '48') &&
+          permission['permission'].value == true;
+    });
+  }
+
+  List<String> get selectedVisibleBoxIds => assignableBoxes
+      .where((box) => box['selected'].value == true)
+      .map<String>((box) => box['id'].toString())
+      .toList();
+
+  void setVisibleBoxValue(Map<String, dynamic> box, bool? value) {
+    if (!canEditPermissionAssignments.value) return;
+    box['selected'].value = value ?? false;
   }
 
   String _permissionGroupForName(dynamic nameEn) {
@@ -745,6 +805,7 @@ class AddEmployeeController extends GetxController {
               .where((e) => e['permission'].value)
               .map<String>((e) => e['id'])
               .toList(),
+          visibleBoxIds: selectedVisibleBoxIds,
           weeklyDaysOff: selectedWeeklyDaysOff,
           fingerprintEnabled: fingerprintEnabled.value,
           deviceUserId: deviceUserIdController.text.trim().isEmpty

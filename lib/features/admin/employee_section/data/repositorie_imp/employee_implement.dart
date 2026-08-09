@@ -40,6 +40,14 @@ class EmployeeImplement implements EmployeeRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getAssignableBoxes() async {
+    if (!await networkInfo.isConnected) {
+      return <Map<String, dynamic>>[];
+    }
+    return employeeDatasource.getAssignableBoxes();
+  }
+
+  @override
   Future<Either<Failure, String>> updatePermissionGrantPolicy({
     required int permissionId,
     required String grantPolicy,
@@ -85,6 +93,7 @@ class EmployeeImplement implements EmployeeRepository {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
     String? deviceUserId,
@@ -108,6 +117,7 @@ class EmployeeImplement implements EmployeeRepository {
         documentImg: documentImg,
         employeeImg: employeeImg,
         permissions: permissions,
+        visibleBoxIds: visibleBoxIds,
         weeklyDaysOff: weeklyDaysOff,
         fingerprintEnabled: fingerprintEnabled,
         deviceUserId: deviceUserId,

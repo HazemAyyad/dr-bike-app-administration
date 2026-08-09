@@ -278,6 +278,25 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 ),
               ],
             ),
+            Obx(
+              () => controller.hasSelectedBoxSectionPermission &&
+                      controller.assignableBoxes.isNotEmpty
+                  ? Column(
+                      children: [
+                        SizedBox(height: 8.h),
+                        _EmployeeFormSection(
+                          icon: Icons.account_balance_wallet_outlined,
+                          title: 'صناديق الموظف',
+                          collapsible: true,
+                          initiallyExpanded: true,
+                          children: [
+                            _VisibleBoxesSection(controller: controller),
+                          ],
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
             SizedBox(height: 10.h),
             AppButton(
               isLoading: controller.isLoading,
@@ -296,6 +315,54 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _VisibleBoxesSection extends StatelessWidget {
+  const _VisibleBoxesSection({required this.controller});
+
+  final AddEmployeeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return Obx(
+      () => LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth >= 680
+              ? (constraints.maxWidth - 10.w) / 2
+              : constraints.maxWidth;
+          return Wrap(
+            spacing: 10.w,
+            runSpacing: 2.h,
+            children: [
+              for (final box in controller.assignableBoxes)
+                SizedBox(
+                  width: itemWidth,
+                  child: CustomCheckBox(
+                    title: [
+                      box['name']?.toString() ?? '',
+                      if ((box['currency']?.toString() ?? '').isNotEmpty)
+                        box['currency'].toString(),
+                    ].join(' - '),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: isDark
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor2,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    value: box['selected'],
+                    onChanged: (value) {
+                      controller.setVisibleBoxValue(box, value);
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

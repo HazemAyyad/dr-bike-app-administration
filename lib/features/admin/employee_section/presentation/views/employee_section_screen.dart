@@ -31,7 +31,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'employeeSection',
+        title: '',
         actions: [
           IconButton(
             tooltip: 'pointsGuideTitle'.tr,
