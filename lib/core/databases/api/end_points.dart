@@ -260,6 +260,16 @@ class EndPoints {
   static const String employeeRewardRules = 'employee-reward-rules';
   static String employeeRewardRule(int id) => 'employee-reward-rules/$id';
 
+  // automatic point rules CRUD
+  static const String employeePointRules = 'employee-point-rules';
+  static String employeePointRule(int id) => 'employee-point-rules/$id';
+  static const String employeePointRulesRun = 'employee-point-rules/run';
+  static String employeePointRuleRun(int id) => 'employee-point-rules/$id/run';
+  static String employeePointRuleOverrides(int employeeId) =>
+      'employees/$employeeId/point-rule-overrides';
+  static String employeePointRuleOverride(int employeeId, int overrideId) =>
+      'employees/$employeeId/point-rule-overrides/$overrideId';
+
   // point categories CRUD
   static const String employeePointCategories = 'employee-point-categories';
   static String employeePointCategory(int id) =>

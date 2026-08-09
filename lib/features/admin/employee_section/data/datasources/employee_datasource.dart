@@ -24,6 +24,7 @@ import '../models/attendance_report_model.dart';
 import '../models/employee_attendance_history_model.dart';
 import '../models/employee_points_log_model.dart';
 import '../models/employee_reward_rule_model.dart';
+import '../models/employee_point_rule_model.dart';
 import '../models/qr_history_model.dart';
 import '../models/working_times_model.dart';
 import '../models/admin_user_model.dart';
@@ -1356,6 +1357,202 @@ class EmployeeDatasource {
     }
   }
 
+  Future<List<EmployeePointRuleModel>> getEmployeePointRules() async {
+    try {
+      final response = await api.get(EndPoints.employeePointRules);
+      return mapListFromResponseKey(
+        response.data,
+        'rules',
+        (Map<String, dynamic> m) => EmployeePointRuleModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getEmployeePointRules',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createEmployeePointRule(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response =
+          await api.post(EndPoints.employeePointRules, data: payload);
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEmployeePointRule(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final response =
+          await api.put(EndPoints.employeePointRule(id), data: payload);
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteEmployeePointRule(int id) async {
+    try {
+      final response = await api.delete(EndPoints.employeePointRule(id));
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<EmployeePointRuleOverrideModel>> getEmployeePointRuleOverrides(
+    int employeeId,
+  ) async {
+    try {
+      final response =
+          await api.get(EndPoints.employeePointRuleOverrides(employeeId));
+      return mapListFromResponseKey(
+        response.data,
+        'overrides',
+        (Map<String, dynamic> m) => EmployeePointRuleOverrideModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getEmployeePointRuleOverrides',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createEmployeePointRuleOverride({
+    required int employeeId,
+    required int ruleId,
+    int? points,
+    String? operationType,
+    bool isExcluded = false,
+    String effectivePolicy = 'today',
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.employeePointRuleOverrides(employeeId),
+        data: {
+          'rule_id': ruleId,
+          if (points != null) 'points': points,
+          if (operationType != null && operationType.isNotEmpty)
+            'operation_type': operationType,
+          'is_excluded': isExcluded ? 1 : 0,
+          'effective_policy': effectivePolicy,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      );
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteEmployeePointRuleOverride({
+    required int employeeId,
+    required int overrideId,
+  }) async {
+    try {
+      final response = await api.delete(
+        EndPoints.employeePointRuleOverride(employeeId, overrideId),
+      );
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> runEmployeePointRules({
+    int? ruleId,
+    bool force = false,
+  }) async {
+    try {
+      final response = await api.post(
+        ruleId == null
+            ? EndPoints.employeePointRulesRun
+            : EndPoints.employeePointRuleRun(ruleId),
+        data: {'force': force ? 1 : 0},
+      );
+      final data = asMap(response.data);
+      return asMap(data['summary']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
   // ========================================================================
   // Configurable point categories CRUD (admin defines behaviors)
   // ========================================================================

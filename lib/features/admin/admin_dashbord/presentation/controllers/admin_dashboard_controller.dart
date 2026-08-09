@@ -160,6 +160,11 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.EMPLOYEEPOINTSREPORTSCREEN
     },
     {
+      'id': '52',
+      'title': 'قواعد النقاط',
+      'route': AppRoutes.EMPLOYEEPOINTRULESSCREEN
+    },
+    {
       'id': '23',
       'title': 'employeeReminders',
       'route': AppRoutes.EMPLOYEEREMINDERSSCREEN

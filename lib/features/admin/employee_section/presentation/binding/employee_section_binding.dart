@@ -28,6 +28,7 @@ import '../../domain/usecases/admin_users_usecase.dart';
 import '../controllers/add_employee_controller.dart';
 import '../controllers/add_admin_controller.dart';
 import '../controllers/employee_point_categories_controller.dart';
+import '../controllers/employee_point_rules_controller.dart';
 import '../controllers/employee_points_controller.dart';
 import '../controllers/employee_points_report_controller.dart';
 import '../controllers/employee_reward_rules_controller.dart';
@@ -162,6 +163,13 @@ class EmployeeSectionBinding extends Bindings {
       fenix: true,
     );
 
+    Get.lazyPut<EmployeePointRulesController>(
+      () => EmployeePointRulesController(
+        datasource: Get.find(),
+        employeeService: Get.find<EmployeeService>(),
+      ),
+      fenix: true,
+    );
     Get.lazyPut<EmployeePointCategoriesController>(
       () => EmployeePointCategoriesController(
         fetchUsecase: GetEmployeePointCategoriesUsecase(

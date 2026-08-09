@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/datasources/employee_datasource.dart';
+import '../../data/models/employee_point_rule_model.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/employee_points_controller.dart';
 
@@ -1141,4 +1143,244 @@ String _categoryDisplayName(EmployeePointCategoryModel cat) {
   }
   if (cat.nameEn != null && cat.nameEn!.isNotEmpty) return cat.nameEn!;
   return cat.nameAr.isNotEmpty ? cat.nameAr : cat.code;
+}
+
+class _RuleOverridesDialog extends StatefulWidget {
+  const _RuleOverridesDialog({required this.employeeId});
+
+  final int employeeId;
+
+  @override
+  State<_RuleOverridesDialog> createState() => _RuleOverridesDialogState();
+}
+
+class _RuleOverridesDialogState extends State<_RuleOverridesDialog> {
+  final _pointsCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  final EmployeeDatasource _datasource = Get.find<EmployeeDatasource>();
+  List<EmployeePointRuleModel> _rules = const [];
+  List<EmployeePointRuleOverrideModel> _overrides = const [];
+  int? _selectedRuleId;
+  String _operationType = 'add';
+  String _effectivePolicy = 'today';
+  bool _isExcluded = false;
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _pointsCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        _datasource.getEmployeePointRules(),
+        _datasource.getEmployeePointRuleOverrides(widget.employeeId),
+      ]);
+      _rules = results[0] as List<EmployeePointRuleModel>;
+      _overrides = results[1] as List<EmployeePointRuleOverrideModel>;
+      _selectedRuleId = _rules.isEmpty ? null : _rules.first.id;
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_selectedRuleId == null) return;
+    final points = int.tryParse(_pointsCtrl.text.trim());
+    if (!_isExcluded && points == null) {
+      Get.snackbar('خطأ', 'اكتب عدد النقاط أو فعل خيار استثناء الموظف');
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await _datasource.createEmployeePointRuleOverride(
+        employeeId: widget.employeeId,
+        ruleId: _selectedRuleId!,
+        points: _isExcluded ? null : points,
+        operationType: _isExcluded ? null : _operationType,
+        isExcluded: _isExcluded,
+        effectivePolicy: _effectivePolicy,
+        notes: _notesCtrl.text.trim(),
+      );
+      _pointsCtrl.clear();
+      _notesCtrl.clear();
+      await _load();
+      Get.snackbar('تم', 'تم حفظ تخصيص قاعدة الموظف');
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _deleteOverride(int id) async {
+    setState(() => _saving = true);
+    try {
+      await _datasource.deleteEmployeePointRuleOverride(
+        employeeId: widget.employeeId,
+        overrideId: id,
+      );
+      await _load();
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 20.h),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: _loading
+            ? const SizedBox(
+                height: 160,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'تخصيص قواعد نقاط الموظف',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    DropdownButtonFormField<int>(
+                      initialValue: _selectedRuleId,
+                      decoration: _overrideDecoration('القاعدة'),
+                      items: _rules
+                          .map(
+                            (rule) => DropdownMenuItem<int>(
+                              value: rule.id,
+                              child: Text(rule.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedRuleId = v),
+                    ),
+                    SizedBox(height: 10.h),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('استثناء الموظف من القاعدة'),
+                      value: _isExcluded,
+                      onChanged: (v) => setState(() => _isExcluded = v),
+                    ),
+                    if (!_isExcluded) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _pointsCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: _overrideDecoration('نقاط الموظف'),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _operationType,
+                              decoration: _overrideDecoration('العملية'),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: 'add', child: Text('إضافة')),
+                                DropdownMenuItem(
+                                    value: 'deduct', child: Text('خصم')),
+                              ],
+                              onChanged: (v) => setState(
+                                () => _operationType = v ?? _operationType,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10.h),
+                    ],
+                    DropdownButtonFormField<String>(
+                      initialValue: _effectivePolicy,
+                      decoration: _overrideDecoration('يبدأ من'),
+                      items: const [
+                        DropdownMenuItem(value: 'today', child: Text('اليوم')),
+                        DropdownMenuItem(
+                          value: 'current_week',
+                          child: Text('بداية الأسبوع الحالي'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'current_month',
+                          child: Text('بداية الشهر الحالي'),
+                        ),
+                      ],
+                      onChanged: (v) => setState(
+                        () => _effectivePolicy = v ?? _effectivePolicy,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: _notesCtrl,
+                      decoration: _overrideDecoration('ملاحظات'),
+                    ),
+                    SizedBox(height: 12.h),
+                    ElevatedButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('حفظ التخصيص'),
+                    ),
+                    SizedBox(height: 12.h),
+                    if (_overrides.isEmpty)
+                      const Text('لا يوجد تخصيصات حالية')
+                    else
+                      ..._overrides.map(
+                        (override) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title:
+                              Text(override.ruleName ?? '#${override.ruleId}'),
+                          subtitle: Text(
+                            override.isExcluded
+                                ? 'مستثنى من ${override.effectiveFrom ?? ''}'
+                                : '${override.operationType == 'deduct' ? '-' : '+'}${override.points ?? 0} من ${override.effectiveFrom ?? ''}',
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: _saving
+                                ? null
+                                : () => _deleteOverride(override.id),
+                          ),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('close'.tr),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  InputDecoration _overrideDecoration(String label) => InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      );
 }

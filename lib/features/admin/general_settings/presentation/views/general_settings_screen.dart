@@ -1080,6 +1080,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               onTap: _editSalesDailySettings,
             ),
             _SettingsItem(
+              icon: Icons.rule_rounded,
+              iconColor: const Color(0xFF7C3AED),
+              titleKey: 'قواعد النقاط التلقائية',
+              descriptionKey: 'إضافة قواعد يومية وأسبوعية وشهرية للنقاط',
+              onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTRULESSCREEN),
+            ),
+            _SettingsItem(
               icon: Icons.emoji_events_outlined,
               iconColor: const Color(0xFFB45309),
               titleKey: 'rewardRulesSetting',
