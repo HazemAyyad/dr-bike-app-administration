@@ -116,7 +116,7 @@ class MetaCatalogSyncScreen extends GetView<MetaCatalogController> {
             isDense: true,
             isExpanded: true,
             decoration: InputDecoration(
-              labelText: 'رقم واتساب / الكتالوج',
+              labelText: 'Business / الكتالوج',
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding:
