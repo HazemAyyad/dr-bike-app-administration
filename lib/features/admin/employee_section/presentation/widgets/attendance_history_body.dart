@@ -158,6 +158,36 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
     }
   }
 
+  Color _statusColor(String value) {
+    switch (value) {
+      case 'approved':
+      case 'paid':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return AppColors.customOrange3;
+    }
+  }
+
+  IconData _statusIcon(String value) {
+    switch (value) {
+      case 'approved':
+      case 'paid':
+        return Icons.arrow_downward_rounded;
+      case 'rejected':
+        return Icons.close_rounded;
+      default:
+        return Icons.schedule_rounded;
+    }
+  }
+
+  String _money(String value) {
+    final amount = double.tryParse(value);
+    if (amount == null) return value;
+    return '${NumberFormat("#,##0.##").format(amount)} ${'currency'.tr}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
@@ -204,43 +234,192 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
               ),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 18.w,
-                horizontalMargin: 8.w,
-                columns: const [
-                  DataColumn(label: Text('التاريخ')),
-                  DataColumn(label: Text('الحالة')),
-                  DataColumn(label: Text('المبلغ')),
-                  DataColumn(label: Text('المعتمد')),
-                ],
-                rows: items
-                    .map(
-                      (advance) => DataRow(
-                        cells: [
-                          DataCell(Text(advance.date)),
-                          DataCell(Text(_status(advance.status))),
-                          DataCell(Text(advance.amount)),
-                          DataCell(Text(
-                            advance.approvedLoanValue ?? '-',
-                          )),
+            Column(
+              children: [
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _AdvanceSummaryText(
+                          label: 'المجموع',
+                          value: _money(advances?.total ?? '0'),
+                          color: isDark
+                              ? Colors.white70
+                              : AppColors.operationalNavy,
+                        ),
+                      ),
+                      Expanded(
+                        child: _AdvanceSummaryText(
+                          label: 'المقبول',
+                          value: _money(advances?.approvedTotal ?? '0'),
+                          color: Colors.green,
+                          alignEnd: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                ...items.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final advance = entry.value;
+                  final color = _statusColor(advance.status);
+                  final approved = advance.approvedLoanValue;
+                  return Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: color.withValues(alpha: 0.12),
+                            radius: 22.r,
+                            child: Icon(
+                              _statusIcon(advance.status),
+                              color: color,
+                              size: 24.sp,
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${advance.date}  ${advance.time}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w800,
+                                          color: isDark
+                                              ? Colors.white
+                                              : AppColors.operationalNavy,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      _money(advance.amount),
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w900,
+                                        color: color,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4.h),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w,
+                                        vertical: 3.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: color.withValues(alpha: 0.10),
+                                        borderRadius:
+                                            BorderRadius.circular(999.r),
+                                      ),
+                                      child: Text(
+                                        _status(advance.status),
+                                        style: TextStyle(
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w800,
+                                          color: color,
+                                        ),
+                                      ),
+                                    ),
+                                    if (approved != null) ...[
+                                      SizedBox(width: 8.w),
+                                      Flexible(
+                                        child: Text(
+                                          'المعتمد: ${_money(approved)}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color: AppColors.customGreyColor5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                if ((advance.reviewedAt ?? '').isNotEmpty ||
+                                    (advance.rejectionReason ?? '')
+                                        .isNotEmpty) ...[
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    advance.rejectionReason?.isNotEmpty == true
+                                        ? 'سبب الرفض: ${advance.rejectionReason}'
+                                        : 'تمت المراجعة: ${advance.reviewedAt}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: AppColors.customGreyColor5,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    )
-                    .toList(),
-              ),
+                      if (index != items.length - 1)
+                        Container(
+                          margin: EdgeInsets.symmetric(vertical: 10.h),
+                          height: 1.h,
+                          color:
+                              isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+                        ),
+                    ],
+                  );
+                }),
+              ],
             ),
-          SizedBox(height: 6.h),
-          Text(
-            'المجموع: ${advances?.total ?? '0'}   المقبول: ${advances?.approvedTotal ?? '0'}',
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white70 : const Color(0xFF4B5563),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _AdvanceSummaryText extends StatelessWidget {
+  const _AdvanceSummaryText({
+    required this.label,
+    required this.value,
+    required this.color,
+    this.alignEnd = false,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$label: $value',
+      textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w800,
+        color: color,
       ),
     );
   }

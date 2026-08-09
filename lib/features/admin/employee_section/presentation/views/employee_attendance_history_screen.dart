@@ -1071,6 +1071,8 @@ class _MonthYearPicker extends StatelessWidget {
         final year = controller.selectedYear.value;
         final month = controller.selectedMonth.value;
         final isCustom = controller.isCustomRange;
+        final monthLabel =
+            '${AttendanceHistoryController.monthNames[month - 1]} ${month.toString().padLeft(2, '0')}';
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -1090,7 +1092,7 @@ class _MonthYearPicker extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: _PickerButton(
-                    label: AttendanceHistoryController.monthNames[month - 1],
+                    label: monthLabel,
                     icon: Icons.date_range_outlined,
                     onTap: () => _pickMonth(context, year),
                   ),
@@ -1206,7 +1208,7 @@ class _MonthYearPicker extends StatelessWidget {
               controller.changeMonth(year, m);
             },
             child: Text(
-              AttendanceHistoryController.monthNames[i],
+              '${AttendanceHistoryController.monthNames[i]} ${m.toString().padLeft(2, '0')}',
               style: TextStyle(
                 fontWeight: controller.selectedMonth.value == m
                     ? FontWeight.bold
