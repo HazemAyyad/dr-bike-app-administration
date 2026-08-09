@@ -9,6 +9,7 @@ import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_currency_chips.dart';
+import 'receipt_media_thumb.dart';
 
 class TransactionEntryScreen extends StatelessWidget {
   final String personName;
@@ -229,9 +230,25 @@ class TransactionEntryScreen extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: calc.isSaving.value
                               ? null
-                              : calc.pickReceiptImages,
-                          icon: const Icon(Icons.add_photo_alternate_outlined),
-                          label: Text('ledgerAddImage'.tr),
+                              : calc.pickReceiptMediaFromGallery,
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: Text('gallery'.tr),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: LedgerColors.primaryBlue,
+                            side: const BorderSide(
+                                color: LedgerColors.primaryBlue),
+                            padding: EdgeInsets.symmetric(vertical: 10.h),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: calc.isSaving.value
+                              ? null
+                              : calc.captureReceiptMedia,
+                          icon: const Icon(Icons.photo_camera_outlined),
+                          label: Text('camera'.tr),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: LedgerColors.primaryBlue,
                             side: const BorderSide(
@@ -254,37 +271,11 @@ class TransactionEntryScreen extends StatelessWidget {
                         separatorBuilder: (_, __) => SizedBox(width: 8.w),
                         itemBuilder: (context, index) {
                           final file = calc.receiptImages[index];
-                          return Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8.r),
-                                child: Image.file(
-                                  file,
-                                  width: 72.w,
-                                  height: 72.h,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () => calc.removeReceiptImage(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          return LedgerReceiptMediaThumb(
+                            path: file.path,
+                            size: 72,
+                            isLocal: true,
+                            onRemove: () => calc.removeReceiptImage(index),
                           );
                         },
                       ),

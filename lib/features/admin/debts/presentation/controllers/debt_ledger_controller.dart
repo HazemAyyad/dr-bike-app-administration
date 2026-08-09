@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -35,6 +35,7 @@ import '../ledger/person_archive_screen.dart';
 import '../ledger/person_deleted_screen.dart';
 import '../ledger/transaction_entry_screen.dart';
 import '../ledger/ledger_pick_person_sheet.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../routes/app_routes.dart';
 
 class DebtLedgerController extends GetxController {
@@ -1499,11 +1500,41 @@ class TransactionCalculatorController extends GetxController {
   String get effectiveCurrency =>
       selectedBox.value?.currency ?? selectedCurrency.value;
 
-  Future<void> pickReceiptImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage(imageQuality: 85);
-    if (picked.isEmpty) return;
-    receiptImages.addAll(picked.map((x) => File(x.path)));
+  Future<void> pickReceiptMediaFromGallery() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'heic',
+        'heif',
+        'mp4',
+        'mov',
+        'webm',
+        '3gp',
+        'm4v',
+        'avi',
+        'mkv',
+      ],
+    );
+    final paths = result?.files
+            .map((file) => file.path)
+            .whereType<String>()
+            .where((path) => path.isNotEmpty)
+            .toList() ??
+        const [];
+    if (paths.isEmpty) return;
+    receiptImages.addAll(paths.map((path) => File(path)));
+  }
+
+  Future<void> captureReceiptMedia() async {
+    final capture =
+        await Get.to<WhatsAppCapture>(() => const WhatsAppCameraScreen());
+    if (capture == null || capture.path.isEmpty) return;
+    receiptImages.add(File(capture.path));
   }
 
   void removeReceiptImage(int index) {

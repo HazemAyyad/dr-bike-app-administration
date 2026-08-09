@@ -1,14 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_activity_section.dart';
 import 'ledger_colors.dart';
 import 'ledger_format.dart';
+import 'receipt_media_thumb.dart';
 
 class TransactionDetailScreen extends GetView<DebtLedgerController> {
   const TransactionDetailScreen({Key? key}) : super(key: key);
@@ -82,7 +80,8 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                               SizedBox(width: 10.w),
                               Text(
-                                LedgerFormat.money(tx.amount, currency: tx.currency, fractionDigits: 1),
+                                LedgerFormat.money(tx.amount,
+                                    currency: tx.currency, fractionDigits: 1),
                                 style: TextStyle(
                                   fontSize: 36.sp,
                                   fontWeight: FontWeight.bold,
@@ -149,7 +148,8 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                           Obx(
                             () => LedgerActivitySection(
                               entries: controller.transactionActivity,
-                              loading: controller.transactionActivityLoading.value,
+                              loading:
+                                  controller.transactionActivityLoading.value,
                             ),
                           ),
                         ],
@@ -209,7 +209,8 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: LedgerColors.givenRed,
-                              side: BorderSide(color: LedgerColors.givenRed),
+                              side: const BorderSide(
+                                  color: LedgerColors.givenRed),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.r),
                               ),
@@ -261,14 +262,14 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: LedgerColors.primaryBlue,
                         side: BorderSide(
-                          color: LedgerColors.primaryBlue.withValues(alpha: 0.5),
+                          color:
+                              LedgerColors.primaryBlue.withValues(alpha: 0.5),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      onPressed: () =>
-                          controller.openTransactionShareSheet(tx),
+                      onPressed: () => controller.openTransactionShareSheet(tx),
                       icon: Icon(Icons.share_outlined, size: 20.sp),
                       label: Text(
                         'Share'.tr,
@@ -300,49 +301,9 @@ class _ReceiptImagesGallery extends StatelessWidget {
       spacing: 10.w,
       runSpacing: 10.h,
       children: List.generate(images.length, (index) {
-        final url = ShowNetImage.getPhoto(images[index]);
-        return GestureDetector(
-          onTap: () => FullScreenZoomImage.open(context, url),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CachedNetworkImage(
-                  imageUrl: url,
-                  width: 108.w,
-                  height: 108.w,
-                  fit: BoxFit.cover,
-              placeholder: (_, __) => Container(
-                width: 108.w,
-                height: 108.w,
-                color: Colors.grey.shade200,
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-                  errorWidget: (_, __, ___) => Container(
-                    width: 108.w,
-                    height: 108.w,
-                    color: Colors.grey.shade200,
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.grey.shade500,
-                      size: 32.sp,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.zoom_in,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  size: 28.sp,
-                  shadows: const [
-                    Shadow(blurRadius: 8, color: Colors.black54),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return LedgerReceiptMediaThumb(
+          path: images[index],
+          size: 108,
         );
       }),
     );

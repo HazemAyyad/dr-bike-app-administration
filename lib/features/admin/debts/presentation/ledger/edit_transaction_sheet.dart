@@ -1,23 +1,22 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../../../core/helpers/custom_dropdown_field.dart';
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_currency_chips.dart';
+import 'receipt_media_thumb.dart';
 
 class EditTransactionSheet extends StatefulWidget {
   final LedgerTransaction transaction;
@@ -96,13 +95,45 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     super.dispose();
   }
 
-  Future<void> _pickReceiptImages() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickMultiImage(imageQuality: 85);
-    if (picked.isEmpty) return;
+  Future<void> _pickReceiptMediaFromGallery() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'heic',
+        'heif',
+        'mp4',
+        'mov',
+        'webm',
+        '3gp',
+        'm4v',
+        'avi',
+        'mkv',
+      ],
+    );
+    final paths = result?.files
+            .map((file) => file.path)
+            .whereType<String>()
+            .where((path) => path.isNotEmpty)
+            .toList() ??
+        const [];
+    if (paths.isEmpty) return;
     receiptImages
       ..clear()
-      ..addAll(picked.map((x) => File(x.path)));
+      ..addAll(paths.map((path) => File(path)));
+  }
+
+  Future<void> _captureReceiptMedia() async {
+    final capture =
+        await Get.to<WhatsAppCapture>(() => const WhatsAppCameraScreen());
+    if (capture == null || capture.path.isEmpty) return;
+    receiptImages
+      ..clear()
+      ..add(File(capture.path));
   }
 
   void _removeReceiptImage(int index) {
@@ -285,7 +316,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
               _ReceiptImageEditor(
                 existingImages: widget.transaction.receiptImages,
                 newImages: receiptImages,
-                onPick: _pickReceiptImages,
+                onPickGallery: _pickReceiptMediaFromGallery,
+                onCapture: _captureReceiptMedia,
                 onRemoveNew: _removeReceiptImage,
               ),
               SizedBox(height: 20.h),
@@ -323,13 +355,15 @@ class _ReceiptImageEditor extends StatelessWidget {
   const _ReceiptImageEditor({
     required this.existingImages,
     required this.newImages,
-    required this.onPick,
+    required this.onPickGallery,
+    required this.onCapture,
     required this.onRemoveNew,
   });
 
   final List<String> existingImages;
   final RxList<File> newImages;
-  final VoidCallback onPick;
+  final VoidCallback onPickGallery;
+  final VoidCallback onCapture;
   final ValueChanged<int> onRemoveNew;
 
   @override
@@ -342,24 +376,41 @@ class _ReceiptImageEditor extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton.icon(
-            onPressed: onPick,
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: Text(
-              hasNewImages || existingImages.isNotEmpty
-                  ? 'ledgerReplaceImages'.tr
-                  : 'ledgerAddImage'.tr,
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: LedgerColors.primaryBlue,
-              side: const BorderSide(color: LedgerColors.primaryBlue),
-              padding: EdgeInsets.symmetric(vertical: 10.h),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPickGallery,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text('gallery'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: LedgerColors.primaryBlue,
+                    side: const BorderSide(color: LedgerColors.primaryBlue),
+                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onCapture,
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text('camera'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: LedgerColors.primaryBlue,
+                    side: const BorderSide(color: LedgerColors.primaryBlue),
+                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                  ),
+                ),
+              ),
+            ],
           ),
-          if (existingImages.isNotEmpty && !hasNewImages) ...[
+          if (hasNewImages || existingImages.isNotEmpty) ...[
             SizedBox(height: 6.h),
             Text(
-              'ledgerImageReplaceHint'.tr,
+              hasNewImages
+                  ? 'ledgerReplaceImages'.tr
+                  : 'ledgerImageReplaceHint'.tr,
               style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
@@ -396,18 +447,9 @@ class _ExistingReceiptThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = ShowNetImage.getPhoto(image);
-    return GestureDetector(
-      onTap: () => FullScreenZoomImage.open(context, url),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8.r),
-        child: CachedNetworkImage(
-          imageUrl: url,
-          width: 76.w,
-          height: 76.h,
-          fit: BoxFit.cover,
-        ),
-      ),
+    return LedgerReceiptMediaThumb(
+      path: image,
+      size: 76,
     );
   }
 }
@@ -420,33 +462,11 @@ class _NewReceiptThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8.r),
-          child: Image.file(
-            file,
-            width: 76.w,
-            height: 76.h,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.close, size: 14, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
+    return LedgerReceiptMediaThumb(
+      path: file.path,
+      size: 76,
+      isLocal: true,
+      onRemove: onRemove,
     );
   }
 }

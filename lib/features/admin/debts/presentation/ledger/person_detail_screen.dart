@@ -1,11 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_activity_section.dart';
@@ -14,6 +11,7 @@ import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 import 'period_filter_sheet.dart';
 import 'person_report_screen.dart';
+import 'receipt_media_thumb.dart';
 import 'share_sheet.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -515,8 +513,7 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ledger = Get.find<DebtLedgerController>();
     final isTaken = transaction.isTaken;
-    final typeColor =
-        isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final typeColor = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
     final balanceAfterColor =
         LedgerColors.signedAmount(transaction.balanceAfter);
 
@@ -671,51 +668,9 @@ class _ReceiptThumbnails extends StatelessWidget {
         itemCount: images.length,
         separatorBuilder: (_, __) => SizedBox(width: 8.w),
         itemBuilder: (_, index) {
-          final url = ShowNetImage.getPhoto(images[index]);
-          return GestureDetector(
-            onTap: () => FullScreenZoomImage.open(context, url),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.r),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: url,
-                    width: 72.w,
-                    height: 72.h,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
-                      width: 72.w,
-                      height: 72.h,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (_, __, ___) => Container(
-                      width: 72.w,
-                      height: 72.h,
-                      color: Colors.grey.shade200,
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.zoom_in,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    size: 22.sp,
-                    shadows: const [
-                      Shadow(
-                        blurRadius: 6,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          return LedgerReceiptMediaThumb(
+            path: images[index],
+            size: 72,
           );
         },
       ),
