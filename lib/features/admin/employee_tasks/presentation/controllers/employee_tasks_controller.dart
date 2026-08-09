@@ -150,6 +150,23 @@ class EmployeeTasksController extends GetxController {
 
   Map<String, List<EmployeeTaskModel>> awaitingReviewTasksFilter = {};
 
+  int get todayRemainingTasksCount {
+    if (!_ongoingLoaded) return 0;
+
+    final todayKey = dateKeyFrom(DateTime.now());
+    final keys = <String>{};
+    for (final task in employeeTaskService.ongoingEmployeeTasks.values
+        .expand((tasks) => tasks)) {
+      if (task.status == 'waiting_review') continue;
+      if (dateKeyFrom(task.startTime) != todayKey) continue;
+      keys.add(
+        '${task.occurrenceId ?? task.taskId}:${task.employeeId}',
+      );
+    }
+
+    return keys.length;
+  }
+
   int get awaitingReviewTasksCount {
     if (!_isAdminViewer || !_ongoingLoaded) return 0;
 

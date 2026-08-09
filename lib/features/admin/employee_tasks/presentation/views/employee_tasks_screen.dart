@@ -162,15 +162,23 @@ class _EmployeeTaskAppBarTabs extends StatelessWidget {
                 icon: _iconForIndex(i),
                 label: controller.tabs[i].tr,
                 selected: controller.currentTab.value == i,
-                badge: controller.canReviewTasks && i == 1
-                    ? controller.awaitingReviewTasksCount
-                    : 0,
+                badge: _badgeForIndex(i),
                 onTap: () => controller.changeTab(i),
               ),
           ],
         );
       },
     );
+  }
+
+  int _badgeForIndex(int index) {
+    if (index == 0) {
+      return controller.todayRemainingTasksCount;
+    }
+    if (controller.canReviewTasks && index == 1) {
+      return controller.awaitingReviewTasksCount;
+    }
+    return 0;
   }
 }
 
