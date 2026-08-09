@@ -152,18 +152,24 @@ class _EmployeeTaskAppBarTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < controller.tabs.length; i++)
-            _EmployeeTaskAppBarTab(
-              icon: _iconForIndex(i),
-              label: controller.tabs[i].tr,
-              selected: controller.currentTab.value == i,
-              onTap: () => controller.changeTab(i),
-            ),
-        ],
-      ),
+      () {
+        controller.listEpoch.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < controller.tabs.length; i++)
+              _EmployeeTaskAppBarTab(
+                icon: _iconForIndex(i),
+                label: controller.tabs[i].tr,
+                selected: controller.currentTab.value == i,
+                badge: controller.canReviewTasks && i == 1
+                    ? controller.awaitingReviewTasksCount
+                    : 0,
+                onTap: () => controller.changeTab(i),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -173,12 +179,14 @@ class _EmployeeTaskAppBarTab extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.selected,
+    required this.badge,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
+  final int badge;
   final VoidCallback onTap;
 
   @override
@@ -202,7 +210,39 @@ class _EmployeeTaskAppBarTab extends StatelessWidget {
             color: selected ? AppColors.operationalPurple : Colors.transparent,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 18.sp, color: fg),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 18.sp, color: fg),
+              if (badge > 0)
+                PositionedDirectional(
+                  top: -5.h,
+                  end: -6.w,
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                    constraints:
+                        BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

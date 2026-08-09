@@ -150,6 +150,21 @@ class EmployeeTasksController extends GetxController {
 
   Map<String, List<EmployeeTaskModel>> awaitingReviewTasksFilter = {};
 
+  int get awaitingReviewTasksCount {
+    if (!_isAdminViewer || !_ongoingLoaded) return 0;
+
+    final keys = <String>{};
+    for (final task in employeeTaskService.ongoingEmployeeTasks.values
+        .expand((tasks) => tasks)) {
+      if (task.status != 'waiting_review') continue;
+      keys.add(
+        '${task.occurrenceId ?? task.taskId}:${task.employeeId}',
+      );
+    }
+
+    return keys.length;
+  }
+
   Map<String, List<EmployeeTaskModel>> get _currentTabMap {
     if (_isAdminViewer) {
       switch (currentTab.value) {
