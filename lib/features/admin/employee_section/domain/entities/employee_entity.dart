@@ -7,6 +7,12 @@ class EmployeeEntity {
   final bool hasAttendedToday;
   final bool isWorkingNow;
   final bool isCameOnTime;
+  final bool isConnectedToAllowedWifi;
+  final bool isNetworkConnected;
+  final String wifiPresenceState;
+  final String? wifiSsid;
+  final String? wifiStatusUpdatedAt;
+  final bool isWifiStatusStale;
   final EmployeePointsSummaryEntity? pointsSummary;
 
   const EmployeeEntity({
@@ -18,6 +24,12 @@ class EmployeeEntity {
     required this.hasAttendedToday,
     required this.isWorkingNow,
     required this.isCameOnTime,
+    required this.isConnectedToAllowedWifi,
+    required this.isNetworkConnected,
+    required this.wifiPresenceState,
+    this.wifiSsid,
+    this.wifiStatusUpdatedAt,
+    this.isWifiStatusStale = true,
     this.pointsSummary,
   });
 }

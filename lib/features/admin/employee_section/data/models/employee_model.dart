@@ -14,6 +14,12 @@ class EmployeeModel extends EmployeeEntity {
     required bool hasAttendedToday,
     required bool isWorkingNow,
     required bool isCameOnTime,
+    required bool isConnectedToAllowedWifi,
+    required bool isNetworkConnected,
+    required String wifiPresenceState,
+    String? wifiSsid,
+    String? wifiStatusUpdatedAt,
+    bool isWifiStatusStale = true,
     EmployeePointsSummaryEntity? pointsSummary,
   }) : super(
           id: id,
@@ -24,6 +30,12 @@ class EmployeeModel extends EmployeeEntity {
           hasAttendedToday: hasAttendedToday,
           isWorkingNow: isWorkingNow,
           isCameOnTime: isCameOnTime,
+          isConnectedToAllowedWifi: isConnectedToAllowedWifi,
+          isNetworkConnected: isNetworkConnected,
+          wifiPresenceState: wifiPresenceState,
+          wifiSsid: wifiSsid,
+          wifiStatusUpdatedAt: wifiStatusUpdatedAt,
+          isWifiStatusStale: isWifiStatusStale,
           pointsSummary: pointsSummary,
         );
 
@@ -44,6 +56,7 @@ class EmployeeModel extends EmployeeEntity {
         rewardStatusColor: asNullableString(m['reward_status_color']),
       );
     }
+    final wifiStatus = asMap(j['wifi_status']);
     return EmployeeModel(
       id: asInt(j[ApiKey.id]),
       name: asString(j[ApiKey.employee_name], 'unknown'),
@@ -53,6 +66,17 @@ class EmployeeModel extends EmployeeEntity {
       hasAttendedToday: asBool(j['has_attended_today']),
       isWorkingNow: asBool(j['is_working_now']),
       isCameOnTime: asBool(j['is_came_on_time']),
+      isConnectedToAllowedWifi: asBool(wifiStatus['connected']),
+      isNetworkConnected: asBool(wifiStatus['network_connected']),
+      wifiPresenceState: asString(
+        wifiStatus['state'],
+        asBool(wifiStatus['connected'])
+            ? 'green'
+            : (asBool(wifiStatus['network_connected']) ? 'orange' : 'red'),
+      ),
+      wifiSsid: asNullableString(wifiStatus['ssid']),
+      wifiStatusUpdatedAt: asNullableString(wifiStatus['updated_at']),
+      isWifiStatusStale: asBool(wifiStatus['stale'], true),
       pointsSummary: summary,
     );
   }
@@ -67,6 +91,14 @@ class EmployeeModel extends EmployeeEntity {
       'has_attended_today': hasAttendedToday,
       'is_working_now': isWorkingNow,
       'is_came_on_time': isCameOnTime,
+      'wifi_status': {
+        'connected': isConnectedToAllowedWifi,
+        'network_connected': isNetworkConnected,
+        'state': wifiPresenceState,
+        'ssid': wifiSsid,
+        'updated_at': wifiStatusUpdatedAt,
+        'stale': isWifiStatusStale,
+      },
     };
   }
 }

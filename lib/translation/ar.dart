@@ -1236,6 +1236,13 @@ const Map<String, String> ar = {
       'القيمة الافتراضية عند تفعيل نقاط إضافية لمهمة فرعية',
   'settingsUpdated': 'تم تحديث الإعدادات',
   'settingsUpdateFailed': 'تعذر تحديث الإعدادات',
+  'employeeAllowedWifiSsidsSetting': 'شبكات دوام الموظفين',
+  'employeeAllowedWifiSsidsSettingDesc':
+      'الشبكات التي تجعل نقطة الموظف خضراء في قائمة الموظفين',
+  'employeeAllowedWifiSsidsHint':
+      'اكتب اسم كل شبكة في سطر أو افصل بينها بفواصل',
+  'employeeAllowedWifiSsidsDesc':
+      'مثال: DoctorBike أو DoctorBike-5G. يجب أن يطابق الاسم اسم شبكة الواي فاي كما يظهر على جهاز الموظف.',
   'fingerprintDefaultDevice': 'الجهاز الافتراضي للبصمة',
   'fingerprintDefaultDeviceHint': 'اختر الجهاز الافتراضي (اختياري)',
   'fingerprintDefaultDeviceNone': 'بدون',

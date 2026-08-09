@@ -4,6 +4,7 @@ import 'package:doctorbike/core/services/final_classes.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../features/auth/data/models/user_model.dart';
+import 'employee_wifi_presence_service.dart';
 import 'initial_bindings.dart';
 
 class UserData {
@@ -60,7 +61,8 @@ class UserData {
     if (kIsWeb) {
       await FinalClasses.getStorage.write('userData', jsonString);
     } else {
-      await FinalClasses.secureStorage.write(key: 'userData', value: jsonString);
+      await FinalClasses.secureStorage
+          .write(key: 'userData', value: jsonString);
       await FinalClasses.getStorage.write('userData_backup', jsonString);
     }
   }
@@ -73,7 +75,8 @@ class UserData {
     } else {
       jsonString = await FinalClasses.secureStorage.read(key: 'userData');
       if (jsonString == null || jsonString.isEmpty) {
-        jsonString = FinalClasses.getStorage.read('userData_backup')?.toString();
+        jsonString =
+            FinalClasses.getStorage.read('userData_backup')?.toString();
         if (jsonString != null && jsonString.isNotEmpty) {
           await FinalClasses.secureStorage.write(
             key: 'userData',
@@ -100,6 +103,7 @@ class UserData {
 
   /// حذف كل البيانات المخزنة
   static Future<void> clearAllUserData() async {
+    await EmployeeWifiPresenceService.instance.stopNative();
     if (kIsWeb) {
       await FinalClasses.getStorage.remove('token');
       await FinalClasses.getStorage.remove('userData');

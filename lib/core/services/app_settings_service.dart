@@ -14,6 +14,8 @@ class AppSettingsService {
 
   static const _cacheKey = 'app_settings_subtask_bonus_default';
   static const _fabCacheKey = 'app_settings_admin_fab_options';
+  static const _employeeAllowedWifiSsidsCacheKey =
+      'app_settings_employee_allowed_wifi_ssids';
   static const _passwordResetOtpDeliveryMethodCacheKey =
       'app_settings_password_reset_otp_delivery_method';
   static const _salesVarianceCacheKey =
@@ -38,6 +40,7 @@ class AppSettingsService {
 
   final RxInt subtaskBonusDefault = 5.obs;
   final RxSet<String> adminFabOptions = <String>{...defaultAdminFabOptions}.obs;
+  final RxString employeeAllowedWifiSsids = ''.obs;
   final RxString passwordResetOtpDeliveryMethod = 'email'.obs;
   final RxDouble salesDailyVarianceAlertThreshold = 50.0.obs;
   final RxMap<String, double> salesDailyMaxFloat = <String, double>{
@@ -69,6 +72,11 @@ class AppSettingsService {
     final cachedFab = FinalClasses.getStorage.read(_fabCacheKey);
     if (cachedFab != null) {
       adminFabOptions.assignAll(_decodeFabOptions(cachedFab.toString()));
+    }
+    final cachedWifi =
+        FinalClasses.getStorage.read(_employeeAllowedWifiSsidsCacheKey);
+    if (cachedWifi != null) {
+      employeeAllowedWifiSsids.value = cachedWifi.toString();
     }
     final cachedPasswordResetOtpDeliveryMethod =
         FinalClasses.getStorage.read(_passwordResetOtpDeliveryMethodCacheKey);
@@ -112,6 +120,14 @@ class AppSettingsService {
             final options = _decodeFabOptions(fabRaw);
             adminFabOptions.assignAll(options);
             await FinalClasses.getStorage.write(_fabCacheKey, fabRaw);
+          }
+          final wifiRaw = settings['employee_allowed_wifi_ssids']?.toString();
+          if (wifiRaw != null) {
+            employeeAllowedWifiSsids.value = wifiRaw;
+            await FinalClasses.getStorage.write(
+              _employeeAllowedWifiSsidsCacheKey,
+              wifiRaw,
+            );
           }
           final resetOtpMethod =
               settings['password_reset_otp_delivery_method']?.toString();
@@ -370,6 +386,33 @@ class AppSettingsService {
     return false;
   }
 
+  Future<bool> updateEmployeeAllowedWifiSsids(String value) async {
+    final api = _api;
+    if (api == null) return false;
+
+    final normalized = _normalizeWifiSsids(value);
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {'employee_allowed_wifi_ssids': normalized},
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        final settings = data['settings'];
+        final next = settings is Map
+            ? settings['employee_allowed_wifi_ssids']?.toString() ?? normalized
+            : normalized;
+        employeeAllowedWifiSsids.value = next;
+        await FinalClasses.getStorage.write(
+          _employeeAllowedWifiSsidsCacheKey,
+          next,
+        );
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   Set<String> _decodeFabOptions(String raw) {
     final values = raw
         .split(',')
@@ -377,6 +420,16 @@ class AppSettingsService {
         .where((e) => allAdminFabOptions.contains(e))
         .toSet();
     return values;
+  }
+
+  String _normalizeWifiSsids(String raw) {
+    final parts = raw
+        .split(RegExp(r'[\r\n,]+'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList();
+    return parts.join(',');
   }
 
   String _normalizePasswordResetOtpDeliveryMethod(String raw) {

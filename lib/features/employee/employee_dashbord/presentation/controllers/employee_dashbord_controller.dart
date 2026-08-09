@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
+import '../../../../../core/services/employee_wifi_presence_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -208,6 +209,7 @@ class EmployeeDashbordController extends GetxController
     if (state == AppLifecycleState.resumed) {
       refreshTodayAttendance(silent: true);
       _syncPersistentAttendanceNotification();
+      EmployeeWifiPresenceService.instance.sendOnce();
     }
   }
 
@@ -1049,6 +1051,7 @@ class EmployeeDashbordController extends GetxController
     syncPeriodBounds();
     unawaited(_bootstrapAttendance());
     _startAttendanceLiveRefresh();
+    EmployeeWifiPresenceService.instance.start();
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -1072,6 +1075,7 @@ class EmployeeDashbordController extends GetxController
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
     _attendanceLiveTimer?.cancel();
+    EmployeeWifiPresenceService.instance.stop();
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;

@@ -27,6 +27,7 @@ class EndPoints {
 
   // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
+  static const String employeeWifiPresence = 'employee/wifi-presence';
   static const String employeeMyAttendanceHistory =
       'employee/my/attendance/history';
   static const String changeEmployeeTaskToCompleted =

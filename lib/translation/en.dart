@@ -1249,6 +1249,13 @@ const Map<String, String> en = {
       'Default value when enabling bonus points on a subtask',
   'settingsUpdated': 'Settings updated',
   'settingsUpdateFailed': 'Could not update settings',
+  'employeeAllowedWifiSsidsSetting': 'Employee Wi-Fi networks',
+  'employeeAllowedWifiSsidsSettingDesc':
+      'Networks that make the employee status dot green in the employees list',
+  'employeeAllowedWifiSsidsHint':
+      'Enter one network name per line or separate with commas',
+  'employeeAllowedWifiSsidsDesc':
+      'Example: DoctorBike or DoctorBike-5G. The name must match the Wi-Fi name shown on the employee device.',
   'adminFabOptionsSetting': 'Add button shortcuts',
   'adminFabOptionsSettingDesc':
       'Choose which shortcuts appear inside the admin + button',

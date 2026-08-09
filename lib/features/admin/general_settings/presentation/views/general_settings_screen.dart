@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -11,7 +11,6 @@ import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/services/attendance_settings_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
-import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
 
@@ -866,6 +865,97 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editEmployeeAllowedWifiSsids() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    final controller = TextEditingController(
+      text: service.employeeAllowedWifiSsids.value
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .join('\n'),
+    );
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'employeeAllowedWifiSsidsSetting'.tr,
+          style: const TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: TextField(
+            controller: controller,
+            minLines: 4,
+            maxLines: 8,
+            style: const TextStyle(color: textPrimary),
+            decoration: InputDecoration(
+              labelText: 'employeeAllowedWifiSsidsHint'.tr,
+              helperText: 'employeeAllowedWifiSsidsDesc'.tr,
+              helperMaxLines: 3,
+              labelStyle: const TextStyle(color: textSecondary),
+              helperStyle: const TextStyle(color: textSecondary),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'save'.tr,
+              style: const TextStyle(color: textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || !mounted) {
+      controller.dispose();
+      return;
+    }
+
+    final ok = await service.updateEmployeeAllowedWifiSsids(controller.text);
+    controller.dispose();
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _loadBiometricState() async {
     final enabled =
         await BiometricAuthService.instance.isBiometricLoginEnabled();
@@ -893,6 +983,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               titleKey: 'attendanceSettings',
               descriptionKey: 'attendanceSettingsDesc',
               onTap: () => Get.toNamed(AppRoutes.ATTENDANCESETTINGSSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.wifi_rounded,
+              iconColor: const Color(0xFF16A34A),
+              titleKey: 'employeeAllowedWifiSsidsSetting',
+              descriptionKey: 'employeeAllowedWifiSsidsSettingDesc',
+              onTap: _editEmployeeAllowedWifiSsids,
             ),
             _SettingsItem(
               icon: Icons.people_outline,
@@ -1014,7 +1111,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               enabled: _biometricEnabled,
               busy: _biometricBusy,
               onChanged: _toggleBiometricLogin,
-              onTestPressed: _testBiometricPrompt,
             );
           }
           final itemIndex = showBiometricSettings ? i - 1 : i;
@@ -1096,62 +1192,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       if (mounted) setState(() => _biometricEnabled = false);
       _showMessage(
         'تعذر تفعيل الدخول بالبصمة، حاول مرة أخرى',
-        isError: true,
-      );
-    } finally {
-      if (mounted) setState(() => _biometricBusy = false);
-    }
-  }
-
-  Future<void> _testBiometricPrompt(String method, String label) async {
-    if (_biometricBusy) return;
-
-    setState(() => _biometricBusy = true);
-    try {
-      if (Get.isSnackbarOpen) {
-        Get.closeCurrentSnackbar();
-      }
-      if (method == 'openSecuritySettings') {
-        final result =
-            await NativeBiometricService.instance.openSecuritySettings();
-        _showMessage(
-          result.success
-              ? 'تم فتح إعدادات الأمان'
-              : result.message ?? 'تعذر فتح إعدادات الأمان',
-          isError: !result.success,
-        );
-        return;
-      }
-      if (method == 'authenticateKeyguard' ||
-          method == 'authenticateKeyguardDirect') {
-        _showMessage(
-          'سيتم فتح شاشة قفل الجهاز. أكمل التحقق بالبصمة أو رمز القفل ثم ارجع للتطبيق.',
-        );
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-
-      debugPrint('Biometric native test: starting $method');
-      final result = await NativeBiometricService.instance.authenticate(
-        method: method,
-        timeout: method == 'authenticateKeyguard' ||
-                method == 'authenticateKeyguardDirect'
-            ? const Duration(seconds: 180)
-            : const Duration(seconds: 90),
-      );
-      debugPrint(
-        'Biometric native test: success=${result.success} '
-        'available=${result.available} code=${result.code} '
-        'codeText=${result.codeText} '
-        'mode=${result.mode} message=${result.message}',
-      );
-      _showMessage(
-        result.success ? '$label نجح' : result.message ?? '$label لم ينجح',
-        isError: !result.success,
-      );
-    } catch (e) {
-      debugPrint('Biometric raw test error: $e');
-      _showMessage(
-        'فشل اختبار نافذة البصمة',
         isError: true,
       );
     } finally {
@@ -1407,13 +1447,11 @@ class _BiometricSettingsCard extends StatelessWidget {
     required this.enabled,
     required this.busy,
     required this.onChanged,
-    required this.onTestPressed,
   });
 
   final bool enabled;
   final bool busy;
   final ValueChanged<bool> onChanged;
-  final void Function(String method, String label) onTestPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1487,104 +1525,7 @@ class _BiometricSettingsCard extends StatelessWidget {
                     ),
             ],
           ),
-          if (!kIsWeb) ...[
-            SizedBox(height: 12.h),
-            Wrap(
-              spacing: 8.w,
-              runSpacing: 8.h,
-              children: [
-                if (kDebugMode) ...[
-                  _BiometricTestButton(
-                    label: 'اختبار بصمة قوية',
-                    busy: busy,
-                    onPressed: () => onTestPressed(
-                      'authenticateStrong',
-                      'اختبار بصمة قوية',
-                    ),
-                  ),
-                  _BiometricTestButton(
-                    label: 'اختبار بصمة ضعيفة',
-                    busy: busy,
-                    onPressed: () => onTestPressed(
-                      'authenticateWeak',
-                      'اختبار بصمة ضعيفة',
-                    ),
-                  ),
-                  _BiometricTestButton(
-                    label: 'اختبار قفل الجهاز القديم',
-                    busy: busy,
-                    onPressed: () => onTestPressed(
-                      'authenticateDeviceCredential',
-                      'اختبار قفل الجهاز القديم',
-                    ),
-                  ),
-                  _BiometricTestButton(
-                    label: 'اختبار بصمة أو قفل الجهاز',
-                    busy: busy,
-                    onPressed: () => onTestPressed(
-                      'authenticateStrongOrCredential',
-                      'اختبار بصمة أو قفل الجهاز',
-                    ),
-                  ),
-                  _BiometricTestButton(
-                    label: 'اختبار Keyguard مباشر',
-                    busy: busy,
-                    onPressed: () => onTestPressed(
-                      'authenticateKeyguardDirect',
-                      'اختبار Keyguard مباشر',
-                    ),
-                  ),
-                ],
-                _BiometricTestButton(
-                  label: 'اختبار قفل الجهاز عبر النظام',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateKeyguard',
-                    'اختبار قفل الجهاز عبر النظام',
-                  ),
-                ),
-                _BiometricTestButton(
-                  label: 'فتح إعدادات الأمان',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'openSecuritySettings',
-                    'فتح إعدادات الأمان',
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
-      ),
-    );
-  }
-}
-
-class _BiometricTestButton extends StatelessWidget {
-  const _BiometricTestButton({
-    required this.label,
-    required this.busy,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool busy;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: busy ? null : onPressed,
-      icon: const Icon(Icons.bug_report_outlined),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF374151),
-        side: const BorderSide(color: Color(0xFFD1D5DB)),
-        backgroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
-        ),
       ),
     );
   }

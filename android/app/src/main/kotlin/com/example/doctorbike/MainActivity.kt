@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "dr_bike/biometric"
+    private val wifiPresenceChannelName = "dr_bike/employee_wifi_presence"
     private val strong = BiometricManager.Authenticators.BIOMETRIC_STRONG
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -91,6 +92,26 @@ class MainActivity : FlutterFragmentActivity() {
                     "authenticateKeyguard" -> authenticateKeyguard(result)
                     "authenticateKeyguardDirect" -> authenticateKeyguardDirect(result)
                     "openSecuritySettings" -> openSecuritySettings(result)
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, wifiPresenceChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "start" -> {
+                        val baseUrl = call.argument<String>("baseUrl") ?: ""
+                        val token = call.argument<String>("token") ?: ""
+                        if (baseUrl.isBlank() || token.isBlank()) {
+                            result.success(false)
+                        } else {
+                            EmployeeWifiPresenceService.start(applicationContext, baseUrl, token)
+                            result.success(true)
+                        }
+                    }
+                    "stop" -> {
+                        EmployeeWifiPresenceService.stop(applicationContext)
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }

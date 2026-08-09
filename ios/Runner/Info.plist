@@ -34,6 +34,8 @@
 	<string>نحتاج صلاحية للوصول إلى الصور لحفظها.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>يستخدم التطبيق Face ID لتسجيل الدخول بشكل آمن</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج صلاحية الموقع لمعرفة اسم شبكة الواي فاي الحالية وتحديث حالة اتصال الموظف.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
