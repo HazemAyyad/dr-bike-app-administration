@@ -39,14 +39,6 @@ class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
                     isDark ? AppColors.primaryColor : AppColors.secondaryColor),
             onPressed: () => _openEditor(context),
           ),
-          IconButton(
-            tooltip: 'تحديث',
-            icon: Icon(Icons.refresh_rounded,
-                size: 24.sp,
-                color:
-                    isDark ? AppColors.primaryColor : AppColors.secondaryColor),
-            onPressed: controller.loadRules,
-          ),
         ],
       ),
       body: Obx(() {
@@ -194,12 +186,14 @@ class _RuleCard extends StatelessWidget {
               if (rule.conditionType ==
                   'employee_completed_all_tasks_before_time')
                 _Badge(
-                    label: 'قبل ${rule.cutoffTime}',
+                    label: 'قبل ${_timeLabel(rule.cutoffTime)}',
                     color: const Color(0xFF0891B2)),
             ],
           ),
           SizedBox(height: 8.h),
-          Row(
+          Wrap(
+            spacing: 4.w,
+            runSpacing: 4.h,
             children: [
               TextButton.icon(
                 onPressed: onEdit,
@@ -247,7 +241,9 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _pointsCtrl;
-  late final TextEditingController _cutoffCtrl;
+  int _cutoffHour = 2;
+  String _cutoffMinute = '00';
+  String _cutoffPeriod = 'am';
   String _condition = 'employee_completed_all_tasks_before_time';
   String _period = 'daily';
   String _operation = 'add';
@@ -263,7 +259,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _pointsCtrl =
         TextEditingController(text: r?.defaultPoints.toString() ?? '0');
-    _cutoffCtrl = TextEditingController(text: r?.cutoffTime ?? '02:00');
+    _initCutoff(r?.cutoffTime ?? '02:00');
     _condition = r?.conditionType ?? _condition;
     _period = r?.periodType ?? _period;
     _operation = r?.operationType ?? _operation;
@@ -276,8 +272,23 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
   void dispose() {
     _nameCtrl.dispose();
     _pointsCtrl.dispose();
-    _cutoffCtrl.dispose();
     super.dispose();
+  }
+
+  void _initCutoff(String value) {
+    final parts = value.split(':');
+    final hour24 = int.tryParse(parts.isNotEmpty ? parts.first : '') ?? 2;
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    _cutoffPeriod = hour24 >= 12 ? 'pm' : 'am';
+    _cutoffHour = hour24 % 12;
+    if (_cutoffHour == 0) _cutoffHour = 12;
+    _cutoffMinute = minute.clamp(0, 59).toString().padLeft(2, '0');
+  }
+
+  String _cutoff24h() {
+    var hour = _cutoffHour % 12;
+    if (_cutoffPeriod == 'pm') hour += 12;
+    return '${hour.toString().padLeft(2, '0')}:$_cutoffMinute';
   }
 
   @override
@@ -362,33 +373,86 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _pointsCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: _decoration('النقاط'),
-                        validator: (v) {
-                          final n = int.tryParse((v ?? '').trim());
-                          return n == null || n < 0 ? '0 أو أكثر' : null;
-                        },
+                TextFormField(
+                  controller: _pointsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: _decoration('النقاط'),
+                  validator: (v) {
+                    final n = int.tryParse((v ?? '').trim());
+                    return n == null || n < 0 ? '0 أو أكثر' : null;
+                  },
+                ),
+                SizedBox(height: 10.h),
+                InputDecorator(
+                  decoration: _decoration('وقت القطع'),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int>(
+                            value: _cutoffHour,
+                            isExpanded: true,
+                            items: List.generate(12, (i) => i + 1)
+                                .map(
+                                  (h) => DropdownMenuItem(
+                                    value: h,
+                                    child: Text('$h'),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) => setState(
+                              () => _cutoffHour = v ?? _cutoffHour,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _cutoffCtrl,
-                        decoration: _decoration('وقت القطع HH:mm'),
-                        validator: (v) {
-                          final value = (v ?? '').trim();
-                          return RegExp(r'^\d{2}:\d{2}$').hasMatch(value)
-                              ? null
-                              : 'مثال 02:00';
-                        },
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _cutoffMinute,
+                            isExpanded: true,
+                            items: List.generate(
+                              60,
+                              (i) => i.toString().padLeft(2, '0'),
+                            )
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) => setState(
+                              () => _cutoffMinute = v ?? _cutoffMinute,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _cutoffPeriod,
+                            isExpanded: true,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'am',
+                                child: Text('صباحا'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'pm',
+                                child: Text('مساء'),
+                              ),
+                            ],
+                            onChanged: (v) => setState(
+                              () => _cutoffPeriod = v ?? _cutoffPeriod,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 8.h),
                 DropdownButtonFormField<String>(
@@ -469,7 +533,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
       defaultPoints: int.parse(_pointsCtrl.text.trim()),
       appliesToAll: _appliesToAll,
       employeeIds: _employeeIds.toList(),
-      cutoffTime: _cutoffCtrl.text.trim(),
+      cutoffTime: _cutoff24h(),
       effectivePolicy: _effectivePolicy,
       isActive: _isActive,
     );
@@ -555,6 +619,16 @@ class _Badge extends StatelessWidget {
       ),
     );
   }
+}
+
+String _timeLabel(String value) {
+  final parts = value.split(':');
+  final hour24 = int.tryParse(parts.isNotEmpty ? parts.first : '') ?? 0;
+  final minute = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+  final period = hour24 >= 12 ? 'مساء' : 'صباحا';
+  var hour = hour24 % 12;
+  if (hour == 0) hour = 12;
+  return '${hour.toString().padLeft(2, '0')}:${minute.clamp(0, 59).toString().padLeft(2, '0')} $period';
 }
 
 String _periodLabel(String value) {

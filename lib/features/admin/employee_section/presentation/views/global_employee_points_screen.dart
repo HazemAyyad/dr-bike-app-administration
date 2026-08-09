@@ -30,17 +30,7 @@ class GlobalEmployeePointsScreen
         title: 'globalEmployeePointsTitle',
         action: false,
         backgroundColor: pageBg,
-        actions: [
-          IconButton(
-            tooltip: 'refresh'.tr,
-            icon: Icon(
-              Icons.refresh_rounded,
-              size: 24.sp,
-              color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
-            ),
-            onPressed: controller.loadRows,
-          ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [

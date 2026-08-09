@@ -150,21 +150,6 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.GENERALSETTINGSSCREEN
     },
     {
-      'id': '21',
-      'title': 'globalEmployeePointsTitle',
-      'route': AppRoutes.GLOBALEMPLOYEEPOINTSSCREEN
-    },
-    {
-      'id': '22',
-      'title': 'pointsReportTitle',
-      'route': AppRoutes.EMPLOYEEPOINTSREPORTSCREEN
-    },
-    {
-      'id': '52',
-      'title': 'قواعد النقاط',
-      'route': AppRoutes.EMPLOYEEPOINTRULESSCREEN
-    },
-    {
       'id': '23',
       'title': 'employeeReminders',
       'route': AppRoutes.EMPLOYEEREMINDERSSCREEN

@@ -77,6 +77,12 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'employee_points_changed':
+        case 'employee_reward_earned':
+          if (_openEmployeePoints()) {
+            return;
+          }
+          break;
         default:
           break;
       }
@@ -220,6 +226,17 @@ class AdminNotificationRouter {
       return true;
     } catch (e) {
       debugPrint('[NotificationRouter] stock export unavailable: $e');
+      return false;
+    }
+  }
+
+  static bool _openEmployeePoints() {
+    try {
+      AppDependencyRegistry.ensureEmployeeSection();
+      Get.toNamed(AppRoutes.GLOBALEMPLOYEEPOINTSSCREEN);
+      return true;
+    } catch (e) {
+      debugPrint('[NotificationRouter] employee points unavailable: $e');
       return false;
     }
   }

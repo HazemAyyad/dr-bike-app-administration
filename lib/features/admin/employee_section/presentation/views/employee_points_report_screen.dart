@@ -23,24 +23,14 @@ class EmployeePointsReportScreen
         title: 'pointsReportTitle',
         action: false,
         backgroundColor: pageBg,
-        actions: [
-          IconButton(
-            tooltip: 'refresh'.tr,
-            icon: Icon(Icons.refresh_rounded,
-                size: 24.sp,
-                color: isDark
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor),
-            onPressed: controller.runReport,
-          ),
-        ],
       ),
       body: Column(
         children: [
           _Filters(isDark: isDark),
           Expanded(
             child: Obx(() {
-              if (controller.isLoading.value && controller.report.value == null) {
+              if (controller.isLoading.value &&
+                  controller.report.value == null) {
                 return const Center(child: CircularProgressIndicator());
               }
               final report = controller.report.value;
@@ -73,8 +63,8 @@ class EmployeePointsReportScreen
               return RefreshIndicator(
                 onRefresh: controller.runReport,
                 child: ListView(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 12.w, vertical: 12.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                   children: [
                     _TotalsCard(report: report, isDark: isDark),
                     SizedBox(height: 10.h),
@@ -110,18 +100,51 @@ class _Filters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.find<EmployeePointsReportController>();
-    return Padding(
-      padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 4.h),
+    return Container(
+      margin: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 6.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1F1F23) : Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+        ),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            children: [
+              Icon(
+                Icons.filter_alt_outlined,
+                size: 18.sp,
+                color:
+                    isDark ? AppColors.primaryColor : AppColors.secondaryColor,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'pointsFilters'.tr,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF111827),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: c.clearFilters,
+                child: Text('pointsFilterClear'.tr),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
           Row(
             children: [
               Expanded(
                 child: Obx(() => _PeriodChip(
                       icon: Icons.calendar_month_rounded,
                       label: 'month'.tr,
-                      value: MonthYearPicker.monthLabel(
-                          c.selectedMonth.value),
+                      value: MonthYearPicker.monthLabel(c.selectedMonth.value),
                       onTap: () => _pickMonth(context, c),
                     )),
               ),
@@ -136,7 +159,7 @@ class _Filters extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 8.h),
           Obx(() {
             return Row(
               children: [
@@ -145,7 +168,7 @@ class _Filters extends StatelessWidget {
                     initialValue: c.selectedCategoryId.value,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: 'pointCategoriesTitle'.tr,
+                      labelText: 'pointsFilterCategory'.tr,
                       labelStyle: TextStyle(fontSize: 12.sp),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10.r),
@@ -175,8 +198,7 @@ class _Filters extends StatelessWidget {
                     initialValue: c.selectedOperationType.value,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText:
-                          'pointCategoryOperationType'.tr,
+                      labelText: 'pointsFilterOperationType'.tr,
                       labelStyle: TextStyle(fontSize: 12.sp),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10.r),
@@ -205,18 +227,21 @@ class _Filters extends StatelessWidget {
               ],
             );
           }),
-          SizedBox(height: 6.h),
-          Obx(() => SwitchListTile.adaptive(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-                title: Text('pointsReportIncludeLogs'.tr,
-                    style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600)),
-                value: c.includeLogs.value,
-                onChanged: c.toggleIncludeLogs,
-              )),
+          SizedBox(height: 4.h),
+          Obx(
+            () => CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                'pointsReportIncludeLogs'.tr,
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+              ),
+              value: c.includeLogs.value,
+              onChanged: (v) => c.toggleIncludeLogs(v ?? false),
+            ),
+          ),
         ],
       ),
     );
@@ -257,8 +282,7 @@ class _PeriodChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final accent =
-        isDark ? AppColors.primaryColor : AppColors.secondaryColor;
+    final accent = isDark ? AppColors.primaryColor : AppColors.secondaryColor;
     return InkWell(
       borderRadius: BorderRadius.circular(12.r),
       onTap: onTap,
@@ -292,9 +316,7 @@ class _PeriodChip extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? Colors.white70
-                          : const Color(0xFF6B7280),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                     ),
                   ),
                   SizedBox(height: 1.h),
@@ -305,9 +327,7 @@ class _PeriodChip extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
-                      color: isDark
-                          ? Colors.white
-                          : const Color(0xFF111827),
+                      color: isDark ? Colors.white : const Color(0xFF111827),
                     ),
                   ),
                 ],
@@ -354,29 +374,40 @@ class _TotalsCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10.h),
-          Row(
-            children: [
-              _Total(
-                label: 'earnedPoints'.tr,
-                value: report.totalEarnedPoints.toString(),
-                color: const Color(0xFF16A34A),
-              ),
-              _Total(
-                label: 'deductedPoints'.tr,
-                value: report.totalDeductedPoints.toString(),
-                color: const Color(0xFFDC2626),
-              ),
-              _Total(
-                label: 'totalNet'.tr,
-                value: report.totalNetPoints.toString(),
-                color: const Color(0xFF2563EB),
-              ),
-              _Total(
-                label: 'totalReward'.tr,
-                value: report.totalRewardAmount,
-                color: const Color(0xFFB45309),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tileWidth = (constraints.maxWidth - 8.w) / 2;
+              return Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  _Total(
+                    width: tileWidth,
+                    label: 'earnedPoints'.tr,
+                    value: report.totalEarnedPoints.toString(),
+                    color: const Color(0xFF16A34A),
+                  ),
+                  _Total(
+                    width: tileWidth,
+                    label: 'deductedPoints'.tr,
+                    value: report.totalDeductedPoints.toString(),
+                    color: const Color(0xFFDC2626),
+                  ),
+                  _Total(
+                    width: tileWidth,
+                    label: 'totalNet'.tr,
+                    value: report.totalNetPoints.toString(),
+                    color: const Color(0xFF2563EB),
+                  ),
+                  _Total(
+                    width: tileWidth,
+                    label: 'totalReward'.tr,
+                    value: report.totalRewardAmount,
+                    color: const Color(0xFFB45309),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -385,32 +416,67 @@ class _TotalsCard extends StatelessWidget {
 }
 
 class _Total extends StatelessWidget {
-  const _Total(
-      {required this.label, required this.value, required this.color});
+  const _Total({
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
+  final double width;
   final String label;
   final String value;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 4.w),
-        child: Column(
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
           children: [
-            Text(value,
-                style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                    color: color)),
-            SizedBox(height: 2.h),
-            Text(label,
-                style: TextStyle(
-                    color: const Color(0xFF6B7280),
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center),
+            Container(
+              width: 8.w,
+              height: 28.h,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF6B7280),
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -460,8 +526,7 @@ class _ReportRowCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(
-                    horizontal: 10.w, vertical: 4.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                 decoration: BoxDecoration(
                   color: badgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10.r),
@@ -484,8 +549,8 @@ class _ReportRowCard extends StatelessWidget {
                   const Color(0xFF16A34A)),
               _Mini('deductedPoints'.tr, row.deductedPoints.toString(),
                   const Color(0xFFDC2626)),
-              _Mini('totalReward'.tr, row.rewardAmount,
-                  const Color(0xFFB45309)),
+              _Mini(
+                  'totalReward'.tr, row.rewardAmount, const Color(0xFFB45309)),
             ],
           ),
           SizedBox(height: 6.h),
@@ -531,9 +596,8 @@ class _ReportRowCard extends StatelessWidget {
             ),
             if (isExpanded)
               Column(
-                children: row.logs
-                    .map((log) => _ReportLogRow(log: log))
-                    .toList(),
+                children:
+                    row.logs.map((log) => _ReportLogRow(log: log)).toList(),
               ),
           ],
         ],
@@ -567,9 +631,8 @@ class _Mini extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                     color: color)),
             Text(label,
-                style: TextStyle(
-                    fontSize: 10.sp,
-                    color: const Color(0xFF6B7280))),
+                style:
+                    TextStyle(fontSize: 10.sp, color: const Color(0xFF6B7280))),
           ],
         ),
       ),
@@ -613,26 +676,21 @@ class _ReportLogRow extends StatelessWidget {
               children: [
                 Text(name,
                     style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700)),
+                        fontSize: 12.sp, fontWeight: FontWeight.w700)),
                 if (log.reason != null && log.reason!.isNotEmpty)
                   Text(log.reason!,
                       style: TextStyle(
-                          fontSize: 11.sp,
-                          color: const Color(0xFF6B7280))),
+                          fontSize: 11.sp, color: const Color(0xFF6B7280))),
                 if (log.pointsDate != null)
                   Text(log.pointsDate!,
                       style: TextStyle(
-                          fontSize: 10.sp,
-                          color: const Color(0xFF9CA3AF))),
+                          fontSize: 10.sp, color: const Color(0xFF9CA3AF))),
               ],
             ),
           ),
           Text('${log.isAdd ? '+' : '-'}${log.points}',
               style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w900,
-                  color: accent)),
+                  fontSize: 13.sp, fontWeight: FontWeight.w900, color: accent)),
         ],
       ),
     );

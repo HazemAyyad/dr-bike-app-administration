@@ -33,15 +33,6 @@ class EmployeePointCategoriesScreen
             ),
             onPressed: () => _openEditor(context),
           ),
-          IconButton(
-            tooltip: 'refresh'.tr,
-            icon: Icon(
-              Icons.refresh_rounded,
-              size: 24.sp,
-              color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
-            ),
-            onPressed: controller.loadCategories,
-          ),
         ],
       ),
       body: Column(
@@ -163,7 +154,8 @@ class EmployeePointCategoriesScreen
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            style:
+                TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
             child: Text('delete'.tr),
           ),
         ],
@@ -240,9 +232,8 @@ class _FilterChip extends StatelessWidget {
     final bg = selected
         ? base.withValues(alpha: 0.16)
         : (isDark ? Colors.white12 : const Color(0xFFEEF0F3));
-    final fg = selected
-        ? base
-        : (isDark ? Colors.white70 : const Color(0xFF374151));
+    final fg =
+        selected ? base : (isDark ? Colors.white70 : const Color(0xFF374151));
     return InkWell(
       borderRadius: BorderRadius.circular(20.r),
       onTap: onTap,
@@ -368,8 +359,8 @@ class _CategoryCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 8.w, vertical: 2.h),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                       decoration: BoxDecoration(
                         color: (category.isActive
                                 ? const Color(0xFF16A34A)
@@ -553,8 +544,7 @@ class _PointCategoryEditorDialogState
   Widget build(BuildContext context) {
     final isUpdate = widget.existing != null;
     return Dialog(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -612,8 +602,7 @@ class _PointCategoryEditorDialogState
                 SizedBox(height: 10.h),
                 DropdownButtonFormField<String>(
                   initialValue: _operationType,
-                  decoration:
-                      _decoration('pointCategoryOperationType'.tr),
+                  decoration: _decoration('pointCategoryOperationType'.tr),
                   items: [
                     DropdownMenuItem(
                       value: 'add',
@@ -624,8 +613,7 @@ class _PointCategoryEditorDialogState
                       child: Text('pointCategoryOpDeduct'.tr),
                     ),
                   ],
-                  onChanged: (v) =>
-                      setState(() => _operationType = v ?? 'add'),
+                  onChanged: (v) => setState(() => _operationType = v ?? 'add'),
                 ),
                 SizedBox(height: 10.h),
                 TextFormField(
@@ -744,8 +732,7 @@ class _PointCategoryEditorDialogState
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      border:
-          OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
       contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
     );
   }

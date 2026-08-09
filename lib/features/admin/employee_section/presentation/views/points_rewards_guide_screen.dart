@@ -38,19 +38,7 @@ class PointsRewardsGuideScreen extends StatelessWidget {
         title: 'pointsGuideTitle',
         action: false,
         backgroundColor: pageBg,
-        actions: [
-          IconButton(
-            tooltip: 'pointsGuideRefresh'.tr,
-            icon: Icon(
-              Icons.refresh_rounded,
-              size: 24.sp,
-              color: isDark
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
-            onPressed: refresh,
-          ),
-        ],
+        actions: const [],
       ),
       body: RefreshIndicator(
         onRefresh: refresh,
@@ -65,9 +53,7 @@ class PointsRewardsGuideScreen extends StatelessWidget {
               .where((c) => c.isActive)
               .toList()
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final rules = rulesController.rules
-              .where((r) => r.isActive)
-              .toList()
+          final rules = rulesController.rules.where((r) => r.isActive).toList()
             ..sort((a, b) => a.minPoints.compareTo(b.minPoints));
 
           if (loading &&
@@ -92,9 +78,7 @@ class PointsRewardsGuideScreen extends StatelessWidget {
                     'pointsGuideEmpty'.tr,
                     style: TextStyle(
                       fontSize: 13.sp,
-                      color: isDark
-                          ? Colors.white70
-                          : const Color(0xFF6B7280),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -294,9 +278,7 @@ class _CategoryTile extends StatelessWidget {
                   category.code,
                   style: TextStyle(
                     fontSize: 11.sp,
-                    color: isDark
-                        ? Colors.white54
-                        : const Color(0xFF9CA3AF),
+                    color: isDark ? Colors.white54 : const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -384,9 +366,7 @@ class _RewardTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? Colors.white70
-                        : const Color(0xFF6B7280),
+                    color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                   ),
                 ),
               ],
@@ -407,9 +387,7 @@ class _RewardTile extends StatelessWidget {
                 'pointsGuideReward'.tr,
                 style: TextStyle(
                   fontSize: 10.sp,
-                  color: isDark
-                      ? Colors.white54
-                      : const Color(0xFF9CA3AF),
+                  color: isDark ? Colors.white54 : const Color(0xFF9CA3AF),
                 ),
               ),
             ],

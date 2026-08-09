@@ -505,4 +505,38 @@ class EmployeeTasksDatasource {
       );
     }
   }
+
+  Future<Map<String, dynamic>> mutateEmployeePoints({
+    required int employeeId,
+    required bool isAdd,
+    required int points,
+    required String reason,
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        isAdd
+            ? EndPoints.employeePointsAdd(employeeId)
+            : EndPoints.employeePointsDeduct(employeeId),
+        data: {
+          'points': points,
+          'category': 'subtask_review',
+          'reason': reason,
+          if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
 }

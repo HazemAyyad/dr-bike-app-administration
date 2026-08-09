@@ -74,7 +74,9 @@ class EmployeeNotificationRouter {
         type == 'employee_task_rejected' ||
         type == 'employee_task_co_subtask_done' ||
         type == 'employee_task_co_main_done' ||
-        type == 'employee_task_co_main_completed') {
+        type == 'employee_task_co_main_completed' ||
+        type == 'employee_points_changed' ||
+        type == 'employee_reward_earned') {
       if (_openDashboard()) {
         return;
       }

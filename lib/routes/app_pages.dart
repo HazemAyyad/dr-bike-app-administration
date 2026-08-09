@@ -80,6 +80,7 @@ import '../features/admin/employee_section/presentation/controllers/attendance_r
 import '../features/admin/employee_section/presentation/views/attendance_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_point_categories_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_point_rules_screen.dart';
+import '../features/admin/employee_section/presentation/views/employee_points_settings_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_points_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_reward_rules_screen.dart';
 import '../features/admin/employee_section/presentation/views/global_employee_points_screen.dart';
@@ -559,6 +560,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.EMPLOYEEPOINTRULESSCREEN,
       page: () => const EmployeePointRulesScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEPOINTSSETTINGSSCREEN,
+      page: () => const EmployeePointsSettingsScreen(),
       binding: EmployeeSectionBinding(),
       transition: _transitionFadeIn,
     ),

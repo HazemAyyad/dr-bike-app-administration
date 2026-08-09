@@ -168,6 +168,7 @@ class AppRoutes {
   static const EMPLOYEEREWARDRULESSCREEN = '/EmployeeRewardRulesScreen';
   static const EMPLOYEEPOINTCATEGORIESSCREEN = '/EmployeePointCategoriesScreen';
   static const EMPLOYEEPOINTRULESSCREEN = '/EmployeePointRulesScreen';
+  static const EMPLOYEEPOINTSSETTINGSSCREEN = '/EmployeePointsSettingsScreen';
   static const GLOBALEMPLOYEEPOINTSSCREEN = '/GlobalEmployeePointsScreen';
   static const EMPLOYEEPOINTSREPORTSCREEN = '/EmployeePointsReportScreen';
 

@@ -8,8 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_reward_rule_model.dart';
 import '../controllers/employee_reward_rules_controller.dart';
 
-class EmployeeRewardRulesScreen
-    extends GetView<EmployeeRewardRulesController> {
+class EmployeeRewardRulesScreen extends GetView<EmployeeRewardRulesController> {
   const EmployeeRewardRulesScreen({Key? key}) : super(key: key);
 
   @override
@@ -33,15 +32,6 @@ class EmployeeRewardRulesScreen
             ),
             onPressed: () => _openRuleEditor(context),
           ),
-          IconButton(
-            tooltip: 'refresh'.tr,
-            icon: Icon(
-              Icons.refresh_rounded,
-              size: 24.sp,
-              color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
-            ),
-            onPressed: controller.loadRules,
-          ),
         ],
       ),
       body: Obx(() {
@@ -63,9 +53,7 @@ class EmployeeRewardRulesScreen
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13.sp,
-                      color: isDark
-                          ? Colors.white70
-                          : const Color(0xFF6B7280),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -89,8 +77,7 @@ class EmployeeRewardRulesScreen
               rule: controller.rules[i],
               onEdit: () => _openRuleEditor(context, rule: controller.rules[i]),
               onToggle: () => controller.toggleActive(controller.rules[i]),
-              onDelete: () =>
-                  _confirmDelete(context, controller.rules[i].id),
+              onDelete: () => _confirmDelete(context, controller.rules[i].id),
             ),
             separatorBuilder: (_, __) => SizedBox(height: 10.h),
             itemCount: controller.rules.length,
@@ -156,8 +143,7 @@ class _RewardRuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final cardColor = isDark ? const Color(0xFF1F1F23) : Colors.white;
-    final borderColor =
-        isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
     final accent =
         rule.isActive ? const Color(0xFF16A34A) : const Color(0xFF9CA3AF);
 
@@ -193,15 +179,14 @@ class _RewardRuleCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF111827),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF111827),
                         ),
                       ),
                     ),
                     Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 8.w, vertical: 2.h),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8.r),
@@ -224,8 +209,7 @@ class _RewardRuleCard extends StatelessWidget {
                   '${'rewardRuleAmount'.tr}: ${rule.rewardAmount}',
                   style: TextStyle(
                     fontSize: 13.sp,
-                    color:
-                        isDark ? Colors.white70 : const Color(0xFF374151),
+                    color: isDark ? Colors.white70 : const Color(0xFF374151),
                   ),
                 ),
                 if ((rule.statusLabel != null &&
@@ -343,10 +327,9 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
     _maxCtrl = TextEditingController(text: r?.maxPoints?.toString() ?? '');
     _amountCtrl = TextEditingController(text: r?.rewardAmount ?? '');
     _statusLabelCtrl = TextEditingController(text: r?.statusLabel ?? '');
-    _statusColor =
-        (r?.statusColor != null && r!.statusColor!.isNotEmpty)
-            ? r.statusColor!
-            : _palette.first;
+    _statusColor = (r?.statusColor != null && r!.statusColor!.isNotEmpty)
+        ? r.statusColor!
+        : _palette.first;
     _isActive = r?.isActive ?? true;
   }
 
@@ -363,8 +346,7 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
   Widget build(BuildContext context) {
     final isUpdate = widget.existingRule != null;
     return Dialog(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -382,9 +364,7 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
                     SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
-                        isUpdate
-                            ? 'editRewardRule'.tr
-                            : 'addRewardRule'.tr,
+                        isUpdate ? 'editRewardRule'.tr : 'addRewardRule'.tr,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
@@ -468,8 +448,8 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
                   spacing: 8.w,
                   runSpacing: 8.h,
                   children: _palette.map((hex) {
-                    final isSelected = _statusColor.toLowerCase() ==
-                        hex.toLowerCase();
+                    final isSelected =
+                        _statusColor.toLowerCase() == hex.toLowerCase();
                     return InkWell(
                       onTap: () => setState(() => _statusColor = hex),
                       borderRadius: BorderRadius.circular(20.r),
@@ -480,9 +460,8 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
                           color: _parseHex(hex) ?? Colors.grey,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected
-                                ? Colors.black
-                                : Colors.transparent,
+                            color:
+                                isSelected ? Colors.black : Colors.transparent,
                             width: 2,
                           ),
                         ),
@@ -587,8 +566,7 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      border:
-          OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
       contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
     );
   }

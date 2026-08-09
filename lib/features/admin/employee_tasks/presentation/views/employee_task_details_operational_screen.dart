@@ -7,6 +7,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/task_details_model.dart';
+import '../../data/datasources/employee_tasks_datasource.dart';
 import '../../domain/entities/task_details_entiny.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/task_admin_materials_section.dart';
@@ -127,6 +128,10 @@ class EmployeeTaskDetailsOperationalScreen
                         child: OperationalChecklist(
                           data: data,
                           compact: _compact,
+                          onSubtaskLongPress: showReview
+                              ? (sub) =>
+                                  _showSubtaskPointsActions(context, data, sub)
+                              : null,
                         ),
                       ),
                     ],
@@ -193,6 +198,191 @@ class EmployeeTaskDetailsOperationalScreen
         ],
       ),
     );
+  }
+
+  Future<void> _showSubtaskPointsActions(
+    BuildContext context,
+    TaskDetailsModel task,
+    SubTaskEntity subtask,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 12.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    subtask.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    task.employeeName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.add_circle_outline,
+                    color: Color(0xFF16A34A),
+                  ),
+                  title: const Text('إضافة نقاط'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showPointsDialog(context, task, subtask, true);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.remove_circle_outline,
+                    color: Color(0xFFDC2626),
+                  ),
+                  title: const Text('خصم نقاط'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _showPointsDialog(context, task, subtask, false);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPointsDialog(
+    BuildContext context,
+    TaskDetailsModel task,
+    SubTaskEntity subtask,
+    bool isAdd,
+  ) async {
+    final pointsCtrl = TextEditingController(text: '1');
+    final notesCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isAdd ? 'إضافة نقاط' : 'خصم نقاط'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: pointsCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'pointsValue'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: notesCtrl,
+              minLines: 2,
+              maxLines: 4,
+              decoration: InputDecoration(
+                labelText: 'pointsNotesOptional'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text('save'.tr),
+          ),
+        ],
+      ),
+    );
+
+    final points = int.tryParse(pointsCtrl.text.trim()) ?? 0;
+    final notes = notesCtrl.text.trim();
+    pointsCtrl.dispose();
+    notesCtrl.dispose();
+    if (confirmed != true) return;
+
+    await _mutateSubtaskReviewPoints(
+      task: task,
+      subtask: subtask,
+      isAdd: isAdd,
+      points: points,
+      notes: notes,
+    );
+  }
+
+  Future<void> _mutateSubtaskReviewPoints({
+    required TaskDetailsModel task,
+    required SubTaskEntity subtask,
+    required bool isAdd,
+    required int points,
+    String? notes,
+  }) async {
+    final employeeId = int.tryParse(task.employeeId);
+    if (employeeId == null || employeeId <= 0) {
+      Get.snackbar('error'.tr, 'employee_not_found'.tr);
+      return;
+    }
+    if (points < 1) {
+      Get.snackbar('error'.tr, 'pointsValueMin'.tr);
+      return;
+    }
+
+    final action = isAdd ? 'إضافة' : 'خصم';
+    final reason = '$action نقاط من مراجعة مهمة فرعية: ${subtask.name}';
+    controller.isLoading(true);
+    try {
+      final res =
+          await Get.find<EmployeeTasksDatasource>().mutateEmployeePoints(
+        employeeId: employeeId,
+        isAdd: isAdd,
+        points: points,
+        reason: reason,
+        notes: notes,
+      );
+      if (res['status'] == 'success') {
+        await controller.getTaskDetails(
+          taskId: task.taskId.toString(),
+          occurrenceId: controller.lastLoadedOccurrenceId,
+          showFullScreenLoader: false,
+        );
+        controller.update(['taskDetails', 'subtasks']);
+        Get.snackbar(
+          'success'.tr,
+          'pointsUpdatedMessage'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+        return;
+      }
+      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    } finally {
+      controller.isLoading(false);
+    }
   }
 }
 
@@ -493,6 +683,7 @@ class OperationalChecklist extends StatelessWidget {
     this.onSubtaskReject,
     this.onSubtaskUndo,
     this.onSubtaskReplaceProof,
+    this.onSubtaskLongPress,
   }) : super(key: key);
 
   final TaskDetailsModel data;
@@ -502,6 +693,7 @@ class OperationalChecklist extends StatelessWidget {
   final void Function(SubTaskEntity sub)? onSubtaskReject;
   final void Function(SubTaskEntity sub)? onSubtaskUndo;
   final void Function(SubTaskEntity sub)? onSubtaskReplaceProof;
+  final void Function(SubTaskEntity sub)? onSubtaskLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -529,6 +721,9 @@ class OperationalChecklist extends StatelessWidget {
           onTap: interactive && !done && !rejected
               ? () => onSubtaskTap?.call(sub)
               : null,
+          onLongPress: onSubtaskLongPress == null
+              ? null
+              : () => onSubtaskLongPress?.call(sub),
           child: Container(
             margin: EdgeInsets.only(bottom: compact ? 4.h : 8.h),
             padding: EdgeInsets.symmetric(
