@@ -177,73 +177,12 @@ class _EmployeeOverviewTab extends StatelessWidget {
         children: [
           _EmployeeHeaderCard(
             employee: employee,
+            phone: _phone,
+            subPhone: _subPhone,
+            workHoursLabel: _workHoursLabel,
+            workingTimeLabel: _workingTimeLabel,
+            weeklyDaysOffLabel: _weeklyDaysOffLabel,
             onCopyEmail: () => _copyEmail(context, employee.email),
-          ),
-          SizedBox(height: 12.h),
-          _DetailSection(
-            title: 'contactInfo'.tr,
-            icon: Icons.contact_phone_outlined,
-            children: [
-              _InfoTile(
-                icon: Icons.email_outlined,
-                label: 'email'.tr,
-                value: employee.email,
-                trailing: IconButton(
-                  tooltip: 'copy'.tr,
-                  onPressed: () => _copyEmail(context, employee.email),
-                  icon: const Icon(Icons.copy_rounded),
-                ),
-              ),
-              _InfoTile(
-                icon: Icons.phone_outlined,
-                label: 'phoneNumber'.tr,
-                value: _phone.isEmpty ? '—' : _phone,
-              ),
-              _InfoTile(
-                icon: Icons.phone_android_outlined,
-                label: 'alternatePhone'.tr,
-                value: _subPhone.isEmpty ? '—' : _subPhone,
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          _DetailSection(
-            title: 'attendanceTimesCard'.tr,
-            icon: Icons.schedule_outlined,
-            children: [
-              _InfoTile(
-                icon: Icons.payments_outlined,
-                label: 'hourlyRate'.tr,
-                value: '${employee.hourWorkPrice} ${'currency'.tr}',
-              ),
-              _InfoTile(
-                icon: Icons.more_time_outlined,
-                label: 'overTimeRate'.tr,
-                value: '${employee.overtimeWorkPrice} ${'currency'.tr}',
-              ),
-              _InfoTile(
-                icon: Icons.timelapse_outlined,
-                label: 'workHoursOfDay'.tr,
-                value: _workHoursLabel,
-              ),
-              _InfoTile(
-                icon: Icons.access_time_outlined,
-                label: 'regularWorkingHours'.tr,
-                value: _workingTimeLabel,
-              ),
-              _InfoTile(
-                icon: Icons.event_busy_outlined,
-                label: 'weeklyDaysOffTitle'.tr,
-                value: _weeklyDaysOffLabel,
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          _FingerprintInfoCard(
-            enabled: employee.fingerprintEnabled,
-            deviceUserId: employee.deviceUserId,
-            lastScan: employee.lastFingerprintScanAt,
-            lastAttendance: employee.lastFingerprintAttendanceAt,
           ),
           if (employee.currentlyInToday && canManageEmployeesAttendance) ...[
             SizedBox(height: 12.h),
@@ -264,17 +203,9 @@ class _EmployeeOverviewTab extends StatelessWidget {
           ],
           SizedBox(height: 12.h),
           _ImageGallerySection(
-            title: 'employeeImage'.tr,
-            images: employee.employeeImg,
-          ),
-          SizedBox(height: 12.h),
-          _ImageGallerySection(
             title: 'documentsImages'.tr,
             images: employee.documentImg,
           ),
-          SizedBox(height: 12.h),
-          if (canViewEmployeesPermissions)
-            _PermissionsSection(permissions: employee.permissions),
         ],
       ),
     );
@@ -295,10 +226,20 @@ class _EmployeeOverviewTab extends StatelessWidget {
 class _EmployeeHeaderCard extends StatelessWidget {
   const _EmployeeHeaderCard({
     required this.employee,
+    required this.phone,
+    required this.subPhone,
+    required this.workHoursLabel,
+    required this.workingTimeLabel,
+    required this.weeklyDaysOffLabel,
     required this.onCopyEmail,
   });
 
   final EmployeeDetailsEntity employee;
+  final String phone;
+  final String subPhone;
+  final String workHoursLabel;
+  final String workingTimeLabel;
+  final String weeklyDaysOffLabel;
   final VoidCallback onCopyEmail;
 
   @override
@@ -317,45 +258,298 @@ class _EmployeeHeaderCard extends StatelessWidget {
           color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
         ),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _EmployeeAvatar(employee: employee),
-          SizedBox(width: 12.w),
-          Expanded(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _EmployeeAvatar(employee: employee),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employee.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                        color: titleColor,
+                        height: 1.15,
+                      ),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      employee.email.isEmpty ? '—' : employee.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.sp, color: subColor),
+                    ),
+                    SizedBox(height: 8.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 6.h,
+                      children: [
+                        _MetricChip(
+                          icon: Icons.copy_rounded,
+                          label: 'copy'.tr,
+                          color: AppColors.secondaryColor,
+                          onTap: onCopyEmail,
+                        ),
+                        if (canViewEmployeesPermissions)
+                          _MetricChip(
+                            icon: Icons.admin_panel_settings_outlined,
+                            label: 'permissions'.tr,
+                            color: AppColors.primaryColor,
+                            onTap: () => _showPermissionsDialog(
+                              context,
+                              employee.permissions,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _CompactInfoChip(
+                icon: Icons.phone_outlined,
+                label: 'phoneNumber'.tr,
+                value: phone.isEmpty ? '—' : phone,
+              ),
+              _CompactInfoChip(
+                icon: Icons.phone_android_outlined,
+                label: 'alternatePhone'.tr,
+                value: subPhone.isEmpty ? '—' : subPhone,
+              ),
+              _CompactInfoChip(
+                icon: Icons.timelapse_outlined,
+                label: 'workHoursOfDay'.tr,
+                value: workHoursLabel,
+              ),
+              _CompactInfoChip(
+                icon: Icons.access_time_outlined,
+                label: 'regularWorkingHours'.tr,
+                value: workingTimeLabel,
+              ),
+              _CompactInfoChip(
+                icon: Icons.event_busy_outlined,
+                label: 'weeklyDaysOffTitle'.tr,
+                value: weeklyDaysOffLabel,
+              ),
+              _CompactInfoChip(
+                icon: Icons.payments_outlined,
+                label: 'hourlyRate'.tr,
+                value: '${employee.hourWorkPrice} ${'currency'.tr}',
+              ),
+              _CompactInfoChip(
+                icon: Icons.more_time_outlined,
+                label: 'overTimeRate'.tr,
+                value: '${employee.overtimeWorkPrice} ${'currency'.tr}',
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          _FingerprintCompactRow(
+            enabled: employee.fingerprintEnabled,
+            deviceUserId: employee.deviceUserId,
+            lastScan: employee.lastFingerprintScanAt,
+            lastAttendance: employee.lastFingerprintAttendanceAt,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPermissionsDialog(
+    BuildContext context,
+    List<PermissionEntity> permissions,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final isDark = ThemeService.isDark.value;
+        return AlertDialog(
+          title: Text('permissions'.tr),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: permissions.isEmpty
+                ? Text('noData'.tr)
+                : SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 7.w,
+                      runSpacing: 7.h,
+                      children: permissions
+                          .map(
+                            (permission) => _PermissionChip(
+                              label: permission.permissionName,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+          ),
+          backgroundColor: isDark ? AppColors.customGreyColor4 : Colors.white,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('close'.tr),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CompactInfoChip extends StatelessWidget {
+  const _CompactInfoChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final labelColor = isDark ? Colors.white60 : const Color(0xFF6B7280);
+    final valueColor = isDark ? Colors.white : const Color(0xFF111827);
+
+    return Container(
+      constraints: BoxConstraints(minWidth: 138.w, maxWidth: 230.w),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: AppColors.primaryColor.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16.sp, color: AppColors.primaryColor),
+          SizedBox(width: 7.w),
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  employee.name,
-                  maxLines: 2,
+                  label,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                    color: titleColor,
-                    height: 1.15,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w700,
+                    color: labelColor,
                   ),
+                ),
+                Text(
+                  value.isEmpty ? '—' : value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w800,
+                    color: valueColor,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FingerprintCompactRow extends StatelessWidget {
+  const _FingerprintCompactRow({
+    required this.enabled,
+    required this.deviceUserId,
+    this.lastScan,
+    this.lastAttendance,
+  });
+
+  final bool enabled;
+  final String? deviceUserId;
+  final String? lastScan;
+  final String? lastAttendance;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+    final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
+    final badgeColor =
+        enabled ? const Color(0xFF059669) : const Color(0xFF6B7280);
+    final badgeText = enabled ? 'enabledLabel'.tr : 'disabledLabel'.tr;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.fingerprint_rounded, color: badgeColor, size: 20.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'fingerprintAttendance'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                          color: titleColor,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  employee.email,
-                  maxLines: 1,
+                  [
+                    '${'deviceUserId'.tr}: ${deviceUserId == null || deviceUserId!.isEmpty ? '—' : deviceUserId}',
+                    '${'lastFingerprintScan'.tr}: ${formatApiDateTime12(lastScan)}',
+                    '${'lastFingerprintAttendance'.tr}: ${formatApiDateTime12(lastAttendance)}',
+                  ].join('  |  '),
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.sp, color: subColor),
-                ),
-                SizedBox(height: 10.h),
-                Wrap(
-                  spacing: 8.w,
-                  runSpacing: 6.h,
-                  children: [
-                    _MetricChip(
-                      icon: Icons.copy_rounded,
-                      label: 'copy'.tr,
-                      color: AppColors.secondaryColor,
-                      onTap: onCopyEmail,
-                    ),
-                  ],
+                  style: TextStyle(fontSize: 11.sp, color: subColor),
                 ),
               ],
             ),
@@ -509,73 +703,6 @@ class _DetailSection extends StatelessWidget {
   }
 }
 
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.trailing,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-    final labelColor = isDark ? Colors.white60 : const Color(0xFF6B7280);
-    final valueColor = isDark ? Colors.white : const Color(0xFF111827);
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 7.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 32.w,
-            height: 32.w,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.primaryColor.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(icon, size: 17.sp, color: AppColors.primaryColor),
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: labelColor,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  value.isEmpty ? '—' : value,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w800,
-                    color: valueColor,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
-  }
-}
-
 class _ImageGallerySection extends StatelessWidget {
   const _ImageGallerySection({
     required this.title,
@@ -673,39 +800,6 @@ class _ImageThumb extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PermissionsSection extends StatelessWidget {
-  const _PermissionsSection({required this.permissions});
-
-  final List<PermissionEntity> permissions;
-
-  @override
-  Widget build(BuildContext context) {
-    return _DetailSection(
-      title: 'permissions'.tr,
-      icon: Icons.admin_panel_settings_outlined,
-      children: [
-        if (permissions.isEmpty)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.h),
-            child: Text('noData'.tr),
-          )
-        else
-          Wrap(
-            spacing: 7.w,
-            runSpacing: 7.h,
-            children: permissions
-                .map(
-                  (permission) => _PermissionChip(
-                    label: permission.permissionName,
-                  ),
-                )
-                .toList(),
-          ),
-      ],
     );
   }
 }
@@ -1176,89 +1270,4 @@ CacheManager _employeeImageCacheManager() {
       maxNrOfCacheObjects: 100,
     ),
   );
-}
-
-class _FingerprintInfoCard extends StatelessWidget {
-  const _FingerprintInfoCard({
-    required this.enabled,
-    required this.deviceUserId,
-    this.lastScan,
-    this.lastAttendance,
-  });
-
-  final bool enabled;
-  final String? deviceUserId;
-  final String? lastScan;
-  final String? lastAttendance;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-    final border = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
-    final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
-    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
-    final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
-    final badgeColor =
-        enabled ? const Color(0xFF059669) : const Color(0xFF6B7280);
-    final badgeText = enabled ? 'enabledLabel'.tr : 'disabledLabel'.tr;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'fingerprintAttendance'.tr,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w800,
-                    color: titleColor,
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            '${'deviceUserId'.tr}: ${deviceUserId == null || deviceUserId!.isEmpty ? '—' : deviceUserId}',
-            style: TextStyle(fontSize: 12.sp, color: subColor),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            '${'lastFingerprintScan'.tr}: ${formatApiDateTime12(lastScan)}',
-            style: TextStyle(fontSize: 12.sp, color: subColor),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            '${'lastFingerprintAttendance'.tr}: ${formatApiDateTime12(lastAttendance)}',
-            style: TextStyle(fontSize: 12.sp, color: subColor),
-          ),
-        ],
-      ),
-    );
-  }
 }
