@@ -14,6 +14,7 @@ import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
+import '../../../../../core/services/employee_wifi_presence_service.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../core/services/session_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -253,6 +254,7 @@ class LoginController extends GetxController {
         EmployeeAttendancePersistentNotificationService.instance
             .initializeForEmployee(),
       );
+      EmployeeWifiPresenceService.instance.start();
     }
   }
 

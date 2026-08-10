@@ -31,11 +31,15 @@ class EmployeeWifiPresenceService {
   void start() {
     if (userType != 'employee' || _running) return;
     _running = true;
-    _startNativeForegroundService();
-    sendOnce();
+    _startAfterInitialSend();
     _timer = Timer.periodic(_interval, (_) {
       sendOnce();
     });
+  }
+
+  Future<void> _startAfterInitialSend() async {
+    await sendOnce();
+    await _startNativeForegroundService();
   }
 
   void stop() {

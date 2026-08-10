@@ -17,6 +17,7 @@ import 'app_startup.dart';
 import 'app_version_tracking_service.dart';
 import 'desktop_window_service.dart';
 import 'employee_attendance_persistent_notification_service.dart';
+import 'employee_wifi_presence_service.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
 import 'user_data.dart';
@@ -463,6 +464,7 @@ class InitialBindings implements Bindings {
           Get.put(EmployeeNotificationBadgeController(), permanent: true);
         }
         await Get.find<EmployeeNotificationBadgeController>().refresh();
+        EmployeeWifiPresenceService.instance.start();
       }
       await NotificationFirebaseService.instance
           .syncFcmTokenToServer(source: 'app_resume');

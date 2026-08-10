@@ -21,7 +21,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
 
     <application
@@ -103,7 +102,7 @@
             android:name=".EmployeeWifiPresenceService"
             android:exported="false"
             android:stopWithTask="false"
-            android:foregroundServiceType="dataSync|location" />
+            android:foregroundServiceType="dataSync" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
