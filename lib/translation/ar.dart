@@ -1247,6 +1247,9 @@ const Map<String, String> ar = {
   'employeeAllowedWifiSsidsExample': 'DoctorBike\nDoctorBike-5G\nOffice WiFi',
   'employeeAllowedWifiSsidsColorGuide':
       'الأخضر = شبكة مسموحة، البرتقالي = إنترنت على شبكة أخرى، الأحمر = بدون إنترنت.',
+  'employeeWifiPresenceHistoryTitle': 'سجل شبكات الموظفين',
+  'employeeWifiPresenceHistoryDesc':
+      'اعرض الشبكة الحالية لكل موظف ومن متى لمتى شبك على كل شبكة',
   'fingerprintDefaultDevice': 'الجهاز الافتراضي للبصمة',
   'fingerprintDefaultDeviceHint': 'اختر الجهاز الافتراضي (اختياري)',
   'fingerprintDefaultDeviceNone': 'بدون',

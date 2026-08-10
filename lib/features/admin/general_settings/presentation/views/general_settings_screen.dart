@@ -1058,6 +1058,15 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               onTap: _editEmployeeAllowedWifiSsids,
             ),
             _SettingsItem(
+              icon: Icons.history_rounded,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'employeeWifiPresenceHistoryTitle',
+              descriptionKey: 'employeeWifiPresenceHistoryDesc',
+              onTap: () => Get.toNamed(
+                AppRoutes.EMPLOYEEWIFIPRESENCEHISTORYSCREEN,
+              ),
+            ),
+            _SettingsItem(
               icon: Icons.people_outline,
               iconColor: const Color(0xFF059669),
               titleKey: 'manageCustomers',

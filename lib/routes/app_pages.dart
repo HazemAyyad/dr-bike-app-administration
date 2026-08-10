@@ -91,6 +91,7 @@ import '../features/admin/general_settings/presentation/views/banks_settings_scr
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/app_version_report_screen.dart';
 import '../features/admin/general_settings/presentation/views/database_backups_screen.dart';
+import '../features/admin/general_settings/presentation/views/employee_wifi_presence_history_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/product_size_options_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/stock_inventory_settings_screen.dart';
@@ -584,6 +585,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.GENERALSETTINGSSCREEN,
       page: () => const GeneralSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEWIFIPRESENCEHISTORYSCREEN,
+      page: () => const EmployeeWifiPresenceHistoryScreen(),
       transition: _transitionFadeIn,
     ),
     GetPage(

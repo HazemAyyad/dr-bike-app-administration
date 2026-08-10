@@ -163,6 +163,8 @@ class EndPoints {
   static const String createEmployee = 'create/employee';
   static const String paySalaryToEmployee = 'pay/employee/salary';
   static const String employees = 'employees';
+  static const String employeeWifiPresenceHistory =
+      'admin/employees/wifi-presence/history';
   static String adminImpersonateEmployee(int employeeId) =>
       'admin/impersonate-employee/$employeeId';
   static String employeeImpersonateEmployee(int employeeId) =>

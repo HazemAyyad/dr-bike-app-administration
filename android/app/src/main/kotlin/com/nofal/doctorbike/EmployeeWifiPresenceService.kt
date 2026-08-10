@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -155,10 +156,10 @@ class EmployeeWifiPresenceService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Employee network presence",
+            "تذكير الدوام والمهام",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Keeps employee network status updated"
+            description = "تذكير هادئ بحالة الدوام والمهام"
             setShowBadge(false)
         }
         val manager = getSystemService(NotificationManager::class.java)
@@ -166,17 +167,19 @@ class EmployeeWifiPresenceService : Service() {
     }
 
     private fun notification(): Notification {
-        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(this)
-        }
-        return builder
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Doctor Bike")
-            .setContentText("تحديث حالة شبكة الموظف")
+            .setContentText("تذكير الدوام والمهام شغال")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("بنذكرك بالدوام والمهام ونحدّث حالة الاتصال بهدوء.")
+            )
             .setOngoing(true)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setShowWhen(false)
             .build()
     }

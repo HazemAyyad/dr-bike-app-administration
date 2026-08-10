@@ -1260,6 +1260,9 @@ const Map<String, String> en = {
   'employeeAllowedWifiSsidsExample': 'DoctorBike\nDoctorBike-5G\nOffice WiFi',
   'employeeAllowedWifiSsidsColorGuide':
       'Green = allowed network, orange = internet on another network, red = no internet.',
+  'employeeWifiPresenceHistoryTitle': 'Employee Wi-Fi history',
+  'employeeWifiPresenceHistoryDesc':
+      'See current employee networks and connection sessions by time range',
   'adminFabOptionsSetting': 'Add button shortcuts',
   'adminFabOptionsSettingDesc':
       'Choose which shortcuts appear inside the admin + button',
