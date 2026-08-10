@@ -28,6 +28,43 @@ class EmployeeWifiPresenceService {
   bool _running = false;
   bool _sending = false;
 
+  Future<WifiPresencePermissionState> checkRequiredPermissions({
+    bool request = false,
+  }) async {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) {
+      return const WifiPresencePermissionState.ready();
+    }
+
+    var location = await Permission.locationWhenInUse.status;
+    if (request &&
+        !location.isGranted &&
+        !location.isLimited &&
+        !location.isPermanentlyDenied) {
+      location = await Permission.locationWhenInUse.request();
+    }
+
+    var notification = PermissionStatus.granted;
+    if (Platform.isAndroid) {
+      notification = await Permission.notification.status;
+      if (request &&
+          !notification.isGranted &&
+          !notification.isPermanentlyDenied) {
+        notification = await Permission.notification.request();
+      }
+    }
+
+    final locationService = await Permission.locationWhenInUse.serviceStatus;
+    return WifiPresencePermissionState(
+      locationGranted: location.isGranted || location.isLimited,
+      notificationGranted: notification.isGranted,
+      locationServiceEnabled: !Platform.isAndroid || locationService.isEnabled,
+      locationPermanentlyDenied: location.isPermanentlyDenied,
+      notificationPermanentlyDenied: notification.isPermanentlyDenied,
+    );
+  }
+
+  Future<void> openPermissionSettings() => openAppSettings();
+
   void start() {
     if (userType != 'employee' || _running) return;
     _running = true;
@@ -155,6 +192,37 @@ class EmployeeWifiPresenceService {
     }
     return ssid.isEmpty ? null : ssid;
   }
+}
+
+class WifiPresencePermissionState {
+  const WifiPresencePermissionState({
+    required this.locationGranted,
+    required this.notificationGranted,
+    required this.locationServiceEnabled,
+    this.locationPermanentlyDenied = false,
+    this.notificationPermanentlyDenied = false,
+  });
+
+  const WifiPresencePermissionState.ready()
+      : locationGranted = true,
+        notificationGranted = true,
+        locationServiceEnabled = true,
+        locationPermanentlyDenied = false,
+        notificationPermanentlyDenied = false;
+
+  final bool locationGranted;
+  final bool notificationGranted;
+  final bool locationServiceEnabled;
+  final bool locationPermanentlyDenied;
+  final bool notificationPermanentlyDenied;
+
+  bool get ready =>
+      locationGranted && notificationGranted && locationServiceEnabled;
+
+  bool get needsSettings =>
+      locationPermanentlyDenied ||
+      notificationPermanentlyDenied ||
+      !locationServiceEnabled;
 }
 
 class _WifiPresencePayload {

@@ -55,6 +55,39 @@ class EmployeeDashbordController extends GetxController
 
   final RxBool todayAttendanceLoading = false.obs;
   final Rxn<EmployeeAttendanceDay> todayAttendance = Rxn();
+  final RxBool wifiPermissionsChecked = false.obs;
+  final RxBool wifiPermissionsReady = true.obs;
+  final RxBool wifiPermissionsBusy = false.obs;
+  final Rxn<WifiPresencePermissionState> wifiPermissionState = Rxn();
+
+  Future<void> refreshWifiPresencePermissions({
+    bool request = false,
+  }) async {
+    if (userType != 'employee') {
+      wifiPermissionsChecked.value = true;
+      wifiPermissionsReady.value = true;
+      return;
+    }
+
+    try {
+      wifiPermissionsBusy.value = true;
+      final state = await EmployeeWifiPresenceService.instance
+          .checkRequiredPermissions(request: request);
+      wifiPermissionState.value = state;
+      wifiPermissionsReady.value = state.ready;
+      wifiPermissionsChecked.value = true;
+      if (state.ready) {
+        EmployeeWifiPresenceService.instance.start();
+        await EmployeeWifiPresenceService.instance.sendOnce();
+      }
+    } finally {
+      wifiPermissionsBusy.value = false;
+    }
+  }
+
+  Future<void> openWifiPermissionSettings() async {
+    await EmployeeWifiPresenceService.instance.openPermissionSettings();
+  }
 
   /// Server-first: avoids stale local state when admin impersonates another employee.
   bool get isAttendanceInside {
@@ -207,6 +240,7 @@ class EmployeeDashbordController extends GetxController
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      refreshWifiPresencePermissions();
       refreshTodayAttendance(silent: true);
       _syncPersistentAttendanceNotification();
       EmployeeWifiPresenceService.instance.sendOnce();
@@ -1049,9 +1083,9 @@ class EmployeeDashbordController extends GetxController
       unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
     }
     syncPeriodBounds();
+    refreshWifiPresencePermissions(request: true);
     unawaited(_bootstrapAttendance());
     _startAttendanceLiveRefresh();
-    EmployeeWifiPresenceService.instance.start();
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
