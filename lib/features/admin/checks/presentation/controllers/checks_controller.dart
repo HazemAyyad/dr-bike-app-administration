@@ -277,7 +277,10 @@ class ChecksController extends GetxController
     return '$trimmed-${index + 1}';
   }
 
-  void generateIncomingBatchRows() {
+  void generateIncomingBatchRows({
+    XFile? sharedFrontImage,
+    XFile? sharedBackImage,
+  }) {
     final count = int.tryParse(incomingBatchCountController.text.trim()) ?? 0;
     if (count < 1) {
       Get.snackbar('error'.tr, 'incomingBatchCountRequired'.tr);
@@ -294,14 +297,19 @@ class ChecksController extends GetxController
     incomingBatchRows.assignAll(
       List.generate(
         count,
-        (index) => IncomingCheckDraft(
-          total: checkValueController.text,
-          dueDate: _addMonths(selectedDay.value, index),
-          currency: defaultCurrency,
-          checkId: sequentialCheckNumber(checkNumberController.text, index),
-          bankName: bankNameController.text,
-          notes: notesController.text,
-        ),
+        (index) {
+          final row = IncomingCheckDraft(
+            total: checkValueController.text,
+            dueDate: _addMonths(selectedDay.value, index),
+            currency: defaultCurrency,
+            checkId: sequentialCheckNumber(checkNumberController.text, index),
+            bankName: bankNameController.text,
+            notes: notesController.text,
+          );
+          row.frontImage.value = sharedFrontImage;
+          row.backImage.value = sharedBackImage;
+          return row;
+        },
       ),
     );
     update();

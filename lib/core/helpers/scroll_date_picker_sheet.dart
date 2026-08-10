@@ -270,8 +270,8 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
           child: ListWheelScrollView.useDelegate(
             key: key,
             controller: controller,
-            itemExtent: 36.h,
-            diameterRatio: 1.4,
+            itemExtent: 42.h,
+            diameterRatio: 1.55,
             perspective: 0.003,
             physics: const _SlowerFixedExtentScrollPhysics(),
             childDelegate: ListWheelChildBuilderDelegate(
@@ -302,8 +302,8 @@ class _SlowerFixedExtentScrollPhysics extends FixedExtentScrollPhysics {
   const _SlowerFixedExtentScrollPhysics({ScrollPhysics? parent})
       : super(parent: parent);
 
-  static const double _dragFactor = 0.62;
-  static const double _flingFactor = 0.55;
+  static const double _dragFactor = 0.42;
+  static const double _flingFactor = 0.28;
 
   @override
   _SlowerFixedExtentScrollPhysics applyTo(ScrollPhysics? ancestor) {

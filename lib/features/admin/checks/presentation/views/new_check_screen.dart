@@ -56,8 +56,8 @@ class NewCheckScreen extends GetView<ChecksController> {
       controller.isInComing = !isNewCheckArg;
     }
     final bool isNewCheck = isNewCheckArg ?? !controller.isInComing;
-    final bool isEditMode = (args is Map && args['isEdit'] == true) ||
-        controller.isEdit.value;
+    final bool isEditMode =
+        (args is Map && args['isEdit'] == true) || controller.isEdit.value;
     if (isEditMode) {
       controller.isEdit.value = true;
       return _CompactEditCheckScaffold(
@@ -831,9 +831,8 @@ class _CompactEditCheckScaffoldState extends State<_CompactEditCheckScaffold> {
 
   Widget _buildSummary(BuildContext context) {
     final beneficiary = c.editBeneficiaryName;
-    final personLabel = c.editBeneficiaryIsCustomer
-        ? 'customer'.tr
-        : 'seller'.tr;
+    final personLabel =
+        c.editBeneficiaryIsCustomer ? 'customer'.tr : 'seller'.tr;
     final currency = c.currencyController.text;
 
     return Container(
@@ -1234,10 +1233,111 @@ class _IncomingBatchHeader extends StatelessWidget {
   }
 }
 
-class _IncomingBatchCreateScaffold extends StatelessWidget {
+class _IncomingBatchCreateScaffold extends StatefulWidget {
   const _IncomingBatchCreateScaffold({required this.controller});
 
   final ChecksController controller;
+
+  @override
+  State<_IncomingBatchCreateScaffold> createState() =>
+      _IncomingBatchCreateScaffoldState();
+}
+
+class _IncomingBatchCreateScaffoldState
+    extends State<_IncomingBatchCreateScaffold> {
+  final _currencyKey = GlobalKey<DropdownSearchState<String>>();
+  final _beneficiaryKey = GlobalKey<DropdownSearchState<dynamic>>();
+
+  ChecksController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.checkValueFocus.requestFocus();
+    });
+  }
+
+  void _openCurrencyDropdown() {
+    FocusScope.of(context).unfocus();
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted) return;
+      _currencyKey.currentState?.openDropDownSearch();
+    });
+  }
+
+  void _openBeneficiaryDropdown() {
+    FocusScope.of(context).unfocus();
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      _beneficiaryKey.currentState?.openDropDownSearch();
+    });
+  }
+
+  void _changePersonType(bool isCustomer) {
+    controller.selectedValue.value = null;
+    controller.selectedCustomersSellers.value = isCustomer;
+    controller.getAllCustomersAndSellers();
+    _openBeneficiaryDropdown();
+  }
+
+  Future<void> _prepareRows() async {
+    final useSharedImages = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('صور الشيكات'),
+        content: const Text(
+          'هل صورة الشيك من الأمام والخلف نفسها لكل الشيكات؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('لا'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('نعم'),
+          ),
+        ],
+      ),
+    );
+
+    if (useSharedImages == null) return;
+    if (!mounted) return;
+
+    if (useSharedImages) {
+      if (controller.checkFrontImage.value == null) {
+        await UploadImageButton.pickFileFor(
+          context,
+          controller.checkFrontImage,
+        );
+      }
+      if (!mounted) return;
+      if (controller.checkFrontImage.value == null) {
+        Get.snackbar('error'.tr, 'checkFrontImage'.tr);
+        return;
+      }
+
+      if (controller.checkBackImage.value == null) {
+        await UploadImageButton.pickFileFor(
+          context,
+          controller.checkBackImage,
+        );
+      }
+      if (!mounted) return;
+      if (controller.checkBackImage.value == null) {
+        Get.snackbar('error'.tr, 'checkBackImage'.tr);
+        return;
+      }
+    }
+
+    controller.generateIncomingBatchRows(
+      sharedFrontImage:
+          useSharedImages ? controller.checkFrontImage.value : null,
+      sharedBackImage: useSharedImages ? controller.checkBackImage.value : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1268,36 +1368,42 @@ class _IncomingBatchCreateScaffold extends StatelessWidget {
                           label: 'checkValue'.tr,
                           hint: 'totalExample'.tr,
                           controller: controller.checkValueController,
+                          focusNode: controller.checkValueFocus,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) => _openCurrencyDropdown(),
                           requiredField: true,
                         ),
                       ),
                       SizedBox(width: 10.w),
                       Expanded(
                         flex: 2,
-                        child: DropdownButtonFormField<String>(
-                          initialValue:
+                        child: DropdownSearch<String>(
+                          key: _currencyKey,
+                          selectedItem:
                               controller.currencyController.text.isEmpty
                                   ? null
                                   : controller.currencyController.text,
-                          isExpanded: true,
-                          decoration: _plainInputDecoration('currencyy'.tr),
-                          items: controller.currency
-                              .map(
-                                (item) => DropdownMenuItem<String>(
-                                  value: item,
-                                  child: Text(item.tr),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              controller.currencyController.text = value;
-                            }
-                          },
+                          items: (filter, infiniteScrollProps) =>
+                              controller.currency,
+                          itemAsString: (item) => item.tr,
                           validator: (value) => value == null || value.isEmpty
                               ? 'currencyy'.tr
                               : null,
+                          popupProps: const PopupProps.menu(
+                            showSearchBox: true,
+                            searchFieldProps: TextFieldProps(
+                              autofocus: true,
+                            ),
+                          ),
+                          decoratorProps: DropDownDecoratorProps(
+                            decoration: _plainInputDecoration('currencyy'.tr),
+                          ),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            controller.currencyController.text = value;
+                            _openBeneficiaryDropdown();
+                          },
                         ),
                       ),
                     ],
@@ -1313,12 +1419,7 @@ class _IncomingBatchCreateScaffold extends StatelessWidget {
                             isCustomer:
                                 controller.selectedCustomersSellers.value,
                             enabled: !controller.isEdit.value,
-                            onChanged: (isCustomer) {
-                              controller.getAllCustomersAndSellers();
-                              controller.selectedValue.value = null;
-                              controller.selectedCustomersSellers.value =
-                                  isCustomer;
-                            },
+                            onChanged: _changePersonType,
                           ),
                         ),
                       ),
@@ -1331,6 +1432,7 @@ class _IncomingBatchCreateScaffold extends StatelessWidget {
                                   ? controller.allCustomersList
                                   : controller.allSellersList;
                           return _PlainBeneficiaryDropdown(
+                            dropdownKey: _beneficiaryKey,
                             items: people,
                             value: controller.selectedValue.value == null
                                 ? null
@@ -1416,7 +1518,7 @@ class _IncomingBatchCreateScaffold extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: controller.generateIncomingBatchRows,
+                      onPressed: _prepareRows,
                       icon: const Icon(Icons.playlist_add),
                       label: ValueListenableBuilder<TextEditingValue>(
                         valueListenable:
@@ -1487,7 +1589,10 @@ class _PlainTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     required this.controller,
+    this.focusNode,
     this.keyboardType,
+    this.textInputAction,
+    this.onFieldSubmitted,
     this.requiredField = false,
     this.minLines = 1,
     this.maxLines = 1,
@@ -1496,7 +1601,10 @@ class _PlainTextField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
   final bool requiredField;
   final int minLines;
   final int maxLines;
@@ -1505,7 +1613,10 @@ class _PlainTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       minLines: minLines,
       maxLines: maxLines,
       decoration: _plainInputDecoration(label).copyWith(hintText: hint),
@@ -1748,6 +1859,7 @@ class _CompactPersonTypeSelector extends StatelessWidget {
 
 class _PlainBeneficiaryDropdown extends StatelessWidget {
   const _PlainBeneficiaryDropdown({
+    this.dropdownKey,
     required this.items,
     required this.value,
     required this.onChanged,
@@ -1755,6 +1867,7 @@ class _PlainBeneficiaryDropdown extends StatelessWidget {
     required this.compareFn,
   });
 
+  final GlobalKey<DropdownSearchState<dynamic>>? dropdownKey;
   final List<dynamic> items;
   final dynamic value;
   final ValueChanged<dynamic> onChanged;
@@ -1764,12 +1877,18 @@ class _PlainBeneficiaryDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownSearch<dynamic>(
+      key: dropdownKey,
       selectedItem: value,
       items: (filter, infiniteScrollProps) => items,
       itemAsString: itemAsString,
       compareFn: compareFn,
       validator: (v) => v == null ? 'beneficiaryName'.tr : null,
-      popupProps: const PopupProps.menu(showSearchBox: true),
+      popupProps: const PopupProps.menu(
+        showSearchBox: true,
+        searchFieldProps: TextFieldProps(
+          autofocus: true,
+        ),
+      ),
       decoratorProps: DropDownDecoratorProps(
         decoration: _plainInputDecoration('beneficiaryName'.tr).copyWith(
           hintText: 'customerNameExample'.tr,
