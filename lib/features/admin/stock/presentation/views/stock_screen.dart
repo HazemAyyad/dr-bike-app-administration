@@ -22,9 +22,17 @@ class StockScreen extends GetView<StockController> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final isPhoneLandscape = size.width > size.height && size.width < 1100;
+    final horizontalPadding = isPhoneLandscape ? 12.0 : 16.w;
+    final verticalPadding = isPhoneLandscape ? 6.0 : 8.h;
+
     return Scaffold(
       appBar: CustomAppBar(
         title: 'stock',
+        titleFontSize: isPhoneLandscape ? 24 : null,
+        iconSize: isPhoneLandscape ? 22 : null,
+        toolbarHeight: isPhoneLandscape ? 48 : null,
         actions: [
           const OpenDesktopWindowButton(
             route: AppRoutes.STOCKSCREEN,
@@ -109,11 +117,22 @@ class StockScreen extends GetView<StockController> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      verticalPadding,
+                      horizontalPadding,
+                      verticalPadding,
+                    ),
                     child: AppTabs(
                       tabs: controller.tabs,
                       currentTab: controller.currentTab,
                       changeTab: controller.changeTab,
+                      height: isPhoneLandscape ? 38 : null,
+                      horizontalPadding: isPhoneLandscape ? 4 : null,
+                      tabHorizontalPadding: isPhoneLandscape ? 14 : null,
+                      tabVerticalPadding: isPhoneLandscape ? 7 : null,
+                      tabHorizontalMargin: isPhoneLandscape ? 3 : null,
+                      fontSize: isPhoneLandscape ? 14 : null,
                     ),
                   ),
                 ),
@@ -128,8 +147,10 @@ class StockScreen extends GetView<StockController> {
                     }
                     return Padding(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 16.w, vertical: 12.h),
-                      child: const StockSearchBar(),
+                        horizontal: horizontalPadding,
+                        vertical: isPhoneLandscape ? 6 : 12.h,
+                      ),
+                      child: StockSearchBar(compact: isPhoneLandscape),
                     );
                   }),
                 ),
@@ -138,8 +159,8 @@ class StockScreen extends GetView<StockController> {
             ),
           ),
           Positioned(
-            bottom: 50.h,
-            right: 20.w,
+            bottom: isPhoneLandscape ? 22 : 50.h,
+            right: isPhoneLandscape ? 14 : 20.w,
             child: Obx(
               () => controller.showScrollToTopButton.value
                   ? GestureDetector(

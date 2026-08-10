@@ -22,7 +22,9 @@ class StockProductsGridSkeleton extends StatelessWidget {
     final columns = StockProductGridLayout.columnsForContext(context);
     final resolvedItemCount = itemCount ?? columns * (rows ?? 4);
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      padding: EdgeInsets.symmetric(
+        horizontal: StockProductGridLayout.horizontalPaddingForContext(context),
+      ),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

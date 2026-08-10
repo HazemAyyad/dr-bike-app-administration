@@ -50,6 +50,8 @@ class EmployeePointsTab extends StatelessWidget {
               SizedBox(height: 16.h),
               if (canManageEmployeesPoints) ...[
                 _ActionButtons(controller: _controller),
+                SizedBox(height: 12.h),
+                _RuleOverridesCard(employeeId: employeeId),
                 SizedBox(height: 20.h),
               ],
               _FiltersBar(controller: _controller),
@@ -445,6 +447,83 @@ class _ActionButtons extends StatelessWidget {
       builder: (ctx) => _PointsMutationDialog(
         controller: controller,
         isAdd: isAdd,
+      ),
+    );
+  }
+}
+
+class _RuleOverridesCard extends StatelessWidget {
+  const _RuleOverridesCard({required this.employeeId});
+
+  final int employeeId;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final bg = isDark ? const Color(0xFF1F1F23) : Colors.white;
+    final border = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final text = isDark ? Colors.white : const Color(0xFF111827);
+    final sub = isDark ? Colors.white70 : const Color(0xFF6B7280);
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12.r),
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (_) => _RuleOverridesDialog(employeeId: employeeId),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(13.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9.r),
+                ),
+                child: Icon(
+                  Icons.manage_accounts_rounded,
+                  color: const Color(0xFF7C3AED),
+                  size: 21.sp,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'قواعد النقاط الخاصة',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                        color: text,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'تعديل نقاط القواعد العامة لهذا الموظف فقط',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.sp, color: sub),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left_rounded, color: sub),
+            ],
+          ),
+        ),
       ),
     );
   }

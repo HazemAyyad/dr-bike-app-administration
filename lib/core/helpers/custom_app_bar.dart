@@ -25,6 +25,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.action = true,
     this.dsibalBack = false,
     this.bottom,
+    this.titleFontSize,
+    this.iconSize,
+    this.toolbarHeight,
   }) : super(key: key);
 
   final String title;
@@ -41,6 +44,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Color? backgroundColor;
   final Color? surfaceTintColor;
   final PreferredSizeWidget? bottom;
+  final double? titleFontSize;
+  final double? iconSize;
+  final double? toolbarHeight;
 
   static bool _backNavigationInProgress = false;
 
@@ -126,10 +132,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: backgroundColor,
       surfaceTintColor: surfaceTintColor,
       bottom: bottom,
+      toolbarHeight: toolbarHeight,
+      iconTheme: IconThemeData(size: iconSize),
+      actionsIconTheme: IconThemeData(size: iconSize),
       title: Text(
         title.tr,
         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              fontSize: 20.sp,
+              fontSize: titleFontSize ?? 20.sp,
               fontWeight: FontWeight.w700,
               color: ThemeService.isDark.value
                   ? AppColors.primaryColor
@@ -153,6 +162,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
+        (toolbarHeight ?? kToolbarHeight) + (bottom?.preferredSize.height ?? 0),
       );
 }

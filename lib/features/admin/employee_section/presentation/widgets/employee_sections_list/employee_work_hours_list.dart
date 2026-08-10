@@ -713,18 +713,6 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                           },
                         ),
                       ),
-                      _MiniActionButton(
-                        icon: Icons.assignment_outlined,
-                        tooltip: 'attendanceReportAction'.tr,
-                        onTap: () => Get.toNamed(
-                          AppRoutes.EMPLOYEEATTENDANCEHISTORY,
-                          arguments: {
-                            'employeeId': work.id.toString(),
-                            'employeeName': work.employeeName,
-                            'reportMode': true,
-                          },
-                        ),
-                      ),
                     ],
                   ),
                 ),

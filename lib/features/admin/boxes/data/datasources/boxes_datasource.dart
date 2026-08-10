@@ -170,7 +170,11 @@ class BoxesDatasource {
       if (kDebugMode) {
         debugParseLog(
           'BoxesDatasource.boxDetails',
-          'endpoint=${EndPoints.showBox} keys=${root.keys.toList()}',
+          'endpoint=${EndPoints.showBox} boxId=$boxId raw=$raw',
+        );
+        debugParseLog(
+          'BoxesDatasource.boxDetails',
+          'unwrappedKeys=${root.keys.toList()} status=${root['status']} message=${root['message']}',
         );
       }
       dynamic details = root['box details'];

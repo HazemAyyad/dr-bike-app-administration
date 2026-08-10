@@ -425,6 +425,16 @@ class _AdvanceSummaryText extends StatelessWidget {
   }
 }
 
+class _AttendanceTableColumn {
+  const _AttendanceTableColumn({
+    required this.label,
+    required this.width,
+  });
+
+  final String label;
+  final double width;
+}
+
 class _AttendanceDaysTable extends StatelessWidget {
   const _AttendanceDaysTable({
     required this.days,
@@ -846,85 +856,161 @@ class _AttendanceDaysTable extends StatelessWidget {
     final weeklyOffColor = isDark
         ? AppColors.customOrange3.withValues(alpha: 0.22)
         : const Color(0xFFFFF3D8);
+    final headerHeight = 42.h;
+    final minRowHeight = 46.h;
+    final maxTableHeight = MediaQuery.sizeOf(context).height * 0.62;
+    final maxBodyHeight = maxTableHeight - headerHeight;
+    final estimatedBodyHeight = days.length * 68.h;
+    final bodyHeight = estimatedBodyHeight > maxBodyHeight
+        ? maxBodyHeight
+        : estimatedBodyHeight;
+    final tableHeight = headerHeight + bodyHeight;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: border),
-        ),
-        child: DataTable(
-          columnSpacing: 18.w,
-          horizontalMargin: 10.w,
-          dataRowMinHeight: 46.h,
-          dataRowMaxHeight: 128.h,
-          headingRowColor: WidgetStateProperty.resolveWith(
-            (_) => AppColors.primaryColor,
-          ),
-          headingTextStyle: const TextStyle(
+    final columns = <_AttendanceTableColumn>[
+      _AttendanceTableColumn(label: 'التاريخ', width: 92.w),
+      _AttendanceTableColumn(label: 'الحالة', width: 130.w),
+      _AttendanceTableColumn(label: 'حركات اليوم', width: 288.w),
+      _AttendanceTableColumn(label: 'الصافي', width: 96.w),
+      _AttendanceTableColumn(label: 'أوفر تايم', width: 96.w),
+      _AttendanceTableColumn(label: 'تعديلات', width: 88.w),
+      if (showAdminEdit) _AttendanceTableColumn(label: '', width: 54.w),
+    ];
+    final columnsWidth =
+        columns.fold<double>(0, (sum, column) => sum + column.width);
+    final tableWidth = columnsWidth + (columns.length * 2.w);
+
+    Widget headerCell(String label, double width) {
+      return Container(
+        width: width,
+        height: headerHeight,
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        color: AppColors.primaryColor,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
           ),
-          columns: [
-            const DataColumn(label: Text('التاريخ')),
-            const DataColumn(label: Text('الحالة')),
-            const DataColumn(label: Text('حركات اليوم')),
-            const DataColumn(label: Text('الصافي')),
-            const DataColumn(label: Text('أوفر تايم')),
-            const DataColumn(label: Text('تعديلات')),
-            if (showAdminEdit) const DataColumn(label: Text('')),
-          ],
-          rows: days.map((day) {
-            final isOff = day.isWeeklyOff || _isPresentOnWeeklyDayOff(day);
-            return DataRow(
-              color: WidgetStateProperty.resolveWith(
-                (_) => isOff ? weeklyOffColor : null,
-              ),
-              cells: [
-                DataCell(Text(_compactDayTitle(day.date))),
-                DataCell(Text(day.attendanceStatusLabel ?? '-')),
-                DataCell(_dayTimeHistory(day)),
-                DataCell(Text(
+        ),
+      );
+    }
+
+    Widget rowCell(
+      Widget child,
+      double width, {
+      AlignmentDirectional alignment = AlignmentDirectional.centerStart,
+    }) {
+      return Container(
+        width: width,
+        constraints: BoxConstraints(minHeight: minRowHeight),
+        alignment: alignment,
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          border: BorderDirectional(
+            end: BorderSide(color: border),
+          ),
+        ),
+        child: child,
+      );
+    }
+
+    Widget dayRow(EmployeeAttendanceDay day) {
+      final isOff = day.isWeeklyOff || _isPresentOnWeeklyDayOff(day);
+      return Container(
+        color: isOff ? weeklyOffColor : null,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              rowCell(Text(_compactDayTitle(day.date)), columns[0].width),
+              rowCell(Text(day.attendanceStatusLabel ?? '-'), columns[1].width),
+              rowCell(_dayTimeHistory(day), columns[2].width),
+              rowCell(
+                Text(
                   day.workedHours ??
                       AttendanceHistoryController.formatMinutes(
                         day.calculatedWorkedMinutes,
                       ),
-                )),
-                DataCell(Text(
+                ),
+                columns[3].width,
+              ),
+              rowCell(
+                Text(
                   AttendanceHistoryController.formatMinutes(
                     day.contractOvertimeMinutes ?? day.overtimeMinutes,
                   ),
-                )),
-                DataCell(
-                  day.adjustments.isEmpty
-                      ? const Text('-')
-                      : TextButton.icon(
-                          onPressed: () => _showAdjustments(day),
-                          icon: const Icon(Icons.history, size: 16),
-                          label: Text('${day.adjustments.length}'),
-                        ),
                 ),
-                if (showAdminEdit)
-                  DataCell(
-                    day.canEditDay && onEditDay != null
-                        ? IconButton(
-                            tooltip: 'editAttendanceDay'.tr,
-                            onPressed: () => onEditDay!(day),
-                            icon: const Icon(Icons.edit_outlined),
-                          )
-                        : Tooltip(
-                            message: _editDisabledReason(day),
-                            child: const Icon(
-                              Icons.lock_clock_outlined,
-                              color: Colors.grey,
-                            ),
+                columns[4].width,
+              ),
+              rowCell(
+                day.adjustments.isEmpty
+                    ? const Text('-')
+                    : TextButton.icon(
+                        onPressed: () => _showAdjustments(day),
+                        icon: const Icon(Icons.history, size: 16),
+                        label: Text('${day.adjustments.length}'),
+                      ),
+                columns[5].width,
+                alignment: AlignmentDirectional.center,
+              ),
+              if (showAdminEdit)
+                rowCell(
+                  day.canEditDay && onEditDay != null
+                      ? IconButton(
+                          tooltip: 'editAttendanceDay'.tr,
+                          onPressed: () => onEditDay!(day),
+                          icon: const Icon(Icons.edit_outlined),
+                        )
+                      : Tooltip(
+                          message: _editDisabledReason(day),
+                          child: const Icon(
+                            Icons.lock_clock_outlined,
+                            color: Colors.grey,
                           ),
-                  ),
-              ],
-            );
-          }).toList(),
+                        ),
+                  columns[6].width,
+                  alignment: AlignmentDirectional.center,
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: tableWidth,
+        height: tableHeight,
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  for (final column in columns)
+                    headerCell(column.label, column.width),
+                ],
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: EdgeInsets.zero,
+                  itemCount: days.length,
+                  separatorBuilder: (_, __) =>
+                      Divider(height: 1.h, thickness: 1.h, color: border),
+                  itemBuilder: (_, index) => dayRow(days[index]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

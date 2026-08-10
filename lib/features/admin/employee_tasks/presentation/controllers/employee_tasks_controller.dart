@@ -1116,6 +1116,7 @@ class EmployeeTasksController extends GetxController {
     required String reason,
     required String mainTaskId,
     String? occurrenceId,
+    bool asReviewer = false,
   }) async {
     final occ = occurrenceId ?? lastLoadedOccurrenceId;
     final isOccurrence = occ != null && occ.isNotEmpty;
@@ -1126,6 +1127,7 @@ class EmployeeTasksController extends GetxController {
         subTaskId: subTaskId,
         reason: reason,
         isOccurrence: isOccurrence,
+        asReviewer: asReviewer,
       );
       if (res['status'] == 'success') {
         await getTaskDetails(

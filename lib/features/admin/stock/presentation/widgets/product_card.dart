@@ -159,12 +159,13 @@ class BuildProductCard extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     final isDesktopLayout = DesktopLayout.isDesktop(context);
+    final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
     final nameStyle = Theme.of(context).textTheme.bodyLarge!.copyWith(
           color: ThemeService.isDark.value
               ? AppColors.whiteColor
               : AppColors.secondaryColor,
           fontWeight: FontWeight.w700,
-          fontSize: isDesktopLayout ? 13.sp : 11.sp,
+          fontSize: isLandscapePhone ? 11 : (isDesktopLayout ? 13.sp : 11.sp),
           height: 1.2,
         );
 
@@ -234,7 +235,7 @@ class BuildProductCard extends GetView<StockController> {
 
       bool isZoomTap(Offset localPosition) {
         if (!canZoom) return false;
-        final edge = 28.w;
+        final edge = isLandscapePhone ? 28.0 : 28.w;
         return localPosition.dx <= edge && localPosition.dy <= edge;
       }
 
@@ -264,7 +265,7 @@ class BuildProductCard extends GetView<StockController> {
         },
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: isDesktopLayout
+            minHeight: isLandscapePhone || isDesktopLayout
                 ? StockProductGridLayout.minCardHeight
                 : StockProductGridLayout.minCardHeight.h,
           ),
@@ -307,7 +308,12 @@ class BuildProductCard extends GetView<StockController> {
                       Expanded(
                         flex: 4,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(5.w, 3.h, 5.w, 3.h),
+                          padding: EdgeInsets.fromLTRB(
+                            isLandscapePhone ? 5 : 5.w,
+                            isLandscapePhone ? 3 : 3.h,
+                            isLandscapePhone ? 5 : 5.w,
+                            isLandscapePhone ? 3 : 3.h,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -334,11 +340,18 @@ class BuildProductCard extends GetView<StockController> {
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              SizedBox(height: 2.h),
+                                              SizedBox(
+                                                height:
+                                                    isLandscapePhone ? 2 : 2.h,
+                                              ),
                                               _buildStockLine(context),
                                               if (userType == 'admin' &&
                                                   tab == 0) ...[
-                                                SizedBox(height: 1.h),
+                                                SizedBox(
+                                                  height: isLandscapePhone
+                                                      ? 1
+                                                      : 1.h,
+                                                ),
                                                 _buildCostPriceLine(context),
                                               ],
                                             ],
@@ -453,6 +466,7 @@ class BuildProductCard extends GetView<StockController> {
     String? locationCodeLabel,
   }) {
     final canZoom = product.allImageUrlsInPriority.isNotEmpty;
+    final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
 
     return Stack(
       fit: StackFit.expand,
@@ -474,18 +488,21 @@ class BuildProductCard extends GetView<StockController> {
             child: Image.asset(
               AssetsManager.stockImage,
               fit: BoxFit.contain,
-              width: 28.w,
-              height: 28.w,
+              width: isLandscapePhone ? 24 : 28.w,
+              height: isLandscapePhone ? 24 : 28.w,
             ),
           ),
         ),
         if (locationCodeLabel != null)
           Positioned(
-            top: 3.h,
-            left: canZoom ? 24.w : 3.w,
-            right: 3.w,
+            top: isLandscapePhone ? 3 : 3.h,
+            left: canZoom ? (isLandscapePhone ? 24 : 24.w) : 3.w,
+            right: isLandscapePhone ? 3 : 3.w,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+              padding: EdgeInsets.symmetric(
+                horizontal: isLandscapePhone ? 4 : 4.w,
+                vertical: isLandscapePhone ? 2 : 2.h,
+              ),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.62),
                 borderRadius: BorderRadius.circular(4.r),
@@ -497,7 +514,7 @@ class BuildProductCard extends GetView<StockController> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 6.5.sp,
+                  fontSize: isLandscapePhone ? 7 : 6.5.sp,
                   fontWeight: FontWeight.w600,
                   height: 1.05,
                 ),
@@ -505,8 +522,8 @@ class BuildProductCard extends GetView<StockController> {
             ),
           ),
         Positioned(
-          bottom: 3.h,
-          right: 3.w,
+          bottom: isLandscapePhone ? 3 : 3.h,
+          right: isLandscapePhone ? 3 : 3.w,
           child: _ImageBadge(
             text: _imageBadgeText(),
             icon: _imageBadgeIcon(),
@@ -514,17 +531,17 @@ class BuildProductCard extends GetView<StockController> {
         ),
         if (canZoom)
           Positioned(
-            top: 3.h,
-            left: 3.w,
+            top: isLandscapePhone ? 3 : 3.h,
+            left: isLandscapePhone ? 3 : 3.w,
             child: Container(
-              padding: EdgeInsets.all(3.w),
+              padding: EdgeInsets.all(isLandscapePhone ? 3 : 3.w),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.58),
                 borderRadius: BorderRadius.circular(5.r),
               ),
               child: Icon(
                 Icons.zoom_in,
-                size: 12.sp,
+                size: isLandscapePhone ? 13 : 12.sp,
                 color: Colors.white,
               ),
             ),
@@ -566,10 +583,11 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = DesktopLayout.isDesktop(context);
+    final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
     return Container(
-      height: isDesktop ? 24 : 19.h,
+      height: isLandscapePhone ? 17 : (isDesktop ? 24 : 19.h),
       alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: 5.w),
+      padding: EdgeInsets.symmetric(horizontal: isLandscapePhone ? 5 : 5.w),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? Colors.white.withValues(alpha: 0.08)
@@ -585,12 +603,12 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: isDesktop ? 11.sp : 9.sp,
+            size: isLandscapePhone ? 9 : (isDesktop ? 11.sp : 9.sp),
             color: ThemeService.isDark.value
                 ? Colors.white.withValues(alpha: 0.82)
                 : AppColors.secondaryColor.withValues(alpha: 0.78),
           ),
-          SizedBox(width: 2.w),
+          SizedBox(width: isLandscapePhone ? 2 : 2.w),
           Flexible(
             child: Text(
               text,
@@ -601,7 +619,8 @@ class _InfoPill extends StatelessWidget {
                 color: ThemeService.isDark.value
                     ? Colors.white.withValues(alpha: 0.9)
                     : AppColors.secondaryColor.withValues(alpha: 0.88),
-                fontSize: isDesktop ? 9.5.sp : 7.5.sp,
+                fontSize:
+                    isLandscapePhone ? 7.5 : (isDesktop ? 9.5.sp : 7.5.sp),
                 fontWeight: FontWeight.w700,
                 height: 1,
               ),
@@ -625,8 +644,12 @@ class _ImageBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = DesktopLayout.isDesktop(context);
+    final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: isLandscapePhone ? 5 : 5.w,
+        vertical: isLandscapePhone ? 2 : 2.h,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.66),
         borderRadius: BorderRadius.circular(5.r),
@@ -634,15 +657,19 @@ class _ImageBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: isDesktop ? 10.sp : 8.sp, color: Colors.white),
-          SizedBox(width: 2.w),
+          Icon(
+            icon,
+            size: isLandscapePhone ? 10 : (isDesktop ? 10.sp : 8.sp),
+            color: Colors.white,
+          ),
+          SizedBox(width: isLandscapePhone ? 2 : 2.w),
           Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white,
-              fontSize: isDesktop ? 9.sp : 7.sp,
+              fontSize: isLandscapePhone ? 8 : (isDesktop ? 9.sp : 7.sp),
               fontWeight: FontWeight.w700,
               height: 1,
             ),

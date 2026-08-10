@@ -8,6 +8,8 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/task_details_model.dart';
 import '../../data/datasources/employee_tasks_datasource.dart';
+import '../../../employee_section/data/models/employee_points_log_model.dart';
+import '../../../employee_section/data/models/employee_reward_rule_model.dart';
 import '../../domain/entities/task_details_entiny.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/task_admin_materials_section.dart';
@@ -132,6 +134,10 @@ class EmployeeTaskDetailsOperationalScreen
                               ? (sub) =>
                                   _showSubtaskPointsActions(context, data, sub)
                               : null,
+                          onSubtaskReject: showReview
+                              ? (sub) =>
+                                  _showSubtaskRejectDialog(context, data, sub)
+                              : null,
                         ),
                       ),
                     ],
@@ -167,6 +173,8 @@ class EmployeeTaskDetailsOperationalScreen
             if (showReview)
               _ReviewBar(
                 taskId: data.taskId.toString(),
+                taskName: data.taskName,
+                employeeId: data.employeeId,
                 occurrenceId: controller.lastLoadedOccurrenceId,
               ),
           ],
@@ -205,59 +213,173 @@ class EmployeeTaskDetailsOperationalScreen
     TaskDetailsModel task,
     SubTaskEntity subtask,
   ) async {
+    final datasource = Get.find<EmployeeTasksDatasource>();
+    var categories = <EmployeePointCategoryModel>[];
+    var rewardRules = <EmployeeRewardRuleModel>[];
+
+    try {
+      categories = await datasource.getPointCategoriesForReview();
+      rewardRules = await datasource.getRewardRulesForReview();
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    }
+
+    final addCategories = categories.where((e) => e.isAdd).toList();
+    final deductCategories = categories.where((e) => e.isDeduct).toList();
+
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 12.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    subtask.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.82,
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 12.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      subtask.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      task.employeeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  subtitle: Text(
-                    task.employeeName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  _PointActionSection(
+                    title: 'أسباب الإضافة',
+                    icon: Icons.add_circle_outline,
+                    color: const Color(0xFF16A34A),
+                    emptyText: 'لا يوجد أسباب إضافة ثابتة',
+                    children: [
+                      for (final category in addCategories)
+                        _PointActionTile(
+                          icon: Icons.add_circle_outline,
+                          color: const Color(0xFF16A34A),
+                          title: _categoryName(category),
+                          subtitle:
+                              '+${category.defaultPoints} ${'pointsUnit'.tr}',
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _showPointsDialog(
+                              context,
+                              task,
+                              subtask,
+                              true,
+                              category: category,
+                            );
+                          },
+                        ),
+                      _PointActionTile(
+                        icon: Icons.edit_note_rounded,
+                        color: const Color(0xFF16A34A),
+                        title: 'إضافة حرّة',
+                        subtitle: 'اكتب عدد النقاط والسبب يدويًا',
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _showPointsDialog(context, task, subtask, true);
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.add_circle_outline,
-                    color: Color(0xFF16A34A),
+                  _PointActionSection(
+                    title: 'أسباب الخصم',
+                    icon: Icons.remove_circle_outline,
+                    color: const Color(0xFFDC2626),
+                    emptyText: 'لا يوجد أسباب خصم ثابتة',
+                    children: [
+                      for (final category in deductCategories)
+                        _PointActionTile(
+                          icon: Icons.remove_circle_outline,
+                          color: const Color(0xFFDC2626),
+                          title: _categoryName(category),
+                          subtitle:
+                              '-${category.defaultPoints} ${'pointsUnit'.tr}',
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _showPointsDialog(
+                              context,
+                              task,
+                              subtask,
+                              false,
+                              category: category,
+                            );
+                          },
+                        ),
+                      _PointActionTile(
+                        icon: Icons.edit_note_rounded,
+                        color: const Color(0xFFDC2626),
+                        title: 'خصم حر',
+                        subtitle: 'اكتب عدد النقاط والسبب يدويًا',
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _showPointsDialog(context, task, subtask, false);
+                        },
+                      ),
+                    ],
                   ),
-                  title: const Text('إضافة نقاط'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _showPointsDialog(context, task, subtask, true);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.remove_circle_outline,
-                    color: Color(0xFFDC2626),
+                  _PointActionSection(
+                    title: 'المكافآت',
+                    icon: Icons.card_giftcard_rounded,
+                    color: AppColors.operationalPurple,
+                    emptyText: 'لا يوجد قواعد مكافآت ثابتة',
+                    children: [
+                      for (final rule in rewardRules)
+                        _PointActionTile(
+                          icon: Icons.card_giftcard_rounded,
+                          color: AppColors.operationalPurple,
+                          title: _rewardName(rule),
+                          subtitle: _rewardSubtitle(rule),
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _showPointsDialog(
+                              context,
+                              task,
+                              subtask,
+                              true,
+                              rewardRule: rule,
+                              categoryCode: 'subtask_review_reward',
+                            );
+                          },
+                        ),
+                      _PointActionTile(
+                        icon: Icons.edit_note_rounded,
+                        color: AppColors.operationalPurple,
+                        title: 'مكافأة حرّة',
+                        subtitle: 'اكتب نقاط المكافأة يدويًا',
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _showPointsDialog(
+                            context,
+                            task,
+                            subtask,
+                            true,
+                            categoryCode: 'subtask_review_reward',
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  title: const Text('خصم نقاط'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _showPointsDialog(context, task, subtask, false);
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -269,17 +391,50 @@ class EmployeeTaskDetailsOperationalScreen
     BuildContext context,
     TaskDetailsModel task,
     SubTaskEntity subtask,
-    bool isAdd,
-  ) async {
-    final pointsCtrl = TextEditingController(text: '1');
+    bool isAdd, {
+    EmployeePointCategoryModel? category,
+    EmployeeRewardRuleModel? rewardRule,
+    String categoryCode = 'subtask_review',
+  }) async {
+    final initialPoints = category?.defaultPoints ??
+        (rewardRule == null
+            ? 1
+            : (rewardRule.minPoints < 1 ? 1 : rewardRule.minPoints));
+    final pointsCtrl = TextEditingController(text: initialPoints.toString());
     final notesCtrl = TextEditingController();
+    final isReward =
+        rewardRule != null || categoryCode == 'subtask_review_reward';
+    final title = isReward
+        ? 'إعطاء مكافأة'
+        : category != null
+            ? _categoryName(category)
+            : isAdd
+                ? 'إضافة نقاط'
+                : 'خصم نقاط';
+    final fixedReason = rewardRule != null
+        ? 'مكافأة من مراجعة مهمة فرعية: ${subtask.name} - ${_rewardName(rewardRule)}'
+        : category != null
+            ? '${isAdd ? 'إضافة' : 'خصم'} نقاط من مراجعة مهمة فرعية: ${subtask.name} - ${_categoryName(category)}'
+            : null;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(isAdd ? 'إضافة نقاط' : 'خصم نقاط'),
+        title: Text(title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (fixedReason != null) ...[
+              Text(
+                fixedReason,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: AppColors.customGreyColor5,
+                ),
+              ),
+              SizedBox(height: 10.h),
+            ],
             TextField(
               controller: pointsCtrl,
               keyboardType: TextInputType.number,
@@ -294,7 +449,9 @@ class EmployeeTaskDetailsOperationalScreen
               minLines: 2,
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: 'pointsNotesOptional'.tr,
+                labelText: fixedReason == null
+                    ? 'سبب / ملاحظات'
+                    : 'pointsNotesOptional'.tr,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -307,8 +464,11 @@ class EmployeeTaskDetailsOperationalScreen
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              backgroundColor: isReward
+                  ? AppColors.operationalPurple
+                  : isAdd
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFFDC2626),
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -330,6 +490,10 @@ class EmployeeTaskDetailsOperationalScreen
       isAdd: isAdd,
       points: points,
       notes: notes,
+      categoryId: category?.id,
+      category: category?.code ?? categoryCode,
+      reasonOverride: fixedReason ??
+          '${isReward ? 'مكافأة' : isAdd ? 'إضافة' : 'خصم'} من مراجعة مهمة فرعية: ${subtask.name}',
     );
   }
 
@@ -339,6 +503,9 @@ class EmployeeTaskDetailsOperationalScreen
     required bool isAdd,
     required int points,
     String? notes,
+    int? categoryId,
+    String category = 'subtask_review',
+    String? reasonOverride,
   }) async {
     final employeeId = int.tryParse(task.employeeId);
     if (employeeId == null || employeeId <= 0) {
@@ -351,7 +518,8 @@ class EmployeeTaskDetailsOperationalScreen
     }
 
     final action = isAdd ? 'إضافة' : 'خصم';
-    final reason = '$action نقاط من مراجعة مهمة فرعية: ${subtask.name}';
+    final reason =
+        reasonOverride ?? '$action نقاط من مراجعة مهمة فرعية: ${subtask.name}';
     controller.isLoading(true);
     try {
       final res =
@@ -360,6 +528,8 @@ class EmployeeTaskDetailsOperationalScreen
         isAdd: isAdd,
         points: points,
         reason: reason,
+        categoryId: categoryId,
+        category: category,
         notes: notes,
       );
       if (res['status'] == 'success') {
@@ -383,6 +553,282 @@ class EmployeeTaskDetailsOperationalScreen
     } finally {
       controller.isLoading(false);
     }
+  }
+
+  Future<void> _showSubtaskRejectDialog(
+    BuildContext context,
+    TaskDetailsModel task,
+    SubTaskEntity subtask,
+  ) async {
+    if (subtask.status == 'rejected') return;
+
+    final reasonController = TextEditingController();
+    final deductionController = TextEditingController();
+    const dialogBg = Color(0xFFF0F0F0);
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        title: Text(
+          'declineSubtaskTitle'.tr,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.operationalNavy,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'declineSubtaskHint'.tr,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: AppColors.customGreyColor5,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: reasonController,
+                maxLines: 4,
+                autofocus: true,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: AppColors.operationalNavy,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'declineReasonRequired'.tr,
+                  hintStyle: TextStyle(
+                    color: AppColors.customGreyColor5,
+                    fontSize: 12.sp,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.whiteColor,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                    borderSide: const BorderSide(
+                      color: AppColors.operationalCardBorder,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                    borderSide: const BorderSide(color: AppColors.redColor),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: deductionController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: AppColors.operationalNavy,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'اتركه فارغ إذا ما بدك تخصم',
+                  labelText: 'خصم نقاط اختياري',
+                  hintStyle: TextStyle(
+                    color: AppColors.customGreyColor5,
+                    fontSize: 12.sp,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.whiteColor,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                    borderSide: const BorderSide(
+                      color: AppColors.operationalCardBorder,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                    borderSide: const BorderSide(color: AppColors.redColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: AppColors.customGreyColor5),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                Get.snackbar('error'.tr, 'declineReasonRequired'.tr);
+                return;
+              }
+              Get.back(result: true);
+            },
+            child: Text(
+              'confirm'.tr,
+              style: const TextStyle(
+                color: AppColors.redColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final reason = reasonController.text.trim();
+    final deductionPoints = int.tryParse(deductionController.text.trim()) ?? 0;
+    if (confirmed != true || reason.isEmpty) return;
+
+    final ok = await controller.rejectSubtask(
+      subTaskId: subtask.id,
+      reason: reason,
+      mainTaskId: task.taskId.toString(),
+      occurrenceId: controller.lastLoadedOccurrenceId,
+      asReviewer: true,
+    );
+    if (ok) {
+      if (deductionPoints > 0) {
+        await _mutateSubtaskReviewPoints(
+          task: task,
+          subtask: subtask,
+          isAdd: false,
+          points: deductionPoints,
+          category: 'task_rejection',
+          reasonOverride:
+              'خصم نقاط بسبب رفض مهمة فرعية: ${subtask.name} - $reason',
+        );
+      } else {
+        Get.snackbar(
+          'success'.tr,
+          'subtaskDeclined'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  String _categoryName(EmployeePointCategoryModel category) {
+    return category.nameAr.trim().isNotEmpty
+        ? category.nameAr.trim()
+        : (category.nameEn ?? category.code).trim();
+  }
+
+  String _rewardName(EmployeeRewardRuleModel rule) {
+    final label = rule.statusLabel?.trim();
+    if (label != null && label.isNotEmpty) return label;
+    return 'مكافأة ${rule.rewardAmount}';
+  }
+
+  String _rewardSubtitle(EmployeeRewardRuleModel rule) {
+    final max = rule.maxPoints == null ? '∞' : rule.maxPoints.toString();
+    return '${rule.minPoints} - $max ${'pointsUnit'.tr} / ${rule.rewardAmount}';
+  }
+}
+
+class _PointActionSection extends StatelessWidget {
+  const _PointActionSection({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.emptyText,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String emptyText;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleChildren = children.isEmpty
+        ? <Widget>[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: Text(
+                emptyText,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: AppColors.customGreyColor5,
+                ),
+              ),
+            ),
+          ]
+        : children;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16.sp, color: color),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.operationalNavy,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          ...visibleChildren,
+        ],
+      ),
+    );
+  }
+}
+
+class _PointActionTile extends StatelessWidget {
+  const _PointActionTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: color, size: 20.sp),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12.5.sp, fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        subtitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 10.5.sp),
+      ),
+      onTap: onTap,
+    );
   }
 }
 
@@ -558,9 +1004,16 @@ class _ProofGallery extends StatelessWidget {
 }
 
 class _ReviewBar extends GetView<EmployeeTasksController> {
-  const _ReviewBar({required this.taskId, this.occurrenceId});
+  const _ReviewBar({
+    required this.taskId,
+    required this.taskName,
+    required this.employeeId,
+    this.occurrenceId,
+  });
 
   final String taskId;
+  final String taskName;
+  final String employeeId;
   final String? occurrenceId;
 
   @override
@@ -632,17 +1085,35 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
 
   Future<void> _reject(BuildContext context) async {
     final notesController = TextEditingController();
+    final deductionController = TextEditingController();
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         title: Text('rejectTask'.tr),
-        content: TextField(
-          controller: notesController,
-          decoration: InputDecoration(
-            hintText: 'rejectionReasonRequired'.tr,
-            labelText: 'rejectionNotes'.tr,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: notesController,
+                decoration: InputDecoration(
+                  hintText: 'rejectionReasonRequired'.tr,
+                  labelText: 'rejectionNotes'.tr,
+                ),
+                maxLines: 4,
+                autofocus: true,
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: deductionController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'اتركه فارغ إذا ما بدك تخصم',
+                  labelText: 'خصم نقاط اختياري',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
-          maxLines: 4,
-          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -661,13 +1132,48 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
         ],
       ),
     );
-    if (confirmed == true && notesController.text.trim().isNotEmpty) {
+
+    final notes = notesController.text.trim();
+    final deductionPoints = int.tryParse(deductionController.text.trim()) ?? 0;
+    if (confirmed == true && notes.isNotEmpty) {
       final ok = await controller.rejectTaskWorkflow(
         taskId,
-        notesController.text.trim(),
+        notes,
         occurrenceId: occurrenceId,
       );
-      if (ok) Get.back(result: true);
+      if (!ok) return;
+
+      if (deductionPoints > 0) {
+        await _deductTaskRejectionPoints(deductionPoints, notes);
+      }
+      Get.back(result: true);
+    }
+  }
+
+  Future<void> _deductTaskRejectionPoints(int points, String notes) async {
+    final parsedEmployeeId = int.tryParse(employeeId);
+    if (parsedEmployeeId == null || parsedEmployeeId <= 0 || points < 1) {
+      return;
+    }
+
+    controller.isLoading(true);
+    try {
+      final res =
+          await Get.find<EmployeeTasksDatasource>().mutateEmployeePoints(
+        employeeId: parsedEmployeeId,
+        isAdd: false,
+        points: points,
+        category: 'task_rejection',
+        reason: 'خصم نقاط بسبب رفض مهمة رئيسية: $taskName',
+        notes: notes,
+      );
+      if (res['status'] != 'success') {
+        Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      }
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    } finally {
+      controller.isLoading(false);
     }
   }
 }
@@ -708,7 +1214,10 @@ class OperationalChecklist extends StatelessWidget {
         final done = sub.status == 'completed';
         final rejected = sub.status == 'rejected';
         final needsProof = sub.isForcedToUploadImg;
-        final canReject = interactive && !done && !rejected;
+        final hasRejectionReason = sub.rejectionReason != null &&
+            sub.rejectionReason!.trim().isNotEmpty;
+        final canReject =
+            !rejected && onSubtaskReject != null && (!done || !interactive);
         final canUndo = interactive && done && onSubtaskUndo != null;
         final canReplaceProof =
             interactive && done && needsProof && onSubtaskReplaceProof != null;
@@ -791,8 +1300,7 @@ class OperationalChecklist extends StatelessWidget {
                             color: AppColors.redColor,
                           ),
                         ),
-                        if (sub.rejectionReason != null &&
-                            sub.rejectionReason!.trim().isNotEmpty) ...[
+                        if (hasRejectionReason) ...[
                           SizedBox(height: 2.h),
                           Text(
                             '${'reasonLabel'.tr}: ${sub.rejectionReason}',
@@ -803,6 +1311,26 @@ class OperationalChecklist extends StatelessWidget {
                             ),
                           ),
                         ],
+                      ],
+                      if (!rejected && hasRejectionReason) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          'تم إرجاعها للتنفيذ',
+                          style: TextStyle(
+                            fontSize: compact ? 9.sp : 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.redColor,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          '${'reasonLabel'.tr}: ${sub.rejectionReason}',
+                          style: TextStyle(
+                            fontSize: compact ? 9.sp : 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.redColor,
+                          ),
+                        ),
                       ],
                       if (done &&
                           sub.completedByName != null &&

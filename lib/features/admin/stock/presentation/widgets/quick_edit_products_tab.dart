@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../controllers/stock_controller.dart';
+import 'stock_product_grid_layout.dart';
 
 class QuickEditProductsTab extends StatefulWidget {
   const QuickEditProductsTab({Key? key}) : super(key: key);
@@ -16,11 +17,14 @@ class QuickEditProductsTab extends StatefulWidget {
 }
 
 class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
-  static const double _desktopTableWidth = 3850;
-  static const double _mobileTableWidth = 2860;
-  static const double _rowHeight = 88;
-  static const double _headingHeight = 56;
-  static const double _scrollbarThickness = 12;
+  static const double _desktopTableWidth = 2960;
+  static const double _mobileTableWidth = 2180;
+  static const double _landscapeTableWidth = 1840;
+  static const double _rowHeight = 58;
+  static const double _headingHeight = 46;
+  static const double _compactRowHeight = 42;
+  static const double _compactHeadingHeight = 36;
+  static const double _scrollbarThickness = 10;
 
   final ScrollController _topHorizontalController = ScrollController();
   final ScrollController _tableHorizontalController = ScrollController();
@@ -117,34 +121,53 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
               .toList()
           : controller.quickEditRows.toList();
 
+      final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
       final viewportHeight = MediaQuery.sizeOf(context).height;
-      final rowsHeight = rows.length * _rowHeight + _headingHeight;
+      final rowHeight = isLandscapePhone ? _compactRowHeight : _rowHeight;
+      final headingHeight =
+          isLandscapePhone ? _compactHeadingHeight : _headingHeight;
+      final rowsHeight = rows.length * rowHeight + headingHeight;
       final tableHeight = rowsHeight.clamp(
-        240.0,
-        (viewportHeight - 245).clamp(320.0, 720.0),
+        isLandscapePhone ? 180.0 : 240.0,
+        (viewportHeight - (isLandscapePhone ? 150 : 245)).clamp(
+          isLandscapePhone ? 220.0 : 320.0,
+          isLandscapePhone ? 360.0 : 720.0,
+        ),
       );
-      final isCompact = MediaQuery.sizeOf(context).width < 700;
-      final tableWidth = isCompact ? _mobileTableWidth : _desktopTableWidth;
+      final isCompact =
+          isLandscapePhone || MediaQuery.sizeOf(context).width < 700;
+      final tableWidth = isLandscapePhone
+          ? _landscapeTableWidth
+          : isCompact
+              ? _mobileTableWidth
+              : _desktopTableWidth;
 
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
+        padding: EdgeInsets.fromLTRB(
+          12,
+          isLandscapePhone ? 2 : 6,
+          12,
+          isLandscapePhone ? 24 : 40,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                FilterChip(
+                _QuickEditFilterChip(
                   selected: !controller.quickEditOnlyUnmarked.value,
                   label: Text('quickEditAll'.tr),
                   onSelected: (_) =>
                       controller.quickEditOnlyUnmarked.value = false,
+                  compact: isLandscapePhone,
                 ),
                 const SizedBox(width: 8),
-                FilterChip(
+                _QuickEditFilterChip(
                   selected: controller.quickEditOnlyUnmarked.value,
                   label: Text('quickEditUnmarkedToday'.tr),
                   onSelected: (_) =>
                       controller.quickEditOnlyUnmarked.value = true,
+                  compact: isLandscapePhone,
                 ),
                 const Spacer(),
                 IconButton(
@@ -157,7 +180,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: isLandscapePhone ? 4 : 8),
             DecoratedBox(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade300),
@@ -208,36 +231,64 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                     headingRowColor: WidgetStatePropertyAll(
                                       Colors.grey.shade100,
                                     ),
-                                    dataRowMinHeight: 56,
-                                    dataRowMaxHeight: 88,
-                                    columnSpacing: 22,
-                                    horizontalMargin: 10,
+                                    headingRowHeight: headingHeight,
+                                    dataRowMinHeight:
+                                        isLandscapePhone ? 34 : 44,
+                                    dataRowMaxHeight: rowHeight,
+                                    columnSpacing: isLandscapePhone ? 8 : 12,
+                                    horizontalMargin: isLandscapePhone ? 6 : 8,
+                                    headingTextStyle: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: isLandscapePhone ? 9 : 10,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                    dataTextStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          fontSize: isLandscapePhone ? 10 : 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                     columns: [
                                       _iconCol(
                                         'quickEditMark',
                                         Icons.check_box_outlined,
                                       ),
-                                      _col('productId', width: 72),
-                                      _col('productCode', width: 110),
+                                      _col('productId',
+                                          width: isLandscapePhone ? 46 : 54),
+                                      _col('productCode',
+                                          width: isLandscapePhone ? 74 : 86),
                                       _iconCol(
                                         'productImages',
                                         Icons.image_outlined,
                                       ),
-                                      _col('productName', width: 220),
+                                      _col('productName',
+                                          width: isLandscapePhone ? 138 : 168),
                                       if (!isCompact) ...[
-                                        _col('productNameEn', width: 180),
-                                        _col('productNameHe', width: 180),
-                                        _col('productDetails', width: 260),
+                                        _col('productNameEn', width: 138),
+                                        _col('productNameHe', width: 138),
+                                        _col('productDetails', width: 190),
                                       ],
-                                      _col('category', width: 140),
-                                      _col('subCategories', width: 170),
-                                      _col('storeLocationTab', width: 130),
-                                      _col('retailPrice', width: 90),
-                                      _col('wholesalePrice', width: 90),
-                                      _col('productCost', width: 90),
-                                      _col('minSalePrice', width: 90),
-                                      _col('stock', width: 90),
-                                      _col('minStock', width: 90),
+                                      _col('category',
+                                          width: isLandscapePhone ? 88 : 104),
+                                      _col('subCategories',
+                                          width: isLandscapePhone ? 104 : 126),
+                                      _col('storeLocationTab',
+                                          width: isLandscapePhone ? 88 : 104),
+                                      _col('retailPrice',
+                                          width: isLandscapePhone ? 58 : 72),
+                                      _col('wholesalePrice',
+                                          width: isLandscapePhone ? 62 : 76),
+                                      _col('productCost',
+                                          width: isLandscapePhone ? 58 : 72),
+                                      _col('minSalePrice',
+                                          width: isLandscapePhone ? 62 : 76),
+                                      _col('stock',
+                                          width: isLandscapePhone ? 52 : 64),
+                                      _col('minStock',
+                                          width: isLandscapePhone ? 58 : 72),
                                       _iconCol(
                                         'productVisible',
                                         Icons.visibility_outlined,
@@ -254,18 +305,26 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                         'soldWithPaper',
                                         Icons.receipt_long_outlined,
                                       ),
-                                      _col('rate', width: 90),
-                                      _col('manufactureYear', width: 90),
-                                      _col('productModel', width: 120),
-                                      _col('rotationNumberField', width: 110),
+                                      _col('rate',
+                                          width: isLandscapePhone ? 50 : 60),
+                                      _col('manufactureYear',
+                                          width: isLandscapePhone ? 58 : 72),
+                                      _col('productModel',
+                                          width: isLandscapePhone ? 82 : 96),
+                                      _col('rotationNumberField',
+                                          width: isLandscapePhone ? 74 : 86),
                                       _iconCol(
                                         'quickEditAction',
                                         Icons.edit_outlined,
                                       ),
                                     ],
                                     rows: rows
-                                        .map((row) =>
-                                            _row(row, isCompact: isCompact))
+                                        .map((row) => _row(
+                                              row,
+                                              isCompact: isCompact,
+                                              isLandscapePhone:
+                                                  isLandscapePhone,
+                                            ))
                                         .toList(),
                                   ),
                                 ),
@@ -298,9 +357,10 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
           width: width,
           child: Text(
             key.tr,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            softWrap: false,
+            softWrap: true,
+            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -312,7 +372,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
       label: Tooltip(
         message: key.tr,
         child: SizedBox(
-          width: 40,
+          width: 46,
           child: Center(child: Icon(icon, size: 18)),
         ),
       ),
@@ -322,6 +382,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
   DataRow _row(
     QuickEditProductRowState row, {
     required bool isCompact,
+    required bool isLandscapePhone,
   }) {
     return DataRow(
       color: WidgetStateProperty.resolveWith((states) {
@@ -339,46 +400,76 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
           ),
         ),
         DataCell(Text(row.product.productId)),
-        DataCell(_field(row, row.productCodeController, width: 110)),
-        DataCell(_image(row.product.productImage)),
-        DataCell(_field(row, row.nameArController, width: 220)),
+        DataCell(_field(
+          row,
+          row.productCodeController,
+          width: isLandscapePhone ? 74 : 86,
+          compact: isLandscapePhone,
+        )),
+        DataCell(_image(row.product.productImage, compact: isLandscapePhone)),
+        DataCell(_field(
+          row,
+          row.nameArController,
+          width: isLandscapePhone ? 138 : 168,
+          compact: isLandscapePhone,
+        )),
         if (!isCompact) ...[
-          DataCell(_field(row, row.nameEngController, width: 180)),
-          DataCell(_field(row, row.nameAbreeController, width: 180)),
-          DataCell(_field(row, row.descriptionArController, width: 260)),
+          DataCell(_field(row, row.nameEngController, width: 138)),
+          DataCell(_field(row, row.nameAbreeController, width: 138)),
+          DataCell(_field(row, row.descriptionArController, width: 190)),
         ],
-        DataCell(_readonly(row.product.categoryName, width: 140)),
-        DataCell(_readonly(row.product.subCategories, width: 170)),
-        DataCell(_readonly(row.product.storeSectionName, width: 130)),
-        DataCell(_number(row, row.normailPriceController)),
-        DataCell(_number(row, row.wholesalePriceController)),
-        DataCell(_number(row, row.costPriceController)),
-        DataCell(_number(row, row.minSalePriceController)),
-        DataCell(_number(row, row.stockController, integerOnly: true)),
-        DataCell(_number(row, row.minStockController)),
-        DataCell(_switch(row, (v) => row.isShow = v, () => row.isShow)),
-        DataCell(_switch(row, (v) => row.isNewItem = v, () => row.isNewItem)),
+        DataCell(_readonly(row.product.categoryName,
+            width: isLandscapePhone ? 88 : 104, compact: isLandscapePhone)),
+        DataCell(_readonly(row.product.subCategories,
+            width: isLandscapePhone ? 104 : 126, compact: isLandscapePhone)),
+        DataCell(_readonly(row.product.storeSectionName,
+            width: isLandscapePhone ? 88 : 104, compact: isLandscapePhone)),
+        DataCell(_number(row, row.normailPriceController,
+            width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
+        DataCell(_number(row, row.wholesalePriceController,
+            width: isLandscapePhone ? 62 : 76, compact: isLandscapePhone)),
+        DataCell(_number(row, row.costPriceController,
+            width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
+        DataCell(_number(row, row.minSalePriceController,
+            width: isLandscapePhone ? 62 : 76, compact: isLandscapePhone)),
+        DataCell(_number(row, row.stockController,
+            integerOnly: true,
+            width: isLandscapePhone ? 52 : 64,
+            compact: isLandscapePhone)),
+        DataCell(_number(row, row.minStockController,
+            width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
+        DataCell(_switch(row, (v) => row.isShow = v, () => row.isShow,
+            compact: isLandscapePhone)),
+        DataCell(_switch(row, (v) => row.isNewItem = v, () => row.isNewItem,
+            compact: isLandscapePhone)),
         DataCell(
-          _switch(row, (v) => row.isMoreSales = v, () => row.isMoreSales),
+          _switch(row, (v) => row.isMoreSales = v, () => row.isMoreSales,
+              compact: isLandscapePhone),
         ),
         DataCell(
           _switch(
             row,
             (v) => row.isSoldWithPaper = v,
             () => row.isSoldWithPaper,
+            compact: isLandscapePhone,
           ),
         ),
-        DataCell(_number(row, row.rateController)),
-        DataCell(
-            _number(row, row.manufactureYearController, integerOnly: true)),
-        DataCell(_field(row, row.modelController, width: 120)),
-        DataCell(_number(row, row.rotationDateController, width: 110)),
+        DataCell(_number(row, row.rateController,
+            width: isLandscapePhone ? 50 : 60, compact: isLandscapePhone)),
+        DataCell(_number(row, row.manufactureYearController,
+            integerOnly: true,
+            width: isLandscapePhone ? 58 : 72,
+            compact: isLandscapePhone)),
+        DataCell(_field(row, row.modelController,
+            width: isLandscapePhone ? 82 : 96, compact: isLandscapePhone)),
+        DataCell(_number(row, row.rotationDateController,
+            width: isLandscapePhone ? 74 : 86, compact: isLandscapePhone)),
         DataCell(
           Obx(() {
             if (row.isSaving.value) {
               return const SizedBox(
-                width: 40,
-                height: 40,
+                width: 32,
+                height: 32,
                 child: Center(
                   child: SizedBox(
                     width: 18,
@@ -391,7 +482,16 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
             final editing = row.isEditing.value;
             return IconButton(
               tooltip: editing ? 'save'.tr : 'edit'.tr,
-              icon: Icon(editing ? Icons.save_outlined : Icons.edit_outlined),
+              visualDensity: VisualDensity.compact,
+              constraints: BoxConstraints.tightFor(
+                width: isLandscapePhone ? 28 : 32,
+                height: isLandscapePhone ? 28 : 32,
+              ),
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                editing ? Icons.save_outlined : Icons.edit_outlined,
+                size: isLandscapePhone ? 18 : null,
+              ),
               onPressed: editing
                   ? () => controller.saveQuickEditRow(row)
                   : () => controller.editQuickEditRow(row),
@@ -402,18 +502,27 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
     );
   }
 
-  Widget _readonly(String value, {double width = 100}) {
+  Widget _readonly(
+    String value, {
+    double width = 100,
+    bool compact = false,
+  }) {
     return SizedBox(
       width: width,
       child: Text(
         value,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: compact ? 10 : 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 
-  Widget _image(String raw) {
+  Widget _image(String raw, {bool compact = false}) {
+    final size = compact ? 34.0 : 42.0;
     return Builder(
       builder: (context) {
         return MouseRegion(
@@ -424,18 +533,24 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
               borderRadius: BorderRadius.circular(6),
               child: Image.network(
                 ShowNetImage.getThumbnailPhoto(raw),
-                width: 56,
-                height: 56,
+                width: size,
+                height: size,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Image.network(
                   ShowNetImage.getPhoto(raw),
-                  width: 56,
-                  height: 56,
+                  width: size,
+                  height: size,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(
-                    width: 56,
-                    height: 56,
-                    child: Icon(Icons.image_not_supported_outlined),
+                  errorBuilder: (context, error, stackTrace) => SizedBox(
+                    width: size,
+                    height: size,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(color: Color(0xFFEFF2F5)),
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        size: compact ? 16 : 18,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -450,20 +565,29 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
     QuickEditProductRowState row,
     TextEditingController textController, {
     double width = 100,
+    bool compact = false,
   }) {
     return Obx(() {
       if (!row.isEditing.value) {
-        return _readonly(textController.text, width: width);
+        return _readonly(textController.text, width: width, compact: compact);
       }
       return SizedBox(
         width: width,
         child: TextField(
           controller: textController,
+          style: TextStyle(
+            fontSize: compact ? 10 : 11,
+            fontWeight: FontWeight.w700,
+          ),
           minLines: 1,
           maxLines: width > 240 ? 2 : 1,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             isDense: true,
-            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: compact ? 5 : 6,
+              vertical: compact ? 6 : 8,
+            ),
+            border: const OutlineInputBorder(),
           ),
         ),
       );
@@ -475,54 +599,97 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
     TextEditingController textController, {
     bool integerOnly = false,
     double width = 90,
+    bool compact = false,
   }) {
     return Obx(() {
       if (!row.isEditing.value) {
-        return _readonly(textController.text, width: width);
+        return _readonly(textController.text, width: width, compact: compact);
       }
       return SizedBox(
         width: width,
         child: TextField(
           controller: textController,
+          style: TextStyle(
+            fontSize: compact ? 10 : 11,
+            fontWeight: FontWeight.w700,
+          ),
           keyboardType: TextInputType.number,
           inputFormatters: [
             FilteringTextInputFormatter.allow(
               integerOnly ? RegExp(r'[0-9]') : RegExp(r'[0-9.]'),
             ),
+            LengthLimitingTextInputFormatter(5),
           ],
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             isDense: true,
-            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: compact ? 5 : 6,
+              vertical: compact ? 6 : 8,
+            ),
+            border: const OutlineInputBorder(),
           ),
         ),
       );
     });
   }
 
-  Widget _switch(
-    QuickEditProductRowState row,
-    ValueChanged<bool> update,
-    bool Function() value,
-  ) {
+  Widget _switch(QuickEditProductRowState row, ValueChanged<bool> update,
+      bool Function() value,
+      {bool compact = false}) {
     return Obx(() {
       if (!row.isEditing.value) {
         return Icon(
           value() ? Icons.check_circle : Icons.remove_circle_outline,
+          size: compact ? 16 : 18,
           color: value() ? Colors.green : Colors.grey,
         );
       }
       return StatefulBuilder(
         builder: (context, setState) {
-          return Switch(
-            value: value(),
-            onChanged: (next) {
-              update(next);
-              setState(() {});
-            },
+          return Transform.scale(
+            scale: compact ? 0.62 : 0.72,
+            child: Switch(
+              value: value(),
+              onChanged: (next) {
+                update(next);
+                setState(() {});
+              },
+            ),
           );
         },
       );
     });
+  }
+}
+
+class _QuickEditFilterChip extends StatelessWidget {
+  const _QuickEditFilterChip({
+    required this.selected,
+    required this.label,
+    required this.onSelected,
+    required this.compact,
+  });
+
+  final bool selected;
+  final Widget label;
+  final ValueChanged<bool> onSelected;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      selected: selected,
+      label: label,
+      onSelected: onSelected,
+      labelStyle: compact
+          ? Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11)
+          : null,
+      padding: compact
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 4)
+          : null,
+      visualDensity: compact ? VisualDensity.compact : null,
+      materialTapTargetSize: compact ? MaterialTapTargetSize.shrinkWrap : null,
+    );
   }
 }
 

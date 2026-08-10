@@ -15,6 +15,8 @@ import '../../../../../core/helpers/proof_form_data.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../employee_section/data/models/employee_points_log_model.dart';
+import '../../../employee_section/data/models/employee_reward_rule_model.dart';
 import '../models/employee_task_model.dart';
 
 class EmployeeTasksDatasource {
@@ -456,11 +458,16 @@ class EmployeeTasksDatasource {
     required int subTaskId,
     required String reason,
     bool isOccurrence = false,
+    bool asReviewer = false,
   }) async {
     try {
-      final endpoint = isOccurrence
-          ? EndPoints.changeSubEmployeeOccurrenceTaskToRejected
-          : EndPoints.changeSubEmployeeTaskToRejected;
+      final endpoint = asReviewer
+          ? (isOccurrence
+              ? EndPoints.adminChangeSubEmployeeOccurrenceTaskToRejected
+              : EndPoints.adminChangeSubEmployeeTaskToRejected)
+          : (isOccurrence
+              ? EndPoints.changeSubEmployeeOccurrenceTaskToRejected
+              : EndPoints.changeSubEmployeeTaskToRejected);
       final response = await api.post(
         endpoint,
         data: {
@@ -511,6 +518,8 @@ class EmployeeTasksDatasource {
     required bool isAdd,
     required int points,
     required String reason,
+    int? categoryId,
+    String category = 'subtask_review',
     String? notes,
   }) async {
     try {
@@ -520,12 +529,69 @@ class EmployeeTasksDatasource {
             : EndPoints.employeePointsDeduct(employeeId),
         data: {
           'points': points,
-          'category': 'subtask_review',
+          'category': category,
+          if (categoryId != null) 'category_id': categoryId,
           'reason': reason,
           if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
         },
       );
       return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<EmployeePointCategoryModel>> getPointCategoriesForReview() async {
+    try {
+      final response = await api.get(EndPoints.employeePointCategories);
+      final data = response.data;
+      final raw = data is Map ? data['categories'] : null;
+      final list = raw is List ? raw : const [];
+      return list
+          .whereType<Map>()
+          .map((e) => EmployeePointCategoryModel.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .where((e) => e.isActive)
+          .toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<EmployeeRewardRuleModel>> getRewardRulesForReview() async {
+    try {
+      final response = await api.get(EndPoints.employeeRewardRules);
+      final data = response.data;
+      final raw = data is Map ? data['rules'] : null;
+      final list = raw is List ? raw : const [];
+      return list
+          .whereType<Map>()
+          .map((e) => EmployeeRewardRuleModel.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .where((e) => e.isActive)
+          .toList()
+        ..sort((a, b) => a.minPoints.compareTo(b.minPoints));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

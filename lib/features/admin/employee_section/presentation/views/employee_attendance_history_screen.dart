@@ -8,6 +8,20 @@ import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 import '../widgets/attendance_history_body.dart';
 
+class _MonthNumberCalendarDelegate extends GregorianCalendarDelegate {
+  const _MonthNumberCalendarDelegate();
+
+  @override
+  String formatMonthYear(
+    DateTime date,
+    MaterialLocalizations localizations,
+  ) {
+    final monthYear = super.formatMonthYear(date, localizations);
+    final monthNumber = date.month.toString().padLeft(2, '0');
+    return '$monthYear ($monthNumber)';
+  }
+}
+
 Future<void> _showEditDayDialog(
   BuildContext context,
   AttendanceHistoryController controller,
@@ -257,6 +271,7 @@ Future<void> _showAddDayDialog(
                         lastDate: DateTime(now.year + 1, 12, 31),
                         initialDate: selectedDate,
                         selectableDayPredicate: isAvailableDate,
+                        calendarDelegate: const _MonthNumberCalendarDelegate(),
                         builder: (pickerContext, child) {
                           return Theme(
                             data: pickerTheme(Theme.of(pickerContext)),
@@ -1164,6 +1179,7 @@ class _MonthYearPicker extends StatelessWidget {
       initialDateRange: initialRange,
       helpText: 'filterByDateRange'.tr,
       saveText: 'confirm'.tr,
+      calendarDelegate: const _MonthNumberCalendarDelegate(),
     );
     if (picked != null) {
       controller.applyDateRange(picked.start, picked.end);

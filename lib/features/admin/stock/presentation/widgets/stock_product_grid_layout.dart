@@ -11,7 +11,13 @@ class StockProductGridLayout {
 
   static double aspectRatioForTab(int tab, {BuildContext? context}) {
     final desktop = context != null && DesktopLayout.isDesktop(context);
+    final landscape = context != null && isPhoneLandscape(context);
     if (desktop) {
+      if (tab == 0) return 0.86;
+      if (tab == 1) return 0.78;
+      return 0.82;
+    }
+    if (landscape) {
       if (tab == 0) return 0.86;
       if (tab == 1) return 0.78;
       return 0.82;
@@ -23,6 +29,17 @@ class StockProductGridLayout {
 
   static int columnsForContext(BuildContext context) {
     final desktop = DesktopLayout.isDesktop(context);
+    final landscape = isPhoneLandscape(context);
+    if (landscape && !desktop) {
+      return DesktopLayout.gridColumns(
+        context,
+        horizontalPadding: horizontalPaddingForContext(context) * 2,
+        minTileWidth: 118,
+        min: 4,
+        max: 6,
+        gap: 8,
+      );
+    }
     return DesktopLayout.gridColumns(
       context,
       horizontalPadding: 48.w,
@@ -44,5 +61,17 @@ class StockProductGridLayout {
       mainAxisSpacing: 4.h,
       childAspectRatio: aspectRatio,
     );
+  }
+
+  static double horizontalPaddingForContext(BuildContext context) {
+    final desktop = DesktopLayout.isDesktop(context);
+    if (isPhoneLandscape(context) && !desktop) return 12;
+    return 24.w;
+  }
+
+  static bool isPhoneLandscape(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return size.width > size.height &&
+        size.width < DesktopLayout.desktopMinWidth;
   }
 }

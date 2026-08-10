@@ -10,18 +10,29 @@ import 'stock_filter_sheet.dart';
 
 /// Search row with a clear filter action for the products inventory tab.
 class StockSearchBar extends GetView<StockController> {
-  const StockSearchBar({Key? key}) : super(key: key);
+  const StockSearchBar({
+    Key? key,
+    this.compact = false,
+  }) : super(key: key);
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final height = compact ? 38.0 : 44.w;
+    final iconSize = compact ? 20.0 : 22.sp;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Row(
         children: [
           Expanded(
-            child: const SearchWidget(isCloseouts: false),
+            child: SizedBox(
+              height: height,
+              child: const SearchWidget(isCloseouts: false),
+            ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: compact ? 8 : 8.w),
           Obx(() {
             final filters = controller.productListFilters.value;
             final count = filters.activeFilterCount;
@@ -43,19 +54,20 @@ class StockSearchBar extends GetView<StockController> {
                     Get.bottomSheet(
                       const StockFilterSheet(),
                       isScrollControlled: true,
-                      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                      backgroundColor:
+                          Theme.of(context).scaffoldBackgroundColor,
                     );
                   },
                   child: SizedBox(
-                    width: 44.w,
-                    height: 44.w,
+                    width: height,
+                    height: height,
                     child: Stack(
                       clipBehavior: Clip.none,
                       alignment: Alignment.center,
                       children: [
                         Icon(
                           Icons.tune_rounded,
-                          size: 22.sp,
+                          size: iconSize,
                           color: active
                               ? AppColors.primaryColor
                               : (ThemeService.isDark.value
@@ -72,8 +84,8 @@ class StockSearchBar extends GetView<StockController> {
                                 vertical: 2.h,
                               ),
                               constraints: BoxConstraints(
-                                minWidth: 16.w,
-                                minHeight: 16.w,
+                                minWidth: compact ? 16 : 16.w,
+                                minHeight: compact ? 16 : 16.w,
                               ),
                               decoration: const BoxDecoration(
                                 color: AppColors.primaryColor,
@@ -84,7 +96,7 @@ class StockSearchBar extends GetView<StockController> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 9.sp,
+                                  fontSize: compact ? 9 : 9.sp,
                                   fontWeight: FontWeight.w700,
                                   height: 1,
                                 ),
@@ -96,8 +108,8 @@ class StockSearchBar extends GetView<StockController> {
                             top: 8,
                             left: 8,
                             child: Container(
-                              width: 8.w,
-                              height: 8.w,
+                              width: compact ? 8 : 8.w,
+                              height: compact ? 8 : 8.w,
                               decoration: const BoxDecoration(
                                 color: AppColors.primaryColor,
                                 shape: BoxShape.circle,

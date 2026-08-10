@@ -91,7 +91,10 @@ class GridViewItems extends GetView<StockController> {
                 ),
               ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    StockProductGridLayout.horizontalPaddingForContext(context),
+              ),
               child: Obx(() {
                 final items = controller.currentTab.value == 0
                     ? controller.allProducts

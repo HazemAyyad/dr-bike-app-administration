@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -61,13 +62,20 @@ class VeiwBoxes extends GetView<BoxesController> {
                 onTap: controller.currentTab.value == 1
                     ? null
                     : () {
+                        final boxArgument = box is ShownBoxesModel
+                            ? box.boxId.toString()
+                            : box is BoxLogModel
+                                ? box.id.toString()
+                                : '';
+                        if (kDebugMode) {
+                          debugPrint(
+                            '[VeiwBoxes.onTap] tab=${controller.currentTab.value} '
+                            'boxType=${box.runtimeType} argument=$boxArgument',
+                          );
+                        }
                         Get.toNamed(
                           AppRoutes.EDITBOXESSCREEN,
-                          arguments: box is ShownBoxesModel
-                              ? box.boxId.toString()
-                              : box is BoxLogModel
-                                  ? box.id.toString()
-                                  : '',
+                          arguments: boxArgument,
                         );
                       },
                 onLongPress: controller.currentTab.value == 0 ||

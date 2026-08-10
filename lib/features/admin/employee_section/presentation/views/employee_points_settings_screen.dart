@@ -40,6 +40,13 @@ class EmployeePointsSettingsScreen extends StatelessWidget {
         onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
       ),
       _PointSettingsItem(
+        icon: Icons.query_stats_rounded,
+        color: const Color(0xFF0F766E),
+        title: 'pointsReportTitle'.tr,
+        subtitle: 'تقرير إجمالي النقاط والخصومات والمكافآت حسب الفترة',
+        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTSREPORTSCREEN),
+      ),
+      _PointSettingsItem(
         icon: Icons.stars_rounded,
         color: const Color(0xFFEA580C),
         title: 'subtaskBonusDefaultSetting'.tr,
