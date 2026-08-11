@@ -326,9 +326,9 @@ class AdminDashboardController extends GetxController
       'title': 'salesInvoiceShortcut',
       'icon': AssetsManager.invoiceIcon,
       'materialIcon': 'sales_invoice',
-      'route': AppRoutes.NEWSALESORDERSCREEN,
+      'route': AppRoutes.INSTANTSALEPRODUCTPICKER,
       'settingKey': 'newSalesInvoice',
-      'freshSalesOrder': 'true',
+      'freshInstantSale': 'true',
     },
     {
       'title': 'newCashProfit',
