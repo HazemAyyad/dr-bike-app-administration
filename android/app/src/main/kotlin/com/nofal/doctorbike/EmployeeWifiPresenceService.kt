@@ -188,12 +188,12 @@ class EmployeeWifiPresenceService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("سجّل دخولك")
-            .setContentText("البصمة أو امسح QR لإكمال مهامك اليومية")
+            .setContentTitle("دوامك اليومي")
+            .setContentText("تابع دوامك ومهامك اليومية")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .setBigContentTitle("سجّل دخولك")
-                    .bigText("البصمة أو امسح QR لإكمال مهامك اليومية")
+                    .setBigContentTitle("دوامك اليومي")
+                    .bigText("تابع دوامك ومهامك اليومية")
                     .setSummaryText("حضور الدوام")
             )
             .setContentIntent(pendingIntent)
