@@ -458,6 +458,20 @@ class ChecksController extends GetxController
 
   RxList<String> archive = ['deleteCheck'].obs;
 
+  bool _canViewDirection(bool incoming) =>
+      incoming ? canViewIncomingChecks : canViewOutgoingChecks;
+
+  bool _canCreateDirection(bool incoming) =>
+      incoming ? canCreateIncomingChecks : canCreateOutgoingChecks;
+
+  void _showChecksPermissionDenied() {
+    Get.snackbar(
+      'error'.tr,
+      'لا تملك صلاحية تنفيذ هذه العملية',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   // add checks
   void addChecks({
     required BuildContext context,
@@ -465,6 +479,10 @@ class ChecksController extends GetxController
     String? customerId,
     String? sellerId,
   }) async {
+    if (!_canCreateDirection(isInComing)) {
+      _showChecksPermissionDenied();
+      return;
+    }
     if ((formKey.currentState as FormState).validate()) {
       isLoading(true);
       if (!Get.isRegistered<BanksService>()) {
@@ -554,6 +572,10 @@ class ChecksController extends GetxController
     String? customerId,
     String? sellerId,
   }) async {
+    if (!canCreateIncomingChecks) {
+      _showChecksPermissionDenied();
+      return;
+    }
     if (!(formKey.currentState as FormState).validate()) return;
     if (incomingBatchRows.isEmpty) {
       generateIncomingBatchRows();
@@ -703,6 +725,16 @@ class ChecksController extends GetxController
 
   void getCeckData({CheckModel? check, required bool isOutgoing}) {
     isInComing = !isOutgoing;
+    final isOpeningEdit = isEdit.value || check != null;
+    if (isOpeningEdit) {
+      if (!_canViewDirection(isInComing)) {
+        _showChecksPermissionDenied();
+        return;
+      }
+    } else if (!_canCreateDirection(isInComing)) {
+      _showChecksPermissionDenied();
+      return;
+    }
     if (isEdit.value) {
       checkId = check!.id.toString();
       checkValueController.text = check.total.toString();
@@ -766,6 +798,10 @@ class ChecksController extends GetxController
     required bool isInComing,
     required String checkId,
   }) async {
+    if (!_canViewDirection(isInComing)) {
+      _showChecksPermissionDenied();
+      return;
+    }
     if ((formKey.currentState as FormState).validate()) {
       isLoading(true);
       final result = await editChecksUsecase.call(
@@ -1473,6 +1509,11 @@ class ChecksController extends GetxController
 
   /// Load all three tabs for current [isInComing] direction (incoming vs outgoing).
   Future<void> loadAllChecksTabs({bool showLoading = true}) async {
+    if (!_canViewDirection(isInComing)) {
+      _clearVisibleChecksData();
+      _showChecksPermissionDenied();
+      return;
+    }
     if (showLoading) {
       isLoading(true);
       update();
@@ -1527,15 +1568,35 @@ class ChecksController extends GetxController
   }
 
   void openOutgoingChecks() {
+    if (!canViewOutgoingChecks) {
+      if (canCreateOutgoingChecks) {
+        isEdit.value = false;
+        getCeckData(isOutgoing: true);
+        return;
+      }
+      _showChecksPermissionDenied();
+      return;
+    }
     isInComing = false;
     currentTab.value = 1;
+    getGeneralChecksData();
     loadAllChecksTabs();
     Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
   }
 
   void openIncomingChecks() {
+    if (!canViewIncomingChecks) {
+      if (canCreateIncomingChecks) {
+        isEdit.value = false;
+        getCeckData(isOutgoing: false);
+        return;
+      }
+      _showChecksPermissionDenied();
+      return;
+    }
     isInComing = true;
     currentTab.value = 0;
+    getGeneralChecksData();
     loadAllChecksTabs();
     Get.toNamed(AppRoutes.INCOMINGCHECKSSCREEN);
   }
@@ -1765,6 +1826,10 @@ class ChecksController extends GetxController
   }
 
   Future<void> pullToRefresh() async {
+    if (!_canViewDirection(isInComing)) {
+      _clearVisibleChecksData();
+      return;
+    }
     try {
       await getGeneralChecksData();
       await loadAllChecksTabs(showLoading: true);
@@ -1783,6 +1848,8 @@ class ChecksController extends GetxController
         (!isInComing && canViewOutgoingChecks)) {
       getGeneralChecksData();
       loadAllChecksTabs(showLoading: true);
+    } else {
+      _clearVisibleChecksData();
     }
 
     getAllCustomersAndSellers();
@@ -1808,6 +1875,20 @@ class ChecksController extends GetxController
     } else if (route == AppRoutes.OUTGOINGCHECKSSCREEN) {
       isInComing = false;
     }
+  }
+
+  void _clearVisibleChecksData() {
+    inComingTasks.clear();
+    cashedToPersonTasks.clear();
+    archiveTasks.clear();
+    filteredInComingTasks.clear();
+    filteredCashedToPersonTasks.clear();
+    filteredArchiveTasks.clear();
+    notActedTabCount.value = 0;
+    actedTabCount.value = 0;
+    archiveTabCount.value = 0;
+    isLoading(false);
+    update();
   }
 
   @override

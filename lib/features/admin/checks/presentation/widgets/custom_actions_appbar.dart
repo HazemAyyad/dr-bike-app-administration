@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -18,6 +19,10 @@ class CustomActionsAppBar extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
+    final canViewCurrentChecks =
+        isNewCheck ? canViewOutgoingChecks : canViewIncomingChecks;
+    if (!canViewCurrentChecks) return const SizedBox.shrink();
+
     return Row(
       children: [
         Obx(
