@@ -223,7 +223,7 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
     final items = advances?.advances ?? const <EmployeeAdvanceModel>[];
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: _cardBg(isDark),
         borderRadius: BorderRadius.circular(8.r),
@@ -248,6 +248,8 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                 tooltip: 'إضافة سلفة',
                 onPressed: onAdd,
                 icon: const Icon(Icons.add_circle_outline),
+                constraints: BoxConstraints.tightFor(width: 36.w, height: 36.w),
+                padding: EdgeInsets.zero,
                 color: AppColors.primaryColor,
               ),
             ],
@@ -303,6 +305,7 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                   final advance = entry.value;
                   final color = _statusColor(advance.status);
                   final approved = advance.approvedLoanValue;
+                  final boxName = advance.approvedBoxName?.trim() ?? '';
                   final canAct = canManageEmployeesOrders &&
                       advance.status == 'approved' &&
                       (advance.canEdit || advance.canCancel);
@@ -313,14 +316,14 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             backgroundColor: color.withValues(alpha: 0.12),
-                            radius: 22.r,
+                            radius: 16.r,
                             child: Icon(
                               _statusIcon(advance.status),
                               color: color,
-                              size: 24.sp,
+                              size: 17.sp,
                             ),
                           ),
-                          SizedBox(width: 10.w),
+                          SizedBox(width: 8.w),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -344,14 +347,46 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                                     Text(
                                       _money(advance.amount),
                                       style: TextStyle(
-                                        fontSize: 13.sp,
+                                        fontSize: 12.sp,
                                         fontWeight: FontWeight.w900,
                                         color: color,
                                       ),
                                     ),
+                                    if (canAct) ...[
+                                      SizedBox(width: 2.w),
+                                      if (advance.canEdit && onEdit != null)
+                                        IconButton(
+                                          tooltip: 'تعديل',
+                                          onPressed: () => onEdit!(advance),
+                                          constraints: BoxConstraints.tightFor(
+                                            width: 30.w,
+                                            height: 30.w,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          icon: Icon(
+                                            Icons.edit_outlined,
+                                            size: 17.sp,
+                                          ),
+                                        ),
+                                      if (advance.canCancel && onCancel != null)
+                                        IconButton(
+                                          tooltip: 'إلغاء',
+                                          onPressed: () => onCancel!(advance),
+                                          constraints: BoxConstraints.tightFor(
+                                            width: 30.w,
+                                            height: 30.w,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          color: Colors.red,
+                                          icon: Icon(
+                                            Icons.block_outlined,
+                                            size: 17.sp,
+                                          ),
+                                        ),
+                                    ],
                                   ],
                                 ),
-                                SizedBox(height: 4.h),
+                                SizedBox(height: 2.h),
                                 Row(
                                   children: [
                                     Container(
@@ -374,14 +409,29 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                                       ),
                                     ),
                                     if (approved != null) ...[
-                                      SizedBox(width: 8.w),
+                                      SizedBox(width: 6.w),
                                       Flexible(
                                         child: Text(
                                           'المعتمد: ${_money(approved)}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 11.sp,
+                                            fontSize: 10.sp,
+                                            color: AppColors.customGreyColor5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    if (boxName.isNotEmpty) ...[
+                                      SizedBox(width: 6.w),
+                                      Flexible(
+                                        child: Text(
+                                          'الصندوق: $boxName',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
                                             color: AppColors.customGreyColor5,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -397,45 +447,15 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                                         .isNotEmpty ||
                                     (advance.editedAfterApprovalAt ?? '')
                                         .isNotEmpty) ...[
-                                  SizedBox(height: 4.h),
+                                  SizedBox(height: 2.h),
                                   Text(
                                     _advanceMeta(advance),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 11.sp,
+                                      fontSize: 10.sp,
                                       color: AppColors.customGreyColor5,
                                     ),
-                                  ),
-                                ],
-                                if (canAct) ...[
-                                  SizedBox(height: 6.h),
-                                  Wrap(
-                                    spacing: 6.w,
-                                    runSpacing: 4.h,
-                                    children: [
-                                      if (advance.canEdit && onEdit != null)
-                                        OutlinedButton.icon(
-                                          onPressed: () => onEdit!(advance),
-                                          icon: Icon(
-                                            Icons.edit_outlined,
-                                            size: 16.sp,
-                                          ),
-                                          label: const Text('تعديل'),
-                                        ),
-                                      if (advance.canCancel && onCancel != null)
-                                        OutlinedButton.icon(
-                                          onPressed: () => onCancel!(advance),
-                                          icon: Icon(
-                                            Icons.block_outlined,
-                                            size: 16.sp,
-                                          ),
-                                          label: const Text('إلغاء'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.red,
-                                          ),
-                                        ),
-                                    ],
                                   ),
                                 ],
                               ],
@@ -445,7 +465,7 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                       ),
                       if (index != items.length - 1)
                         Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
+                          margin: EdgeInsets.symmetric(vertical: 7.h),
                           height: 1.h,
                           color:
                               isDark ? Colors.white12 : const Color(0xFFE5E7EB),

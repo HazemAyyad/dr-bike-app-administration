@@ -11,6 +11,7 @@ class EmployeeAdvanceModel {
     this.approvedLoanValue,
     this.reviewedAt,
     this.rejectionReason,
+    this.approvedBoxName,
     this.cancellationReason,
     this.cancelledAt,
     this.previousLoanValue,
@@ -28,6 +29,7 @@ class EmployeeAdvanceModel {
   final String? approvedLoanValue;
   final String? reviewedAt;
   final String? rejectionReason;
+  final String? approvedBoxName;
   final String? cancellationReason;
   final String? cancelledAt;
   final String? previousLoanValue;
@@ -46,6 +48,7 @@ class EmployeeAdvanceModel {
       approvedLoanValue: asNullableString(json['approved_loan_value']),
       reviewedAt: asNullableString(json['reviewed_at']),
       rejectionReason: asNullableString(json['rejection_reason']),
+      approvedBoxName: asNullableString(json['approved_box_name']),
       cancellationReason: asNullableString(json['cancellation_reason']),
       cancelledAt: asNullableString(json['cancelled_at']),
       previousLoanValue: asNullableString(json['previous_loan_value']),
