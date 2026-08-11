@@ -1844,9 +1844,11 @@ class ChecksController extends GetxController
     _applyRouteArguments();
     loadSavedExchangeCurrencies();
     fetchExchangeRate();
+    if (canAccessChecks) {
+      getGeneralChecksData();
+    }
     if ((isInComing && canViewIncomingChecks) ||
         (!isInComing && canViewOutgoingChecks)) {
-      getGeneralChecksData();
       loadAllChecksTabs(showLoading: true);
     } else {
       _clearVisibleChecksData();

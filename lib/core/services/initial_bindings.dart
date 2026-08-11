@@ -273,22 +273,18 @@ bool get canAccessChecks =>
 
 bool get canViewIncomingChecks =>
     userType == 'admin' ||
-    employeePermissionNames.contains(checksPermissionName) ||
     employeePermissionNames.contains(checksIncomingViewPermissionName);
 
 bool get canViewOutgoingChecks =>
     userType == 'admin' ||
-    employeePermissionNames.contains(checksPermissionName) ||
     employeePermissionNames.contains(checksOutgoingViewPermissionName);
 
 bool get canCreateIncomingChecks =>
     userType == 'admin' ||
-    employeePermissionNames.contains(checksPermissionName) ||
     employeePermissionNames.contains(checksIncomingCreatePermissionName);
 
 bool get canCreateOutgoingChecks =>
     userType == 'admin' ||
-    employeePermissionNames.contains(checksPermissionName) ||
     employeePermissionNames.contains(checksOutgoingCreatePermissionName);
 
 /// هل يقدر المستخدم الحالي الوصول لشاشة إدارة مهام الموظفين (عرض/إنشاء)؟
