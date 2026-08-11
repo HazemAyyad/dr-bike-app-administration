@@ -441,8 +441,18 @@ class _ReportBottomActions extends StatelessWidget {
                   ),
                 ),
                 onPressed: () async {
-                  final file = await controller.downloadPersonReport();
-                  if (file != null) controller.openDownloadedReport(file);
+                  Get.bottomSheet(
+                    ReportDetailLevelSheet(
+                      onSelected: (detailLevel) async {
+                        final file = await controller.downloadPersonReport(
+                          detailLevel: detailLevel,
+                        );
+                        if (file != null) controller.openDownloadedReport(file);
+                      },
+                    ),
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                  );
                 },
                 child: Text(
                   'ledgerPdfReport'.tr,
@@ -466,7 +476,13 @@ class _ReportBottomActions extends StatelessWidget {
                   ),
                 ),
                 onPressed: () => Get.bottomSheet(
-                  const ShareSheet(),
+                  ReportDetailLevelSheet(
+                    onSelected: (detailLevel) => Get.bottomSheet(
+                      ShareSheet(detailLevel: detailLevel),
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
                   isScrollControlled: true,
                   backgroundColor: Colors.white,
                 ),

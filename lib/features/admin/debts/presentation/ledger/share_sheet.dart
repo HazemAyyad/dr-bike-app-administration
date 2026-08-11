@@ -7,7 +7,12 @@ import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 
 class ShareSheet extends StatelessWidget {
-  const ShareSheet({Key? key}) : super(key: key);
+  final LedgerReportDetailLevel detailLevel;
+
+  const ShareSheet({
+    Key? key,
+    this.detailLevel = LedgerReportDetailLevel.summary,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,10 @@ class ShareSheet extends StatelessWidget {
                     color: const Color(0xFF25D366),
                     onTap: () {
                       Get.back();
-                      controller.shareReportVia('whatsapp');
+                      controller.shareReportVia(
+                        'whatsapp',
+                        detailLevel: detailLevel,
+                      );
                     },
                   ),
                 ),
@@ -50,13 +58,76 @@ class ShareSheet extends StatelessWidget {
                     color: LedgerColors.primaryBlue,
                     onTap: () {
                       Get.back();
-                      controller.shareReportVia('sms');
+                      controller.shareReportVia(
+                        'sms',
+                        detailLevel: detailLevel,
+                      );
                     },
                   ),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class ReportDetailLevelSheet extends StatelessWidget {
+  final ValueChanged<LedgerReportDetailLevel> onSelected;
+
+  const ReportDetailLevelSheet({
+    Key? key,
+    required this.onSelected,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final options = LedgerReportDetailLevel.values;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'نوع التقرير',
+                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12.h),
+              ...options.map(
+                (option) => ListTile(
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                  leading: Icon(option.icon, color: LedgerColors.primaryBlue),
+                  title: Text(
+                    option.title,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  subtitle: Text(
+                    option.subtitle,
+                    style: TextStyle(fontSize: 12.sp),
+                  ),
+                  onTap: () {
+                    Get.back();
+                    onSelected(option);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -188,7 +259,13 @@ class ShareOptionsSheet extends StatelessWidget {
             onTap: () {
               Get.back();
               Get.bottomSheet(
-                const ShareSheet(),
+                ReportDetailLevelSheet(
+                  onSelected: (detailLevel) => Get.bottomSheet(
+                    ShareSheet(detailLevel: detailLevel),
+                    isScrollControlled: true,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
                 isScrollControlled: true,
               );
             },

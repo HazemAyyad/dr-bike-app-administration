@@ -32,6 +32,7 @@ abstract class DebtLedgerRepository {
   Future<Either<Failure, String>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? reportDetailLevel,
   });
   Future<Either<Failure, LedgerPersonInfo>> updatePersonMeta({
     int? customerId,
@@ -95,6 +96,7 @@ abstract class DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   });
   Future<Either<Failure, LedgerReportData>> generateReportJson({
     int? customerId,
@@ -103,6 +105,7 @@ abstract class DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   });
   Future<Either<Failure, List<LedgerActivityEntry>>> getTransactionActivity(
     int transactionId,

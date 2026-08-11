@@ -166,6 +166,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   Future<Either<Failure, String>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? reportDetailLevel,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -174,6 +175,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       final data = await datasource.createPersonShareLink(
         customerId: customerId,
         sellerId: sellerId,
+        reportDetailLevel: reportDetailLevel,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -471,6 +473,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -483,6 +486,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         startDate: startDate,
         endDate: endDate,
         currency: currency,
+        reportDetailLevel: reportDetailLevel,
       );
       return Right(bytes);
     } on ServerException catch (e) {
@@ -498,6 +502,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -510,6 +515,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         startDate: startDate,
         endDate: endDate,
         currency: currency,
+        reportDetailLevel: reportDetailLevel,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(

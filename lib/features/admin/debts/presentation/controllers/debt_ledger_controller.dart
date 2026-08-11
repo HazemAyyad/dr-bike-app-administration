@@ -59,22 +59,22 @@ extension LedgerReportDetailLevelX on LedgerReportDetailLevel {
   String get title {
     switch (this) {
       case LedgerReportDetailLevel.summary:
-        return '????? ?????';
+        return 'تقرير مختصر';
       case LedgerReportDetailLevel.detailed:
-        return '????? ????';
+        return 'تقرير مفصل';
       case LedgerReportDetailLevel.detailedWithImages:
-        return '????? ???? ?? ???';
+        return 'تقرير مفصل مع صور';
     }
   }
 
   String get subtitle {
     switch (this) {
       case LedgerReportDetailLevel.summary:
-        return '???? ??????? ??????? ???';
+        return 'يعرض الحركات والرصيد فقط';
       case LedgerReportDetailLevel.detailed:
-        return '???? ?????? ???????? ?????????';
+        return 'يعرض تفاصيل الفواتير والمنتجات';
       case LedgerReportDetailLevel.detailedWithImages:
-        return '???? ?????? ???????? ?? ??? ????????';
+        return 'يعرض تفاصيل الفواتير مع صور المنتجات';
     }
   }
 
@@ -1389,8 +1389,11 @@ class DebtLedgerController extends GetxController {
     await SharePlus.instance.share(ShareParams(text: message));
   }
 
-  Future<void> shareReportVia(String channel) async {
-    final shareUrl = await fetchPersonShareUrl();
+  Future<void> shareReportVia(
+    String channel, {
+    LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
+  }) async {
+    final shareUrl = await fetchPersonShareUrl(detailLevel: detailLevel);
     if (shareUrl == null) {
       Get.snackbar('error'.tr, 'ledgerShareLinkFailed'.tr);
       return;

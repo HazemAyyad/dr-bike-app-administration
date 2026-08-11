@@ -114,6 +114,7 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? reportDetailLevel,
   }) async {
     try {
       final response = await api.post(
@@ -121,6 +122,8 @@ class DebtLedgerDatasource {
         data: {
           if (customerId != null) 'customer_id': customerId,
           if (sellerId != null) 'seller_id': sellerId,
+          if (reportDetailLevel != null && reportDetailLevel.isNotEmpty)
+            'report_detail_level': reportDetailLevel,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -381,6 +384,7 @@ class DebtLedgerDatasource {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   }) async {
     try {
       final response = await api.post(
@@ -392,6 +396,8 @@ class DebtLedgerDatasource {
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
           if (currency != null && currency.isNotEmpty) 'currency': currency,
+          if (reportDetailLevel != null && reportDetailLevel.isNotEmpty)
+            'report_detail_level': reportDetailLevel,
         },
         options: Options(responseType: ResponseType.bytes),
         isFormData: true,
@@ -409,6 +415,7 @@ class DebtLedgerDatasource {
     String? startDate,
     String? endDate,
     String? currency,
+    String? reportDetailLevel,
   }) async {
     try {
       final response = await api.post(
@@ -420,6 +427,8 @@ class DebtLedgerDatasource {
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
           if (currency != null && currency.isNotEmpty) 'currency': currency,
+          if (reportDetailLevel != null && reportDetailLevel.isNotEmpty)
+            'report_detail_level': reportDetailLevel,
           'json_response': true,
         },
         isFormData: true,
