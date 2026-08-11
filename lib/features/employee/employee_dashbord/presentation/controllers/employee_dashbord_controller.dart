@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
 import '../../../../../core/services/employee_wifi_presence_service.dart';
+import '../../../../../core/services/impersonation_state.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -63,9 +64,11 @@ class EmployeeDashbordController extends GetxController
   Future<void> refreshWifiPresencePermissions({
     bool request = false,
   }) async {
-    if (userType != 'employee') {
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
       wifiPermissionsChecked.value = true;
       wifiPermissionsReady.value = true;
+      await EmployeeWifiPresenceService.instance.stopNative();
       return;
     }
 
@@ -130,7 +133,10 @@ class EmployeeDashbordController extends GetxController
   }
 
   void _syncPersistentAttendanceNotification() {
-    if (userType != 'employee') return;
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
+      return;
+    }
     unawaited(
       EmployeeAttendancePersistentNotificationService.instance.sync(
         weeklyDaysOff: employeeData.value?.weeklyDaysOff ?? const [],
@@ -243,7 +249,9 @@ class EmployeeDashbordController extends GetxController
       refreshWifiPresencePermissions();
       refreshTodayAttendance(silent: true);
       _syncPersistentAttendanceNotification();
-      EmployeeWifiPresenceService.instance.sendOnce();
+      if (!ImpersonationState.isAdminImpersonatingEmployee) {
+        EmployeeWifiPresenceService.instance.sendOnce();
+      }
     }
   }
 

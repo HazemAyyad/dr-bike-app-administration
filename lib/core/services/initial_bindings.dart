@@ -18,6 +18,7 @@ import 'app_version_tracking_service.dart';
 import 'desktop_window_service.dart';
 import 'employee_attendance_persistent_notification_service.dart';
 import 'employee_wifi_presence_service.dart';
+import 'impersonation_state.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
 import 'user_data.dart';
@@ -492,7 +493,8 @@ class InitialBindings implements Bindings {
           Get.put(AdminNotificationBadgeController(), permanent: true);
         }
         Get.find<AdminNotificationBadgeController>().refresh();
-      } else if (userdata.user.type == 'employee') {
+      } else if (userdata.user.type == 'employee' &&
+          !ImpersonationState.isAdminImpersonatingEmployee) {
         if (!Get.isRegistered<EmployeeNotificationBadgeController>()) {
           Get.put(EmployeeNotificationBadgeController(), permanent: true);
         }
@@ -504,12 +506,18 @@ class InitialBindings implements Bindings {
       AppVersionTrackingService.instance.start();
       await AppVersionTrackingService.instance.sync(source: 'app_resume');
 
-      if (userdata.user.type == 'employee') {
+      if (userdata.user.type == 'employee' &&
+          !ImpersonationState.isAdminImpersonatingEmployee) {
         EmployeeAttendancePersistentNotificationService.instance
             .initializeForEmployee()
             .catchError((Object e, StackTrace st) {
           debugPrint('[Startup] attendance notification error: $e\n$st');
         });
+      } else if (ImpersonationState.isAdminImpersonatingEmployee) {
+        await EmployeeWifiPresenceService.instance.stopNative();
+        await EmployeeAttendancePersistentNotificationService.instance.stop(
+          reason: 'admin_impersonation_startup',
+        );
       }
     } catch (e, st) {
       debugPrint('[Startup] deferred setup error: $e\n$st');

@@ -12,6 +12,7 @@ import '../helpers/task_recurrence_rules.dart';
 import '../../features/admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../../routes/app_routes.dart';
 import 'initial_bindings.dart';
+import 'impersonation_state.dart';
 import 'notification_firebase_service.dart';
 
 /// Attendance reminder notification.
@@ -35,7 +36,12 @@ class EmployeeAttendancePersistentNotificationService {
   EmployeeAttendanceDay? _todayDay;
 
   Future<void> initializeForEmployee() async {
-    if (kIsWeb || userType != 'employee') return;
+    if (kIsWeb ||
+        userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
+      await stop(reason: 'not_real_employee_session');
+      return;
+    }
     await NotificationFirebaseService.instance.ensureInitialized();
     await NotificationFirebaseService.instance.setupFlutterNotifications();
     await _ensureChannel();
@@ -61,7 +67,9 @@ class EmployeeAttendancePersistentNotificationService {
   }
 
   Future<void> syncFromSession() async {
-    if (kIsWeb || userType != 'employee') {
+    if (kIsWeb ||
+        userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
       await stop(reason: 'not_employee');
       return;
     }
@@ -76,7 +84,12 @@ class EmployeeAttendancePersistentNotificationService {
     required bool isInside,
     EmployeeAttendanceDay? todayDay,
   }) async {
-    if (kIsWeb || userType != 'employee') return;
+    if (kIsWeb ||
+        userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
+      await stop(reason: 'not_real_employee_session');
+      return;
+    }
 
     _weeklyDaysOff = weeklyDaysOff;
     _startWorkTime = startWorkTime;
@@ -266,7 +279,10 @@ class EmployeeAttendancePersistentNotificationService {
 
   static void handlePayload(Map<String, dynamic> data) {
     if (data['type']?.toString() != payloadType) return;
-    if (userType != 'employee') return;
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
+      return;
+    }
     Get.toNamed(AppRoutes.FULLSCREENQRSCANNER);
   }
 }

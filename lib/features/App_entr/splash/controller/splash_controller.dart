@@ -5,6 +5,7 @@ import 'package:doctorbike/core/services/app_update_service.dart';
 import 'package:doctorbike/core/services/desktop_window_service.dart';
 import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/core/services/impersonation_state.dart';
 import 'package:doctorbike/core/services/session_service.dart';
 import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -98,7 +99,8 @@ class SplashController extends GetxController {
         Get.offAllNamed(desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN);
         _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
-        if (userType == 'employee') {
+        if (userType == 'employee' &&
+            !ImpersonationState.isAdminImpersonatingEmployee) {
           EmployeeAttendancePersistentNotificationService.instance
               .initializeForEmployee();
         }
@@ -121,7 +123,8 @@ class SplashController extends GetxController {
         Get.offAllNamed(desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN);
         _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
-        if (userType == 'employee') {
+        if (userType == 'employee' &&
+            !ImpersonationState.isAdminImpersonatingEmployee) {
           EmployeeAttendancePersistentNotificationService.instance
               .initializeForEmployee();
         }

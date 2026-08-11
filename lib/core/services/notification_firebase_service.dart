@@ -22,6 +22,7 @@ import 'admin_notification_api_service.dart';
 import 'admin_notification_router.dart';
 import 'employee_attendance_persistent_notification_service.dart';
 import 'employee_notification_router.dart';
+import 'impersonation_state.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
@@ -199,6 +200,11 @@ bool isShiplyDeliveredNotificationType(String? type) =>
 
 bool isSalesOrderStatusNotificationType(String? type) =>
     type != null && kSalesOrderStatusNotificationTypes.contains(type);
+
+bool isEmployeeNotificationType(String? type) =>
+    type != null &&
+    (type.startsWith('employee_') ||
+        type == EmployeeAttendancePersistentNotificationService.payloadType);
 
 bool get _supportsFirebaseMessaging =>
     !kIsWeb && (Platform.isAndroid || Platform.isIOS);
@@ -528,6 +534,11 @@ class NotificationFirebaseService {
     }
 
     await ensureInitialized();
+
+    if (ImpersonationState.isAdminImpersonatingEmployee) {
+      debugPrint('[FCM] Skip sync ($source): admin impersonating employee');
+      return;
+    }
 
     final authToken = await UserData.getUserToken();
     if (authToken.isEmpty) {
@@ -1185,6 +1196,7 @@ class NotificationFirebaseService {
       Get.find<AdminNotificationBadgeController>().refresh();
     }
     if (userType == 'employee' &&
+        !ImpersonationState.isAdminImpersonatingEmployee &&
         Get.isRegistered<EmployeeNotificationBadgeController>()) {
       Get.find<EmployeeNotificationBadgeController>().refresh();
     }
@@ -1195,7 +1207,8 @@ class NotificationFirebaseService {
       EmployeeAttendancePersistentNotificationService.handlePayload(data);
       return;
     }
-    if (userType == 'employee') {
+    if (userType == 'employee' &&
+        !ImpersonationState.isAdminImpersonatingEmployee) {
       EmployeeNotificationRouter.handlePayload(data);
     } else {
       AdminNotificationRouter.handlePayload(data);
@@ -1203,7 +1216,10 @@ class NotificationFirebaseService {
   }
 
   void _handleEmployeeSalesDailyForeground(Map<String, dynamic> data) {
-    if (userType != 'employee') return;
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee) {
+      return;
+    }
 
     final type = data['type']?.toString() ?? '';
     switch (type) {
@@ -1243,6 +1259,11 @@ class NotificationFirebaseService {
         '[FCM] foreground message title=${message.notification?.title} '
         'data=${message.data}',
       );
+      if (ImpersonationState.isAdminImpersonatingEmployee &&
+          isEmployeeNotificationType(message.data['type']?.toString())) {
+        debugPrint('[FCM] Drop employee foreground push during impersonation');
+        return;
+      }
       await showForegroundNotification(message);
       _refreshNotificationBadge();
       _handleEmployeeSalesDailyForeground(_payloadFromMessage(message));

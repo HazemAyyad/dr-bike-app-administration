@@ -17,6 +17,9 @@ import '../../features/employee/employee_dashbord/presentation/controllers/emplo
 import '../../features/employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../routes/app_routes.dart';
 import 'final_classes.dart';
+import 'employee_attendance_persistent_notification_service.dart';
+import 'employee_wifi_presence_service.dart';
+import 'impersonation_state.dart';
 import 'initial_bindings.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
@@ -24,10 +27,10 @@ import 'user_data.dart';
 
 /// Admin or privileged employee enters another employee account; session can be restored.
 class ImpersonationService {
-  static const _originalTokenKey = 'impersonation_admin_token';
-  static const _originalUserKey = 'impersonation_admin_user_json';
-  static const _originalNameKey = 'impersonation_admin_name';
-  static const _originalTypeKey = 'impersonation_impersonator_type';
+  static const _originalTokenKey = ImpersonationState.originalTokenKey;
+  static const _originalUserKey = ImpersonationState.originalUserKey;
+  static const _originalNameKey = ImpersonationState.originalNameKey;
+  static const _originalTypeKey = ImpersonationState.originalTypeKey;
 
   static const impersonationPermissionId = 43;
 
@@ -39,8 +42,7 @@ class ImpersonationService {
       employeePermissions.contains(impersonationPermissionId);
 
   static Future<bool> get isActive async {
-    final t = FinalClasses.getStorage.read(_originalTokenKey);
-    return t != null && t.toString().isNotEmpty;
+    return ImpersonationState.isActive;
   }
 
   static Future<void> startFromLoginResponse(Map<String, dynamic> raw) async {
@@ -128,6 +130,7 @@ class ImpersonationService {
       permissionNamesEn:
           userModel.employeePermissions.map((p) => p.permissionNameEn).toList(),
     );
+    await _stopEmployeeRuntimeServicesForImpersonation();
     debugPrint(
       '[Impersonation] session synced userType=$userType '
       'permissionIds=$employeePermissions permissionNames=$employeePermissionNames',
@@ -139,6 +142,10 @@ class ImpersonationService {
   }
 
   static Future<void> _registerEmployeeShell() async {
+    if (ImpersonationState.isAdminImpersonatingEmployee) {
+      await _stopEmployeeRuntimeServicesForImpersonation();
+      return;
+    }
     try {
       if (Get.isRegistered<AdminNotificationBadgeController>()) {
         await Get.delete<AdminNotificationBadgeController>(force: true);
@@ -153,6 +160,7 @@ class ImpersonationService {
   }
 
   static Future<void> _resetShellControllers() async {
+    await _stopEmployeeRuntimeServicesForImpersonation();
     debugPrint(
       '[Impersonation] reset shell: clearing boxes cache, '
       'boxesControllerRegistered=${Get.isRegistered<BoxesController>()}',
@@ -299,5 +307,15 @@ class ImpersonationService {
     await FinalClasses.getStorage.remove(_originalUserKey);
     await FinalClasses.getStorage.remove(_originalNameKey);
     await FinalClasses.getStorage.remove(_originalTypeKey);
+  }
+
+  static Future<void> _stopEmployeeRuntimeServicesForImpersonation() async {
+    await EmployeeWifiPresenceService.instance.stopNative();
+    await EmployeeAttendancePersistentNotificationService.instance.stop(
+      reason: 'admin_impersonation',
+    );
+    if (Get.isRegistered<EmployeeNotificationBadgeController>()) {
+      await Get.delete<EmployeeNotificationBadgeController>(force: true);
+    }
   }
 }

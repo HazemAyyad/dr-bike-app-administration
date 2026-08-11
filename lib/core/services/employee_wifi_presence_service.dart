@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../databases/api/dio_consumer.dart';
 import '../databases/api/end_points.dart';
 import 'final_classes.dart';
+import 'impersonation_state.dart';
 import 'initial_bindings.dart';
 
 class EmployeeWifiPresenceService {
@@ -66,7 +67,14 @@ class EmployeeWifiPresenceService {
   Future<void> openPermissionSettings() => openAppSettings();
 
   void start() {
-    if (userType != 'employee' || _running) return;
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee ||
+        _running) {
+      if (ImpersonationState.isAdminImpersonatingEmployee) {
+        stopNative();
+      }
+      return;
+    }
     _running = true;
     _startAfterInitialSend();
     _timer = Timer.periodic(_interval, (_) {
@@ -115,7 +123,11 @@ class EmployeeWifiPresenceService {
   }
 
   Future<void> sendOnce() async {
-    if (userType != 'employee' || _sending) return;
+    if (userType != 'employee' ||
+        ImpersonationState.isAdminImpersonatingEmployee ||
+        _sending) {
+      return;
+    }
     _sending = true;
     try {
       final status = await _readWifiStatus();

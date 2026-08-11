@@ -15,6 +15,7 @@ import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
 import '../../../../../core/services/employee_wifi_presence_service.dart';
+import '../../../../../core/services/impersonation_state.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../core/services/session_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -205,7 +206,8 @@ class LoginController extends GetxController {
       }
       Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
       AppShortcutService.instance.scheduleConsumePending();
-      if (userType == 'employee') {
+      if (userType == 'employee' &&
+          !ImpersonationState.isAdminImpersonatingEmployee) {
         unawaited(
           EmployeeAttendancePersistentNotificationService.instance
               .initializeForEmployee(),
@@ -249,7 +251,8 @@ class LoginController extends GetxController {
 
     Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     AppShortcutService.instance.scheduleConsumePending();
-    if (userType == 'employee') {
+    if (userType == 'employee' &&
+        !ImpersonationState.isAdminImpersonatingEmployee) {
       unawaited(
         EmployeeAttendancePersistentNotificationService.instance
             .initializeForEmployee(),
@@ -269,7 +272,8 @@ class LoginController extends GetxController {
         Get.put(AdminNotificationBadgeController(), permanent: true);
       }
       await Get.find<AdminNotificationBadgeController>().refresh();
-    } else if (userType == 'employee') {
+    } else if (userType == 'employee' &&
+        !ImpersonationState.isAdminImpersonatingEmployee) {
       if (!Get.isRegistered<EmployeeNotificationBadgeController>()) {
         Get.put(EmployeeNotificationBadgeController(), permanent: true);
       }
