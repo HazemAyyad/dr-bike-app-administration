@@ -3,6 +3,7 @@ package com.nofal.doctorbike
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -162,10 +163,10 @@ class EmployeeWifiPresenceService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "تذكير الدوام والمهام",
+            "حضور الدوام",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "تذكير هادئ بحالة الدوام والمهام"
+            description = "إشعار ثابت لتسجيل الدخول والعد التنازلي للانصراف"
             setShowBadge(false)
         }
         val manager = getSystemService(NotificationManager::class.java)
@@ -173,19 +174,35 @@ class EmployeeWifiPresenceService : Service() {
     }
 
     private fun notification(): Notification {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val pendingIntent = launchIntent?.let {
+            PendingIntent.getActivity(
+                this,
+                0,
+                it,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Doctor Bike")
-            .setContentText("تذكير الدوام والمهام شغال")
+            .setContentTitle("سجّل دخولك")
+            .setContentText("البصمة أو امسح QR لإكمال مهامك اليومية")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("بنذكرك بالدوام والمهام ونحدّث حالة الاتصال بهدوء.")
+                    .setBigContentTitle("سجّل دخولك")
+                    .bigText("البصمة أو امسح QR لإكمال مهامك اليومية")
+                    .setSummaryText("حضور الدوام")
             )
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setShowWhen(false)
             .build()
     }
@@ -199,7 +216,7 @@ class EmployeeWifiPresenceService : Service() {
     companion object {
         private const val TAG = "DrBikeWifiPresence"
         private const val PREFS = "employee_wifi_presence"
-        private const val CHANNEL_ID = "employee_wifi_presence"
+        private const val CHANNEL_ID = "dr_bike_employee_attendance_status"
         private const val NOTIFICATION_ID = 2409
         private const val INTERVAL_MS = 45_000L
         private const val EXTRA_BASE_URL = "base_url"
