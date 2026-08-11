@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -389,7 +391,7 @@ class _SpecialTaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  textDirection: TextDirection.rtl,
+                  textDirection: ui.TextDirection.rtl,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Obx(
