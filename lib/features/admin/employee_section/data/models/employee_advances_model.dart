@@ -11,6 +11,12 @@ class EmployeeAdvanceModel {
     this.approvedLoanValue,
     this.reviewedAt,
     this.rejectionReason,
+    this.cancellationReason,
+    this.cancelledAt,
+    this.previousLoanValue,
+    this.editedAfterApprovalAt,
+    this.canEdit = false,
+    this.canCancel = false,
   });
 
   final int id;
@@ -22,6 +28,12 @@ class EmployeeAdvanceModel {
   final String? approvedLoanValue;
   final String? reviewedAt;
   final String? rejectionReason;
+  final String? cancellationReason;
+  final String? cancelledAt;
+  final String? previousLoanValue;
+  final String? editedAfterApprovalAt;
+  final bool canEdit;
+  final bool canCancel;
 
   factory EmployeeAdvanceModel.fromJson(Map<String, dynamic> json) {
     return EmployeeAdvanceModel(
@@ -34,6 +46,12 @@ class EmployeeAdvanceModel {
       approvedLoanValue: asNullableString(json['approved_loan_value']),
       reviewedAt: asNullableString(json['reviewed_at']),
       rejectionReason: asNullableString(json['rejection_reason']),
+      cancellationReason: asNullableString(json['cancellation_reason']),
+      cancelledAt: asNullableString(json['cancelled_at']),
+      previousLoanValue: asNullableString(json['previous_loan_value']),
+      editedAfterApprovalAt: asNullableString(json['edited_after_approval_at']),
+      canEdit: json['can_edit'] == true,
+      canCancel: json['can_cancel'] == true,
     );
   }
 }

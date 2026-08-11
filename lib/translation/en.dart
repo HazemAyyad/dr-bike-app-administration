@@ -1814,6 +1814,8 @@ const Map<String, String> en = {
 
   'newReceipt': 'New Check Receipt',
   'newCheck': 'Create New Check',
+  'newOutgoingCheck': 'Create Outgoing Check',
+  'newIncomingCheck': 'Create Incoming Check',
   'editCheck': 'Edit Check',
   'checkValue': 'Check Amount',
   'debtValue2': 'Debt Value',

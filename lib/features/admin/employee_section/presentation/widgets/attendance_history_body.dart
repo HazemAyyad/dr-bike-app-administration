@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/widgets/attendance_dual_time_text.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_attendance_history_model.dart';
@@ -61,6 +62,8 @@ class AttendanceHistoryBody extends StatelessWidget {
     this.advances,
     this.advancesLoading = false,
     this.onAddAdvance,
+    this.onEditAdvance,
+    this.onCancelAdvance,
   }) : super(key: key);
 
   final EmployeeAttendanceHead employee;
@@ -73,6 +76,8 @@ class AttendanceHistoryBody extends StatelessWidget {
   final EmployeeAdvancesResult? advances;
   final bool advancesLoading;
   final VoidCallback? onAddAdvance;
+  final Future<void> Function(EmployeeAdvanceModel advance)? onEditAdvance;
+  final Future<void> Function(EmployeeAdvanceModel advance)? onCancelAdvance;
 
   List<EmployeeAttendanceDay> get _logDays {
     final list = showTodaySummary
@@ -127,6 +132,8 @@ class AttendanceHistoryBody extends StatelessWidget {
             advances: advances,
             loading: advancesLoading,
             onAdd: onAddAdvance,
+            onEdit: onEditAdvance,
+            onCancel: onCancelAdvance,
           ),
         ],
       ],
@@ -139,11 +146,15 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
     required this.advances,
     required this.loading,
     required this.onAdd,
+    required this.onEdit,
+    required this.onCancel,
   });
 
   final EmployeeAdvancesResult? advances;
   final bool loading;
   final VoidCallback? onAdd;
+  final Future<void> Function(EmployeeAdvanceModel advance)? onEdit;
+  final Future<void> Function(EmployeeAdvanceModel advance)? onCancel;
 
   String _status(String value) {
     switch (value) {
@@ -153,6 +164,8 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
         return 'مرفوضة';
       case 'paid':
         return 'مدفوعة';
+      case 'cancelled':
+        return 'ملغاة';
       default:
         return 'قيد المراجعة';
     }
@@ -165,6 +178,8 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
         return Colors.green;
       case 'rejected':
         return Colors.red;
+      case 'cancelled':
+        return AppColors.customGreyColor5;
       default:
         return AppColors.customOrange3;
     }
@@ -177,6 +192,8 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
         return Icons.arrow_downward_rounded;
       case 'rejected':
         return Icons.close_rounded;
+      case 'cancelled':
+        return Icons.block_rounded;
       default:
         return Icons.schedule_rounded;
     }
@@ -186,6 +203,19 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
     final amount = double.tryParse(value);
     if (amount == null) return value;
     return '${NumberFormat("#,##0.##").format(amount)} ${'currency'.tr}';
+  }
+
+  String _advanceMeta(EmployeeAdvanceModel advance) {
+    if (advance.rejectionReason?.isNotEmpty == true) {
+      return 'سبب الرفض: ${advance.rejectionReason}';
+    }
+    if (advance.cancellationReason?.isNotEmpty == true) {
+      return 'سبب الإلغاء: ${advance.cancellationReason}';
+    }
+    if (advance.editedAfterApprovalAt?.isNotEmpty == true) {
+      return 'تم التعديل: ${advance.editedAfterApprovalAt}';
+    }
+    return 'تمت المراجعة: ${advance.reviewedAt}';
   }
 
   @override
@@ -273,6 +303,9 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                   final advance = entry.value;
                   final color = _statusColor(advance.status);
                   final approved = advance.approvedLoanValue;
+                  final canAct = canManageEmployeesOrders &&
+                      advance.status == 'approved' &&
+                      (advance.canEdit || advance.canCancel);
                   return Column(
                     children: [
                       Row(
@@ -359,18 +392,50 @@ class _EmployeeAdvancesInlineSection extends StatelessWidget {
                                 ),
                                 if ((advance.reviewedAt ?? '').isNotEmpty ||
                                     (advance.rejectionReason ?? '')
+                                        .isNotEmpty ||
+                                    (advance.cancellationReason ?? '')
+                                        .isNotEmpty ||
+                                    (advance.editedAfterApprovalAt ?? '')
                                         .isNotEmpty) ...[
                                   SizedBox(height: 4.h),
                                   Text(
-                                    advance.rejectionReason?.isNotEmpty == true
-                                        ? 'سبب الرفض: ${advance.rejectionReason}'
-                                        : 'تمت المراجعة: ${advance.reviewedAt}',
+                                    _advanceMeta(advance),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 11.sp,
                                       color: AppColors.customGreyColor5,
                                     ),
+                                  ),
+                                ],
+                                if (canAct) ...[
+                                  SizedBox(height: 6.h),
+                                  Wrap(
+                                    spacing: 6.w,
+                                    runSpacing: 4.h,
+                                    children: [
+                                      if (advance.canEdit && onEdit != null)
+                                        OutlinedButton.icon(
+                                          onPressed: () => onEdit!(advance),
+                                          icon: Icon(
+                                            Icons.edit_outlined,
+                                            size: 16.sp,
+                                          ),
+                                          label: const Text('تعديل'),
+                                        ),
+                                      if (advance.canCancel && onCancel != null)
+                                        OutlinedButton.icon(
+                                          onPressed: () => onCancel!(advance),
+                                          icon: Icon(
+                                            Icons.block_outlined,
+                                            size: 16.sp,
+                                          ),
+                                          label: const Text('إلغاء'),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.red,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ],

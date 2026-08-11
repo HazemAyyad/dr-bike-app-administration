@@ -201,6 +201,76 @@ class AttendanceHistoryController extends GetxController {
     }
   }
 
+  Future<bool> updateAdvance({
+    required int employeeOrderId,
+    required String loanValue,
+    String note = '',
+  }) async {
+    try {
+      isAdvancesLoading.value = true;
+      final raw = await Get.find<EmployeeDatasource>().updateEmployeeAdvance(
+        employeeOrderId: employeeOrderId,
+        loanValue: loanValue,
+        note: note,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar(
+          'error'.tr,
+          raw['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+      Get.snackbar(
+        'success'.tr,
+        raw['message']?.toString() ?? 'تم تعديل السلفة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await loadAdvances(silent: true);
+      return true;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    } finally {
+      isAdvancesLoading.value = false;
+    }
+  }
+
+  Future<bool> cancelAdvance({
+    required int employeeOrderId,
+    String reason = '',
+  }) async {
+    try {
+      isAdvancesLoading.value = true;
+      final raw = await Get.find<EmployeeDatasource>().cancelEmployeeAdvance(
+        employeeOrderId: employeeOrderId,
+        reason: reason,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar(
+          'error'.tr,
+          raw['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+      Get.snackbar(
+        'success'.tr,
+        raw['message']?.toString() ?? 'تم إلغاء السلفة',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await loadAdvances(silent: true);
+      return true;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    } finally {
+      isAdvancesLoading.value = false;
+    }
+  }
+
   bool get isViewingCurrentMonth {
     final now = DateTime.now();
     return selectedYear.value == now.year && selectedMonth.value == now.month;

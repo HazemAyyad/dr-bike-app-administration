@@ -99,6 +99,11 @@ const String employeesFingerprintManagePermissionName =
     'Employees Fingerprint Manage';
 const String employeesRewardsRulesManagePermissionName =
     'Employees Rewards Rules Manage';
+const String checksPermissionName = 'Checks';
+const String checksIncomingViewPermissionName = 'Checks Incoming View';
+const String checksOutgoingViewPermissionName = 'Checks Outgoing View';
+const String checksIncomingCreatePermissionName = 'Checks Incoming Create';
+const String checksOutgoingCreatePermissionName = 'Checks Outgoing Create';
 
 const List<String> employeeSectionDetailedPermissionNames = [
   employeesViewPermissionName,
@@ -256,6 +261,34 @@ bool get canManageEmployeesRewardsRules =>
     employeePermissionNames
         .contains(employeesRewardsRulesManagePermissionName) ||
     employeePermissions.contains(employeesRewardsRulesManagePermissionId);
+
+bool get canAccessChecks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(checksPermissionName) ||
+    canViewIncomingChecks ||
+    canViewOutgoingChecks ||
+    canCreateIncomingChecks ||
+    canCreateOutgoingChecks;
+
+bool get canViewIncomingChecks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(checksPermissionName) ||
+    employeePermissionNames.contains(checksIncomingViewPermissionName);
+
+bool get canViewOutgoingChecks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(checksPermissionName) ||
+    employeePermissionNames.contains(checksOutgoingViewPermissionName);
+
+bool get canCreateIncomingChecks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(checksPermissionName) ||
+    employeePermissionNames.contains(checksIncomingCreatePermissionName);
+
+bool get canCreateOutgoingChecks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(checksPermissionName) ||
+    employeePermissionNames.contains(checksOutgoingCreatePermissionName);
 
 /// هل يقدر المستخدم الحالي الوصول لشاشة إدارة مهام الموظفين (عرض/إنشاء)؟
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Employee Tasks".

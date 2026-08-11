@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_informaiton.dart';
 import '../widgets/currency_exchange_card.dart';
@@ -23,33 +24,73 @@ class ChecksScreen extends GetView<ChecksController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [
           SizedBox(height: 10.h),
-          const ChecksInformaiton(),
-          SizedBox(height: 30.h),
-          AppButton(
-            isSafeArea: false,
-            text: 'outgoingChecks',
-            textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 16.sp,
-                  color: AppColors.whiteColor,
-                  fontWeight: FontWeight.w700,
-                ),
-            onPressed: controller.openOutgoingChecks,
-            color: AppColors.primaryColor,
-            height: 48.h,
-          ),
-          SizedBox(height: 15.h),
-          AppButton(
-            isSafeArea: false,
-            text: 'incomingChecks',
-            textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 16.sp,
-                  color: AppColors.whiteColor,
-                  fontWeight: FontWeight.w700,
-                ),
-            onPressed: controller.openIncomingChecks,
-            color: AppColors.primaryColor,
-            height: 48.h,
-          ),
+          if (canViewIncomingChecks || canViewOutgoingChecks) ...[
+            const ChecksInformaiton(),
+            SizedBox(height: 30.h),
+          ],
+          if (canViewOutgoingChecks) ...[
+            AppButton(
+              isSafeArea: false,
+              text: 'outgoingChecks',
+              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 16.sp,
+                    color: AppColors.whiteColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+              onPressed: controller.openOutgoingChecks,
+              color: AppColors.primaryColor,
+              height: 48.h,
+            ),
+            SizedBox(height: 15.h),
+          ],
+          if (!canViewOutgoingChecks && canCreateOutgoingChecks) ...[
+            AppButton(
+              isSafeArea: false,
+              text: 'newOutgoingCheck',
+              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 16.sp,
+                    color: AppColors.whiteColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+              onPressed: () {
+                controller.isEdit.value = false;
+                controller.getCeckData(isOutgoing: true);
+              },
+              color: AppColors.primaryColor,
+              height: 48.h,
+            ),
+            SizedBox(height: 15.h),
+          ],
+          if (canViewIncomingChecks)
+            AppButton(
+              isSafeArea: false,
+              text: 'incomingChecks',
+              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 16.sp,
+                    color: AppColors.whiteColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+              onPressed: controller.openIncomingChecks,
+              color: AppColors.primaryColor,
+              height: 48.h,
+            ),
+          if (!canViewIncomingChecks && canCreateIncomingChecks) ...[
+            AppButton(
+              isSafeArea: false,
+              text: 'newIncomingCheck',
+              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 16.sp,
+                    color: AppColors.whiteColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+              onPressed: () {
+                controller.isEdit.value = false;
+                controller.getCeckData(isOutgoing: false);
+              },
+              color: AppColors.primaryColor,
+              height: 48.h,
+            ),
+          ],
           SizedBox(height: 16.h),
           const CurrencyExchangeCard(),
         ],

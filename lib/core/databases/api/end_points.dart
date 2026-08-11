@@ -246,6 +246,8 @@ class EndPoints {
   static const String loanOrders = 'employee/loan/orders';
   static const String rejectEmployeeOrder = 'reject/employee/order';
   static const String approveEmployeeLoanOrder = 'approve/employee/loan/order';
+  static const String cancelEmployeeLoanOrder = 'cancel/employee/loan/order';
+  static const String editEmployeeLoanOrder = 'edit/employee/loan/order';
   static const String approveEmployeeOvertimeOrder =
       'approve/employee/overtime/order';
   static const String employeeLogs = 'employee/logs';

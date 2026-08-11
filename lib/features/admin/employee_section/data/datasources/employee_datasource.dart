@@ -542,6 +542,62 @@ class EmployeeDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> updateEmployeeAdvance({
+    required int employeeOrderId,
+    required String loanValue,
+    String note = '',
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.editEmployeeLoanOrder,
+        data: {
+          'employee_order_id': employeeOrderId,
+          'loan_value': loanValue,
+          if (note.trim().isNotEmpty) 'order': note.trim(),
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelEmployeeAdvance({
+    required int employeeOrderId,
+    String reason = '',
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.cancelEmployeeLoanOrder,
+        data: {
+          'employee_order_id': employeeOrderId,
+          if (reason.trim().isNotEmpty) 'cancellation_reason': reason.trim(),
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getShownBoxesForEmployeeAdvance() async {
     try {
       final response = await api.get(EndPoints.getShownBoxes);

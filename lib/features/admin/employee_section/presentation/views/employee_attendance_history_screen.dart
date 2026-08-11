@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/employee_advances_model.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 import '../widgets/attendance_history_body.dart';
@@ -511,6 +512,103 @@ Future<void> _showAddAdvanceDialog(
   );
 }
 
+Future<void> _showEditAdvanceDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+  EmployeeAdvanceModel advance,
+) async {
+  final amountController = TextEditingController(text: advance.amount);
+  final noteController = TextEditingController();
+
+  final ok = await Get.dialog<bool>(
+    AlertDialog(
+      title: const Text('تعديل السلفة'),
+      content: SizedBox(
+        width: 420.w,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'المبلغ الجديد'),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: noteController,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'ملاحظة'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('save'.tr),
+        ),
+      ],
+    ),
+  );
+
+  if (ok != true) return;
+  if (amountController.text.trim().isEmpty) {
+    Get.snackbar('error'.tr, 'يرجى إدخال مبلغ السلفة',
+        snackPosition: SnackPosition.BOTTOM);
+    return;
+  }
+
+  await controller.updateAdvance(
+    employeeOrderId: advance.id,
+    loanValue: amountController.text.trim(),
+    note: noteController.text.trim(),
+  );
+}
+
+Future<void> _showCancelAdvanceDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+  EmployeeAdvanceModel advance,
+) async {
+  final reasonController = TextEditingController();
+
+  final ok = await Get.dialog<bool>(
+    AlertDialog(
+      title: const Text('إلغاء السلفة'),
+      content: SizedBox(
+        width: 420.w,
+        child: TextField(
+          controller: reasonController,
+          maxLines: 3,
+          decoration: const InputDecoration(labelText: 'سبب الإلغاء'),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('confirm'.tr),
+        ),
+      ],
+    ),
+  );
+
+  if (ok != true) return;
+  await controller.cancelAdvance(
+    employeeOrderId: advance.id,
+    reason: reasonController.text.trim(),
+  );
+}
+
 // ignore: unused_element
 Future<void> _showWeeklyOffImportDialog(
   BuildContext context,
@@ -796,6 +894,10 @@ class EmployeeAttendanceHistoryScreen
                 advances: controller.advances.value,
                 advancesLoading: controller.isAdvancesLoading.value,
                 onAddAdvance: () => _showAddAdvanceDialog(context, controller),
+                onEditAdvance: (advance) =>
+                    _showEditAdvanceDialog(context, controller, advance),
+                onCancelAdvance: (advance) =>
+                    _showCancelAdvanceDialog(context, controller, advance),
               );
             }),
           ),

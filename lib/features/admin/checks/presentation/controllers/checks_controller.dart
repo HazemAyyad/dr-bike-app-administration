@@ -11,6 +11,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -1778,8 +1779,11 @@ class ChecksController extends GetxController
     _applyRouteArguments();
     loadSavedExchangeCurrencies();
     fetchExchangeRate();
-    getGeneralChecksData();
-    loadAllChecksTabs(showLoading: true);
+    if ((isInComing && canViewIncomingChecks) ||
+        (!isInComing && canViewOutgoingChecks)) {
+      getGeneralChecksData();
+      loadAllChecksTabs(showLoading: true);
+    }
 
     getAllCustomersAndSellers();
     getShowBoxes();

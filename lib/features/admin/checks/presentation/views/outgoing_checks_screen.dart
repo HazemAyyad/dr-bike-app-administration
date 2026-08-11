@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/helpers/custom_floating_action_button.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -98,12 +99,14 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
           ),
         ],
       ),
-      floatingActionButton: AddFloatingActionButton(
-        onPressed: () {
-          controller.isEdit.value = false;
-          controller.getCeckData(isOutgoing: true);
-        },
-      ),
+      floatingActionButton: canCreateOutgoingChecks
+          ? AddFloatingActionButton(
+              onPressed: () {
+                controller.isEdit.value = false;
+                controller.getCeckData(isOutgoing: true);
+              },
+            )
+          : null,
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,

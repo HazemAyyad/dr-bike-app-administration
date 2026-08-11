@@ -1870,6 +1870,8 @@ const Map<String, String> ar = {
 
   'newReceipt': 'قبض شيك جديد',
   'newCheck': 'إنشاء شيك جديد',
+  'newOutgoingCheck': 'إنشاء شيك صادر',
+  'newIncomingCheck': 'إنشاء شيك وارد',
   'editCheck': 'تعديل الشيك',
   'checkValue': 'قيمة الشيك',
   'debtValue2': 'قيمة الدين',
