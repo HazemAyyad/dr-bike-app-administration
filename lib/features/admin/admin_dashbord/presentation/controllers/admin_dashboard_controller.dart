@@ -52,12 +52,6 @@ class AdminDashboardController extends GetxController
       'badgeKey': 'special_tasks_today_pending',
     },
     {
-      'id': '5',
-      'title': 'employeeDepartment',
-      'route': AppRoutes.EMPLOYEESECTIONSCREEN,
-      'badgeKey': 'employees_absent_today',
-    },
-    {
       'id': '4',
       'title': 'projectManagement',
       'route': AppRoutes.PROJECTMANAGEMENTSCREEN

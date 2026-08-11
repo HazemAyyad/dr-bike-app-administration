@@ -42,54 +42,64 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     ? sessionUserType.value
                     : userType;
                 return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  BuildNavItem(
-                    assetImage: AssetsManager.homeIcon,
-                    isSelected: controller.currentIndex.value == 0,
-                    label: 'home'.tr,
-                    onTap: () => controller.changePage(0),
-                  ),
-                  role == 'admin'
-                      ? BuildNavItem(
-                          assetImage: AssetsManager.taskIcon,
-                          isSelected: controller.currentIndex.value == 1,
-                          label: 'statistics'.tr,
-                          onTap: () {
-                            CountersController(
-                              getReportInformationUsecase:
-                                  GetReportInformationUsecase(
-                                countersRepository:
-                                    Get.find<CountrersImplement>(),
-                              ),
-                              getReportByType: GetReportByTypeUsecase(
-                                countersRepository:
-                                    Get.find<CountrersImplement>(),
-                              ),
-                            ).getReportInformation();
-                            controller.changePage(1);
-                          },
-                        )
-                      : BuildNavItem(
-                          assetImage: AssetsManager.taskIcon,
-                          isSelected: controller.currentIndex.value == 1,
-                          label: 'tasks'.tr,
-                          onTap: () {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              Get.find<EmployeeDashbordController>()
-                                  .scrollToToday();
-                            });
-                            controller.changePage(1);
-                          },
-                        ),
-                  BuildNavItem(
-                    assetImage: AssetsManager.profileIcon,
-                    isSelected: controller.currentIndex.value == 2,
-                    label: 'profile'.tr,
-                    onTap: () => controller.changePage(2),
-                  ),
-                ],
-              );
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    BuildNavItem(
+                      assetImage: AssetsManager.homeIcon,
+                      isSelected: controller.currentIndex.value == 0,
+                      label: 'home'.tr,
+                      onTap: () => controller.changePage(0),
+                    ),
+                    role == 'admin'
+                        ? BuildNavItem(
+                            assetImage: AssetsManager.taskIcon,
+                            isSelected: controller.currentIndex.value == 1,
+                            label: 'statistics'.tr,
+                            onTap: () {
+                              CountersController(
+                                getReportInformationUsecase:
+                                    GetReportInformationUsecase(
+                                  countersRepository:
+                                      Get.find<CountrersImplement>(),
+                                ),
+                                getReportByType: GetReportByTypeUsecase(
+                                  countersRepository:
+                                      Get.find<CountrersImplement>(),
+                                ),
+                              ).getReportInformation();
+                              controller.changePage(1);
+                            },
+                          )
+                        : BuildNavItem(
+                            assetImage: AssetsManager.taskIcon,
+                            isSelected: controller.currentIndex.value == 1,
+                            label: 'tasks'.tr,
+                            onTap: () {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Get.find<EmployeeDashbordController>()
+                                    .scrollToToday();
+                              });
+                              controller.changePage(1);
+                            },
+                          ),
+                    if (role == 'admin')
+                      BuildNavItem(
+                        assetImage: AssetsManager.usersIcon,
+                        isSelected: controller.currentIndex.value == 2,
+                        label: 'employeeDepartment'.tr,
+                        onTap: () => controller.changePage(2),
+                      ),
+                    BuildNavItem(
+                      assetImage: AssetsManager.profileIcon,
+                      isSelected: controller.currentIndex.value ==
+                          (role == 'admin' ? 3 : 2),
+                      label: 'profile'.tr,
+                      onTap: () => controller.changePage(
+                        role == 'admin' ? 3 : 2,
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),

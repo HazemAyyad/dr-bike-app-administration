@@ -21,6 +21,9 @@ import '../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
+import '../../admin/employee_section/presentation/binding/employee_section_binding.dart';
+import '../../admin/employee_section/presentation/controllers/employee_section_controller.dart';
+import '../../admin/employee_section/presentation/views/employee_section_screen.dart';
 import '../../common_feature/presentation/user_profile/views/profile_screen.dart';
 import '../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../employee/employee_dashbord/domain/usecases/change_task_completed_uasecase.dart';
@@ -176,10 +179,21 @@ class BottomNavBarController extends GetxController {
           return const TasksScreen(key: ValueKey(1));
         }
       case 2:
+        if (role == 'admin') {
+          if (!Get.isRegistered<EmployeeSectionController>()) {
+            EmployeeSectionBinding().dependencies();
+          }
+          return const EmployeeSectionScreen(key: ValueKey(2));
+        }
         if (!Get.isRegistered<ProfileController>()) {
           Get.put(ProfileController());
         }
         return const ProfileScreen(key: ValueKey(2));
+      case 3:
+        if (!Get.isRegistered<ProfileController>()) {
+          Get.put(ProfileController());
+        }
+        return const ProfileScreen(key: ValueKey(3));
       default:
         return const HomePageScreen(key: ValueKey(1));
     }
