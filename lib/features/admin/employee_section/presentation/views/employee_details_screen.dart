@@ -6,6 +6,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -31,7 +33,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     final showPointsTab = canViewEmployeesPoints;
     return DefaultTabController(
-      length: showPointsTab ? 3 : 2,
+      length: showPointsTab ? 4 : 3,
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'employeeDetails',
@@ -63,6 +65,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 tabs: [
                   Tab(text: 'employeeDetails'.tr),
                   if (showPointsTab) Tab(text: 'pointsAndRewardsTab'.tr),
+                  const Tab(text: 'سجل الشبكات'),
                   const Tab(text: 'سجل النشاط'),
                 ],
               ),
@@ -124,6 +127,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 ),
               ),
               if (showPointsTab) EmployeePointsTab(employeeId: employeeId),
+              EmployeeWifiPresenceTab(employeeId: employeeId),
               EmployeeActivityLogsTab(employeeId: employeeId),
             ];
             return TabBarView(children: children);
@@ -829,6 +833,412 @@ class _PermissionChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class EmployeeWifiPresenceTab extends StatefulWidget {
+  const EmployeeWifiPresenceTab({Key? key, required this.employeeId})
+      : super(key: key);
+
+  final int employeeId;
+
+  @override
+  State<EmployeeWifiPresenceTab> createState() =>
+      _EmployeeWifiPresenceTabState();
+}
+
+class _EmployeeWifiPresenceTabState extends State<EmployeeWifiPresenceTab> {
+  bool _loading = true;
+  String? _error;
+  _EmployeeWifiCurrent? _current;
+  List<_EmployeeWifiPeriod> _periods = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final response = await Get.find<DioConsumer>().get(
+        EndPoints.employeeWifiPresenceHistory,
+        queryParameters: {
+          'employee_id': widget.employeeId,
+          'limit': 80,
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['status']?.toString() != 'success') {
+        throw Exception(data is Map ? data['message'] : null);
+      }
+      final currentRaw = data['current'];
+      final logsRaw = data['logs'];
+      setState(() {
+        _current = currentRaw is List && currentRaw.isNotEmpty
+            ? _EmployeeWifiCurrent.fromJson(
+                Map<String, dynamic>.from(currentRaw.first as Map),
+              )
+            : null;
+        _periods = logsRaw is List
+            ? logsRaw
+                .whereType<Map>()
+                .map((e) => _EmployeeWifiPeriod.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ))
+                .toList()
+            : const [];
+      });
+    } catch (_) {
+      setState(() => _error = 'تعذر تحميل سجل الشبكات');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final bg = isDark ? AppColors.darkColor : const Color(0xFFF4F6FA);
+    return ColoredBox(
+      color: bg,
+      child: RefreshIndicator(
+        onRefresh: _load,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? ListView(
+                    padding: EdgeInsets.all(24.w),
+                    children: [
+                      SizedBox(height: 120.h),
+                      Center(child: Text(_error!)),
+                    ],
+                  )
+                : ListView(
+                    padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 28.h),
+                    children: [
+                      _WifiCurrentCard(current: _current),
+                      SizedBox(height: 12.h),
+                      Text(
+                        'فترات الاتصال',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w900,
+                          color:
+                              isDark ? Colors.white : AppColors.operationalNavy,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      if (_periods.isEmpty)
+                        const _WifiEmptyCard(text: 'لا يوجد سجل شبكات بعد')
+                      else
+                        ..._periods.map((period) {
+                          return _WifiPeriodTile(period: period);
+                        }),
+                    ],
+                  ),
+      ),
+    );
+  }
+}
+
+class _WifiCurrentCard extends StatelessWidget {
+  const _WifiCurrentCard({required this.current});
+
+  final _EmployeeWifiCurrent? current;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = current;
+    if (c == null) {
+      return const _WifiEmptyCard(text: 'لا توجد حالة حالية');
+    }
+    return _WifiPresenceBox(
+      title: 'الحالة الحالية',
+      displayName: c.displayName,
+      state: c.state,
+      label: c.label,
+      icon: _connectionIcon(c.connectionType),
+      lines: [
+        'آخر تحديث: ${_formatWifiDate(c.updatedAt)}',
+      ],
+    );
+  }
+}
+
+class _WifiPeriodTile extends StatelessWidget {
+  const _WifiPeriodTile({required this.period});
+
+  final _EmployeeWifiPeriod period;
+
+  @override
+  Widget build(BuildContext context) {
+    return _WifiPresenceBox(
+      title: period.displayName,
+      displayName: period.label,
+      state: period.state,
+      label: _formatWifiDuration(period.durationSeconds),
+      icon: _connectionIcon(period.connectionType),
+      lines: [
+        'من: ${_formatWifiDate(period.startedAt)}',
+        'إلى: ${period.endedAt == null ? 'حالياً' : _formatWifiDate(period.endedAt)}',
+      ],
+    );
+  }
+}
+
+class _WifiPresenceBox extends StatelessWidget {
+  const _WifiPresenceBox({
+    required this.title,
+    required this.displayName,
+    required this.state,
+    required this.label,
+    required this.icon,
+    required this.lines,
+  });
+
+  final String title;
+  final String displayName;
+  final String state;
+  final String label;
+  final IconData icon;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final color = _wifiStateColor(state);
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor4 : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38.w,
+            height: 38.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(icon, size: 20.sp, color: color),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                ...lines.map(
+                  (line) => Padding(
+                    padding: EdgeInsets.only(bottom: 2.h),
+                    child: Text(
+                      line,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color:
+                            isDark ? Colors.white70 : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WifiEmptyCard extends StatelessWidget {
+  const _WifiEmptyCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      alignment: Alignment.center,
+      child: Text(text),
+    );
+  }
+}
+
+class _EmployeeWifiCurrent {
+  const _EmployeeWifiCurrent({
+    required this.state,
+    required this.displayName,
+    required this.label,
+    required this.connectionType,
+    this.updatedAt,
+  });
+
+  factory _EmployeeWifiCurrent.fromJson(Map<String, dynamic> json) {
+    final wifi = json['wifi_status'] is Map
+        ? Map<String, dynamic>.from(json['wifi_status'] as Map)
+        : <String, dynamic>{};
+    return _EmployeeWifiCurrent(
+      state: wifi['state']?.toString() ?? 'red',
+      displayName: _nonEmpty(wifi['display_name']) ?? 'بدون إنترنت',
+      label: _nonEmpty(wifi['label']) ?? _wifiStateLabel(wifi['state']),
+      connectionType: _nonEmpty(wifi['connection_type']) ?? 'none',
+      updatedAt: _parseWifiDate(wifi['updated_at']),
+    );
+  }
+
+  final String state;
+  final String displayName;
+  final String label;
+  final String connectionType;
+  final DateTime? updatedAt;
+}
+
+class _EmployeeWifiPeriod {
+  const _EmployeeWifiPeriod({
+    required this.state,
+    required this.displayName,
+    required this.label,
+    required this.connectionType,
+    required this.durationSeconds,
+    this.startedAt,
+    this.endedAt,
+  });
+
+  factory _EmployeeWifiPeriod.fromJson(Map<String, dynamic> json) {
+    return _EmployeeWifiPeriod(
+      state: json['state']?.toString() ?? 'red',
+      displayName: _nonEmpty(json['display_name']) ?? 'بدون إنترنت',
+      label: _nonEmpty(json['label']) ?? _wifiStateLabel(json['state']),
+      connectionType: _nonEmpty(json['connection_type']) ?? 'none',
+      durationSeconds:
+          int.tryParse(json['duration_seconds']?.toString() ?? '') ?? 0,
+      startedAt: _parseWifiDate(json['started_at']),
+      endedAt: _parseWifiDate(json['ended_at']),
+    );
+  }
+
+  final String state;
+  final String displayName;
+  final String label;
+  final String connectionType;
+  final int durationSeconds;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+}
+
+String? _nonEmpty(dynamic value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+DateTime? _parseWifiDate(dynamic value) {
+  if (value == null) return null;
+  return DateTime.tryParse(value.toString())?.toLocal();
+}
+
+String _formatWifiDate(DateTime? date) {
+  if (date == null) return 'لا يوجد';
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day $hour:$minute';
+}
+
+String _formatWifiDuration(int seconds) {
+  final duration = Duration(seconds: seconds);
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  if (hours > 0) return '$hours ساعة و $minutes دقيقة';
+  if (minutes > 0) return '$minutes دقيقة';
+  return 'أقل من دقيقة';
+}
+
+Color _wifiStateColor(String state) {
+  switch (state) {
+    case 'green':
+      return const Color(0xFF16A34A);
+    case 'orange':
+      return const Color(0xFFF59E0B);
+    default:
+      return const Color(0xFFDC2626);
+  }
+}
+
+String _wifiStateLabel(dynamic state) {
+  switch (state?.toString()) {
+    case 'green':
+      return 'شبكة مسموحة';
+    case 'orange':
+      return 'متصل';
+    default:
+      return 'بدون إنترنت';
+  }
+}
+
+IconData _connectionIcon(String type) {
+  switch (type) {
+    case 'mobile':
+      return Icons.signal_cellular_alt_rounded;
+    case 'wifi':
+      return Icons.wifi_rounded;
+    default:
+      return Icons.wifi_off_rounded;
   }
 }
 

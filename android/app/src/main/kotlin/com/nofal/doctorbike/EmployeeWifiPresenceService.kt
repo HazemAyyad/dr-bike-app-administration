@@ -106,6 +106,7 @@ class EmployeeWifiPresenceService : Service() {
                 val body = JSONObject().apply {
                     put("connected", status.ssid != null)
                     put("network_connected", status.networkConnected)
+                    put("connection_type", status.connectionType)
                     status.ssid?.let { put("ssid", it) }
                 }
                 OutputStreamWriter(connection.outputStream).use { writer ->
@@ -130,7 +131,11 @@ class EmployeeWifiPresenceService : Service() {
         val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
         if (!isWifi) {
-            return WifiPresenceStatus(networkConnected = hasNetwork, ssid = null)
+            return WifiPresenceStatus(
+                networkConnected = hasNetwork,
+                connectionType = if (hasNetwork) "mobile" else "none",
+                ssid = null,
+            )
         }
 
         val wifiManager =
@@ -138,6 +143,7 @@ class EmployeeWifiPresenceService : Service() {
         val raw = wifiManager.connectionInfo?.ssid
         return WifiPresenceStatus(
             networkConnected = hasNetwork,
+            connectionType = if (hasNetwork) "wifi" else "none",
             ssid = normalizeSsid(raw),
         )
     }
@@ -186,6 +192,7 @@ class EmployeeWifiPresenceService : Service() {
 
     private data class WifiPresenceStatus(
         val networkConnected: Boolean,
+        val connectionType: String,
         val ssid: String?,
     )
 

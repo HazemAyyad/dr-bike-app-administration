@@ -125,6 +125,7 @@ class EmployeeWifiPresenceService {
         data: {
           'connected': status.connected,
           'network_connected': status.networkConnected,
+          'connection_type': status.connectionType,
           if (status.ssid != null) 'ssid': status.ssid,
         },
       );
@@ -140,6 +141,7 @@ class EmployeeWifiPresenceService {
       return const _WifiPresencePayload(
         connected: false,
         networkConnected: false,
+        connectionType: 'none',
       );
     }
 
@@ -152,6 +154,7 @@ class EmployeeWifiPresenceService {
       return _WifiPresencePayload(
         connected: false,
         networkConnected: hasNetwork,
+        connectionType: hasNetwork ? 'mobile' : 'none',
       );
     }
 
@@ -161,6 +164,7 @@ class EmployeeWifiPresenceService {
         return _WifiPresencePayload(
           connected: false,
           networkConnected: hasNetwork,
+          connectionType: hasNetwork ? 'wifi' : 'none',
         );
       }
     }
@@ -170,6 +174,7 @@ class EmployeeWifiPresenceService {
     return _WifiPresencePayload(
       connected: ssid != null,
       networkConnected: hasNetwork,
+      connectionType: hasNetwork ? 'wifi' : 'none',
       ssid: ssid,
     );
   }
@@ -229,10 +234,12 @@ class _WifiPresencePayload {
   const _WifiPresencePayload({
     required this.connected,
     required this.networkConnected,
+    required this.connectionType,
     this.ssid,
   });
 
   final bool connected;
   final bool networkConnected;
+  final String connectionType;
   final String? ssid;
 }

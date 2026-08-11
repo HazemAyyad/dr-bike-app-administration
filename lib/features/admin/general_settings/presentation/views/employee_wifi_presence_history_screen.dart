@@ -165,6 +165,8 @@ class _CurrentWifiCard extends StatelessWidget {
       name: row.employeeName,
       ssid: row.ssid,
       state: row.state,
+      displayName: row.displayName,
+      label: row.label,
       lines: [
         'آخر تحديث: ${_formatDate(row.updatedAt)}',
       ],
@@ -183,6 +185,8 @@ class _WifiLogCard extends StatelessWidget {
       name: row.employeeName,
       ssid: row.ssid,
       state: row.state,
+      displayName: row.displayName,
+      label: row.label,
       lines: [
         'من: ${_formatDate(row.startedAt)}',
         'إلى: ${row.endedAt == null ? 'حالياً' : _formatDate(row.endedAt)}',
@@ -197,18 +201,22 @@ class _PresenceCard extends StatelessWidget {
     required this.name,
     required this.ssid,
     required this.state,
+    required this.displayName,
+    required this.label,
     required this.lines,
   });
 
   final String name;
   final String? ssid;
   final String state;
+  final String? displayName;
+  final String? label;
   final List<String> lines;
 
   @override
   Widget build(BuildContext context) {
     final color = _stateColor(state);
-    final label = _stateLabel(state);
+    final statusLabel = label ?? _stateLabel(state);
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(12.w),
@@ -247,7 +255,7 @@ class _PresenceCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      label,
+                      statusLabel,
                       style: TextStyle(
                         color: color,
                         fontSize: 11.sp,
@@ -258,7 +266,10 @@ class _PresenceCard extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  ssid == null || ssid!.trim().isEmpty ? 'بدون شبكة' : ssid!,
+                  displayName ??
+                      (ssid == null || ssid!.trim().isEmpty
+                          ? 'بدون شبكة'
+                          : ssid!),
                   style: TextStyle(
                     color: AppColors.primaryColor,
                     fontSize: 13.sp,
@@ -315,6 +326,8 @@ class _CurrentWifiRow {
     required this.employeeName,
     required this.state,
     this.ssid,
+    this.displayName,
+    this.label,
     this.updatedAt,
   });
 
@@ -326,6 +339,8 @@ class _CurrentWifiRow {
       employeeName: json['employee_name']?.toString() ?? '',
       state: wifi['state']?.toString() ?? 'red',
       ssid: wifi['ssid']?.toString(),
+      displayName: wifi['display_name']?.toString(),
+      label: wifi['label']?.toString(),
       updatedAt: _parseDate(wifi['updated_at']),
     );
   }
@@ -333,6 +348,8 @@ class _CurrentWifiRow {
   final String employeeName;
   final String state;
   final String? ssid;
+  final String? displayName;
+  final String? label;
   final DateTime? updatedAt;
 }
 
@@ -342,6 +359,8 @@ class _WifiLogRow {
     required this.state,
     required this.durationSeconds,
     this.ssid,
+    this.displayName,
+    this.label,
     this.startedAt,
     this.endedAt,
   });
@@ -351,6 +370,8 @@ class _WifiLogRow {
       employeeName: json['employee_name']?.toString() ?? '',
       state: json['state']?.toString() ?? 'red',
       ssid: json['ssid']?.toString(),
+      displayName: json['display_name']?.toString(),
+      label: json['label']?.toString(),
       startedAt: _parseDate(json['started_at']),
       endedAt: _parseDate(json['ended_at']),
       durationSeconds: int.tryParse(
@@ -363,6 +384,8 @@ class _WifiLogRow {
   final String employeeName;
   final String state;
   final String? ssid;
+  final String? displayName;
+  final String? label;
   final DateTime? startedAt;
   final DateTime? endedAt;
   final int durationSeconds;

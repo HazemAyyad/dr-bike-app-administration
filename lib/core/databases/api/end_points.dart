@@ -165,6 +165,8 @@ class EndPoints {
   static const String employees = 'employees';
   static const String employeeWifiPresenceHistory =
       'admin/employees/wifi-presence/history';
+  static String employeeWifiPresenceHistoryForEmployee(int employeeId) =>
+      'admin/employees/wifi-presence/history?employee_id=$employeeId';
   static String adminImpersonateEmployee(int employeeId) =>
       'admin/impersonate-employee/$employeeId';
   static String employeeImpersonateEmployee(int employeeId) =>

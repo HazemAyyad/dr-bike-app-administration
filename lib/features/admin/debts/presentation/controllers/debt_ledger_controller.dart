@@ -38,6 +38,58 @@ import '../ledger/ledger_pick_person_sheet.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../routes/app_routes.dart';
 
+enum LedgerReportDetailLevel {
+  summary,
+  detailed,
+  detailedWithImages,
+}
+
+extension LedgerReportDetailLevelX on LedgerReportDetailLevel {
+  String get apiValue {
+    switch (this) {
+      case LedgerReportDetailLevel.summary:
+        return 'summary';
+      case LedgerReportDetailLevel.detailed:
+        return 'detailed';
+      case LedgerReportDetailLevel.detailedWithImages:
+        return 'detailed_with_images';
+    }
+  }
+
+  String get title {
+    switch (this) {
+      case LedgerReportDetailLevel.summary:
+        return '????? ?????';
+      case LedgerReportDetailLevel.detailed:
+        return '????? ????';
+      case LedgerReportDetailLevel.detailedWithImages:
+        return '????? ???? ?? ???';
+    }
+  }
+
+  String get subtitle {
+    switch (this) {
+      case LedgerReportDetailLevel.summary:
+        return '???? ??????? ??????? ???';
+      case LedgerReportDetailLevel.detailed:
+        return '???? ?????? ???????? ?????????';
+      case LedgerReportDetailLevel.detailedWithImages:
+        return '???? ?????? ???????? ?? ??? ????????';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case LedgerReportDetailLevel.summary:
+        return Icons.receipt_long_outlined;
+      case LedgerReportDetailLevel.detailed:
+        return Icons.format_list_bulleted_outlined;
+      case LedgerReportDetailLevel.detailedWithImages:
+        return Icons.image_outlined;
+    }
+  }
+}
+
 class DebtLedgerController extends GetxController {
   final DebtLedgerRepository repository;
 
@@ -1121,7 +1173,9 @@ class DebtLedgerController extends GetxController {
     await applyPeriod('custom');
   }
 
-  Future<File?> downloadPersonReport() async {
+  Future<File?> downloadPersonReport({
+    LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
+  }) async {
     if (selectedPerson == null) return null;
     final result = await repository.downloadReport(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
@@ -1130,6 +1184,7 @@ class DebtLedgerController extends GetxController {
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
       currency: selectedCurrency.value,
+      reportDetailLevel: detailLevel.apiValue,
     );
     return result.fold(
       (failure) {
@@ -1190,7 +1245,9 @@ class DebtLedgerController extends GetxController {
     }
   }
 
-  Future<String?> fetchPersonShareUrl() async {
+  Future<String?> fetchPersonShareUrl({
+    LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
+  }) async {
     final person = selectedPerson;
     if (person == null) return null;
 
@@ -1198,6 +1255,7 @@ class DebtLedgerController extends GetxController {
     final linkResult = await repository.createPersonShareLink(
       customerId: person.isCustomer ? person.id : null,
       sellerId: person.isCustomer ? null : person.id,
+      reportDetailLevel: detailLevel.apiValue,
     );
     linkResult.fold((_) => null, (url) => shareUrl = url);
     return shareUrl.isEmpty ? null : shareUrl;
