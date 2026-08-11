@@ -241,97 +241,104 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                       child:
                           InlineSubtaskBuilder(isSpecialTask: _isSpecialTask),
                     ),
-                    if (!_isSpecialTask)
-                      TaskFormSectionCard(
-                        compact: _compact,
-                        title: 'attachments',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: AudioRecorderButton(
-                                    label: 'recordAudio',
-                                    recordedPath: controller.recordedPath,
-                                  ),
+                    TaskFormSectionCard(
+                      compact: _compact,
+                      title: 'attachments',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: AudioRecorderButton(
+                                  label: 'recordAudio',
+                                  recordedPath: controller.recordedPath,
                                 ),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: MediaUploadButton(
-                                    isShowPreview: !_isEdit,
-                                    onFilesChanged: (files) {
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: MediaUploadButton(
+                                  isShowPreview: !_isEdit,
+                                  onFilesChanged: (files) {
+                                    if (_isEdit) {
                                       for (final file in files) {
-                                        if (!controller.selectedFile
-                                            .contains(file)) {
+                                        final exists = controller.selectedFile
+                                            .any((e) => e.path == file.path);
+                                        if (!exists) {
                                           controller.selectedFile.add(file);
                                         }
                                       }
-                                      controller.update();
-                                    },
-                                    title: 'uploadImage',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_isEdit &&
-                                controller.selectedFile.isNotEmpty) ...[
-                              SizedBox(height: 6.h),
-                              SizedBox(
-                                height: 64.h,
-                                child: ListView(
-                                  scrollDirection: Axis.horizontal,
-                                  children: controller.selectedFile
-                                      .asMap()
-                                      .entries
-                                      .map((entry) {
-                                    final index = entry.key;
-                                    final file = entry.value;
-                                    return Padding(
-                                      padding: EdgeInsets.only(left: 6.w),
-                                      child: Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(8.r),
-                                            child: file.path.contains('http')
-                                                ? CachedNetworkImage(
-                                                    imageUrl: file.path,
-                                                    height: 64.h,
-                                                    width: 64.w,
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : Image.file(
-                                                    file,
-                                                    height: 64.h,
-                                                    width: 64.w,
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                          ),
-                                          Positioned(
-                                            top: 0,
-                                            left: 0,
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                controller.selectedFile
-                                                    .removeAt(index);
-                                                controller.update();
-                                              },
-                                              child: Icon(
-                                                Icons.cancel,
-                                                size: 18.sp,
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
+                                    } else {
+                                      controller.selectedFile
+                                        ..clear()
+                                        ..addAll(files);
+                                    }
+                                    controller.update();
+                                  },
+                                  title: 'uploadImage',
                                 ),
                               ),
                             ],
+                          ),
+                          if (_isEdit &&
+                              controller.selectedFile.isNotEmpty) ...[
+                            SizedBox(height: 6.h),
+                            SizedBox(
+                              height: 64.h,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: controller.selectedFile
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final index = entry.key;
+                                  final file = entry.value;
+                                  return Padding(
+                                    padding: EdgeInsets.only(left: 6.w),
+                                    child: Stack(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
+                                          child: file.path.contains('http')
+                                              ? CachedNetworkImage(
+                                                  imageUrl: file.path,
+                                                  height: 64.h,
+                                                  width: 64.w,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : Image.file(
+                                                  file,
+                                                  height: 64.h,
+                                                  width: 64.w,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              controller.selectedFile
+                                                  .removeAt(index);
+                                              controller.update();
+                                            },
+                                            child: Icon(
+                                              Icons.cancel,
+                                              size: 18.sp,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                          if (!_isSpecialTask) ...[
                             SizedBox(height: 4.h),
                             Obx(
                               () => ProofMediaTypeSelector(
@@ -351,8 +358,9 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                               onChanged: (v) => controller.hideTask.value = v!,
                             ),
                           ],
-                        ),
+                        ],
                       ),
+                    ),
                     SizedBox(height: 64.h),
                   ],
                 ),

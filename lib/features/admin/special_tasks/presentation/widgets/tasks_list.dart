@@ -1,8 +1,6 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -51,7 +49,7 @@ class TasksList extends GetView<SpecialTasksController> {
             if (tasksForDate.isEmpty) return const SizedBox.shrink();
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
               child: Column(
                 children: [
                   if (controller.currentTab.value != 1)
@@ -365,7 +363,7 @@ class _SpecialTaskCard extends StatelessWidget {
     final displayName = task.name;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 3.h),
+      padding: EdgeInsets.only(bottom: 1.h),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -373,8 +371,8 @@ class _SpecialTaskCard extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(10.r),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 3.h),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            margin: EdgeInsets.symmetric(horizontal: 1.w, vertical: 1.h),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(12.r),
@@ -391,7 +389,7 @@ class _SpecialTaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  textDirection: ui.TextDirection.ltr,
+                  textDirection: TextDirection.rtl,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Obx(
@@ -404,7 +402,7 @@ class _SpecialTaskCard extends StatelessWidget {
                         shape: const CircleBorder(),
                       ),
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: 6.w),
                     Expanded(
                       child: Text(
                         displayName,

@@ -45,6 +45,16 @@ Future<MultipartFile> _multipartFromPath(String path) async {
   );
 }
 
+Future<dynamic> _adminAttachmentFromFile(File file) async {
+  if (file.path.startsWith('http')) {
+    return file.path;
+  }
+  final uploadPath = localFileIsVideo(file.path) || _isAudioPath(file.path)
+      ? file.path
+      : (await compressImage(XFile(file.path))).path;
+  return _multipartFromPath(uploadPath);
+}
+
 Future<void> _appendSubtaskAdminUploads({
   required Map<String, dynamic> target,
   required int subIndex,
@@ -76,6 +86,37 @@ Future<void> _appendSubtaskAdminUploads({
   if (audioPath != null &&
       audioPath.isNotEmpty &&
       !audioPath.startsWith('http')) {
+    await addPath(audioPath);
+  }
+}
+
+Future<void> _appendSpecialSubtaskAdminUploads({
+  required Map<String, dynamic> target,
+  required int subIndex,
+  required List<String> localPaths,
+  required bool isEdit,
+  String? audioPath,
+}) async {
+  var fileIndex = 0;
+  final seen = <String>{};
+  final fieldName = isEdit ? 'admin_subtask_img' : 'admin_subtask__img';
+
+  Future<void> addPath(String path) async {
+    if (path.isEmpty || path.startsWith('http') || seen.contains(path)) return;
+    seen.add(path);
+    final uploadPath = localFileIsVideo(path) || _isAudioPath(path)
+        ? path
+        : (await compressImage(XFile(path))).path;
+    target['sub_special_tasks[$subIndex][$fieldName][$fileIndex]'] =
+        await _multipartFromPath(uploadPath);
+    fileIndex++;
+  }
+
+  for (final path in localPaths) {
+    await addPath(path);
+  }
+
+  if (audioPath != null && audioPath.isNotEmpty) {
     await addPath(audioPath);
   }
 }
@@ -224,17 +265,7 @@ class CreateEmployeeTasksDatasource {
         'requires_admin_review': requiresAdminReview,
         if (adminImg.isNotEmpty)
           'admin_img[]': await Future.wait(
-            adminImg.map((e) async {
-              if (e.path.startsWith('http')) {
-                return e.path;
-              } else {
-                final compressedImg = await compressImage(XFile(e.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }
-            }),
+            adminImg.map(_adminAttachmentFromFile),
           ),
         if (audio.path.isNotEmpty && await audio.exists())
           'audio': audio.path.startsWith('http')
@@ -342,35 +373,43 @@ class CreateEmployeeTasksDatasource {
     try {
       final subSpecialTasksMap = <String, dynamic>{};
       for (int i = 0; i < subSpecialTasks.length; i++) {
-        if (subSpecialTasks[i]['subTaskId'] != null) {
-          subSpecialTasksMap['sub_special_tasks[$i][id]'] =
-              subSpecialTasks[i]['subTaskId'];
+        final task = subSpecialTasks[i];
+        if (task['subTaskId'] != null) {
+          subSpecialTasksMap['sub_special_tasks[$i][id]'] = task['subTaskId'];
         }
-        subSpecialTasksMap['sub_special_tasks[$i][name]'] =
-            subSpecialTasks[i]['subTaskName'];
-        if (subSpecialTasks[i]['subTaskId'] == null &&
-            subSpecialTasks[i]['subTaskImage'] != null) {
-          final compressedImg =
-              await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
-          if (specialTaskId == 0) {
-            subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
-                await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
-            );
-          } else {
-            subSpecialTasksMap['sub_special_tasks[$i][admin_subtask_img][]'] =
-                await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
-            );
+        subSpecialTasksMap['sub_special_tasks[$i][name]'] = task['subTaskName'];
+
+        final imgList = task['subTaskImage'];
+        final localPaths = <String>[];
+        if (imgList is List) {
+          for (final img in imgList) {
+            final path = img.toString();
+            if (path.isNotEmpty && !path.startsWith('http')) {
+              localPaths.add(path);
+            }
+          }
+        } else if (imgList != null) {
+          final path = imgList.toString();
+          if (path.isNotEmpty && !path.startsWith('http')) {
+            localPaths.add(path);
           }
         }
+        await _appendSpecialSubtaskAdminUploads(
+          target: subSpecialTasksMap,
+          subIndex: i,
+          localPaths: localPaths,
+          isEdit: specialTaskId != 0,
+          audioPath: task['subTaskAudio']?.toString(),
+        );
+        if (task['proofMediaType'] != null) {
+          subSpecialTasksMap['sub_special_tasks[$i][proof_media_type]'] =
+              task['proofMediaType'].toString();
+        }
         subSpecialTasksMap['sub_special_tasks[$i][description]'] =
-            subSpecialTasks[i]['subTaskdescription'];
+            task['subTaskdescription'];
         subSpecialTasksMap[
                 'sub_special_tasks[$i][force_employee_to_add_img_for_sub_task]'] =
-            subSpecialTasks[i]['imageIsRequired'] == true ? 1 : 0;
+            task['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
         specialTaskId != 0
@@ -390,17 +429,7 @@ class CreateEmployeeTasksDatasource {
           'force_employee_to_add_img': forceEmployeeToAddImg ? 1 : 0,
           if (adminImg.isNotEmpty)
             'admin_img[]': await Future.wait(
-              adminImg.map((e) async {
-                if (e.path.startsWith('http')) {
-                  return e.path;
-                } else {
-                  final compressedImg = await compressImage(XFile(e.path));
-                  return await MultipartFile.fromFile(
-                    compressedImg.path,
-                    filename: compressedImg.path.split('/').last,
-                  );
-                }
-              }),
+              adminImg.map(_adminAttachmentFromFile),
             ),
           if (audio.path.isNotEmpty)
             'audio': audio.path.startsWith('http')
