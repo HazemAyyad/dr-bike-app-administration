@@ -32,8 +32,9 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     final showPointsTab = canViewEmployeesPoints;
+    final showWifiHistoryTab = userType == 'admin';
     return DefaultTabController(
-      length: showPointsTab ? 4 : 3,
+      length: 2 + (showPointsTab ? 1 : 0) + (showWifiHistoryTab ? 1 : 0),
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'employeeDetails',
@@ -65,7 +66,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 tabs: [
                   Tab(text: 'employeeDetails'.tr),
                   if (showPointsTab) Tab(text: 'pointsAndRewardsTab'.tr),
-                  const Tab(text: 'سجل الشبكات'),
+                  if (showWifiHistoryTab) const Tab(text: 'سجل الشبكات'),
                   const Tab(text: 'سجل النشاط'),
                 ],
               ),
@@ -127,7 +128,8 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 ),
               ),
               if (showPointsTab) EmployeePointsTab(employeeId: employeeId),
-              EmployeeWifiPresenceTab(employeeId: employeeId),
+              if (showWifiHistoryTab)
+                EmployeeWifiPresenceTab(employeeId: employeeId),
               EmployeeActivityLogsTab(employeeId: employeeId),
             ];
             return TabBarView(children: children);
@@ -923,14 +925,31 @@ class _EmployeeWifiPresenceTabState extends State<EmployeeWifiPresenceTab> {
                     children: [
                       _WifiCurrentCard(current: _current),
                       SizedBox(height: 12.h),
-                      Text(
-                        'فترات الاتصال',
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w900,
-                          color:
-                              isDark ? Colors.white : AppColors.operationalNavy,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'فترات الاتصال',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w900,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.operationalNavy,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${_periods.length} فترة',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 8.h),
                       if (_periods.isEmpty)
@@ -957,15 +976,55 @@ class _WifiCurrentCard extends StatelessWidget {
     if (c == null) {
       return const _WifiEmptyCard(text: 'لا توجد حالة حالية');
     }
-    return _WifiPresenceBox(
-      title: 'الحالة الحالية',
-      displayName: c.displayName,
-      state: c.state,
-      label: c.label,
-      icon: _connectionIcon(c.connectionType),
-      lines: [
-        'آخر تحديث: ${_formatWifiDate(c.updatedAt)}',
-      ],
+    final color = _wifiStateColor(c.state);
+    final isDark = ThemeService.isDark.value;
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor4 : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Row(
+        children: [
+          _WifiStatusIcon(
+            color: color,
+            icon: _connectionIcon(c.connectionType),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  c.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.operationalNavy,
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  'آخر تحديث: ${_formatWifiDate(c.updatedAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          _WifiStatusPill(label: c.label, color: color),
+        ],
+      ),
     );
   }
 }
@@ -977,44 +1036,11 @@ class _WifiPeriodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _WifiPresenceBox(
-      title: period.displayName,
-      displayName: period.label,
-      state: period.state,
-      label: _formatWifiDuration(period.durationSeconds),
-      icon: _connectionIcon(period.connectionType),
-      lines: [
-        'من: ${_formatWifiDate(period.startedAt)}',
-        'إلى: ${period.endedAt == null ? 'حالياً' : _formatWifiDate(period.endedAt)}',
-      ],
-    );
-  }
-}
-
-class _WifiPresenceBox extends StatelessWidget {
-  const _WifiPresenceBox({
-    required this.title,
-    required this.displayName,
-    required this.state,
-    required this.label,
-    required this.icon,
-    required this.lines,
-  });
-
-  final String title;
-  final String displayName;
-  final String state;
-  final String label;
-  final IconData icon;
-  final List<String> lines;
-
-  @override
-  Widget build(BuildContext context) {
+    final color = _wifiStateColor(period.state);
     final isDark = ThemeService.isDark.value;
-    final color = _wifiStateColor(state);
     return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(12.w),
+      margin: EdgeInsets.only(bottom: 7.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
       decoration: BoxDecoration(
         color: isDark ? AppColors.customGreyColor4 : Colors.white,
         borderRadius: BorderRadius.circular(8.r),
@@ -1023,75 +1049,128 @@ class _WifiPresenceBox extends StatelessWidget {
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 38.w,
-            height: 38.w,
-            alignment: Alignment.center,
+            width: 9.w,
+            height: 9.w,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8.r),
+              color: color,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 20.sp, color: color),
           ),
-          SizedBox(width: 10.w),
+          SizedBox(width: 8.w),
           Expanded(
+            flex: 5,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.5.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 10.5.sp,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4.h),
                 Text(
-                  displayName,
+                  period.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12.5.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.operationalNavy,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  period.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.5.sp,
+                    fontWeight: FontWeight.w700,
                     color: color,
                   ),
                 ),
-                SizedBox(height: 6.h),
-                ...lines.map(
-                  (line) => Padding(
-                    padding: EdgeInsets.only(bottom: 2.h),
-                    child: Text(
-                      line,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color:
-                            isDark ? Colors.white70 : const Color(0xFF6B7280),
-                      ),
-                    ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            flex: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${_formatWifiShortDate(period.startedAt)} - ${period.endedAt == null ? 'الآن' : _formatWifiShortDate(period.endedAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : const Color(0xFF374151),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _formatWifiDuration(period.durationSeconds),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 10.5.sp,
+                    color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WifiStatusIcon extends StatelessWidget {
+  const _WifiStatusIcon({required this.color, required this.icon});
+
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38.w,
+      height: 38.w,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Icon(icon, size: 20.sp, color: color),
+    );
+  }
+}
+
+class _WifiStatusPill extends StatelessWidget {
+  const _WifiStatusPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 110.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 10.5.sp,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
       ),
     );
   }
@@ -1106,15 +1185,23 @@ class _WifiEmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor4
             : Colors.white,
         borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: ThemeService.isDark.value
+              ? Colors.white12
+              : const Color(0xFFE5E7EB),
+        ),
       ),
       alignment: Alignment.center,
-      child: Text(text),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }
@@ -1198,6 +1285,15 @@ String _formatWifiDate(DateTime? date) {
   final hour = date.hour.toString().padLeft(2, '0');
   final minute = date.minute.toString().padLeft(2, '0');
   return '${date.year}-$month-$day $hour:$minute';
+}
+
+String _formatWifiShortDate(DateTime? date) {
+  if (date == null) return 'لا يوجد';
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$day/$month $hour:$minute';
 }
 
 String _formatWifiDuration(int seconds) {
