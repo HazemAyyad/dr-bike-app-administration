@@ -334,6 +334,37 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 ],
               ),
               SizedBox(height: 10.h),
+              Obx(
+                () => controller.isLoding.value
+                    ? Padding(
+                        padding: EdgeInsets.only(bottom: 8.h),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              controller.uploadProgressText,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.customGreyColor5,
+                                  ),
+                            ),
+                            if (controller.uploadProgress.value > 0) ...[
+                              SizedBox(height: 6.h),
+                              LinearProgressIndicator(
+                                value: controller.uploadProgress.value,
+                                minHeight: 4.h,
+                              ),
+                            ],
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
               AppButton(
                 isLoading: controller.isLoding,
                 text: controller.isEdit

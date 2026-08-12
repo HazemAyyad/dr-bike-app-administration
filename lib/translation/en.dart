@@ -925,6 +925,8 @@ const Map<String, String> en = {
 
   'createTask': 'Create Task',
   'taskCreatedSuccessfully': 'Task created successfully',
+  'savingTaskPleaseWait': 'Saving task...',
+  'uploadingTaskMediaProgress': 'Uploading media @percent%',
 
   'employeeTaskDetails': 'Employee Task Details',
   'privateTaskDetails': 'Private Task Details',

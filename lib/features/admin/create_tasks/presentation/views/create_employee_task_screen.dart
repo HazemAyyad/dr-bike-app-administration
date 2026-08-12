@@ -402,7 +402,7 @@ class _StickySaveBar extends GetView<CreateTaskController> {
         child: Obx(
           () => SizedBox(
             width: double.infinity,
-            height: 44.h,
+            height: controller.isLoding.value ? 58.h : 44.h,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.operationalPurple,
@@ -432,13 +432,52 @@ class _StickySaveBar extends GetView<CreateTaskController> {
                       }
                     },
               child: controller.isLoding.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Flexible(
+                              child: Text(
+                                controller.uploadProgressText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (controller.uploadProgress.value > 0) ...[
+                          SizedBox(height: 6.h),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: controller.uploadProgress.value,
+                              minHeight: 3.h,
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.24),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     )
                   : Text(
                       isEdit ? 'editTask'.tr : 'createTask'.tr,

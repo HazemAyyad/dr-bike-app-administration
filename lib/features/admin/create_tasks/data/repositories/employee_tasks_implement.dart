@@ -43,6 +43,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -71,6 +72,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         recurrenceConfig: recurrenceConfig,
         templateId: templateId,
         occurrenceId: occurrenceId,
+        onSendProgress: onSendProgress,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -101,6 +103,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required File audio,
     required RxList subSpecialTasks,
     required int specialTaskId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -120,6 +123,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         adminImg: adminImg,
         audio: audio,
         specialTaskId: specialTaskId,
+        onSendProgress: onSendProgress,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

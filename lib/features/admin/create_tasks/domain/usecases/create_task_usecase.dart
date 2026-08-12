@@ -34,6 +34,7 @@ class CreateTaskUsecase {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    void Function(int sent, int total)? onSendProgress,
   }) {
     return employeeTasksRepository.creatEmployeeTasks(
       employeeTaskId: employeeTaskId,
@@ -58,6 +59,7 @@ class CreateTaskUsecase {
       recurrenceConfig: recurrenceConfig,
       templateId: templateId,
       occurrenceId: occurrenceId,
+      onSendProgress: onSendProgress,
     );
   }
 }

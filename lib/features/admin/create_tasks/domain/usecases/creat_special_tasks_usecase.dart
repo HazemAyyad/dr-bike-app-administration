@@ -25,6 +25,7 @@ class CreatSpecialTasksUsecase {
     required File audio,
     required RxList subSpecialTasks,
     required int specialTaskId,
+    void Function(int sent, int total)? onSendProgress,
   }) {
     return createEmployeeTasksRepository.creatSpecialTasks(
       name: name,
@@ -40,6 +41,7 @@ class CreatSpecialTasksUsecase {
       audio: audio,
       subSpecialTasks: subSpecialTasks,
       specialTaskId: specialTaskId,
+      onSendProgress: onSendProgress,
     );
   }
 }

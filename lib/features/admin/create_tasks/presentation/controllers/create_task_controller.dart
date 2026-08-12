@@ -657,6 +657,29 @@ class CreateTaskController extends GetxController {
   }
 
   RxBool isLoding = false.obs;
+  final RxDouble uploadProgress = 0.0.obs;
+
+  String get uploadProgressText {
+    if (!isLoding.value) return '';
+    final progress = uploadProgress.value;
+    if (progress <= 0) return 'savingTaskPleaseWait'.tr;
+    final percent = (progress * 100).clamp(1, 100).round();
+    return 'uploadingTaskMediaProgress'
+        .tr
+        .replaceAll('@percent', percent.toString());
+  }
+
+  void _resetUploadProgress() {
+    uploadProgress.value = 0;
+  }
+
+  void _handleUploadProgress(int sent, int total) {
+    if (total <= 0) {
+      uploadProgress.value = 0;
+      return;
+    }
+    uploadProgress.value = (sent / total).clamp(0.0, 1.0);
+  }
 
   final RxString recordedPath = ''.obs;
 
@@ -687,6 +710,7 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
+      _resetUploadProgress();
       try {
         if (!isEdit) {
           employeeTaskService.taskDetails.value = null;
@@ -722,6 +746,7 @@ class CreateTaskController extends GetxController {
               : File(''),
           priority: priority.value,
           recurrenceConfig: buildRecurrenceConfigMap(),
+          onSendProgress: _handleUploadProgress,
         );
         if (!context.mounted) return;
         result.fold(
@@ -733,6 +758,7 @@ class CreateTaskController extends GetxController {
             );
           },
           (success) {
+            uploadProgress.value = 1;
             employeeTaskService.taskDetails.value = null;
             TaskDetailsDebug.clearTraces();
             if (Get.isRegistered<EmployeeTasksController>()) {
@@ -748,7 +774,7 @@ class CreateTaskController extends GetxController {
               }
             }
             Future.delayed(
-              const Duration(milliseconds: 650),
+              const Duration(milliseconds: 1600),
               () {
                 if (isEdit) {
                   AppNavigation.popToRoute(AppRoutes.TASKDETAILS);
@@ -763,6 +789,7 @@ class CreateTaskController extends GetxController {
               context: context,
               title: 'success'.tr,
               message: success,
+              autoCloseAfter: const Duration(milliseconds: 1400),
             );
           },
         );
@@ -773,7 +800,10 @@ class CreateTaskController extends GetxController {
           message: e.toString(),
         );
       } finally {
-        isLoding(false);
+        if (uploadProgress.value < 1) {
+          isLoding(false);
+          _resetUploadProgress();
+        }
       }
     }
   }
@@ -798,6 +828,7 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
+      _resetUploadProgress();
       try {
         final result = await creatSpecialTasksUsecase.call(
           specialTaskId: specialTaskId,
@@ -816,6 +847,7 @@ class CreateTaskController extends GetxController {
           audio: hasPlayableAudio(recordedPath.value)
               ? File(recordedPath.value)
               : File(''),
+          onSendProgress: _handleUploadProgress,
         );
         result.fold(
           (failure) {
@@ -842,6 +874,7 @@ class CreateTaskController extends GetxController {
             }
           },
           (success) {
+            uploadProgress.value = 1;
             if (Get.isRegistered<SpecialTasksController>()) {
               final specialTasksController = Get.find<SpecialTasksController>();
               specialTasksController.getSpecialTasks();
@@ -859,7 +892,7 @@ class CreateTaskController extends GetxController {
               }
             }
             Future.delayed(
-              const Duration(milliseconds: 650),
+              const Duration(milliseconds: 1600),
               () {
                 if (isEdit) {
                   AppNavigation.popToRoute(AppRoutes.SPECIALTASKDETAILSSCREEN);
@@ -874,11 +907,15 @@ class CreateTaskController extends GetxController {
               context: context,
               title: 'success'.tr,
               message: success,
+              autoCloseAfter: const Duration(milliseconds: 1400),
             );
           },
         );
       } finally {
-        isLoding(false);
+        if (uploadProgress.value < 1) {
+          isLoding(false);
+          _resetUploadProgress();
+        }
       }
     } else {
       Get.snackbar(

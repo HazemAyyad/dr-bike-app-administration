@@ -159,6 +159,7 @@ class CreateEmployeeTasksDatasource {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final subEmployeeTasksMap = <String, dynamic>{};
@@ -286,6 +287,7 @@ class CreateEmployeeTasksDatasource {
         endpoint,
         data: requestData,
         isFormData: true,
+        onSendProgress: onSendProgress,
       );
       final data = response.data;
       if (kDebugMode && isEdit) {
@@ -369,6 +371,7 @@ class CreateEmployeeTasksDatasource {
     required File audio,
     required RxList subSpecialTasks,
     required int specialTaskId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final subSpecialTasksMap = <String, dynamic>{};
@@ -443,6 +446,7 @@ class CreateEmployeeTasksDatasource {
             'audio': '',
         },
         isFormData: true,
+        onSendProgress: onSendProgress,
         options: Options(
           headers: {
             "Content-Type": "multipart/form-data",

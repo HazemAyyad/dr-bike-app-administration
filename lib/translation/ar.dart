@@ -912,6 +912,8 @@ const Map<String, String> ar = {
   'notesTotal': 'مجموع الملاحظات',
   'createTask': 'إنشاء المهمة',
   'taskCreatedSuccessfully': 'تم إنشاء المهمة بنجاح',
+  'savingTaskPleaseWait': 'جارٍ حفظ المهمة...',
+  'uploadingTaskMediaProgress': 'جارٍ رفع الملفات @percent%',
 
   'employeeTaskDetails': 'تفاصيل مهمة الموظفين',
   'privateTaskDetails': 'تفاصيل المهمة الخاصة',

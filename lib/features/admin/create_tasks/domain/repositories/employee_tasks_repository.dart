@@ -28,6 +28,7 @@ abstract class CreateEmployeeTasksRepository {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    void Function(int sent, int total)? onSendProgress,
   });
 
   Future<Either<Failure, String>> creatSpecialTasks({
@@ -44,5 +45,6 @@ abstract class CreateEmployeeTasksRepository {
     required File audio,
     required RxList subSpecialTasks,
     required int specialTaskId,
+    void Function(int sent, int total)? onSendProgress,
   });
 }
