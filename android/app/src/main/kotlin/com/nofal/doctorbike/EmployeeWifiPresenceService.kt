@@ -1,4 +1,4 @@
-package com.nofal.doctorbike
+package com.application.doctorbike
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -221,7 +221,7 @@ class EmployeeWifiPresenceService : Service() {
         private const val INTERVAL_MS = 45_000L
         private const val EXTRA_BASE_URL = "base_url"
         private const val EXTRA_TOKEN = "token"
-        private const val ACTION_STOP = "com.nofal.doctorbike.STOP_WIFI_PRESENCE"
+        private const val ACTION_STOP = "com.application.doctorbike.STOP_WIFI_PRESENCE"
 
         fun start(context: Context, baseUrl: String, token: String) {
             val intent = Intent(context, EmployeeWifiPresenceService::class.java).apply {

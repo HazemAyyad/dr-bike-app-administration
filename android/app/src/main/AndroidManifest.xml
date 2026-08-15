@@ -25,10 +25,16 @@
 
     <application
         android:label="@string/app_name"
-        android:name="${applicationName}"
+        android:name="com.application.doctorbike.DoctorBikeApplication"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true">
+        <meta-data
+            android:name="THING_SMART_APPKEY"
+            android:value="${THING_SMART_APPKEY}" />
+        <meta-data
+            android:name="THING_SMART_SECRET"
+            android:value="${THING_SMART_SECRET}" />
         <meta-data
             android:name="io.flutter.embedding.android.ImpellerEnabled"
             android:value="false" />
@@ -42,7 +48,7 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="dr_bike_admin_notifications" />
         <activity
-            android:name="com.nofal.doctorbike.MainActivity"
+            android:name="com.application.doctorbike.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
@@ -80,7 +86,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.nofal.doctorbike.BiometricProxyActivity"
+            android:name="com.application.doctorbike.BiometricProxyActivity"
             android:exported="false"
             android:theme="@style/Theme.DrBike.BiometricProxy" />
         <receiver

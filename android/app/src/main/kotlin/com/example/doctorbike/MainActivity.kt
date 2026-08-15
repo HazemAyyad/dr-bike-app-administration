@@ -1,4 +1,4 @@
-package com.nofal.doctorbike
+package com.application.doctorbike
 
 import android.app.KeyguardManager
 import android.app.Activity
@@ -16,11 +16,15 @@ import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.thingclips.smart.android.user.api.ILoginCallback
+import com.thingclips.smart.android.user.bean.User
+import com.thingclips.smart.home.sdk.ThingHomeSdk
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "dr_bike/biometric"
     private val wifiPresenceChannelName = "dr_bike/employee_wifi_presence"
+    private val smartHomeChannelName = "dr_bike/smart_home"
     private val strong = BiometricManager.Authenticators.BIOMETRIC_STRONG
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -115,8 +119,79 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, smartHomeChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "status" -> result.success(
+                        mapOf(
+                            "initialized" to DoctorBikeApplication.tuyaInitialized,
+                            "platform" to "android",
+                            "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                        )
+                    )
+                    "loginWithUid" -> loginTuyaWithUid(call, result)
+                    else -> result.notImplemented()
+                }
+            }
     }
 
+    private fun loginTuyaWithUid(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "uid" to "",
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                )
+            )
+            return
+        }
+
+        val countryCode = call.argument<String>("countryCode") ?: ""
+        val uid = call.argument<String>("uid") ?: ""
+        val password = call.argument<String>("password") ?: ""
+        if (countryCode.isBlank() || uid.isBlank() || password.isBlank()) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "uid" to uid,
+                    "code" to "missing_uid_login_arguments",
+                    "message" to "Missing Tuya UID login arguments",
+                )
+            )
+            return
+        }
+
+        ThingHomeSdk.getUserInstance().loginOrRegisterWithUid(
+            countryCode,
+            uid,
+            password,
+            object : ILoginCallback {
+                override fun onSuccess(user: User) {
+                    result.success(
+                        mapOf(
+                            "success" to true,
+                            "uid" to (user.uid ?: uid),
+                            "code" to "",
+                            "message" to "Tuya UID login succeeded",
+                        )
+                    )
+                }
+
+                override fun onError(code: String, error: String) {
+                    result.success(
+                        mapOf(
+                            "success" to false,
+                            "uid" to uid,
+                            "code" to code,
+                            "message" to error,
+                        )
+                    )
+                }
+            }
+        )
+    }
     private fun checkAvailability(): Map<String, Any> {
         val manager = BiometricManager.from(this)
         val strongCode = manager.canAuthenticate(strong)
@@ -487,3 +562,4 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 }
+

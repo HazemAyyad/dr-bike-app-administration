@@ -2,11 +2,19 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://maven-other.tuya.com/repository/maven-releases/") }
+        maven { url = uri("https://maven-other.tuya.com/repository/maven-commercial-releases/") }
     }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
 rootProject.layout.buildDirectory.value(newBuildDir)
+
+subprojects {
+    configurations.all {
+        exclude(group = "com.thingclips.smart", module = "thingsmart-modularCampAnno")
+    }
+}
 
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)

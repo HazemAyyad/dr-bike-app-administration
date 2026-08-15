@@ -52,6 +52,7 @@ class AppRoutes {
   static const APPDEVELOPMENT = '/AppDevelopment';
   static const APPDEVELOPMENTTASK = '/AppDevelopment/:id';
   static const METACATALOGSYNC = '/MetaCatalogSync';
+  static const SMARTHOMESCREEN = '/SmartHomeScreen';
 
   // EMPLOYEE TASKS SCREEN
   static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';

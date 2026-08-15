@@ -1,4 +1,4 @@
-package com.nofal.doctorbike
+package com.application.doctorbike
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider

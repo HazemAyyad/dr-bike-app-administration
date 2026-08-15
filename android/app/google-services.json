@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:960923193223:android:f026a525be6386c924cd22",
+        "android_client_info": {
+          "package_name": "com.application.doctorbike"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDge4XGPw6OVrvK_051-1ELHnU8EBIzah8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:960923193223:android:9b7c56a07743cb5724cd22",
         "android_client_info": {
           "package_name": "com.nofal.doctorbike"

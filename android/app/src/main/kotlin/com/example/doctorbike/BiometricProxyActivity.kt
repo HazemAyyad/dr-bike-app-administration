@@ -1,4 +1,4 @@
-package com.nofal.doctorbike
+package com.application.doctorbike
 
 import android.app.Activity
 import android.app.KeyguardManager

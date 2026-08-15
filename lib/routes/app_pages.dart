@@ -38,6 +38,8 @@ import '../features/admin/meta_catalog/presentation/bindings/meta_catalog_bindin
 import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_screen.dart';
 import '../features/technical_support/presentation/technical_support_screen.dart';
 import '../features/notes/presentation/notes_screen.dart';
+import '../features/smart_home/presentation/bindings/smart_home_binding.dart';
+import '../features/smart_home/presentation/views/smart_home_dashboard_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
@@ -344,6 +346,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.NOTES,
       page: () => const NotesScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SMARTHOMESCREEN,
+      page: () => const SmartHomeDashboardScreen(),
+      binding: SmartHomeBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
