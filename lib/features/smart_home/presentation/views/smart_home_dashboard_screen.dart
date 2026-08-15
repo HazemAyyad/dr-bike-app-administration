@@ -103,6 +103,15 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              Obx(() {
+                if (controller.errorMessage.value.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(top: 12.h),
+                  child: _ErrorBanner(message: controller.errorMessage.value),
+                );
+              }),
             ],
           ),
           actions: [
@@ -115,6 +124,7 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 onPressed: controller.isPairingDevice.value
                     ? null
                     : () async {
+                        controller.errorMessage('');
                         await controller.startDevicePairing(
                           ssid: ssidController.text,
                           password: passwordController.text,

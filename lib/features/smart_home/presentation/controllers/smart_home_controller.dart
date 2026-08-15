@@ -40,6 +40,13 @@ class SmartHomeController extends GetxController {
       devices.where((device) => !device.online).length;
   bool get isTuyaUserLinked => tuyaUser.value?.linked == true;
 
+  String formatVisibleError(String fallback, {String? code, String? message}) {
+    final parts = <String>[fallback];
+    if (code != null && code.isNotEmpty) parts.add('[]');
+    if (message != null && message.isNotEmpty) parts.add(message);
+    return parts.join(' ');
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -96,7 +103,18 @@ class SmartHomeController extends GetxController {
         password: credentials.password,
       );
       if (!result.success) {
-        errorMessage(result.message.isNotEmpty ? result.message : result.code);
+        final visible = formatVisibleError(
+          'tuyaUserLinkFailed'.tr,
+          code: result.code,
+          message: result.message,
+        );
+        errorMessage(visible);
+        await _logEvent(
+          event: 'tuya_uid_login',
+          success: false,
+          errorCode: result.code,
+          message: result.message,
+        );
         return;
       }
       tuyaUser.value = await apiService.updateTuyaUser(
@@ -121,14 +139,26 @@ class SmartHomeController extends GetxController {
     final home = selectedHome;
     if (home == null) {
       errorMessage('smartHomeMissingHome'.tr);
+      await _logEvent(
+          event: 'pairing_validation',
+          success: false,
+          message: 'Missing selected home');
       return;
     }
     if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
       errorMessage('smartHomeTuyaNotReady'.tr);
+      await _logEvent(
+          event: 'pairing_validation',
+          success: false,
+          message: 'Tuya not ready');
       return;
     }
     if (ssid.trim().isEmpty) {
       errorMessage('smartHomeWifiNameRequired'.tr);
+      await _logEvent(
+          event: 'pairing_validation',
+          success: false,
+          message: 'Missing WiFi SSID');
       return;
     }
 
@@ -159,6 +189,13 @@ class SmartHomeController extends GetxController {
           homes.add(activeHome);
         }
         tuyaHomeId = activeHome.tuyaHomeId;
+        await _logEvent(
+          smartHomeId: activeHome.id,
+          event: 'tuya_home_create',
+          success: true,
+          message: nativeHome.message,
+          context: {'tuya_home_id': tuyaHomeId},
+        );
       }
 
       final pairing = await nativeService.startWifiPairing(
@@ -182,11 +219,40 @@ class SmartHomeController extends GetxController {
         devices.add(registered);
       }
       await refreshData();
+      await _logEvent(
+        smartHomeId: activeHome.id,
+        event: 'wifi_pairing',
+        success: true,
+        message: pairing.message,
+        context: pairing.device,
+      );
       Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
     } catch (e) {
       errorMessage(e.toString());
     } finally {
       isPairingDevice(false);
+    }
+  }
+
+  Future<void> _logEvent({
+    int? smartHomeId,
+    required String event,
+    required bool success,
+    String? errorCode,
+    String? message,
+    Map<String, dynamic>? context,
+  }) async {
+    try {
+      await apiService.storeEventLog(
+        smartHomeId: smartHomeId,
+        event: event,
+        success: success,
+        errorCode: errorCode,
+        message: message,
+        context: context,
+      );
+    } catch (_) {
+      // Logging must not block the customer flow.
     }
   }
 

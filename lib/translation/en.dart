@@ -3066,6 +3066,9 @@ const Map<String, String> en = {
   'smartHomeTuyaNotReady': 'Tuya is not ready for pairing yet',
   'smartHomeWifiNameRequired': 'Enter the WiFi network name first',
   'smartHomeDevicePaired': 'Device paired and saved',
+  'tuyaUserLinkFailed': 'Failed to link Tuya user',
+  'smartHomeCreateTuyaHomeFailed': 'Failed to create the home in Tuya',
+  'smartHomePairingFailed': 'Device pairing failed',
   'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
   'smartHomeComingSoon':
       'This step will be enabled after the full Tuya connection',

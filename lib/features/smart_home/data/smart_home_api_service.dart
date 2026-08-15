@@ -162,6 +162,24 @@ class SmartDeviceModel {
 class SmartHomeApiService {
   DioConsumer get _api => Get.find<DioConsumer>();
 
+  Future<void> storeEventLog({
+    int? smartHomeId,
+    required String event,
+    required bool success,
+    String? errorCode,
+    String? message,
+    Map<String, dynamic>? context,
+  }) async {
+    await _api.post(EndPoints.smartHomeEventLogs, data: {
+      if (smartHomeId != null) 'smart_home_id': smartHomeId,
+      'event': event,
+      'success': success,
+      if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
+      if (message != null && message.isNotEmpty) 'message': message,
+      if (context != null) 'context': context,
+    });
+  }
+
   Future<SmartHomeTuyaUserModel> getTuyaUser() async {
     final response = await _api.get(EndPoints.smartTuyaUser);
     return SmartHomeTuyaUserModel.fromJson(
