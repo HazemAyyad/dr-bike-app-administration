@@ -19,6 +19,14 @@ import io.flutter.plugin.common.MethodChannel
 import com.thingclips.smart.android.user.api.ILoginCallback
 import com.thingclips.smart.android.user.bean.User
 import com.thingclips.smart.home.sdk.ThingHomeSdk
+import com.thingclips.smart.home.sdk.bean.HomeBean
+import com.thingclips.smart.home.sdk.builder.ActivatorBuilder
+import com.thingclips.smart.home.sdk.callback.IThingHomeResultCallback
+import com.thingclips.smart.sdk.api.IThingActivator
+import com.thingclips.smart.sdk.api.IThingActivatorGetToken
+import com.thingclips.smart.sdk.api.IThingSmartActivatorListener
+import com.thingclips.smart.sdk.bean.DeviceBean
+import com.thingclips.smart.sdk.enums.ActivatorModelEnum
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterFragmentActivity() {
@@ -33,6 +41,7 @@ class MainActivity : FlutterFragmentActivity() {
     private lateinit var biometricProxyLauncher: ActivityResultLauncher<Intent>
     private var pendingKeyguardResult: MethodChannel.Result? = null
     private var keyguardLaunchStartedAt: Long = 0L
+    private var activeSmartHomeActivator: IThingActivator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,6 +139,12 @@ class MainActivity : FlutterFragmentActivity() {
                         )
                     )
                     "loginWithUid" -> loginTuyaWithUid(call, result)
+                    "createHome" -> createTuyaHome(call, result)
+                    "startWifiPairing" -> startTuyaWifiPairing(call, result)
+                    "stopPairing" -> {
+                        stopSmartHomeActivator()
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -190,6 +205,171 @@ class MainActivity : FlutterFragmentActivity() {
                     )
                 }
             }
+        )
+    }
+    private fun createTuyaHome(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "tuya_home_id" to "",
+                    "name" to "",
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                )
+            )
+            return
+        }
+
+        val name = call.argument<String>("name")?.takeIf { it.isNotBlank() } ?: "Doctor Bike"
+        ThingHomeSdk.getHomeManagerInstance().createHome(
+            name,
+            0.0,
+            0.0,
+            "",
+            arrayListOf<String>(),
+            object : IThingHomeResultCallback {
+                override fun onSuccess(bean: HomeBean) {
+                    result.success(
+                        mapOf(
+                            "success" to true,
+                            "tuya_home_id" to bean.homeId.toString(),
+                            "name" to (bean.name ?: name),
+                            "code" to "",
+                            "message" to "Tuya home created",
+                        )
+                    )
+                }
+
+                override fun onError(code: String, error: String) {
+                    result.success(
+                        mapOf(
+                            "success" to false,
+                            "tuya_home_id" to "",
+                            "name" to name,
+                            "code" to code,
+                            "message" to error,
+                        )
+                    )
+                }
+            }
+        )
+    }
+
+    private fun startTuyaWifiPairing(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                    "device" to emptyMap<String, Any?>(),
+                )
+            )
+            return
+        }
+
+        val tuyaHomeId = call.argument<String>("tuyaHomeId")?.toLongOrNull() ?: 0L
+        val ssid = call.argument<String>("ssid") ?: ""
+        val password = call.argument<String>("password") ?: ""
+        if (tuyaHomeId <= 0L || ssid.isBlank()) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "missing_pairing_arguments",
+                    "message" to "Missing Tuya home id or WiFi name",
+                    "device" to emptyMap<String, Any?>(),
+                )
+            )
+            return
+        }
+
+        stopSmartHomeActivator()
+        val completed = AtomicBoolean(false)
+        ThingHomeSdk.getActivatorInstance().getActivatorToken(
+            tuyaHomeId,
+            object : IThingActivatorGetToken {
+                override fun onSuccess(token: String) {
+                    val builder = ActivatorBuilder()
+                        .setContext(applicationContext)
+                        .setSsid(ssid)
+                        .setPassword(password)
+                        .setToken(token)
+                        .setTimeOut(120)
+                        .setActivatorModel(ActivatorModelEnum.THING_EZ)
+                        .setListener(object : IThingSmartActivatorListener {
+                            override fun onError(code: String, error: String) {
+                                if (completed.compareAndSet(false, true)) {
+                                    stopSmartHomeActivator()
+                                    result.success(
+                                        mapOf(
+                                            "success" to false,
+                                            "code" to code,
+                                            "message" to error,
+                                            "device" to emptyMap<String, Any?>(),
+                                        )
+                                    )
+                                }
+                            }
+
+                            override fun onActiveSuccess(deviceBean: DeviceBean) {
+                                if (completed.compareAndSet(false, true)) {
+                                    stopSmartHomeActivator()
+                                    result.success(
+                                        mapOf(
+                                            "success" to true,
+                                            "code" to "",
+                                            "message" to "Device paired",
+                                            "device" to mapDeviceBean(deviceBean),
+                                        )
+                                    )
+                                }
+                            }
+
+                            override fun onStep(step: String, data: Any?) {
+                                Log.d("DoctorBikeTuya", "Pairing step=$step data=$data")
+                            }
+                        })
+
+                    activeSmartHomeActivator = ThingHomeSdk.getActivatorInstance()
+                        .newEZWifiConfigDevActivator(builder)
+                    activeSmartHomeActivator?.start()
+                }
+
+                override fun onFailure(code: String, error: String) {
+                    if (completed.compareAndSet(false, true)) {
+                        result.success(
+                            mapOf(
+                                "success" to false,
+                                "code" to code,
+                                "message" to error,
+                                "device" to emptyMap<String, Any?>(),
+                            )
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    private fun stopSmartHomeActivator() {
+        runCatching { activeSmartHomeActivator?.stop() }
+        runCatching { activeSmartHomeActivator?.onDestroy() }
+        activeSmartHomeActivator = null
+    }
+
+    private fun mapDeviceBean(device: DeviceBean): Map<String, Any?> {
+        return mapOf(
+            "tuya_device_id" to (device.devId ?: ""),
+            "tuya_product_id" to device.productId,
+            "tuya_uuid" to device.uuid,
+            "name" to (device.name ?: "Smart device"),
+            "category" to device.category,
+            "product_name" to (device.productId ?: device.category ?: ""),
+            "icon" to device.iconUrl,
+            "protocol" to "wifi",
+            "online" to (device.isOnline == true),
+            "last_status" to (device.dps ?: emptyMap<String, Any?>()),
         )
     }
     private fun checkAvailability(): Map<String, Any> {

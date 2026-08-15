@@ -25,6 +25,7 @@ class SmartHomeController extends GetxController {
   final devices = <SmartDeviceModel>[].obs;
   final tuyaUser = Rxn<SmartHomeTuyaUserModel>();
   final isLinkingTuyaUser = false.obs;
+  final isPairingDevice = false.obs;
 
   SmartHomeModel? get selectedHome =>
       homes.firstWhereOrNull((home) => home.isDefault) ??
@@ -110,6 +111,82 @@ class SmartHomeController extends GetxController {
       errorMessage(e.toString());
     } finally {
       isLinkingTuyaUser(false);
+    }
+  }
+
+  Future<void> startDevicePairing({
+    required String ssid,
+    required String password,
+  }) async {
+    final home = selectedHome;
+    if (home == null) {
+      errorMessage('smartHomeMissingHome'.tr);
+      return;
+    }
+    if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
+      errorMessage('smartHomeTuyaNotReady'.tr);
+      return;
+    }
+    if (ssid.trim().isEmpty) {
+      errorMessage('smartHomeWifiNameRequired'.tr);
+      return;
+    }
+
+    isPairingDevice(true);
+    errorMessage('');
+    try {
+      var activeHome = home;
+      var tuyaHomeId = activeHome.tuyaHomeId;
+      if (tuyaHomeId.isEmpty) {
+        final nativeHome =
+            await nativeService.createHome(name: activeHome.name);
+        if (!nativeHome.success || nativeHome.tuyaHomeId.isEmpty) {
+          errorMessage(
+            nativeHome.message.isNotEmpty
+                ? nativeHome.message
+                : nativeHome.code,
+          );
+          return;
+        }
+        activeHome = await apiService.updateHomeTuyaId(
+          homeId: activeHome.id,
+          tuyaHomeId: nativeHome.tuyaHomeId,
+        );
+        final index = homes.indexWhere((item) => item.id == activeHome.id);
+        if (index >= 0) {
+          homes[index] = activeHome;
+        } else {
+          homes.add(activeHome);
+        }
+        tuyaHomeId = activeHome.tuyaHomeId;
+      }
+
+      final pairing = await nativeService.startWifiPairing(
+        tuyaHomeId: tuyaHomeId,
+        ssid: ssid.trim(),
+        password: password,
+      );
+      if (!pairing.success) {
+        errorMessage(
+            pairing.message.isNotEmpty ? pairing.message : pairing.code);
+        return;
+      }
+      final registered = await apiService.registerDevice(
+        smartHomeId: activeHome.id,
+        device: pairing.device,
+      );
+      final existing = devices.indexWhere((item) => item.id == registered.id);
+      if (existing >= 0) {
+        devices[existing] = registered;
+      } else {
+        devices.add(registered);
+      }
+      await refreshData();
+      Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isPairingDevice(false);
     }
   }
 

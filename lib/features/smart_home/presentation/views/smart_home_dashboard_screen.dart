@@ -56,7 +56,7 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
               _SectionHeader(
                 title: 'devices'.tr,
                 actionLabel: 'addDevice'.tr,
-                onAction: () => _notReady('addDevice'.tr),
+                onAction: _showAddDeviceDialog,
               ),
               SizedBox(height: 8.h),
               _DevicesList(controller: controller),
@@ -69,6 +69,77 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
 
   void _notReady(String title) {
     Get.snackbar(title, 'smartHomeComingSoon'.tr);
+  }
+
+  Future<void> _showAddDeviceDialog() async {
+    final ssidController = TextEditingController();
+    final passwordController = TextEditingController();
+    try {
+      await Get.dialog<void>(
+        AlertDialog(
+          title: Text('addDevice'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ssidController,
+                decoration: InputDecoration(
+                  labelText: 'smartHomeWifiName'.tr,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'smartHomeWifiPassword'.tr,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                'smartHomePairingHint'.tr,
+                style: Get.textTheme.bodySmall?.copyWith(
+                  color: AppColors.customGreyColor5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: Get.back,
+              child: Text('close'.tr),
+            ),
+            Obx(
+              () => ElevatedButton(
+                onPressed: controller.isPairingDevice.value
+                    ? null
+                    : () async {
+                        await controller.startDevicePairing(
+                          ssid: ssidController.text,
+                          password: passwordController.text,
+                        );
+                        if (!controller.isPairingDevice.value &&
+                            controller.errorMessage.value.isEmpty) {
+                          Get.back<void>();
+                        }
+                      },
+                child: controller.isPairingDevice.value
+                    ? SizedBox(
+                        width: 18.w,
+                        height: 18.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('startPairing'.tr),
+              ),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      ssidController.dispose();
+      passwordController.dispose();
+    }
   }
 }
 

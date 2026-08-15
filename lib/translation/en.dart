@@ -3057,6 +3057,15 @@ const Map<String, String> en = {
   'tuyaUserLinked': 'Tuya user linked',
   'tuyaUserLinking': 'Linking Tuya user...',
   'tuyaUserNeedsLink': 'Tuya user is not linked yet',
+  'startPairing': 'Start pairing',
+  'smartHomeWifiName': 'WiFi network name',
+  'smartHomeWifiPassword': 'WiFi password',
+  'smartHomePairingHint':
+      'Put the device in fast blinking mode, then start pairing. Use a 2.4GHz network when the device requires it.',
+  'smartHomeMissingHome': 'No smart home is selected',
+  'smartHomeTuyaNotReady': 'Tuya is not ready for pairing yet',
+  'smartHomeWifiNameRequired': 'Enter the WiFi network name first',
+  'smartHomeDevicePaired': 'Device paired and saved',
   'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
   'smartHomeComingSoon':
       'This step will be enabled after the full Tuya connection',
