@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -11,7 +13,6 @@ import 'package:doctorbike/core/utils/assets_manger.dart';
 
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
-import 'dart:typed_data';
 
 class UploadImageButton extends StatefulWidget {
   final Rx<XFile?> selectedFile;
@@ -330,6 +331,31 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
     widget.onFilesChanged(List<File>.unmodifiable(_files));
   }
 
+  Future<List<XFile>> _pickGalleryVideos() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const [
+        'mp4',
+        'mov',
+        'avi',
+        'webm',
+        'mkv',
+        'm4v',
+        '3gp',
+      ],
+      allowMultiple: true,
+      withData: false,
+    );
+    if (result == null) return [];
+
+    return result.files
+        .map((file) => file.path)
+        .whereType<String>()
+        .where((path) => path.trim().isNotEmpty)
+        .map((path) => XFile(path))
+        .toList();
+  }
+
   Future<void> _pickFiles() async {
     final picker = ImagePicker();
     List<XFile> picked = [];
@@ -374,8 +400,7 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
             showMediaPermissionDeniedSnackbar();
             return;
           }
-          final video = await picker.pickVideo(source: ImageSource.gallery);
-          if (video != null) picked.add(video);
+          picked.addAll(await _pickGalleryVideos());
         }
         break;
 
@@ -407,8 +432,7 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           final video = await picker.pickVideo(source: ImageSource.camera);
           if (video != null) picked.add(video);
         } else if (choice == 'gallery_video') {
-          final video = await picker.pickVideo(source: ImageSource.gallery);
-          if (video != null) picked.add(video);
+          picked.addAll(await _pickGalleryVideos());
         }
         break;
 

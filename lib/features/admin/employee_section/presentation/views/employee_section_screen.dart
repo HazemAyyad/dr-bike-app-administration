@@ -10,6 +10,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
+import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/employee_section_controller.dart';
 import '../widgets/create_qrcode.dart';
@@ -32,6 +33,18 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: '',
+        onPressedBack: () {
+          if (Get.isRegistered<BottomNavBarController>()) {
+            final nav = Get.find<BottomNavBarController>();
+            if (nav.currentIndex.value == 2) {
+              nav.changePage(0);
+              return;
+            }
+          }
+          if (Get.key.currentState?.canPop() ?? false) {
+            Get.back();
+          }
+        },
         actions: [
           IconButton(
             tooltip: 'pointsGuideTitle'.tr,

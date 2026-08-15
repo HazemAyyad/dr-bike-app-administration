@@ -1285,51 +1285,18 @@ class _IncomingBatchCreateScaffoldState
   Future<void> _prepareRows() async {
     final useSharedImages = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('صور الشيكات'),
-        content: const Text(
-          'هل صورة الشيك من الأمام والخلف نفسها لكل الشيكات؟',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('لا'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('نعم'),
-          ),
-        ],
+      builder: (dialogContext) => _SharedBatchImagesDialog(
+        frontImage: controller.checkFrontImage,
+        backImage: controller.checkBackImage,
       ),
     );
 
     if (useSharedImages == null) return;
     if (!mounted) return;
 
-    if (useSharedImages) {
-      if (controller.checkFrontImage.value == null) {
-        await UploadImageButton.pickFileFor(
-          context,
-          controller.checkFrontImage,
-        );
-      }
-      if (!mounted) return;
-      if (controller.checkFrontImage.value == null) {
-        Get.snackbar('error'.tr, 'checkFrontImage'.tr);
-        return;
-      }
-
-      if (controller.checkBackImage.value == null) {
-        await UploadImageButton.pickFileFor(
-          context,
-          controller.checkBackImage,
-        );
-      }
-      if (!mounted) return;
-      if (controller.checkBackImage.value == null) {
-        Get.snackbar('error'.tr, 'checkBackImage'.tr);
-        return;
-      }
+    if (useSharedImages && controller.checkFrontImage.value == null) {
+      Get.snackbar('error'.tr, 'checkFrontImage'.tr);
+      return;
     }
 
     controller.generateIncomingBatchRows(
@@ -1623,6 +1590,99 @@ class _PlainTextField extends StatelessWidget {
       validator: requiredField
           ? (value) => value == null || value.trim().isEmpty ? label : null
           : null,
+    );
+  }
+}
+
+class _SharedBatchImagesDialog extends StatelessWidget {
+  const _SharedBatchImagesDialog({
+    required this.frontImage,
+    required this.backImage,
+  });
+
+  final Rx<XFile?> frontImage;
+  final Rx<XFile?> backImage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFFF3F4F6),
+      surfaceTintColor: const Color(0xFFF3F4F6),
+      insetPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 24.h),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420.w,
+          minWidth: 280.w,
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 10.h),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'صور الشيكات المشتركة',
+                  style: TextStyle(
+                    color: const Color(0xFF111827),
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  'هل صورة الأمام والخلف نفسها لكل الشيكات؟',
+                  style: TextStyle(
+                    color: const Color(0xFF374151),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                _MiniImagePicker(
+                  title: 'checkFrontImage',
+                  selectedFile: frontImage,
+                  requiredField: true,
+                ),
+                SizedBox(height: 10.h),
+                _MiniImagePicker(
+                  title: 'checkBackImage',
+                  selectedFile: backImage,
+                ),
+                SizedBox(height: 12.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF374151),
+                      ),
+                      child: const Text('لا'),
+                    ),
+                    SizedBox(width: 8.w),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (frontImage.value == null) {
+                          Get.snackbar('error'.tr, 'checkFrontImage'.tr);
+                          return;
+                        }
+                        Navigator.pop(context, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE5E7EB),
+                        foregroundColor: const Color(0xFF111827),
+                        elevation: 0,
+                      ),
+                      child: const Text('نعم'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2413,28 +2473,121 @@ class _MiniImagePicker extends StatelessWidget {
   const _MiniImagePicker({
     required this.title,
     required this.selectedFile,
+    this.requiredField = false,
   });
 
   final String title;
   final Rx<XFile?> selectedFile;
+  final bool requiredField;
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => OutlinedButton.icon(
-        onPressed: () async {
+    return Obx(() {
+      final file = selectedFile.value;
+
+      return InkWell(
+        onTap: () async {
           await UploadImageButton.pickFileFor(context, selectedFile);
         },
-        icon: Icon(
-          selectedFile.value == null ? Icons.add_a_photo : Icons.check_circle,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          constraints: BoxConstraints(minHeight: 112.h),
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFD1D5DB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      requiredField ? '${title.tr} *' : title.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFF111827),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    file == null ? Icons.add_a_photo : Icons.edit_outlined,
+                    color: AppColors.primaryColor,
+                    size: 18.sp,
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              if (file == null)
+                Container(
+                  height: 72.h,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'إرفاق صورة',
+                    style: TextStyle(
+                      color: const Color(0xFF6B7280),
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.file(
+                        File(file.path),
+                        height: 92.h,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 92.h,
+                          alignment: Alignment.center,
+                          color: const Color(0xFFF3F4F6),
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: const Color(0xFF6B7280),
+                            size: 22.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4.h,
+                      right: 4.w,
+                      child: InkWell(
+                        onTap: () => selectedFile.value = null,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: EdgeInsets.all(4.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(230),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: const Color(0xFF111827),
+                            size: 15.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
-        label: Text(
-          title.tr,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
+      );
+    });
   }
 }
