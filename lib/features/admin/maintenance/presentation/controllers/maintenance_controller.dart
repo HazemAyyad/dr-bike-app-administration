@@ -106,7 +106,13 @@ class MaintenanceController extends GetxController {
     {3: 'readyToDeliver'},
   ];
 
-  List<String> tabs = ['newRequest', 'inProgress', 'readyToDeliver', 'archive'];
+  List<String> tabs = [
+    'newRequest',
+    'inProgress',
+    'readyToDeliver',
+    'delivered',
+    'archive',
+  ];
 
   double get laborCost => SalesAmountFormat.parse(laborCostController.text);
   double get discount => SalesAmountFormat.parse(discountController.text);
@@ -876,7 +882,15 @@ class MaintenanceController extends GetxController {
     MaintenanceServes().readyMaintenancesTasks.value =
         _groupMaintenancesByDate(ready);
 
-    final archiveData = await maintenanceUsecase.call(tab: 3);
+    final deliveredData = await maintenanceUsecase.call(tab: 3);
+    final delivered = (deliveredData['maintenance_details'] as List)
+        .map((e) => MaintenanceDataModel.fromJson(e))
+        .toList();
+    MaintenanceServes().deliveredMaintenancesList.assignAll(delivered);
+    MaintenanceServes().deliveredMaintenancesTasks.value =
+        _groupMaintenancesByDate(delivered);
+
+    final archiveData = await maintenanceUsecase.call(tab: 4);
     final archive = (archiveData['maintenance_details'] as List)
         .map((e) => MaintenanceDataModel.fromJson(e))
         .toList();
@@ -1086,12 +1100,15 @@ class MaintenanceController extends GetxController {
   final Map<String, List<MaintenanceDataModel>> maintenancesSearch = {};
   final Map<String, List<MaintenanceDataModel>> ongoingMaintenancesSearch = {};
   final Map<String, List<MaintenanceDataModel>> readyMaintenancesSearch = {};
+  final Map<String, List<MaintenanceDataModel>> deliveredMaintenancesSearch =
+      {};
   final Map<String, List<MaintenanceDataModel>> archiveMaintenancesSearch = {};
 
   List<int> get tabCounts => [
         _groupedCount(maintenancesSearch),
         _groupedCount(ongoingMaintenancesSearch),
         _groupedCount(readyMaintenancesSearch),
+        _groupedCount(deliveredMaintenancesSearch),
         _groupedCount(archiveMaintenancesSearch),
       ];
 
@@ -1172,6 +1189,10 @@ class MaintenanceController extends GetxController {
       ..clear()
       ..addAll(_groupMaintenancesByDate(
           applyFilter(MaintenanceServes().readyMaintenancesList)));
+    deliveredMaintenancesSearch
+      ..clear()
+      ..addAll(_groupMaintenancesByDate(
+          applyFilter(MaintenanceServes().deliveredMaintenancesList)));
     archiveMaintenancesSearch
       ..clear()
       ..addAll(_groupMaintenancesByDate(
@@ -1190,6 +1211,8 @@ class MaintenanceController extends GetxController {
         .assignAll(MaintenanceServes().ongoingMaintenancesTasks);
     readyMaintenancesSearch
         .assignAll(MaintenanceServes().readyMaintenancesTasks);
+    deliveredMaintenancesSearch
+        .assignAll(MaintenanceServes().deliveredMaintenancesTasks);
     archiveMaintenancesSearch
         .assignAll(MaintenanceServes().archiveMaintenancesTasks);
   }
@@ -1201,6 +1224,7 @@ Color getStatusColor({
   required int currentTab,
 }) {
   if (currentTab == 3) return AppColors.customGreen1;
+  if (currentTab == 4) return AppColors.operationalPurple;
   final DateTime receiptDateTime = DateTime.parse("$receiptDate $receiptTime");
   final Duration diff = receiptDateTime.difference(DateTime.now());
   if (diff.inHours > 1) return AppColors.customGreen1;

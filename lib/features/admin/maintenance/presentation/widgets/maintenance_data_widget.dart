@@ -130,6 +130,12 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
           );
         }
         if (controller.currentTab.value == 3 &&
+            controller.deliveredMaintenancesSearch.isEmpty) {
+          return const SliverFillRemaining(
+            child: Center(child: ShowNoData()),
+          );
+        }
+        if (controller.currentTab.value == 4 &&
             controller.archiveMaintenancesSearch.isEmpty) {
           return const SliverFillRemaining(
             child: Center(child: ShowNoData()),
@@ -153,10 +159,15 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                               .toList()
                               .reversed
                               .toList()[index]
-                          : controller.archiveMaintenancesSearch.keys
-                              .toList()
-                              .reversed
-                              .toList()[index];
+                          : controller.currentTab.value == 3
+                              ? controller.deliveredMaintenancesSearch.keys
+                                  .toList()
+                                  .reversed
+                                  .toList()[index]
+                              : controller.archiveMaintenancesSearch.keys
+                                  .toList()
+                                  .reversed
+                                  .toList()[index];
 
               final assets = controller.currentTab.value == 0
                   ? controller.maintenancesSearch[month]!.reversed.toList()
@@ -166,9 +177,13 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                       : controller.currentTab.value == 2
                           ? controller.readyMaintenancesSearch[month]!.reversed
                               .toList()
-                          : controller
-                              .archiveMaintenancesSearch[month]!.reversed
-                              .toList();
+                          : controller.currentTab.value == 3
+                              ? controller
+                                  .deliveredMaintenancesSearch[month]!.reversed
+                                  .toList()
+                              : controller
+                                  .archiveMaintenancesSearch[month]!.reversed
+                                  .toList();
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -457,10 +472,14 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                       child: Text(
                                         controller.currentTab.value == 3
                                             ? 'delivered'.tr
-                                            : getStatusText(
-                                                receiptDate: item.receiptDate,
-                                                receiptTime: item.receiptTime,
-                                              ),
+                                            : controller.currentTab.value == 4
+                                                ? 'archive'.tr
+                                                : getStatusText(
+                                                    receiptDate:
+                                                        item.receiptDate,
+                                                    receiptTime:
+                                                        item.receiptTime,
+                                                  ),
                                         textAlign: TextAlign.center,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -492,7 +511,9 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                     ? controller.ongoingMaintenancesSearch.length
                     : controller.currentTab.value == 2
                         ? controller.readyMaintenancesSearch.length
-                        : controller.archiveMaintenancesSearch.length,
+                        : controller.currentTab.value == 3
+                            ? controller.deliveredMaintenancesSearch.length
+                            : controller.archiveMaintenancesSearch.length,
           ),
         );
       },

@@ -26,7 +26,9 @@ class MaintenanceDatasource {
                 ? EndPoints.getOngoingMaintenances
                 : tab == 2
                     ? EndPoints.getReadyMaintenances
-                    : EndPoints.getDeliveredMaintenances,
+                    : tab == 3
+                        ? EndPoints.getDeliveredMaintenances
+                        : EndPoints.getArchivedMaintenances,
       );
       return response.data;
     } on DioException catch (e) {

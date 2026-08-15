@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
-import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -24,6 +23,11 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         title: 'maintenance',
         action: false,
         actions: [
+          GetBuilder<MaintenanceController>(
+            builder: (_) => _MaintenanceAppBarStatusTabs(
+              controller: controller,
+            ),
+          ),
           IconButton(
             tooltip: 'صناديق الصيانة اليومية',
             icon: const Icon(Icons.account_balance_wallet_outlined),
@@ -95,22 +99,6 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: GetBuilder<MaintenanceController>(
-              builder: (controller) => AppTabs(
-                tabs: controller.tabs,
-                tabCounts: controller.tabCounts,
-                currentTab: controller.currentTab,
-                changeTab: controller.changeTab,
-                height: 42.h,
-                tabHorizontalPadding: 4.w,
-                tabVerticalPadding: 8.h,
-                tabHorizontalMargin: 2.w,
-                fontSize: 13.sp,
-                fitToWidthUpToCount: 4,
-              ),
-            ),
-          ),
           const SliverToBoxAdapter(child: _MaintenanceDailyBoxStatus()),
           const MaintenanceDataWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 60.h)),
@@ -125,6 +113,143 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _MaintenanceAppBarStatusTabs extends StatelessWidget {
+  const _MaintenanceAppBarStatusTabs({required this.controller});
+
+  final MaintenanceController controller;
+
+  IconData _iconForIndex(int index) {
+    switch (index) {
+      case 0:
+        return Icons.fiber_new_rounded;
+      case 1:
+        return Icons.build_circle_outlined;
+      case 2:
+        return Icons.verified_outlined;
+      case 3:
+        return Icons.check_circle_outline_rounded;
+      default:
+        return Icons.archive_outlined;
+    }
+  }
+
+  Color _colorForIndex(int index) {
+    switch (index) {
+      case 0:
+        return Colors.blueAccent;
+      case 1:
+        return Colors.orange;
+      case 2:
+        return AppColors.customGreen1;
+      case 3:
+        return AppColors.customGreen1;
+      default:
+        return AppColors.operationalPurple;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < controller.tabs.length; i++)
+            _MaintenanceAppBarStatusTab(
+              icon: _iconForIndex(i),
+              label: controller.tabs[i].tr,
+              color: _colorForIndex(i),
+              selected: controller.currentTab.value == i,
+              badge: controller.tabCounts[i],
+              onTap: () => controller.changeTab(i),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MaintenanceAppBarStatusTab extends StatelessWidget {
+  const _MaintenanceAppBarStatusTab({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.badge,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool selected;
+  final int badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected
+        ? Colors.white
+        : ThemeService.isDark.value
+            ? Colors.white70
+            : color;
+
+    return Tooltip(
+      message: label,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
+        onPressed: onTap,
+        icon: Container(
+          width: 30.w,
+          height: 30.w,
+          decoration: BoxDecoration(
+            color: selected ? color : color.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? color : color.withValues(alpha: 0.24),
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 18.sp, color: fg),
+              if (badge > 0)
+                PositionedDirectional(
+                  top: -5.h,
+                  end: -6.w,
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                    constraints:
+                        BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

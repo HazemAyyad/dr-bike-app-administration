@@ -6,11 +6,13 @@ class MaintenanceServes {
   final List<MaintenanceDataModel> maintenancesList = [];
   final List<MaintenanceDataModel> ongoingMaintenancesList = [];
   final List<MaintenanceDataModel> readyMaintenancesList = [];
+  final List<MaintenanceDataModel> deliveredMaintenancesList = [];
   final List<MaintenanceDataModel> archiveMaintenancesList = [];
 
   final maintenancesTasks = <String, List<MaintenanceDataModel>>{}.obs;
   final ongoingMaintenancesTasks = <String, List<MaintenanceDataModel>>{}.obs;
   final readyMaintenancesTasks = <String, List<MaintenanceDataModel>>{}.obs;
+  final deliveredMaintenancesTasks = <String, List<MaintenanceDataModel>>{}.obs;
   final archiveMaintenancesTasks = <String, List<MaintenanceDataModel>>{}.obs;
 
   // singleton pattern
