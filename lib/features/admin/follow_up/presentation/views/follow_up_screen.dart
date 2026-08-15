@@ -212,64 +212,61 @@ class _FollowUpFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
     final foreground = selected
         ? Colors.white
-        : (isDark ? Colors.white : AppColors.secondaryColor);
-    final background = selected
-        ? data.color
-        : data.color.withValues(alpha: isDark ? 0.18 : 0.09);
+        : ThemeService.isDark.value
+            ? Colors.white70
+            : data.color;
 
     return Tooltip(
       message: data.label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24.r),
-        child: AnimatedContainer(
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
+        onPressed: onTap,
+        icon: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: EdgeInsetsDirectional.fromSTEB(10.w, 0, 12.w, 0),
+          width: 30.w,
+          height: 30.w,
           decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(24.r),
+            color: selected ? data.color : data.color.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
             border: Border.all(
               color: selected ? data.color : data.color.withValues(alpha: 0.22),
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
             children: [
               Icon(data.icon, size: 18.sp, color: foreground),
-              SizedBox(width: 6.w),
-              Text(
-                data.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(width: 6.w),
-              Container(
-                constraints: BoxConstraints(minWidth: 20.w),
-                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : data.color.withValues(alpha: isDark ? 0.22 : 0.14),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '${data.count}',
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
+              if (data.count > 0)
+                PositionedDirectional(
+                  top: -5.h,
+                  end: -6.w,
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                    constraints:
+                        BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                    child: Text(
+                      data.count > 99 ? '99+' : '${data.count}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

@@ -320,23 +320,40 @@ class _FollowUpCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          followup.productName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5.sp,
-                            height: 1.2,
-                            fontWeight: FontWeight.w600,
-                            color: subColor,
-                          ),
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
+              if (followup.productName.trim().isNotEmpty) ...[
+                SizedBox(height: 7.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 7.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkColor.withValues(alpha: 0.45)
+                        : AppColors.customGreyColor7.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: AppColors.operationalCardBorder
+                          .withValues(alpha: 0.75),
+                    ),
+                  ),
+                  child: Text(
+                    followup.productName,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      height: 1.32,
+                      fontWeight: FontWeight.w600,
+                      color: subColor,
+                    ),
+                  ),
+                ),
+              ],
               SizedBox(height: 6.h),
               Row(
                 children: [
