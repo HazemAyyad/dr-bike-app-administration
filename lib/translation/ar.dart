@@ -1035,8 +1035,13 @@ const Map<String, String> ar = {
   'editEmployee': 'تعديل بيانات الموظف',
 
   // follow Up
+  'allFollowUps': 'كل المتابعات',
+  'activeFollowUps': 'المتابعات الجارية',
   'currentFollowUps': 'متابعات جارية',
   'initialFollowUp': 'المتابعة الاولية',
+  'deliveredFollowUps': 'المتابعات المسلمة',
+  'canceledFollowUps': 'المتابعات الملغية',
+  'deletedFollowUps': 'المتابعات المحذوفة',
   'customerName': 'أسم الزبون',
   'sellerName': 'أسم التاجر',
   'productDetails': 'تفاصيل المنتج',
@@ -3017,6 +3022,9 @@ const Map<String, String> ar = {
   'addRoom': 'إضافة غرفة',
   'addDevice': 'إضافة جهاز',
   'tuyaSdkReady': 'Tuya SDK جاهز',
+  'tuyaUserLinked': 'مستخدم Tuya مرتبط',
+  'tuyaUserLinking': 'جاري ربط مستخدم Tuya...',
+  'tuyaUserNeedsLink': 'مستخدم Tuya غير مرتبط بعد',
   'tuyaSdkNeedsSetup': 'إعداد Tuya يحتاج مراجعة قبل التحكم بالأجهزة',
   'smartHomeComingSoon': 'سيتم تفعيل هذه الخطوة بعد ربط Tuya الكامل',
   'noRoomsYet': 'لا توجد غرف بعد',

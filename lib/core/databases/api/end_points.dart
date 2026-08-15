@@ -113,6 +113,13 @@ class EndPoints {
   static String note(int id) => 'notes/$id';
   static String noteAttachments(int id) => 'notes/$id/attachments';
 
+  static const String smartTuyaUser = 'smart-home/tuya-user';
+  static const String smartHomes = 'smart-home/homes';
+  static String smartHome(int id) => 'smart-home/homes/$id';
+  static String smartHomeRooms(int homeId) => 'smart-home/homes/$homeId/rooms';
+  static const String smartDevices = 'smart-home/devices';
+  static String smartDevice(int id) => 'smart-home/devices/$id';
+
   // banks (checks)
   static const String banks = 'banks';
   static const String banksFindOrCreate = 'banks/find-or-create';
@@ -649,6 +656,7 @@ class EndPoints {
   static const String getOngoingMaintenances = 'get/ongoing/maintenances';
   static const String getReadyMaintenances = 'get/ready/maintenances';
   static const String getDeliveredMaintenances = 'get/delivered/maintenances';
+  static const String getArchivedMaintenances = 'get/archived/maintenances';
   static const String showMaintenance = 'show/maintenance';
   static const String deleteMaintenance = 'delete/maintenance';
   static const String maintenanceSyncProducts = 'maintenance/sync/products';
@@ -693,6 +701,9 @@ class EndPoints {
   static const String getFinishAndAgreementFollowups =
       'get/finish/and/agreement/followups';
   static const String getArchivedFollowups = 'get/archived/followups';
+  static const String getDeliveredFollowups = 'get/delivered/followups';
+  static const String getCanceledFollowups = 'canceled/followup';
+  static const String getDeletedFollowups = 'get/deleted/followups';
 
   // bills
   static const String addBill = 'add/bill';

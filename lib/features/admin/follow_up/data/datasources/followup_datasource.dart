@@ -20,7 +20,13 @@ class FollowupDatasource {
                   ? EndPoints.getInformPersonFollowups
                   : page == 2
                       ? EndPoints.getFinishAndAgreementFollowups
-                      : EndPoints.getArchivedFollowups,
+                      : page == 3
+                          ? EndPoints.getDeliveredFollowups
+                          : page == 4
+                              ? EndPoints.getCanceledFollowups
+                              : page == 5
+                                  ? EndPoints.getDeletedFollowups
+                                  : EndPoints.getArchivedFollowups,
           queryParameters: {'page': page});
       final data = response.data['followups'] as List;
       return data.toList().map((e) => FollowupModel.fromJson(e)).toList();

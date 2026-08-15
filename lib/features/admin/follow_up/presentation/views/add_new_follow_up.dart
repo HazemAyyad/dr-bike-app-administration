@@ -25,7 +25,13 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
         action: false,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          24.w,
+          0,
+          24.w,
+          MediaQuery.viewInsetsOf(context).bottom + 16.h,
+        ),
         child: Form(
           key: controller.formKey,
           child: GetBuilder<FollowUpController>(
@@ -33,19 +39,15 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
               return Column(
                 children: [
                   SizedBox(height: 10.h),
-                  _FollowUpStepper(
-                    timeLineSteps: controller.timeLineSteps,
-                    selectedStep: controller.selectedStep,
-                    changeSelected: controller.changeSelected,
-                  ),
-                  SizedBox(height: 20.h),
+                  _FollowUpStageIndicator(controller: controller),
+                  SizedBox(height: 12.h),
                   CustomTextField(
                     label: 'details',
                     hintText: 'details',
                     controller: controller.itemIdController,
                     focusNode: controller.detailsFocusNode,
-                    minLines: 6,
-                    maxLines: 10,
+                    minLines: 2,
+                    maxLines: 7,
                     validator: (p0) => null,
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.next,
@@ -55,6 +57,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                   ),
                   SizedBox(height: 16.h),
                   Row(
+                    key: controller.customerPickerKey,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Flexible(
@@ -104,7 +107,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                               popupProps: PopupProps.menu(
                                 showSearchBox: true,
                                 fit: FlexFit.loose,
-                                constraints: BoxConstraints(maxHeight: 220.h),
+                                constraints: BoxConstraints(maxHeight: 170.h),
                                 searchDelay: const Duration(milliseconds: 120),
                                 searchFieldProps: TextFieldProps(
                                   focusNode: controller.customerSearchFocusNode,
@@ -210,35 +213,9 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                     ),
                   ],
                   if (controller.isEdite.value) ...[
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 8.h),
                     _FollowUpAuditSection(controller: controller),
                   ],
-                  SizedBox(height: 20.h),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: RichText(
-                          text: TextSpan(
-                            text: controller.selectedStep.value == 1
-                                ? 'step_one'.tr
-                                : controller.selectedStep.value == 2
-                                    ? 'step_two'.tr
-                                    : 'step_three'.tr,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.whiteColor
-                                      : AppColors.blackColor,
-                                ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                   SizedBox(height: 10.h),
                   if (controller.isEdite.value)
                     _AutoSaveStatus(controller: controller),
@@ -297,115 +274,126 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
   }
 }
 
-class _FollowUpStepper extends StatelessWidget {
-  const _FollowUpStepper({
-    required this.timeLineSteps,
-    required this.selectedStep,
-    required this.changeSelected,
-  });
+class _FollowUpStageIndicator extends StatelessWidget {
+  const _FollowUpStageIndicator({required this.controller});
 
-  final List<Map<int, String>> timeLineSteps;
-  final RxInt selectedStep;
-  final void Function(int index) changeSelected;
+  final FollowUpController controller;
+
+  String _labelForStep(int step) {
+    if (step == 1) return 'initialFollowUp'.tr;
+    if (step == 2) return 'notify_customer'.tr;
+    if (step == 3) return 'completion_and_agreement'.tr;
+    return 'archive'.tr;
+  }
+
+  Color _colorForStep(int step) {
+    if (step == 1) return AppColors.primaryColor;
+    if (step == 2) return Colors.blueAccent;
+    if (step == 3) return AppColors.customGreen1;
+    return AppColors.redColor;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        child: Row(
+      () {
+        final step = controller.selectedStep.value;
+        final color = _colorForStep(step);
+        return Row(
           children: [
-            for (var i = 0; i < timeLineSteps.length; i++) ...[
-              Expanded(
-                child: _FollowUpStepItem(
-                  index: i + 1,
-                  label: timeLineSteps[i].values.first.tr,
-                  selectedStep: selectedStep.value,
-                  onTap: () => changeSelected(i + 1),
-                ),
+            Container(
+              width: 6.w,
+              height: 34.h,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20.r),
               ),
-              if (i < timeLineSteps.length - 1)
-                Container(
-                  width: 18.w,
-                  height: 2.h,
-                  color: selectedStep.value > i + 1
-                      ? AppColors.primaryColor
-                      : AppColors.customGreyColor5.withValues(alpha: 0.35),
-                ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                _labelForStep(step),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                    ),
+              ),
+            ),
+            if (controller.isEdite.value) ...[
+              _StageTextButton(
+                label: 'initialFollowUp'.tr,
+                selected: step == 1,
+                color: _colorForStep(1),
+                onTap: () => controller.changeSelected(1),
+              ),
+              _StageTextButton(
+                label: 'notify_customer'.tr,
+                selected: step == 2,
+                color: _colorForStep(2),
+                onTap: () => controller.changeSelected(2),
+              ),
+              _StageTextButton(
+                label: 'completion_and_agreement'.tr,
+                selected: step == 3,
+                color: _colorForStep(3),
+                onTap: () => controller.changeSelected(3),
+              ),
             ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
-class _FollowUpStepItem extends StatelessWidget {
-  const _FollowUpStepItem({
-    required this.index,
+class _StageTextButton extends StatelessWidget {
+  const _StageTextButton({
     required this.label,
-    required this.selectedStep,
+    required this.selected,
+    required this.color,
     required this.onTap,
   });
 
-  final int index;
   final String label;
-  final int selectedStep;
+  final bool selected;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isActive = selectedStep == index;
-    final isDone = selectedStep > index;
-    final color = isActive || isDone
-        ? AppColors.primaryColor
-        : AppColors.customGreyColor5;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8.r),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 32.w,
-            height: 32.w,
-            decoration: BoxDecoration(
-              color: isActive || isDone
-                  ? AppColors.primaryColor
-                  : Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: 1.4),
-            ),
-            child: Center(
-              child: Icon(
-                isDone ? Icons.check_rounded : Icons.circle,
-                size: isDone ? 18.sp : 8.sp,
-                color: isActive || isDone ? Colors.white : color,
-              ),
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        margin: EdgeInsetsDirectional.only(start: 4.w),
+        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: selected ? color : Colors.transparent,
           ),
-          SizedBox(height: 5.h),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10.5.sp,
-              fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
-              color: color,
-              height: 1.15,
-            ),
+        ),
+        constraints: BoxConstraints(maxWidth: 64.w),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 9.5.sp,
+            fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+            color: selected
+                ? color
+                : ThemeService.isDark.value
+                    ? AppColors.customGreyColor3
+                    : AppColors.customGreyColor5,
           ),
-        ],
+        ),
       ),
     );
   }

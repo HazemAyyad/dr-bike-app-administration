@@ -13,6 +13,8 @@ class FollowupModel {
   final String followupStatus;
   final String createdByName;
   final bool adminOnly;
+  final bool isCanceled;
+  final bool isDeleted;
   final DateTime createdAt;
 
   FollowupModel({
@@ -27,6 +29,8 @@ class FollowupModel {
     required this.followupStatus,
     required this.createdByName,
     required this.adminOnly,
+    required this.isCanceled,
+    required this.isDeleted,
     required this.createdAt,
   });
 
@@ -44,6 +48,8 @@ class FollowupModel {
       followupStatus: asString(j['followup_status']),
       createdByName: asString(j['created_by_name']),
       adminOnly: asBool(j['admin_only']),
+      isCanceled: asBool(j['is_canceled']),
+      isDeleted: asString(j['deleted_at']).isNotEmpty,
       createdAt: parseApiDateTime(j['created_at']),
     );
   }
@@ -59,6 +65,8 @@ class FollowupModel {
       'followup_status': followupStatus,
       'created_by_name': createdByName,
       'admin_only': adminOnly,
+      'is_canceled': isCanceled,
+      'is_deleted': isDeleted,
     };
   }
 }

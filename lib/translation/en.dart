@@ -1047,8 +1047,13 @@ const Map<String, String> en = {
   'editEmployee': 'Edit Employee Details',
 
   // follow Up Department
+  'allFollowUps': 'All Follow-ups',
+  'activeFollowUps': 'Active Follow-ups',
   'currentFollowUps': 'Ongoing Follow-Ups',
   'initialFollowUp': 'Initial Follow-Up',
+  'deliveredFollowUps': 'Delivered Follow-ups',
+  'canceledFollowUps': 'Canceled Follow-ups',
+  'deletedFollowUps': 'Deleted Follow-ups',
   'customerName': 'Customer Name',
   'sellerName': 'Seller Name',
   'productDetails': 'Details',
@@ -3049,6 +3054,9 @@ const Map<String, String> en = {
   'addRoom': 'Add room',
   'addDevice': 'Add device',
   'tuyaSdkReady': 'Tuya SDK is ready',
+  'tuyaUserLinked': 'Tuya user linked',
+  'tuyaUserLinking': 'Linking Tuya user...',
+  'tuyaUserNeedsLink': 'Tuya user is not linked yet',
   'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
   'smartHomeComingSoon':
       'This step will be enabled after the full Tuya connection',

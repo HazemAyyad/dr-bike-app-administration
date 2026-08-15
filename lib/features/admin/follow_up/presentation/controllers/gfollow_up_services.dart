@@ -9,6 +9,10 @@ class FollowUpServices {
 
   final List<FollowupModel> archivedFollowups = [];
 
+  final List<FollowupModel> canceledFollowups = [];
+
+  final List<FollowupModel> deletedFollowups = [];
+
   // singleton pattern
   static final FollowUpServices _instance = FollowUpServices._internal();
   factory FollowUpServices() => _instance;

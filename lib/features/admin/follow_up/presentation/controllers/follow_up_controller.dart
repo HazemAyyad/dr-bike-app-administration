@@ -26,6 +26,12 @@ import '../../domain/usecases/get_followup_usecase.dart';
 import 'gfollow_up_services.dart';
 
 class FollowUpController extends GetxController {
+  static const followUpFilterAll = 'all';
+  static const followUpFilterActive = 'active';
+  static const followUpFilterDelivered = 'delivered';
+  static const followUpFilterCanceled = 'canceled';
+  static const followUpFilterDeleted = 'deleted';
+
   final AddFollowupUsecase addFollowupUsecase;
   final GetFollowupUsecase getFollowupUsecase;
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
@@ -54,6 +60,7 @@ class FollowUpController extends GetxController {
   final customerAndSellerIdController = TextEditingController();
   final itemIdController = TextEditingController();
   final detailsFocusNode = FocusNode();
+  final customerPickerKey = GlobalKey();
   final customerDropdownKey = GlobalKey<DropdownSearchState<dynamic>>();
   final customerSearchFocusNode = FocusNode();
 
@@ -63,6 +70,7 @@ class FollowUpController extends GetxController {
   final customerNotesController = TextEditingController();
 
   RxInt currentTab = 0.obs;
+  final RxString followUpViewFilter = followUpFilterAll.obs;
   final RxBool isSearchVisible = false.obs;
   final RxBool isAutoSaving = false.obs;
   final RxBool hasAutoSaveError = false.obs;
@@ -75,7 +83,9 @@ class FollowUpController extends GetxController {
     'initialFollowUp',
     'notify_customer',
     'completion_and_agreement',
-    'archive',
+    'deliveredFollowUps',
+    'canceledFollowUps',
+    'deletedFollowUps',
   ].obs;
 
   void changeTab(int index) {
@@ -87,15 +97,63 @@ class FollowUpController extends GetxController {
   int get informCount => informFollowupsFilterList.length;
   int get finishAgreementCount => finishAndAgreementFollowupsFilterList.length;
   int get archivedCount => archivedFollowupsFilterList.length;
+  int get canceledCount => canceledFollowupsFilterList.length;
+  int get deletedCount => deletedFollowupsFilterList.length;
 
   int get totalFilteredCount =>
-      initialCount + informCount + finishAgreementCount + archivedCount;
+      initialCount +
+      informCount +
+      finishAgreementCount +
+      archivedCount +
+      canceledCount +
+      deletedCount;
+
+  int get activeSectionsCount =>
+      initialCount + informCount + finishAgreementCount;
+
+  int get visibleFilteredCount {
+    switch (followUpViewFilter.value) {
+      case followUpFilterActive:
+        return activeSectionsCount;
+      case followUpFilterDelivered:
+        return archivedCount;
+      case followUpFilterCanceled:
+        return canceledCount;
+      case followUpFilterDeleted:
+        return deletedCount;
+      default:
+        return totalFilteredCount;
+    }
+  }
+
+  bool get showActiveFollowUpSections =>
+      followUpViewFilter.value == followUpFilterAll ||
+      followUpViewFilter.value == followUpFilterActive;
+
+  bool get showDeliveredFollowUpSection =>
+      followUpViewFilter.value == followUpFilterAll ||
+      followUpViewFilter.value == followUpFilterDelivered;
+
+  bool get showCanceledFollowUpSection =>
+      followUpViewFilter.value == followUpFilterAll ||
+      followUpViewFilter.value == followUpFilterCanceled;
+
+  bool get showDeletedFollowUpSection =>
+      followUpViewFilter.value == followUpFilterAll ||
+      followUpViewFilter.value == followUpFilterDeleted;
+
+  void setFollowUpViewFilter(String value) {
+    followUpViewFilter.value = value;
+    update();
+  }
 
   int get activeFilteredCount {
     if (currentTab.value == 0) return initialCount;
     if (currentTab.value == 1) return informCount;
     if (currentTab.value == 2) return finishAgreementCount;
-    return archivedCount;
+    if (currentTab.value == 3) return archivedCount;
+    if (currentTab.value == 4) return canceledCount;
+    return deletedCount;
   }
 
   final List<Map<int, String>> timeLineSteps = [
@@ -172,6 +230,8 @@ class FollowUpController extends GetxController {
         getFollowupUsecase.call(page: 1),
         getFollowupUsecase.call(page: 2),
         getFollowupUsecase.call(page: 3),
+        getFollowupUsecase.call(page: 4),
+        getFollowupUsecase.call(page: 5),
       ]);
 
       FollowUpServices().initialFollowups.assignAll(results[0]);
@@ -187,6 +247,13 @@ class FollowUpController extends GetxController {
       FollowUpServices().archivedFollowups.assignAll(results[3]);
       archivedFollowupsFilterList
           .assignAll(FollowUpServices().archivedFollowups);
+
+      FollowUpServices().canceledFollowups.assignAll(results[4]);
+      canceledFollowupsFilterList
+          .assignAll(FollowUpServices().canceledFollowups);
+
+      FollowUpServices().deletedFollowups.assignAll(results[5]);
+      deletedFollowupsFilterList.assignAll(FollowUpServices().deletedFollowups);
     } finally {
       isLoading(false);
       update();
@@ -314,7 +381,16 @@ class FollowUpController extends GetxController {
     }
     detailsFocusNode.unfocus();
     getAllCustomersAndSellers();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final context = customerPickerKey.currentContext;
+      if (context != null) {
+        await Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: 0.08,
+        );
+      }
       customerSearchFocusNode.requestFocus();
       customerDropdownKey.currentState?.openDropDownSearch();
       SystemChannels.textInput.invokeMethod('TextInput.show');
@@ -543,6 +619,8 @@ class FollowUpController extends GetxController {
   final List<FollowupModel> finishAndAgreementFollowupsFilterList =
       <FollowupModel>[].obs;
   final List<FollowupModel> archivedFollowupsFilterList = <FollowupModel>[].obs;
+  final List<FollowupModel> canceledFollowupsFilterList = <FollowupModel>[].obs;
+  final List<FollowupModel> deletedFollowupsFilterList = <FollowupModel>[].obs;
 
   void filterGoals() {
     final nameQuery = employeeNameController.text.trim();
@@ -582,6 +660,12 @@ class FollowUpController extends GetxController {
     archivedFollowupsFilterList
       ..clear()
       ..addAll(applyFilter(FollowUpServices().archivedFollowups));
+    canceledFollowupsFilterList
+      ..clear()
+      ..addAll(applyFilter(FollowUpServices().canceledFollowups));
+    deletedFollowupsFilterList
+      ..clear()
+      ..addAll(applyFilter(FollowUpServices().deletedFollowups));
 
     Get.back();
     update();
@@ -630,6 +714,26 @@ class FollowUpController extends GetxController {
             f.sellerPhone.toLowerCase().contains(search) ||
             f.createdAt.toString().toLowerCase().contains(search)),
       );
+
+      canceledFollowupsFilterList.assignAll(
+        FollowUpServices().canceledFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
+
+      deletedFollowupsFilterList.assignAll(
+        FollowUpServices().deletedFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
     } else {
       initialFollowupsFilterList.assignAll(FollowUpServices().initialFollowups);
       informFollowupsFilterList.assignAll(FollowUpServices().informFollowups);
@@ -637,6 +741,9 @@ class FollowUpController extends GetxController {
           .assignAll(FollowUpServices().finishAndAgreementFollowups);
       archivedFollowupsFilterList
           .assignAll(FollowUpServices().archivedFollowups);
+      canceledFollowupsFilterList
+          .assignAll(FollowUpServices().canceledFollowups);
+      deletedFollowupsFilterList.assignAll(FollowUpServices().deletedFollowups);
     }
     update();
   }
@@ -652,6 +759,8 @@ class FollowUpController extends GetxController {
     finishAndAgreementFollowupsFilterList
         .assignAll(FollowUpServices().finishAndAgreementFollowups);
     archivedFollowupsFilterList.assignAll(FollowUpServices().archivedFollowups);
+    canceledFollowupsFilterList.assignAll(FollowUpServices().canceledFollowups);
+    deletedFollowupsFilterList.assignAll(FollowUpServices().deletedFollowups);
   }
 
   @override
