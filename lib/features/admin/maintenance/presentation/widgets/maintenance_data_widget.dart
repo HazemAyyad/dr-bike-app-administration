@@ -111,412 +111,494 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
             ),
           );
         }
-        if (controller.currentTab.value == 0 &&
-            controller.maintenancesSearch.isEmpty) {
+
+        if (controller.visibleFilteredCount == 0) {
           return const SliverFillRemaining(
             child: Center(child: ShowNoData()),
           );
         }
-        if (controller.currentTab.value == 1 &&
-            controller.ongoingMaintenancesSearch.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: ShowNoData()),
+
+        final children = <Widget>[];
+        if (controller.showNewMaintenanceSection) {
+          children.addAll(
+            _buildSection(
+              context: context,
+              title: 'newRequest'.tr,
+              grouped: controller.maintenancesSearch,
+              statusColor: Colors.blueAccent,
+              statusLabel: 'newRequest'.tr,
+            ),
           );
         }
-        if (controller.currentTab.value == 2 &&
-            controller.readyMaintenancesSearch.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: ShowNoData()),
+        if (controller.showOngoingMaintenanceSection) {
+          children.addAll(
+            _buildSection(
+              context: context,
+              title: 'inProgress'.tr,
+              grouped: controller.ongoingMaintenancesSearch,
+              statusColor: Colors.orange,
+              statusLabel: 'inProgress'.tr,
+            ),
           );
         }
-        if (controller.currentTab.value == 3 &&
-            controller.deliveredMaintenancesSearch.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: ShowNoData()),
+        if (controller.showReadyMaintenanceSection) {
+          children.addAll(
+            _buildSection(
+              context: context,
+              title: 'readyToDeliver'.tr,
+              grouped: controller.readyMaintenancesSearch,
+              statusColor: AppColors.customGreen1,
+              statusLabel: 'readyToDeliver'.tr,
+            ),
           );
         }
-        if (controller.currentTab.value == 4 &&
-            controller.archiveMaintenancesSearch.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: ShowNoData()),
+        if (controller.showDeliveredMaintenanceSection) {
+          children.addAll(
+            _buildSection(
+              context: context,
+              title: 'delivered'.tr,
+              grouped: controller.deliveredMaintenancesSearch,
+              statusColor: AppColors.customGreen1,
+              statusLabel: 'delivered'.tr,
+            ),
           );
         }
+        if (controller.showArchivedMaintenanceSection) {
+          children.addAll(
+            _buildSection(
+              context: context,
+              title: 'archive'.tr,
+              grouped: controller.archiveMaintenancesSearch,
+              statusColor: AppColors.customGreyColor5,
+              statusLabel: 'archive'.tr,
+              readOnly: true,
+            ),
+          );
+        }
+
         return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final month = controller.currentTab.value == 0
-                  ? controller.maintenancesSearch.keys
-                      .toList()
-                      .reversed
-                      .toList()[index]
-                  : controller.currentTab.value == 1
-                      ? controller.ongoingMaintenancesSearch.keys
-                          .toList()
-                          .reversed
-                          .toList()[index]
-                      : controller.currentTab.value == 2
-                          ? controller.readyMaintenancesSearch.keys
-                              .toList()
-                              .reversed
-                              .toList()[index]
-                          : controller.currentTab.value == 3
-                              ? controller.deliveredMaintenancesSearch.keys
-                                  .toList()
-                                  .reversed
-                                  .toList()[index]
-                              : controller.archiveMaintenancesSearch.keys
-                                  .toList()
-                                  .reversed
-                                  .toList()[index];
+          delegate: SliverChildListDelegate(children),
+        );
+      },
+    );
+  }
 
-              final assets = controller.currentTab.value == 0
-                  ? controller.maintenancesSearch[month]!.reversed.toList()
-                  : controller.currentTab.value == 1
-                      ? controller.ongoingMaintenancesSearch[month]!.reversed
-                          .toList()
-                      : controller.currentTab.value == 2
-                          ? controller.readyMaintenancesSearch[month]!.reversed
-                              .toList()
-                          : controller.currentTab.value == 3
-                              ? controller
-                                  .deliveredMaintenancesSearch[month]!.reversed
-                                  .toList()
-                              : controller
-                                  .archiveMaintenancesSearch[month]!.reversed
-                                  .toList();
+  List<Widget> _buildSection({
+    required BuildContext context,
+    required String title,
+    required Map<String, List<MaintenanceDataModel>> grouped,
+    required Color statusColor,
+    required String statusLabel,
+    bool readOnly = false,
+  }) {
+    final itemsCount = grouped.values.fold<int>(0, (sum, e) => sum + e.length);
+    final children = <Widget>[
+      _MaintenanceSectionHeader(
+        title: title,
+        count: itemsCount,
+        color: statusColor,
+      ),
+    ];
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 10.h),
-                    // separator عنوان الشهر
-                    Row(
+    if (itemsCount == 0) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 8.h),
+          child: Text(
+            'noData'.tr,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor3
+                  : AppColors.customGreyColor5,
+            ),
+          ),
+        ),
+      );
+      return children;
+    }
+
+    final keys = grouped.keys.toList().reversed.toList();
+    for (final key in keys) {
+      children.add(_MaintenanceDateHeader(title: key));
+      final items = grouped[key]!.reversed.toList();
+      children.addAll(
+        items.map(
+          (item) => _buildMaintenanceCard(
+            context: context,
+            item: item,
+            statusColor: statusColor,
+            statusLabel: statusLabel,
+            readOnly: readOnly,
+          ),
+        ),
+      );
+    }
+    children.add(SizedBox(height: 10.h));
+    return children;
+  }
+
+  Widget _buildMaintenanceCard({
+    required BuildContext context,
+    required MaintenanceDataModel item,
+    required Color statusColor,
+    required String statusLabel,
+    required bool readOnly,
+  }) {
+    final displayName = (item.sellerName != null && item.sellerName!.isNotEmpty)
+        ? item.sellerName!
+        : item.customerName;
+    final isDark = ThemeService.isDark.value;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: readOnly
+            ? null
+            : () {
+                controller.getMaintenancesDetails(
+                  maintenanceId: item.id.toString(),
+                );
+                Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+              },
+        onLongPress:
+            readOnly ? null : () => _showMaintenanceActions(context, item),
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 3.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: AppColors.operationalCardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.operationalNavy.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  _MaintenanceThumb(imageUrl: item.mediaFiles),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          month,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium!
-                              .copyWith(
-                                color: AppColors.primaryColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15.sp,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.2,
+                                  color: isDark
+                                      ? AppColors.whiteColor
+                                      : AppColors.operationalNavy,
+                                ),
                               ),
+                            ),
+                            SizedBox(width: 6.w),
+                            _MaintenanceStatusPill(
+                              label: statusLabel,
+                              color: statusColor,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          showData(item.receiptDate),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: isDark
+                                ? AppColors.customGreyColor3
+                                : AppColors.customGreyColor5,
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 5.h),
-                    Container(
-                      height: 1.h,
-                      width: double.infinity,
+                  ),
+                ],
+              ),
+              if (item.invoiceTotal > 0) ...[
+                SizedBox(height: 7.h),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkColor.withValues(alpha: 0.45)
+                        : AppColors.customGreyColor7.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: AppColors.operationalCardBorder
+                          .withValues(alpha: 0.75),
+                    ),
+                  ),
+                  child: Text(
+                    [
+                      '${'total'.tr}: ${_money(item.invoiceTotal)}',
+                      '${'paidAmount'.tr}: ${_money(item.paidAmount)}',
+                      if (item.remainingAmount > 0)
+                        '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
+                    ].join(' | '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primaryColor,
                     ),
-                    SizedBox(height: 10.h),
-                    // عرض العناصر
-                    ...assets.map(
-                      (item) {
-                        final displayName = (item.sellerName != null &&
-                                item.sellerName!.isNotEmpty)
-                            ? item.sellerName!
-                            : item.customerName;
-
-                        return GestureDetector(
-                          onLongPress: () async {
-                            controller.getAllCustomersAndSellers();
-                            final phone = _resolvePhone(item);
-                            final canDelete =
-                                controller.currentTab.value == 0 ||
-                                    controller.currentTab.value == 1;
-                            await showModalBottomSheet<void>(
-                              context: context,
-                              builder: (ctx) => SafeArea(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (phone != null && phone.isNotEmpty) ...[
-                                      ListTile(
-                                        leading: const Icon(Icons.phone),
-                                        title: Text('callCustomer'.tr),
-                                        subtitle: Text(phone),
-                                        onTap: () async {
-                                          Navigator.pop(ctx);
-                                          await launchDialer(
-                                            phoneNumber: phone,
-                                          );
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: Image.asset(
-                                          AssetsManager.whatsapp,
-                                          width: 24.w,
-                                          height: 24.w,
-                                        ),
-                                        title: Text('whatsappCall'.tr),
-                                        subtitle: Text(phone),
-                                        onTap: () async {
-                                          Navigator.pop(ctx);
-                                          await launchWhatsApp(
-                                            phoneNumber: phone,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                    if (canDelete)
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                        title: Text(
-                                          'deleteMaintenance'.tr,
-                                          style: const TextStyle(
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                        onTap: () async {
-                                          Navigator.pop(ctx);
-                                          await _confirmDelete(context, item);
-                                        },
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          onTap: () {
-                            controller.getMaintenancesDetails(
-                              maintenanceId: item.id.toString(),
-                            );
-                            Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
-                          },
-                          child: Container(
-                            margin: EdgeInsets.symmetric(vertical: 6.h),
-                            decoration: BoxDecoration(
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor4
-                                  : AppColors.whiteColor,
-                              borderRadius: BorderRadius.circular(8.r),
-                              border: Border.all(
-                                color: AppColors.operationalCardBorder,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(5),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 58.w,
-                                          height: 52.h,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(5.r),
-                                            child: CachedNetworkImage(
-                                              cacheManager: CacheManager(
-                                                Config(
-                                                  'imagesCache',
-                                                  stalePeriod:
-                                                      const Duration(days: 7),
-                                                  maxNrOfCacheObjects: 100,
-                                                ),
-                                              ),
-                                              imageBuilder:
-                                                  (context, imageProvider) =>
-                                                      Container(
-                                                decoration: BoxDecoration(
-                                                  image: DecorationImage(
-                                                    image: imageProvider,
-                                                    fit: BoxFit.cover,
-                                                    filterQuality:
-                                                        FilterQuality.medium,
-                                                  ),
-                                                ),
-                                              ),
-                                              imageUrl: item.mediaFiles,
-                                              placeholder: (context, url) =>
-                                                  const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                              errorWidget:
-                                                  (context, url, error) =>
-                                                      const Icon(Icons.error),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 6.w),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                displayName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium!
-                                                    .copyWith(
-                                                      fontSize: 13.sp,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color: ThemeService
-                                                              .isDark.value
-                                                          ? AppColors.whiteColor
-                                                          : AppColors
-                                                              .secondaryColor,
-                                                    ),
-                                              ),
-                                              SizedBox(height: 3.h),
-                                              Text(
-                                                showData(item.receiptDate),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium!
-                                                    .copyWith(
-                                                      fontSize: 11.sp,
-                                                      color: Colors.grey
-                                                          .withAlpha(500),
-                                                    ),
-                                              ),
-                                              if (item.invoiceTotal > 0)
-                                                Text(
-                                                  [
-                                                    '${'total'.tr}: ${_money(item.invoiceTotal)}',
-                                                    '${'paidAmount'.tr}: ${_money(item.paidAmount)}',
-                                                    if (item.remainingAmount >
-                                                        0)
-                                                      '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
-                                                  ].join(' | '),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium!
-                                                      .copyWith(
-                                                        fontSize: 11.sp,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: AppColors
-                                                            .primaryColor,
-                                                      ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 58.w,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _compactActionButton(
-                                        tooltip: 'maintenanceInvoice'.tr,
-                                        icon: Icons.receipt_long_outlined,
-                                        color: AppColors.primaryColor,
-                                        onTap: () =>
-                                            controller.openMaintenanceInvoice(
-                                          context: context,
-                                          maintenanceId: item.id.toString(),
-                                        ),
-                                      ),
-                                      _compactActionButton(
-                                        tooltip: 'maintenanceActivityLog'.tr,
-                                        icon: Icons.history,
-                                        color: AppColors.customGreyColor,
-                                        onTap: () => controller.openActivityLog(
-                                          context: context,
-                                          maintenanceId: item.id.toString(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Obx(
-                                  () => Container(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 5.w),
-                                    width: 50.w,
-                                    height: 54.h,
-                                    decoration: BoxDecoration(
-                                      color: getStatusColor(
-                                        receiptDate: item.receiptDate,
-                                        receiptTime: item.receiptTime,
-                                        currentTab: controller.currentTab.value,
-                                      ),
-                                      borderRadius: Get.locale!.languageCode ==
-                                              'en'
-                                          ? BorderRadius.only(
-                                              topRight: Radius.circular(4.r),
-                                              bottomRight: Radius.circular(4.r),
-                                            )
-                                          : BorderRadius.only(
-                                              topLeft: Radius.circular(4.r),
-                                              bottomLeft: Radius.circular(4.r),
-                                            ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        controller.currentTab.value == 3
-                                            ? 'delivered'.tr
-                                            : controller.currentTab.value == 4
-                                                ? 'archive'.tr
-                                                : getStatusText(
-                                                    receiptDate:
-                                                        item.receiptDate,
-                                                    receiptTime:
-                                                        item.receiptTime,
-                                                  ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                              fontSize: 11.sp,
-                                              fontWeight: FontWeight.w800,
-                                              color: Colors.white,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                  ),
+                ),
+              ],
+              if (!readOnly) ...[
+                SizedBox(height: 6.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _compactActionButton(
+                      tooltip: 'maintenanceInvoice'.tr,
+                      icon: Icons.receipt_long_outlined,
+                      color: AppColors.primaryColor,
+                      onTap: () => controller.openMaintenanceInvoice(
+                        context: context,
+                        maintenanceId: item.id.toString(),
+                      ),
+                    ),
+                    _compactActionButton(
+                      tooltip: 'maintenanceActivityLog'.tr,
+                      icon: Icons.history,
+                      color: AppColors.customGreyColor,
+                      onTap: () => controller.openActivityLog(
+                        context: context,
+                        maintenanceId: item.id.toString(),
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
-            childCount: controller.currentTab.value == 0
-                ? controller.maintenancesSearch.length
-                : controller.currentTab.value == 1
-                    ? controller.ongoingMaintenancesSearch.length
-                    : controller.currentTab.value == 2
-                        ? controller.readyMaintenancesSearch.length
-                        : controller.currentTab.value == 3
-                            ? controller.deliveredMaintenancesSearch.length
-                            : controller.archiveMaintenancesSearch.length,
+              ],
+            ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMaintenanceActions(
+    BuildContext context,
+    MaintenanceDataModel item,
+  ) async {
+    controller.getAllCustomersAndSellers();
+    final phone = _resolvePhone(item);
+    final canDelete = item.status == 'new' || item.status == 'ongoing';
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (phone != null && phone.isNotEmpty) ...[
+              ListTile(
+                leading: const Icon(Icons.phone),
+                title: Text('callCustomer'.tr),
+                subtitle: Text(phone),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await launchDialer(phoneNumber: phone);
+                },
+              ),
+              ListTile(
+                leading: Image.asset(
+                  AssetsManager.whatsapp,
+                  width: 24.w,
+                  height: 24.w,
+                ),
+                title: Text('whatsappCall'.tr),
+                subtitle: Text(phone),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await launchWhatsApp(phoneNumber: phone);
+                },
+              ),
+            ],
+            if (canDelete)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: Text(
+                  'deleteMaintenance'.tr,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _confirmDelete(context, item);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceSectionHeader extends StatelessWidget {
+  const _MaintenanceSectionHeader({
+    required this.title,
+    required this.count,
+    required this.color,
+  });
+
+  final String title;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(28.w, 14.h, 28.w, 6.h),
+      child: Row(
+        children: [
+          Container(
+            width: 4.w,
+            height: 20.h,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w900,
+                color: ThemeService.isDark.value
+                    ? AppColors.whiteColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MaintenanceDateHeader extends StatelessWidget {
+  const _MaintenanceDateHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(28.w, 6.h, 28.w, 5.h),
+      child: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: AppColors.primaryColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 12.sp,
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceThumb extends StatelessWidget {
+  const _MaintenanceThumb({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44.w,
+      height: 44.w,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8.r),
+        child: CachedNetworkImage(
+          cacheManager: CacheManager(
+            Config(
+              'imagesCache',
+              stalePeriod: const Duration(days: 7),
+              maxNrOfCacheObjects: 100,
+            ),
+          ),
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: AppColors.customGreyColor7,
+            child: Icon(
+              Icons.construction_outlined,
+              size: 22.sp,
+              color: AppColors.customGreyColor5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceStatusPill extends StatelessWidget {
+  const _MaintenanceStatusPill({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 92.w),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 9.sp,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
+      ),
     );
   }
 }

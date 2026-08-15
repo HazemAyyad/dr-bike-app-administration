@@ -23,11 +23,6 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         title: 'maintenance',
         action: false,
         actions: [
-          GetBuilder<MaintenanceController>(
-            builder: (_) => _MaintenanceAppBarStatusTabs(
-              controller: controller,
-            ),
-          ),
           IconButton(
             tooltip: 'صناديق الصيانة اليومية',
             icon: const Icon(Icons.account_balance_wallet_outlined),
@@ -99,6 +94,26 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
+          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+          const SliverToBoxAdapter(child: _MaintenanceQuickFilters()),
+          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: GetBuilder<MaintenanceController>(
+                builder: (c) => Text(
+                  '${'total'.tr}: ${c.visibleFilteredCount}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
           const SliverToBoxAdapter(child: _MaintenanceDailyBoxStatus()),
           const MaintenanceDataWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 60.h)),
@@ -117,135 +132,174 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
   }
 }
 
-class _MaintenanceAppBarStatusTabs extends StatelessWidget {
-  const _MaintenanceAppBarStatusTabs({required this.controller});
-
-  final MaintenanceController controller;
-
-  IconData _iconForIndex(int index) {
-    switch (index) {
-      case 0:
-        return Icons.fiber_new_rounded;
-      case 1:
-        return Icons.build_circle_outlined;
-      case 2:
-        return Icons.verified_outlined;
-      case 3:
-        return Icons.check_circle_outline_rounded;
-      default:
-        return Icons.archive_outlined;
-    }
-  }
-
-  Color _colorForIndex(int index) {
-    switch (index) {
-      case 0:
-        return Colors.blueAccent;
-      case 1:
-        return Colors.orange;
-      case 2:
-        return AppColors.customGreen1;
-      case 3:
-        return AppColors.customGreen1;
-      default:
-        return AppColors.operationalPurple;
-    }
-  }
+class _MaintenanceQuickFilters extends GetView<MaintenanceController> {
+  const _MaintenanceQuickFilters();
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < controller.tabs.length; i++)
-            _MaintenanceAppBarStatusTab(
-              icon: _iconForIndex(i),
-              label: controller.tabs[i].tr,
-              color: _colorForIndex(i),
-              selected: controller.currentTab.value == i,
-              badge: controller.tabCounts[i],
-              onTap: () => controller.changeTab(i),
-            ),
-        ],
-      ),
+    return GetBuilder<MaintenanceController>(
+      builder: (controller) {
+        final filters = [
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterAll,
+            label: 'all'.tr,
+            icon: Icons.dashboard_customize_outlined,
+            color: AppColors.operationalPurple,
+            count: controller.totalFilteredCount,
+          ),
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterNew,
+            label: 'newRequest'.tr,
+            icon: Icons.fiber_new_rounded,
+            color: Colors.blueAccent,
+            count: controller.newCount,
+          ),
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterOngoing,
+            label: 'inProgress'.tr,
+            icon: Icons.build_circle_outlined,
+            color: Colors.orange,
+            count: controller.ongoingCount,
+          ),
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterReady,
+            label: 'readyToDeliver'.tr,
+            icon: Icons.verified_outlined,
+            color: AppColors.customGreen1,
+            count: controller.readyCount,
+          ),
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterDelivered,
+            label: 'delivered'.tr,
+            icon: Icons.check_circle_outline_rounded,
+            color: AppColors.customGreen1,
+            count: controller.deliveredCount,
+          ),
+          _MaintenanceFilterData(
+            value: MaintenanceController.maintenanceFilterArchived,
+            label: 'archive'.tr,
+            icon: Icons.archive_outlined,
+            color: AppColors.customGreyColor5,
+            count: controller.archivedCount,
+          ),
+        ];
+
+        return SizedBox(
+          height: 46.h,
+          child: ListView.separated(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            scrollDirection: Axis.horizontal,
+            itemCount: filters.length,
+            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+            itemBuilder: (context, index) {
+              final filter = filters[index];
+              final selected =
+                  controller.maintenanceViewFilter.value == filter.value;
+              return _MaintenanceFilterChip(
+                data: filter,
+                selected: selected,
+                onTap: () => controller.setMaintenanceViewFilter(filter.value),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
-class _MaintenanceAppBarStatusTab extends StatelessWidget {
-  const _MaintenanceAppBarStatusTab({
-    required this.icon,
+class _MaintenanceFilterData {
+  const _MaintenanceFilterData({
+    required this.value,
     required this.label,
+    required this.icon,
     required this.color,
+    required this.count,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final int count;
+}
+
+class _MaintenanceFilterChip extends StatelessWidget {
+  const _MaintenanceFilterChip({
+    required this.data,
     required this.selected,
-    required this.badge,
     required this.onTap,
   });
 
-  final IconData icon;
-  final String label;
-  final Color color;
+  final _MaintenanceFilterData data;
   final bool selected;
-  final int badge;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final fg = selected
+    final isDark = ThemeService.isDark.value;
+    final foreground = selected
         ? Colors.white
-        : ThemeService.isDark.value
-            ? Colors.white70
-            : color;
+        : (isDark ? Colors.white : AppColors.secondaryColor);
+    final background = selected
+        ? data.color
+        : data.color.withValues(alpha: isDark ? 0.18 : 0.09);
 
     return Tooltip(
-      message: label,
-      child: IconButton(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
-        onPressed: onTap,
-        icon: Container(
-          width: 30.w,
-          height: 30.w,
+      message: data.label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: BoxConstraints(minWidth: 88.w, maxWidth: 132.w),
+          padding: EdgeInsetsDirectional.fromSTEB(10.w, 0, 10.w, 0),
           decoration: BoxDecoration(
-            color: selected ? color : color.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
+            color: background,
+            borderRadius: BorderRadius.circular(24.r),
             border: Border.all(
-              color: selected ? color : color.withValues(alpha: 0.24),
+              color: selected ? data.color : data.color.withValues(alpha: 0.22),
             ),
           ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18.sp, color: fg),
-              if (badge > 0)
-                PositionedDirectional(
-                  top: -5.h,
-                  end: -6.w,
-                  child: Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-                    constraints:
-                        BoxConstraints(minWidth: 16.w, minHeight: 16.w),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white, width: 1.2),
-                    ),
-                    child: Text(
-                      badge > 99 ? '99+' : '$badge',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8.sp,
-                        fontWeight: FontWeight.w800,
-                        height: 1,
-                      ),
-                    ),
+              Icon(data.icon, size: 18.sp, color: foreground),
+              SizedBox(width: 5.w),
+              Flexible(
+                child: Text(
+                  data.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
                   ),
                 ),
+              ),
+              SizedBox(width: 5.w),
+              Container(
+                constraints: BoxConstraints(minWidth: 18.w),
+                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : data.color.withValues(alpha: isDark ? 0.22 : 0.14),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  data.count > 99 ? '99+' : '${data.count}',
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 9.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

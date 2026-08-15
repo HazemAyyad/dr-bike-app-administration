@@ -39,6 +39,13 @@ import '../widgets/maintenance_delivery_dialog.dart';
 import '../widgets/maintenance_invoice_sheet.dart';
 
 class MaintenanceController extends GetxController {
+  static const maintenanceFilterAll = 'all';
+  static const maintenanceFilterNew = 'new';
+  static const maintenanceFilterOngoing = 'ongoing';
+  static const maintenanceFilterReady = 'ready';
+  static const maintenanceFilterDelivered = 'delivered';
+  static const maintenanceFilterArchived = 'archived';
+
   final MaintenanceUsecase maintenanceUsecase;
   final CreatMaintenanceUsecase creatMaintenanceUsecase;
   final DeleteMaintenanceUsecase deleteMaintenanceUsecase;
@@ -78,6 +85,7 @@ class MaintenanceController extends GetxController {
   TextEditingController discountController = TextEditingController();
 
   RxInt currentTab = 0.obs;
+  final RxString maintenanceViewFilter = maintenanceFilterAll.obs;
   final RxBool isSearchVisible = false.obs;
   RxBool selectedSellers = false.obs;
   RxBool isCalendarVisible = false.obs;
@@ -183,6 +191,38 @@ class MaintenanceController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    maintenanceViewFilter.value = _filterForIndex(index);
+    update();
+  }
+
+  String _filterForIndex(int index) {
+    switch (index) {
+      case 1:
+        return maintenanceFilterOngoing;
+      case 2:
+        return maintenanceFilterReady;
+      case 3:
+        return maintenanceFilterDelivered;
+      case 4:
+        return maintenanceFilterArchived;
+      default:
+        return maintenanceFilterNew;
+    }
+  }
+
+  void setMaintenanceViewFilter(String value) {
+    maintenanceViewFilter.value = value;
+    if (value == maintenanceFilterOngoing) {
+      currentTab.value = 1;
+    } else if (value == maintenanceFilterReady) {
+      currentTab.value = 2;
+    } else if (value == maintenanceFilterDelivered) {
+      currentTab.value = 3;
+    } else if (value == maintenanceFilterArchived) {
+      currentTab.value = 4;
+    } else {
+      currentTab.value = 0;
+    }
     update();
   }
 
@@ -1111,6 +1151,51 @@ class MaintenanceController extends GetxController {
         _groupedCount(deliveredMaintenancesSearch),
         _groupedCount(archiveMaintenancesSearch),
       ];
+
+  int get newCount => _groupedCount(maintenancesSearch);
+  int get ongoingCount => _groupedCount(ongoingMaintenancesSearch);
+  int get readyCount => _groupedCount(readyMaintenancesSearch);
+  int get deliveredCount => _groupedCount(deliveredMaintenancesSearch);
+  int get archivedCount => _groupedCount(archiveMaintenancesSearch);
+  int get totalFilteredCount =>
+      newCount + ongoingCount + readyCount + deliveredCount + archivedCount;
+
+  int get visibleFilteredCount {
+    switch (maintenanceViewFilter.value) {
+      case maintenanceFilterNew:
+        return newCount;
+      case maintenanceFilterOngoing:
+        return ongoingCount;
+      case maintenanceFilterReady:
+        return readyCount;
+      case maintenanceFilterDelivered:
+        return deliveredCount;
+      case maintenanceFilterArchived:
+        return archivedCount;
+      default:
+        return totalFilteredCount;
+    }
+  }
+
+  bool get showNewMaintenanceSection =>
+      maintenanceViewFilter.value == maintenanceFilterAll ||
+      maintenanceViewFilter.value == maintenanceFilterNew;
+
+  bool get showOngoingMaintenanceSection =>
+      maintenanceViewFilter.value == maintenanceFilterAll ||
+      maintenanceViewFilter.value == maintenanceFilterOngoing;
+
+  bool get showReadyMaintenanceSection =>
+      maintenanceViewFilter.value == maintenanceFilterAll ||
+      maintenanceViewFilter.value == maintenanceFilterReady;
+
+  bool get showDeliveredMaintenanceSection =>
+      maintenanceViewFilter.value == maintenanceFilterAll ||
+      maintenanceViewFilter.value == maintenanceFilterDelivered;
+
+  bool get showArchivedMaintenanceSection =>
+      maintenanceViewFilter.value == maintenanceFilterAll ||
+      maintenanceViewFilter.value == maintenanceFilterArchived;
 
   int _groupedCount(Map<String, List<MaintenanceDataModel>> grouped) {
     return grouped.values.fold(0, (sum, list) => sum + list.length);
