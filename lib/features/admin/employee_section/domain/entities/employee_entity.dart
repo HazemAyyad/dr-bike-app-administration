@@ -13,6 +13,9 @@ class EmployeeEntity {
   final String? wifiSsid;
   final String? wifiStatusUpdatedAt;
   final bool isWifiStatusStale;
+  final bool isSuspended;
+  final String? suspendedAt;
+  final String? suspensionReason;
   final EmployeePointsSummaryEntity? pointsSummary;
 
   const EmployeeEntity({
@@ -30,6 +33,9 @@ class EmployeeEntity {
     this.wifiSsid,
     this.wifiStatusUpdatedAt,
     this.isWifiStatusStale = true,
+    this.isSuspended = false,
+    this.suspendedAt,
+    this.suspensionReason,
     this.pointsSummary,
   });
 }

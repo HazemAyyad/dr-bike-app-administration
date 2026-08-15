@@ -20,6 +20,9 @@ class EmployeeModel extends EmployeeEntity {
     String? wifiSsid,
     String? wifiStatusUpdatedAt,
     bool isWifiStatusStale = true,
+    bool isSuspended = false,
+    String? suspendedAt,
+    String? suspensionReason,
     EmployeePointsSummaryEntity? pointsSummary,
   }) : super(
           id: id,
@@ -36,6 +39,9 @@ class EmployeeModel extends EmployeeEntity {
           wifiSsid: wifiSsid,
           wifiStatusUpdatedAt: wifiStatusUpdatedAt,
           isWifiStatusStale: isWifiStatusStale,
+          isSuspended: isSuspended,
+          suspendedAt: suspendedAt,
+          suspensionReason: suspensionReason,
           pointsSummary: pointsSummary,
         );
 
@@ -77,6 +83,9 @@ class EmployeeModel extends EmployeeEntity {
       wifiSsid: asNullableString(wifiStatus['ssid']),
       wifiStatusUpdatedAt: asNullableString(wifiStatus['updated_at']),
       isWifiStatusStale: asBool(wifiStatus['stale'], true),
+      isSuspended: asBool(j['is_suspended']),
+      suspendedAt: asNullableString(j['suspended_at']),
+      suspensionReason: asNullableString(j['suspension_reason']),
       pointsSummary: summary,
     );
   }
@@ -99,6 +108,9 @@ class EmployeeModel extends EmployeeEntity {
         'updated_at': wifiStatusUpdatedAt,
         'stale': isWifiStatusStale,
       },
+      'is_suspended': isSuspended,
+      'suspended_at': suspendedAt,
+      'suspension_reason': suspensionReason,
     };
   }
 }

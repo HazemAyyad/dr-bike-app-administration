@@ -268,6 +268,59 @@ class EmployeeDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> suspendEmployee({
+    required String employeeId,
+    String? reason,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.suspendEmployee,
+        data: {
+          'employee_id': employeeId,
+          if (reason != null && reason.trim().isNotEmpty)
+            'reason': reason.trim(),
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> restoreSuspendedEmployee({
+    required String employeeId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.restoreSuspendedEmployee,
+        data: {'employee_id': employeeId},
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   // change employee password by admin
   Future<Map<String, dynamic>> changeEmployeePassword({
     required String employeeId,
@@ -390,6 +443,29 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<EmployeeModel>> getSuspendedEmployees() async {
+    try {
+      final response = await api.get(EndPoints.suspendedEmployees);
+      return mapListFromResponseKey(
+        response.data,
+        ApiKey.employees,
+        (Map<String, dynamic> m) => EmployeeModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getSuspendedEmployees',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

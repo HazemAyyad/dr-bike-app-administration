@@ -15,6 +15,7 @@ import '../../domain/usecases/employee_advances_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
 import '../../domain/usecases/get_logs_usecase.dart';
+import '../../domain/usecases/get_suspended_employees_usecase.dart';
 import '../../domain/usecases/get_assignable_boxes_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
 import '../../domain/usecases/overtime_and_loan_usecase.dart';
@@ -22,6 +23,7 @@ import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
 import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
+import '../../domain/usecases/suspend_employee_usecase.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 import '../../domain/usecases/update_permission_grant_policy_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
@@ -89,6 +91,15 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         deleteEmployeeUsecase: DeleteEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        suspendEmployeeUsecase: SuspendEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        restoreSuspendedEmployeeUsecase: RestoreSuspendedEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getSuspendedEmployeesUsecase: GetSuspendedEmployeesUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         changeEmployeePasswordUsecase: ChangeEmployeePasswordUsecase(

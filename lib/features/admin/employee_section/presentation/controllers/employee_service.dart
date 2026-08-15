@@ -12,6 +12,7 @@ import '../../domain/entities/working_times_entity.dart';
 
 class EmployeeService {
   final RxList<EmployeeEntity> employeeList = <EmployeeEntity>[].obs;
+  final RxList<EmployeeEntity> suspendedEmployeeList = <EmployeeEntity>[].obs;
 
   final RxList<WorkingTimesEntity> workingTimesList =
       <WorkingTimesEntity>[].obs;

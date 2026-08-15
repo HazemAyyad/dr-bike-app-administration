@@ -76,6 +76,16 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                 onPressed: controller.openLoansTab,
               ),
             ),
+          if (canViewEmployees)
+            Obx(
+              () => _AppBarBadgeIconButton(
+                tooltip: 'suspendedEmployees'.tr,
+                badgeCount:
+                    controller.employeeService.suspendedEmployeeList.length,
+                icon: Icons.person_off_outlined,
+                onPressed: controller.openSuspendedEmployeesTab,
+              ),
+            ),
           Obx(() {
             final tab = controller.activeTab;
             final canShowAttendanceReport =
@@ -269,6 +279,44 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                             SizedBox(
                               height: index ==
                                       controller.filteredLoanList.length - 1
+                                  ? 20.h
+                                  : 0.h,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (tab == EmployeeSectionController.suspendedEmployeesTab) {
+                  return EmployeeSection(
+                    isLoading: controller.isLoading,
+                    onCount: () => controller.filteredSuspendedEmployees.length,
+                    itemBuilder: (context, index) {
+                      final employee =
+                          controller.filteredSuspendedEmployees[index];
+                      return Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24.w,
+                          vertical: 5.h,
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(height: index == 0 ? 10.h : 0.h),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: ThemeService.isDark.value
+                                    ? AppColors.customGreyColor4
+                                    : AppColors.whiteColor2,
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: EmployeeList(employee: employee),
+                            ),
+                            SizedBox(
+                              height: index ==
+                                      controller.filteredSuspendedEmployees
+                                              .length -
+                                          1
                                   ? 20.h
                                   : 0.h,
                             ),

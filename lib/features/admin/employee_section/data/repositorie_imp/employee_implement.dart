@@ -191,6 +191,50 @@ class EmployeeImplement implements EmployeeRepository {
   }
 
   @override
+  Future<Either<Failure, String>> suspendEmployee({
+    required String employeeId,
+    String? reason,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.suspendEmployee(
+        employeeId: employeeId,
+        reason: reason,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message'] ?? '');
+      }
+      return Left(
+          ValidationFailure(result['message'] ?? 'Unknown error', result));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> restoreSuspendedEmployee({
+    required String employeeId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.restoreSuspendedEmployee(
+        employeeId: employeeId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message'] ?? '');
+      }
+      return Left(
+          ValidationFailure(result['message'] ?? 'Unknown error', result));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> changeEmployeePassword({
     required String employeeId,
     required String password,
@@ -227,6 +271,19 @@ class EmployeeImplement implements EmployeeRepository {
         final result = await employeeDatasource.getEmployees();
 
         return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<List<EmployeeModel>> getSuspendedEmployees() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await employeeDatasource.getSuspendedEmployees();
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }

@@ -2604,6 +2604,16 @@ const Map<String, String> en = {
   'deleteEmployeeConfirmBody':
       'Delete employee @name? They will be hidden from lists but all their records (attendance, points, salaries) are kept.',
   'employeeDeletedSuccess': 'Employee deleted successfully',
+  'suspendedEmployees': 'Suspended',
+  'suspendEmployeeAction': 'Suspend employee',
+  'restoreEmployeeAction': 'Restore employee',
+  'suspendEmployeeConfirmTitle': 'Confirm suspension',
+  'suspendEmployeeConfirmBody':
+      'Suspend @name? They will be blocked from login and hidden from active lists.',
+  'restoreEmployeeConfirmTitle': 'Restore employee',
+  'restoreEmployeeConfirmBody': 'Restore @name to the active employees list?',
+  'employeeSuspendedSuccess': 'Employee suspended successfully',
+  'employeeRestoredSuccess': 'Employee restored successfully',
 
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'Points & Rewards Guide',

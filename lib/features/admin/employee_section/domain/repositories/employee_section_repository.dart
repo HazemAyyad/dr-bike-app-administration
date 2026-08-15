@@ -31,6 +31,8 @@ abstract class EmployeeRepository {
 
   Future<List<EmployeeEntity>> getEmployees();
 
+  Future<List<EmployeeEntity>> getSuspendedEmployees();
+
   Future<List<WorkingTimesModel>> getWorkingTimes();
 
   Future<List<FinancialDuesModel>> getFinancialDues();
@@ -93,6 +95,15 @@ abstract class EmployeeRepository {
   });
 
   Future<Either<Failure, String>> deleteEmployee({
+    required String employeeId,
+  });
+
+  Future<Either<Failure, String>> suspendEmployee({
+    required String employeeId,
+    String? reason,
+  });
+
+  Future<Either<Failure, String>> restoreSuspendedEmployee({
     required String employeeId,
   });
 

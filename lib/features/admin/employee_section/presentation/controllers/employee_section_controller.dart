@@ -43,6 +43,8 @@ import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
 import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
+import '../../domain/usecases/get_suspended_employees_usecase.dart';
+import '../../domain/usecases/suspend_employee_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import '../../domain/usecases/admin_users_usecase.dart';
 import '../../data/models/admin_user_model.dart';
@@ -65,6 +67,9 @@ class EmployeeSectionController extends GetxController
   final GetLogsUsecase getLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final DeleteEmployeeUsecase deleteEmployeeUsecase;
+  final SuspendEmployeeUsecase suspendEmployeeUsecase;
+  final RestoreSuspendedEmployeeUsecase restoreSuspendedEmployeeUsecase;
+  final GetSuspendedEmployeesUsecase getSuspendedEmployeesUsecase;
   final ChangeEmployeePasswordUsecase changeEmployeePasswordUsecase;
   final GetAdminUsersUsecase getAdminUsersUsecase;
   final ManageAdminUserUsecase manageAdminUserUsecase;
@@ -87,6 +92,9 @@ class EmployeeSectionController extends GetxController
     required this.getLogsUsecase,
     required this.cancelLogUsecase,
     required this.deleteEmployeeUsecase,
+    required this.suspendEmployeeUsecase,
+    required this.restoreSuspendedEmployeeUsecase,
+    required this.getSuspendedEmployeesUsecase,
     required this.changeEmployeePasswordUsecase,
     required this.getAdminUsersUsecase,
     required this.manageAdminUserUsecase,
@@ -107,6 +115,7 @@ class EmployeeSectionController extends GetxController
   static const int loansTab = 3;
   static const int overtimeTab = 4;
   static const int adminsTab = 5;
+  static const int suspendedEmployeesTab = 6;
 
   final tabs = <String>[].obs;
   final visibleTabIndexes = <int>[].obs;
@@ -141,6 +150,11 @@ class EmployeeSectionController extends GetxController
     actionTab.value = entitlementsTab;
   }
 
+  void openSuspendedEmployeesTab() {
+    actionTab.value = suspendedEmployeesTab;
+    getSuspendedEmployees();
+  }
+
   int get activeTab {
     if (actionTab.value >= 0) {
       return actionTab.value;
@@ -172,6 +186,7 @@ class EmployeeSectionController extends GetxController
     add(overtimeTab, 'overtime',
         canManageEmployeesOrders || canViewEmployeesAttendance);
     add(adminsTab, 'admins', userType == 'admin');
+    add(suspendedEmployeesTab, 'suspendedEmployees', canViewEmployees);
 
     tabs.assignAll(nextTabs);
     visibleTabIndexes.assignAll(nextIndexes);
@@ -449,7 +464,7 @@ class EmployeeSectionController extends GetxController
   }
 
   //Get Employee
-  void getEmployee() async {
+  Future<void> getEmployee() async {
     final showLoader = employeeService.employeeList.isEmpty;
     if (showLoader) isLoading(true);
     try {
@@ -470,6 +485,27 @@ class EmployeeSectionController extends GetxController
       );
     } finally {
       if (showLoader) isLoading(false);
+    }
+  }
+
+  Future<void> getSuspendedEmployees() async {
+    try {
+      final result = await getSuspendedEmployeesUsecase.call();
+      employeeService.suspendedEmployeeList.assignAll(result);
+      filteredSuspendedEmployees
+          .assignAll(employeeService.suspendedEmployeeList);
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -568,6 +604,7 @@ class EmployeeSectionController extends GetxController
   }
 
   final RxBool isDeletingEmployee = false.obs;
+  final RxBool isSuspendingEmployee = false.obs;
   final RxBool isChangingEmployeePassword = false.obs;
   final TextEditingController employeePasswordController =
       TextEditingController();
@@ -593,9 +630,12 @@ class EmployeeSectionController extends GetxController
           final int? id = int.tryParse(employeeId);
           if (id != null) {
             employeeService.employeeList.removeWhere((e) => e.id == id);
+            employeeService.suspendedEmployeeList
+                .removeWhere((e) => e.id == id);
             employeeService.workingTimesList.removeWhere((e) => e.id == id);
             employeeService.financialDuesList.removeWhere((e) => e.id == id);
             filteredEmployees.removeWhere((e) => e.id == id);
+            filteredSuspendedEmployees.removeWhere((e) => e.id == id);
             filteredWorkingTimes.removeWhere((e) => e.id == id);
             filteredFinancialDues.removeWhere((e) => e.id == id);
           }
@@ -611,6 +651,84 @@ class EmployeeSectionController extends GetxController
       );
     } finally {
       isDeletingEmployee.value = false;
+    }
+  }
+
+  Future<bool> suspendEmployee(String employeeId, {String? reason}) async {
+    isSuspendingEmployee.value = true;
+    try {
+      final result = await suspendEmployeeUsecase.call(
+        employeeId: employeeId,
+        reason: reason,
+      );
+      return result.fold(
+        (failure) {
+          Get.snackbar(
+            'error'.tr,
+            failure.errMessage,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        },
+        (message) async {
+          await _refreshEmployeesAfterStatusChange();
+          Get.snackbar(
+            'success'.tr,
+            message.isNotEmpty ? message : 'employeeSuspendedSuccess'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFFFFF7ED),
+            colorText: const Color(0xFF9A3412),
+          );
+          return true;
+        },
+      );
+    } finally {
+      isSuspendingEmployee.value = false;
+    }
+  }
+
+  Future<bool> restoreSuspendedEmployee(String employeeId) async {
+    isSuspendingEmployee.value = true;
+    try {
+      final result = await restoreSuspendedEmployeeUsecase.call(
+        employeeId: employeeId,
+      );
+      return result.fold(
+        (failure) {
+          Get.snackbar(
+            'error'.tr,
+            failure.errMessage,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        },
+        (message) async {
+          await _refreshEmployeesAfterStatusChange();
+          Get.snackbar(
+            'success'.tr,
+            message.isNotEmpty ? message : 'employeeRestoredSuccess'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFFE8F5E9),
+            colorText: const Color(0xFF1B5E20),
+          );
+          return true;
+        },
+      );
+    } finally {
+      isSuspendingEmployee.value = false;
+    }
+  }
+
+  Future<void> _refreshEmployeesAfterStatusChange() async {
+    if (canViewEmployees) {
+      await getEmployee();
+      await getSuspendedEmployees();
+    }
+    if (canViewEmployeesAttendance) {
+      getWorkingTimes();
+    }
+    if (canViewEmployeesFinancial) {
+      getFinancialDues();
     }
   }
 
@@ -1056,6 +1174,8 @@ class EmployeeSectionController extends GetxController
   }
 
   final RxList<EmployeeEntity> filteredEmployees = <EmployeeEntity>[].obs;
+  final RxList<EmployeeEntity> filteredSuspendedEmployees =
+      <EmployeeEntity>[].obs;
   final RxList<AdminUserModel> filteredAdmins = <AdminUserModel>[].obs;
   final RxList<WorkingTimesEntity> filteredWorkingTimes =
       <WorkingTimesEntity>[].obs;
@@ -1072,6 +1192,9 @@ class EmployeeSectionController extends GetxController
     if (employeeNameController.text.isEmpty) {
       // رجع القوائم الأصلية
       filteredEmployees.assignAll(employeeService.employeeList);
+      filteredSuspendedEmployees.assignAll(
+        employeeService.suspendedEmployeeList,
+      );
       filteredWorkingTimes.assignAll(employeeService.workingTimesList);
       filteredFinancialDues.assignAll(employeeService.financialDuesList);
       filteredOvertimeList.assignAll(employeeService.overtimeList);
@@ -1082,6 +1205,10 @@ class EmployeeSectionController extends GetxController
 
       filteredEmployees.assignAll(
         employeeService.employeeList
+            .where((e) => e.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+      filteredSuspendedEmployees.assignAll(
+        employeeService.suspendedEmployeeList
             .where((e) => e.employeeName.toLowerCase().contains(lowerQuery)),
       );
 
@@ -1122,6 +1249,10 @@ class EmployeeSectionController extends GetxController
       final result = await getAllEmployeeUsecase.call();
       employeeService.employeeList.assignAll(result);
       filteredEmployees.assignAll(employeeService.employeeList);
+      final suspended = await getSuspendedEmployeesUsecase.call();
+      employeeService.suspendedEmployeeList.assignAll(suspended);
+      filteredSuspendedEmployees
+          .assignAll(employeeService.suspendedEmployeeList);
     }
     if (canViewEmployeesAttendance) {
       getWorkingTimes();
@@ -1149,7 +1280,10 @@ class EmployeeSectionController extends GetxController
     _resolveCurrentEmployeeRecordId();
     if (canViewEmployees) {
       getEmployee();
+      getSuspendedEmployees();
       filteredEmployees.assignAll(employeeService.employeeList);
+      filteredSuspendedEmployees
+          .assignAll(employeeService.suspendedEmployeeList);
     }
     if (canViewEmployeesAttendance) {
       getWorkingTimes();

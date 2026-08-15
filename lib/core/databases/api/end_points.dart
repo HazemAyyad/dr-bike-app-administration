@@ -163,6 +163,7 @@ class EndPoints {
   static const String createEmployee = 'create/employee';
   static const String paySalaryToEmployee = 'pay/employee/salary';
   static const String employees = 'employees';
+  static const String suspendedEmployees = 'employees/suspended';
   static const String employeeWifiPresenceHistory =
       'admin/employees/wifi-presence/history';
   static String employeeWifiPresenceHistoryForEmployee(int employeeId) =>
@@ -224,6 +225,8 @@ class EndPoints {
   static const String editEmployee = 'edit/employee';
   static const String changeEmployeePassword = 'employee/change-password';
   static const String deleteEmployee = 'delete/employee';
+  static const String suspendEmployee = 'suspend/employee';
+  static const String restoreSuspendedEmployee = 'restore/suspended/employee';
 
   // admin users
   static const String adminUsers = 'admin/users';

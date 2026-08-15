@@ -2657,6 +2657,16 @@ const Map<String, String> ar = {
   'deleteEmployeeConfirmBody':
       'هل تريد حذف الموظف @name؟ سيتم إخفاؤه من القوائم مع الاحتفاظ بسجلاته (الحضور، النقاط، الرواتب…).',
   'employeeDeletedSuccess': 'تم حذف الموظف بنجاح',
+  'suspendedEmployees': 'المجمدين',
+  'suspendEmployeeAction': 'تجميد الموظف',
+  'restoreEmployeeAction': 'إلغاء التجميد',
+  'suspendEmployeeConfirmTitle': 'تأكيد التجميد',
+  'suspendEmployeeConfirmBody':
+      'هل تريد تجميد الموظف @name؟ سيتم منعه من الدخول وإخفاؤه من القوائم النشطة.',
+  'restoreEmployeeConfirmTitle': 'إلغاء التجميد',
+  'restoreEmployeeConfirmBody': 'هل تريد إعادة الموظف @name للقائمة النشطة؟',
+  'employeeSuspendedSuccess': 'تم تجميد الموظف بنجاح',
+  'employeeRestoredSuccess': 'تم إلغاء تجميد الموظف بنجاح',
 
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'دليل النقاط والمكافآت',
