@@ -499,6 +499,8 @@ const Map<String, String> ar = {
   'address': 'العنوان',
   'enterFullAddress': 'أدخل العنوان بالتفصيل...',
   'save': 'حفظ',
+  'saving': 'جارٍ الحفظ',
+  'saved': 'تم الحفظ',
   'saveReminder': 'حفظ التنبيه',
 
   // تغيير كلمة المرور
@@ -3008,5 +3010,16 @@ const Map<String, String> ar = {
   'dashboardCustomizeSaveFailed': 'تعذر حفظ تخصيص الداشبورد',
   'openInNewWindow': 'فتح في نافذة جديدة',
   'openInNewWindowFailed': 'تعذر فتح النافذة الجديدة',
-  'close': 'إغلاق',
+  'smartHome': 'المنزل الذكي',
+  'smartHomeDefaultName': 'منزلي',
+  'rooms': 'الغرف',
+  'devices': 'الأجهزة',
+  'addRoom': 'إضافة غرفة',
+  'addDevice': 'إضافة جهاز',
+  'tuyaSdkReady': 'Tuya SDK جاهز',
+  'tuyaSdkNeedsSetup': 'إعداد Tuya يحتاج مراجعة قبل التحكم بالأجهزة',
+  'smartHomeComingSoon': 'سيتم تفعيل هذه الخطوة بعد ربط Tuya الكامل',
+  'noRoomsYet': 'لا توجد غرف بعد',
+  'noDevicesYet': 'لا توجد أجهزة بعد',
+  'smartDevice': 'جهاز ذكي', 'close': 'إغلاق',
 };

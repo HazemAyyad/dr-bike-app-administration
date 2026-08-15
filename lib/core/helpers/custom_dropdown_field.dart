@@ -144,6 +144,8 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
   final FormFieldValidator<dynamic>? validator;
   final TextStyle? labelStyle;
   final dynamic value;
+  final GlobalKey<DropdownSearchState<dynamic>>? dropdownKey;
+  final PopupProps<dynamic>? popupProps;
 
   const CustomDropdownFieldWithSearch({
     Key? key,
@@ -159,6 +161,8 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
     this.validator,
     this.labelStyle,
     this.value,
+    this.dropdownKey,
+    this.popupProps,
   }) : super(key: key);
 
   @override
@@ -206,6 +210,7 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
               borderRadius: BorderRadius.circular(11.r),
             ),
             child: DropdownSearch<dynamic>(
+              key: dropdownKey,
               selectedItem: value,
               items: (filter, infiniteScrollProps) => items,
               itemAsString: itemAsString,
@@ -235,7 +240,8 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
                           ),
                 ),
               ),
-              popupProps: const PopupProps.menu(showSearchBox: true),
+              popupProps:
+                  popupProps ?? const PopupProps.menu(showSearchBox: true),
               onChanged: isEnabled ? onChanged : null,
             ),
           ),

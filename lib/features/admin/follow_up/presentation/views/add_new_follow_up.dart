@@ -1,6 +1,7 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,7 +11,6 @@ import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../maintenance/presentation/widgets/custom_line_steps_widget.dart';
 import '../../../maintenance/presentation/widgets/next_back_button.dart';
 import '../controllers/follow_up_controller.dart';
 
@@ -33,12 +33,27 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
               return Column(
                 children: [
                   SizedBox(height: 10.h),
-                  CustomLineSteps(
+                  _FollowUpStepper(
                     timeLineSteps: controller.timeLineSteps,
                     selectedStep: controller.selectedStep,
                     changeSelected: controller.changeSelected,
                   ),
                   SizedBox(height: 20.h),
+                  CustomTextField(
+                    label: 'details',
+                    hintText: 'details',
+                    controller: controller.itemIdController,
+                    focusNode: controller.detailsFocusNode,
+                    minLines: 6,
+                    maxLines: 10,
+                    validator: (p0) => null,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) =>
+                        controller.openCustomerPickerFromKeyboard(),
+                    onChanged: (_) => controller.scheduleAutoSave(),
+                  ),
+                  SizedBox(height: 16.h),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -85,6 +100,24 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                             ),
                             SizedBox(height: 10.h),
                             CustomDropdownFieldWithSearch(
+                              dropdownKey: controller.customerDropdownKey,
+                              popupProps: PopupProps.menu(
+                                showSearchBox: true,
+                                fit: FlexFit.loose,
+                                constraints: BoxConstraints(maxHeight: 220.h),
+                                searchDelay: const Duration(milliseconds: 120),
+                                searchFieldProps: TextFieldProps(
+                                  focusNode: controller.customerSearchFocusNode,
+                                  autofocus: true,
+                                  textInputAction: TextInputAction.search,
+                                  decoration: InputDecoration(
+                                    hintText: 'search'.tr,
+                                    prefixIcon:
+                                        const Icon(Icons.search_rounded),
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                ),
+                              ),
                               tital: controller.isCustomer.value
                                   ? 'customerName'.tr
                                   : 'sellerName'.tr,
@@ -115,6 +148,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                               onChanged: (value) {
                                 controller.customerAndSellerIdController.text =
                                     value.id.toString();
+                                controller.scheduleAutoSave();
                               },
                               itemAsString: (f) => f.name,
                               compareFn: (a, b) => a.id == b.id,
@@ -143,17 +177,6 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                         )
                     ],
                   ),
-                  SizedBox(height: 20.h),
-                  CustomTextField(
-                    label: 'details',
-                    hintText: 'details',
-                    controller: controller.itemIdController,
-                    minLines: 6,
-                    maxLines: 10,
-                    validator: (p0) => null,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                  ),
                   if (controller.canUseAdminOnly) ...[
                     SizedBox(height: 10.h),
                     SwitchListTile(
@@ -181,6 +204,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                       value: controller.adminOnly.value,
                       onChanged: (value) {
                         controller.adminOnly.value = value;
+                        controller.scheduleAutoSave();
                         controller.update();
                       },
                     ),
@@ -217,16 +241,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                   ),
                   SizedBox(height: 10.h),
                   if (controller.isEdite.value)
-                    AppButton(
-                      isSafeArea: false,
-                      isLoading: controller.isLoading,
-                      text: 'save',
-                      onPressed: () {
-                        controller.addFollowUp(
-                          step: controller.selectedStep.value - 1,
-                        );
-                      },
-                    ),
+                    _AutoSaveStatus(controller: controller),
                   SizedBox(height: 10.h),
                   Row(
                     children: [
@@ -278,6 +293,181 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FollowUpStepper extends StatelessWidget {
+  const _FollowUpStepper({
+    required this.timeLineSteps,
+    required this.selectedStep,
+    required this.changeSelected,
+  });
+
+  final List<Map<int, String>> timeLineSteps;
+  final RxInt selectedStep;
+  final void Function(int index) changeSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : AppColors.whiteColor2,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < timeLineSteps.length; i++) ...[
+              Expanded(
+                child: _FollowUpStepItem(
+                  index: i + 1,
+                  label: timeLineSteps[i].values.first.tr,
+                  selectedStep: selectedStep.value,
+                  onTap: () => changeSelected(i + 1),
+                ),
+              ),
+              if (i < timeLineSteps.length - 1)
+                Container(
+                  width: 18.w,
+                  height: 2.h,
+                  color: selectedStep.value > i + 1
+                      ? AppColors.primaryColor
+                      : AppColors.customGreyColor5.withValues(alpha: 0.35),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowUpStepItem extends StatelessWidget {
+  const _FollowUpStepItem({
+    required this.index,
+    required this.label,
+    required this.selectedStep,
+    required this.onTap,
+  });
+
+  final int index;
+  final String label;
+  final int selectedStep;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = selectedStep == index;
+    final isDone = selectedStep > index;
+    final color = isActive || isDone
+        ? AppColors.primaryColor
+        : AppColors.customGreyColor5;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 32.w,
+            height: 32.w,
+            decoration: BoxDecoration(
+              color: isActive || isDone
+                  ? AppColors.primaryColor
+                  : Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 1.4),
+            ),
+            child: Center(
+              child: Icon(
+                isDone ? Icons.check_rounded : Icons.circle,
+                size: isDone ? 18.sp : 8.sp,
+                color: isActive || isDone ? Colors.white : color,
+              ),
+            ),
+          ),
+          SizedBox(height: 5.h),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.5.sp,
+              fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+              color: color,
+              height: 1.15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AutoSaveStatus extends StatelessWidget {
+  const _AutoSaveStatus({required this.controller});
+
+  final FollowUpController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<FollowUpController>(
+      id: 'autoSaveStatus',
+      builder: (_) {
+        final hasError = controller.hasAutoSaveError.value;
+        final isSaving = controller.isAutoSaving.value;
+        return Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Row(
+              key: ValueKey('$isSaving-$hasError'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSaving)
+                  SizedBox(
+                    width: 16.w,
+                    height: 16.w,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    hasError
+                        ? Icons.error_outline_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 18.sp,
+                    color:
+                        hasError ? AppColors.redColor : AppColors.customGreen1,
+                  ),
+                SizedBox(width: 6.w),
+                Text(
+                  isSaving
+                      ? 'saving'.tr
+                      : hasError
+                          ? 'error'.tr
+                          : 'saved'.tr,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: hasError
+                        ? AppColors.redColor
+                        : ThemeService.isDark.value
+                            ? AppColors.customGreyColor3
+                            : AppColors.customGreyColor5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

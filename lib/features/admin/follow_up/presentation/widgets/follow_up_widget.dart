@@ -18,19 +18,6 @@ import 'contact_dialog.dart';
 class FollowUpWidget extends StatelessWidget {
   const FollowUpWidget({Key? key}) : super(key: key);
 
-  List<FollowupModel> _activeList(FollowUpController controller) {
-    if (controller.currentTab.value == 0) {
-      return controller.initialFollowupsFilterList.reversed.toList();
-    }
-    if (controller.currentTab.value == 1) {
-      return controller.informFollowupsFilterList.reversed.toList();
-    }
-    if (controller.currentTab.value == 2) {
-      return controller.finishAndAgreementFollowupsFilterList.reversed.toList();
-    }
-    return controller.archivedFollowupsFilterList.reversed.toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return GetBuilder<FollowUpController>(
@@ -39,39 +26,146 @@ class FollowUpWidget extends StatelessWidget {
           return const _FollowUpSkeletonSliver();
         }
 
-        final followups = _activeList(controller);
-        if (followups.isEmpty) {
+        if (controller.totalFilteredCount == 0) {
           return const SliverFillRemaining(
             child: Center(child: ShowNoData()),
           );
         }
 
-        return SliverList.builder(
-          itemCount: followups.length,
-          itemBuilder: (context, index) {
-            return _FollowUpCard(
-              followup: followups[index],
-              showArchiveStatus: controller.currentTab.value == 3,
-              onOpen: () => controller.getFollowUpDetails(
-                followupId: followups[index].id.toString(),
-              ),
-              onCancel: () => Get.dialog(
-                CancelDialog(followupId: followups[index].id.toString()),
-              ),
-              onViewLog: () => _showActivityLogDialog(
-                context,
-                controller,
-                followups[index].id.toString(),
-              ),
-              onDelete: () => _showDeleteDialog(
-                context,
-                controller,
-                followups[index].id.toString(),
-              ),
-            );
-          },
+        final children = <Widget>[
+          ..._buildSection(
+            context: context,
+            controller: controller,
+            title: 'initialFollowUp'.tr,
+            followups: controller.initialFollowupsFilterList.reversed.toList(),
+          ),
+          ..._buildSection(
+            context: context,
+            controller: controller,
+            title: 'notify_customer'.tr,
+            followups: controller.informFollowupsFilterList.reversed.toList(),
+          ),
+          ..._buildSection(
+            context: context,
+            controller: controller,
+            title: 'completion_and_agreement'.tr,
+            followups: controller.finishAndAgreementFollowupsFilterList.reversed
+                .toList(),
+          ),
+          ..._buildSection(
+            context: context,
+            controller: controller,
+            title: 'archive'.tr,
+            followups: controller.archivedFollowupsFilterList.reversed.toList(),
+            showArchiveStatus: true,
+          ),
+        ];
+
+        return SliverList(
+          delegate: SliverChildListDelegate(children),
         );
       },
+    );
+  }
+
+  List<Widget> _buildSection({
+    required BuildContext context,
+    required FollowUpController controller,
+    required String title,
+    required List<FollowupModel> followups,
+    bool showArchiveStatus = false,
+  }) {
+    return [
+      _FollowUpSectionHeader(title: title, count: followups.length),
+      if (followups.isEmpty)
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 8.h),
+          child: Text(
+            'noData'.tr,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor3
+                  : AppColors.customGreyColor5,
+            ),
+          ),
+        )
+      else
+        ...followups.map(
+          (followup) => _FollowUpCard(
+            followup: followup,
+            showArchiveStatus: showArchiveStatus,
+            onOpen: () => controller.getFollowUpDetails(
+              followupId: followup.id.toString(),
+            ),
+            onCancel: () => Get.dialog(
+              CancelDialog(followupId: followup.id.toString()),
+            ),
+            onViewLog: () => _showActivityLogDialog(
+              context,
+              controller,
+              followup.id.toString(),
+            ),
+            onDelete: () => _showDeleteDialog(
+              context,
+              controller,
+              followup.id.toString(),
+            ),
+          ),
+        ),
+      SizedBox(height: 12.h),
+    ];
+  }
+}
+
+class _FollowUpSectionHeader extends StatelessWidget {
+  const _FollowUpSectionHeader({
+    required this.title,
+    required this.count,
+  });
+
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(28.w, 14.h, 28.w, 6.h),
+      child: Row(
+        children: [
+          Container(
+            width: 4.w,
+            height: 20.h,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w900,
+                color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,7 +1,13 @@
+import 'dart:async';
+
+import 'package:dartz/dartz.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
@@ -47,6 +53,9 @@ class FollowUpController extends GetxController {
 
   final customerAndSellerIdController = TextEditingController();
   final itemIdController = TextEditingController();
+  final detailsFocusNode = FocusNode();
+  final customerDropdownKey = GlobalKey<DropdownSearchState<dynamic>>();
+  final customerSearchFocusNode = FocusNode();
 
   final customerNameController = TextEditingController();
   final customerTypeController = TextEditingController();
@@ -54,6 +63,13 @@ class FollowUpController extends GetxController {
   final customerNotesController = TextEditingController();
 
   RxInt currentTab = 0.obs;
+  final RxBool isSearchVisible = false.obs;
+  final RxBool isAutoSaving = false.obs;
+  final RxBool hasAutoSaveError = false.obs;
+  Timer? _autoSaveDebounce;
+  bool _isHydratingFollowupForm = false;
+  bool _autoSaveQueued = false;
+  int? _queuedAutoSaveStep;
   RxList<Map<String, dynamic>> tasks = <Map<String, dynamic>>[].obs;
   final tabs = [
     'initialFollowUp',
@@ -71,6 +87,9 @@ class FollowUpController extends GetxController {
   int get informCount => informFollowupsFilterList.length;
   int get finishAgreementCount => finishAndAgreementFollowupsFilterList.length;
   int get archivedCount => archivedFollowupsFilterList.length;
+
+  int get totalFilteredCount =>
+      initialCount + informCount + finishAgreementCount + archivedCount;
 
   int get activeFilteredCount {
     if (currentTab.value == 0) return initialCount;
@@ -91,7 +110,24 @@ class FollowUpController extends GetxController {
       return;
     }
     selectedStep.value = index;
+    scheduleAutoSave(step: index - 1);
     update();
+  }
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    if (!isSearchVisible.value) {
+      employeeNameController.clear();
+      searchBar('');
+    }
+    update(['searchBar']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    employeeNameController.clear();
+    searchBar('');
+    update(['searchBar']);
   }
 
   void nextStep() {
@@ -210,6 +246,7 @@ class FollowUpController extends GetxController {
       return;
     }
     isEdite(true);
+    _isHydratingFollowupForm = true;
     Get.toNamed(AppRoutes.ADDFOLLOWUPSCREEN);
     final result = await followupDetailsCancelUsecase.call(
       followupId: followupId,
@@ -245,6 +282,7 @@ class FollowUpController extends GetxController {
                 : 4;
 
     this.followupId = followupDetails['id'].toString();
+    _isHydratingFollowupForm = false;
     isLoading(false);
     update();
   }
@@ -260,31 +298,80 @@ class FollowUpController extends GetxController {
     activityLogs.clear();
     selectedStep.value = 1;
     update();
+    focusDetailsField();
+  }
+
+  void focusDetailsField() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      detailsFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.show');
+    });
+  }
+
+  void openCustomerPickerFromKeyboard() {
+    if (isEdite.value) {
+      return;
+    }
+    detailsFocusNode.unfocus();
+    getAllCustomersAndSellers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      customerSearchFocusNode.requestFocus();
+      customerDropdownKey.currentState?.openDropDownSearch();
+      SystemChannels.textInput.invokeMethod('TextInput.show');
+    });
+  }
+
+  void scheduleAutoSave({int? step}) {
+    if (!isEdite.value || _isHydratingFollowupForm || followupId.isEmpty) {
+      return;
+    }
+    _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = Timer(
+      const Duration(milliseconds: 650),
+      () => autoSaveFollowUp(step: step),
+    );
+  }
+
+  Future<void> autoSaveFollowUp({int? step}) async {
+    if (!isEdite.value || followupId.isEmpty) {
+      return;
+    }
+    if (isAutoSaving.value) {
+      _autoSaveQueued = true;
+      _queuedAutoSaveStep = step;
+      return;
+    }
+    isAutoSaving(true);
+    hasAutoSaveError(false);
+    update(['autoSaveStatus']);
+    final result = await _saveFollowUp(step: step ?? selectedStep.value - 1);
+    result.fold(
+      (failure) {
+        hasAutoSaveError(true);
+        Helpers.showCustomDialogError(
+          context: Get.context!,
+          title: failure.errMessage,
+          message: failure.data?['message'] ?? failure.errMessage,
+        );
+      },
+      (_) {
+        getAllFollowUps();
+      },
+    );
+    isAutoSaving(false);
+    update(['autoSaveStatus']);
+    if (_autoSaveQueued) {
+      final queuedStep = _queuedAutoSaveStep;
+      _autoSaveQueued = false;
+      _queuedAutoSaveStep = null;
+      await autoSaveFollowUp(step: queuedStep);
+    }
   }
 
   // add follow up
   void addFollowUp({int step = 0, bool finishEdit = false}) async {
     isLoading(true);
-    String status = 'initial';
-    if (step == 1) {
-      status = 'inform';
-    } else if (step == 2) {
-      status = 'agreement';
-    } else if (step == 3) {
-      status = 'delivered';
-    } else if (step == 4) {
-      status = 'rejected';
-    }
-    final result = await addFollowupUsecase.call(
-      followupId: followupId,
-      customerId: isCustomer.value ? customerAndSellerIdController.text : '',
-      sellerId: !isCustomer.value ? customerAndSellerIdController.text : '',
-      productId: itemIdController.text,
-      status: status,
-      adminOnly: adminOnly.value,
-    );
-    // values [inform,agreement,delivered,rejected]
-
+    final result = await _saveFollowUp(step: step);
     result.fold(
       (failure) {
         final errors = failure.data != null ? failure.data['errors'] : null;
@@ -335,6 +422,27 @@ class FollowUpController extends GetxController {
       },
     );
     isLoading(false);
+  }
+
+  Future<Either<Failure, String>> _saveFollowUp({int step = 0}) {
+    String status = 'initial';
+    if (step == 1) {
+      status = 'inform';
+    } else if (step == 2) {
+      status = 'agreement';
+    } else if (step == 3) {
+      status = 'delivered';
+    } else if (step == 4) {
+      status = 'rejected';
+    }
+    return addFollowupUsecase.call(
+      followupId: followupId,
+      customerId: isCustomer.value ? customerAndSellerIdController.text : '',
+      sellerId: !isCustomer.value ? customerAndSellerIdController.text : '',
+      productId: itemIdController.text,
+      status: status,
+      adminOnly: adminOnly.value,
+    );
   }
 
   void deleteFollowUp({required String followupId}) async {
@@ -548,6 +656,7 @@ class FollowUpController extends GetxController {
 
   @override
   void onClose() {
+    _autoSaveDebounce?.cancel();
     fromDateController.dispose();
     toDateController.dispose();
     customerAndSellerIdController.dispose();
@@ -556,6 +665,8 @@ class FollowUpController extends GetxController {
     itemIdController.dispose();
     customerTypeController.dispose();
     customerNotesController.dispose();
+    detailsFocusNode.dispose();
+    customerSearchFocusNode.dispose();
     super.onClose();
   }
 }

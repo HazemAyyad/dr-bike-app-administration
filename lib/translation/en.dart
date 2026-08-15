@@ -502,6 +502,8 @@ const Map<String, String> en = {
   'address': 'Address',
   'enterFullAddress': 'Enter the address in detail...',
   'save': 'Save',
+  'saving': 'Saving',
+  'saved': 'Saved',
   'saveReminder': 'Save alert',
 
   // Change Password
@@ -3040,5 +3042,17 @@ const Map<String, String> en = {
   'dashboardCustomizeSaveFailed': 'Could not save dashboard customization',
   'openInNewWindow': 'Open in new window',
   'openInNewWindowFailed': 'Could not open the new window',
-  'close': 'Close',
+  'smartHome': 'Smart Home',
+  'smartHomeDefaultName': 'My Home',
+  'rooms': 'Rooms',
+  'devices': 'Devices',
+  'addRoom': 'Add room',
+  'addDevice': 'Add device',
+  'tuyaSdkReady': 'Tuya SDK is ready',
+  'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
+  'smartHomeComingSoon':
+      'This step will be enabled after the full Tuya connection',
+  'noRoomsYet': 'No rooms yet',
+  'noDevicesYet': 'No devices yet',
+  'smartDevice': 'Smart device', 'close': 'Close',
 };

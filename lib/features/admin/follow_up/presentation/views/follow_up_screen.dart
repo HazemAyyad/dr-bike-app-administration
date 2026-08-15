@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
-import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/follow_up_controller.dart';
@@ -19,68 +18,72 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'followUpDepartment',
-        fromDateController: controller.fromDateController,
-        toDateController: controller.toDateController,
-        employeeNameController: controller.employeeNameController,
-        onPressedFilter: () => controller.filterGoals(),
-        label: 'customerName',
         action: false,
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: 'search'.tr,
+              onPressed: controller.toggleSearch,
+              icon: Icon(
+                controller.isSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+        ],
       ),
       body: AppPullToRefresh(
         onRefresh: controller.pullToRefresh,
         child: CustomScrollView(
           physics: kRefreshableScrollPhysics,
           slivers: [
-            // tab bar
-            SliverToBoxAdapter(
-              child: GetBuilder<FollowUpController>(
-                builder: (controller) {
-                  return AppTabs(
-                    tabs: [
-                      '${'initialFollowUp'.tr} (${controller.initialCount})',
-                      '${'notify_customer'.tr} (${controller.informCount})',
-                      '${'completion_and_agreement'.tr} (${controller.finishAgreementCount})',
-                      '${'archive'.tr} (${controller.archivedCount})',
-                    ],
-                    currentTab: controller.currentTab,
-                    changeTab: controller.changeTab,
-                    translateLabels: false,
-                    height: 34.h,
-                    horizontalPadding: 2.w,
-                    tabHorizontalMargin: 1.w,
-                    tabHorizontalPadding: 8.w,
-                    tabVerticalPadding: 5.h,
-                    fontSize: 10.5.sp,
-                  );
-                },
-              ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 50.w),
-                child: SearchBar(
-                  shadowColor: WidgetStateProperty.all(Colors.transparent),
-                  leading: const Icon(
-                    Icons.search,
-                  ),
-                  hintText: 'search'.tr,
-                  backgroundColor: WidgetStateProperty.all(
-                    ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.customGreyColor7,
-                  ),
-                  onChanged: (value) => controller.searchBar(value),
+            GetBuilder<FollowUpController>(
+              id: 'searchBar',
+              builder: (_) => SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 6.h,
+                          ),
+                          child: SearchBar(
+                            controller: controller.employeeNameController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            leading: const Icon(Icons.search),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closeSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText: 'search'.tr,
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: controller.searchBar,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+            SliverToBoxAdapter(child: SizedBox(height: 8.h)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24.w),
                 child: GetBuilder<FollowUpController>(
                   builder: (c) => Text(
-                    '${'total'.tr}: ${c.activeFilteredCount}',
+                    '${'total'.tr}: ${c.totalFilteredCount}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: ThemeService.isDark.value
                               ? Colors.white
