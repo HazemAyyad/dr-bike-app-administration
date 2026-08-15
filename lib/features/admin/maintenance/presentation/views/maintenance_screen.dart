@@ -3,11 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/costom_dialog_filter.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
@@ -22,12 +22,6 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'maintenance',
-        employeeNameController: controller.employeeNameController,
-        fromDateController: controller.fromDateController,
-        toDateController: controller.toDateController,
-        onPressedFilter: () {
-          controller.filterAllMaintenances();
-        },
         action: false,
         actions: [
           IconButton(
@@ -47,24 +41,60 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
                 await controller.loadMaintenanceDailySession();
               },
             ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: () {
-              showCustomDialog(
-                context,
-                fromDateController: controller.fromDateController,
-                toDateController: controller.toDateController,
-                employeeNameController: controller.employeeNameController,
-                label: 'employeeName',
-                onPressed: controller.filterAllMaintenances,
-              );
-            },
+          Obx(
+            () => IconButton(
+              tooltip: 'search'.tr,
+              onPressed: controller.toggleSearch,
+              icon: Icon(
+                controller.isSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
           ),
           SizedBox(width: 10.w),
         ],
       ),
       body: CustomScrollView(
         slivers: [
+          GetBuilder<MaintenanceController>(
+            id: 'maintenanceSearchBar',
+            builder: (_) => SliverToBoxAdapter(
+              child: Obx(
+                () => controller.isSearchVisible.value
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 6.h,
+                        ),
+                        child: SearchBar(
+                          controller: controller.searchController,
+                          shadowColor:
+                              WidgetStateProperty.all(Colors.transparent),
+                          leading: const Icon(Icons.search),
+                          trailing: [
+                            IconButton(
+                              tooltip: 'cancel'.tr,
+                              onPressed: controller.closeSearch,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                          hintText: 'maintenance'.tr,
+                          backgroundColor: WidgetStateProperty.all(
+                            ThemeService.isDark.value
+                                ? AppColors.customGreyColor
+                                : AppColors.customGreyColor7,
+                          ),
+                          onChanged: (_) => controller.filterMaintenances(),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+          ),
           SliverToBoxAdapter(
             child: GetBuilder<MaintenanceController>(
               builder: (controller) => AppTabs(

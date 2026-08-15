@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
@@ -85,63 +84,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Obx(
-                    () => Row(
-                      children: [
-                        Expanded(
-                          child: CustomDropdownFieldWithSearch(
-                            value: controller.selectedSellers.value == false
-                                ? controller.allCustomersList.firstWhereOrNull(
-                                    (item) =>
-                                        item.id.toString() ==
-                                        controller.partnerIdController.text)
-                                : controller.allSellersList.firstWhereOrNull(
-                                    (item) =>
-                                        item.id.toString() ==
-                                        controller.partnerIdController.text),
-                            isRequired: true,
-                            tital: 'customerName'.tr,
-                            hint: 'customerNameExample',
-                            items: controller.selectedSellers.value == false
-                                ? controller.allCustomersList
-                                : controller.allSellersList,
-                            onChanged: (value) {
-                              if (value != null) {
-                                controller.partnerIdController.text =
-                                    value.id.toString();
-                              }
-                            },
-                            isEnabled: !controller.isEdit.value,
-                            itemAsString: (item) => item.name,
-                            compareFn: (a, b) => a.id == b.id,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: controller.isEdit.value
-                              ? null
-                              : () => Get.toNamed(
-                                    AppRoutes.ADDNEWCUSTOMERSCREEN,
-                                    arguments: {
-                                      'sellerId': '',
-                                      'employeeId': '',
-                                      'popOnceOnSuccess': true,
-                                      'employeeType':
-                                          controller.selectedSellers.value
-                                              ? 'seller'
-                                              : 'customer',
-                                    },
-                                  )?.then((_) {
-                                    controller.getAllCustomersAndSellers();
-                                  }),
-                          icon: Icon(
-                            Icons.add_circle_sharp,
-                            color: AppColors.primaryColor,
-                            size: 30.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _MaintenancePartnerSearch(controller: controller),
                   SizedBox(height: 10.h),
                   _MaintenanceDeliveryDateTimeFields(controller: controller),
                   SizedBox(height: 10.h),
@@ -189,6 +132,258 @@ class NewMaintenanceScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _MaintenancePartnerSearch extends StatefulWidget {
+  const _MaintenancePartnerSearch({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  State<_MaintenancePartnerSearch> createState() =>
+      _MaintenancePartnerSearchState();
+}
+
+class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  bool _showResults = false;
+  bool? _lastSelectedSellers;
+
+  MaintenanceController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) return;
+      setState(() => _showResults = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _syncSelectedText() {
+    if (_focusNode.hasFocus || _showResults) return;
+    final selected = _selectedPartner();
+    final text = selected?.name ?? '';
+    if (_searchController.text != text) {
+      _searchController.text = text;
+    }
+  }
+
+  dynamic _selectedPartner() {
+    final list = controller.selectedSellers.value
+        ? controller.allSellersList
+        : controller.allCustomersList;
+    return list.firstWhereOrNull(
+      (item) => item.id.toString() == controller.partnerIdController.text,
+    );
+  }
+
+  List<dynamic> _filteredPartners() {
+    final list = controller.selectedSellers.value
+        ? controller.allSellersList
+        : controller.allCustomersList;
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return list.take(8).toList();
+    return list
+        .where((item) {
+          final haystack = '${item.name} ${item.phone}'.toLowerCase();
+          return haystack.contains(query);
+        })
+        .take(12)
+        .toList();
+  }
+
+  Future<void> _addPartner() async {
+    if (controller.isEdit.value) return;
+    await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'popOnceOnSuccess': true,
+        'employeeType':
+            controller.selectedSellers.value ? 'seller' : 'customer',
+      },
+    );
+    controller.getAllCustomersAndSellers();
+    if (!mounted) return;
+    setState(() => _showResults = true);
+    _focusNode.requestFocus();
+  }
+
+  void _selectPartner(dynamic item) {
+    controller.partnerIdController.text = item.id.toString();
+    _searchController.text = item.name;
+    _focusNode.unfocus();
+    setState(() => _showResults = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (_lastSelectedSellers != controller.selectedSellers.value) {
+        _lastSelectedSellers = controller.selectedSellers.value;
+        _searchController.clear();
+        _showResults = false;
+      }
+      _syncSelectedText();
+      final items = _filteredPartners();
+      final enabled = !controller.isEdit.value;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'customerName'.tr,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: AppColors.customGreyColor,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+              Text(
+                '*',
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Colors.red,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  enabled: enabled,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.customGreyColor7,
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    hintText: 'customerNameExample'.tr,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 12.h,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(11.r),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  validator: (_) => controller.partnerIdController.text.isEmpty
+                      ? 'customerName'.tr
+                      : null,
+                  onChanged: (_) {
+                    controller.partnerIdController.clear();
+                    setState(() => _showResults = true);
+                  },
+                ),
+              ),
+              SizedBox(width: 6.w),
+              IconButton(
+                tooltip: controller.selectedSellers.value
+                    ? 'seller'.tr
+                    : 'customer'.tr,
+                onPressed: enabled ? _addPartner : null,
+                icon: Icon(
+                  Icons.add_circle_sharp,
+                  color:
+                      enabled ? AppColors.primaryColor : Colors.grey.shade400,
+                  size: 30.sp,
+                ),
+              ),
+            ],
+          ),
+          if (_showResults && enabled)
+            Container(
+              width: double.infinity,
+              constraints: BoxConstraints(maxHeight: 210.h),
+              margin: EdgeInsets.only(top: 6.h, left: 42.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: AppColors.operationalCardBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: items.isEmpty
+                  ? Padding(
+                      padding: EdgeInsets.all(12.w),
+                      child: Text(
+                        'noData'.tr,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      itemBuilder: (_, index) {
+                        final item = items[index];
+                        return ListTile(
+                          dense: true,
+                          minLeadingWidth: 24.w,
+                          leading: Icon(
+                            controller.selectedSellers.value
+                                ? Icons.storefront_outlined
+                                : Icons.person_outline_rounded,
+                            size: 20.sp,
+                            color: AppColors.primaryColor,
+                          ),
+                          title: Text(
+                            item.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: item.phone.toString().isEmpty
+                              ? null
+                              : Text(
+                                  item.phone,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 11.sp),
+                                ),
+                          onTap: () => _selectPartner(item),
+                        );
+                      },
+                    ),
+            ),
+        ],
+      );
+    });
   }
 }
 

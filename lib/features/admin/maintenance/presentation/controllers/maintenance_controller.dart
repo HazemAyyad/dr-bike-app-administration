@@ -71,15 +71,14 @@ class MaintenanceController extends GetxController {
   });
 
   final formKey = GlobalKey<FormState>();
-  TextEditingController employeeNameController = TextEditingController();
-  TextEditingController fromDateController = TextEditingController();
-  TextEditingController toDateController = TextEditingController();
+  TextEditingController searchController = TextEditingController();
   TextEditingController partnerIdController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   TextEditingController laborCostController = TextEditingController();
   TextEditingController discountController = TextEditingController();
 
   RxInt currentTab = 0.obs;
+  final RxBool isSearchVisible = false.obs;
   RxBool selectedSellers = false.obs;
   RxBool isCalendarVisible = false.obs;
   RxBool isTimeVisible = false.obs;
@@ -494,9 +493,7 @@ class MaintenanceController extends GetxController {
 
   @override
   void onClose() {
-    employeeNameController.dispose();
-    fromDateController.dispose();
-    toDateController.dispose();
+    searchController.dispose();
     partnerIdController.dispose();
     descriptionController.dispose();
     laborCostController.dispose();
@@ -855,63 +852,38 @@ class MaintenanceController extends GetxController {
     if (MaintenanceServes().maintenancesList.isEmpty) isLoading(true);
     update();
 
-    Map<String, List<MaintenanceDataModel>> groupByDate(
-        List<MaintenanceDataModel> list) {
-      final Map<String, List<MaintenanceDataModel>> grouped = {};
-      for (var task in list) {
-        final receiptDateObj = DateTime.parse(task.receiptDate);
-        final dayName =
-            DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
-        final dateKey =
-            "$dayName ${receiptDateObj.year}-${receiptDateObj.month}-${receiptDateObj.day}";
-        grouped.putIfAbsent(dateKey, () => []);
-        if (!grouped[dateKey]!.any((a) => a.id == task.id)) {
-          grouped[dateKey]!.add(task);
-        }
-      }
-      final sortedEntries = grouped.entries.toList()
-        ..sort((a, b) {
-          final aDate = DateTime.parse(a.value.first.receiptDate);
-          final bDate = DateTime.parse(b.value.first.receiptDate);
-          return aDate.compareTo(bDate);
-        });
-      return Map.fromEntries(sortedEntries);
-    }
-
     final maintenancesData = await maintenanceUsecase.call(tab: 0);
     final maintenances = (maintenancesData['maintenance_details'] as List)
         .map((e) => MaintenanceDataModel.fromJson(e))
         .toList();
     MaintenanceServes().maintenancesList.assignAll(maintenances);
-    MaintenanceServes().maintenancesTasks.value = groupByDate(maintenances);
-    maintenancesSearch.assignAll(MaintenanceServes().maintenancesTasks);
+    MaintenanceServes().maintenancesTasks.value =
+        _groupMaintenancesByDate(maintenances);
 
     final ongoingData = await maintenanceUsecase.call(tab: 1);
     final ongoing = (ongoingData['maintenance_details'] as List)
         .map((e) => MaintenanceDataModel.fromJson(e))
         .toList();
     MaintenanceServes().ongoingMaintenancesList.assignAll(ongoing);
-    MaintenanceServes().ongoingMaintenancesTasks.value = groupByDate(ongoing);
-    ongoingMaintenancesSearch
-        .assignAll(MaintenanceServes().ongoingMaintenancesTasks);
+    MaintenanceServes().ongoingMaintenancesTasks.value =
+        _groupMaintenancesByDate(ongoing);
 
     final readyData = await maintenanceUsecase.call(tab: 2);
     final ready = (readyData['maintenance_details'] as List)
         .map((e) => MaintenanceDataModel.fromJson(e))
         .toList();
     MaintenanceServes().readyMaintenancesList.assignAll(ready);
-    MaintenanceServes().readyMaintenancesTasks.value = groupByDate(ready);
-    readyMaintenancesSearch
-        .assignAll(MaintenanceServes().readyMaintenancesTasks);
+    MaintenanceServes().readyMaintenancesTasks.value =
+        _groupMaintenancesByDate(ready);
 
     final archiveData = await maintenanceUsecase.call(tab: 3);
     final archive = (archiveData['maintenance_details'] as List)
         .map((e) => MaintenanceDataModel.fromJson(e))
         .toList();
     MaintenanceServes().archiveMaintenancesList.assignAll(archive);
-    MaintenanceServes().archiveMaintenancesTasks.value = groupByDate(archive);
-    archiveMaintenancesSearch
-        .assignAll(MaintenanceServes().archiveMaintenancesTasks);
+    MaintenanceServes().archiveMaintenancesTasks.value =
+        _groupMaintenancesByDate(archive);
+    filterMaintenances();
 
     isLoading(false);
     update();
@@ -1127,64 +1099,83 @@ class MaintenanceController extends GetxController {
     return grouped.values.fold(0, (sum, list) => sum + list.length);
   }
 
-  void filterAllMaintenances() {
-    final nameQuery = employeeNameController.text.trim();
-    final fromDate = fromDateController.text.trim();
-    final toDate = toDateController.text.trim();
+  Map<String, List<MaintenanceDataModel>> _groupMaintenancesByDate(
+      List<MaintenanceDataModel> list) {
+    final Map<String, List<MaintenanceDataModel>> grouped = {};
+    for (var task in list) {
+      final receiptDateObj =
+          DateTime.tryParse(task.receiptDate) ?? DateTime.now();
+      final dayName =
+          DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
+      final dateKey =
+          "$dayName ${receiptDateObj.year}-${receiptDateObj.month}-${receiptDateObj.day}";
+      grouped.putIfAbsent(dateKey, () => []);
+      if (!grouped[dateKey]!.any((a) => a.id == task.id)) {
+        grouped[dateKey]!.add(task);
+      }
+    }
+    final sortedEntries = grouped.entries.toList()
+      ..sort((a, b) {
+        final aDate = DateTime.tryParse(a.value.first.receiptDate) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = DateTime.tryParse(b.value.first.receiptDate) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return aDate.compareTo(bDate);
+      });
+    return Map.fromEntries(sortedEntries);
+  }
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    if (!isSearchVisible.value) {
+      searchController.clear();
+      filterMaintenances();
+    }
+    update(['maintenanceSearchBar']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    filterMaintenances();
+    update(['maintenanceSearchBar']);
+  }
+
+  void filterMaintenances() {
+    final query = searchController.text.trim().toLowerCase();
 
     List<MaintenanceDataModel> applyFilter(
-        List<MaintenanceDataModel> sourceList) {
+      List<MaintenanceDataModel> sourceList,
+    ) {
+      if (query.isEmpty) return List<MaintenanceDataModel>.from(sourceList);
       return sourceList.where((item) {
-        final name = item.customerName.isNotEmpty
-            ? item.customerName.toLowerCase()
-            : (item.sellerName ?? "").toLowerCase();
-        final matchesName =
-            (nameQuery.isEmpty) ? true : name.contains(nameQuery.toLowerCase());
-        final itemDate = DateTime.tryParse(item.receiptDate);
-        final from = (fromDate.isNotEmpty) ? DateTime.tryParse(fromDate) : null;
-        final to = (toDate.isNotEmpty) ? DateTime.tryParse(toDate) : null;
-        bool matchesDate = true;
-        if (itemDate != null) {
-          if (from != null && itemDate.isBefore(from)) matchesDate = false;
-          if (to != null && itemDate.isAfter(to)) matchesDate = false;
-        }
-        return matchesName && matchesDate;
+        final fields = [
+          item.id.toString(),
+          item.customerName,
+          item.sellerName ?? '',
+          item.contactPhone ?? '',
+          item.status,
+        ].join(' ').toLowerCase();
+        return fields.contains(query);
       }).toList();
-    }
-
-    Map<String, List<MaintenanceDataModel>> groupByDate(
-        List<MaintenanceDataModel> list) {
-      final Map<String, List<MaintenanceDataModel>> grouped = {};
-      for (var task in list) {
-        final receiptDateObj = DateTime.parse(task.receiptDate);
-        final dayName =
-            DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
-        final dateKey =
-            "$dayName ${receiptDateObj.year}-${receiptDateObj.month}-${receiptDateObj.day}";
-        grouped.putIfAbsent(dateKey, () => []);
-        if (!grouped[dateKey]!.any((a) => a.id == task.id)) {
-          grouped[dateKey]!.add(task);
-        }
-      }
-      return grouped;
     }
 
     maintenancesSearch
       ..clear()
-      ..addAll(groupByDate(applyFilter(MaintenanceServes().maintenancesList)));
+      ..addAll(_groupMaintenancesByDate(
+          applyFilter(MaintenanceServes().maintenancesList)));
     ongoingMaintenancesSearch
       ..clear()
-      ..addAll(groupByDate(
+      ..addAll(_groupMaintenancesByDate(
           applyFilter(MaintenanceServes().ongoingMaintenancesList)));
     readyMaintenancesSearch
       ..clear()
-      ..addAll(
-          groupByDate(applyFilter(MaintenanceServes().readyMaintenancesList)));
+      ..addAll(_groupMaintenancesByDate(
+          applyFilter(MaintenanceServes().readyMaintenancesList)));
     archiveMaintenancesSearch
       ..clear()
-      ..addAll(groupByDate(
+      ..addAll(_groupMaintenancesByDate(
           applyFilter(MaintenanceServes().archiveMaintenancesList)));
-    Get.back();
     update();
   }
 

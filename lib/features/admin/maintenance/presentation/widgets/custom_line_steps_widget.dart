@@ -25,110 +25,119 @@ class CustomLineSteps extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme.bodyMedium!;
 
-    return Column(
-      children: [
-        // ✅ الخطوات (الأرقام + الخطوط بس في نفس السطر)
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 15.h, // مسافة بين الأسطر
+    return Obx(
+      () => Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor.withValues(alpha: 0.35)
+              : AppColors.customGreyColor7,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Row(
           children: [
-            ...timeLineSteps.asMap().entries.map(
-              (entry) {
-                final int step = entry.key + 1;
-                return Obx(
-                  () => Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () => isTaped ? changeSelected(step) : null,
-                        child: Container(
-                          height: 45,
-                          width: 45,
-                          decoration: BoxDecoration(
-                            color: selectedStep.value == step
-                                ? ThemeService.isDark.value
-                                    ? AppColors.customGreyColor
-                                    : Colors.white
-                                : step < selectedStep.value
-                                    ? AppColors.primaryColor
-                                    : ThemeService.isDark.value
-                                        ? AppColors.customGreyColor
-                                        : Colors.white,
-                            borderRadius: BorderRadius.circular(50.r),
-                            border: Border.all(
-                              color: selectedStep.value == step
-                                  ? AppColors.customGreyColor5
-                                  : step < selectedStep.value
-                                      ? Colors.white
-                                      : Colors.grey.shade400,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              entry.value.keys.first.toString(),
-                              style: textTheme.copyWith(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                                color: selectedStep.value == step
-                                    ? AppColors.customGreyColor2
-                                    : step < selectedStep.value
-                                        ? Colors.white
-                                        : Colors.grey.shade400,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // ✅ نرسم الخط بس لو العنصر ده مش آخر عنصر في Wrap
-                      if (step < timeLineSteps.length)
-                        Container(
-                          height: 2.h,
-                          width: width ?? 80.w,
-                          color: step < selectedStep.value
-                              ? AppColors.primaryColor
-                              : Colors.grey.shade400,
-                        ),
-                    ],
+            for (final entry in timeLineSteps.asMap().entries) ...[
+              Expanded(
+                child: _CompactStep(
+                  index: entry.key + 1,
+                  label: entry.value.values.first.tr,
+                  selectedStep: selectedStep.value,
+                  textTheme: textTheme,
+                  onTap: isTaped ? () => changeSelected(entry.key + 1) : null,
+                ),
+              ),
+              if (entry.key + 1 < timeLineSteps.length)
+                Container(
+                  width: width ?? 24.w,
+                  height: 2.h,
+                  margin: EdgeInsets.only(bottom: 18.h),
+                  decoration: BoxDecoration(
+                    color: entry.key + 1 < selectedStep.value
+                        ? AppColors.primaryColor
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                );
-              },
-            ),
+                ),
+            ],
           ],
         ),
-        SizedBox(height: 10.h),
+      ),
+    );
+  }
+}
 
-        Obx(
-          () => Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ...timeLineSteps.asMap().entries.map(
-                (entry) {
-                  final int step = entry.key + 1;
-                  return Flexible(
-                    child: Text(
-                      entry.value.values.first.tr,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+class _CompactStep extends StatelessWidget {
+  const _CompactStep({
+    required this.index,
+    required this.label,
+    required this.selectedStep,
+    required this.textTheme,
+    this.onTap,
+  });
+
+  final int index;
+  final String label;
+  final int selectedStep;
+  final TextStyle textTheme;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = selectedStep == index;
+    final isDone = selectedStep > index;
+    final color =
+        isSelected || isDone ? AppColors.primaryColor : Colors.grey.shade400;
+    final bg = isDone
+        ? AppColors.primaryColor
+        : isSelected
+            ? AppColors.primaryColor.withValues(alpha: 0.12)
+            : ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : Colors.white;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28.w,
+            height: 28.w,
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: isSelected ? 1.4 : 1),
+            ),
+            child: Center(
+              child: isDone
+                  ? Icon(Icons.check_rounded, size: 16.sp, color: Colors.white)
+                  : Text(
+                      '$index',
                       style: textTheme.copyWith(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: selectedStep.value == step
-                            ? AppColors.primaryColor
-                            : step < selectedStep.value
-                                ? AppColors.primaryColor
-                                : Colors.grey.shade400,
+                        fontSize: 12.sp,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                        color: color,
                       ),
                     ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.copyWith(
+              fontSize: 10.sp,
+              height: 1.1,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
