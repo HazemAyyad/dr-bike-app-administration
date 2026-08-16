@@ -1101,6 +1101,67 @@ class _DevicesList extends StatelessWidget {
   }
 }
 
+Future<bool> _showRenameDeviceDialog({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  final nameController = TextEditingController(text: device.name);
+  var saving = false;
+  final result = await Get.dialog<bool>(
+    StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Text('smartHomeRenameDevice'.tr),
+          content: TextField(
+            controller: nameController,
+            enabled: !saving,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: 'smartHomeDeviceName'.tr),
+            onSubmitted: (_) async {
+              if (saving) return;
+              setState(() => saving = true);
+              final ok = await controller.renameSmartDevice(
+                device: device,
+                name: nameController.text,
+              );
+              if (Get.isDialogOpen == true) Get.back(result: ok);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            ElevatedButton.icon(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      setState(() => saving = true);
+                      final ok = await controller.renameSmartDevice(
+                        device: device,
+                        name: nameController.text,
+                      );
+                      if (Get.isDialogOpen == true) Get.back(result: ok);
+                    },
+              icon: saving
+                  ? SizedBox(
+                      width: 16.r,
+                      height: 16.r,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded),
+              label: Text('save'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  nameController.dispose();
+  return result == true;
+}
+
 class _SmartDeviceCard extends StatelessWidget {
   const _SmartDeviceCard({
     required this.controller,
@@ -1186,7 +1247,17 @@ class _SmartDeviceCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(width: 10.w),
+                    SizedBox(width: 8.w),
+                    _RenameDeviceButton(
+                      enabled: !busy &&
+                          !(controller.canViewSmartHomeOwners &&
+                              controller.selectedOwnerId.value != null),
+                      onPressed: () => _showRenameDeviceDialog(
+                        controller: controller,
+                        device: device,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
                     _RoundPowerButton(
                       enabled: device.canTogglePower && !busy,
                       busy: busy,
@@ -1313,6 +1384,22 @@ String _friendlyDpsName(String key) {
       .trim();
   if (clean.isEmpty) return 'DPS';
   return clean.length > 16 ? '${clean.substring(0, 14)}...' : clean;
+}
+
+class _RenameDeviceButton extends StatelessWidget {
+  const _RenameDeviceButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      tooltip: 'smartHomeRenameDevice'.tr,
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.edit_rounded),
+    );
+  }
 }
 
 class _RoundPowerButton extends StatelessWidget {
