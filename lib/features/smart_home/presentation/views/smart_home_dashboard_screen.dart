@@ -1249,9 +1249,7 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     _RenameDeviceButton(
-                      enabled: !busy &&
-                          !(controller.canViewSmartHomeOwners &&
-                              controller.selectedOwnerId.value != null),
+                      enabled: !busy,
                       onPressed: () => _showRenameDeviceDialog(
                         controller: controller,
                         device: device,
@@ -1713,8 +1711,7 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
         final busy = widget.controller.deviceDetailsBusyIds.contains(device.id);
         final controlling =
             widget.controller.deviceControlBusyIds.contains(device.id);
-        final readOnly = widget.controller.canViewSmartHomeOwners &&
-            widget.controller.selectedOwnerId.value != null;
+        const readOnly = false;
         return ListView(
           padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
           children: [

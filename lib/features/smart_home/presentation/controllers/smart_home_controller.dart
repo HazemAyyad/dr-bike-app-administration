@@ -582,7 +582,10 @@ class SmartHomeController extends GetxController {
   Future<SmartDeviceModel> loadDeviceDetails(SmartDeviceModel device) async {
     deviceDetailsBusyIds.add(device.id);
     try {
-      final loaded = await apiService.getDevice(device.id);
+      final loaded = await apiService.getDevice(
+        device.id,
+        userId: selectedOwnerId.value,
+      );
       final native = await nativeService.getDeviceStatus(
         tuyaDeviceId: loaded.tuyaDeviceId,
       );
@@ -648,8 +651,11 @@ class SmartHomeController extends GetxController {
         return false;
       }
 
-      final updated =
-          await apiService.renameDevice(id: device.id, name: cleanName);
+      final updated = await apiService.renameDevice(
+        id: device.id,
+        name: cleanName,
+        userId: selectedOwnerId.value,
+      );
       _upsertDevice(updated);
       Get.snackbar('smartHomeRenameDevice'.tr, 'smartHomeDeviceRenamed'.tr);
       return true;
@@ -674,10 +680,6 @@ class SmartHomeController extends GetxController {
     required String commandCode,
     required dynamic value,
   }) async {
-    if (canViewSmartHomeOwners && selectedOwnerId.value != null) {
-      errorMessage('smartHomeAdminReadOnly'.tr);
-      return false;
-    }
     if (commandCode.trim().isEmpty) {
       errorMessage('smartHomeNoPowerDps'.tr);
       return false;
@@ -717,6 +719,7 @@ class SmartHomeController extends GetxController {
         success: true,
         lastStatus: nextStatus,
         online: native.online || device.online,
+        userId: selectedOwnerId.value,
       );
       final updated = loggedDevice ??
           device.copyWith(
@@ -747,11 +750,6 @@ class SmartHomeController extends GetxController {
     required SmartDeviceModel device,
     required bool powerOn,
   }) async {
-    if (canViewSmartHomeOwners && selectedOwnerId.value != null) {
-      errorMessage('smartHomeAdminReadOnly'.tr);
-      return false;
-    }
-
     final dp = device.primaryPowerDp.isNotEmpty
         ? device.primaryPowerDp
         : _powerDpFromStatus(device.lastStatus);
@@ -802,6 +800,7 @@ class SmartHomeController extends GetxController {
         success: true,
         lastStatus: nextStatus,
         online: native.online || device.online,
+        userId: selectedOwnerId.value,
       );
       final updated = loggedDevice ??
           device.copyWith(
@@ -844,6 +843,7 @@ class SmartHomeController extends GetxController {
         success: success,
         errorCode: errorCode,
         errorMessage: errorMessage,
+        userId: selectedOwnerId.value,
       );
     } catch (_) {
       // Logging must not block the customer flow.

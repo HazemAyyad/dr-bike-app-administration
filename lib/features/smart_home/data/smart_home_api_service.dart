@@ -380,10 +380,13 @@ class SmartHomeApiService {
         .toList();
   }
 
-  Future<SmartDeviceModel> getDevice(int id) async {
+  Future<SmartDeviceModel> getDevice(int id, {int? userId}) async {
     final response = await _api.get(
       EndPoints.smartDevice(id),
-      queryParameters: {'include_debug': true},
+      queryParameters: {
+        'include_debug': true,
+        if (userId != null) 'user_id': userId,
+      },
     );
     return SmartDeviceModel.fromJson(
       Map<String, dynamic>.from(response.data['device'] as Map),
@@ -393,10 +396,17 @@ class SmartHomeApiService {
   Future<SmartDeviceModel> renameDevice({
     required int id,
     required String name,
+    int? userId,
   }) async {
-    final response = await _api.patch(EndPoints.smartDevice(id), data: {
-      'name': name,
-    });
+    final response = await _api.patch(
+      EndPoints.smartDevice(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'name': name,
+      },
+    );
     return SmartDeviceModel.fromJson(
       Map<String, dynamic>.from(response.data['device'] as Map),
     );
@@ -425,18 +435,24 @@ class SmartHomeApiService {
     String? errorMessage,
     Map<String, dynamic>? lastStatus,
     bool? online,
+    int? userId,
   }) async {
-    final response =
-        await _api.post(EndPoints.smartDeviceControlLog(id), data: {
-      'command_code': commandCode,
-      'command_value': commandValue,
-      'success': success,
-      if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
-      if (errorMessage != null && errorMessage.isNotEmpty)
-        'error_message': errorMessage,
-      if (lastStatus != null) 'last_status': lastStatus,
-      if (online != null) 'online': online,
-    });
+    final response = await _api.post(
+      EndPoints.smartDeviceControlLog(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'command_code': commandCode,
+        'command_value': commandValue,
+        'success': success,
+        if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
+        if (errorMessage != null && errorMessage.isNotEmpty)
+          'error_message': errorMessage,
+        if (lastStatus != null) 'last_status': lastStatus,
+        if (online != null) 'online': online,
+      },
+    );
     final rawDevice = response.data['device'];
     if (rawDevice is! Map) return null;
     return SmartDeviceModel.fromJson(Map<String, dynamic>.from(rawDevice));
