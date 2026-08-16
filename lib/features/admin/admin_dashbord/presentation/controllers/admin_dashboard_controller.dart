@@ -166,7 +166,7 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.NOTES,
     },
     {
-      'id': '52',
+      'id': '72',
       'title': 'smartHome',
       'route': AppRoutes.SMARTHOMESCREEN,
     },
