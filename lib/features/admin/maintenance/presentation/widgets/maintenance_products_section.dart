@@ -159,106 +159,106 @@ class _ProductsTable extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(8.r),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: MediaQuery.sizeOf(context).width - 52.w,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF4FF),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(7.r)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _headerText('productName'.tr)),
+                _headerCell('quantity'.tr, 34),
+                _headerCell('price'.tr, 58),
+                _headerCell('total'.tr, 62),
+                if (!isLocked) SizedBox(width: 26.w),
+              ],
+            ),
           ),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF4FF),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(7.r)),
-                ),
-                child: Row(
-                  children: [
-                    _headerCell('productName'.tr, 168),
-                    _headerCell('quantity'.tr, 54),
-                    _headerCell('price'.tr, 76),
-                    _headerCell('total'.tr, 78),
-                    if (!isLocked) SizedBox(width: 30.w),
-                  ],
-                ),
+          ...List.generate(controller.maintenanceProducts.length, (index) {
+            final item = controller.maintenanceProducts[index];
+            final isLast = index == controller.maintenanceProducts.length - 1;
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: isLast
+                    ? null
+                    : Border(
+                        bottom: BorderSide(color: Colors.grey.shade200),
+                      ),
               ),
-              ...List.generate(controller.maintenanceProducts.length, (index) {
-                final item = controller.maintenanceProducts[index];
-                final isLast =
-                    index == controller.maintenanceProducts.length - 1;
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: isLast
-                        ? null
-                        : Border(
-                            bottom: BorderSide(color: Colors.grey.shade200),
-                          ),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 168.w,
-                        child: Row(
-                          children: [
-                            _ProductThumb(imageUrl: item.imageUrl),
-                            SizedBox(width: 6.w),
-                            Expanded(
-                              child: Text(
-                                item.productName.isEmpty
-                                    ? '-'
-                                    : item.productName,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.2,
-                                ),
-                              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _ProductThumb(imageUrl: item.imageUrl),
+                        SizedBox(width: 5.w),
+                        Expanded(
+                          child: Text(
+                            item.productName.isEmpty ? '-' : item.productName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
                             ),
-                          ],
-                        ),
-                      ),
-                      _dataCell('${item.quantity}', 54, center: true),
-                      _dataCell(
-                        SalesAmountFormat.display(item.unitPrice),
-                        76,
-                        center: true,
-                      ),
-                      _dataCell(
-                        SalesAmountFormat.display(item.lineTotal),
-                        78,
-                        center: true,
-                        bold: true,
-                      ),
-                      if (!isLocked)
-                        SizedBox(
-                          width: 30.w,
-                          child: IconButton(
-                            tooltip: 'delete'.tr,
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints.tight(
-                              Size(28.w, 28.w),
-                            ),
-                            icon: Icon(
-                              Icons.close,
-                              size: 17.sp,
-                              color: Colors.red.shade500,
-                            ),
-                            onPressed: () => controller.removeProduct(index),
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                );
-              }),
-            ],
-          ),
-        ),
+                  _dataCell('${item.quantity}', 34, center: true),
+                  _dataCell(
+                    SalesAmountFormat.display(item.unitPrice),
+                    58,
+                    center: true,
+                  ),
+                  _dataCell(
+                    SalesAmountFormat.display(item.lineTotal),
+                    62,
+                    center: true,
+                    bold: true,
+                  ),
+                  if (!isLocked)
+                    SizedBox(
+                      width: 26.w,
+                      child: IconButton(
+                        tooltip: 'delete'.tr,
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints.tight(
+                          Size(24.w, 24.w),
+                        ),
+                        icon: Icon(
+                          Icons.close,
+                          size: 16.sp,
+                          color: Colors.red.shade500,
+                        ),
+                        onPressed: () => controller.removeProduct(index),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerText(String value) {
+    return Text(
+      value,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 10.sp,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primaryColor,
       ),
     );
   }
@@ -272,7 +272,7 @@ class _ProductsTable extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 10.sp,
+          fontSize: 9.sp,
           fontWeight: FontWeight.w800,
           color: AppColors.primaryColor,
         ),
@@ -294,7 +294,7 @@ class _ProductsTable extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 11.sp,
+          fontSize: 10.sp,
           fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
           color: bold ? AppColors.primaryColor : Colors.grey.shade800,
         ),

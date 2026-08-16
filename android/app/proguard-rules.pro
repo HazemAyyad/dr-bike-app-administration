@@ -1,0 +1,25 @@
+# R8 reports these as optional references from Flutter deferred components
+# and the Thingclips/Tuya SDK during release builds.
+-dontwarn com.facebook.soloader.SoLoader
+-dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallManager
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest$Builder
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallRequest
+-dontwarn com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener
+-dontwarn com.google.android.play.core.tasks.OnFailureListener
+-dontwarn com.google.android.play.core.tasks.OnSuccessListener
+-dontwarn com.google.android.play.core.tasks.Task
+-dontwarn com.thingclips.smart.api.MicroContext
+-dontwarn com.thingclips.smart.api.service.MicroService
+-dontwarn com.thingclips.smart.audioengine.api.ThingVoiceDetectorInterface
+-dontwarn com.thingclips.smart.audioengine.callback.ThingAudioEngineListener
+-dontwarn com.thingclips.smart.audioengine.callback.ThingPlayerListener
+-dontwarn com.thingclips.smart.audioengine.callback.ThingVoiceDetectorListener
+-dontwarn com.thingclips.smart.base.utils.ThingNetworkUtils
+-dontwarn com.thingclips.smart.cloudstorage.ThingCloudStorageSignatureTools
+-dontwarn com.thingclips.smart.mp3codec.ThingMP3CodecManager
+-dontwarn com.thingclips.smart.mp3codec.api.ThingMP3DecoderInterface
+-dontwarn com.thingclips.smart.opus.utils.OpusUtils$Companion
+-dontwarn com.thingclips.smart.opus.utils.OpusUtils
+-dontwarn com.thingclips.smart.statapi.StatService
+-dontwarn com.thingclips.smart.utils.NumberUtils

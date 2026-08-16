@@ -425,6 +425,8 @@ const Map<String, String> en = {
   'maintenanceLaborCost': 'Labor cost',
   'maintenancePartsTotal': 'Parts total',
   'maintenanceDeliverAndPay': 'Deliver & pay',
+  'maintenancePaidNow': 'Paid now',
+  'maintenanceDebtOn': 'Debt on',
   'deleteMaintenance': 'Delete maintenance request',
   'deleteMaintenanceConfirm': 'Delete this maintenance request?',
   'noBoxesAvailable': 'No boxes available',

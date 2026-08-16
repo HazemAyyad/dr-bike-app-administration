@@ -314,6 +314,7 @@ class FollowUpController extends GetxController {
     }
     isEdite(true);
     _isHydratingFollowupForm = true;
+    getAllCustomersAndSellers();
     Get.toNamed(AppRoutes.ADDFOLLOWUPSCREEN);
     final result = await followupDetailsCancelUsecase.call(
       followupId: followupId,
@@ -352,6 +353,12 @@ class FollowUpController extends GetxController {
     _isHydratingFollowupForm = false;
     isLoading(false);
     update();
+    Future.delayed(const Duration(milliseconds: 260), () {
+      if (isEdite.value &&
+          this.followupId == followupDetails['id'].toString()) {
+        focusDetailsField();
+      }
+    });
   }
 
   void resetData() {
@@ -376,9 +383,6 @@ class FollowUpController extends GetxController {
   }
 
   void openCustomerPickerFromKeyboard() {
-    if (isEdite.value) {
-      return;
-    }
     detailsFocusNode.unfocus();
     getAllCustomersAndSellers();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -395,6 +399,26 @@ class FollowUpController extends GetxController {
       customerDropdownKey.currentState?.openDropDownSearch();
       SystemChannels.textInput.invokeMethod('TextInput.show');
     });
+  }
+
+  void selectSellerTypeAndOpenPicker() {
+    getAllCustomersAndSellers();
+    if (isCustomer.value) {
+      customerAndSellerIdController.clear();
+      isCustomer.value = false;
+    }
+    update();
+    openCustomerPickerFromKeyboard();
+  }
+
+  void selectCustomerTypeAndOpenPicker() {
+    getAllCustomersAndSellers();
+    if (!isCustomer.value) {
+      customerAndSellerIdController.clear();
+      isCustomer.value = true;
+    }
+    update();
+    openCustomerPickerFromKeyboard();
   }
 
   void scheduleAutoSave({int? step}) {

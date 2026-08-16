@@ -426,6 +426,8 @@ const Map<String, String> ar = {
   'maintenanceLaborCost': 'أجرة الصيانة',
   'maintenancePartsTotal': 'إجمالي القطع',
   'maintenanceDeliverAndPay': 'تسليم ودفع',
+  'maintenancePaidNow': 'المبلغ المدفوع',
+  'maintenanceDebtOn': 'دين على',
   'deleteMaintenance': 'حذف طلب الصيانة',
   'deleteMaintenanceConfirm': 'هل تريد حذف طلب الصيانة؟',
   'noBoxesAvailable': 'لا توجد صناديق متاحة',

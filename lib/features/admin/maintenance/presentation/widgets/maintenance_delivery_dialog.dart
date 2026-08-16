@@ -57,6 +57,8 @@ class _MaintenanceDeliveryDialogState
     final total = widget.controller.invoiceTotal;
     final remaining = (total - _paidTotal).clamp(0, double.infinity).toDouble();
     final isOverPaid = _paidTotal > total;
+    final partnerType =
+        widget.controller.selectedSellers.value ? 'seller'.tr : 'customer'.tr;
 
     return AlertDialog(
       backgroundColor: Colors.grey.shade100,
@@ -80,8 +82,13 @@ class _MaintenanceDeliveryDialogState
               _totalRow('discount'.tr, -widget.controller.discount),
             Divider(height: 16.h),
             _totalRow('total'.tr, total, bold: true),
-            _totalRow('paidAmount'.tr, _paidTotal),
-            _totalRow('remainingAmount'.tr, remaining, bold: remaining > 0),
+            _totalRow('maintenancePaidNow'.tr, _paidTotal),
+            _totalRow(
+              '${'maintenanceDebtOn'.tr} $partnerType',
+              remaining,
+              bold: remaining > 0,
+              color: remaining > 0 ? AppColors.redColor : null,
+            ),
             if (isOverPaid)
               Padding(
                 padding: EdgeInsets.only(top: 6.h),
@@ -151,7 +158,7 @@ class _MaintenanceDeliveryDialogState
             SizedBox(height: 10.h),
             CustomTextField(
               controller: _cashCtrl,
-              label: 'كاش',
+              label: 'maintenancePaidNow',
               hintText: '0',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -213,7 +220,12 @@ class _MaintenanceDeliveryDialogState
     return payments;
   }
 
-  Widget _totalRow(String label, double value, {bool bold = false}) {
+  Widget _totalRow(
+    String label,
+    double value, {
+    bool bold = false,
+    Color? color,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 2.h),
       child: Row(
@@ -231,7 +243,7 @@ class _MaintenanceDeliveryDialogState
             style: TextStyle(
               fontSize: 13.sp,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-              color: bold ? AppColors.primaryColor : null,
+              color: color ?? (bold ? AppColors.primaryColor : null),
             ),
           ),
         ],

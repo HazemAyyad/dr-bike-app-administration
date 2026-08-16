@@ -1,7 +1,7 @@
-import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/person_avatar_helper.dart';
@@ -40,8 +40,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'initialFollowUp'.tr,
-              followups:
-                  controller.initialFollowupsFilterList.reversed.toList(),
+              followups: controller.initialFollowupsFilterList,
             ),
           );
           children.addAll(
@@ -49,7 +48,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'notify_customer'.tr,
-              followups: controller.informFollowupsFilterList.reversed.toList(),
+              followups: controller.informFollowupsFilterList,
             ),
           );
           children.addAll(
@@ -57,9 +56,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'completion_and_agreement'.tr,
-              followups: controller
-                  .finishAndAgreementFollowupsFilterList.reversed
-                  .toList(),
+              followups: controller.finishAndAgreementFollowupsFilterList,
             ),
           );
         }
@@ -70,8 +67,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'deliveredFollowUps'.tr,
-              followups:
-                  controller.archivedFollowupsFilterList.reversed.toList(),
+              followups: controller.archivedFollowupsFilterList,
               showArchiveStatus: true,
             ),
           );
@@ -83,8 +79,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'canceledFollowUps'.tr,
-              followups:
-                  controller.canceledFollowupsFilterList.reversed.toList(),
+              followups: controller.canceledFollowupsFilterList,
               showArchiveStatus: true,
             ),
           );
@@ -96,8 +91,7 @@ class FollowUpWidget extends StatelessWidget {
               context: context,
               controller: controller,
               title: 'deletedFollowUps'.tr,
-              followups:
-                  controller.deletedFollowupsFilterList.reversed.toList(),
+              followups: controller.deletedFollowupsFilterList,
               showArchiveStatus: true,
               readOnly: true,
             ),
@@ -119,9 +113,12 @@ class FollowUpWidget extends StatelessWidget {
     bool showArchiveStatus = false,
     bool readOnly = false,
   }) {
-    return [
+    final children = <Widget>[
       _FollowUpSectionHeader(title: title, count: followups.length),
-      if (followups.isEmpty)
+    ];
+
+    if (followups.isEmpty) {
+      children.add(
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 8.h),
           child: Text(
@@ -134,40 +131,95 @@ class FollowUpWidget extends StatelessWidget {
                   : AppColors.customGreyColor5,
             ),
           ),
-        )
-      else
-        ...followups.map(
-          (followup) => _FollowUpCard(
-            followup: followup,
-            showArchiveStatus: showArchiveStatus,
-            readOnly: readOnly,
-            onOpen: () => controller.getFollowUpDetails(
-              followupId: followup.id.toString(),
-            ),
-            onContact: () => Get.dialog(
-              ContactDialog(
-                phone: followup.customerPhone.isNotEmpty
-                    ? followup.customerPhone
-                    : followup.sellerPhone,
-              ),
-            ),
-            onCancel: () => Get.dialog(
-              CancelDialog(followupId: followup.id.toString()),
-            ),
-            onViewLog: () => _showActivityLogDialog(
-              context,
-              controller,
-              followup.id.toString(),
-            ),
-            onDelete: () => _showDeleteDialog(
-              context,
-              controller,
-              followup.id.toString(),
-            ),
-          ),
         ),
-      SizedBox(height: 12.h),
-    ];
+      );
+      children.add(SizedBox(height: 12.h));
+      return children;
+    }
+
+    final grouped = _groupFollowupsByDate(followups);
+    for (final key in grouped.keys.toList().reversed) {
+      children.add(_FollowUpDateHeader(title: key));
+      children.addAll(
+        grouped[key]!.reversed.map(
+          (followup) {
+            return _FollowUpCard(
+              followup: followup,
+              showArchiveStatus: showArchiveStatus,
+              readOnly: readOnly,
+              onOpen: () => controller.getFollowUpDetails(
+                followupId: followup.id.toString(),
+              ),
+              onContact: () => Get.dialog(
+                ContactDialog(
+                  phone: followup.customerPhone.isNotEmpty
+                      ? followup.customerPhone
+                      : followup.sellerPhone,
+                ),
+              ),
+              onCancel: () => Get.dialog(
+                CancelDialog(followupId: followup.id.toString()),
+              ),
+              onViewLog: () => _showActivityLogDialog(
+                context,
+                controller,
+                followup.id.toString(),
+              ),
+              onDelete: () => _showDeleteDialog(
+                context,
+                controller,
+                followup.id.toString(),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    children.add(SizedBox(height: 12.h));
+    return children;
+  }
+
+  Map<String, List<FollowupModel>> _groupFollowupsByDate(
+    List<FollowupModel> followups,
+  ) {
+    final grouped = <String, List<FollowupModel>>{};
+    final sorted = followups.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    for (final followup in sorted) {
+      final dayName =
+          DateFormat.EEEE(Get.locale!.languageCode).format(followup.createdAt);
+      final dateKey =
+          '$dayName ${followup.createdAt.year}-${followup.createdAt.month}-${followup.createdAt.day}';
+      grouped.putIfAbsent(dateKey, () => []);
+      grouped[dateKey]!.add(followup);
+    }
+
+    return grouped;
+  }
+}
+
+class _FollowUpDateHeader extends StatelessWidget {
+  const _FollowUpDateHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(28.w, 6.h, 28.w, 5.h),
+      child: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: AppColors.primaryColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 12.sp,
+        ),
+      ),
+    );
   }
 }
 
@@ -287,7 +339,7 @@ class _FollowUpCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _AvatarButton(imageUrl: _avatarUrl),
                   SizedBox(width: 8.w),
@@ -296,89 +348,49 @@ class _FollowUpCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Text(
+                          _personName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5.sp,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                            color: titleColor,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Wrap(
+                          spacing: 4.w,
+                          runSpacing: 3.h,
                           children: [
-                            Expanded(
-                              child: Text(
-                                _personName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.2,
-                                  color: titleColor,
-                                ),
+                            _MiniChip(
+                              label: _personType,
+                              color: AppColors.operationalPurple,
+                              icon: Icons.person_outline_rounded,
+                            ),
+                            if (followup.createdByName.isNotEmpty)
+                              _MiniChip(
+                                label:
+                                    '${'createdBy'.tr}: ${followup.createdByName}',
+                                color: AppColors.customGreen1,
+                                icon: Icons.badge_outlined,
                               ),
-                            ),
-                            SizedBox(width: 6.w),
-                            _StatusPill(
-                              showArchiveStatus: showArchiveStatus,
-                              status: followup.followupStatus,
-                              isCanceled: followup.isCanceled,
-                              isDeleted: followup.isDeleted,
-                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              if (followup.productName.trim().isNotEmpty) ...[
-                SizedBox(height: 7.h),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10.w,
-                    vertical: 7.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkColor.withValues(alpha: 0.45)
-                        : AppColors.customGreyColor7.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                      color: AppColors.operationalCardBorder
-                          .withValues(alpha: 0.75),
-                    ),
-                  ),
-                  child: Text(
-                    followup.productName,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      height: 1.32,
-                      fontWeight: FontWeight.w600,
-                      color: subColor,
-                    ),
-                  ),
-                ),
-              ],
-              SizedBox(height: 6.h),
-              Row(
-                children: [
-                  _MiniChip(
-                    label: _personType,
-                    color: AppColors.operationalPurple,
-                    icon: Icons.person_outline_rounded,
-                  ),
-                  SizedBox(width: 4.w),
-                  _MiniChip(
-                    label: showData(followup.createdAt),
-                    color: AppColors.customGreyColor5,
-                    icon: Icons.event_note_outlined,
-                  ),
-                  if (followup.createdByName.isNotEmpty) ...[
-                    SizedBox(width: 4.w),
-                    Expanded(
-                      child: _MiniChip(
-                        label: '${'createdBy'.tr}: ${followup.createdByName}',
-                        color: AppColors.customGreen1,
-                        icon: Icons.badge_outlined,
+                  if (followup.productName.trim().isNotEmpty) ...[
+                    SizedBox(width: 8.w),
+                    SizedBox(
+                      width: 132.w,
+                      child: _FollowUpDetailsPreview(
+                        details: followup.productName.trim(),
+                        color: subColor,
                       ),
                     ),
-                  ] else
-                    const Spacer(),
+                  ],
                 ],
               ),
             ],
@@ -561,6 +573,112 @@ class _MiniChip extends StatelessWidget {
   }
 }
 
+class _FollowUpDetailsPreview extends StatelessWidget {
+  const _FollowUpDetailsPreview({
+    required this.details,
+    required this.color,
+  });
+
+  final String details;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final style = TextStyle(
+      fontSize: 10.5.sp,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+      color: color,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final direction = Directionality.of(context);
+        final iconSpace = 28.w;
+        final detailsWidth = constraints.maxWidth > iconSpace
+            ? constraints.maxWidth - iconSpace
+            : 0.0;
+        final painter = TextPainter(
+          text: TextSpan(text: details, style: style),
+          maxLines: 2,
+          textDirection: direction,
+        )..layout(maxWidth: detailsWidth);
+        final hasMore = painter.didExceedMaxLines;
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsetsDirectional.fromSTEB(8.w, 5.h, 5.w, 5.h),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.darkColor.withValues(alpha: 0.35)
+                : AppColors.customGreyColor7.withValues(alpha: 0.38),
+            borderRadius: BorderRadius.circular(7.r),
+            border: Border.all(
+              color: AppColors.operationalCardBorder.withValues(alpha: 0.55),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(
+                  details,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: style,
+                ),
+              ),
+              if (hasMore) ...[
+                SizedBox(width: 3.w),
+                InkWell(
+                  onTap: () => _showDetailsDialog(details),
+                  borderRadius: BorderRadius.circular(18.r),
+                  child: Padding(
+                    padding: EdgeInsets.all(3.w),
+                    child: Icon(
+                      Icons.open_in_full_rounded,
+                      size: 14.sp,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDetailsDialog(String details) {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: ThemeService.isDark.value
+            ? AppColors.darkColor
+            : AppColors.whiteColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        title: Text(
+          'productDetails'.tr,
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            details,
+            style: TextStyle(fontSize: 13.sp, height: 1.45),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: Text('close'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 void _showActivityLogDialog(
   BuildContext context,
   FollowUpController controller,
@@ -679,8 +797,9 @@ class _AvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPlaceholder = PersonAvatarHelper.isPlaceholder(imageUrl);
     return GestureDetector(
-      onTap: PersonAvatarHelper.isPlaceholder(imageUrl)
+      onTap: isPlaceholder
           ? null
           : () {
               showGeneralDialog(
@@ -694,73 +813,25 @@ class _AvatarButton extends StatelessWidget {
                 },
               );
             },
-      child: PersonAvatarImage(
-        imageUrl: imageUrl,
-        height: 40.h,
-        width: 40.w,
-        fit: BoxFit.cover,
-        circular: true,
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.showArchiveStatus,
-    required this.status,
-    required this.isCanceled,
-    required this.isDeleted,
-  });
-
-  final bool showArchiveStatus;
-  final String status;
-  final bool isCanceled;
-  final bool isDeleted;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDelivered = status == 'delivered';
-    final isRejected = status == 'rejected';
-    final activeLabel = status == 'initial'
-        ? 'initialFollowUp'.tr
-        : status == 'inform'
-            ? 'notify_customer'.tr
-            : status == 'agreement'
-                ? 'completion_and_agreement'.tr
-                : 'currentFollowUps'.tr;
-    final label = showArchiveStatus
-        ? isDeleted
-            ? 'deletedFollowUps'.tr
-            : isCanceled
-                ? 'canceledFollowUps'.tr
-                : isDelivered
-                    ? 'sale_completed'.tr
-                    : isRejected
-                        ? 'sale_rejected'.tr
-                        : 'canceledFollowUps'.tr
-        : activeLabel;
-    final color = showArchiveStatus
-        ? isDelivered
-            ? AppColors.customGreen1
-            : AppColors.redColor
-        : AppColors.primaryColor;
-
-    return Container(
-      constraints: BoxConstraints(maxWidth: 86.w),
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 9.sp,
-          fontWeight: FontWeight.w800,
-          color: color,
+      child: Container(
+        width: 42.w,
+        height: 42.w,
+        padding: EdgeInsets.all(1.4.w),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isPlaceholder
+                ? AppColors.primaryColor.withValues(alpha: 0.45)
+                : AppColors.operationalCardBorder,
+            width: 1.2.w,
+          ),
+        ),
+        child: PersonAvatarImage(
+          imageUrl: imageUrl,
+          height: 39.h,
+          width: 39.w,
+          fit: BoxFit.cover,
+          circular: true,
         ),
       ),
     );

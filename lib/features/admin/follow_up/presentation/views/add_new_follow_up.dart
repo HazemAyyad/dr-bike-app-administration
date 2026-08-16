@@ -39,6 +39,22 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
               return Column(
                 children: [
                   SizedBox(height: 10.h),
+                  if (controller.isEdite.value ||
+                      controller.canUseAdminOnly) ...[
+                    Row(
+                      children: [
+                        if (controller.isEdite.value)
+                          Expanded(
+                            child: _AutoSaveStatus(controller: controller),
+                          )
+                        else
+                          const Spacer(),
+                        if (controller.canUseAdminOnly)
+                          _AdminOnlyIconButton(controller: controller),
+                      ],
+                    ),
+                    SizedBox(height: 8.h),
+                  ],
                   _FollowUpStageIndicator(controller: controller),
                   SizedBox(height: 12.h),
                   CustomTextField(
@@ -68,35 +84,31 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Flexible(
-                                  child: CustomCheckBox(
-                                    title: 'seller'.tr,
-                                    value: RxBool(!controller.isCustomer.value),
-                                    onChanged: (val) {
-                                      if (controller.isEdite.value) {
-                                        return;
-                                      }
-                                      controller.getAllCustomersAndSellers();
-                                      controller.customerAndSellerIdController
-                                          .clear();
-                                      controller.isCustomer.value = false;
-                                      controller.update();
-                                    },
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: controller
+                                        .selectSellerTypeAndOpenPicker,
+                                    child: CustomCheckBox(
+                                      title: 'seller'.tr,
+                                      value:
+                                          RxBool(!controller.isCustomer.value),
+                                      onChanged: (_) => controller
+                                          .selectSellerTypeAndOpenPicker(),
+                                    ),
                                   ),
                                 ),
                                 Flexible(
-                                  child: CustomCheckBox(
-                                    title: 'customer'.tr,
-                                    value: RxBool(controller.isCustomer.value),
-                                    onChanged: (val) {
-                                      if (controller.isEdite.value) {
-                                        return;
-                                      }
-                                      controller.getAllCustomersAndSellers();
-                                      controller.customerAndSellerIdController
-                                          .text = '';
-                                      controller.isCustomer.value = true;
-                                      controller.update();
-                                    },
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: controller
+                                        .selectCustomerTypeAndOpenPicker,
+                                    child: CustomCheckBox(
+                                      title: 'customer'.tr,
+                                      value:
+                                          RxBool(controller.isCustomer.value),
+                                      onChanged: (_) => controller
+                                          .selectCustomerTypeAndOpenPicker(),
+                                    ),
                                   ),
                                 )
                               ],
@@ -149,13 +161,16 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                                   .text,
                                         )),
                               onChanged: (value) {
+                                if (value == null) {
+                                  return;
+                                }
                                 controller.customerAndSellerIdController.text =
                                     value.id.toString();
                                 controller.scheduleAutoSave();
                               },
                               itemAsString: (f) => f.name,
                               compareFn: (a, b) => a.id == b.id,
-                              isEnabled: !controller.isEdite.value,
+                              isEnabled: true,
                             ),
                           ],
                         ),
@@ -180,45 +195,10 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                         )
                     ],
                   ),
-                  if (controller.canUseAdminOnly) ...[
-                    SizedBox(height: 10.h),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      activeThumbColor: AppColors.primaryColor,
-                      title: Text(
-                        'adminOnlyFollowUp'.tr,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.whiteColor
-                                  : AppColors.secondaryColor,
-                            ),
-                      ),
-                      subtitle: Text(
-                        'adminOnlyFollowUpHint'.tr,
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                              fontSize: 11.sp,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor3
-                                  : AppColors.customGreyColor5,
-                            ),
-                      ),
-                      value: controller.adminOnly.value,
-                      onChanged: (value) {
-                        controller.adminOnly.value = value;
-                        controller.scheduleAutoSave();
-                        controller.update();
-                      },
-                    ),
-                  ],
                   if (controller.isEdite.value) ...[
                     SizedBox(height: 8.h),
                     _FollowUpAuditSection(controller: controller),
                   ],
-                  SizedBox(height: 10.h),
-                  if (controller.isEdite.value)
-                    _AutoSaveStatus(controller: controller),
                   SizedBox(height: 10.h),
                   Row(
                     children: [
@@ -233,9 +213,6 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                           selectedStep: controller.selectedStep,
                           onPressedBack: () {
                             if (controller.formKey.currentState!.validate()) {
-                              if (controller.selectedStep.value == 2) {
-                                return;
-                              }
                               return controller.prevStep();
                             }
                           },
@@ -322,79 +299,9 @@ class _FollowUpStageIndicator extends StatelessWidget {
                     ),
               ),
             ),
-            if (controller.isEdite.value) ...[
-              _StageTextButton(
-                label: 'initialFollowUp'.tr,
-                selected: step == 1,
-                color: _colorForStep(1),
-                onTap: () => controller.changeSelected(1),
-              ),
-              _StageTextButton(
-                label: 'notify_customer'.tr,
-                selected: step == 2,
-                color: _colorForStep(2),
-                onTap: () => controller.changeSelected(2),
-              ),
-              _StageTextButton(
-                label: 'completion_and_agreement'.tr,
-                selected: step == 3,
-                color: _colorForStep(3),
-                onTap: () => controller.changeSelected(3),
-              ),
-            ],
           ],
         );
       },
-    );
-  }
-}
-
-class _StageTextButton extends StatelessWidget {
-  const _StageTextButton({
-    required this.label,
-    required this.selected,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8.r),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        margin: EdgeInsetsDirectional.only(start: 4.w),
-        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 5.h),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(
-            color: selected ? color : Colors.transparent,
-          ),
-        ),
-        constraints: BoxConstraints(maxWidth: 64.w),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 9.5.sp,
-            fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-            color: selected
-                ? color
-                : ThemeService.isDark.value
-                    ? AppColors.customGreyColor3
-                    : AppColors.customGreyColor5,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -412,7 +319,7 @@ class _AutoSaveStatus extends StatelessWidget {
         final hasError = controller.hasAutoSaveError.value;
         final isSaving = controller.isAutoSaving.value;
         return Align(
-          alignment: AlignmentDirectional.centerStart,
+          alignment: Alignment.centerLeft,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
             child: Row(
@@ -460,6 +367,48 @@ class _AutoSaveStatus extends StatelessWidget {
   }
 }
 
+class _AdminOnlyIconButton extends StatelessWidget {
+  const _AdminOnlyIconButton({required this.controller});
+
+  final FollowUpController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOn = controller.adminOnly.value;
+    final color = isOn ? AppColors.primaryColor : AppColors.customGreyColor5;
+    return Tooltip(
+      message: 'adminOnlyFollowUp'.tr,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        onPressed: () {
+          controller.adminOnly.value = !controller.adminOnly.value;
+          controller.scheduleAutoSave();
+          controller.update();
+        },
+        icon: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 34.w,
+          height: 34.w,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isOn ? 0.16 : 0.08),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withValues(alpha: isOn ? 0.55 : 0.25),
+            ),
+          ),
+          child: Icon(
+            isOn
+                ? Icons.admin_panel_settings_rounded
+                : Icons.admin_panel_settings_outlined,
+            color: color,
+            size: 19.sp,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FollowUpAuditSection extends StatelessWidget {
   const _FollowUpAuditSection({required this.controller});
 
@@ -470,7 +419,6 @@ class _FollowUpAuditSection extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(10.r),
       decoration: BoxDecoration(
         color: isDark ? AppColors.customGreyColor : AppColors.whiteColor2,
         borderRadius: BorderRadius.circular(8.r),
@@ -479,66 +427,143 @@ class _FollowUpAuditSection extends StatelessWidget {
               isDark ? AppColors.customGreyColor2 : AppColors.customGreyColor7,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (controller.createdByName.value.isNotEmpty)
-            Text(
-              '${'createdBy'.tr}: ${controller.createdByName.value}',
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
-              ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.symmetric(horizontal: 10.w),
+          childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
+          iconColor: AppColors.primaryColor,
+          collapsedIconColor:
+              isDark ? AppColors.customGreyColor3 : AppColors.customGreyColor5,
+          leading: Icon(
+            Icons.history_rounded,
+            size: 18.sp,
+            color: AppColors.primaryColor,
+          ),
+          title: Text(
+            'followUpActivityLog'.tr,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w900,
+              color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
             ),
-          if (controller.activityLogs.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Text(
-              'followUpActivityLog'.tr,
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w800,
-                color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
-              ),
-            ),
-            SizedBox(height: 6.h),
-            ...controller.activityLogs.map((log) {
-              final description = log['description']?.toString() ?? '';
-              final actorName = log['actor_name']?.toString() ?? '';
-              final createdAt = log['created_at']?.toString() ?? '';
-              return Padding(
-                padding: EdgeInsets.only(bottom: 6.h),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.history_rounded,
-                      size: 15.sp,
-                      color: AppColors.primaryColor,
+          ),
+          subtitle: controller.createdByName.value.isNotEmpty
+              ? Text(
+                  '${'createdBy'.tr}: ${controller.createdByName.value}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.customGreyColor3
+                        : AppColors.customGreyColor5,
+                  ),
+                )
+              : null,
+          children: [
+            if (controller.activityLogs.isEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 4.h),
+                  child: Text(
+                    'noData'.tr,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: isDark
+                          ? AppColors.customGreyColor3
+                          : AppColors.customGreyColor5,
                     ),
-                    SizedBox(width: 6.w),
-                    Expanded(
-                      child: Text(
-                        [
-                          if (description.isNotEmpty) description,
-                          if (actorName.isNotEmpty) actorName,
-                          if (createdAt.isNotEmpty) createdAt,
-                        ].join(' - '),
-                        style: TextStyle(
-                          fontSize: 10.5.sp,
-                          height: 1.25,
-                          color: isDark
-                              ? AppColors.customGreyColor3
-                              : AppColors.customGreyColor5,
-                        ),
+                  ),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: 520.w,
+                  child: Table(
+                    columnWidths: const {
+                      0: FlexColumnWidth(1.05),
+                      1: FlexColumnWidth(1.0),
+                      2: FlexColumnWidth(2.2),
+                    },
+                    border: TableBorder(
+                      horizontalInside: BorderSide(
+                        color: isDark
+                            ? AppColors.customGreyColor2
+                            : AppColors.customGreyColor7,
                       ),
                     ),
-                  ],
+                    children: [
+                      TableRow(
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        children: [
+                          _AuditTableCell('date'.tr, header: true),
+                          _AuditTableCell('employee'.tr, header: true),
+                          _AuditTableCell('details'.tr, header: true),
+                        ],
+                      ),
+                      ...controller.activityLogs.map((log) {
+                        final description =
+                            log['description']?.toString() ?? '';
+                        final actorName = log['actor_name']?.toString() ?? '';
+                        final createdAt = log['created_at']?.toString() ?? '';
+                        return TableRow(
+                          children: [
+                            _AuditTableCell(createdAt),
+                            _AuditTableCell(actorName),
+                            _AuditTableCell(description, maxLines: 3),
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              );
-            }),
+              ),
           ],
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuditTableCell extends StatelessWidget {
+  const _AuditTableCell(
+    this.text, {
+    this.header = false,
+    this.maxLines = 2,
+  });
+
+  final String text;
+  final bool header;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final color = header
+        ? AppColors.primaryColor
+        : isDark
+            ? AppColors.customGreyColor3
+            : AppColors.customGreyColor5;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 7.h),
+      child: Text(
+        text.isEmpty ? '-' : text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: header ? 10.5.sp : 10.sp,
+          height: 1.25,
+          fontWeight: header ? FontWeight.w900 : FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

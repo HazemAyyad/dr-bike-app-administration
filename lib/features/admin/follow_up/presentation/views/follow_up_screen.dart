@@ -160,7 +160,7 @@ class _FollowUpQuickFilters extends GetView<FollowUpController> {
         ];
 
         return SizedBox(
-          height: 42.h,
+          height: 48.h,
           child: ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             scrollDirection: Axis.horizontal,
@@ -220,15 +220,13 @@ class _FollowUpFilterChip extends StatelessWidget {
 
     return Tooltip(
       message: data.label,
-      child: IconButton(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
-        onPressed: onTap,
-        icon: AnimatedContainer(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24.r),
+        child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 30.w,
-          height: 30.w,
+          width: 42.w,
+          height: 42.w,
           decoration: BoxDecoration(
             color: selected ? data.color : data.color.withValues(alpha: 0.08),
             shape: BoxShape.circle,
@@ -240,28 +238,28 @@ class _FollowUpFilterChip extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              Icon(data.icon, size: 18.sp, color: foreground),
+              Icon(data.icon, size: 20.sp, color: foreground),
               if (data.count > 0)
                 PositionedDirectional(
                   top: -5.h,
-                  end: -6.w,
+                  end: -5.w,
                   child: Container(
+                    constraints:
+                        BoxConstraints(minWidth: 17.w, minHeight: 17.w),
                     padding:
                         EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-                    constraints:
-                        BoxConstraints(minWidth: 16.w, minHeight: 16.w),
                     decoration: BoxDecoration(
                       color: Colors.redAccent,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: Colors.white, width: 1.2),
                     ),
+                    alignment: Alignment.center,
                     child: Text(
                       data.count > 99 ? '99+' : '${data.count}',
-                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 8.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         height: 1,
                       ),
                     ),
