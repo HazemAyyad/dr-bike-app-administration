@@ -70,7 +70,7 @@ class SmartHomeController extends GetxController {
 
   String formatVisibleError(String fallback, {String? code, String? message}) {
     final parts = <String>[fallback];
-    if (code != null && code.isNotEmpty) parts.add('[]');
+    if (code != null && code.isNotEmpty) parts.add('[$code]');
     if (message != null && message.isNotEmpty) parts.add(message);
     return parts.join(' ');
   }

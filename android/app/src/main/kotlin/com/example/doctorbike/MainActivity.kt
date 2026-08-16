@@ -676,7 +676,23 @@ class MainActivity : FlutterFragmentActivity() {
             "protocol" to "wifi",
             "online" to (device.isOnline == true),
             "last_status" to (device.dps ?: emptyMap<String, Any?>()),
+            "schema_map" to mapSchemaMap(device.schemaMap),
+            "schema" to (device.schema ?: ""),
         )
+    }
+    private fun mapSchemaMap(schemaMap: Map<String, com.thingclips.smart.android.device.bean.SchemaBean>?): Map<String, Any?> {
+        if (schemaMap == null) return emptyMap()
+        return schemaMap.mapValues { (_, schema) ->
+            mapOf(
+                "id" to (schema.id ?: ""),
+                "code" to (schema.code ?: ""),
+                "name" to (schema.name ?: ""),
+                "mode" to (schema.mode ?: ""),
+                "type" to (schema.type ?: ""),
+                "property" to (schema.property ?: ""),
+                "schema_type" to (schema.schemaType ?: ""),
+            )
+        }
     }
     private fun checkAvailability(): Map<String, Any> {
         val manager = BiometricManager.from(this)

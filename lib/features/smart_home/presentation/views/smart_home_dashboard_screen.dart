@@ -1205,8 +1205,16 @@ class _SmartDeviceCard extends StatelessWidget {
                         .map(
                           (entry) => Expanded(
                             child: _DpsShortcut(
-                              label: _friendlyDpsName(entry.key),
+                              label: _dpsLabel(device, entry.key),
                               value: entry.value,
+                              busy: busy,
+                              onTap: entry.value is bool
+                                  ? () => controller.setDeviceDps(
+                                        device: device,
+                                        commandCode: entry.key,
+                                        value: !(entry.value as bool),
+                                      )
+                                  : null,
                             ),
                           ),
                         )
@@ -1261,13 +1269,50 @@ class _SmartDeviceCard extends StatelessWidget {
     if (value.contains('sensor')) return Icons.sensors_rounded;
     return Icons.devices_other_rounded;
   }
+}
 
-  String _friendlyDpsName(String key) {
-    final clean =
-        key.replaceAll('_', ' ').replaceAll('switch led', 'switch').trim();
-    if (clean.isEmpty) return 'DPS';
-    return clean.length > 14 ? '${clean.substring(0, 12)}...' : clean;
+List<MapEntry<String, dynamic>> _boolDps(Map<String, dynamic> status) {
+  final entries = status.entries
+      .where((entry) => entry.value is bool)
+      .toList(growable: false);
+  entries.sort((a, b) => a.key.compareTo(b.key));
+  return entries;
+}
+
+String _dpsLabel(SmartDeviceModel device, String key) {
+  final fromSchema = _schemaName(device, key);
+  if (fromSchema.isNotEmpty) return fromSchema;
+  return _friendlyDpsName(key);
+}
+
+String _schemaName(SmartDeviceModel device, String key) {
+  final schemaMap = device.rawMetadata['schema_map'];
+  if (schemaMap is! Map) return '';
+
+  final direct = schemaMap[key];
+  if (direct is Map) {
+    final name = direct['name']?.toString().trim() ?? '';
+    if (name.isNotEmpty) return name;
   }
+
+  for (final raw in schemaMap.values) {
+    if (raw is! Map) continue;
+    final code = raw['code']?.toString();
+    if (code != key) continue;
+    final name = raw['name']?.toString().trim() ?? '';
+    if (name.isNotEmpty) return name;
+  }
+  return '';
+}
+
+String _friendlyDpsName(String key) {
+  final clean = key
+      .replaceAll('_', ' ')
+      .replaceAll('switch led', 'switch')
+      .replaceAll('switch', 'Switch')
+      .trim();
+  if (clean.isEmpty) return 'DPS';
+  return clean.length > 16 ? '${clean.substring(0, 14)}...' : clean;
 }
 
 class _RoundPowerButton extends StatelessWidget {
@@ -1325,55 +1370,83 @@ class _RoundPowerButton extends StatelessWidget {
 }
 
 class _DpsShortcut extends StatelessWidget {
-  const _DpsShortcut({required this.label, required this.value});
+  const _DpsShortcut({
+    required this.label,
+    required this.value,
+    required this.busy,
+    required this.onTap,
+  });
 
   final String label;
   final dynamic value;
+  final bool busy;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final active = value == true || (value is num && value != 0);
+    final enabled = onTap != null && !busy;
+    final activeColor = const Color(0xFF28C79A);
     return Opacity(
-      opacity: active ? 1 : .34,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            value is bool
-                ? Icons.power_settings_new_rounded
-                : Icons.tune_rounded,
-            color:
-                active ? const Color(0xFF28C79A) : AppColors.customGreyColor5,
-            size: 22.r,
-          ),
-          SizedBox(height: 5.h),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.customGreyColor5,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11.sp,
+      opacity: active || enabled ? 1 : .42,
+      child: Material(
+        color: active ? activeColor.withOpacity(.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12.r),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(12.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (busy && onTap != null)
+                  SizedBox(
+                    width: 18.r,
+                    height: 18.r,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    value is bool
+                        ? Icons.power_settings_new_rounded
+                        : Icons.tune_rounded,
+                    color: active ? activeColor : AppColors.customGreyColor5,
+                    size: 22.r,
+                  ),
+                SizedBox(height: 5.h),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            active ? activeColor : AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11.sp,
+                      ),
                 ),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            value == true
-                ? 'ON'
-                : value == false
-                    ? 'Off'
-                    : '$value',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.customGreyColor5,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 10.sp,
+                SizedBox(height: 2.h),
+                Text(
+                  value == true
+                      ? 'ON'
+                      : value == false
+                          ? 'OFF'
+                          : '$value',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            active ? activeColor : AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10.sp,
+                      ),
                 ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1668,6 +1741,7 @@ class _DeviceCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final curtainDp = _curtainCommandDp(device.lastStatus);
+    final boolDps = _boolDps(device.lastStatus);
     if (_looksLikeCurtain(device) || curtainDp.isNotEmpty) {
       return _CurtainCommandSurface(
         device: device,
@@ -1675,6 +1749,16 @@ class _DeviceCommandSurface extends StatelessWidget {
         readOnly: readOnly,
         commandDp: curtainDp,
         percentDp: _curtainPercentDp(device.lastStatus),
+        onDps: onDps,
+      );
+    }
+
+    if (boolDps.length >= 2) {
+      return _MultiSwitchCommandSurface(
+        device: device,
+        entries: boolDps,
+        busy: busy,
+        readOnly: readOnly,
         onDps: onDps,
       );
     }
@@ -1719,6 +1803,208 @@ class _DeviceCommandSurface extends StatelessWidget {
       if (status[key] is num) return key;
     }
     return '';
+  }
+}
+
+class _MultiSwitchCommandSurface extends StatelessWidget {
+  const _MultiSwitchCommandSurface({
+    required this.device,
+    required this.entries,
+    required this.busy,
+    required this.readOnly,
+    required this.onDps,
+  });
+
+  final SmartDeviceModel device;
+  final List<MapEntry<String, dynamic>> entries;
+  final bool busy;
+  final bool readOnly;
+  final void Function(String code, dynamic value) onDps;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = !busy && !readOnly;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: entries.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: entries.length == 1 ? 1 : 2,
+            crossAxisSpacing: 12.w,
+            mainAxisSpacing: 12.h,
+            childAspectRatio: 1.18,
+          ),
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return _SwitchChannelButton(
+              label: _dpsLabel(device, entry.key),
+              active: entry.value == true,
+              busy: busy,
+              enabled: enabled,
+              onTap: () => onDps(entry.key, entry.value != true),
+            );
+          },
+        ),
+        SizedBox(height: 14.h),
+        Row(
+          children: [
+            Expanded(
+              child: _AllSwitchesButton(
+                label: 'OFF',
+                enabled: enabled,
+                onTap: () {
+                  for (final entry in entries) {
+                    if (entry.value == true) onDps(entry.key, false);
+                  }
+                },
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: _AllSwitchesButton(
+                label: 'ON',
+                enabled: enabled,
+                active: true,
+                onTap: () {
+                  for (final entry in entries) {
+                    if (entry.value != true) onDps(entry.key, true);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SwitchChannelButton extends StatelessWidget {
+  const _SwitchChannelButton({
+    required this.label,
+    required this.active,
+    required this.busy,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final bool busy;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = const Color(0xFF28C79A);
+    return Material(
+      color:
+          ThemeService.isDark.value ? AppColors.customGreyColor : Colors.white,
+      borderRadius: BorderRadius.circular(18.r),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(
+              color: active ? activeColor : Colors.black.withOpacity(.05),
+              width: active ? 1.6 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (active ? activeColor : Colors.black)
+                    .withOpacity(active ? .14 : .045),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 58.r,
+                height: 58.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active ? activeColor : Colors.grey.shade300,
+                ),
+                child: Center(
+                  child: busy
+                      ? SizedBox(
+                          width: 18.r,
+                          height: 18.r,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          Icons.power_settings_new_rounded,
+                          color: Colors.white,
+                          size: 30.r,
+                        ),
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: active ? activeColor : AppColors.customGreyColor5,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                active ? 'ON' : 'OFF',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: active ? activeColor : AppColors.customGreyColor5,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AllSwitchesButton extends StatelessWidget {
+  const _AllSwitchesButton({
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final String label;
+  final bool enabled;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: enabled ? onTap : null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: active ? const Color(0xFF28C79A) : Colors.white,
+        foregroundColor: active ? Colors.white : AppColors.customGreyColor5,
+        minimumSize: Size.fromHeight(54.h),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        elevation: 0,
+      ),
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+    );
   }
 }
 
