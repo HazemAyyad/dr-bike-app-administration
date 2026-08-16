@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/app_colors.dart';
+import '../../data/smart_home_native_service.dart';
 import '../controllers/smart_home_controller.dart';
 
 class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
@@ -72,84 +73,702 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
   }
 
   Future<void> _showAddDeviceDialog() async {
-    final ssidController = TextEditingController();
-    final passwordController = TextEditingController();
-    try {
-      await Get.dialog<void>(
-        AlertDialog(
-          title: Text('addDevice'.tr),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: ssidController,
-                decoration: InputDecoration(
-                  labelText: 'smartHomeWifiName'.tr,
-                ),
+    await Get.to<void>(() => _AddDeviceFlowScreen(controller: controller));
+  }
+}
+
+enum _AddDeviceStage { search, manualReset, wifi, connecting, failed }
+
+class _ResetInstruction {
+  const _ResetInstruction({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+}
+
+class _AddDeviceFlowScreen extends StatefulWidget {
+  const _AddDeviceFlowScreen({required this.controller});
+
+  final SmartHomeController controller;
+
+  @override
+  State<_AddDeviceFlowScreen> createState() => _AddDeviceFlowScreenState();
+}
+
+class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
+  late final TextEditingController ssidController;
+  late final TextEditingController passwordController;
+  _AddDeviceStage stage = _AddDeviceStage.search;
+  int resetStep = 0;
+  bool loadingWifi = true;
+  bool loadingCurrentWifi = false;
+  bool useBluetoothPairing = false;
+  SmartHomeBleScanDevice? selectedBleDevice;
+
+  @override
+  void initState() {
+    super.initState();
+    ssidController = TextEditingController();
+    passwordController = TextEditingController();
+    widget.controller.errorMessage('');
+    widget.controller.bluetoothDevices.clear();
+    widget.controller.selectedBluetoothDevice.value = null;
+    _loadWifi();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scanNearby());
+  }
+
+  Future<void> _loadWifi() async {
+    final savedWifi = await widget.controller.savedWifiCredentials();
+    final currentSsid =
+        savedWifi.ssid.isEmpty ? await widget.controller.currentWifiSsid() : '';
+    if (!mounted) return;
+    ssidController.text =
+        savedWifi.ssid.isNotEmpty ? savedWifi.ssid : currentSsid;
+    passwordController.text = savedWifi.password;
+    setState(() => loadingWifi = false);
+  }
+
+  Future<void> _fillCurrentWifi() async {
+    setState(() => loadingCurrentWifi = true);
+    final ssid = await widget.controller.currentWifiSsid();
+    if (!mounted) return;
+    if (ssid.isNotEmpty) ssidController.text = ssid;
+    setState(() => loadingCurrentWifi = false);
+  }
+
+  Future<void> _scanNearby() async {
+    await widget.controller.scanBluetoothDevices();
+  }
+
+  void _selectBleDevice(SmartHomeBleScanDevice device) {
+    selectedBleDevice = device;
+    widget.controller.selectedBluetoothDevice.value = device;
+    useBluetoothPairing = true;
+    _goWifi();
+  }
+
+  void _goManual() {
+    widget.controller.errorMessage('');
+    selectedBleDevice = null;
+    widget.controller.selectedBluetoothDevice.value = null;
+    useBluetoothPairing = false;
+    setState(() {
+      stage = _AddDeviceStage.manualReset;
+      resetStep = 0;
+    });
+  }
+
+  void _goWifi() {
+    widget.controller.errorMessage('');
+    setState(() => stage = _AddDeviceStage.wifi);
+  }
+
+  void _nextResetStep() {
+    if (resetStep >= 2) {
+      _goWifi();
+      return;
+    }
+    setState(() => resetStep += 1);
+  }
+
+  Future<void> _connect() async {
+    widget.controller.errorMessage('');
+    setState(() => stage = _AddDeviceStage.connecting);
+
+    if (useBluetoothPairing && selectedBleDevice != null) {
+      await widget.controller.startBluetoothDevicePairing(
+        scanDevice: selectedBleDevice!,
+        ssid: ssidController.text,
+        password: passwordController.text,
+      );
+    } else {
+      await widget.controller.startDevicePairing(
+        ssid: ssidController.text,
+        password: passwordController.text,
+      );
+    }
+
+    if (!mounted) return;
+    if (widget.controller.errorMessage.value.isEmpty) {
+      Get.back<void>();
+      return;
+    }
+    setState(() => stage = _AddDeviceStage.failed);
+  }
+
+  void _retry() {
+    widget.controller.errorMessage('');
+    setState(() => stage = _AddDeviceStage.connecting);
+    _connect();
+  }
+
+  @override
+  void dispose() {
+    ssidController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 28.h),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: _buildStage(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStage(BuildContext context) {
+    switch (stage) {
+      case _AddDeviceStage.search:
+        return _buildSearch(context);
+      case _AddDeviceStage.manualReset:
+        return _buildManualReset(context);
+      case _AddDeviceStage.wifi:
+        return _buildWifi(context);
+      case _AddDeviceStage.connecting:
+        return _buildConnecting(context);
+      case _AddDeviceStage.failed:
+        return _buildFailed(context);
+    }
+  }
+
+  Widget _buildHeader({String? trailing, VoidCallback? onTrailing}) {
+    return Row(
+      children: [
+        IconButton(
+          onPressed: Get.back,
+          icon: const Icon(Icons.close_rounded),
+        ),
+        const Spacer(),
+        if (trailing != null)
+          TextButton(
+            onPressed: onTrailing,
+            style: TextButton.styleFrom(
+              backgroundColor: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : AppColors.whiteColor2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
               ),
-              SizedBox(height: 10.h),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'smartHomeWifiPassword'.tr,
+            ),
+            child: Text(trailing),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSearch(BuildContext context) {
+    return Column(
+      key: const ValueKey('search'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        SizedBox(height: 34.h),
+        Center(
+          child: Text(
+            'smartHomeSearchingNearby'.tr,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 27.sp,
                 ),
-              ),
-              SizedBox(height: 12.h),
-              Text(
-                'smartHomePairingHint'.tr,
-                style: Get.textTheme.bodySmall?.copyWith(
+          ),
+        ),
+        SizedBox(height: 10.h),
+        Center(
+          child: Text(
+            'smartHomeSearchingHint'.tr,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.customGreyColor5,
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-              Obx(() {
-                if (controller.errorMessage.value.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                return Padding(
-                  padding: EdgeInsets.only(top: 12.h),
-                  child: _ErrorBanner(message: controller.errorMessage.value),
-                );
-              }),
-            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: Get.back,
-              child: Text('close'.tr),
+        ),
+        SizedBox(height: 54.h),
+        Center(child: _RadarGraphic(scanning: true)),
+        SizedBox(height: 34.h),
+        Obx(() {
+          if (widget.controller.isScanningBluetooth.value) {
+            return _PermissionNotice(
+              title: 'smartHomeBluetoothScan'.tr,
+              subtitle: 'smartHomeBluetoothScanning'.tr,
+              icon: Icons.bluetooth_searching_rounded,
+            );
+          }
+          if (widget.controller.bluetoothDevices.isEmpty) {
+            return _PermissionNotice(
+              title: 'smartHomeBluetoothNoDevicesTitle'.tr,
+              subtitle: 'smartHomeBluetoothNoDevices'.tr,
+              icon: Icons.bluetooth_disabled_rounded,
+              actionLabel: 'retry'.tr,
+              onAction: _scanNearby,
+            );
+          }
+          return Column(
+            children: widget.controller.bluetoothDevices
+                .map(
+                  (device) => _BleDeviceTile(
+                    device: device,
+                    onTap: () => _selectBleDevice(device),
+                  ),
+                )
+                .toList(growable: false),
+          );
+        }),
+        const Spacer(),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'smartHomeAddManually'.tr,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
             ),
-            Obx(
-              () => ElevatedButton(
-                onPressed: controller.isPairingDevice.value
-                    ? null
-                    : () async {
-                        controller.errorMessage('');
-                        await controller.startDevicePairing(
-                          ssid: ssidController.text,
-                          password: passwordController.text,
-                        );
-                        if (!controller.isPairingDevice.value &&
-                            controller.errorMessage.value.isEmpty) {
-                          Get.back<void>();
-                        }
-                      },
-                child: controller.isPairingDevice.value
-                    ? SizedBox(
-                        width: 18.w,
-                        height: 18.w,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text('startPairing'.tr),
+            TextButton(
+              onPressed: _goManual,
+              child: Text('smartHomeManualWifiDevice'.tr),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManualReset(BuildContext context) {
+    final steps = [
+      _ResetInstruction(
+        icon: Icons.power_settings_new_rounded,
+        title: 'smartHomeResetStepPower'.tr,
+      ),
+      _ResetInstruction(
+        icon: Icons.touch_app_rounded,
+        title: 'smartHomeResetStepHold'.tr,
+      ),
+      _ResetInstruction(
+        icon: Icons.wifi_tethering_rounded,
+        title: 'smartHomeResetStepBlink'.tr,
+      ),
+    ];
+    final current = steps[resetStep];
+
+    return Column(
+      key: ValueKey('manual-$resetStep'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(
+            trailing: 'smartHomeOtherModes'.tr,
+            onTrailing: () {
+              setState(() => stage = _AddDeviceStage.search);
+            }),
+        SizedBox(height: 42.h),
+        Text(
+          'smartHomeResetDevice'.tr,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 30.sp,
+              ),
+        ),
+        const Spacer(),
+        Center(
+          child: Icon(
+            current.icon,
+            size: 92.r,
+            color: resetStep == 2 ? AppColors.customOrange3 : Colors.grey[400],
+          ),
+        ),
+        SizedBox(height: 28.h),
+        Center(child: _StepDots(current: resetStep)),
+        SizedBox(height: 46.h),
+        Text(
+          current.title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 22.sp,
+              ),
+        ),
+        const Spacer(flex: 2),
+        Row(
+          children: [
+            if (resetStep > 0)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => setState(() => resetStep -= 1),
+                  child: Text('back'.tr),
+                ),
+              ),
+            if (resetStep > 0) SizedBox(width: 14.w),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _nextResetStep,
+                child: Text('next'.tr),
               ),
             ),
           ],
         ),
-      );
-    } finally {
-      ssidController.dispose();
-      passwordController.dispose();
-    }
+      ],
+    );
+  }
+
+  Widget _buildWifi(BuildContext context) {
+    return Column(
+      key: const ValueKey('wifi'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(
+            trailing: 'smartHomeOtherModes'.tr,
+            onTrailing: () {
+              setState(() => stage = _AddDeviceStage.search);
+            }),
+        SizedBox(height: 38.h),
+        Text(
+          useBluetoothPairing
+              ? 'smartHomeBluetoothPair'.tr
+              : 'smartHomeManualWifiDevice'.tr,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 28.sp,
+              ),
+        ),
+        SizedBox(height: 10.h),
+        Text(
+          'smartHomeWifiConnectHint'.tr,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.customGreyColor5,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        SizedBox(height: 32.h),
+        TextField(
+          controller: ssidController,
+          enabled: !loadingWifi && !loadingCurrentWifi,
+          decoration: InputDecoration(
+            labelText: 'smartHomeWifiName'.tr,
+            suffixIcon: IconButton(
+              tooltip: 'smartHomeUseCurrentWifi'.tr,
+              onPressed:
+                  loadingWifi || loadingCurrentWifi ? null : _fillCurrentWifi,
+              icon: loadingCurrentWifi
+                  ? SizedBox(
+                      width: 16.w,
+                      height: 16.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.wifi_find_rounded),
+            ),
+          ),
+        ),
+        SizedBox(height: 14.h),
+        TextField(
+          controller: passwordController,
+          enabled: !loadingWifi,
+          obscureText: true,
+          decoration: InputDecoration(labelText: 'smartHomeWifiPassword'.tr),
+        ),
+        SizedBox(height: 12.h),
+        Obx(() {
+          if (widget.controller.errorMessage.value.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return _ErrorBanner(message: widget.controller.errorMessage.value);
+        }),
+        const Spacer(),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => setState(() {
+                  stage = useBluetoothPairing
+                      ? _AddDeviceStage.search
+                      : _AddDeviceStage.manualReset;
+                }),
+                child: Text('back'.tr),
+              ),
+            ),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: loadingWifi ? null : _connect,
+                child: Text('next'.tr),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConnecting(BuildContext context) {
+    return Column(
+      key: const ValueKey('connecting'),
+      children: [
+        _buildHeader(),
+        const Spacer(),
+        Text(
+          'smartHomeConnectingDevice'.tr,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 28.sp,
+              ),
+        ),
+        SizedBox(height: 72.h),
+        Icon(
+          useBluetoothPairing
+              ? Icons.bluetooth_connected_rounded
+              : Icons.devices_other_rounded,
+          size: 88.r,
+          color: AppColors.primaryColor.withOpacity(.35),
+        ),
+        SizedBox(height: 54.h),
+        LinearProgressIndicator(
+          minHeight: 6.h,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        const Spacer(flex: 2),
+      ],
+    );
+  }
+
+  Widget _buildFailed(BuildContext context) {
+    final message = widget.controller.errorMessage.value;
+    return Column(
+      key: const ValueKey('failed'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        SizedBox(height: 72.h),
+        Text(
+          'smartHomeFailedToAdd'.tr,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 29.sp,
+              ),
+        ),
+        SizedBox(height: 28.h),
+        Text(
+          'smartHomeFailedCheck'.tr,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 25.sp,
+              ),
+        ),
+        SizedBox(height: 28.h),
+        Text(
+          'smartHomeFailedHint1'.tr,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.customGreyColor5,
+                fontWeight: FontWeight.w600,
+                height: 1.8,
+              ),
+        ),
+        Text(
+          'smartHomeFailedHint2'.tr,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppColors.customGreyColor5,
+                fontWeight: FontWeight.w600,
+                height: 1.8,
+              ),
+        ),
+        if (message.isNotEmpty) ...[
+          SizedBox(height: 18.h),
+          _ErrorBanner(message: message),
+        ],
+        const Spacer(),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _retry,
+            child: Text('retry'.tr),
+          ),
+        ),
+        SizedBox(height: 12.h),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => setState(() => stage = _AddDeviceStage.search),
+            child: Text('smartHomeTryOtherModes'.tr),
+          ),
+        ),
+        SizedBox(height: 12.h),
+        Center(
+          child: TextButton(
+            onPressed: () => Get.snackbar(
+              'smartHomeReportIssue'.tr,
+              'smartHomeIssueLogged'.tr,
+            ),
+            child: Text('smartHomeReportIssue'.tr),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RadarGraphic extends StatelessWidget {
+  const _RadarGraphic({required this.scanning});
+
+  final bool scanning;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 190.w,
+      height: 190.w,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.primaryColor.withOpacity(.06),
+      ),
+      child: Center(
+        child: Container(
+          width: 118.w,
+          height: 118.w,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primaryColor.withOpacity(.08),
+          ),
+          child: Icon(
+            scanning ? Icons.radar_rounded : Icons.devices_other_rounded,
+            color: AppColors.primaryColor,
+            size: 52.r,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PermissionNotice extends StatelessWidget {
+  const _PermissionNotice({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22.r,
+            backgroundColor: AppColors.primaryColor.withOpacity(.12),
+            child: Icon(icon, color: AppColors.primaryColor),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          if (actionLabel != null)
+            TextButton(onPressed: onAction, child: Text(actionLabel!)),
+        ],
+      ),
+    );
+  }
+}
+
+class _BleDeviceTile extends StatelessWidget {
+  const _BleDeviceTile({required this.device, required this.onTap});
+
+  final SmartHomeBleScanDevice device;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        tileColor: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        leading: const Icon(Icons.bluetooth_connected_rounded),
+        title: Text(device.displayName),
+        subtitle: Text(
+          '${device.isWifiCombo ? 'WiFi + BLE' : 'BLE'}  RSSI ${device.rssi}',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
+}
+
+class _StepDots extends StatelessWidget {
+  const _StepDots({required this.current});
+
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        final active = index == current;
+        return Container(
+          width: 26.w,
+          height: 26.w,
+          margin: EdgeInsets.symmetric(horizontal: 5.w),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active ? AppColors.customGreyColor5 : Colors.transparent,
+            border: Border.all(color: AppColors.customGreyColor5),
+          ),
+          child: Text(
+            '${index + 1}',
+            style: TextStyle(
+              color: active ? Colors.white : AppColors.customGreyColor5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      }),
+    );
   }
 }
 

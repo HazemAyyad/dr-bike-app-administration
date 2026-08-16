@@ -5,6 +5,16 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import com.thingclips.smart.android.ble.api.BleScanResponse
+import com.thingclips.smart.android.ble.api.LeScanSetting
+import com.thingclips.smart.android.ble.api.ScanDeviceBean
+import com.thingclips.smart.android.ble.api.ScanType
+import com.thingclips.smart.sdk.api.IBleActivatorListener
+import com.thingclips.smart.sdk.api.IMultiModeActivatorListener
+import com.thingclips.smart.sdk.bean.BleActivatorBean
+import com.thingclips.smart.sdk.bean.MultiModeActivatorBean
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -42,6 +52,7 @@ class MainActivity : FlutterFragmentActivity() {
     private var pendingKeyguardResult: MethodChannel.Result? = null
     private var keyguardLaunchStartedAt: Long = 0L
     private var activeSmartHomeActivator: IThingActivator? = null
+    private val smartHomeHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,6 +152,8 @@ class MainActivity : FlutterFragmentActivity() {
                     "loginWithUid" -> loginTuyaWithUid(call, result)
                     "createHome" -> createTuyaHome(call, result)
                     "startWifiPairing" -> startTuyaWifiPairing(call, result)
+                    "scanBluetoothDevices" -> scanTuyaBluetoothDevices(call, result)
+                    "startBluetoothPairing" -> startTuyaBluetoothPairing(call, result)
                     "stopPairing" -> {
                         stopSmartHomeActivator()
                         result.success(true)
@@ -352,6 +365,195 @@ class MainActivity : FlutterFragmentActivity() {
         )
     }
 
+
+    private fun scanTuyaBluetoothDevices(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                    "devices" to emptyList<Map<String, Any?>>()
+                )
+            )
+            return
+        }
+
+        val timeoutMs = call.argument<Int>("timeoutMs") ?: 10000
+        val devices = linkedMapOf<String, ScanDeviceBean>()
+        val completed = AtomicBoolean(false)
+        val scanSetting = LeScanSetting.Builder()
+            .setTimeout(timeoutMs.toLong())
+            .addScanType(ScanType.SINGLE)
+            .setRepeatFilter(true)
+            .build()
+
+        fun finish() {
+            if (completed.compareAndSet(false, true)) {
+                runCatching { ThingHomeSdk.getBleOperator().stopLeScan() }
+                result.success(
+                    mapOf(
+                        "success" to true,
+                        "code" to "",
+                        "message" to "Bluetooth scan completed",
+                        "devices" to devices.values.map { mapScanDeviceBean(it) }
+                    )
+                )
+            }
+        }
+
+        runCatching { ThingHomeSdk.getBleOperator().stopLeScan() }
+        ThingHomeSdk.getBleOperator().startLeScan(scanSetting, object : BleScanResponse {
+            override fun onResult(bean: ScanDeviceBean) {
+                val key = bean.uuid ?: bean.id ?: bean.address ?: bean.mac ?: return
+                devices[key] = bean
+            }
+        })
+        smartHomeHandler.postDelayed({ finish() }, timeoutMs.toLong() + 600L)
+    }
+
+    private fun startTuyaBluetoothPairing(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                    "device" to emptyMap<String, Any?>()
+                )
+            )
+            return
+        }
+
+        val tuyaHomeId = call.argument<String>("tuyaHomeId")?.toLongOrNull() ?: 0L
+        val ssid = call.argument<String>("ssid") ?: ""
+        val password = call.argument<String>("password") ?: ""
+        val scanDevice = scanDeviceBeanFromMap(call.argument<Map<String, Any?>>("scanDevice") ?: emptyMap())
+        if (tuyaHomeId <= 0L || scanDevice.uuid.isNullOrBlank()) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "missing_ble_pairing_arguments",
+                    "message" to "Missing Tuya home id or Bluetooth device UUID",
+                    "device" to emptyMap<String, Any?>()
+                )
+            )
+            return
+        }
+
+        val completed = AtomicBoolean(false)
+        fun fail(code: String, message: String) {
+            if (completed.compareAndSet(false, true)) {
+                runCatching { ThingHomeSdk.getBleManager().stopBleConfig(scanDevice.uuid) }
+                runCatching { ThingHomeSdk.getActivator().newMultiModeActivator().stopActivator(scanDevice.uuid) }
+                result.success(
+                    mapOf(
+                        "success" to false,
+                        "code" to code,
+                        "message" to message,
+                        "device" to emptyMap<String, Any?>()
+                    )
+                )
+            }
+        }
+
+        fun success(deviceBean: DeviceBean) {
+            if (completed.compareAndSet(false, true)) {
+                result.success(
+                    mapOf(
+                        "success" to true,
+                        "code" to "",
+                        "message" to "Bluetooth device paired",
+                        "device" to mapDeviceBean(deviceBean)
+                    )
+                )
+            }
+        }
+
+        ThingHomeSdk.getActivatorInstance().getActivatorToken(
+            tuyaHomeId,
+            object : IThingActivatorGetToken {
+                override fun onSuccess(token: String) {
+                    if (scanDevice.configType == "config_type_wifi") {
+                        val bean = MultiModeActivatorBean(scanDevice)
+                        bean.homeId = tuyaHomeId
+                        bean.uuid = scanDevice.uuid
+                        bean.address = scanDevice.address
+                        bean.deviceType = scanDevice.deviceType
+                        bean.flag = scanDevice.flag
+                        bean.mac = scanDevice.mac
+                        bean.productId = scanDevice.productId
+                        bean.ssid = ssid
+                        bean.pwd = password
+                        bean.token = token
+                        bean.timeout = 120000L
+                        bean.phase1Timeout = 60000L
+                        ThingHomeSdk.getActivator().newMultiModeActivator().startActivator(
+                            bean,
+                            object : IMultiModeActivatorListener {
+                                override fun onSuccess(deviceBean: DeviceBean) = success(deviceBean)
+                                override fun onFailure(code: Int, msg: String, handle: Any?) = fail(code.toString(), msg)
+                            }
+                        )
+                    } else {
+                        val bean = BleActivatorBean(scanDevice)
+                        bean.homeId = tuyaHomeId
+                        bean.uuid = scanDevice.uuid
+                        bean.address = scanDevice.address
+                        bean.productId = scanDevice.productId
+                        bean.deviceType = scanDevice.deviceType
+                        bean.isShare = scanDevice.isShare
+                        bean.timeout = 60000L
+                        ThingHomeSdk.getActivator().newBleActivator().startActivator(
+                            bean,
+                            object : IBleActivatorListener {
+                                override fun onSuccess(deviceBean: DeviceBean) = success(deviceBean)
+                                override fun onFailure(code: Int, msg: String, handle: Any?) = fail(code.toString(), msg)
+                            }
+                        )
+                    }
+                }
+
+                override fun onFailure(code: String, error: String) = fail(code, error)
+            }
+        )
+    }
+
+    private fun mapScanDeviceBean(device: ScanDeviceBean): Map<String, Any?> {
+        return mapOf(
+            "id" to (device.id ?: ""),
+            "name" to (device.name ?: ""),
+            "provider_name" to (device.providerName ?: ""),
+            "config_type" to (device.configType ?: ""),
+            "product_id" to (device.productId ?: ""),
+            "uuid" to (device.uuid ?: ""),
+            "mac" to (device.mac ?: ""),
+            "address" to (device.address ?: ""),
+            "device_type" to device.deviceType,
+            "flag" to device.flag,
+            "rssi" to device.rssi,
+            "is_bind" to device.getIsbind(),
+            "is_share" to device.isShare
+        )
+    }
+
+    private fun scanDeviceBeanFromMap(map: Map<String, Any?>): ScanDeviceBean {
+        val bean = ScanDeviceBean()
+        bean.id = map["id"]?.toString() ?: ""
+        bean.name = map["name"]?.toString() ?: ""
+        bean.providerName = map["provider_name"]?.toString() ?: ""
+        bean.configType = map["config_type"]?.toString() ?: ""
+        bean.productId = map["product_id"]?.toString() ?: ""
+        bean.uuid = map["uuid"]?.toString() ?: ""
+        bean.mac = map["mac"]?.toString() ?: ""
+        bean.address = map["address"]?.toString() ?: ""
+        bean.deviceType = (map["device_type"] as? Number)?.toInt() ?: 0
+        bean.flag = (map["flag"] as? Number)?.toInt() ?: 0
+        bean.rssi = (map["rssi"] as? Number)?.toInt() ?: 0
+        bean.setShare(map["is_share"] == true)
+        bean.setIsbind(map["is_bind"] == true)
+        return bean
+    }
     private fun stopSmartHomeActivator() {
         runCatching { activeSmartHomeActivator?.stop() }
         runCatching { activeSmartHomeActivator?.onDestroy() }

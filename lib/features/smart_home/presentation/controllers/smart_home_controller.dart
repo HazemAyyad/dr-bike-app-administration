@@ -1,7 +1,23 @@
-import 'package:get/get.dart';
+import 'dart:async';
 
+import 'package:get/get.dart';
+import 'package:network_info_plus/network_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../../../../core/services/final_classes.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
+
+const Duration _smartHomePairingTimeout = Duration(seconds: 150);
+const String _smartHomeWifiSsidKey = 'smart_home_wifi_ssid';
+const String _smartHomeWifiPasswordKey = 'smart_home_wifi_password';
+
+class SmartHomeWifiCredentials {
+  const SmartHomeWifiCredentials({required this.ssid, required this.password});
+
+  final String ssid;
+  final String password;
+}
 
 class SmartHomeController extends GetxController {
   SmartHomeController({
@@ -26,6 +42,9 @@ class SmartHomeController extends GetxController {
   final tuyaUser = Rxn<SmartHomeTuyaUserModel>();
   final isLinkingTuyaUser = false.obs;
   final isPairingDevice = false.obs;
+  final isScanningBluetooth = false.obs;
+  final bluetoothDevices = <SmartHomeBleScanDevice>[].obs;
+  final selectedBluetoothDevice = Rxn<SmartHomeBleScanDevice>();
 
   SmartHomeModel? get selectedHome =>
       homes.firstWhereOrNull((home) => home.isDefault) ??
@@ -85,6 +104,55 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<SmartHomeWifiCredentials> savedWifiCredentials() async {
+    final ssid = await FinalClasses.secureStorage.read(
+          key: _smartHomeWifiSsidKey,
+        ) ??
+        '';
+    final password = await FinalClasses.secureStorage.read(
+          key: _smartHomeWifiPasswordKey,
+        ) ??
+        '';
+    return SmartHomeWifiCredentials(ssid: ssid, password: password);
+  }
+
+  Future<String> currentWifiSsid() async {
+    final status = await Permission.locationWhenInUse.request();
+    if (!status.isGranted && !status.isLimited) return '';
+
+    final raw = await NetworkInfo().getWifiName();
+    return _normalizeSsid(raw) ?? '';
+  }
+
+  String? _normalizeSsid(String? value) {
+    var ssid = value?.trim();
+    if (ssid == null || ssid.isEmpty || ssid == '<unknown ssid>') {
+      return null;
+    }
+    if ((ssid.startsWith('"') && ssid.endsWith('"')) ||
+        (ssid.startsWith("'") && ssid.endsWith("'"))) {
+      ssid = ssid.substring(1, ssid.length - 1).trim();
+    }
+    return ssid.isEmpty ? null : ssid;
+  }
+
+  Future<void> saveWifiCredentials({
+    required String ssid,
+    required String password,
+  }) async {
+    final cleanSsid = ssid.trim();
+    if (cleanSsid.isEmpty) return;
+
+    await FinalClasses.secureStorage.write(
+      key: _smartHomeWifiSsidKey,
+      value: cleanSsid,
+    );
+    await FinalClasses.secureStorage.write(
+      key: _smartHomeWifiPasswordKey,
+      value: password,
+    );
+  }
+
   Future<void> ensureTuyaUserLinked() async {
     if (!nativeStatus.value.initialized || isTuyaUserLinked) return;
 
@@ -132,6 +200,203 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<SmartHomeModel?> _ensureActiveTuyaHome(SmartHomeModel home) async {
+    var activeHome = home;
+    var tuyaHomeId = activeHome.tuyaHomeId;
+    if (tuyaHomeId.isNotEmpty) return activeHome;
+
+    final nativeHome = await nativeService.createHome(name: activeHome.name);
+    if (!nativeHome.success || nativeHome.tuyaHomeId.isEmpty) {
+      final visible =
+          nativeHome.message.isNotEmpty ? nativeHome.message : nativeHome.code;
+      errorMessage(visible);
+      await _logEvent(
+        smartHomeId: activeHome.id,
+        event: 'tuya_home_create',
+        success: false,
+        errorCode: nativeHome.code,
+        message: visible,
+      );
+      return null;
+    }
+
+    activeHome = await apiService.updateHomeTuyaId(
+      homeId: activeHome.id,
+      tuyaHomeId: nativeHome.tuyaHomeId,
+    );
+    final index = homes.indexWhere((item) => item.id == activeHome.id);
+    if (index >= 0) {
+      homes[index] = activeHome;
+    } else {
+      homes.add(activeHome);
+    }
+    await _logEvent(
+      smartHomeId: activeHome.id,
+      event: 'tuya_home_create',
+      success: true,
+      message: nativeHome.message,
+      context: {'tuya_home_id': activeHome.tuyaHomeId},
+    );
+    return activeHome;
+  }
+
+  Future<bool> _ensureBluetoothPermissions() async {
+    final permissions = <Permission>[
+      Permission.locationWhenInUse,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+    ];
+    final statuses = await permissions.request();
+    return statuses.values
+        .every((status) => status.isGranted || status.isLimited);
+  }
+
+  Future<void> scanBluetoothDevices() async {
+    if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
+      errorMessage('smartHomeTuyaNotReady'.tr);
+      return;
+    }
+    final granted = await _ensureBluetoothPermissions();
+    if (!granted) {
+      errorMessage('smartHomeBluetoothPermissionRequired'.tr);
+      return;
+    }
+
+    isScanningBluetooth(true);
+    errorMessage('');
+    selectedBluetoothDevice.value = null;
+    try {
+      final result = await nativeService.scanBluetoothDevices(timeoutMs: 10000);
+      if (!result.success) {
+        errorMessage(result.message.isNotEmpty
+            ? result.message
+            : 'smartHomeBluetoothScanFailed'.tr);
+        await _logEvent(
+          event: 'ble_scan',
+          success: false,
+          errorCode: result.code,
+          message: result.message,
+        );
+        return;
+      }
+      bluetoothDevices.assignAll(result.devices);
+      if (result.devices.isEmpty) {
+        errorMessage('smartHomeBluetoothNoDevices'.tr);
+      }
+      await _logEvent(
+        event: 'ble_scan',
+        success: true,
+        message: result.message,
+        context: {'count': result.devices.length},
+      );
+    } catch (e) {
+      errorMessage(e.toString());
+    } finally {
+      isScanningBluetooth(false);
+    }
+  }
+
+  Future<void> startBluetoothDevicePairing({
+    required SmartHomeBleScanDevice scanDevice,
+    required String ssid,
+    required String password,
+  }) async {
+    final home = selectedHome;
+    if (home == null) {
+      errorMessage('smartHomeMissingHome'.tr);
+      return;
+    }
+    if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
+      errorMessage('smartHomeTuyaNotReady'.tr);
+      return;
+    }
+    if (scanDevice.isWifiCombo && ssid.trim().isEmpty) {
+      errorMessage('smartHomeWifiNameRequired'.tr);
+      return;
+    }
+
+    await saveWifiCredentials(ssid: ssid, password: password);
+    isPairingDevice(true);
+    errorMessage('');
+    try {
+      final activeHome = await _ensureActiveTuyaHome(home);
+      if (activeHome == null) return;
+
+      final pairing = await nativeService
+          .startBluetoothPairing(
+        tuyaHomeId: activeHome.tuyaHomeId,
+        scanDevice: scanDevice,
+        ssid: ssid.trim(),
+        password: password,
+      )
+          .timeout(
+        _smartHomePairingTimeout,
+        onTimeout: () async {
+          await nativeService.stopPairing();
+          return SmartHomeNativePairingResult(
+            success: false,
+            code: 'ble_pairing_timeout',
+            message: 'smartHomePairingTimedOut'.tr,
+            device: const <String, dynamic>{},
+          );
+        },
+      );
+      if (!pairing.success) {
+        final visible = pairing.message.isNotEmpty
+            ? pairing.message
+            : 'smartHomePairingFailed'.tr;
+        errorMessage(visible);
+        await _logEvent(
+          smartHomeId: activeHome.id,
+          event: 'ble_pairing',
+          success: false,
+          errorCode: pairing.code,
+          message: visible,
+          context: {
+            'ssid': ssid.trim(),
+            'scan_device': scanDevice.raw,
+          },
+        );
+        return;
+      }
+      final registered = await apiService.registerDevice(
+        smartHomeId: activeHome.id,
+        device: pairing.device,
+      );
+      final existing = devices.indexWhere((item) => item.id == registered.id);
+      if (existing >= 0) {
+        devices[existing] = registered;
+      } else {
+        devices.add(registered);
+      }
+      await refreshData();
+      await _logEvent(
+        smartHomeId: activeHome.id,
+        event: 'ble_pairing',
+        success: true,
+        message: pairing.message,
+        context: pairing.device,
+      );
+      Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+    } catch (e) {
+      final visible = e.toString();
+      errorMessage(visible);
+      await _logEvent(
+        smartHomeId: selectedHome?.id,
+        event: 'ble_pairing',
+        success: false,
+        errorCode: 'ble_pairing_exception',
+        message: visible,
+        context: {
+          'ssid': ssid.trim(),
+          'scan_device': scanDevice.raw,
+        },
+      );
+    } finally {
+      isPairingDevice(false);
+    }
+  }
+
   Future<void> startDevicePairing({
     required String ssid,
     required String password,
@@ -162,6 +427,8 @@ class SmartHomeController extends GetxController {
       return;
     }
 
+    await saveWifiCredentials(ssid: ssid, password: password);
+
     isPairingDevice(true);
     errorMessage('');
     try {
@@ -171,10 +438,16 @@ class SmartHomeController extends GetxController {
         final nativeHome =
             await nativeService.createHome(name: activeHome.name);
         if (!nativeHome.success || nativeHome.tuyaHomeId.isEmpty) {
-          errorMessage(
-            nativeHome.message.isNotEmpty
-                ? nativeHome.message
-                : nativeHome.code,
+          final visible = nativeHome.message.isNotEmpty
+              ? nativeHome.message
+              : nativeHome.code;
+          errorMessage(visible);
+          await _logEvent(
+            smartHomeId: activeHome.id,
+            event: 'tuya_home_create',
+            success: false,
+            errorCode: nativeHome.code,
+            message: visible,
           );
           return;
         }
@@ -198,14 +471,37 @@ class SmartHomeController extends GetxController {
         );
       }
 
-      final pairing = await nativeService.startWifiPairing(
+      final pairing = await nativeService
+          .startWifiPairing(
         tuyaHomeId: tuyaHomeId,
         ssid: ssid.trim(),
         password: password,
+      )
+          .timeout(
+        _smartHomePairingTimeout,
+        onTimeout: () async {
+          await nativeService.stopPairing();
+          return SmartHomeNativePairingResult(
+            success: false,
+            code: 'pairing_timeout',
+            message: 'smartHomePairingTimedOut'.tr,
+            device: const <String, dynamic>{},
+          );
+        },
       );
       if (!pairing.success) {
-        errorMessage(
-            pairing.message.isNotEmpty ? pairing.message : pairing.code);
+        final visible = pairing.message.isNotEmpty
+            ? pairing.message
+            : 'smartHomePairingFailed'.tr;
+        errorMessage(visible);
+        await _logEvent(
+          smartHomeId: activeHome.id,
+          event: 'wifi_pairing',
+          success: false,
+          errorCode: pairing.code,
+          message: visible,
+          context: {'ssid': ssid.trim()},
+        );
         return;
       }
       final registered = await apiService.registerDevice(
@@ -228,7 +524,16 @@ class SmartHomeController extends GetxController {
       );
       Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
     } catch (e) {
-      errorMessage(e.toString());
+      final visible = e.toString();
+      errorMessage(visible);
+      await _logEvent(
+        smartHomeId: selectedHome?.id,
+        event: 'wifi_pairing',
+        success: false,
+        errorCode: 'pairing_exception',
+        message: visible,
+        context: {'ssid': ssid.trim()},
+      );
     } finally {
       isPairingDevice(false);
     }

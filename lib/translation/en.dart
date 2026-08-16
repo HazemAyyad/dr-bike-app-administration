@@ -3058,7 +3058,38 @@ const Map<String, String> en = {
   'tuyaUserLinking': 'Linking Tuya user...',
   'tuyaUserNeedsLink': 'Tuya user is not linked yet',
   'startPairing': 'Start pairing',
+  'smartHomeSearchingNearby': 'Searching for nearby devices...',
+  'smartHomeSearchingHint':
+      'Make sure the device is powered on and in pairing mode',
+  'smartHomeBluetoothScanning': 'Scanning nearby Tuya devices',
+  'smartHomeBluetoothNoDevicesTitle': 'No nearby device found',
+  'smartHomeAddManually': 'Add manually',
+  'smartHomeManualWifiDevice': 'WiFi device',
+  'smartHomeOtherModes': 'Other modes',
+  'smartHomeResetDevice': 'Reset the device',
+  'smartHomeResetStepPower':
+      'Power on the device. Power off after 10s and then power on again.',
+  'smartHomeResetStepHold': 'Hold the RESET button for 5s.',
+  'smartHomeResetStepBlink': 'Confirm the indicator is blinking.',
+  'smartHomeWifiConnectHint':
+      'Use a 2.4GHz network and enter the WiFi password.',
+  'smartHomeConnectingDevice': 'Connecting Device',
+  'smartHomeFailedToAdd': 'Failed to add the device',
+  'smartHomeFailedCheck': 'Please check the following and try again',
+  'smartHomeFailedHint1': '• The device is powered on and in reset mode.',
+  'smartHomeFailedHint2': '• Make sure your phone is near the device.',
+  'smartHomeTryOtherModes': 'Try Other Modes',
+  'smartHomeReportIssue': 'Report Issue',
+  'smartHomeIssueLogged': 'The issue was logged in Smart Home logs.',
+  'smartHomeBluetoothScan': 'Scan Bluetooth',
+  'smartHomeBluetoothPair': 'Pair with Bluetooth',
+  'smartHomeBluetoothPermissionRequired':
+      'Enable Bluetooth and location permissions to find nearby devices',
+  'smartHomeBluetoothScanFailed': 'Bluetooth device scan failed',
+  'smartHomeBluetoothNoDevices':
+      'No nearby Tuya devices found. Make sure the device is in pairing mode and Bluetooth is on.',
   'smartHomeWifiName': 'WiFi network name',
+  'smartHomeUseCurrentWifi': 'Use current WiFi',
   'smartHomeWifiPassword': 'WiFi password',
   'smartHomePairingHint':
       'Put the device in fast blinking mode, then start pairing. Use a 2.4GHz network when the device requires it.',
@@ -3069,6 +3100,8 @@ const Map<String, String> en = {
   'tuyaUserLinkFailed': 'Failed to link Tuya user',
   'smartHomeCreateTuyaHomeFailed': 'Failed to create the home in Tuya',
   'smartHomePairingFailed': 'Device pairing failed',
+  'smartHomePairingTimedOut':
+      'Pairing timed out. Make sure the device is in fast blinking mode and the network is 2.4GHz, then try again.',
   'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
   'smartHomeComingSoon':
       'This step will be enabled after the full Tuya connection',
