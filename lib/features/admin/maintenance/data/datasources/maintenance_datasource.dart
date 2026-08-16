@@ -7,7 +7,9 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../sales/data/models/daily_session_model.dart';
 import '../models/maintenance_activity_log_model.dart';
 import '../models/maintenance_invoice_model.dart';
 import '../models/maintenance_product_model.dart';
@@ -280,6 +282,84 @@ class MaintenanceDatasource {
     try {
       final response = await api.get(EndPoints.maintenanceDailySessionsOpen);
       return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<DailySessionSummaryModel>> getDailySessionsHistory({
+    String? fromDate,
+    String? toDate,
+    String? status,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.maintenanceDailySessions,
+        queryParameters: {
+          if (fromDate != null && fromDate.isNotEmpty) 'from_date': fromDate,
+          if (toDate != null && toDate.isNotEmpty) 'to_date': toDate,
+          if (status != null && status.isNotEmpty) 'status': status,
+          'per_page': 50,
+        },
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        return mapList(
+          data['sessions'],
+          (Map<String, dynamic> m) => DailySessionSummaryModel.fromJson(m),
+        );
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<DailySessionDetailModel> getDailySessionDetail(int sessionId) async {
+    try {
+      final response = await api.get(
+        EndPoints.maintenanceDailySessionDetail(sessionId),
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        final detail = data['session_detail'];
+        if (detail is Map) {
+          return DailySessionDetailModel.fromJson(
+            Map<String, dynamic>.from(detail),
+          );
+        }
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

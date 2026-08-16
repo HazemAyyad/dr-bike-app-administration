@@ -671,6 +671,10 @@ class EndPoints {
       'maintenance/daily-session/open';
   static const String maintenanceDailySessionsOpen =
       'maintenance/daily-sessions/open';
+  static const String maintenanceDailySessions =
+      'maintenance/daily-sessions';
+  static String maintenanceDailySessionDetail(int sessionId) =>
+      'maintenance/daily-sessions/$sessionId';
   static const String maintenanceDailySessionRequestClosing =
       'maintenance/daily-session/request-closing';
   static const String maintenanceDailyClosingPending =

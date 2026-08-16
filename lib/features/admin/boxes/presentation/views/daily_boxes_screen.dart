@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../maintenance/data/repositories/maintenance_implement.dart';
+import '../../../maintenance/data/datasources/maintenance_datasource.dart';
 import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
 import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
@@ -31,9 +32,13 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
   final BoxesController controller = Get.find<BoxesController>();
   String _filter = 'all';
   List<DailySessionSummaryModel> _salesSessions = const [];
+  List<DailySessionSummaryModel> _maintenanceSessions = const [];
   bool _loadingSalesSessions = false;
+  bool _loadingMaintenanceSessions = false;
   _DailyBoxLogScope _salesSessionScope = _DailyBoxLogScope.today;
+  _DailyBoxLogScope _maintenanceSessionScope = _DailyBoxLogScope.today;
   DateTime? _salesSessionCustomDate;
+  DateTime? _maintenanceSessionCustomDate;
 
   @override
   void initState() {
@@ -46,6 +51,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       }
     }
     _loadSalesSessions();
+    _loadMaintenanceSessions();
   }
 
   DateTime _dateOnly(DateTime date) {
@@ -94,6 +100,48 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       setState(() => _salesSessions = const []);
     } finally {
       if (mounted) setState(() => _loadingSalesSessions = false);
+    }
+  }
+
+  Future<void> _loadMaintenanceSessions() async {
+    setState(() => _loadingMaintenanceSessions = true);
+    try {
+      AppDependencyRegistry.ensureMaintenance();
+      final ds = Get.find<MaintenanceDatasource>();
+      final today = _dateOnly(DateTime.now());
+      String? fromDate;
+      String? toDate;
+      switch (_maintenanceSessionScope) {
+        case _DailyBoxLogScope.today:
+          fromDate = _apiDate(today);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.yesterday:
+          final target = today.subtract(const Duration(days: 1));
+          fromDate = _apiDate(target);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.custom:
+          final target = _maintenanceSessionCustomDate == null
+              ? today
+              : _dateOnly(_maintenanceSessionCustomDate!);
+          fromDate = _apiDate(target);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.all:
+          break;
+      }
+      final sessions = await ds.getDailySessionsHistory(
+        fromDate: fromDate,
+        toDate: toDate,
+      );
+      if (!mounted) return;
+      setState(() => _maintenanceSessions = sessions);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _maintenanceSessions = const []);
+    } finally {
+      if (mounted) setState(() => _loadingMaintenanceSessions = false);
     }
   }
 
@@ -189,6 +237,22 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
     await _loadSalesSessions();
   }
 
+  Future<void> _pickMaintenanceSessionDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _maintenanceSessionCustomDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (picked == null) return;
+    setState(() {
+      _maintenanceSessionCustomDate = picked;
+      _maintenanceSessionScope = _DailyBoxLogScope.custom;
+    });
+    await _loadMaintenanceSessions();
+  }
+
   Future<void> _showSalesSessionDetails(
     BuildContext context,
     DailySessionSummaryModel session,
@@ -220,6 +284,47 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                   amount: _amount,
                   dateText: _dateText,
                   scrollController: scrollController,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showMaintenanceSessionDetails(
+    BuildContext context,
+    DailySessionSummaryModel session,
+  ) async {
+    AppDependencyRegistry.ensureMaintenance();
+    final ds = Get.find<MaintenanceDatasource>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .82,
+          minChildSize: .45,
+          maxChildSize: .95,
+          builder: (context, scrollController) {
+            return FutureBuilder<DailySessionDetailModel>(
+              future: ds.getDailySessionDetail(session.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text('noData'.tr));
+                }
+                return _SalesSessionDetailSheet(
+                  detail: snapshot.data!,
+                  amount: _amount,
+                  dateText: _dateText,
+                  scrollController: scrollController,
+                  mode: _DailySessionViewMode.maintenance,
                 );
               },
             );
@@ -306,10 +411,17 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       body: Obx(() {
         final boxes = _dailyBoxes();
         final showSalesSessions = _filter == 'all' || _filter == 'sales';
+        final showMaintenanceSessions =
+            _filter == 'all' || _filter == 'maintenance';
         final hasSalesSessions = showSalesSessions && _salesSessions.isNotEmpty;
-        if ((controller.isLoading.value || _loadingSalesSessions) &&
+        final hasMaintenanceSessions =
+            showMaintenanceSessions && _maintenanceSessions.isNotEmpty;
+        if ((controller.isLoading.value ||
+                _loadingSalesSessions ||
+                _loadingMaintenanceSessions) &&
             boxes.isEmpty &&
-            !hasSalesSessions) {
+            !hasSalesSessions &&
+            !hasMaintenanceSessions) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -318,6 +430,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
             await Future.wait([
               controller.pullToRefresh(),
               _loadSalesSessions(),
+              _loadMaintenanceSessions(),
             ]);
           },
           child: ListView(
@@ -345,8 +458,31 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                   onOpenDetails: (session) =>
                       _showSalesSessionDetails(context, session),
                 ),
-              if (showSalesSessions && boxes.isNotEmpty) SizedBox(height: 12.h),
-              if (_filter == 'maintenance')
+              if (showSalesSessions &&
+                  (boxes.isNotEmpty || showMaintenanceSessions))
+                SizedBox(height: 12.h),
+              if (showMaintenanceSessions)
+                _SalesSessionsSection(
+                  sessions: _maintenanceSessions,
+                  loading: _loadingMaintenanceSessions,
+                  scope: _maintenanceSessionScope,
+                  customDate: _maintenanceSessionCustomDate,
+                  amount: _amount,
+                  dateText: _dateText,
+                  mode: _DailySessionViewMode.maintenance,
+                  onScopeChanged: (scope) async {
+                    setState(() => _maintenanceSessionScope = scope);
+                    await _loadMaintenanceSessions();
+                  },
+                  onPickDate: () => _pickMaintenanceSessionDate(context),
+                  onOpenDetails: (session) =>
+                      _showMaintenanceSessionDetails(context, session),
+                ),
+              if (showMaintenanceSessions &&
+                  boxes.isNotEmpty &&
+                  _maintenanceSessions.isEmpty)
+                SizedBox(height: 12.h),
+              if (_filter == 'maintenance' && _maintenanceSessions.isEmpty)
                 _MaintenanceBoxesSection(
                   boxes: boxes,
                   logsForBox: _boxLogs,
@@ -364,10 +500,17 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                   },
                   onOpenInvoice: (log) => _openMaintenanceInvoice(context, log),
                 )
-              else if (boxes.isEmpty && !hasSalesSessions)
+              else if (boxes.isEmpty &&
+                  !hasSalesSessions &&
+                  !hasMaintenanceSessions)
                 SizedBox(height: 360.h, child: const ShowNoData())
               else
-                ...boxes.map((box) => _DailyBoxCard(
+                ...boxes.where((box) {
+                  if (_filter == 'all' && _boxKind(box) == 'maintenance') {
+                    return _maintenanceSessions.isEmpty;
+                  }
+                  return true;
+                }).map((box) => _DailyBoxCard(
                       box: box,
                       logs: _boxLogs(box),
                       amount: _amount,
@@ -448,6 +591,8 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
+enum _DailySessionViewMode { sales, maintenance }
+
 class _SalesSessionsSection extends StatelessWidget {
   const _SalesSessionsSection({
     required this.sessions,
@@ -459,6 +604,7 @@ class _SalesSessionsSection extends StatelessWidget {
     required this.onScopeChanged,
     required this.onPickDate,
     required this.onOpenDetails,
+    this.mode = _DailySessionViewMode.sales,
   });
 
   final List<DailySessionSummaryModel> sessions;
@@ -470,6 +616,22 @@ class _SalesSessionsSection extends StatelessWidget {
   final ValueChanged<_DailyBoxLogScope> onScopeChanged;
   final VoidCallback onPickDate;
   final ValueChanged<DailySessionSummaryModel> onOpenDetails;
+  final _DailySessionViewMode mode;
+
+  bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
+
+  String get _sectionTitle =>
+      _isMaintenance ? 'dailyBoxMaintenance'.tr : 'salesDailyHistoryTitle'.tr;
+
+  String get _totalLabel =>
+      _isMaintenance ? 'المتحصل كاش' : 'salesDailySalesCollected'.tr;
+
+  IconData get _sectionIcon => _isMaintenance
+      ? Icons.build_circle_outlined
+      : Icons.point_of_sale_outlined;
+
+  Color get _sectionColor =>
+      _isMaintenance ? const Color(0xFF007C89) : AppColors.primaryColor;
 
   Map<String, List<DailySessionSummaryModel>> _groupByDay() {
     final groups = <String, List<DailySessionSummaryModel>>{};
@@ -543,12 +705,12 @@ class _SalesSessionsSection extends StatelessWidget {
           tilePadding: EdgeInsets.all(12.w),
           childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
           leading: Icon(
-            Icons.point_of_sale_outlined,
-            color: AppColors.primaryColor,
+            _sectionIcon,
+            color: _sectionColor,
             size: 22.sp,
           ),
           title: Text(
-            'salesDailyHistoryTitle'.tr,
+            _sectionTitle,
             style: TextStyle(
               color: textColor,
               fontSize: 15.sp,
@@ -556,7 +718,7 @@ class _SalesSessionsSection extends StatelessWidget {
             ),
           ),
           subtitle: Text(
-            '${'salesDailySalesCollected'.tr}: $allTotal',
+            '$_totalLabel: $allTotal',
             style: TextStyle(
               color: AppColors.greyColor,
               fontSize: 12.sp,
@@ -595,6 +757,7 @@ class _SalesSessionsSection extends StatelessWidget {
                   totalText: _totalsText(_salesTotalsByCurrency(entry.value)),
                   amount: amount,
                   dateText: dateText,
+                  mode: mode,
                   onOpenDetails: onOpenDetails,
                 ),
               ),
@@ -613,6 +776,7 @@ class _SalesDayGroup extends StatelessWidget {
     required this.amount,
     required this.dateText,
     required this.onOpenDetails,
+    this.mode = _DailySessionViewMode.sales,
   });
 
   final String title;
@@ -621,6 +785,9 @@ class _SalesDayGroup extends StatelessWidget {
   final String Function(double value) amount;
   final String Function(String? value) dateText;
   final ValueChanged<DailySessionSummaryModel> onOpenDetails;
+  final _DailySessionViewMode mode;
+
+  bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
 
   @override
   Widget build(BuildContext context) {
@@ -642,7 +809,7 @@ class _SalesDayGroup extends StatelessWidget {
           style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
         ),
         subtitle: Text(
-          '${'salesDailySalesCollected'.tr}: $totalText',
+          '${_isMaintenance ? 'المتحصل كاش' : 'salesDailySalesCollected'.tr}: $totalText',
           style: TextStyle(
             color: AppColors.greyColor,
             fontSize: 11.sp,
@@ -655,6 +822,7 @@ class _SalesDayGroup extends StatelessWidget {
                 session: session,
                 amount: amount,
                 dateText: dateText,
+                mode: mode,
                 onOpenDetails: () => onOpenDetails(session),
               ),
             )
@@ -670,12 +838,25 @@ class _SalesSessionTile extends StatelessWidget {
     required this.amount,
     required this.dateText,
     required this.onOpenDetails,
+    this.mode = _DailySessionViewMode.sales,
   });
 
   final DailySessionSummaryModel session;
   final String Function(double value) amount;
   final String Function(String? value) dateText;
   final VoidCallback onOpenDetails;
+  final _DailySessionViewMode mode;
+
+  bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
+
+  Color get _accentColor =>
+      _isMaintenance ? const Color(0xFF007C89) : AppColors.primaryColor;
+
+  String get _collectedLabel =>
+      _isMaintenance ? 'المتحصل كاش' : 'salesDailySalesCollected'.tr;
+
+  String get _primaryCountLabel =>
+      _isMaintenance ? 'عمليات الصيانة' : 'instant_sales'.tr;
 
   DailyExpectedOpeningCount? _expectedFor(String currency) {
     return session.expectedOpeningCounts.firstWhereOrNull(
@@ -723,10 +904,12 @@ class _SalesSessionTile extends StatelessWidget {
         childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
         leading: CircleAvatar(
           radius: 18.r,
-          backgroundColor: AppColors.primaryColor.withValues(alpha: .12),
+          backgroundColor: _accentColor.withValues(alpha: .12),
           child: Icon(
-            Icons.person_outline,
-            color: AppColors.primaryColor,
+            _isMaintenance
+                ? Icons.build_circle_outlined
+                : Icons.person_outline,
+            color: _accentColor,
             size: 20.sp,
           ),
         ),
@@ -749,20 +932,21 @@ class _SalesSessionTile extends StatelessWidget {
               Text(session.businessDate, style: TextStyle(fontSize: 11.sp)),
               Text(_statusLabel(session.status),
                   style: TextStyle(
-                    color: AppColors.primaryColor,
+                    color: _accentColor,
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w800,
                   )),
               Text(
-                '${'instant_sales'.tr}: ${session.instantSalesCount}',
+                '$_primaryCountLabel: ${session.instantSalesCount}',
                 style: TextStyle(fontSize: 11.sp),
               ),
+              if (!_isMaintenance)
+                Text(
+                  '${'cashProfit'.tr}: ${session.profitSalesCount}',
+                  style: TextStyle(fontSize: 11.sp),
+                ),
               Text(
-                '${'cashProfit'.tr}: ${session.profitSalesCount}',
-                style: TextStyle(fontSize: 11.sp),
-              ),
-              Text(
-                '${'salesDailySalesCollected'.tr}: $_sessionSalesTotal',
+                '$_collectedLabel: $_sessionSalesTotal',
                 style: TextStyle(
                   color: AppColors.secondaryColor,
                   fontSize: 11.sp,
@@ -780,7 +964,7 @@ class _SalesSessionTile extends StatelessWidget {
               runSpacing: 6.h,
               children: [
                 _DailyBoxMetric(
-                  label: 'salesDailySalesCollected'.tr,
+                  label: _collectedLabel,
                   value: _sessionSalesTotal,
                 ),
                 _DailyBoxMetric(
@@ -849,12 +1033,25 @@ class _SalesSessionDetailSheet extends StatelessWidget {
     required this.amount,
     required this.dateText,
     required this.scrollController,
+    this.mode = _DailySessionViewMode.sales,
   });
 
   final DailySessionDetailModel detail;
   final String Function(double value) amount;
   final String Function(String? value) dateText;
   final ScrollController scrollController;
+  final _DailySessionViewMode mode;
+
+  bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
+
+  String get _collectedLabel =>
+      _isMaintenance ? 'المتحصل كاش' : 'salesDailySalesCollected'.tr;
+
+  String get _primaryCountLabel =>
+      _isMaintenance ? 'عمليات الصيانة' : 'instant_sales'.tr;
+
+  String get _logTitle =>
+      _isMaintenance ? 'سجل دفعات الصيانة' : 'salesDailySalesLog'.tr;
 
   DailyExpectedOpeningCount? _expectedFor(String currency) {
     return detail.expectedOpeningCounts.firstWhereOrNull(
@@ -893,19 +1090,21 @@ class _SalesSessionDetailSheet extends StatelessWidget {
           runSpacing: 8.h,
           children: [
             _DailyBoxMetric(
-              label: 'instant_sales'.tr,
+              label: _primaryCountLabel,
               value: detail.instantSalesCount.toString(),
             ),
+            if (!_isMaintenance)
+              _DailyBoxMetric(
+                label: 'cashProfit'.tr,
+                value: detail.profitSalesCount.toString(),
+              ),
+            if (!_isMaintenance)
+              _DailyBoxMetric(
+                label: 'salesDailyOrdersSection'.tr,
+                value: detail.salesOrdersCount.toString(),
+              ),
             _DailyBoxMetric(
-              label: 'cashProfit'.tr,
-              value: detail.profitSalesCount.toString(),
-            ),
-            _DailyBoxMetric(
-              label: 'salesDailyOrdersSection'.tr,
-              value: detail.salesOrdersCount.toString(),
-            ),
-            _DailyBoxMetric(
-              label: 'salesDailySalesCollected'.tr,
+              label: _collectedLabel,
               value: _salesTotal,
             ),
           ],
@@ -941,7 +1140,7 @@ class _SalesSessionDetailSheet extends StatelessWidget {
                       value: amount(row.openingFloat),
                     ),
                     _DetailLine(
-                      label: 'salesDailySalesCollected'.tr,
+                      label: _collectedLabel,
                       value: amount(row.salesCollected),
                     ),
                     _DetailLine(
@@ -960,7 +1159,7 @@ class _SalesSessionDetailSheet extends StatelessWidget {
         ),
         SizedBox(height: 14.h),
         Text(
-          'salesDailySalesLog'.tr,
+          _logTitle,
           style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
         ),
         SizedBox(height: 8.h),
