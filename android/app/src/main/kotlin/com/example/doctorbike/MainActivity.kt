@@ -212,13 +212,13 @@ class MainActivity : FlutterFragmentActivity() {
                     )
                 }
 
-                override fun onError(code: String, error: String) {
+                override fun onError(code: String?, error: String?) {
                     result.success(
                         mapOf(
                             "success" to false,
                             "uid" to uid,
-                            "code" to code,
-                            "message" to error,
+                            "code" to safeTuyaErrorCode(code),
+                            "message" to safeTuyaErrorMessage(error),
                         )
                     )
                 }
@@ -259,14 +259,14 @@ class MainActivity : FlutterFragmentActivity() {
                     )
                 }
 
-                override fun onError(code: String, error: String) {
+                override fun onError(code: String?, error: String?) {
                     result.success(
                         mapOf(
                             "success" to false,
                             "tuya_home_id" to "",
                             "name" to name,
-                            "code" to code,
-                            "message" to error,
+                            "code" to safeTuyaErrorCode(code),
+                            "message" to safeTuyaErrorMessage(error),
                         )
                     )
                 }
@@ -316,14 +316,14 @@ class MainActivity : FlutterFragmentActivity() {
                         .setTimeOut(120)
                         .setActivatorModel(ActivatorModelEnum.THING_EZ)
                         .setListener(object : IThingSmartActivatorListener {
-                            override fun onError(code: String, error: String) {
+                            override fun onError(code: String?, error: String?) {
                                 if (completed.compareAndSet(false, true)) {
                                     stopSmartHomeActivator()
                                     result.success(
                                         mapOf(
                                             "success" to false,
-                                            "code" to code,
-                                            "message" to error,
+                                            "code" to safeTuyaErrorCode(code),
+                                            "message" to safeTuyaErrorMessage(error),
                                             "device" to emptyMap<String, Any?>(),
                                         )
                                     )
@@ -359,8 +359,8 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(
                             mapOf(
                                 "success" to false,
-                                "code" to code,
-                                "message" to error,
+                                "code" to safeTuyaErrorCode(code),
+                                "message" to safeTuyaErrorMessage(error),
                                 "device" to emptyMap<String, Any?>(),
                             )
                         )
@@ -454,7 +454,7 @@ class MainActivity : FlutterFragmentActivity() {
                 result.success(
                     mapOf(
                         "success" to false,
-                        "code" to code,
+                        "code" to safeTuyaErrorCode(code),
                         "message" to message,
                         "device" to emptyMap<String, Any?>()
                     )
@@ -566,8 +566,8 @@ class MainActivity : FlutterFragmentActivity() {
                 device.onDestroy()
             }
 
-            override fun onError(code: String, error: String) {
-                result.success(deviceResult(false, code, error, ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+            override fun onError(code: String?, error: String?) {
+                result.success(deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(error), ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
                 device.onDestroy()
             }
         })
@@ -601,13 +601,20 @@ class MainActivity : FlutterFragmentActivity() {
                 device.onDestroy()
             }
 
-            override fun onError(code: String, error: String) {
-                result.success(deviceResult(false, code, error, ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+            override fun onError(code: String?, error: String?) {
+                result.success(deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(error), ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
                 device.onDestroy()
             }
         })
     }
 
+    private fun safeTuyaErrorCode(code: String?): String {
+        return code?.takeIf { it.isNotBlank() } ?: "tuya_error"
+    }
+
+    private fun safeTuyaErrorMessage(error: String?): String {
+        return error?.takeIf { it.isNotBlank() } ?: "Tuya returned an empty error message"
+    }
     private fun deviceResult(
         success: Boolean,
         code: String,
@@ -616,7 +623,7 @@ class MainActivity : FlutterFragmentActivity() {
     ): Map<String, Any?> {
         return mapOf(
             "success" to success,
-            "code" to code,
+            "code" to safeTuyaErrorCode(code),
             "message" to message,
             "device" to if (deviceBean != null) mapDeviceBean(deviceBean) else emptyMap<String, Any?>(),
             "dps" to (deviceBean?.dps ?: emptyMap<String, Any?>()),
@@ -1064,6 +1071,4 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 }
-
-
 
