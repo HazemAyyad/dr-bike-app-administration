@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/product_image_utils.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
-import '../../data/models/maintenance_product_model.dart';
 import '../controllers/maintenance_controller.dart';
 
 class MaintenanceProductsSection extends StatelessWidget {
@@ -17,8 +20,8 @@ class MaintenanceProductsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(
       () {
-        final isLocked = controller.selectedStep.value >= 4 ||
-            controller.isDelivered.value;
+        final isLocked =
+            controller.selectedStep.value >= 4 || controller.isDelivered.value;
 
         return Container(
           padding: EdgeInsets.all(10.w),
@@ -58,20 +61,26 @@ class MaintenanceProductsSection extends StatelessWidget {
                   ),
                 )
               else
-                ...controller.maintenanceProducts.map(_productTile),
+                _ProductsTable(controller: controller),
               SizedBox(height: 8.h),
               _amountField(
                 label: 'maintenanceLaborCost'.tr,
                 controller: controller.laborCostController,
                 enabled: !isLocked,
-                onChanged: controller.recalculateTotals,
+                onChanged: () {
+                  controller.recalculateTotals();
+                  controller.scheduleAutoSave();
+                },
               ),
               SizedBox(height: 6.h),
               _amountField(
                 label: 'discount'.tr,
                 controller: controller.discountController,
                 enabled: !isLocked,
-                onChanged: controller.recalculateTotals,
+                onChanged: () {
+                  controller.recalculateTotals();
+                  controller.scheduleAutoSave();
+                },
               ),
               SizedBox(height: 8.h),
               Row(
@@ -101,53 +110,6 @@ class MaintenanceProductsSection extends StatelessWidget {
     );
   }
 
-  Widget _productTile(MaintenanceProductModel item) {
-    final index = controller.maintenanceProducts.indexOf(item);
-    final isLocked = controller.selectedStep.value >= 4 ||
-        controller.isDelivered.value;
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 6.h),
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.productName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${item.quantity} × ${SalesAmountFormat.display(item.unitPrice)}',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            SalesAmountFormat.display(item.lineTotal),
-            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
-          ),
-          if (!isLocked)
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Icon(Icons.close, size: 18.sp, color: Colors.red.shade400),
-              onPressed: () => controller.removeProduct(index),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget _amountField({
     required String label,
     required TextEditingController controller,
@@ -171,12 +133,205 @@ class MaintenanceProductsSection extends StatelessWidget {
               isDense: true,
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.r)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(6.r)),
             ),
             onChanged: (_) => onChanged(),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProductsTable extends StatelessWidget {
+  const _ProductsTable({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocked =
+        controller.selectedStep.value >= 4 || controller.isDelivered.value;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.sizeOf(context).width - 52.w,
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF4FF),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(7.r)),
+                ),
+                child: Row(
+                  children: [
+                    _headerCell('productName'.tr, 168),
+                    _headerCell('quantity'.tr, 54),
+                    _headerCell('price'.tr, 76),
+                    _headerCell('total'.tr, 78),
+                    if (!isLocked) SizedBox(width: 30.w),
+                  ],
+                ),
+              ),
+              ...List.generate(controller.maintenanceProducts.length, (index) {
+                final item = controller.maintenanceProducts[index];
+                final isLast =
+                    index == controller.maintenanceProducts.length - 1;
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: isLast
+                        ? null
+                        : Border(
+                            bottom: BorderSide(color: Colors.grey.shade200),
+                          ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 168.w,
+                        child: Row(
+                          children: [
+                            _ProductThumb(imageUrl: item.imageUrl),
+                            SizedBox(width: 6.w),
+                            Expanded(
+                              child: Text(
+                                item.productName.isEmpty
+                                    ? '-'
+                                    : item.productName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _dataCell('${item.quantity}', 54, center: true),
+                      _dataCell(
+                        SalesAmountFormat.display(item.unitPrice),
+                        76,
+                        center: true,
+                      ),
+                      _dataCell(
+                        SalesAmountFormat.display(item.lineTotal),
+                        78,
+                        center: true,
+                        bold: true,
+                      ),
+                      if (!isLocked)
+                        SizedBox(
+                          width: 30.w,
+                          child: IconButton(
+                            tooltip: 'delete'.tr,
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints.tight(
+                              Size(28.w, 28.w),
+                            ),
+                            icon: Icon(
+                              Icons.close,
+                              size: 17.sp,
+                              color: Colors.red.shade500,
+                            ),
+                            onPressed: () => controller.removeProduct(index),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String value, double width) {
+    return SizedBox(
+      width: width.w,
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _dataCell(
+    String value,
+    double width, {
+    bool center = false,
+    bool bold = false,
+  }) {
+    return SizedBox(
+      width: width.w,
+      child: Text(
+        value,
+        textAlign: center ? TextAlign.center : TextAlign.start,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+          color: bold ? AppColors.primaryColor : Colors.grey.shade800,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductThumb extends StatelessWidget {
+  const _ProductThumb({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final thumbnail = ShowNetImage.getThumbnailPhoto(imageUrl);
+    final hasImage = ProductImageUtils.isValidUrl(imageUrl);
+
+    return GestureDetector(
+      onTap: hasImage ? () => openProductImageViewer(context, imageUrl) : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(5.r),
+        child: SizedBox(
+          width: 30.w,
+          height: 30.w,
+          child: hasImage
+              ? CachedNetworkImage(imageUrl: thumbnail, fit: BoxFit.cover)
+              : ColoredBox(
+                  color: Colors.grey.shade200,
+                  child: Icon(
+                    Icons.inventory_2_outlined,
+                    size: 15.sp,
+                    color: Colors.grey,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }

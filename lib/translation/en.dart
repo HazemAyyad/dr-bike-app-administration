@@ -1936,6 +1936,7 @@ const Map<String, String> en = {
   "inProgress": "In Progress",
   "readyToDeliver": "Ready for Delivery",
   "createMaintenance": "Create New Maintenance",
+  "editMaintenance": "Edit Maintenance Contract",
   "newMaintenance": "New Maintenance",
   "deliveryDate": "Delivery Date",
   "saturday": "Saturday",

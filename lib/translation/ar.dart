@@ -1991,6 +1991,7 @@ const Map<String, String> ar = {
   "inProgress": "قيد العمل",
   "readyToDeliver": "جاهز للتسليم",
   "createMaintenance": "إنشاء صيانة جديدة",
+  "editMaintenance": "تعديل عقد الصيانة",
   "newMaintenance": "صيانة جديدة",
   "deliveryDate": "موعد التسليم",
   "saturday": "السبت",

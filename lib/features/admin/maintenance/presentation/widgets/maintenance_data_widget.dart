@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -126,7 +125,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               title: 'newRequest'.tr,
               grouped: controller.maintenancesSearch,
               statusColor: Colors.blueAccent,
-              statusLabel: 'newRequest'.tr,
             ),
           );
         }
@@ -137,7 +135,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               title: 'inProgress'.tr,
               grouped: controller.ongoingMaintenancesSearch,
               statusColor: Colors.orange,
-              statusLabel: 'inProgress'.tr,
             ),
           );
         }
@@ -148,7 +145,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               title: 'readyToDeliver'.tr,
               grouped: controller.readyMaintenancesSearch,
               statusColor: AppColors.customGreen1,
-              statusLabel: 'readyToDeliver'.tr,
             ),
           );
         }
@@ -159,7 +155,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               title: 'delivered'.tr,
               grouped: controller.deliveredMaintenancesSearch,
               statusColor: AppColors.customGreen1,
-              statusLabel: 'delivered'.tr,
             ),
           );
         }
@@ -170,7 +165,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               title: 'archive'.tr,
               grouped: controller.archiveMaintenancesSearch,
               statusColor: AppColors.customGreyColor5,
-              statusLabel: 'archive'.tr,
               readOnly: true,
             ),
           );
@@ -188,7 +182,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
     required String title,
     required Map<String, List<MaintenanceDataModel>> grouped,
     required Color statusColor,
-    required String statusLabel,
     bool readOnly = false,
   }) {
     final itemsCount = grouped.values.fold<int>(0, (sum, e) => sum + e.length);
@@ -228,8 +221,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
           (item) => _buildMaintenanceCard(
             context: context,
             item: item,
-            statusColor: statusColor,
-            statusLabel: statusLabel,
             readOnly: readOnly,
           ),
         ),
@@ -242,8 +233,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
   Widget _buildMaintenanceCard({
     required BuildContext context,
     required MaintenanceDataModel item,
-    required Color statusColor,
-    required String statusLabel,
     required bool readOnly,
   }) {
     final displayName = (item.sellerName != null && item.sellerName!.isNotEmpty)
@@ -266,8 +255,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
             readOnly ? null : () => _showMaintenanceActions(context, item),
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 3.h),
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+          padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
           decoration: BoxDecoration(
             color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
             borderRadius: BorderRadius.circular(12.r),
@@ -284,6 +273,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _MaintenanceThumb(imageUrl: item.mediaFiles),
                   SizedBox(width: 8.w),
@@ -302,30 +292,52 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w800,
-                                  height: 1.2,
+                                  height: 1.15,
                                   color: isDark
                                       ? AppColors.whiteColor
                                       : AppColors.operationalNavy,
                                 ),
                               ),
                             ),
-                            SizedBox(width: 6.w),
-                            _MaintenanceStatusPill(
-                              label: statusLabel,
-                              color: statusColor,
-                            ),
+                            if (!readOnly) ...[
+                              SizedBox(width: 6.w),
+                              _compactActionButton(
+                                tooltip: 'maintenanceInvoice'.tr,
+                                icon: Icons.receipt_long_outlined,
+                                color: AppColors.primaryColor,
+                                onTap: () => controller.openMaintenanceInvoice(
+                                  context: context,
+                                  maintenanceId: item.id.toString(),
+                                ),
+                              ),
+                              _compactActionButton(
+                                tooltip: 'maintenanceActivityLog'.tr,
+                                icon: Icons.history,
+                                color: AppColors.customGreyColor,
+                                onTap: () => controller.openActivityLog(
+                                  context: context,
+                                  maintenanceId: item.id.toString(),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
-                        SizedBox(height: 5.h),
+                        SizedBox(height: 3.h),
                         Text(
-                          showData(item.receiptDate),
+                          [
+                            '${'total'.tr}: ${_money(item.invoiceTotal)}',
+                            if (item.invoiceTotal > 0)
+                              '${'paidAmount'.tr}: ${_money(item.paidAmount)}',
+                            if (item.remainingAmount > 0)
+                              '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
+                          ].join(' | '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11.sp,
-                            color: isDark
-                                ? AppColors.customGreyColor3
-                                : AppColors.customGreyColor5,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                            color: AppColors.primaryColor,
                           ),
                         ),
                       ],
@@ -333,65 +345,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                   ),
                 ],
               ),
-              if (item.invoiceTotal > 0) ...[
-                SizedBox(height: 7.h),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkColor.withValues(alpha: 0.45)
-                        : AppColors.customGreyColor7.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                      color: AppColors.operationalCardBorder
-                          .withValues(alpha: 0.75),
-                    ),
-                  ),
-                  child: Text(
-                    [
-                      '${'total'.tr}: ${_money(item.invoiceTotal)}',
-                      '${'paidAmount'.tr}: ${_money(item.paidAmount)}',
-                      if (item.remainingAmount > 0)
-                        '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
-                    ].join(' | '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-              if (!readOnly) ...[
-                SizedBox(height: 6.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _compactActionButton(
-                      tooltip: 'maintenanceInvoice'.tr,
-                      icon: Icons.receipt_long_outlined,
-                      color: AppColors.primaryColor,
-                      onTap: () => controller.openMaintenanceInvoice(
-                        context: context,
-                        maintenanceId: item.id.toString(),
-                      ),
-                    ),
-                    _compactActionButton(
-                      tooltip: 'maintenanceActivityLog'.tr,
-                      icon: Icons.history,
-                      color: AppColors.customGreyColor,
-                      onTap: () => controller.openActivityLog(
-                        context: context,
-                        maintenanceId: item.id.toString(),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
@@ -540,8 +493,8 @@ class _MaintenanceThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 44.w,
-      height: 44.w,
+      width: 40.w,
+      height: 40.w,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8.r),
         child: CachedNetworkImage(
@@ -561,42 +514,10 @@ class _MaintenanceThumb extends StatelessWidget {
             color: AppColors.customGreyColor7,
             child: Icon(
               Icons.construction_outlined,
-              size: 22.sp,
+              size: 20.sp,
               color: AppColors.customGreyColor5,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MaintenanceStatusPill extends StatelessWidget {
-  const _MaintenanceStatusPill({
-    required this.label,
-    required this.color,
-  });
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(maxWidth: 92.w),
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 9.sp,
-          fontWeight: FontWeight.w800,
-          color: color,
         ),
       ),
     );

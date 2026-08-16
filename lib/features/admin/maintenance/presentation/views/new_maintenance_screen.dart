@@ -15,7 +15,6 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../controllers/maintenance_controller.dart';
-import '../widgets/custom_line_steps_widget.dart';
 import '../widgets/maintenance_products_section.dart';
 import '../widgets/next_back_button.dart';
 
@@ -24,111 +23,121 @@ class NewMaintenanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'createMaintenance',
-        action: false,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: GetBuilder<MaintenanceController>(
-          builder: (controller) {
-            if (controller.isEditLoading.value) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 200.h),
-                  child: const CircularProgressIndicator(),
+    return GetBuilder<MaintenanceController>(
+      builder: (controller) => Scaffold(
+        appBar: CustomAppBar(
+          title:
+              controller.isEdit.value ? 'editMaintenance' : 'createMaintenance',
+          action: false,
+        ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          child: GetBuilder<MaintenanceController>(
+            builder: (controller) {
+              if (controller.isEditLoading.value) {
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 200.h),
+                    child: const CircularProgressIndicator(),
+                  ),
+                );
+              }
+              return Form(
+                key: controller.formKey,
+                child: Column(
+                  children: [
+                    SizedBox(height: 10.h),
+                    if (controller.isEdit.value) ...[
+                      _MaintenanceAutoSaveStatus(controller: controller),
+                      SizedBox(height: 8.h),
+                    ],
+                    _MaintenanceStageTitle(controller: controller),
+                    SizedBox(height: 12.h),
+                    Obx(
+                      () => Row(
+                        children: [
+                          Expanded(
+                            child: CustomCheckBox(
+                              title: 'seller'.tr,
+                              value: RxBool(controller.selectedSellers.value),
+                              onChanged: (val) {
+                                controller.getAllCustomersAndSellers();
+                                if (!controller.isEdit.value) {
+                                  controller.selectedSellers.value = true;
+                                  controller.partnerIdController.clear();
+                                }
+                                controller.scheduleAutoSave();
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: CustomCheckBox(
+                              title: 'customer'.tr,
+                              value: RxBool(!controller.selectedSellers.value),
+                              onChanged: (val) {
+                                controller.getAllCustomersAndSellers();
+                                if (!controller.isEdit.value) {
+                                  controller.selectedSellers.value = false;
+                                  controller.partnerIdController.clear();
+                                }
+                                controller.scheduleAutoSave();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    _MaintenancePartnerSearch(controller: controller),
+                    SizedBox(height: 10.h),
+                    _MaintenanceDeliveryDateTimeFields(controller: controller),
+                    SizedBox(height: 10.h),
+                    CustomTextField(
+                      validator: (value) => null,
+                      label: 'details',
+                      hintText: 'detailsExample',
+                      controller: controller.descriptionController,
+                      minLines: 2,
+                      maxLines: 4,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      onChanged: (_) => controller.scheduleAutoSave(),
+                    ),
+                    SizedBox(height: 12.h),
+                    MaintenanceProductsSection(controller: controller),
+                    SizedBox(height: 10.h),
+                    _MaintenanceMediaPicker(controller: controller),
+                    SizedBox(height: 20.h),
+                    if (!controller.isDelivered.value &&
+                        !controller.isEdit.value &&
+                        (controller.maintenanceId == null ||
+                            controller.maintenanceId!.isEmpty))
+                      AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'save',
+                        onPressed: () {
+                          controller.createMaintenance(
+                            step: controller.selectedStep.value,
+                            maintenanceId: controller.maintenanceId,
+                            isSave: true,
+                          );
+                        },
+                      ),
+                    if (!controller.isDelivered.value)
+                      NextBackButton(
+                        isLoading: controller.isLoading,
+                        endTitle: 'delivered',
+                        totalSteps: controller.timeLineSteps.length.obs,
+                        selectedStep: controller.selectedStep,
+                        onPressedBack: controller.prevStep,
+                        onPressedNext: controller.nextStep,
+                      ),
+                    SizedBox(height: 16.h),
+                  ],
                 ),
               );
-            }
-            return Form(
-              key: controller.formKey,
-              child: Column(
-                children: [
-                  CustomLineSteps(
-                    timeLineSteps: controller.timeLineSteps,
-                    selectedStep: controller.selectedStep,
-                    changeSelected: controller.changeSelected,
-                  ),
-                  SizedBox(height: 12.h),
-                  Obx(
-                    () => Row(
-                      children: [
-                        Expanded(
-                          child: CustomCheckBox(
-                            title: 'seller'.tr,
-                            value: RxBool(controller.selectedSellers.value),
-                            onChanged: (val) {
-                              controller.getAllCustomersAndSellers();
-                              if (!controller.isEdit.value) {
-                                controller.selectedSellers.value = true;
-                                controller.partnerIdController.clear();
-                              }
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: CustomCheckBox(
-                            title: 'customer'.tr,
-                            value: RxBool(!controller.selectedSellers.value),
-                            onChanged: (val) {
-                              controller.getAllCustomersAndSellers();
-                              if (!controller.isEdit.value) {
-                                controller.selectedSellers.value = false;
-                                controller.partnerIdController.clear();
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  _MaintenancePartnerSearch(controller: controller),
-                  SizedBox(height: 10.h),
-                  _MaintenanceDeliveryDateTimeFields(controller: controller),
-                  SizedBox(height: 10.h),
-                  CustomTextField(
-                    validator: (value) => null,
-                    label: 'details',
-                    hintText: 'detailsExample',
-                    controller: controller.descriptionController,
-                    minLines: 2,
-                    maxLines: 4,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                  ),
-                  SizedBox(height: 12.h),
-                  MaintenanceProductsSection(controller: controller),
-                  SizedBox(height: 10.h),
-                  _MaintenanceMediaPicker(controller: controller),
-                  SizedBox(height: 20.h),
-                  if (!controller.isDelivered.value)
-                    AppButton(
-                      isLoading: controller.isLoading,
-                      text: 'save',
-                      onPressed: () {
-                        controller.createMaintenance(
-                          step: controller.selectedStep.value,
-                          maintenanceId: controller.maintenanceId,
-                          isSave: true,
-                        );
-                      },
-                    ),
-                  if (!controller.isDelivered.value)
-                    NextBackButton(
-                      isLoading: controller.isLoading,
-                      endTitle: 'delivered',
-                      totalSteps: controller.timeLineSteps.length.obs,
-                      selectedStep: controller.selectedStep,
-                      onPressedBack: controller.prevStep,
-                      onPressedNext: controller.nextStep,
-                    ),
-                  SizedBox(height: 16.h),
-                ],
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -223,6 +232,7 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
   void _selectPartner(dynamic item) {
     controller.partnerIdController.text = item.id.toString();
     _searchController.text = item.name;
+    controller.scheduleAutoSave();
     _focusNode.unfocus();
     setState(() => _showResults = false);
   }
@@ -387,6 +397,120 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
   }
 }
 
+class _MaintenanceAutoSaveStatus extends StatelessWidget {
+  const _MaintenanceAutoSaveStatus({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<MaintenanceController>(
+      id: 'maintenanceAutoSaveStatus',
+      builder: (_) {
+        final isSaving = controller.isAutoSaving.value;
+        final hasError = controller.hasAutoSaveError.value;
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Row(
+              key: ValueKey('$isSaving-$hasError'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSaving)
+                  SizedBox(
+                    width: 16.w,
+                    height: 16.w,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    hasError
+                        ? Icons.error_outline_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 18.sp,
+                    color:
+                        hasError ? AppColors.redColor : AppColors.customGreen1,
+                  ),
+                SizedBox(width: 6.w),
+                Text(
+                  isSaving
+                      ? 'saving'.tr
+                      : hasError
+                          ? 'error'.tr
+                          : 'saved'.tr,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: hasError
+                        ? AppColors.redColor
+                        : AppColors.customGreyColor5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MaintenanceStageTitle extends StatelessWidget {
+  const _MaintenanceStageTitle({required this.controller});
+
+  final MaintenanceController controller;
+
+  String _labelForStep(int step) {
+    if (step == 1) return 'newMaintenance'.tr;
+    if (step == 2) return 'inProgress'.tr;
+    if (step == 3) return 'readyToDeliver'.tr;
+    return 'delivered'.tr;
+  }
+
+  Color _colorForStep(int step) {
+    if (step == 1) return AppColors.primaryColor;
+    if (step == 2) return Colors.orange;
+    if (step == 3) return AppColors.customGreen1;
+    return AppColors.customGreen1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () {
+        final step = controller.selectedStep.value;
+        final color = _colorForStep(step);
+        return Row(
+          children: [
+            Container(
+              width: 6.w,
+              height: 34.h,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                _labelForStep(step),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                    ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _MaintenanceDeliveryDateTimeFields extends StatelessWidget {
   const _MaintenanceDeliveryDateTimeFields({required this.controller});
 
@@ -394,40 +518,85 @@ class _MaintenanceDeliveryDateTimeFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'deliveryDate'.tr,
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.operationalNavy,
-          ),
-        ),
-        SizedBox(height: 6.h),
-        Obx(
-          () => Row(
-            children: [
-              Expanded(
-                child: _MaintenancePickerTile(
-                  icon: Icons.calendar_today_outlined,
-                  value: showData(controller.deliveryDate.value),
-                  onTap: () => controller.pickDeliveryDate(context),
+    return Obx(
+      () {
+        final showSchedule = controller.showDeliverySchedule.value;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Material(
+              color: AppColors.whiteColor,
+              borderRadius: BorderRadius.circular(10.r),
+              child: InkWell(
+                onTap: () => controller.toggleDeliverySchedule(!showSchedule),
+                borderRadius: BorderRadius.circular(10.r),
+                child: Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: AppColors.operationalCardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.event_available_outlined,
+                        size: 19.sp,
+                        color: showSchedule
+                            ? AppColors.primaryColor
+                            : AppColors.customGreyColor5,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'deliveryDate'.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.operationalNavy,
+                          ),
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: showSchedule,
+                        activeThumbColor: AppColors.primaryColor,
+                        activeTrackColor:
+                            AppColors.primaryColor.withValues(alpha: 0.32),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: controller.toggleDeliverySchedule,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: _MaintenancePickerTile(
-                  icon: Icons.access_time_rounded,
-                  value: _formatTime(controller.deliveryTime.value),
-                  onTap: () => controller.pickDeliveryTime(context),
-                ),
+            ),
+            if (showSchedule) ...[
+              SizedBox(height: 6.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MaintenancePickerTile(
+                      icon: Icons.calendar_today_outlined,
+                      value: showData(controller.deliveryDate.value),
+                      onTap: () => controller.pickDeliveryDate(context),
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  Expanded(
+                    child: _MaintenancePickerTile(
+                      icon: Icons.access_time_rounded,
+                      value: _formatTime(controller.deliveryTime.value),
+                      onTap: () => controller.pickDeliveryTime(context),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 

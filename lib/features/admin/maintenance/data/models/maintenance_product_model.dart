@@ -4,6 +4,7 @@ class MaintenanceProductModel {
   final int? id;
   final int productId;
   final String productName;
+  final String imageUrl;
   final int? sizeId;
   final int? sizeColorId;
   final int quantity;
@@ -14,6 +15,7 @@ class MaintenanceProductModel {
     this.id,
     required this.productId,
     this.productName = '',
+    this.imageUrl = '',
     this.sizeId,
     this.sizeColorId,
     required this.quantity,
@@ -27,6 +29,13 @@ class MaintenanceProductModel {
       id: j['id'] == null ? null : asInt(j['id']),
       productId: asInt(j['product_id']),
       productName: asString(j['product_name']),
+      imageUrl: asString(
+        j['product_image'] ??
+            j['image_url'] ??
+            j['image'] ??
+            asMap(j['product'])['product_image'] ??
+            asMap(j['product'])['image'],
+      ),
       sizeId: j['size_id'] == null ? null : asInt(j['size_id']),
       sizeColorId:
           j['size_color_id'] == null ? null : asInt(j['size_color_id']),
@@ -50,6 +59,7 @@ class MaintenanceProductModel {
     int? quantity,
     double? unitPrice,
     String? productName,
+    String? imageUrl,
   }) {
     final qty = quantity ?? this.quantity;
     final price = unitPrice ?? this.unitPrice;
@@ -57,6 +67,7 @@ class MaintenanceProductModel {
       id: id,
       productId: productId,
       productName: productName ?? this.productName,
+      imageUrl: imageUrl ?? this.imageUrl,
       sizeId: sizeId,
       sizeColorId: sizeColorId,
       quantity: qty,

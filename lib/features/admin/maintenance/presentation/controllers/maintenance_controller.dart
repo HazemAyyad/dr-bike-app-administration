@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -95,6 +96,8 @@ class MaintenanceController extends GetxController {
   RxBool isEdit = false.obs;
   RxBool isDelivered = false.obs;
   final RxBool isLoading = false.obs;
+  final RxBool isAutoSaving = false.obs;
+  final RxBool hasAutoSaveError = false.obs;
   final RxBool isDailyBoxLoading = false.obs;
   final RxBool isDailyClosingReviewLoading = false.obs;
   final RxList<Map<String, dynamic>> dailyOpenSessions =
@@ -107,6 +110,10 @@ class MaintenanceController extends GetxController {
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
 
   String? maintenanceId;
+  Timer? _autoSaveDebounce;
+  bool _isHydratingMaintenanceForm = false;
+  bool _autoSaveQueued = false;
+  int? _queuedAutoSaveStep;
 
   final List<Map<int, String>> timeLineSteps = [
     {1: 'newMaintenance'},
@@ -539,6 +546,7 @@ class MaintenanceController extends GetxController {
 
   @override
   void onClose() {
+    _autoSaveDebounce?.cancel();
     searchController.dispose();
     partnerIdController.dispose();
     descriptionController.dispose();
@@ -590,9 +598,66 @@ class MaintenanceController extends GetxController {
     createMaintenance(step: selectedStep.value, maintenanceId: maintenanceId);
   }
 
+  void scheduleAutoSave({int? step}) {
+    if (!isEdit.value ||
+        _isHydratingMaintenanceForm ||
+        isDelivered.value ||
+        maintenanceId == null ||
+        maintenanceId!.isEmpty) {
+      return;
+    }
+    _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = Timer(
+      const Duration(milliseconds: 650),
+      () => autoSaveMaintenance(step: step),
+    );
+  }
+
+  Future<void> autoSaveMaintenance({int? step}) async {
+    if (!isEdit.value ||
+        isDelivered.value ||
+        maintenanceId == null ||
+        maintenanceId!.isEmpty) {
+      return;
+    }
+    if (isAutoSaving.value) {
+      _autoSaveQueued = true;
+      _queuedAutoSaveStep = step;
+      return;
+    }
+
+    isAutoSaving(true);
+    hasAutoSaveError(false);
+    update(['maintenanceAutoSaveStatus']);
+
+    final ok = await createMaintenance(
+      step: step ?? selectedStep.value,
+      maintenanceId: maintenanceId,
+      silent: true,
+    );
+
+    hasAutoSaveError(!ok);
+    isAutoSaving(false);
+    update(['maintenanceAutoSaveStatus']);
+
+    if (_autoSaveQueued) {
+      final queuedStep = _queuedAutoSaveStep;
+      _autoSaveQueued = false;
+      _queuedAutoSaveStep = null;
+      await autoSaveMaintenance(step: queuedStep);
+    }
+  }
+
   final Rx<DateTime> deliveryDate = DateTime.now().obs;
   final Rx<TimeOfDay> deliveryTime = TimeOfDay.now().obs;
+  final RxBool showDeliverySchedule = false.obs;
   List<File> selectedMedia = [];
+
+  void toggleDeliverySchedule(bool value) {
+    showDeliverySchedule.value = value;
+    scheduleAutoSave();
+    update();
+  }
 
   Future<void> pickDeliveryDate(BuildContext context) async {
     final picked = await ScrollDatePickerSheet.show(
@@ -608,6 +673,7 @@ class MaintenanceController extends GetxController {
       deliveryTime.value.hour,
       deliveryTime.value.minute,
     );
+    scheduleAutoSave();
   }
 
   Future<void> pickDeliveryTime(BuildContext context) async {
@@ -617,6 +683,7 @@ class MaintenanceController extends GetxController {
     );
     if (picked == null) return;
     deliveryTime.value = picked;
+    scheduleAutoSave();
   }
 
   Future<void> openProductPicker(BuildContext context) async {
@@ -677,7 +744,9 @@ class MaintenanceController extends GetxController {
           productName: item.productName.isNotEmpty
               ? item.productName
               : (product?.nameAr?.toString() ?? '-'),
-          imageUrl: product?.preferredImageUrl?.toString() ?? '',
+          imageUrl: item.imageUrl.isNotEmpty
+              ? item.imageUrl
+              : product?.preferredImageUrl?.toString() ?? '',
           stock: stock,
           sizeColorId: item.sizeColorId?.toString(),
           sizeId: item.sizeId?.toString(),
@@ -698,6 +767,7 @@ class MaintenanceController extends GetxController {
           return MaintenanceProductModel(
             productId: int.parse(line.productId),
             productName: line.displayName,
+            imageUrl: line.imageUrl,
             sizeId: line.sizeId != null ? int.tryParse(line.sizeId!) : null,
             sizeColorId: line.sizeColorId != null
                 ? int.tryParse(line.sizeColorId!)
@@ -710,6 +780,7 @@ class MaintenanceController extends GetxController {
       ),
     );
     syncProductsIfPossible();
+    scheduleAutoSave();
   }
 
   Future<List<ShownBoxesModel>> loadPaymentBoxes() async {
@@ -726,6 +797,7 @@ class MaintenanceController extends GetxController {
     if (index < 0 || index >= maintenanceProducts.length) return;
     maintenanceProducts.removeAt(index);
     syncProductsIfPossible();
+    scheduleAutoSave();
     update();
   }
 
@@ -946,6 +1018,7 @@ class MaintenanceController extends GetxController {
   void getMaintenancesDetails({required String maintenanceId}) async {
     isEdit(true);
     isEditLoading(true);
+    _isHydratingMaintenanceForm = true;
     update();
 
     try {
@@ -966,6 +1039,7 @@ class MaintenanceController extends GetxController {
       }
 
       this.maintenanceId = maintenances['id'].toString();
+      showDeliverySchedule.value = true;
       deliveryDate.value =
           DateTime.tryParse(maintenances['receipt_date']?.toString() ?? '') ??
               DateTime.now();
@@ -1029,6 +1103,7 @@ class MaintenanceController extends GetxController {
         colorText: Colors.white,
       );
     } finally {
+      _isHydratingMaintenanceForm = false;
       isEditLoading(false);
       update();
     }
@@ -1037,6 +1112,11 @@ class MaintenanceController extends GetxController {
   void clearControllers() {
     isEdit(false);
     isDelivered(false);
+    isAutoSaving(false);
+    hasAutoSaveError(false);
+    _autoSaveDebounce?.cancel();
+    _autoSaveQueued = false;
+    _queuedAutoSaveStep = null;
     maintenanceId = null;
     partnerIdController.clear();
     descriptionController.clear();
@@ -1045,6 +1125,7 @@ class MaintenanceController extends GetxController {
     maintenanceProducts.clear();
     deliveryDate.value = DateTime.now();
     deliveryTime.value = TimeOfDay.now();
+    showDeliverySchedule(false);
     selectedMedia = [];
     selectedSellers(false);
     selectedStep(1);
@@ -1063,15 +1144,18 @@ class MaintenanceController extends GetxController {
     allSellersList.assignAll(resultSellers);
   }
 
-  Future<void> createMaintenance({
+  Future<bool> createMaintenance({
     required int step,
     String? maintenanceId,
     bool isSave = false,
+    bool silent = false,
   }) async {
-    if (!formKey.currentState!.validate()) return;
+    if (!formKey.currentState!.validate()) return false;
 
-    isLoading(true);
-    update();
+    if (!silent) {
+      isLoading(true);
+      update();
+    }
 
     try {
       final status = step == 1
@@ -1107,13 +1191,15 @@ class MaintenanceController extends GetxController {
           } else {
             errorMessage = errors?.toString() ?? '';
           }
-          Get.snackbar(
-            failure.data['message'] ?? 'error'.tr,
-            errorMessage,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          if (!silent) {
+            Get.snackbar(
+              failure.data['message'] ?? 'error'.tr,
+              errorMessage,
+              backgroundColor: Colors.red,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
         },
         (success) async {
           final newId = success['maintenance_id'];
@@ -1124,16 +1210,34 @@ class MaintenanceController extends GetxController {
           await syncProductsIfPossible();
           getMaintenancesData();
           if (isSave) Get.back();
-          Get.snackbar(
-            'success'.tr,
-            success['message'] ?? '',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          if (!silent) {
+            Get.snackbar(
+              'success'.tr,
+              success['message'] ?? '',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
         },
       );
+      return result.isRight();
+    } catch (e) {
+      if (!silent) {
+        Get.snackbar(
+          'error'.tr,
+          e.toString(),
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     } finally {
-      isLoading(false);
-      update();
+      if (!silent) {
+        isLoading(false);
+        update();
+      } else {
+        update();
+      }
     }
   }
 
