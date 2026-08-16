@@ -3103,6 +3103,9 @@ const Map<String, String> en = {
   'smartHomePairingFailed': 'Device pairing failed',
   'smartHomePairingTimedOut':
       'Pairing timed out. Make sure the device is in fast blinking mode and the network is 2.4GHz, then try again.',
+  'smartHomeSelectOwner': 'Select user',
+  'smartHomeNoOwners': 'No users have added devices yet',
+  'smartHomeAdminReadOnly': 'Admin user-device view is read-only',
   'tuyaSdkNeedsSetup': 'Tuya setup needs review before device control',
   'smartHomeComingSoon':
       'This step will be enabled after the full Tuya connection',

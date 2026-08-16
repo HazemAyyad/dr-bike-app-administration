@@ -5,6 +5,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/services/final_classes.dart';
+import '../../../../core/services/initial_bindings.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 
@@ -36,6 +37,8 @@ class SmartHomeController extends GetxController {
     platform: '',
     message: '',
   ).obs;
+  final owners = <SmartHomeOwnerModel>[].obs;
+  final selectedOwnerId = RxnInt();
   final homes = <SmartHomeModel>[].obs;
   final rooms = <SmartRoomModel>[].obs;
   final devices = <SmartDeviceModel>[].obs;
@@ -58,6 +61,10 @@ class SmartHomeController extends GetxController {
       selectedHome?.offlineDevicesCount ??
       devices.where((device) => !device.online).length;
   bool get isTuyaUserLinked => tuyaUser.value?.linked == true;
+  bool get canViewSmartHomeOwners => userType == 'admin';
+  SmartHomeOwnerModel? get selectedOwner => selectedOwnerId.value == null
+      ? null
+      : owners.firstWhereOrNull((owner) => owner.id == selectedOwnerId.value);
 
   String formatVisibleError(String fallback, {String? code, String? message}) {
     final parts = <String>[fallback];
@@ -80,10 +87,31 @@ class SmartHomeController extends GetxController {
       tuyaUser.value = await apiService.getTuyaUser();
       await ensureTuyaUserLinked();
 
-      final loadedHomes = await apiService.getHomes();
+      if (canViewSmartHomeOwners) {
+        final loadedOwners = await apiService.getOwners();
+        owners.assignAll(loadedOwners);
+        final selectedStillExists =
+            loadedOwners.any((owner) => owner.id == selectedOwnerId.value);
+        if (loadedOwners.isEmpty) {
+          selectedOwnerId.value = null;
+        } else if (selectedOwnerId.value == null || !selectedStillExists) {
+          selectedOwnerId.value = loadedOwners.first.id;
+        }
+      } else {
+        owners.clear();
+        selectedOwnerId.value = null;
+      }
+
+      final loadedHomes =
+          await apiService.getHomes(userId: selectedOwnerId.value);
       if (loadedHomes.isEmpty) {
-        final created = await apiService.createHome('smartHomeDefaultName'.tr);
-        homes.assignAll([created]);
+        if (selectedOwnerId.value == null) {
+          final created =
+              await apiService.createHome('smartHomeDefaultName'.tr);
+          homes.assignAll([created]);
+        } else {
+          homes.clear();
+        }
       } else {
         homes.assignAll(loadedHomes);
       }
@@ -102,6 +130,12 @@ class SmartHomeController extends GetxController {
     } finally {
       isRefreshing(false);
     }
+  }
+
+  Future<void> selectOwner(int? ownerId) async {
+    if (!canViewSmartHomeOwners || selectedOwnerId.value == ownerId) return;
+    selectedOwnerId.value = ownerId;
+    await refreshData();
   }
 
   Future<SmartHomeWifiCredentials> savedWifiCredentials() async {
@@ -572,8 +606,14 @@ class SmartHomeController extends GetxController {
       devices.clear();
       return;
     }
-    final loadedRooms = await apiService.getRooms(home.id);
-    final loadedDevices = await apiService.getDevices(homeId: home.id);
+    final loadedRooms = await apiService.getRooms(
+      home.id,
+      userId: selectedOwnerId.value,
+    );
+    final loadedDevices = await apiService.getDevices(
+      homeId: home.id,
+      userId: selectedOwnerId.value,
+    );
     rooms.assignAll(loadedRooms);
     devices.assignAll(loadedDevices);
   }

@@ -57,6 +57,39 @@ class SmartHomeUidLoginCredentials {
       );
 }
 
+class SmartHomeOwnerModel {
+  final int id;
+  final String name;
+  final String phone;
+  final String type;
+  final int homesCount;
+  final int devicesCount;
+  final int onlineDevicesCount;
+
+  const SmartHomeOwnerModel({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.type,
+    required this.homesCount,
+    required this.devicesCount,
+    required this.onlineDevicesCount,
+  });
+
+  factory SmartHomeOwnerModel.fromJson(Map<String, dynamic> json) =>
+      SmartHomeOwnerModel(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        name: json['name']?.toString() ?? '',
+        phone: json['phone']?.toString() ?? '',
+        type: json['type']?.toString() ?? '',
+        homesCount: int.tryParse(json['homes_count']?.toString() ?? '') ?? 0,
+        devicesCount:
+            int.tryParse(json['devices_count']?.toString() ?? '') ?? 0,
+        onlineDevicesCount:
+            int.tryParse(json['online_devices_count']?.toString() ?? '') ?? 0,
+      );
+}
+
 class SmartHomeModel {
   final int id;
   final String name;
@@ -202,8 +235,25 @@ class SmartHomeApiService {
     );
   }
 
-  Future<List<SmartHomeModel>> getHomes() async {
-    final response = await _api.get(EndPoints.smartHomes);
+  Future<List<SmartHomeOwnerModel>> getOwners() async {
+    final response = await _api.get(EndPoints.smartHomeOwners);
+    return _extractList(response.data, const ['owners'])
+        .whereType<Map>()
+        .map(
+          (item) =>
+              SmartHomeOwnerModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .where((item) => item.id > 0)
+        .toList();
+  }
+
+  Future<List<SmartHomeModel>> getHomes({int? userId}) async {
+    final response = await _api.get(
+      EndPoints.smartHomes,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
     return _extractList(response.data, const ['homes'])
         .whereType<Map>()
         .map((item) => SmartHomeModel.fromJson(Map<String, dynamic>.from(item)))
@@ -233,8 +283,13 @@ class SmartHomeApiService {
     );
   }
 
-  Future<List<SmartRoomModel>> getRooms(int homeId) async {
-    final response = await _api.get(EndPoints.smartHomeRooms(homeId));
+  Future<List<SmartRoomModel>> getRooms(int homeId, {int? userId}) async {
+    final response = await _api.get(
+      EndPoints.smartHomeRooms(homeId),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
     return _extractList(response.data, const ['rooms'])
         .whereType<Map>()
         .map((item) => SmartRoomModel.fromJson(Map<String, dynamic>.from(item)))
@@ -242,11 +297,12 @@ class SmartHomeApiService {
         .toList();
   }
 
-  Future<List<SmartDeviceModel>> getDevices({int? homeId}) async {
+  Future<List<SmartDeviceModel>> getDevices({int? homeId, int? userId}) async {
     final response = await _api.get(
       EndPoints.smartDevices,
       queryParameters: {
         if (homeId != null) 'home_id': homeId,
+        if (userId != null) 'user_id': userId,
       },
     );
     return _extractList(response.data, const ['devices', 'data'])

@@ -43,6 +43,10 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
             children: [
               if (controller.errorMessage.value.isNotEmpty)
                 _ErrorBanner(message: controller.errorMessage.value),
+              if (controller.canViewSmartHomeOwners) ...[
+                _OwnerFilter(controller: controller),
+                SizedBox(height: 14.h),
+              ],
               _HomeSummaryCard(controller: controller),
               SizedBox(height: 16.h),
               _NativeStatusCard(controller: controller),
@@ -58,7 +62,10 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
               _SectionHeader(
                 title: 'devices'.tr,
                 actionLabel: 'addDevice'.tr,
-                onAction: _showAddDeviceDialog,
+                onAction: controller.canViewSmartHomeOwners &&
+                        controller.selectedOwnerId.value != null
+                    ? () => _notReady('smartHomeAdminReadOnly'.tr)
+                    : _showAddDeviceDialog,
               ),
               SizedBox(height: 8.h),
               _DevicesList(controller: controller),
@@ -784,6 +791,62 @@ class _StepDots extends StatelessWidget {
         );
       }),
     );
+  }
+}
+
+class _OwnerFilter extends StatelessWidget {
+  const _OwnerFilter({required this.controller});
+
+  final SmartHomeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.owners.isEmpty) {
+      return _EmptyState(text: 'smartHomeNoOwners'.tr);
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.manage_accounts_rounded, color: AppColors.primaryColor),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: controller.selectedOwnerId.value,
+                isExpanded: true,
+                hint: Text('smartHomeSelectOwner'.tr),
+                items: controller.owners
+                    .map(
+                      (owner) => DropdownMenuItem<int>(
+                        value: owner.id,
+                        child: Text(
+                          _ownerLabel(owner),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: controller.selectOwner,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _ownerLabel(SmartHomeOwnerModel owner) {
+    final name = owner.name.isNotEmpty ? owner.name : '#${owner.id}';
+    return '$name  ${owner.devicesCount} ${'devices'.tr}';
   }
 }
 

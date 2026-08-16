@@ -3069,6 +3069,9 @@ const Map<String, String> ar = {
   'smartHomePairingFailed': 'فشل ربط الجهاز',
   'smartHomePairingTimedOut':
       'انتهت مهلة الربط. تأكد أن الجهاز على وضع الوميض السريع وأن الشبكة 2.4GHz ثم حاول مرة أخرى.',
+  'smartHomeSelectOwner': 'اختر مستخدم',
+  'smartHomeNoOwners': 'لا يوجد مستخدمون أضافوا أجهزة بعد',
+  'smartHomeAdminReadOnly': 'عرض أجهزة المستخدمين للأدمن فقط',
   'tuyaSdkNeedsSetup': 'إعداد Tuya يحتاج مراجعة قبل التحكم بالأجهزة',
   'smartHomeComingSoon': 'سيتم تفعيل هذه الخطوة بعد ربط Tuya الكامل',
   'noRoomsYet': 'لا توجد غرف بعد',
