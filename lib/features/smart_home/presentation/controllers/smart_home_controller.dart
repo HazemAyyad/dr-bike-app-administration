@@ -48,6 +48,8 @@ class SmartHomeController extends GetxController {
   final isScanningBluetooth = false.obs;
   final bluetoothDevices = <SmartHomeBleScanDevice>[].obs;
   final selectedBluetoothDevice = Rxn<SmartHomeBleScanDevice>();
+  final deviceControlBusyIds = <int>{}.obs;
+  final deviceDetailsBusyIds = <int>{}.obs;
 
   SmartHomeModel? get selectedHome =>
       homes.firstWhereOrNull((home) => home.isDefault) ??
@@ -575,6 +577,228 @@ class SmartHomeController extends GetxController {
     } finally {
       isPairingDevice(false);
     }
+  }
+
+  Future<SmartDeviceModel> loadDeviceDetails(SmartDeviceModel device) async {
+    deviceDetailsBusyIds.add(device.id);
+    try {
+      final loaded = await apiService.getDevice(device.id);
+      final native = await nativeService.getDeviceStatus(
+        tuyaDeviceId: loaded.tuyaDeviceId,
+      );
+      final merged = native.success
+          ? loaded.copyWith(
+              online: native.online,
+              lastStatus:
+                  native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
+              rawMetadata:
+                  native.device.isNotEmpty ? native.device : loaded.rawMetadata,
+              primaryPowerDp: _powerDpFromStatus(
+                native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
+              ),
+              powerOn: _powerStateFromStatus(
+                native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
+              ),
+            )
+          : loaded;
+      _upsertDevice(merged);
+      if (!native.success) {
+        await _logDeviceControl(
+          device: loaded,
+          commandCode: 'status_refresh',
+          commandValue: const <String, dynamic>{},
+          success: false,
+          errorCode: native.code,
+          errorMessage: native.message,
+        );
+      }
+      return merged;
+    } finally {
+      deviceDetailsBusyIds.remove(device.id);
+    }
+  }
+
+  Future<bool> renameSmartDevice({
+    required SmartDeviceModel device,
+    required String name,
+  }) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty || cleanName == device.name) return false;
+
+    deviceControlBusyIds.add(device.id);
+    try {
+      final native = await nativeService.renameDevice(
+        tuyaDeviceId: device.tuyaDeviceId,
+        name: cleanName,
+      );
+      if (!native.success) {
+        await _logDeviceControl(
+          device: device,
+          commandCode: 'rename',
+          commandValue: {'name': cleanName},
+          success: false,
+          errorCode: native.code,
+          errorMessage: native.message,
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeRenameFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ));
+        return false;
+      }
+
+      final updated =
+          await apiService.renameDevice(id: device.id, name: cleanName);
+      _upsertDevice(updated);
+      Get.snackbar('smartHomeRenameDevice'.tr, 'smartHomeDeviceRenamed'.tr);
+      return true;
+    } catch (e) {
+      await _logDeviceControl(
+        device: device,
+        commandCode: 'rename',
+        commandValue: {'name': cleanName},
+        success: false,
+        errorCode: 'rename_exception',
+        errorMessage: e.toString(),
+      );
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
+  Future<bool> setDevicePower({
+    required SmartDeviceModel device,
+    required bool powerOn,
+  }) async {
+    if (canViewSmartHomeOwners && selectedOwnerId.value != null) {
+      errorMessage('smartHomeAdminReadOnly'.tr);
+      return false;
+    }
+
+    final dp = device.primaryPowerDp.isNotEmpty
+        ? device.primaryPowerDp
+        : _powerDpFromStatus(device.lastStatus);
+    if (dp.isEmpty) {
+      errorMessage('smartHomeNoPowerDps'.tr);
+      await _logDeviceControl(
+        device: device,
+        commandCode: 'power',
+        commandValue: {'power': powerOn},
+        success: false,
+        errorCode: 'missing_power_dp',
+        errorMessage: 'No boolean Tuya DPS was found for power control.',
+      );
+      return false;
+    }
+
+    final command = <String, dynamic>{dp: powerOn};
+    deviceControlBusyIds.add(device.id);
+    errorMessage('');
+    try {
+      final native = await nativeService.publishDps(
+        tuyaDeviceId: device.tuyaDeviceId,
+        dps: command,
+      );
+      if (!native.success) {
+        await _logDeviceControl(
+          device: device,
+          commandCode: dp,
+          commandValue: command,
+          success: false,
+          errorCode: native.code,
+          errorMessage: native.message,
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeControlFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ));
+        return false;
+      }
+
+      final nextStatus = Map<String, dynamic>.from(device.lastStatus)
+        ..addAll(native.dps.isNotEmpty ? native.dps : command);
+      final loggedDevice = await apiService.storeControlLog(
+        id: device.id,
+        commandCode: dp,
+        commandValue: command,
+        success: true,
+        lastStatus: nextStatus,
+        online: native.online || device.online,
+      );
+      final updated = loggedDevice ??
+          device.copyWith(
+            online: native.online || device.online,
+            lastStatus: nextStatus,
+            primaryPowerDp: dp,
+            powerOn: powerOn,
+          );
+      _upsertDevice(updated);
+      return true;
+    } catch (e) {
+      await _logDeviceControl(
+        device: device,
+        commandCode: dp,
+        commandValue: command,
+        success: false,
+        errorCode: 'control_exception',
+        errorMessage: e.toString(),
+      );
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
+  Future<void> _logDeviceControl({
+    required SmartDeviceModel device,
+    required String commandCode,
+    required Map<String, dynamic> commandValue,
+    required bool success,
+    String? errorCode,
+    String? errorMessage,
+  }) async {
+    try {
+      await apiService.storeControlLog(
+        id: device.id,
+        commandCode: commandCode,
+        commandValue: commandValue,
+        success: success,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+      );
+    } catch (_) {
+      // Logging must not block the customer flow.
+    }
+  }
+
+  void _upsertDevice(SmartDeviceModel device) {
+    final index = devices.indexWhere((item) => item.id == device.id);
+    if (index >= 0) {
+      devices[index] = device;
+    } else {
+      devices.add(device);
+    }
+  }
+
+  String _powerDpFromStatus(Map<String, dynamic> status) {
+    for (final key in const ['switch_led', 'switch', 'power', '1']) {
+      if (status.containsKey(key)) return key;
+    }
+    for (final entry in status.entries) {
+      if (entry.value is bool) return entry.key;
+    }
+    return '';
+  }
+
+  bool? _powerStateFromStatus(Map<String, dynamic> status) {
+    final dp = _powerDpFromStatus(status);
+    final value = dp.isEmpty ? null : status[dp];
+    return value is bool ? value : null;
   }
 
   Future<void> _logEvent({

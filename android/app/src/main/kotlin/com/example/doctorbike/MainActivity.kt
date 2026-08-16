@@ -35,9 +35,11 @@ import com.thingclips.smart.home.sdk.callback.IThingHomeResultCallback
 import com.thingclips.smart.sdk.api.IThingActivator
 import com.thingclips.smart.sdk.api.IThingActivatorGetToken
 import com.thingclips.smart.sdk.api.IThingSmartActivatorListener
+import com.thingclips.smart.sdk.api.IResultCallback
 import com.thingclips.smart.sdk.bean.DeviceBean
 import com.thingclips.smart.sdk.enums.ActivatorModelEnum
 import java.util.concurrent.atomic.AtomicBoolean
+import org.json.JSONObject
 
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "dr_bike/biometric"
@@ -154,6 +156,9 @@ class MainActivity : FlutterFragmentActivity() {
                     "startWifiPairing" -> startTuyaWifiPairing(call, result)
                     "scanBluetoothDevices" -> scanTuyaBluetoothDevices(call, result)
                     "startBluetoothPairing" -> startTuyaBluetoothPairing(call, result)
+                    "getDeviceStatus" -> getTuyaDeviceStatus(call, result)
+                    "renameDevice" -> renameTuyaDevice(call, result)
+                    "publishDps" -> publishTuyaDps(call, result)
                     "stopPairing" -> {
                         stopSmartHomeActivator()
                         result.success(true)
@@ -519,6 +524,105 @@ class MainActivity : FlutterFragmentActivity() {
         )
     }
 
+    private fun getTuyaDeviceStatus(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(deviceResult(false, "tuya_not_initialized", DoctorBikeApplication.tuyaInitializationMessage, null))
+            return
+        }
+
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        if (devId.isBlank()) {
+            result.success(deviceResult(false, "missing_device_id", "Missing Tuya device id", null))
+            return
+        }
+
+        val deviceBean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+        if (deviceBean == null) {
+            result.success(deviceResult(false, "device_not_found", "Device was not found in Tuya cache", null))
+            return
+        }
+
+        result.success(deviceResult(true, "", "Device status loaded", deviceBean))
+    }
+
+    private fun renameTuyaDevice(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(deviceResult(false, "tuya_not_initialized", DoctorBikeApplication.tuyaInitializationMessage, null))
+            return
+        }
+
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val name = call.argument<String>("name") ?: ""
+        if (devId.isBlank() || name.isBlank()) {
+            result.success(deviceResult(false, "missing_rename_arguments", "Missing Tuya device id or name", null))
+            return
+        }
+
+        val device = ThingHomeSdk.newDeviceInstance(devId)
+        device.renameDevice(name, object : IResultCallback {
+            override fun onSuccess() {
+                val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                result.success(deviceResult(true, "", "Device renamed", bean))
+                device.onDestroy()
+            }
+
+            override fun onError(code: String, error: String) {
+                result.success(deviceResult(false, code, error, ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+                device.onDestroy()
+            }
+        })
+    }
+
+    private fun publishTuyaDps(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(deviceResult(false, "tuya_not_initialized", DoctorBikeApplication.tuyaInitializationMessage, null))
+            return
+        }
+
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val dps = call.argument<Map<String, Any?>>("dps") ?: emptyMap()
+        if (devId.isBlank() || dps.isEmpty()) {
+            result.success(deviceResult(false, "missing_dps_arguments", "Missing Tuya device id or DPS command", null))
+            return
+        }
+
+        val device = ThingHomeSdk.newDeviceInstance(devId)
+        val payload = JSONObject(dps).toString()
+        device.publishDps(payload, object : IResultCallback {
+            override fun onSuccess() {
+                val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                val response = deviceResult(true, "", "DPS command published", bean).toMutableMap()
+                val merged = linkedMapOf<String, Any?>()
+                if (bean?.dps != null) merged.putAll(bean.dps)
+                merged.putAll(dps)
+                response["dps"] = merged
+                response["online"] = bean?.isOnline == true
+                result.success(response)
+                device.onDestroy()
+            }
+
+            override fun onError(code: String, error: String) {
+                result.success(deviceResult(false, code, error, ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+                device.onDestroy()
+            }
+        })
+    }
+
+    private fun deviceResult(
+        success: Boolean,
+        code: String,
+        message: String,
+        deviceBean: DeviceBean?
+    ): Map<String, Any?> {
+        return mapOf(
+            "success" to success,
+            "code" to code,
+            "message" to message,
+            "device" to if (deviceBean != null) mapDeviceBean(deviceBean) else emptyMap<String, Any?>(),
+            "dps" to (deviceBean?.dps ?: emptyMap<String, Any?>()),
+            "online" to (deviceBean?.isOnline == true),
+        )
+    }
     private fun mapScanDeviceBean(device: ScanDeviceBean): Map<String, Any?> {
         return mapOf(
             "id" to (device.id ?: ""),
@@ -944,4 +1048,6 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 }
+
+
 

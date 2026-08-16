@@ -90,6 +90,41 @@ class SmartHomeNativePairingResult {
       );
 }
 
+class SmartHomeNativeDeviceResult {
+  final bool success;
+  final String code;
+  final String message;
+  final Map<String, dynamic> device;
+  final Map<String, dynamic> dps;
+  final bool online;
+
+  const SmartHomeNativeDeviceResult({
+    required this.success,
+    required this.code,
+    required this.message,
+    required this.device,
+    required this.dps,
+    required this.online,
+  });
+
+  factory SmartHomeNativeDeviceResult.fromMap(Map<dynamic, dynamic> map) {
+    final rawDevice = map['device'];
+    final rawDps = map['dps'];
+    return SmartHomeNativeDeviceResult(
+      success: map['success'] == true,
+      code: map['code']?.toString() ?? '',
+      message: map['message']?.toString() ?? '',
+      device: rawDevice is Map
+          ? Map<String, dynamic>.from(rawDevice)
+          : const <String, dynamic>{},
+      dps: rawDps is Map
+          ? Map<String, dynamic>.from(rawDps)
+          : const <String, dynamic>{},
+      online: map['online'] == true,
+    );
+  }
+}
+
 class SmartHomeBleScanDevice {
   const SmartHomeBleScanDevice({
     required this.raw,
@@ -320,6 +355,98 @@ class SmartHomeNativeService {
         code: e.code,
         message: e.message ?? 'Tuya Bluetooth pairing failed',
         device: const <String, dynamic>{},
+      );
+    }
+  }
+
+  Future<SmartHomeNativeDeviceResult> getDeviceStatus({
+    required String tuyaDeviceId,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'getDeviceStatus',
+        {'tuyaDeviceId': tuyaDeviceId},
+      );
+      return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeDeviceResult(
+        success: false,
+        code: 'missing_plugin',
+        message: 'Smart Home native bridge is not available on this platform',
+        device: <String, dynamic>{},
+        dps: <String, dynamic>{},
+        online: false,
+      );
+    } on PlatformException catch (e) {
+      return SmartHomeNativeDeviceResult(
+        success: false,
+        code: e.code,
+        message: e.message ?? 'Tuya device status failed',
+        device: const <String, dynamic>{},
+        dps: const <String, dynamic>{},
+        online: false,
+      );
+    }
+  }
+
+  Future<SmartHomeNativeDeviceResult> renameDevice({
+    required String tuyaDeviceId,
+    required String name,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'renameDevice',
+        {'tuyaDeviceId': tuyaDeviceId, 'name': name},
+      );
+      return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeDeviceResult(
+        success: false,
+        code: 'missing_plugin',
+        message: 'Smart Home native bridge is not available on this platform',
+        device: <String, dynamic>{},
+        dps: <String, dynamic>{},
+        online: false,
+      );
+    } on PlatformException catch (e) {
+      return SmartHomeNativeDeviceResult(
+        success: false,
+        code: e.code,
+        message: e.message ?? 'Tuya device rename failed',
+        device: const <String, dynamic>{},
+        dps: const <String, dynamic>{},
+        online: false,
+      );
+    }
+  }
+
+  Future<SmartHomeNativeDeviceResult> publishDps({
+    required String tuyaDeviceId,
+    required Map<String, dynamic> dps,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'publishDps',
+        {'tuyaDeviceId': tuyaDeviceId, 'dps': dps},
+      );
+      return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeDeviceResult(
+        success: false,
+        code: 'missing_plugin',
+        message: 'Smart Home native bridge is not available on this platform',
+        device: <String, dynamic>{},
+        dps: <String, dynamic>{},
+        online: false,
+      );
+    } on PlatformException catch (e) {
+      return SmartHomeNativeDeviceResult(
+        success: false,
+        code: e.code,
+        message: e.message ?? 'Tuya DPS command failed',
+        device: const <String, dynamic>{},
+        dps: const <String, dynamic>{},
+        online: false,
       );
     }
   }

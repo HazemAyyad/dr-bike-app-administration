@@ -155,42 +155,109 @@ class SmartDeviceModel {
   final int id;
   final int smartHomeId;
   final int? smartRoomId;
+  final String tuyaDeviceId;
+  final String tuyaProductId;
+  final String tuyaUuid;
   final String name;
   final String category;
   final String productName;
+  final String icon;
   final String protocol;
   final bool online;
+  final String model;
+  final String manufacturer;
+  final String primaryPowerDp;
+  final bool? powerOn;
   final Map<String, dynamic> lastStatus;
+  final Map<String, dynamic> rawMetadata;
 
   const SmartDeviceModel({
     required this.id,
     required this.smartHomeId,
     required this.smartRoomId,
+    required this.tuyaDeviceId,
+    required this.tuyaProductId,
+    required this.tuyaUuid,
     required this.name,
     required this.category,
     required this.productName,
+    required this.icon,
     required this.protocol,
     required this.online,
+    required this.model,
+    required this.manufacturer,
+    required this.primaryPowerDp,
+    required this.powerOn,
     required this.lastStatus,
+    required this.rawMetadata,
   });
+
+  bool get canTogglePower => primaryPowerDp.isNotEmpty;
+
+  SmartDeviceModel copyWith({
+    String? name,
+    bool? online,
+    Object? powerOn = _noValue,
+    String? primaryPowerDp,
+    Map<String, dynamic>? lastStatus,
+    Map<String, dynamic>? rawMetadata,
+  }) =>
+      SmartDeviceModel(
+        id: id,
+        smartHomeId: smartHomeId,
+        smartRoomId: smartRoomId,
+        tuyaDeviceId: tuyaDeviceId,
+        tuyaProductId: tuyaProductId,
+        tuyaUuid: tuyaUuid,
+        name: name ?? this.name,
+        category: category,
+        productName: productName,
+        icon: icon,
+        protocol: protocol,
+        online: online ?? this.online,
+        model: model,
+        manufacturer: manufacturer,
+        primaryPowerDp: primaryPowerDp ?? this.primaryPowerDp,
+        powerOn: powerOn == _noValue ? this.powerOn : powerOn as bool?,
+        lastStatus: lastStatus ?? this.lastStatus,
+        rawMetadata: rawMetadata ?? this.rawMetadata,
+      );
 
   factory SmartDeviceModel.fromJson(Map<String, dynamic> json) {
     final rawStatus = json['last_status'];
+    final rawMetadata = json['raw_metadata'];
     return SmartDeviceModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       smartHomeId: int.tryParse(json['smart_home_id']?.toString() ?? '') ?? 0,
       smartRoomId: int.tryParse(json['smart_room_id']?.toString() ?? ''),
+      tuyaDeviceId: json['tuya_device_id']?.toString() ?? '',
+      tuyaProductId: json['tuya_product_id']?.toString() ?? '',
+      tuyaUuid: json['tuya_uuid']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       category: json['category']?.toString() ?? '',
       productName: json['product_name']?.toString() ?? '',
+      icon: json['icon']?.toString() ?? '',
       protocol: json['protocol']?.toString() ?? '',
       online: json['online'] == true,
+      model: json['model']?.toString() ?? '',
+      manufacturer: json['manufacturer']?.toString() ?? '',
+      primaryPowerDp: json['primary_power_dp']?.toString() ?? '',
+      powerOn: json['power_on'] is bool ? json['power_on'] as bool : null,
       lastStatus: rawStatus is Map
           ? Map<String, dynamic>.from(rawStatus)
+          : const <String, dynamic>{},
+      rawMetadata: rawMetadata is Map
+          ? Map<String, dynamic>.from(rawMetadata)
           : const <String, dynamic>{},
     );
   }
 }
+
+class _NoValue {
+  const _NoValue();
+}
+
+const _noValue = _NoValue();
 
 class SmartHomeApiService {
   DioConsumer get _api => Get.find<DioConsumer>();
@@ -311,6 +378,68 @@ class SmartHomeApiService {
             SmartDeviceModel.fromJson(Map<String, dynamic>.from(item)))
         .where((item) => item.id > 0)
         .toList();
+  }
+
+  Future<SmartDeviceModel> getDevice(int id) async {
+    final response = await _api.get(
+      EndPoints.smartDevice(id),
+      queryParameters: {'include_debug': true},
+    );
+    return SmartDeviceModel.fromJson(
+      Map<String, dynamic>.from(response.data['device'] as Map),
+    );
+  }
+
+  Future<SmartDeviceModel> renameDevice({
+    required int id,
+    required String name,
+  }) async {
+    final response = await _api.patch(EndPoints.smartDevice(id), data: {
+      'name': name,
+    });
+    return SmartDeviceModel.fromJson(
+      Map<String, dynamic>.from(response.data['device'] as Map),
+    );
+  }
+
+  Future<SmartDeviceModel> updateDeviceStatus({
+    required int id,
+    required bool online,
+    required Map<String, dynamic> lastStatus,
+  }) async {
+    final response = await _api.post(EndPoints.smartDeviceStatus(id), data: {
+      'online': online,
+      'last_status': lastStatus,
+    });
+    return SmartDeviceModel.fromJson(
+      Map<String, dynamic>.from(response.data['device'] as Map),
+    );
+  }
+
+  Future<SmartDeviceModel?> storeControlLog({
+    required int id,
+    required String commandCode,
+    required Map<String, dynamic> commandValue,
+    required bool success,
+    String? errorCode,
+    String? errorMessage,
+    Map<String, dynamic>? lastStatus,
+    bool? online,
+  }) async {
+    final response =
+        await _api.post(EndPoints.smartDeviceControlLog(id), data: {
+      'command_code': commandCode,
+      'command_value': commandValue,
+      'success': success,
+      if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
+      if (errorMessage != null && errorMessage.isNotEmpty)
+        'error_message': errorMessage,
+      if (lastStatus != null) 'last_status': lastStatus,
+      if (online != null) 'online': online,
+    });
+    final rawDevice = response.data['device'];
+    if (rawDevice is! Map) return null;
+    return SmartDeviceModel.fromJson(Map<String, dynamic>.from(rawDevice));
   }
 
   Future<SmartDeviceModel> registerDevice({

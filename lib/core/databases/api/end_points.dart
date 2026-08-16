@@ -121,6 +121,9 @@ class EndPoints {
   static const String smartDevices = 'smart-home/devices';
   static const String smartDevicesRegister = 'smart-home/devices/register';
   static String smartDevice(int id) => 'smart-home/devices/$id';
+  static String smartDeviceStatus(int id) => 'smart-home/devices/$id/status';
+  static String smartDeviceControlLog(int id) =>
+      'smart-home/devices/$id/control-log';
   static const String smartHomeEventLogs = 'smart-home/event-logs';
 
   // banks (checks)
