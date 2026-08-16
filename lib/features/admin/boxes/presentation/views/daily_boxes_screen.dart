@@ -506,6 +506,10 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                 SizedBox(height: 360.h, child: const ShowNoData())
               else
                 ...boxes.where((box) {
+                  if (_filter == 'maintenance' &&
+                      _maintenanceSessions.isNotEmpty) {
+                    return false;
+                  }
                   if (_filter == 'all' && _boxKind(box) == 'maintenance') {
                     return _maintenanceSessions.isEmpty;
                   }
@@ -621,10 +625,10 @@ class _SalesSessionsSection extends StatelessWidget {
   bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
 
   String get _sectionTitle =>
-      _isMaintenance ? 'dailyBoxMaintenance'.tr : 'salesDailyHistoryTitle'.tr;
+      _isMaintenance ? 'صناديق الصيانة اليومية' : 'salesDailyHistoryTitle'.tr;
 
   String get _totalLabel =>
-      _isMaintenance ? 'المتحصل كاش' : 'salesDailySalesCollected'.tr;
+      _isMaintenance ? 'قبض صيانة اليوم' : 'salesDailySalesCollected'.tr;
 
   IconData get _sectionIcon => _isMaintenance
       ? Icons.build_circle_outlined
