@@ -1083,69 +1083,154 @@ class _DevicesList extends StatelessWidget {
       return _EmptyState(text: 'noDevicesYet'.tr);
     }
     return Column(
-      children: controller.devices.map((device) {
-        return Container(
-          margin: EdgeInsets.only(bottom: 10.h),
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor
-                : AppColors.whiteColor2,
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22.r,
-                backgroundColor: AppColors.primaryColor.withOpacity(.12),
-                child: Icon(
-                  _iconForCategory(device.category),
-                  color: AppColors.primaryColor,
+      children: controller.devices
+          .map(
+            (device) => _SmartDeviceCard(
+              controller: controller,
+              device: device,
+              onOpen: () => Get.to<void>(
+                () => _DeviceDetailsScreen(
+                  controller: controller,
+                  initialDevice: device,
                 ),
               ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _SmartDeviceCard extends StatelessWidget {
+  const _SmartDeviceCard({
+    required this.controller,
+    required this.device,
+    required this.onOpen,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = controller.deviceControlBusyIds.contains(device.id);
+    final dps = _visibleDps(device).take(4).toList(growable: false);
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.045),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(18.r),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 16.h),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Text(
-                      device.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
+                    Container(
+                      width: 48.w,
+                      height: 58.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withOpacity(.08),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(
+                        _iconForCategory(device.category),
+                        color: AppColors.primaryColor,
+                        size: 26.r,
+                      ),
                     ),
-                    SizedBox(height: 3.h),
-                    Text(
-                      _deviceSubtitle(device),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                            color: AppColors.customGreyColor5,
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            device.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15.sp,
+                                ),
                           ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            _deviceSubtitle(device),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.customGreyColor5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    _RoundPowerButton(
+                      enabled: device.canTogglePower && !busy,
+                      busy: busy,
+                      active: device.powerOn == true,
+                      onPressed: () => controller.setDevicePower(
+                        device: device,
+                        powerOn: device.powerOn != true,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              _OnlinePill(online: device.online),
-              SizedBox(width: 4.w),
-              IconButton(
-                tooltip: 'smartHomeDeviceDetails'.tr,
-                onPressed: () => Get.to<void>(
-                  () => _DeviceDetailsScreen(
-                    controller: controller,
-                    initialDevice: device,
+                if (dps.isNotEmpty) ...[
+                  SizedBox(height: 16.h),
+                  Row(
+                    children: dps
+                        .map(
+                          (entry) => Expanded(
+                            child: _DpsShortcut(
+                              label: _friendlyDpsName(entry.key),
+                              value: entry.value,
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
                   ),
-                ),
-                icon: const Icon(Icons.chevron_right_rounded),
-              ),
-            ],
+                ],
+              ],
+            ),
           ),
-        );
-      }).toList(),
+        ),
+      ),
     );
+  }
+
+  List<MapEntry<String, dynamic>> _visibleDps(SmartDeviceModel device) {
+    final entries = device.lastStatus.entries
+        .where((entry) => entry.value is bool || entry.value is num)
+        .toList(growable: false);
+    entries.sort((a, b) {
+      final ap = a.key == device.primaryPowerDp ? 0 : 1;
+      final bp = b.key == device.primaryPowerDp ? 0 : 1;
+      return ap == bp ? a.key.compareTo(b.key) : ap.compareTo(bp);
+    });
+    return entries;
   }
 
   String _deviceSubtitle(SmartDeviceModel device) {
@@ -1175,6 +1260,122 @@ class _DevicesList extends StatelessWidget {
     if (value.contains('lock')) return Icons.lock_outline_rounded;
     if (value.contains('sensor')) return Icons.sensors_rounded;
     return Icons.devices_other_rounded;
+  }
+
+  String _friendlyDpsName(String key) {
+    final clean =
+        key.replaceAll('_', ' ').replaceAll('switch led', 'switch').trim();
+    if (clean.isEmpty) return 'DPS';
+    return clean.length > 14 ? '${clean.substring(0, 12)}...' : clean;
+  }
+}
+
+class _RoundPowerButton extends StatelessWidget {
+  const _RoundPowerButton({
+    required this.enabled,
+    required this.busy,
+    required this.active,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final bool busy;
+  final bool active;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: enabled ? onPressed : null,
+      radius: 28.r,
+      child: Container(
+        width: 54.w,
+        height: 54.w,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: active ? const Color(0xFF28C79A) : Colors.grey.shade300,
+          boxShadow: [
+            BoxShadow(
+              color: (active ? const Color(0xFF28C79A) : Colors.black)
+                  .withOpacity(active ? .18 : .06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: busy
+              ? SizedBox(
+                  width: 18.w,
+                  height: 18.w,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(
+                  Icons.power_settings_new_rounded,
+                  color: Colors.white,
+                  size: 28.r,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DpsShortcut extends StatelessWidget {
+  const _DpsShortcut({required this.label, required this.value});
+
+  final String label;
+  final dynamic value;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = value == true || (value is num && value != 0);
+    return Opacity(
+      opacity: active ? 1 : .34,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            value is bool
+                ? Icons.power_settings_new_rounded
+                : Icons.tune_rounded,
+            color:
+                active ? const Color(0xFF28C79A) : AppColors.customGreyColor5,
+            size: 22.r,
+          ),
+          SizedBox(height: 5.h),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.customGreyColor5,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11.sp,
+                ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            value == true
+                ? 'ON'
+                : value == false
+                    ? 'Off'
+                    : '$value',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.customGreyColor5,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10.sp,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1308,6 +1509,20 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
       powerOn: value,
     );
     if (!mounted || !ok) return;
+    _syncDeviceFromController();
+  }
+
+  Future<void> _sendDps(String code, dynamic value) async {
+    final ok = await widget.controller.setDeviceDps(
+      device: device,
+      commandCode: code,
+      value: value,
+    );
+    if (!mounted || !ok) return;
+    _syncDeviceFromController();
+  }
+
+  void _syncDeviceFromController() {
     final updated = widget.controller.devices.firstWhereOrNull(
       (item) => item.id == device.id,
     );
@@ -1346,18 +1561,19 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
             if (widget.controller.errorMessage.value.isNotEmpty)
               _ErrorBanner(message: widget.controller.errorMessage.value),
             _DeviceHero(device: device, busy: busy),
+            SizedBox(height: 18.h),
+            _DeviceCommandSurface(
+              device: device,
+              busy: controlling,
+              readOnly: readOnly,
+              onPowerChanged: _togglePower,
+              onDps: _sendDps,
+            ),
             SizedBox(height: 14.h),
             _DeviceRenameCard(
               controller: nameController,
               enabled: !controlling && !readOnly,
               onSave: _rename,
-            ),
-            SizedBox(height: 14.h),
-            _DevicePowerCard(
-              device: device,
-              busy: controlling,
-              readOnly: readOnly,
-              onChanged: _togglePower,
             ),
             SizedBox(height: 14.h),
             _DeviceSpecsCard(device: device),
@@ -1434,6 +1650,403 @@ class _DeviceHero extends StatelessWidget {
   }
 }
 
+class _DeviceCommandSurface extends StatelessWidget {
+  const _DeviceCommandSurface({
+    required this.device,
+    required this.busy,
+    required this.readOnly,
+    required this.onPowerChanged,
+    required this.onDps,
+  });
+
+  final SmartDeviceModel device;
+  final bool busy;
+  final bool readOnly;
+  final ValueChanged<bool> onPowerChanged;
+  final void Function(String code, dynamic value) onDps;
+
+  @override
+  Widget build(BuildContext context) {
+    final curtainDp = _curtainCommandDp(device.lastStatus);
+    if (_looksLikeCurtain(device) || curtainDp.isNotEmpty) {
+      return _CurtainCommandSurface(
+        device: device,
+        busy: busy,
+        readOnly: readOnly,
+        commandDp: curtainDp,
+        percentDp: _curtainPercentDp(device.lastStatus),
+        onDps: onDps,
+      );
+    }
+
+    return _PowerCommandSurface(
+      device: device,
+      busy: busy,
+      readOnly: readOnly,
+      onPowerChanged: onPowerChanged,
+    );
+  }
+
+  bool _looksLikeCurtain(SmartDeviceModel device) {
+    final text =
+        '${device.category} ${device.productName} ${device.name}'.toLowerCase();
+    return text.contains('curtain') ||
+        text.contains('blind') ||
+        text.contains('ستار') ||
+        text.contains('بوابة');
+  }
+
+  String _curtainCommandDp(Map<String, dynamic> status) {
+    for (final key in const [
+      'control',
+      'control_1',
+      'curtain_control',
+      'mach_operate',
+      'open_close',
+    ]) {
+      if (status.containsKey(key)) return key;
+    }
+    return '';
+  }
+
+  String _curtainPercentDp(Map<String, dynamic> status) {
+    for (final key in const [
+      'percent_control',
+      'percent_control_1',
+      'percent_state',
+      'position',
+    ]) {
+      if (status[key] is num) return key;
+    }
+    return '';
+  }
+}
+
+class _PowerCommandSurface extends StatelessWidget {
+  const _PowerCommandSurface({
+    required this.device,
+    required this.busy,
+    required this.readOnly,
+    required this.onPowerChanged,
+  });
+
+  final SmartDeviceModel device;
+  final bool busy;
+  final bool readOnly;
+  final ValueChanged<bool> onPowerChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = device.powerOn == true;
+    final canToggle = device.canTogglePower && !readOnly && !busy;
+    return SizedBox(
+      height: 330.h,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 270.w,
+            height: 270.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : Colors.white,
+              border: Border.all(color: Colors.white.withOpacity(.8), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(.055),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+          ),
+          InkResponse(
+            onTap: canToggle ? () => onPowerChanged(!active) : null,
+            radius: 82.r,
+            child: Container(
+              width: 118.w,
+              height: 118.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: active ? const Color(0xFF28C79A) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(.12),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: busy
+                    ? const CircularProgressIndicator(strokeWidth: 2)
+                    : Icon(
+                        Icons.power_settings_new_rounded,
+                        color:
+                            active ? Colors.white : AppColors.customGreyColor5,
+                        size: 54.r,
+                      ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 62.h,
+            child: Text(
+              active ? 'ON' : 'OFF',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: active
+                        ? const Color(0xFF28C79A)
+                        : AppColors.customGreyColor5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+            ),
+          ),
+          Positioned(
+            bottom: 42.h,
+            child: Text(
+              device.primaryPowerDp.isEmpty
+                  ? 'No DPS'
+                  : '${'smartHomeDpsCode'.tr}: ${device.primaryPowerDp}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.customGreyColor5,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurtainCommandSurface extends StatelessWidget {
+  const _CurtainCommandSurface({
+    required this.device,
+    required this.busy,
+    required this.readOnly,
+    required this.commandDp,
+    required this.percentDp,
+    required this.onDps,
+  });
+
+  final SmartDeviceModel device;
+  final bool busy;
+  final bool readOnly;
+  final String commandDp;
+  final String percentDp;
+  final void Function(String code, dynamic value) onDps;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = busy || readOnly || commandDp.isEmpty;
+    final percent = percentDp.isEmpty
+        ? 0.0
+        : ((device.lastStatus[percentDp] as num?)?.toDouble() ?? 0)
+            .clamp(0, 100)
+            .toDouble();
+    return Column(
+      children: [
+        SizedBox(
+          height: 360.h,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 292.w,
+                height: 292.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : Colors.white,
+                  border: Border.all(
+                      color: Colors.white.withOpacity(.85), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.055),
+                      blurRadius: 36,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 44.h,
+                child: _CurtainActionButton(
+                  icon: Icons.keyboard_arrow_up_rounded,
+                  label: 'open',
+                  onTap: disabled ? null : () => onDps(commandDp, 'open'),
+                ),
+              ),
+              Positioned(
+                bottom: 40.h,
+                child: _CurtainActionButton(
+                  icon: Icons.keyboard_arrow_down_rounded,
+                  label: 'close',
+                  onTap: disabled ? null : () => onDps(commandDp, 'close'),
+                ),
+              ),
+              InkResponse(
+                onTap: disabled ? null : () => onDps(commandDp, 'stop'),
+                radius: 64.r,
+                child: Container(
+                  width: 108.w,
+                  height: 108.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(.12),
+                        blurRadius: 22,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: busy
+                        ? const CircularProgressIndicator(strokeWidth: 2)
+                        : Icon(
+                            Icons.pause_rounded,
+                            color: AppColors.customGreyColor5,
+                            size: 56.r,
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (percentDp.isNotEmpty)
+          _CurtainPercentSlider(
+            label: device.name,
+            value: percent,
+            enabled: !busy && !readOnly,
+            onChanged: (value) => onDps(percentDp, value.round()),
+          ),
+      ],
+    );
+  }
+}
+
+class _CurtainActionButton extends StatelessWidget {
+  const _CurtainActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(42.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 8.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 42.r, color: AppColors.customGreyColor5),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.customGreyColor5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CurtainPercentSlider extends StatefulWidget {
+  const _CurtainPercentSlider({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double value;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  @override
+  State<_CurtainPercentSlider> createState() => _CurtainPercentSliderState();
+}
+
+class _CurtainPercentSliderState extends State<_CurtainPercentSlider> {
+  late double value;
+
+  @override
+  void initState() {
+    super.initState();
+    value = widget.value;
+  }
+
+  @override
+  void didUpdateWidget(covariant _CurtainPercentSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) value = widget.value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 82.w,
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.customGreyColor5,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Slider(
+              value: value.clamp(0, 100),
+              min: 0,
+              max: 100,
+              onChanged: widget.enabled
+                  ? (next) => setState(() => value = next)
+                  : null,
+              onChangeEnd: widget.enabled ? widget.onChanged : null,
+            ),
+          ),
+          SizedBox(
+            width: 52.w,
+            child: Text(
+              '${value.round()}%',
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DeviceRenameCard extends StatelessWidget {
   const _DeviceRenameCard({
     required this.controller,
@@ -1463,74 +2076,6 @@ class _DeviceRenameCard extends StatelessWidget {
             onPressed: enabled ? onSave : null,
             icon: const Icon(Icons.save_rounded),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DevicePowerCard extends StatelessWidget {
-  const _DevicePowerCard({
-    required this.device,
-    required this.busy,
-    required this.readOnly,
-    required this.onChanged,
-  });
-
-  final SmartDeviceModel device;
-  final bool busy;
-  final bool readOnly;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final canToggle = device.canTogglePower && !readOnly;
-    return _Panel(
-      child: Row(
-        children: [
-          Icon(
-            device.powerOn == true
-                ? Icons.power_settings_new_rounded
-                : Icons.power_off_rounded,
-            color: device.powerOn == true
-                ? Colors.green
-                : AppColors.customGreyColor5,
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'smartHomePowerControl'.tr,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  device.primaryPowerDp.isEmpty
-                      ? 'smartHomeNoPowerDps'.tr
-                      : '${'smartHomeDpsCode'.tr}: ${device.primaryPowerDp}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.customGreyColor5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          if (busy)
-            SizedBox(
-              width: 22.w,
-              height: 22.w,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            Switch(
-              value: device.powerOn == true,
-              onChanged: canToggle ? onChanged : null,
-            ),
         ],
       ),
     );

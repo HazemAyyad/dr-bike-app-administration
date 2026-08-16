@@ -669,6 +669,80 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<bool> setDeviceDps({
+    required SmartDeviceModel device,
+    required String commandCode,
+    required dynamic value,
+  }) async {
+    if (canViewSmartHomeOwners && selectedOwnerId.value != null) {
+      errorMessage('smartHomeAdminReadOnly'.tr);
+      return false;
+    }
+    if (commandCode.trim().isEmpty) {
+      errorMessage('smartHomeNoPowerDps'.tr);
+      return false;
+    }
+
+    final command = <String, dynamic>{commandCode: value};
+    deviceControlBusyIds.add(device.id);
+    errorMessage('');
+    try {
+      final native = await nativeService.publishDps(
+        tuyaDeviceId: device.tuyaDeviceId,
+        dps: command,
+      );
+      if (!native.success) {
+        await _logDeviceControl(
+          device: device,
+          commandCode: commandCode,
+          commandValue: command,
+          success: false,
+          errorCode: native.code,
+          errorMessage: native.message,
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeControlFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ));
+        return false;
+      }
+
+      final nextStatus = Map<String, dynamic>.from(device.lastStatus)
+        ..addAll(native.dps.isNotEmpty ? native.dps : command);
+      final loggedDevice = await apiService.storeControlLog(
+        id: device.id,
+        commandCode: commandCode,
+        commandValue: command,
+        success: true,
+        lastStatus: nextStatus,
+        online: native.online || device.online,
+      );
+      final updated = loggedDevice ??
+          device.copyWith(
+            online: native.online || device.online,
+            lastStatus: nextStatus,
+            primaryPowerDp: _powerDpFromStatus(nextStatus),
+            powerOn: _powerStateFromStatus(nextStatus),
+          );
+      _upsertDevice(updated);
+      return true;
+    } catch (e) {
+      await _logDeviceControl(
+        device: device,
+        commandCode: commandCode,
+        commandValue: command,
+        success: false,
+        errorCode: 'control_exception',
+        errorMessage: e.toString(),
+      );
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
   Future<bool> setDevicePower({
     required SmartDeviceModel device,
     required bool powerOn,
