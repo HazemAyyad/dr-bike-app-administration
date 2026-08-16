@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/app_colors.dart';
+import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 import '../controllers/smart_home_controller.dart';
 
@@ -174,24 +175,38 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
   Future<void> _connect() async {
     widget.controller.errorMessage('');
     setState(() => stage = _AddDeviceStage.connecting);
+    final existingDeviceIds =
+        widget.controller.devices.map((device) => device.id).toSet();
 
-    if (useBluetoothPairing && selectedBleDevice != null) {
-      await widget.controller.startBluetoothDevicePairing(
-        scanDevice: selectedBleDevice!,
-        ssid: ssidController.text,
-        password: passwordController.text,
-      );
-    } else {
-      await widget.controller.startDevicePairing(
-        ssid: ssidController.text,
-        password: passwordController.text,
-      );
-    }
+    final success = useBluetoothPairing && selectedBleDevice != null
+        ? await widget.controller.startBluetoothDevicePairing(
+            scanDevice: selectedBleDevice!,
+            ssid: ssidController.text,
+            password: passwordController.text,
+          )
+        : await widget.controller.startDevicePairing(
+            ssid: ssidController.text,
+            password: passwordController.text,
+          );
 
     if (!mounted) return;
-    if (widget.controller.errorMessage.value.isEmpty) {
+    if (success) {
       Get.back<void>();
       return;
+    }
+
+    final failedMessage = widget.controller.errorMessage.value;
+    await widget.controller.refreshData();
+    if (!mounted) return;
+    final addedDevice = widget.controller.devices.any(
+      (device) => !existingDeviceIds.contains(device.id),
+    );
+    if (addedDevice) {
+      Get.back<void>();
+      return;
+    }
+    if (failedMessage.isNotEmpty) {
+      widget.controller.errorMessage(failedMessage);
     }
     setState(() => stage = _AddDeviceStage.failed);
   }
@@ -1041,11 +1056,7 @@ class _DevicesList extends StatelessWidget {
                     ),
                     SizedBox(height: 3.h),
                     Text(
-                      device.productName.isNotEmpty
-                          ? device.productName
-                          : (device.category.isNotEmpty
-                              ? device.category
-                              : 'smartDevice'.tr),
+                      _deviceSubtitle(device),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall!.copyWith(
@@ -1061,6 +1072,22 @@ class _DevicesList extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+
+  String _deviceSubtitle(SmartDeviceModel device) {
+    if (device.category.isNotEmpty) return device.category;
+    if (device.protocol.isNotEmpty) return device.protocol.toUpperCase();
+    if (device.productName.isNotEmpty &&
+        !_looksLikeTuyaIdentifier(device.productName)) {
+      return device.productName;
+    }
+    return 'smartDevice'.tr;
+  }
+
+  bool _looksLikeTuyaIdentifier(String value) {
+    final clean = value.trim();
+    if (clean.length < 10) return false;
+    return RegExp(r'^[a-z0-9_-]+$').hasMatch(clean);
   }
 
   IconData _iconForCategory(String category) {

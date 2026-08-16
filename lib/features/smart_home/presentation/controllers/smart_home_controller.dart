@@ -296,7 +296,7 @@ class SmartHomeController extends GetxController {
     }
   }
 
-  Future<void> startBluetoothDevicePairing({
+  Future<bool> startBluetoothDevicePairing({
     required SmartHomeBleScanDevice scanDevice,
     required String ssid,
     required String password,
@@ -304,15 +304,15 @@ class SmartHomeController extends GetxController {
     final home = selectedHome;
     if (home == null) {
       errorMessage('smartHomeMissingHome'.tr);
-      return;
+      return false;
     }
     if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
       errorMessage('smartHomeTuyaNotReady'.tr);
-      return;
+      return false;
     }
     if (scanDevice.isWifiCombo && ssid.trim().isEmpty) {
       errorMessage('smartHomeWifiNameRequired'.tr);
-      return;
+      return false;
     }
 
     await saveWifiCredentials(ssid: ssid, password: password);
@@ -320,7 +320,7 @@ class SmartHomeController extends GetxController {
     errorMessage('');
     try {
       final activeHome = await _ensureActiveTuyaHome(home);
-      if (activeHome == null) return;
+      if (activeHome == null) return false;
 
       final pairing = await nativeService
           .startBluetoothPairing(
@@ -357,7 +357,7 @@ class SmartHomeController extends GetxController {
             'scan_device': scanDevice.raw,
           },
         );
-        return;
+        return false;
       }
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
@@ -378,6 +378,7 @@ class SmartHomeController extends GetxController {
         context: pairing.device,
       );
       Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+      return true;
     } catch (e) {
       final visible = e.toString();
       errorMessage(visible);
@@ -392,12 +393,13 @@ class SmartHomeController extends GetxController {
           'scan_device': scanDevice.raw,
         },
       );
+      return false;
     } finally {
       isPairingDevice(false);
     }
   }
 
-  Future<void> startDevicePairing({
+  Future<bool> startDevicePairing({
     required String ssid,
     required String password,
   }) async {
@@ -408,7 +410,7 @@ class SmartHomeController extends GetxController {
           event: 'pairing_validation',
           success: false,
           message: 'Missing selected home');
-      return;
+      return false;
     }
     if (!nativeStatus.value.initialized || !isTuyaUserLinked) {
       errorMessage('smartHomeTuyaNotReady'.tr);
@@ -416,7 +418,7 @@ class SmartHomeController extends GetxController {
           event: 'pairing_validation',
           success: false,
           message: 'Tuya not ready');
-      return;
+      return false;
     }
     if (ssid.trim().isEmpty) {
       errorMessage('smartHomeWifiNameRequired'.tr);
@@ -424,7 +426,7 @@ class SmartHomeController extends GetxController {
           event: 'pairing_validation',
           success: false,
           message: 'Missing WiFi SSID');
-      return;
+      return false;
     }
 
     await saveWifiCredentials(ssid: ssid, password: password);
@@ -449,7 +451,7 @@ class SmartHomeController extends GetxController {
             errorCode: nativeHome.code,
             message: visible,
           );
-          return;
+          return false;
         }
         activeHome = await apiService.updateHomeTuyaId(
           homeId: activeHome.id,
@@ -502,7 +504,7 @@ class SmartHomeController extends GetxController {
           message: visible,
           context: {'ssid': ssid.trim()},
         );
-        return;
+        return false;
       }
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
@@ -523,6 +525,7 @@ class SmartHomeController extends GetxController {
         context: pairing.device,
       );
       Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+      return true;
     } catch (e) {
       final visible = e.toString();
       errorMessage(visible);
@@ -534,6 +537,7 @@ class SmartHomeController extends GetxController {
         message: visible,
         context: {'ssid': ssid.trim()},
       );
+      return false;
     } finally {
       isPairingDevice(false);
     }
