@@ -99,7 +99,7 @@ class _OpenMaintenanceSessions extends StatelessWidget {
               subtitle: Text(
                 [
                   'التاريخ: ${item['business_date'] ?? '-'}',
-                  'كاش: ${_money(item['cash_total'])} | فيزا: ${_money(item['visa_total'])} | حوالات: ${_money(item['transfer_total'])} | دين: ${_money(item['debt_total'])}',
+                  'كاش: ${_money(item['cash_total'])}',
                   'المطلوب ترحيله: ${_money(item['expected_closing_balance'])} ${item['currency'] ?? ''}',
                   if (isPending) 'طلب الإغلاق معلق',
                 ].join('\n'),
@@ -221,7 +221,7 @@ class _MaintenanceClosingRequests extends StatelessWidget {
               subtitle: Text(
                 [
                   'التاريخ: ${item['business_date'] ?? '-'}',
-                  'كاش: ${_money(item['cash_total'])} | فيزا: ${_money(item['visa_total'])} | حوالات: ${_money(item['transfer_total'])} | دين: ${_money(item['debt_total'])}',
+                  'كاش: ${_money(item['cash_total'])}',
                   'المطلوب ترحيله: ${_money(item['amount_to_transfer'] ?? item['expected_closing_balance'])} ${item['currency'] ?? ''}',
                 ].join('\n'),
               ),

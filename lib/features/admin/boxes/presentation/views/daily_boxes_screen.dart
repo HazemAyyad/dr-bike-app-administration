@@ -906,9 +906,7 @@ class _SalesSessionTile extends StatelessWidget {
           radius: 18.r,
           backgroundColor: _accentColor.withValues(alpha: .12),
           child: Icon(
-            _isMaintenance
-                ? Icons.build_circle_outlined
-                : Icons.person_outline,
+            _isMaintenance ? Icons.build_circle_outlined : Icons.person_outline,
             color: _accentColor,
             size: 20.sp,
           ),
@@ -1362,24 +1360,10 @@ class _MaintenanceBoxesSectionState extends State<_MaintenanceBoxesSection> {
 
   String _totalsText(List<BoxLogModel> logs) {
     final cash = logs
-        .where((log) =>
-            log.affectsCashBalance &&
-            (log.paymentMethod == null || log.paymentMethod == 'cash'))
-        .fold<double>(0, (sum, log) => sum + _paidValue(log));
-    final visa = logs
-        .where((log) => log.paymentMethod == 'visa')
-        .fold<double>(0, (sum, log) => sum + _paidValue(log));
-    final transfer = logs
-        .where((log) => log.paymentMethod == 'bank_transfer')
-        .fold<double>(0, (sum, log) => sum + _paidValue(log));
-    final debt = logs
-        .where((log) => log.paymentMethod == 'debt')
+        .where((log) => log.type != 'minus')
         .fold<double>(0, (sum, log) => sum + _paidValue(log));
     final parts = <String>[
       'كاش: ${widget.amount(cash)}',
-      if (visa > 0) 'فيزا: ${widget.amount(visa)}',
-      if (transfer > 0) 'حوالة: ${widget.amount(transfer)}',
-      if (debt > 0) 'دين: ${widget.amount(debt)}',
     ];
     return parts.join(' | ');
   }
@@ -1640,27 +1624,13 @@ class _MaintenanceBoxSessionTile extends StatelessWidget {
 
   String _totalsText() {
     double cash = 0;
-    double visa = 0;
-    double transfer = 0;
-    double debt = 0;
     for (final log in logs) {
       if (log.type == 'minus') continue;
       final value = log.value.abs();
-      if (log.paymentMethod == 'visa') {
-        visa += value;
-      } else if (log.paymentMethod == 'bank_transfer') {
-        transfer += value;
-      } else if (log.paymentMethod == 'debt') {
-        debt += value;
-      } else if (log.affectsCashBalance) {
-        cash += value;
-      }
+      cash += value;
     }
     return [
       'كاش: ${amount(cash)}',
-      if (visa > 0) 'فيزا: ${amount(visa)}',
-      if (transfer > 0) 'حوالة: ${amount(transfer)}',
-      if (debt > 0) 'دين: ${amount(debt)}',
     ].join(' | ');
   }
 
@@ -1830,14 +1800,7 @@ class _MaintenanceRequestGroup {
       log.affectsCashBalance &&
       (log.paymentMethod == null || log.paymentMethod == 'cash'));
 
-  double get visa => _sumWhere((log) => log.paymentMethod == 'visa');
-
-  double get transfer =>
-      _sumWhere((log) => log.paymentMethod == 'bank_transfer');
-
-  double get debt => _sumWhere((log) => log.paymentMethod == 'debt');
-
-  double get paidTotal => cash + visa + transfer;
+  double get paidTotal => cash;
 
   double _sumWhere(bool Function(BoxLogModel log) test) {
     return logs
@@ -1949,24 +1912,6 @@ class _MaintenanceRequestLogTile extends StatelessWidget {
                           value: amount(group.cash),
                           color: AppColors.customGreen1,
                         ),
-                      if (group.visa > 0)
-                        _MaintenancePaymentPill(
-                          label: 'فيزا',
-                          value: amount(group.visa),
-                          color: AppColors.primaryColor,
-                        ),
-                      if (group.transfer > 0)
-                        _MaintenancePaymentPill(
-                          label: 'حوالة',
-                          value: amount(group.transfer),
-                          color: AppColors.primaryColor,
-                        ),
-                      if (group.debt > 0)
-                        _MaintenancePaymentPill(
-                          label: 'دين متبقي',
-                          value: amount(group.debt),
-                          color: AppColors.redColor,
-                        ),
                     ],
                   ),
                 ],
@@ -1981,15 +1926,6 @@ class _MaintenanceRequestLogTile extends StatelessWidget {
                     '+${amount(group.paidTotal)}',
                     style: TextStyle(
                       color: AppColors.customGreen1,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                if (group.debt > 0)
-                  Text(
-                    '-${amount(group.debt)}',
-                    style: TextStyle(
-                      color: AppColors.redColor,
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w900,
                     ),
@@ -2298,6 +2234,7 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
                   date: widget.date,
                   boxId: widget.box.boxId.toString(),
                   signedValue: _signedValue,
+                  cashOnly: _isMaintenanceBox,
                   onOpenInvoice: widget.onOpenInvoice,
                 ),
               ),
@@ -2395,6 +2332,7 @@ class _DailyBoxDayGroup extends StatelessWidget {
     required this.date,
     required this.boxId,
     required this.signedValue,
+    required this.cashOnly,
     required this.onOpenInvoice,
   });
 
@@ -2404,6 +2342,7 @@ class _DailyBoxDayGroup extends StatelessWidget {
   final String Function(DateTime date) date;
   final String boxId;
   final double Function(BoxLogModel log) signedValue;
+  final bool cashOnly;
   final ValueChanged<BoxLogModel> onOpenInvoice;
 
   @override
@@ -2411,11 +2350,15 @@ class _DailyBoxDayGroup extends StatelessWidget {
     final sortedAsc = [...logs]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final total = logs.fold<double>(0, (sum, log) => sum + signedValue(log));
-    final cashTotal = logs
-        .where((log) =>
-            log.affectsCashBalance &&
-            (log.paymentMethod == null || log.paymentMethod == 'cash'))
-        .fold<double>(0, (sum, log) => sum + log.value.abs());
+    final cashTotal = cashOnly
+        ? logs
+            .where((log) => log.type != 'minus')
+            .fold<double>(0, (sum, log) => sum + log.value.abs())
+        : logs
+            .where((log) =>
+                log.affectsCashBalance &&
+                (log.paymentMethod == null || log.paymentMethod == 'cash'))
+            .fold<double>(0, (sum, log) => sum + log.value.abs());
     final visaTotal = logs
         .where((log) => log.paymentMethod == 'visa')
         .fold<double>(0, (sum, log) => sum + log.value.abs());
@@ -2475,17 +2418,17 @@ class _DailyBoxDayGroup extends StatelessWidget {
                   label: 'كاش',
                   value: amount(cashTotal),
                 ),
-              if (visaTotal > 0)
+              if (!cashOnly && visaTotal > 0)
                 _DailyBoxMetric(
                   label: 'فيزا',
                   value: amount(visaTotal),
                 ),
-              if (transferTotal > 0)
+              if (!cashOnly && transferTotal > 0)
                 _DailyBoxMetric(
                   label: 'حوالة',
                   value: amount(transferTotal),
                 ),
-              if (debtTotal > 0)
+              if (!cashOnly && debtTotal > 0)
                 _DailyBoxMetric(
                   label: 'دين',
                   value: amount(debtTotal),
@@ -2512,6 +2455,7 @@ class _DailyBoxDayGroup extends StatelessWidget {
                 boxId: boxId,
                 amount: amount,
                 date: date,
+                cashOnly: cashOnly,
                 onOpenInvoice: onOpenInvoice,
               )),
         ],
@@ -2554,6 +2498,7 @@ class _DailyBoxLogTile extends StatelessWidget {
     required this.boxId,
     required this.amount,
     required this.date,
+    required this.cashOnly,
     required this.onOpenInvoice,
   });
 
@@ -2561,12 +2506,14 @@ class _DailyBoxLogTile extends StatelessWidget {
   final String boxId;
   final String Function(double value) amount;
   final String Function(DateTime date) date;
+  final bool cashOnly;
   final ValueChanged<BoxLogModel> onOpenInvoice;
 
   bool get _isOut => log.fromBoxId == boxId || log.type == 'minus';
   bool get _hasMaintenanceInvoice =>
       log.maintenanceId != null && log.maintenanceId!.trim().isNotEmpty;
   String? get _paymentMethodLabel {
+    if (cashOnly && log.type != 'minus') return 'كاش';
     switch (log.paymentMethod) {
       case 'cash':
         return 'كاش';

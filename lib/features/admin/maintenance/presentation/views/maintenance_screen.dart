@@ -185,7 +185,7 @@ class _MaintenanceQuickFilters extends GetView<MaintenanceController> {
         ];
 
         return SizedBox(
-          height: 46.h,
+          height: 48.h,
           child: ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             scrollDirection: Axis.horizontal,
@@ -238,9 +238,8 @@ class _MaintenanceFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final foreground = selected
-        ? Colors.white
-        : (isDark ? Colors.white : AppColors.secondaryColor);
+    final foreground =
+        selected ? Colors.white : (isDark ? Colors.white : data.color);
     final background = selected
         ? data.color
         : data.color.withValues(alpha: isDark ? 0.18 : 0.09);
@@ -252,54 +251,46 @@ class _MaintenanceFilterChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(24.r),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          constraints: BoxConstraints(minWidth: 88.w, maxWidth: 132.w),
-          padding: EdgeInsetsDirectional.fromSTEB(10.w, 0, 10.w, 0),
+          width: 42.w,
+          height: 42.w,
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(24.r),
+            shape: BoxShape.circle,
             border: Border.all(
               color: selected ? data.color : data.color.withValues(alpha: 0.22),
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
             children: [
-              Icon(data.icon, size: 18.sp, color: foreground),
-              SizedBox(width: 5.w),
-              Flexible(
-                child: Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
+              Icon(data.icon, size: 20.sp, color: foreground),
+              if (data.count > 0)
+                PositionedDirectional(
+                  top: -5.h,
+                  end: -5.w,
+                  child: Container(
+                    constraints:
+                        BoxConstraints(minWidth: 17.w, minHeight: 17.w),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 1.2),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      data.count > 99 ? '99+' : '${data.count}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 5.w),
-              Container(
-                constraints: BoxConstraints(minWidth: 18.w),
-                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : data.color.withValues(alpha: isDark ? 0.22 : 0.14),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  data.count > 99 ? '99+' : '${data.count}',
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 9.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -401,7 +392,7 @@ class _MaintenanceDailyBoxStatus extends GetView<MaintenanceController> {
                       style: TextStyle(fontSize: 11.sp),
                     ),
                     Text(
-                      'كاش: ${_money(controller.maintenanceDailyCashTotal)} | فيزا: ${_money(controller.maintenanceDailyVisaTotal)} | حوالة: ${_money(controller.maintenanceDailyTransferTotal)} | دين: ${_money(controller.maintenanceDailyDebtTotal)}',
+                      'كاش: ${_money(controller.maintenanceDailyCashTotal)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -851,9 +842,6 @@ class _MaintenanceClosingTotals extends StatelessWidget {
       children: [
         _TotalChip(label: 'استلم فكة', value: _num(item['opening_balance'])),
         _TotalChip(label: 'كاش اليوم', value: _num(item['cash_total'])),
-        _TotalChip(label: 'فيزا', value: _num(item['visa_total'])),
-        _TotalChip(label: 'حوالة', value: _num(item['transfer_total'])),
-        _TotalChip(label: 'دين', value: _num(item['debt_total'])),
         _TotalChip(
           label: 'المطلوب يسكر',
           value: _num(item['expected_closing_balance']),

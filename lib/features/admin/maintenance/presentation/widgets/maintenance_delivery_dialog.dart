@@ -33,40 +33,24 @@ class _MaintenanceDeliveryDialog extends StatefulWidget {
 class _MaintenanceDeliveryDialogState
     extends State<_MaintenanceDeliveryDialog> {
   final _cashCtrl = TextEditingController();
-  final _visaCtrl = TextEditingController();
-  final _transferCtrl = TextEditingController();
-  final _visaNoteCtrl = TextEditingController();
-  final _transferNoteCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _cashCtrl.text = SalesAmountFormat.display(widget.controller.invoiceTotal);
-    for (final ctrl in [_cashCtrl, _visaCtrl, _transferCtrl]) {
-      ctrl.addListener(_refreshTotals);
-    }
+    _cashCtrl.addListener(_refreshTotals);
   }
 
   @override
   void dispose() {
-    for (final ctrl in [
-      _cashCtrl,
-      _visaCtrl,
-      _transferCtrl,
-      _visaNoteCtrl,
-      _transferNoteCtrl,
-    ]) {
-      ctrl.dispose();
-    }
+    _cashCtrl.dispose();
     super.dispose();
   }
 
   void _refreshTotals() => setState(() {});
 
   double get _cashAmount => SalesAmountFormat.parse(_cashCtrl.text);
-  double get _visaAmount => SalesAmountFormat.parse(_visaCtrl.text);
-  double get _transferAmount => SalesAmountFormat.parse(_transferCtrl.text);
-  double get _paidTotal => _cashAmount + _visaAmount + _transferAmount;
+  double get _paidTotal => _cashAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -173,38 +157,6 @@ class _MaintenanceDeliveryDialogState
                   const TextInputType.numberWithOptions(decimal: true),
               validator: (_) => null,
             ),
-            SizedBox(height: 8.h),
-            CustomTextField(
-              controller: _visaCtrl,
-              label: 'فيزا',
-              hintText: '0',
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              validator: (_) => null,
-            ),
-            SizedBox(height: 8.h),
-            CustomTextField(
-              controller: _visaNoteCtrl,
-              label: 'ملاحظة الفيزا',
-              hintText: 'رقم العملية أو آخر 4 أرقام',
-              validator: (_) => null,
-            ),
-            SizedBox(height: 8.h),
-            CustomTextField(
-              controller: _transferCtrl,
-              label: 'حوالة',
-              hintText: '0',
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              validator: (_) => null,
-            ),
-            SizedBox(height: 8.h),
-            CustomTextField(
-              controller: _transferNoteCtrl,
-              label: 'ملاحظة الحوالة',
-              hintText: 'رقم الحوالة أو من مين وصلت',
-              validator: (_) => null,
-            ),
           ],
         ),
       ),
@@ -258,8 +210,6 @@ class _MaintenanceDeliveryDialogState
     }
 
     addPayment('cash', _cashAmount, '');
-    addPayment('visa', _visaAmount, _visaNoteCtrl.text);
-    addPayment('bank_transfer', _transferAmount, _transferNoteCtrl.text);
     return payments;
   }
 
