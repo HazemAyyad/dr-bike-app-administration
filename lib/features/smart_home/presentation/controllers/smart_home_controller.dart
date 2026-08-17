@@ -51,6 +51,7 @@ class SmartHomeController extends GetxController {
   final selectedBluetoothDevice = Rxn<SmartHomeBleScanDevice>();
   final deviceControlBusyIds = <int>{}.obs;
   final deviceDetailsBusyIds = <int>{}.obs;
+  final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
   String _activeNativeTuyaUid = '';
 
   SmartHomeModel? get selectedHome =>
@@ -622,9 +623,15 @@ class SmartHomeController extends GetxController {
           rawMetadata:
               saved.rawMetadata.isNotEmpty ? saved.rawMetadata : nextMetadata,
         );
+        _deviceRefreshFailures.remove(loaded.id);
       }
       _upsertDevice(merged);
       if (!native.success) {
+        _deviceRefreshFailures[loaded.id] = {
+          'code': native.code,
+          'message': native.message,
+          'tuya_home_id': _tuyaHomeIdForDevice(loaded),
+        };
         await _logDeviceControl(
           device: loaded,
           commandCode: 'status_refresh',
@@ -913,6 +920,7 @@ class SmartHomeController extends GetxController {
     final controlDevice = await _deviceWithFunctionMetadata(device);
     final function = DeviceCapabilityResolver.resolvePower(controlDevice);
     if (function == null) {
+      final refreshFailure = _deviceRefreshFailures[controlDevice.id];
       errorMessage('smartHomeNoPowerDps'.tr);
       await _logDeviceControl(
         device: controlDevice,
@@ -921,11 +929,15 @@ class SmartHomeController extends GetxController {
           device: controlDevice,
           requestedCode: 'power',
           submittedValue: powerOn,
+          refreshFailure: refreshFailure,
         ),
         success: false,
-        errorCode: 'missing_writable_power_function',
-        errorMessage:
-            'No writable boolean Tuya function was found for power control.',
+        errorCode: refreshFailure == null
+            ? 'missing_writable_power_function'
+            : 'missing_writable_power_function_after_refresh_failure',
+        errorMessage: refreshFailure == null
+            ? 'No writable boolean Tuya function was found for power control.'
+            : 'No writable boolean Tuya function was found because device schema refresh failed.',
       );
       return false;
     }
@@ -956,6 +968,7 @@ class SmartHomeController extends GetxController {
     required dynamic submittedValue,
     TuyaDeviceFunction? function,
     Object? exception,
+    Map<String, dynamic>? refreshFailure,
   }) {
     return {
       'device_id': device.tuyaDeviceId,
@@ -966,6 +979,7 @@ class SmartHomeController extends GetxController {
       'submitted_value_type': submittedValue.runtimeType.toString(),
       if (function != null) ...function.toLogValue(submittedValue),
       if (exception != null) 'exception_type': exception.runtimeType.toString(),
+      if (refreshFailure != null) 'last_status_refresh_error': refreshFailure,
       'functions': DeviceCapabilityResolver.debugSummary(device)['functions'],
     };
   }

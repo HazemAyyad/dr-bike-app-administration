@@ -72,25 +72,23 @@ class DeviceCapabilityResolver {
   const DeviceCapabilityResolver._();
 
   static List<TuyaDeviceFunction> functions(SmartDeviceModel device) {
-    final schemaMap = device.rawMetadata['schema_map'];
-    if (schemaMap is! Map) return const <TuyaDeviceFunction>[];
-
     final functions = <TuyaDeviceFunction>[];
-    schemaMap.forEach((key, raw) {
+    _schemaEntries(device.rawMetadata).forEach((key, raw) {
       if (raw is! Map) return;
       final dpId = (raw['id']?.toString().trim().isNotEmpty == true)
           ? raw['id'].toString().trim()
           : key.toString().trim();
       final code = raw['code']?.toString().trim() ?? '';
       if (dpId.isEmpty || code.isEmpty) return;
+      final values = _decodeValues(raw['property']);
       functions.add(
         TuyaDeviceFunction(
           dpId: dpId,
           code: code,
           name: raw['name']?.toString().trim() ?? '',
-          type: raw['type']?.toString().trim() ?? '',
+          type: _dataType(raw, values),
           mode: raw['mode']?.toString().trim() ?? '',
-          values: _decodeValues(raw['property']),
+          values: values,
         ),
       );
     });
@@ -101,6 +99,44 @@ class DeviceCapabilityResolver {
       return a.dpId.compareTo(b.dpId);
     });
     return functions;
+  }
+
+  static Map<dynamic, dynamic> _schemaEntries(Map<String, dynamic> metadata) {
+    final schemaMap = metadata['schema_map'];
+    if (schemaMap is Map && schemaMap.isNotEmpty) return schemaMap;
+    if (schemaMap is List && schemaMap.isNotEmpty) {
+      return {
+        for (final raw in schemaMap)
+          if (raw is Map && raw['id'] != null) raw['id'].toString(): raw,
+      };
+    }
+
+    final schema = metadata['schema'];
+    final decoded = schema is String ? _decodeJson(schema) : schema;
+    if (decoded is List) {
+      return {
+        for (final raw in decoded)
+          if (raw is Map && raw['id'] != null) raw['id'].toString(): raw,
+      };
+    }
+    if (decoded is Map) return decoded;
+    return const <dynamic, dynamic>{};
+  }
+
+  static dynamic _decodeJson(String raw) {
+    if (raw.trim().isEmpty) return null;
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String _dataType(Map raw, Map<String, dynamic> values) {
+    final propertyType = values['type']?.toString().trim() ?? '';
+    if (propertyType.isNotEmpty) return propertyType;
+    final type = raw['type']?.toString().trim() ?? '';
+    return type.toLowerCase() == 'obj' ? '' : type;
   }
 
   static List<TuyaDeviceFunction> writableFunctions(SmartDeviceModel device) =>

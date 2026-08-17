@@ -39,6 +39,7 @@ import com.thingclips.smart.sdk.api.IResultCallback
 import com.thingclips.smart.sdk.bean.DeviceBean
 import com.thingclips.smart.sdk.enums.ActivatorModelEnum
 import java.util.concurrent.atomic.AtomicBoolean
+import org.json.JSONArray
 import org.json.JSONObject
 
 class MainActivity : FlutterFragmentActivity() {
@@ -677,7 +678,7 @@ class MainActivity : FlutterFragmentActivity() {
                     response["submitted"] = mapOf(
                         "dp_id" to publishDpId,
                         "code" to (schema.code ?: requestedCode),
-                        "type" to (schema.type ?: requestedType),
+                        "type" to (schemaDataType(schema).ifBlank { requestedType }),
                         "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
                     )
                     result.success(response)
@@ -751,14 +752,41 @@ class MainActivity : FlutterFragmentActivity() {
         dpId: String,
         code: String,
     ): com.thingclips.smart.android.device.bean.SchemaBean? {
-        val schemaMap = deviceBean?.schemaMap ?: return null
-        val direct = schemaMap[dpId]
+        val schemaMap = deviceBean?.schemaMap
+        val direct = schemaMap?.get(dpId)
         if (direct != null && isWritableSchema(direct) && (code.isBlank() || direct.code == code || direct.id == dpId)) {
             return direct
         }
-        return schemaMap.values.firstOrNull { schema ->
+        val fromMap = schemaMap?.values?.firstOrNull { schema ->
             isWritableSchema(schema) && (schema.id == dpId || schema.code == code)
         }
+        if (fromMap != null) return fromMap
+
+        return parseSchemaList(deviceBean?.schema).firstOrNull { schema ->
+            isWritableSchema(schema) && (schema.id == dpId || schema.code == code)
+        }
+    }
+
+    private fun parseSchemaList(rawSchema: String?): List<com.thingclips.smart.android.device.bean.SchemaBean> {
+        if (rawSchema.isNullOrBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(rawSchema)
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                com.thingclips.smart.android.device.bean.SchemaBean().also { schema ->
+                    schema.id = item.opt("id")?.toString() ?: ""
+                    schema.code = item.optString("code")
+                    schema.name = item.optString("name")
+                    schema.mode = item.optString("mode")
+                    schema.type = item.optString("type")
+                    schema.property = item.opt("property")?.let { property ->
+                        if (property is JSONObject) property.toString() else property.toString()
+                    } ?: ""
+                    schema.schemaType = item.optString("schemaType")
+                    schema.iconname = item.optString("iconname")
+                }
+            }
+        }.getOrElse { emptyList() }
     }
 
     private fun isWritableSchema(schema: com.thingclips.smart.android.device.bean.SchemaBean): Boolean {
@@ -769,7 +797,7 @@ class MainActivity : FlutterFragmentActivity() {
         schema: com.thingclips.smart.android.device.bean.SchemaBean,
         value: Any?,
     ): Pair<Boolean, String?> {
-        return when ((schema.type ?: "").lowercase()) {
+        return when (schemaDataType(schema)) {
             "bool" -> Pair(value is Boolean, "Expected boolean for ${schema.code}")
             "enum" -> {
                 val range = runCatching {
@@ -790,8 +818,17 @@ class MainActivity : FlutterFragmentActivity() {
                 Pair(true, null)
             }
             "string" -> Pair(value is String, "Expected string for ${schema.code}")
-            else -> Pair(false, "Unsupported Tuya DP type ${schema.type} for ${schema.code}")
+            else -> Pair(false, "Unsupported Tuya DP type ${schemaDataType(schema)} for ${schema.code}")
         }
+    }
+
+    private fun schemaDataType(schema: com.thingclips.smart.android.device.bean.SchemaBean): String {
+        val propertyType = runCatching {
+            JSONObject(schema.property ?: "{}").optString("type")
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+        if (propertyType != null) return propertyType.lowercase()
+        val rawType = (schema.type ?: "").lowercase()
+        return if (rawType == "obj") "" else rawType
     }
 
     private fun mapSchemaBean(schema: com.thingclips.smart.android.device.bean.SchemaBean): Map<String, Any?> {
@@ -800,7 +837,8 @@ class MainActivity : FlutterFragmentActivity() {
             "code" to (schema.code ?: ""),
             "name" to (schema.name ?: ""),
             "mode" to (schema.mode ?: ""),
-            "type" to (schema.type ?: ""),
+            "type" to schemaDataType(schema),
+            "raw_type" to (schema.type ?: ""),
             "property" to (schema.property ?: ""),
             "schema_type" to (schema.schemaType ?: ""),
         )

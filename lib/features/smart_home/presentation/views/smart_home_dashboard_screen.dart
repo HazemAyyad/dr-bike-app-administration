@@ -1834,6 +1834,7 @@ class _DeviceHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconUrl = device.icon.trim();
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -1842,11 +1843,29 @@ class _DeviceHero extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 28.r,
-            backgroundColor: Colors.white.withOpacity(.16),
-            child: Icon(Icons.devices_other_rounded,
-                color: Colors.white, size: 30.r),
+          Container(
+            width: 62.r,
+            height: 62.r,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(.16),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: iconUrl.isEmpty
+                ? Icon(
+                    Icons.devices_other_rounded,
+                    color: Colors.white,
+                    size: 32.r,
+                  )
+                : Image.network(
+                    iconUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.devices_other_rounded,
+                      color: Colors.white,
+                      size: 32.r,
+                    ),
+                  ),
           ),
           SizedBox(width: 12.w),
           Expanded(
