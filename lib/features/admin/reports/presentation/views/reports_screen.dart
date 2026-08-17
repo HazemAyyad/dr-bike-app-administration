@@ -21,20 +21,18 @@ class ReportsScreen extends GetView<ReportsController> {
       body: GetBuilder<ReportsController>(
         builder: (_) => LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth > 980
+            final columns = constraints.maxWidth > 1100
                 ? 4
-                : constraints.maxWidth > 680
-                    ? 3
-                    : constraints.maxWidth > 420
-                        ? 2
-                        : 1;
+                : constraints.maxWidth < 340
+                    ? 2
+                    : 3;
             return GridView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
-                crossAxisSpacing: 10.w,
-                mainAxisSpacing: 10.h,
-                childAspectRatio: constraints.maxWidth > 420 ? 2.35 : 2.85,
+                crossAxisSpacing: 7.w,
+                mainAxisSpacing: 7.h,
+                childAspectRatio: constraints.maxWidth > 420 ? 2.75 : 1.62,
               ),
               itemCount: controller.reports.length,
               itemBuilder: (context, index) {
@@ -108,6 +106,17 @@ class ReportsDetailScreen extends GetView<ReportsController> {
         actions: [
           if (reportKey == 'sales')
             IconButton(
+              tooltip: 'الفلاتر',
+              onPressed: () => _showFiltersSheet(context, controller),
+              icon: Icon(
+                Icons.tune_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          if (reportKey == 'sales')
+            IconButton(
               tooltip: 'PDF',
               onPressed: () =>
                   Get.snackbar('PDF', 'سيتم ربط تصدير PDF للتقرير'),
@@ -131,12 +140,6 @@ class ReportsDetailScreen extends GetView<ReportsController> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-                    child: _FiltersBar(controller: controller),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: _SalesReport(controller: controller),
                   ),
@@ -149,6 +152,59 @@ class ReportsDetailScreen extends GetView<ReportsController> {
       ),
     );
   }
+}
+
+void _showFiltersSheet(BuildContext context, ReportsController controller) {
+  Get.bottomSheet(
+    GetBuilder<ReportsController>(
+      builder: (_) => Container(
+        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.tune_rounded, color: AppColors.primaryColor),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'فلاتر التقرير',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: Get.back,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              _FiltersBar(controller: controller),
+              SizedBox(height: 12.h),
+              FilledButton.icon(
+                onPressed: () async {
+                  await controller.loadSalesReport();
+                  Get.back();
+                },
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('تطبيق'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    isScrollControlled: true,
+  );
 }
 
 class _ReportCard extends StatelessWidget {
@@ -173,7 +229,7 @@ class _ReportCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(6.r),
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(12.r),
+        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 7.h),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(6.r),
@@ -185,47 +241,30 @@ class _ReportCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 38.w,
-              height: 38.w,
+              width: 28.w,
+              height: 28.w,
               decoration: BoxDecoration(
                 color: AppColors.primaryColor.withValues(alpha: .10),
                 borderRadius: BorderRadius.circular(6.r),
               ),
-              child: Icon(icon, color: AppColors.primaryColor, size: 21.sp),
+              child: Icon(icon, color: AppColors.primaryColor, size: 16.sp),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 6.w),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    enabled ? 'عرض التقرير' : 'قيد التجهيز',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: enabled ? AppColors.primaryColor : Colors.grey,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5.sp,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             Icon(
               Icons.chevron_left_rounded,
               color: AppColors.primaryColor,
-              size: 23.sp,
+              size: 18.sp,
             ),
           ],
         ),
