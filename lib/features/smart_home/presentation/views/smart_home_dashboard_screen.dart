@@ -1146,7 +1146,11 @@ class _RenameDeviceDialogState extends State<_RenameDeviceDialog> {
       name: nameController.text,
     );
     if (!mounted) return;
-    Get.back(result: ok);
+    if (ok) {
+      Get.back(result: true);
+      return;
+    }
+    setState(() => saving = false);
   }
 
   @override

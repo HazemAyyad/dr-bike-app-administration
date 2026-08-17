@@ -402,6 +402,16 @@ class SmartHomeNativeService {
       final result = await _channel.invokeMapMethod<dynamic, dynamic>(
         'renameDevice',
         {'tuyaDeviceId': tuyaDeviceId, 'name': name},
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => <dynamic, dynamic>{
+          'success': false,
+          'code': 'rename_timeout',
+          'message': 'Tuya device rename timed out',
+          'device': <String, dynamic>{},
+          'dps': <String, dynamic>{},
+          'online': false,
+        },
       );
       return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
     } on MissingPluginException {
