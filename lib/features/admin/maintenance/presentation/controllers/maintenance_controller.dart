@@ -22,6 +22,7 @@ import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../create_tasks/presentation/widgets/horizontal_time_picker_sheet.dart';
 import '../../data/repositories/maintenance_implement.dart';
 import '../../data/models/maintenance_product_model.dart';
+import '../../data/models/maintenance_service_model.dart';
 import '../../data/models/maintenances_model.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
 import '../../domain/usecases/delete_maintenance_usecase.dart';
@@ -107,7 +108,12 @@ class MaintenanceController extends GetxController {
   final RxMap<String, dynamic> dailyBoxPayload = <String, dynamic>{}.obs;
   final RxList<MaintenanceProductModel> maintenanceProducts =
       <MaintenanceProductModel>[].obs;
+  final RxList<MaintenanceServiceModel> maintenanceServices =
+      <MaintenanceServiceModel>[].obs;
+  final RxList<MaintenanceServiceModel> serviceSuggestions =
+      <MaintenanceServiceModel>[].obs;
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
+  final RxBool isServicesLoading = false.obs;
 
   String? maintenanceId;
   Timer? _autoSaveDebounce;
@@ -287,12 +293,19 @@ class MaintenanceController extends GetxController {
     return opened;
   }
 
-  Future<bool> requestMaintenanceDailySessionClosing({String? note}) async {
+  Future<bool> requestMaintenanceDailySessionClosing({
+    String? note,
+    double? physicalCount,
+    double? floatToKeep,
+  }) async {
     isDailyBoxLoading(true);
     update();
 
-    final result =
-        await requestMaintenanceDailySessionClosingUsecase.call(note: note);
+    final result = await requestMaintenanceDailySessionClosingUsecase.call(
+      note: note,
+      physicalCount: physicalCount,
+      floatToKeep: floatToKeep,
+    );
     var requested = false;
     result.fold(
       (failure) {
@@ -445,6 +458,8 @@ class MaintenanceController extends GetxController {
     int sessionId, {
     int? toBoxId,
     String? note,
+    double? physicalCount,
+    double? floatToKeep,
   }) async {
     isDailyClosingReviewLoading(true);
     update();
@@ -454,6 +469,8 @@ class MaintenanceController extends GetxController {
         sessionId: sessionId,
         toBoxId: toBoxId,
         reviewNote: note,
+        physicalCount: physicalCount,
+        floatToKeep: floatToKeep,
       );
       if (response['status'] == 'success') {
         Get.snackbar(
@@ -723,6 +740,67 @@ class MaintenanceController extends GetxController {
     update();
   }
 
+  Future<void> loadMaintenanceServices({String? search}) async {
+    isServicesLoading(true);
+    update();
+    try {
+      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final services = await datasource.getMaintenanceServices(search: search);
+      maintenanceServices.assignAll(services);
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isServicesLoading(false);
+      update();
+    }
+  }
+
+  Future<void> searchServiceSuggestions(String value) async {
+    final query = _serviceSearchTerm(value);
+    if (query.length < 2) {
+      serviceSuggestions.clear();
+      update(['maintenanceServiceSuggestions']);
+      return;
+    }
+
+    final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+    final suggestions = await datasource.searchMaintenanceServices(query);
+    serviceSuggestions.assignAll(suggestions);
+    update(['maintenanceServiceSuggestions']);
+  }
+
+  String _serviceSearchTerm(String value) {
+    final clean = value.trim();
+    if (clean.isEmpty) return '';
+    final parts = clean.split(RegExp(r'[\n،,]+'));
+    return parts.isEmpty ? clean : parts.last.trim();
+  }
+
+  void addMaintenanceServiceToDetails(MaintenanceServiceModel service) {
+    final line =
+        '${service.name} - ${SalesAmountFormat.display(service.price)}';
+    final current = descriptionController.text.trimRight();
+    if (!current.contains(service.name)) {
+      descriptionController.text = current.isEmpty ? line : '$current\n$line';
+    }
+
+    final nextLabor = laborCost + service.price;
+    laborCostController.text =
+        nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
+    serviceSuggestions.clear();
+    recalculateTotals();
+    syncProductsIfPossible();
+    scheduleAutoSave();
+    update(['maintenanceServiceSuggestions']);
+    update();
+  }
+
   void _hydrateSalesCart(SalesController sales) {
     sales.clearCartLines(deferDispose: false);
     for (final item in maintenanceProducts) {
@@ -801,15 +879,19 @@ class MaintenanceController extends GetxController {
     update();
   }
 
-  Future<void> syncProductsIfPossible() async {
+  Future<void> syncProductsIfPossible({String? editReason}) async {
     if (maintenanceId == null || maintenanceId!.isEmpty) return;
-    if (isDelivered.value) return;
+    if (isDelivered.value &&
+        (editReason == null || editReason.trim().isEmpty)) {
+      return;
+    }
 
     await syncMaintenanceProductsUsecase.call(
       maintenanceId: maintenanceId!,
       products: maintenanceProducts.toList(),
       laborCost: laborCost,
       discount: discount,
+      editReason: editReason,
     );
   }
 
@@ -1149,8 +1231,13 @@ class MaintenanceController extends GetxController {
     String? maintenanceId,
     bool isSave = false,
     bool silent = false,
+    String? editReason,
   }) async {
     if (!formKey.currentState!.validate()) return false;
+
+    final deliveredEditReason =
+        editReason ?? await _resolveDeliveredEditReason(silent);
+    if (isDelivered.value && deliveredEditReason == null) return false;
 
     if (!silent) {
       isLoading(true);
@@ -1178,6 +1265,7 @@ class MaintenanceController extends GetxController {
         status: status,
         laborCost: laborCost,
         discount: discount,
+        editReason: deliveredEditReason,
       );
 
       await result.fold(
@@ -1207,7 +1295,7 @@ class MaintenanceController extends GetxController {
             this.maintenanceId = newId;
             isEdit(true);
           }
-          await syncProductsIfPossible();
+          await syncProductsIfPossible(editReason: deliveredEditReason);
           getMaintenancesData();
           if (isSave) Get.back();
           if (!silent) {
@@ -1239,6 +1327,48 @@ class MaintenanceController extends GetxController {
         update();
       }
     }
+  }
+
+  Future<String?> _resolveDeliveredEditReason(bool silent) async {
+    if (!isDelivered.value) return null;
+    if (silent) return null;
+
+    final controller = TextEditingController();
+    final reason = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('سبب تعديل الصيانة المسلّمة'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'سبب التعديل',
+            hintText: 'مثال: تصحيح تكلفة قطعة / تعديل موعد / ملاحظة',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<String>(),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isEmpty) {
+                Get.snackbar('error'.tr, 'يجب إدخال سبب التعديل');
+                return;
+              }
+              Get.back<String>(result: value);
+            },
+            child: Text('save'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    controller.dispose();
+    return reason?.trim().isEmpty == true ? null : reason;
   }
 
   final Map<String, List<MaintenanceDataModel>> maintenancesSearch = {};

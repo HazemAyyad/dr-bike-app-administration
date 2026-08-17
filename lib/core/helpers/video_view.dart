@@ -305,9 +305,13 @@ class _VideoViewState extends State<VideoView> {
                 fit: StackFit.expand,
                 children: [
                   Center(
-                    child: AspectRatio(
-                      aspectRatio: controller.value.aspectRatio,
-                      child: VideoPlayer(controller),
+                    child: InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: AspectRatio(
+                        aspectRatio: controller.value.aspectRatio,
+                        child: VideoPlayer(controller),
+                      ),
                     ),
                   ),
                   AnimatedOpacity(

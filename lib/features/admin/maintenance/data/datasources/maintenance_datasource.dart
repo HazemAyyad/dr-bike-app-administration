@@ -13,6 +13,7 @@ import '../../../sales/data/models/daily_session_model.dart';
 import '../models/maintenance_activity_log_model.dart';
 import '../models/maintenance_invoice_model.dart';
 import '../models/maintenance_product_model.dart';
+import '../models/maintenance_service_model.dart';
 
 class MaintenanceDatasource {
   final ApiConsumer api;
@@ -57,6 +58,7 @@ class MaintenanceDatasource {
     required String status,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) async {
     try {
       final response = await api.post(
@@ -72,6 +74,8 @@ class MaintenanceDatasource {
           'receipt_time': receiptTime,
           if (laborCost != null) 'labor_cost': laborCost,
           if (discount != null) 'discount': discount,
+          if (editReason != null && editReason.trim().isNotEmpty)
+            'edit_reason': editReason.trim(),
           if (files.isNotEmpty)
             'files[]': await Future.wait(
               files.map((e) async {
@@ -151,6 +155,7 @@ class MaintenanceDatasource {
     required List<MaintenanceProductModel> products,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) async {
     try {
       final response = await api.post(
@@ -159,6 +164,8 @@ class MaintenanceDatasource {
           'maintenance_id': maintenanceId,
           if (laborCost != null) 'labor_cost': laborCost,
           if (discount != null) 'discount': discount,
+          if (editReason != null && editReason.trim().isNotEmpty)
+            'edit_reason': editReason.trim(),
           'products': products.map((e) => e.toApiJson()).toList(),
         },
       );
@@ -208,6 +215,131 @@ class MaintenanceDatasource {
     }
   }
 
+  Future<List<MaintenanceServiceModel>> getMaintenanceServices({
+    String? search,
+    bool activeOnly = false,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.maintenanceServices,
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+          if (activeOnly) 'active_only': 1,
+        },
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        return ((data['services'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) => MaintenanceServiceModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                ))
+            .toList();
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<MaintenanceServiceModel>> searchMaintenanceServices(
+      String query) async {
+    try {
+      final response = await api.get(
+        EndPoints.maintenanceServicesSearch,
+        queryParameters: {'q': query, 'limit': 10},
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        return ((data['services'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) => MaintenanceServiceModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                ))
+            .toList();
+      }
+      return const <MaintenanceServiceModel>[];
+    } on DioException catch (_) {
+      return const <MaintenanceServiceModel>[];
+    }
+  }
+
+  Future<Map<String, dynamic>> saveMaintenanceService({
+    int? serviceId,
+    required String name,
+    required double price,
+    required bool isActive,
+    required List<File> media,
+    List<int> keepMediaIds = const [],
+  }) async {
+    try {
+      final response = await api.post(
+        serviceId == null
+            ? EndPoints.maintenanceServices
+            : EndPoints.maintenanceService(serviceId),
+        data: {
+          'name': name,
+          'price': price,
+          'is_active': isActive ? 1 : 0,
+          if (keepMediaIds.isNotEmpty) 'keep_media_ids': keepMediaIds,
+          if (media.isNotEmpty)
+            'media[]': await Future.wait(
+              media.map(
+                (file) => MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split(Platform.pathSeparator).last,
+                ),
+              ),
+            ),
+        },
+        isFormData: true,
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteMaintenanceService(int serviceId) async {
+    try {
+      final response =
+          await api.delete(EndPoints.maintenanceService(serviceId));
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> getDailySessionCurrent() async {
     try {
       final response = await api.get(EndPoints.maintenanceDailySessionCurrent);
@@ -243,11 +375,19 @@ class MaintenanceDatasource {
     }
   }
 
-  Future<dynamic> requestDailySessionClosing({String? note}) async {
+  Future<dynamic> requestDailySessionClosing({
+    String? note,
+    double? physicalCount,
+    double? floatToKeep,
+  }) async {
     try {
       final response = await api.post(
         EndPoints.maintenanceDailySessionRequestClosing,
-        data: {if (note != null && note.trim().isNotEmpty) 'note': note},
+        data: {
+          if (note != null && note.trim().isNotEmpty) 'note': note,
+          if (physicalCount != null) 'physical_count': physicalCount,
+          if (floatToKeep != null) 'float_to_keep': floatToKeep,
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -376,6 +516,8 @@ class MaintenanceDatasource {
     required int sessionId,
     int? toBoxId,
     String? reviewNote,
+    double? physicalCount,
+    double? floatToKeep,
   }) async {
     try {
       final response = await api.post(
@@ -385,6 +527,8 @@ class MaintenanceDatasource {
           if (toBoxId != null) 'to_box_id': toBoxId,
           if (reviewNote != null && reviewNote.trim().isNotEmpty)
             'review_note': reviewNote,
+          if (physicalCount != null) 'physical_count': physicalCount,
+          if (floatToKeep != null) 'float_to_keep': floatToKeep,
         },
       );
       return response.data;

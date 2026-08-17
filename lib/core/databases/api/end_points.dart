@@ -669,14 +669,16 @@ class EndPoints {
   static const String maintenanceDeliver = 'maintenance/deliver';
   static const String maintenanceActivityLog = 'maintenance/activity-log';
   static const String maintenanceInvoice = 'maintenance/invoice';
+  static const String maintenanceServices = 'maintenance/services';
+  static const String maintenanceServicesSearch = 'maintenance/services/search';
+  static String maintenanceService(int id) => 'maintenance/services/$id';
   static const String maintenanceDailySessionCurrent =
       'maintenance/daily-session/current';
   static const String maintenanceDailySessionOpen =
       'maintenance/daily-session/open';
   static const String maintenanceDailySessionsOpen =
       'maintenance/daily-sessions/open';
-  static const String maintenanceDailySessions =
-      'maintenance/daily-sessions';
+  static const String maintenanceDailySessions = 'maintenance/daily-sessions';
   static String maintenanceDailySessionDetail(int sessionId) =>
       'maintenance/daily-sessions/$sessionId';
   static const String maintenanceDailySessionRequestClosing =

@@ -46,6 +46,13 @@ class MaintenanceProductsSection extends StatelessWidget {
                   ),
                   if (!isLocked)
                     TextButton.icon(
+                      onPressed: () => _showServicesPicker(context),
+                      icon:
+                          Icon(Icons.home_repair_service_outlined, size: 18.sp),
+                      label: Text('خدمات', style: TextStyle(fontSize: 12.sp)),
+                    ),
+                  if (!isLocked)
+                    TextButton.icon(
                       onPressed: () => controller.openProductPicker(context),
                       icon: Icon(Icons.add, size: 18.sp),
                       label: Text('add'.tr, style: TextStyle(fontSize: 12.sp)),
@@ -110,6 +117,21 @@ class MaintenanceProductsSection extends StatelessWidget {
     );
   }
 
+  Future<void> _showServicesPicker(BuildContext context) async {
+    await controller.loadMaintenanceServices();
+    if (!context.mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (_) => _MaintenanceServicesPicker(controller: controller),
+    );
+  }
+
   Widget _amountField({
     required String label,
     required TextEditingController controller,
@@ -140,6 +162,123 @@ class MaintenanceProductsSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MaintenanceServicesPicker extends StatefulWidget {
+  const _MaintenanceServicesPicker({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  State<_MaintenanceServicesPicker> createState() =>
+      _MaintenanceServicesPickerState();
+}
+
+class _MaintenanceServicesPickerState
+    extends State<_MaintenanceServicesPicker> {
+  final TextEditingController _searchController = TextEditingController();
+
+  MaintenanceController get controller => widget.controller;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .72,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'خدمات الصيانة',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'بحث عن خدمة',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+                onChanged: (value) =>
+                    controller.loadMaintenanceServices(search: value),
+              ),
+              SizedBox(height: 10.h),
+              Expanded(
+                child: GetBuilder<MaintenanceController>(
+                  builder: (_) {
+                    if (controller.isServicesLoading.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (controller.maintenanceServices.isEmpty) {
+                      return Center(child: Text('noData'.tr));
+                    }
+                    return ListView.separated(
+                      itemCount: controller.maintenanceServices.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      itemBuilder: (_, index) {
+                        final service = controller.maintenanceServices[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.home_repair_service_outlined,
+                            color: AppColors.primaryColor,
+                          ),
+                          title: Text(
+                            service.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${service.price.toStringAsFixed(2)} شيكل',
+                          ),
+                          trailing: const Icon(Icons.add_circle_outline),
+                          onTap: () {
+                            controller.addMaintenanceServiceToDetails(service);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

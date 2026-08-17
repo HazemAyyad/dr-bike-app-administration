@@ -127,7 +127,9 @@ import '../features/admin/general_data_list/presentation/views/add_new_customer_
 import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
 import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_daily_admin_screen.dart';
+import '../features/admin/maintenance/presentation/views/maintenance_daily_close_screen.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
+import '../features/admin/maintenance/presentation/views/maintenance_services_settings_screen.dart';
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
 import '../features/admin/product_management/presentation/binding/product_management_binding.dart';
 import '../features/admin/product_management/presentation/views/add_product_management_screen.dart';
@@ -934,6 +936,20 @@ class AppPages {
     GetPage(
       name: AppRoutes.MAINTENANCEDAILYADMINSCREEN,
       page: () => const MaintenanceDailyAdminScreen(),
+      binding: MaintenanceBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+      page: () => const MaintenanceDailyCloseScreen(),
+      binding: MaintenanceBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
+      page: () => const MaintenanceServicesSettingsScreen(),
       binding: MaintenanceBinding(),
       transition: _transitionFadeIn,
     ),

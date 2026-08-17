@@ -101,8 +101,12 @@ class NewMaintenanceScreen extends StatelessWidget {
                       maxLines: 4,
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.newline,
-                      onChanged: (_) => controller.scheduleAutoSave(),
+                      onChanged: (value) {
+                        controller.scheduleAutoSave();
+                        controller.searchServiceSuggestions(value);
+                      },
                     ),
+                    _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
                     MaintenanceProductsSection(controller: controller),
                     SizedBox(height: 10.h),
@@ -112,6 +116,18 @@ class NewMaintenanceScreen extends StatelessWidget {
                         !controller.isEdit.value &&
                         (controller.maintenanceId == null ||
                             controller.maintenanceId!.isEmpty))
+                      AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'save',
+                        onPressed: () {
+                          controller.createMaintenance(
+                            step: controller.selectedStep.value,
+                            maintenanceId: controller.maintenanceId,
+                            isSave: true,
+                          );
+                        },
+                      ),
+                    if (controller.isDelivered.value && controller.isEdit.value)
                       AppButton(
                         isLoading: controller.isLoading,
                         text: 'save',
@@ -140,6 +156,75 @@ class NewMaintenanceScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MaintenanceServiceSuggestions extends StatelessWidget {
+  const _MaintenanceServiceSuggestions({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<MaintenanceController>(
+      id: 'maintenanceServiceSuggestions',
+      builder: (_) {
+        final suggestions = controller.serviceSuggestions;
+        if (suggestions.isEmpty ||
+            controller.selectedStep.value >= 4 ||
+            controller.isDelivered.value) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          width: double.infinity,
+          margin: EdgeInsets.only(top: 6.h),
+          padding: EdgeInsets.symmetric(vertical: 4.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: AppColors.operationalCardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: suggestions
+                .take(4)
+                .map(
+                  (service) => ListTile(
+                    dense: true,
+                    leading: Icon(
+                      Icons.home_repair_service_outlined,
+                      color: AppColors.primaryColor,
+                      size: 20.sp,
+                    ),
+                    title: Text(
+                      service.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${service.price.toStringAsFixed(2)} شيكل',
+                      style: TextStyle(fontSize: 11.sp),
+                    ),
+                    onTap: () =>
+                        controller.addMaintenanceServiceToDetails(service),
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
     );
   }
 }

@@ -1158,6 +1158,15 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               onTap: _editSalesDailySettings,
             ),
             _SettingsItem(
+              icon: Icons.home_repair_service_outlined,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'خدمات الصيانة',
+              descriptionKey: 'أسعار خدمات الصيانة وفيديوهات الشرح',
+              onTap: () => Get.toNamed(
+                AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
+              ),
+            ),
+            _SettingsItem(
               icon: Icons.add_circle_outline,
               iconColor: const Color(0xFF0F766E),
               titleKey: 'adminFabOptionsSetting',

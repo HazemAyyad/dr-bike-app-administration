@@ -74,6 +74,9 @@ class AppRoutes {
   static const MAINTENANCESCREEN = '/MaintenancesScreen';
   static const NEWMAINTENANCESCREEN = '/NewMaintenanceScreen';
   static const MAINTENANCEDAILYADMINSCREEN = '/MaintenanceDailyAdminScreen';
+  static const MAINTENANCEDAILYCLOSESCREEN = '/MaintenanceDailyCloseScreen';
+  static const MAINTENANCESERVICESSETTINGSSCREEN =
+      '/MaintenanceServicesSettingsScreen';
 
   // Sales
   static const SALESSCREEN = '/SalesScreen';
