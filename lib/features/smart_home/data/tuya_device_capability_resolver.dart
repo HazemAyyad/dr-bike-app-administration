@@ -172,13 +172,26 @@ class DeviceCapabilityResolver {
     SmartDeviceModel device,
     TuyaDeviceFunction function,
   ) {
-    if (device.lastStatus.containsKey(function.dpId)) {
-      return device.lastStatus[function.dpId];
+    final status = _mergedStatus(device);
+    final intDpId = int.tryParse(function.dpId);
+    if (status.containsKey(function.dpId)) {
+      return status[function.dpId];
     }
-    if (device.lastStatus.containsKey(function.code)) {
-      return device.lastStatus[function.code];
+    if (intDpId != null && status.containsKey(intDpId)) {
+      return status[intDpId];
+    }
+    if (status.containsKey(function.code)) {
+      return status[function.code];
     }
     return null;
+  }
+
+  static Map<dynamic, dynamic> _mergedStatus(SmartDeviceModel device) {
+    final status = <dynamic, dynamic>{};
+    final metadataStatus = device.rawMetadata['last_status'];
+    if (metadataStatus is Map) status.addAll(metadataStatus);
+    status.addAll(device.lastStatus);
+    return status;
   }
 
   static TuyaValidationResult validate(
@@ -286,7 +299,9 @@ class DeviceCapabilityResolver {
   static bool _looksLikePowerCode(String code) {
     final clean = code.toLowerCase();
     return clean == 'switch' ||
-        clean.startsWith('switch_') ||
+        (clean.startsWith('switch_') &&
+            clean != 'switch_backlight' &&
+            clean != 'switch_inching') ||
         clean == 'switch_led' ||
         clean == 'power' ||
         clean.startsWith('power_');

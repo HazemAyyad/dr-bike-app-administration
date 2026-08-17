@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
 
 import '../../../core/databases/api/dio_consumer.dart';
@@ -243,14 +245,27 @@ class SmartDeviceModel {
       manufacturer: json['manufacturer']?.toString() ?? '',
       primaryPowerDp: json['primary_power_dp']?.toString() ?? '',
       powerOn: json['power_on'] is bool ? json['power_on'] as bool : null,
-      lastStatus: rawStatus is Map
-          ? Map<String, dynamic>.from(rawStatus)
-          : const <String, dynamic>{},
-      rawMetadata: rawMetadata is Map
-          ? Map<String, dynamic>.from(rawMetadata)
-          : const <String, dynamic>{},
+      lastStatus: _mapFromDynamic(rawStatus),
+      rawMetadata: _mapFromDynamic(rawMetadata),
     );
   }
+}
+
+Map<String, dynamic> _mapFromDynamic(dynamic raw) {
+  if (raw is Map) {
+    return raw.map((key, value) => MapEntry(key.toString(), value));
+  }
+  if (raw is String && raw.trim().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
+      }
+    } catch (_) {
+      return const <String, dynamic>{};
+    }
+  }
+  return const <String, dynamic>{};
 }
 
 class _NoValue {

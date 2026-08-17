@@ -1373,8 +1373,12 @@ class _SmartDeviceCard extends StatelessWidget {
   }
 
   List<TuyaDeviceFunction> _visibleFunctions(SmartDeviceModel device) {
+    final curtain = _looksLikeCurtainDevice(device);
     final functions = DeviceCapabilityResolver.writableFunctions(device)
         .where((item) => item.isBool || item.isValue || item.isEnum)
+        .where((item) => curtain
+            ? _isCurtainUserFunction(item)
+            : _isSwitchUserFunction(item))
         .toList(growable: false);
     final power = DeviceCapabilityResolver.resolvePower(device);
     functions.sort((a, b) {
@@ -1415,6 +1419,76 @@ class _SmartDeviceCard extends StatelessWidget {
   }
 }
 
+bool _looksLikeCurtainDevice(SmartDeviceModel device) {
+  final text =
+      '${device.category} ${device.productName} ${device.name}'.toLowerCase();
+  return text.contains('curtain') ||
+      text.contains('blind') ||
+      text.contains('ستار') ||
+      text.contains('بوابة');
+}
+
+String _deviceMainStatusLabel(SmartDeviceModel device) {
+  final ar = Get.locale?.languageCode == 'ar';
+  if (_looksLikeCurtainDevice(device)) {
+    final functions = DeviceCapabilityResolver.writableFunctions(device);
+    final command = _functionByCode(functions, 'control');
+    final percent = _functionByCode(functions, 'percent_control');
+    final commandValue = command == null
+        ? null
+        : DeviceCapabilityResolver.statusValue(device, command);
+    final percentValue = percent == null
+        ? null
+        : DeviceCapabilityResolver.statusValue(device, percent);
+    if (commandValue != null && percentValue != null) {
+      return ar
+          ? 'الحالة: ${_friendlyEnumValue(commandValue.toString())} - $percentValue%'
+          : 'Status: ${_friendlyEnumValue(commandValue.toString())} - $percentValue%';
+    }
+    if (commandValue != null) {
+      return ar
+          ? 'الحالة: ${_friendlyEnumValue(commandValue.toString())}'
+          : 'Status: ${_friendlyEnumValue(commandValue.toString())}';
+    }
+    if (percentValue != null) {
+      return ar ? 'نسبة الفتح: $percentValue%' : 'Open percent: $percentValue%';
+    }
+    return '';
+  }
+
+  final power = DeviceCapabilityResolver.resolvePower(device);
+  if (power == null) return '';
+  final value = DeviceCapabilityResolver.statusValue(device, power);
+  if (value is! bool) return '';
+  return '${_functionLabel(power)}: ${_onOffLabel(value)}';
+}
+
+TuyaDeviceFunction? _functionByCode(
+  List<TuyaDeviceFunction> functions,
+  String code,
+) {
+  final clean = code.toLowerCase();
+  for (final function in functions) {
+    if (function.code.toLowerCase() == clean) return function;
+  }
+  return null;
+}
+
+bool _isCurtainUserFunction(TuyaDeviceFunction function) {
+  final code = function.code.toLowerCase();
+  return code == 'control' ||
+      code == 'percent_control' ||
+      code == 'switch_backlight';
+}
+
+bool _isSwitchUserFunction(TuyaDeviceFunction function) {
+  final code = function.code.toLowerCase();
+  return code == 'switch' ||
+      code.startsWith('switch_') && code != 'switch_inching' ||
+      code == 'switch_led' ||
+      code == 'switch_backlight';
+}
+
 String _functionLabel(TuyaDeviceFunction function) {
   final name = function.name.trim();
   if (name.isNotEmpty && !_containsCjk(name)) return name;
@@ -1427,12 +1501,12 @@ String _friendlyDpsName(String key) {
   final mapped = ar
       ? {
           'switch': 'تشغيل',
-          'switch_1': 'المفتاح 1',
-          'switch_2': 'المفتاح 2',
-          'switch_3': 'المفتاح 3',
-          'switch_4': 'المفتاح 4',
+          'switch_1': 'تشغيل / إطفاء 1',
+          'switch_2': 'تشغيل / إطفاء 2',
+          'switch_3': 'تشغيل / إطفاء 3',
+          'switch_4': 'تشغيل / إطفاء 4',
           'switch_led': 'الإضاءة',
-          'switch_backlight': 'إضاءة الزر',
+          'switch_backlight': 'إضاءة زر الجهاز',
           'control': 'حركة الستارة',
           'percent_control': 'نسبة الفتح',
           'relay_status': 'حالة الريليه',
@@ -1471,13 +1545,18 @@ String _functionStatusLabel(TuyaDeviceFunction function, dynamic value) {
   final ar = Get.locale?.languageCode == 'ar';
   if (value == null) return ar ? 'غير معروف' : 'Unknown';
   if (function.isBool || value is bool) {
-    return value == true ? (ar ? 'شغال' : 'On') : (ar ? 'مطفي' : 'Off');
+    return _onOffLabel(value == true);
   }
   if (function.isValue || value is num) {
     final unit = function.values['unit']?.toString() ?? '';
     return '$value$unit';
   }
   return _friendlyEnumValue(value.toString());
+}
+
+String _onOffLabel(bool active) {
+  final ar = Get.locale?.languageCode == 'ar';
+  return active ? (ar ? 'شغال' : 'On') : (ar ? 'مطفي' : 'Off');
 }
 
 String _friendlyEnumValue(String value) {
@@ -1943,6 +2022,7 @@ class _DeviceHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconUrl = device.icon.trim();
+    final statusText = _deviceMainStatusLabel(device);
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -1999,6 +2079,18 @@ class _DeviceHero extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
+                if (statusText.isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  Text(
+                    statusText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -2035,43 +2127,68 @@ class _DeviceCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final curtainCommand = _curtainCommandFunction(device);
-    if (_looksLikeCurtain(device) || curtainCommand != null) {
-      return _CurtainCommandSurface(
-        device: device,
-        busy: busy,
-        readOnly: readOnly,
-        commandFunction: curtainCommand,
-        percentFunction: _curtainPercentFunction(device),
-        onDps: onDps,
+    final auxiliary = _auxiliaryBoolFunctions(device);
+    if (_looksLikeCurtainDevice(device) || curtainCommand != null) {
+      return Column(
+        children: [
+          _CurtainCommandSurface(
+            device: device,
+            busy: busy,
+            readOnly: readOnly,
+            commandFunction: curtainCommand,
+            percentFunction: _curtainPercentFunction(device),
+            onDps: onDps,
+          ),
+          _AuxiliaryControlsSurface(
+            device: device,
+            entries: auxiliary,
+            busy: busy,
+            readOnly: readOnly,
+            onDps: onDps,
+          ),
+        ],
       );
     }
 
     final boolFunctions = DeviceCapabilityResolver.boolSwitches(device);
     if (boolFunctions.length >= 2) {
-      return _MultiSwitchCommandSurface(
-        device: device,
-        entries: boolFunctions,
-        busy: busy,
-        readOnly: readOnly,
-        onDps: onDps,
+      return Column(
+        children: [
+          _MultiSwitchCommandSurface(
+            device: device,
+            entries: boolFunctions,
+            busy: busy,
+            readOnly: readOnly,
+            onDps: onDps,
+          ),
+          _AuxiliaryControlsSurface(
+            device: device,
+            entries: auxiliary,
+            busy: busy,
+            readOnly: readOnly,
+            onDps: onDps,
+          ),
+        ],
       );
     }
 
-    return _PowerCommandSurface(
-      device: device,
-      busy: busy,
-      readOnly: readOnly,
-      onPowerChanged: onPowerChanged,
+    return Column(
+      children: [
+        _PowerCommandSurface(
+          device: device,
+          busy: busy,
+          readOnly: readOnly,
+          onPowerChanged: onPowerChanged,
+        ),
+        _AuxiliaryControlsSurface(
+          device: device,
+          entries: auxiliary,
+          busy: busy,
+          readOnly: readOnly,
+          onDps: onDps,
+        ),
+      ],
     );
-  }
-
-  bool _looksLikeCurtain(SmartDeviceModel device) {
-    final text =
-        '${device.category} ${device.productName} ${device.name}'.toLowerCase();
-    return text.contains('curtain') ||
-        text.contains('blind') ||
-        text.contains('ستار') ||
-        text.contains('بوابة');
   }
 
   TuyaDeviceFunction? _curtainCommandFunction(SmartDeviceModel device) {
@@ -2097,6 +2214,16 @@ class _DeviceCommandSurface extends StatelessWidget {
       }
     }
     return null;
+  }
+
+  List<TuyaDeviceFunction> _auxiliaryBoolFunctions(SmartDeviceModel device) {
+    final powerDpIds =
+        DeviceCapabilityResolver.boolSwitches(device).map((item) => item.dpId);
+    return DeviceCapabilityResolver.writableFunctions(device)
+        .where((item) => item.isBool)
+        .where((item) => !powerDpIds.contains(item.dpId))
+        .where((item) => item.code.toLowerCase() == 'switch_backlight')
+        .toList(growable: false);
   }
 }
 
@@ -2149,7 +2276,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
           children: [
             Expanded(
               child: _AllSwitchesButton(
-                label: 'OFF',
+                label: _onOffLabel(false),
                 enabled: enabled,
                 onTap: () {
                   for (final function in entries) {
@@ -2165,7 +2292,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
             SizedBox(width: 12.w),
             Expanded(
               child: _AllSwitchesButton(
-                label: 'ON',
+                label: _onOffLabel(true),
                 enabled: enabled,
                 active: true,
                 onTap: () {
@@ -2182,6 +2309,85 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _AuxiliaryControlsSurface extends StatelessWidget {
+  const _AuxiliaryControlsSurface({
+    required this.device,
+    required this.entries,
+    required this.busy,
+    required this.readOnly,
+    required this.onDps,
+  });
+
+  final SmartDeviceModel device;
+  final List<TuyaDeviceFunction> entries;
+  final bool busy;
+  final bool readOnly;
+  final void Function(String code, dynamic value) onDps;
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final enabled = !busy && !readOnly;
+    return Padding(
+      padding: EdgeInsets.only(top: 12.h),
+      child: Column(
+        children: entries.map((function) {
+          final value = DeviceCapabilityResolver.statusValue(device, function);
+          final active = value == true;
+          return Container(
+            margin: EdgeInsets.only(bottom: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: Colors.black.withOpacity(.05)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.light_mode_outlined,
+                  color: active ? const Color(0xFF28C79A) : Colors.grey,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _functionLabel(function),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        _functionStatusLabel(function, value),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: active
+                                  ? const Color(0xFF28C79A)
+                                  : AppColors.customGreyColor5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: active,
+                  onChanged:
+                      enabled ? (next) => onDps(function.code, next) : null,
+                ),
+              ],
+            ),
+          );
+        }).toList(growable: false),
+      ),
     );
   }
 }
@@ -2268,7 +2474,7 @@ class _SwitchChannelButton extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
               Text(
-                active ? 'ON' : 'OFF',
+                _onOffLabel(active),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: active ? activeColor : AppColors.customGreyColor5,
                       fontWeight: FontWeight.w900,
@@ -2389,7 +2595,7 @@ class _PowerCommandSurface extends StatelessWidget {
           Positioned(
             top: 62.h,
             child: Text(
-              active ? 'ON' : 'OFF',
+              _onOffLabel(active),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: active
                         ? const Color(0xFF28C79A)
@@ -2404,9 +2610,11 @@ class _PowerCommandSurface extends StatelessWidget {
             child: Text(
               powerFunction == null
                   ? hasSchema
-                      ? 'No writable power function'
-                      : 'Loading power function'
-                  : '${'smartHomeDpsCode'.tr}: ${powerFunction.code} (${powerFunction.dpId})',
+                      ? 'smartHomeNoPowerDps'.tr
+                      : (Get.locale?.languageCode == 'ar'
+                          ? 'تحميل أمر التشغيل'
+                          : 'Loading power function')
+                  : _functionLabel(powerFunction),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.customGreyColor5,
                     fontWeight: FontWeight.w700,
@@ -2443,17 +2651,24 @@ class _CurtainCommandSurface extends StatelessWidget {
         ? null
         : DeviceCapabilityResolver.statusValue(device, commandFunction!);
     final rawPercent = percentFunction == null
-        ? 0
+        ? null
         : DeviceCapabilityResolver.statusValue(device, percentFunction!);
     final min = _valueSetting(percentFunction, 'min') ?? 0;
     final max = _valueSetting(percentFunction, 'max') ?? 100;
     final step = _valueSetting(percentFunction, 'step') ?? 1;
     final percent = _snapValue(
-      ((rawPercent as num?)?.toDouble() ?? min).clamp(min, max).toDouble(),
+      (_doubleValue(rawPercent) ?? min).clamp(min, max).toDouble(),
       min: min,
       max: max,
       step: step,
     );
+    final statusLabel = currentCommand == null
+        ? (rawPercent == null
+            ? (Get.locale?.languageCode == 'ar'
+                ? 'الحالة غير معروفة'
+                : 'Unknown status')
+            : '${_functionLabel(percentFunction!)}: ${percent.round()}%')
+        : _friendlyEnumValue(currentCommand.toString());
     return Column(
       children: [
         SizedBox(
@@ -2533,11 +2748,7 @@ class _CurtainCommandSurface extends StatelessWidget {
               Positioned(
                 bottom: 132.h,
                 child: Text(
-                  currentCommand == null
-                      ? (Get.locale?.languageCode == 'ar'
-                          ? 'الحالة غير معروفة'
-                          : 'Unknown status')
-                      : _friendlyEnumValue(currentCommand.toString()),
+                  statusLabel,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppColors.customGreyColor5,
                         fontWeight: FontWeight.w900,
@@ -2564,9 +2775,13 @@ class _CurtainCommandSurface extends StatelessWidget {
 
   double? _valueSetting(TuyaDeviceFunction? function, String key) {
     final raw = function?.values[key];
-    if (raw is num) return raw.toDouble();
-    return double.tryParse(raw?.toString() ?? '');
+    return _doubleValue(raw);
   }
+}
+
+double? _doubleValue(dynamic raw) {
+  if (raw is num) return raw.toDouble();
+  return double.tryParse(raw?.toString() ?? '');
 }
 
 class _CurtainActionButton extends StatelessWidget {
