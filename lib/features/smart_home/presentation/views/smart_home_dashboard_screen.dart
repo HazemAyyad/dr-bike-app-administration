@@ -1989,7 +1989,7 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
             SizedBox(height: 14.h),
             _DeviceSpecsCard(device: device),
             SizedBox(height: 14.h),
-            _DpsCard(status: device.lastStatus),
+            _DpsCard(device: device),
           ],
         );
       }),
@@ -3050,14 +3050,13 @@ class _DeviceSpecsCard extends StatelessWidget {
 }
 
 class _DpsCard extends StatelessWidget {
-  const _DpsCard({required this.status});
+  const _DpsCard({required this.device});
 
-  final Map<String, dynamic> status;
+  final SmartDeviceModel device;
 
   @override
   Widget build(BuildContext context) {
-    final rows = status.entries.toList(growable: false)
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final rows = _dpsStatusRows(device);
     return _Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3072,16 +3071,49 @@ class _DpsCard extends StatelessWidget {
           if (rows.isEmpty)
             Text('smartHomeNoDps'.tr)
           else
-            ...rows.map(
-              (row) => _SpecRow(
-                label: row.key,
-                value: row.value?.toString() ?? '',
-              ),
-            ),
+            ...rows.map((row) => _SpecRow(label: row.key, value: row.value)),
         ],
       ),
     );
   }
+}
+
+List<MapEntry<String, String>> _dpsStatusRows(SmartDeviceModel device) {
+  final status = DeviceCapabilityResolver.statusMap(device);
+  final functions = DeviceCapabilityResolver.functions(device);
+  final byDpId = {
+    for (final function in functions) function.dpId: function,
+  };
+  final entries = status.entries.toList(growable: false)
+    ..sort((a, b) {
+      final aKey = a.key.toString();
+      final bKey = b.key.toString();
+      final aNumber = int.tryParse(aKey);
+      final bNumber = int.tryParse(bKey);
+      if (aNumber != null && bNumber != null) {
+        return aNumber.compareTo(bNumber);
+      }
+      return aKey.compareTo(bKey);
+    });
+
+  return entries.map((entry) {
+    final dpId = entry.key.toString();
+    final function = byDpId[dpId];
+    final label =
+        function == null ? dpId : '$dpId - ${_functionLabel(function)}';
+    final value = function == null
+        ? _rawStatusLabel(entry.value)
+        : _functionStatusLabel(function, entry.value);
+    return MapEntry(label, value);
+  }).toList(growable: false);
+}
+
+String _rawStatusLabel(dynamic value) {
+  final ar = Get.locale?.languageCode == 'ar';
+  if (value == null) return ar ? 'غير معروف' : 'Unknown';
+  if (value is bool) return _onOffLabel(value);
+  if (value is String) return _friendlyEnumValue(value);
+  return value.toString();
 }
 
 class _SpecRow extends StatelessWidget {

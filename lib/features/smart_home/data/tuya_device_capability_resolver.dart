@@ -172,7 +172,7 @@ class DeviceCapabilityResolver {
     SmartDeviceModel device,
     TuyaDeviceFunction function,
   ) {
-    final status = _mergedStatus(device);
+    final status = statusMap(device);
     final intDpId = int.tryParse(function.dpId);
     if (status.containsKey(function.dpId)) {
       return status[function.dpId];
@@ -186,10 +186,14 @@ class DeviceCapabilityResolver {
     return null;
   }
 
-  static Map<dynamic, dynamic> _mergedStatus(SmartDeviceModel device) {
+  static Map<dynamic, dynamic> statusMap(SmartDeviceModel device) {
     final status = <dynamic, dynamic>{};
     final metadataStatus = device.rawMetadata['last_status'];
     if (metadataStatus is Map) status.addAll(metadataStatus);
+    if (metadataStatus is String) {
+      final decoded = _decodeJson(metadataStatus);
+      if (decoded is Map) status.addAll(decoded);
+    }
     status.addAll(device.lastStatus);
     return status;
   }
@@ -271,7 +275,7 @@ class DeviceCapabilityResolver {
         'device_id': device.tuyaDeviceId,
         'product_id': device.tuyaProductId,
         'category': device.category,
-        'current_dps': device.lastStatus,
+        'current_dps': statusMap(device),
         'functions': functions(device)
             .map(
               (item) => {
