@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -1230,7 +1229,7 @@ class _SmartDeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
-    final functions = _visibleFunctions(device).take(4).toList(growable: false);
+    final functions = _visibleFunctions(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
     final powerActive = powerFunction == null
@@ -1335,14 +1334,16 @@ class _SmartDeviceCard extends StatelessWidget {
                 ),
                 if (functions.isNotEmpty) ...[
                   SizedBox(height: 16.h),
-                  Row(
-                    children: functions.map(
-                      (function) {
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: functions.map((function) {
                         final value = DeviceCapabilityResolver.statusValue(
                           device,
                           function,
                         );
-                        return Expanded(
+                        return SizedBox(
+                          width: 92.w,
                           child: _DpsShortcut(
                             label: _functionLabel(function),
                             value: value,
@@ -1360,8 +1361,8 @@ class _SmartDeviceCard extends StatelessWidget {
                                 : null,
                           ),
                         );
-                      },
-                    ).toList(growable: false),
+                      }).toList(growable: false),
+                    ),
                   ),
                 ],
               ],
@@ -1373,18 +1374,20 @@ class _SmartDeviceCard extends StatelessWidget {
   }
 
   List<TuyaDeviceFunction> _visibleFunctions(SmartDeviceModel device) {
-    final curtain = _looksLikeCurtainDevice(device);
     final functions = DeviceCapabilityResolver.writableFunctions(device)
-        .where((item) => item.isBool || item.isValue || item.isEnum)
-        .where((item) => curtain
-            ? _isCurtainUserFunction(item)
-            : _isSwitchUserFunction(item))
+        .where(
+          (item) => item.isBool || item.isValue || item.isEnum || item.isString,
+        )
         .toList(growable: false);
     final power = DeviceCapabilityResolver.resolvePower(device);
     functions.sort((a, b) {
       final ap = a.dpId == power?.dpId ? 0 : 1;
       final bp = b.dpId == power?.dpId ? 0 : 1;
-      return ap == bp ? a.dpId.compareTo(b.dpId) : ap.compareTo(bp);
+      if (ap != bp) return ap.compareTo(bp);
+      final ai = int.tryParse(a.dpId);
+      final bi = int.tryParse(b.dpId);
+      if (ai != null && bi != null) return ai.compareTo(bi);
+      return a.dpId.compareTo(b.dpId);
     });
     return functions;
   }
@@ -1472,21 +1475,6 @@ TuyaDeviceFunction? _functionByCode(
     if (function.code.toLowerCase() == clean) return function;
   }
   return null;
-}
-
-bool _isCurtainUserFunction(TuyaDeviceFunction function) {
-  final code = function.code.toLowerCase();
-  return code == 'control' ||
-      code == 'percent_control' ||
-      code == 'switch_backlight';
-}
-
-bool _isSwitchUserFunction(TuyaDeviceFunction function) {
-  final code = function.code.toLowerCase();
-  return code == 'switch' ||
-      code.startsWith('switch_') && code != 'switch_inching' ||
-      code == 'switch_led' ||
-      code == 'switch_backlight';
 }
 
 String _functionLabel(TuyaDeviceFunction function) {
@@ -2001,10 +1989,6 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
             SizedBox(height: 14.h),
             _DeviceSpecsCard(device: device),
             SizedBox(height: 14.h),
-            if (kDebugMode) ...[
-              _DeviceFunctionsCard(device: device),
-              SizedBox(height: 14.h),
-            ],
             _DpsCard(status: device.lastStatus),
           ],
         );
@@ -2127,7 +2111,7 @@ class _DeviceCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final curtainCommand = _curtainCommandFunction(device);
-    final auxiliary = _auxiliaryBoolFunctions(device);
+    final auxiliary = _auxiliaryFunctions(device);
     if (_looksLikeCurtainDevice(device) || curtainCommand != null) {
       return Column(
         children: [
@@ -2216,13 +2200,16 @@ class _DeviceCommandSurface extends StatelessWidget {
     return null;
   }
 
-  List<TuyaDeviceFunction> _auxiliaryBoolFunctions(SmartDeviceModel device) {
-    final powerDpIds =
-        DeviceCapabilityResolver.boolSwitches(device).map((item) => item.dpId);
+  List<TuyaDeviceFunction> _auxiliaryFunctions(SmartDeviceModel device) {
+    final primaryDpIds = <String>{
+      ...DeviceCapabilityResolver.boolSwitches(device).map((item) => item.dpId),
+      for (final code in const ['control', 'percent_control'])
+        ...DeviceCapabilityResolver.writableFunctions(device)
+            .where((item) => item.code.toLowerCase() == code)
+            .map((item) => item.dpId),
+    };
     return DeviceCapabilityResolver.writableFunctions(device)
-        .where((item) => item.isBool)
-        .where((item) => !powerDpIds.contains(item.dpId))
-        .where((item) => item.code.toLowerCase() == 'switch_backlight')
+        .where((item) => !primaryDpIds.contains(item.dpId))
         .toList(growable: false);
   }
 }
@@ -2338,6 +2325,8 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
         children: entries.map((function) {
           final value = DeviceCapabilityResolver.statusValue(device, function);
           final active = value == true;
+          final statusColor =
+              active ? const Color(0xFF28C79A) : AppColors.customGreyColor5;
           return Container(
             margin: EdgeInsets.only(bottom: 8.h),
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -2351,8 +2340,8 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.light_mode_outlined,
-                  color: active ? const Color(0xFF28C79A) : Colors.grey,
+                  _functionIcon(function),
+                  color: statusColor,
                 ),
                 SizedBox(width: 10.w),
                 Expanded(
@@ -2369,19 +2358,18 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
                       Text(
                         _functionStatusLabel(function, value),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: active
-                                  ? const Color(0xFF28C79A)
-                                  : AppColors.customGreyColor5,
+                              color: statusColor,
                               fontWeight: FontWeight.w800,
                             ),
                       ),
                     ],
                   ),
                 ),
-                Switch.adaptive(
-                  value: active,
-                  onChanged:
-                      enabled ? (next) => onDps(function.code, next) : null,
+                _AuxiliaryControlAction(
+                  function: function,
+                  value: value,
+                  enabled: enabled,
+                  onDps: onDps,
                 ),
               ],
             ),
@@ -2390,6 +2378,70 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AuxiliaryControlAction extends StatelessWidget {
+  const _AuxiliaryControlAction({
+    required this.function,
+    required this.value,
+    required this.enabled,
+    required this.onDps,
+  });
+
+  final TuyaDeviceFunction function;
+  final dynamic value;
+  final bool enabled;
+  final void Function(String code, dynamic value) onDps;
+
+  @override
+  Widget build(BuildContext context) {
+    if (function.isBool) {
+      return Switch.adaptive(
+        value: value == true,
+        onChanged: enabled ? (next) => onDps(function.code, next) : null,
+      );
+    }
+    if (function.isEnum) {
+      final range = function.values['range'];
+      final options = range is List
+          ? range.map((item) => item.toString()).toList(growable: false)
+          : const <String>[];
+      if (options.isEmpty) return const SizedBox.shrink();
+      return PopupMenuButton<String>(
+        enabled: enabled,
+        tooltip: _functionLabel(function),
+        onSelected: (next) => onDps(function.code, next),
+        itemBuilder: (_) => options
+            .map(
+              (option) => PopupMenuItem<String>(
+                value: option,
+                child: Text(_friendlyEnumValue(option)),
+              ),
+            )
+            .toList(growable: false),
+        child: Icon(
+          Icons.more_horiz_rounded,
+          color: enabled ? AppColors.primaryColor : AppColors.customGreyColor5,
+        ),
+      );
+    }
+    return const SizedBox(width: 8);
+  }
+}
+
+IconData _functionIcon(TuyaDeviceFunction function) {
+  final code = function.code.toLowerCase();
+  if (code.contains('backlight')) return Icons.light_mode_outlined;
+  if (code.contains('countdown') || code.contains('time')) {
+    return Icons.timer_outlined;
+  }
+  if (code.contains('calibration')) return Icons.tune_rounded;
+  if (code.contains('relay')) return Icons.restart_alt_rounded;
+  if (code.contains('control_back')) return Icons.compare_arrows_rounded;
+  if (function.isEnum) return Icons.list_alt_rounded;
+  if (function.isValue) return Icons.pin_rounded;
+  if (function.isString) return Icons.notes_rounded;
+  return Icons.settings_outlined;
 }
 
 class _SwitchChannelButton extends StatelessWidget {
@@ -2953,50 +3005,6 @@ class _DeviceRenameCard extends StatelessWidget {
             onPressed: enabled ? onSave : null,
             icon: const Icon(Icons.save_rounded),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DeviceFunctionsCard extends StatelessWidget {
-  const _DeviceFunctionsCard({required this.device});
-
-  final SmartDeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final functions = DeviceCapabilityResolver.functions(device);
-    return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tuya Functions',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-          SizedBox(height: 8.h),
-          _SpecRow(label: 'Device ID', value: device.tuyaDeviceId),
-          _SpecRow(label: 'Product ID', value: device.tuyaProductId),
-          _SpecRow(label: 'Category', value: device.category),
-          if (functions.isEmpty)
-            Text(
-              'No Tuya function schema loaded',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.customGreyColor5,
-                    fontWeight: FontWeight.w700,
-                  ),
-            )
-          else
-            ...functions.map(
-              (function) => _SpecRow(
-                label: 'DP ${function.dpId}',
-                value:
-                    'code: ${function.code} | type: ${function.type} | mode: ${function.mode}${function.values.isEmpty ? '' : ' | values: ${function.values}'}',
-              ),
-            ),
         ],
       ),
     );

@@ -3101,8 +3101,8 @@ const Map<String, String> ar = {
   'smartHomeProductId': 'Product ID',
   'smartHomeUuid': 'UUID',
   'smartHomeNoSpecs': 'لا توجد مواصفات محفوظة بعد',
-  'smartHomeDpsStatus': 'حالة DPS',
-  'smartHomeNoDps': 'لا توجد حالة DPS محفوظة بعد',
+  'smartHomeDpsStatus': 'حالة الجهاز الحالية',
+  'smartHomeNoDps': 'لا توجد حالة محفوظة بعد',
   'smartDevice': 'جهاز ذكي',
   'close': 'إغلاق',
 };

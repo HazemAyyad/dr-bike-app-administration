@@ -3136,8 +3136,8 @@ const Map<String, String> en = {
   'smartHomeProductId': 'Product ID',
   'smartHomeUuid': 'UUID',
   'smartHomeNoSpecs': 'No saved specs yet',
-  'smartHomeDpsStatus': 'DPS status',
-  'smartHomeNoDps': 'No saved DPS status yet',
+  'smartHomeDpsStatus': 'Current device state',
+  'smartHomeNoDps': 'No saved device state yet',
   'smartDevice': 'Smart device',
   'close': 'Close',
 };
