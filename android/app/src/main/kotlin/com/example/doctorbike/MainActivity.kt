@@ -158,6 +158,7 @@ class MainActivity : FlutterFragmentActivity() {
                     "startBluetoothPairing" -> startTuyaBluetoothPairing(call, result)
                     "getDeviceStatus" -> getTuyaDeviceStatus(call, result)
                     "renameDevice" -> renameTuyaDevice(call, result)
+                    "removeDevice" -> removeTuyaDevice(call, result)
                     "publishDps" -> publishTuyaDps(call, result)
                     "stopPairing" -> {
                         stopSmartHomeActivator()
@@ -568,6 +569,42 @@ class MainActivity : FlutterFragmentActivity() {
                 device.onDestroy()
             }
         })
+    }
+
+    private fun removeTuyaDevice(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(deviceResult(false, "tuya_not_initialized", DoctorBikeApplication.tuyaInitializationMessage, null))
+            return
+        }
+
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val homeId = call.argument<String>("tuyaHomeId") ?: ""
+        if (devId.isBlank()) {
+            result.success(deviceResult(false, "missing_device_id", "Missing Tuya device id", null))
+            return
+        }
+
+        withTuyaDeviceBean(devId, homeId, result) { bean ->
+            val device = ThingHomeSdk.newDeviceInstance(devId)
+            device.removeDevice(object : IResultCallback {
+                override fun onSuccess() {
+                    result.success(deviceResult(true, "", "Device removed", bean))
+                    device.onDestroy()
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    result.success(
+                        deviceResult(
+                            false,
+                            safeTuyaErrorCode(code),
+                            safeTuyaErrorMessage(code, error),
+                            ThingHomeSdk.getDataInstance().getDeviceBean(devId),
+                        )
+                    )
+                    device.onDestroy()
+                }
+            })
+        }
     }
 
     private fun publishTuyaDps(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {

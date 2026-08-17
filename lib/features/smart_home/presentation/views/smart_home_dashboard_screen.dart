@@ -1164,6 +1164,58 @@ Future<bool> _showRenameDeviceDialog({
   return result == true;
 }
 
+Future<bool> _showDeleteDeviceDialog({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  var deleting = false;
+  final result = await Get.dialog<bool>(
+    StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Text('smartHomeDeleteDevice'.tr),
+          content: Text(
+            'smartHomeDeleteDeviceConfirm'.trParams({'name': device.name}),
+          ),
+          actions: [
+            TextButton(
+              onPressed: deleting ? null : () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            ElevatedButton.icon(
+              onPressed: deleting
+                  ? null
+                  : () async {
+                      setState(() => deleting = true);
+                      final ok = await controller.deleteSmartDevice(
+                        device: device,
+                      );
+                      if (Get.isDialogOpen == true) Get.back(result: ok);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+              ),
+              icon: deleting
+                  ? SizedBox(
+                      width: 16.r,
+                      height: 16.r,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.delete_rounded),
+              label: Text('delete'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  return result == true;
+}
+
 class _SmartDeviceCard extends StatelessWidget {
   const _SmartDeviceCard({
     required this.controller,
@@ -1255,6 +1307,13 @@ class _SmartDeviceCard extends StatelessWidget {
                     _RenameDeviceButton(
                       enabled: !busy,
                       onPressed: () => _showRenameDeviceDialog(
+                        controller: controller,
+                        device: device,
+                      ),
+                    ),
+                    _DeleteDeviceButton(
+                      enabled: !busy,
+                      onPressed: () => _showDeleteDeviceDialog(
                         controller: controller,
                         device: device,
                       ),
@@ -1383,6 +1442,25 @@ class _RenameDeviceButton extends StatelessWidget {
       tooltip: 'smartHomeRenameDevice'.tr,
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.edit_rounded),
+    );
+  }
+}
+
+class _DeleteDeviceButton extends StatelessWidget {
+  const _DeleteDeviceButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      tooltip: 'smartHomeDeleteDevice'.tr,
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(Icons.delete_outline_rounded),
+      style: IconButton.styleFrom(
+        foregroundColor: Colors.red.shade600,
+      ),
     );
   }
 }
@@ -1667,6 +1745,15 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
     _syncDeviceFromController();
   }
 
+  Future<void> _delete() async {
+    final ok = await _showDeleteDeviceDialog(
+      controller: widget.controller,
+      device: device,
+    );
+    if (!mounted || !ok) return;
+    Get.back<void>();
+  }
+
   void _syncDeviceFromController() {
     final updated = widget.controller.devices.firstWhereOrNull(
       (item) => item.id == device.id,
@@ -1687,6 +1774,11 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
         scrolledUnderElevation: 0,
         title: Text('smartHomeDeviceDetails'.tr),
         actions: [
+          IconButton(
+            tooltip: 'smartHomeDeleteDevice'.tr,
+            onPressed: _delete,
+            icon: const Icon(Icons.delete_outline_rounded),
+          ),
           IconButton(
             tooltip: 'refresh'.tr,
             onPressed: _load,

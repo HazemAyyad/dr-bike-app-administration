@@ -3083,6 +3083,11 @@ const Map<String, String> ar = {
   'smartHomeRenameDevice': 'تعديل اسم الجهاز',
   'smartHomeDeviceRenamed': 'تم تعديل اسم الجهاز',
   'smartHomeRenameFailed': 'فشل تعديل اسم الجهاز',
+  'smartHomeDeleteDevice': 'حذف الجهاز',
+  'smartHomeDeleteDeviceConfirm':
+      'هل تريد حذف جهاز @name؟ سيتم إزالته من Tuya ومن قائمة Doctor Bike.',
+  'smartHomeDeviceDeleted': 'تم حذف الجهاز',
+  'smartHomeDeleteFailed': 'فشل حذف الجهاز',
   'smartHomePowerControl': 'تشغيل / إطفاء',
   'smartHomeControlFailed': 'فشل التحكم بالجهاز',
   'smartHomeNoPowerDps': 'لا يوجد أمر تشغيل واضح لهذا الجهاز',

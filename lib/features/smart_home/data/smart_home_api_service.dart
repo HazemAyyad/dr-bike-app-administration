@@ -413,6 +413,18 @@ class SmartHomeApiService {
     );
   }
 
+  Future<void> deleteDevice({
+    required int id,
+    int? userId,
+  }) async {
+    await _api.delete(
+      EndPoints.smartDevice(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
+  }
+
   Future<SmartDeviceModel> updateDeviceStatus({
     required int id,
     required bool online,

@@ -677,6 +677,77 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<bool> deleteSmartDevice({
+    required SmartDeviceModel device,
+  }) async {
+    deviceControlBusyIds.add(device.id);
+    errorMessage('');
+    try {
+      final native = await nativeService.removeDevice(
+        tuyaDeviceId: device.tuyaDeviceId,
+        tuyaHomeId: _tuyaHomeIdForDevice(device),
+      );
+      final tuyaAlreadyGone =
+          native.code == 'device_not_found' || native.code == '11002';
+      if (!native.success && !tuyaAlreadyGone) {
+        await _logDeviceControl(
+          device: device,
+          commandCode: 'delete_device',
+          commandValue: {
+            'device_id': device.tuyaDeviceId,
+            'native_code': native.code,
+            'native_message': native.message,
+          },
+          success: false,
+          errorCode: native.code,
+          errorMessage: native.message,
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeDeleteFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ));
+        return false;
+      }
+
+      await _logDeviceControl(
+        device: device,
+        commandCode: 'delete_device',
+        commandValue: {
+          'device_id': device.tuyaDeviceId,
+          'tuya_removed': native.success,
+          'tuya_already_gone': tuyaAlreadyGone,
+          'native_code': native.code,
+          'native_message': native.message,
+        },
+        success: true,
+      );
+      await apiService.deleteDevice(
+        id: device.id,
+        userId: selectedOwnerId.value,
+      );
+      devices.removeWhere((item) => item.id == device.id);
+      Get.snackbar('smartHomeDeleteDevice'.tr, 'smartHomeDeviceDeleted'.tr);
+      return true;
+    } catch (e) {
+      await _logDeviceControl(
+        device: device,
+        commandCode: 'delete_device',
+        commandValue: {
+          'device_id': device.tuyaDeviceId,
+          'exception_type': e.runtimeType.toString(),
+        },
+        success: false,
+        errorCode: 'delete_exception',
+        errorMessage: e.toString(),
+      );
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
   Future<bool> setDeviceDps({
     required SmartDeviceModel device,
     required String commandCode,

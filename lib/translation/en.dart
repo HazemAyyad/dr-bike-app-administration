@@ -3118,6 +3118,11 @@ const Map<String, String> en = {
   'smartHomeRenameDevice': 'Rename device',
   'smartHomeDeviceRenamed': 'Device name updated',
   'smartHomeRenameFailed': 'Failed to rename device',
+  'smartHomeDeleteDevice': 'Delete device',
+  'smartHomeDeleteDeviceConfirm':
+      'Delete @name? It will be removed from Tuya and Doctor Bike.',
+  'smartHomeDeviceDeleted': 'Device deleted',
+  'smartHomeDeleteFailed': 'Failed to delete device',
   'smartHomePowerControl': 'Power control',
   'smartHomeControlFailed': 'Device control failed',
   'smartHomeNoPowerDps': 'No clear power command was found for this device',

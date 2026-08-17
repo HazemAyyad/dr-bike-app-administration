@@ -425,6 +425,41 @@ class SmartHomeNativeService {
     }
   }
 
+  Future<SmartHomeNativeDeviceResult> removeDevice({
+    required String tuyaDeviceId,
+    String? tuyaHomeId,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'removeDevice',
+        {
+          'tuyaDeviceId': tuyaDeviceId,
+          if (tuyaHomeId != null && tuyaHomeId.isNotEmpty)
+            'tuyaHomeId': tuyaHomeId,
+        },
+      );
+      return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeDeviceResult(
+        success: false,
+        code: 'missing_plugin',
+        message: 'Smart Home native bridge is not available on this platform',
+        device: <String, dynamic>{},
+        dps: <String, dynamic>{},
+        online: false,
+      );
+    } on PlatformException catch (e) {
+      return SmartHomeNativeDeviceResult(
+        success: false,
+        code: e.code,
+        message: e.message ?? 'Tuya device remove failed',
+        device: const <String, dynamic>{},
+        dps: const <String, dynamic>{},
+        online: false,
+      );
+    }
+  }
+
   Future<SmartHomeNativeDeviceResult> publishDps({
     required String tuyaDeviceId,
     String? tuyaHomeId,
