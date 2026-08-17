@@ -442,7 +442,13 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
       if (response['status'] == 'success') {
         Get.back(result: true);
       } else {
-        Get.snackbar('error'.tr, response['message']?.toString() ?? '');
+        Get.snackbar(
+          'error'.tr,
+          _responseErrorMessage(response),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
     } catch (e) {
       Get.snackbar('error'.tr, e.toString());
@@ -555,6 +561,19 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
         ),
       ),
     );
+  }
+
+  String _responseErrorMessage(Map<String, dynamic> response) {
+    final errors = response['errors'];
+    if (errors is Map) {
+      final messages = errors.values
+          .expand((value) => value is List ? value : [value])
+          .map((value) => value.toString())
+          .where((value) => value.trim().isNotEmpty)
+          .toList();
+      if (messages.isNotEmpty) return messages.join('\n');
+    }
+    return response['message']?.toString() ?? 'tryAgain'.tr;
   }
 }
 

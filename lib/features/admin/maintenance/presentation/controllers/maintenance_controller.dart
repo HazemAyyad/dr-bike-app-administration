@@ -110,6 +110,8 @@ class MaintenanceController extends GetxController {
       <MaintenanceProductModel>[].obs;
   final RxList<MaintenanceServiceModel> maintenanceServices =
       <MaintenanceServiceModel>[].obs;
+  final RxList<MaintenanceServiceModel> selectedMaintenanceServices =
+      <MaintenanceServiceModel>[].obs;
   final RxList<MaintenanceServiceModel> serviceSuggestions =
       <MaintenanceServiceModel>[].obs;
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
@@ -140,6 +142,10 @@ class MaintenanceController extends GetxController {
   double get partsTotal => maintenanceProducts.fold(
         0.0,
         (sum, item) => sum + item.lineTotal,
+      );
+  double get selectedServicesTotal => selectedMaintenanceServices.fold(
+        0.0,
+        (sum, item) => sum + item.price,
       );
   double get invoiceTotal =>
       (partsTotal + laborCost - discount).clamp(0, double.infinity);
@@ -783,6 +789,13 @@ class MaintenanceController extends GetxController {
   }
 
   void addMaintenanceServiceToDetails(MaintenanceServiceModel service) {
+    final alreadySelected = selectedMaintenanceServices.any(
+      (item) => item.id == service.id,
+    );
+    if (!alreadySelected) {
+      selectedMaintenanceServices.add(service);
+    }
+
     final line =
         '${service.name} - ${SalesAmountFormat.display(service.price)}';
     final current = descriptionController.text.trimRight();
@@ -790,14 +803,37 @@ class MaintenanceController extends GetxController {
       descriptionController.text = current.isEmpty ? line : '$current\n$line';
     }
 
-    final nextLabor = laborCost + service.price;
-    laborCostController.text =
-        nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
+    if (!alreadySelected) {
+      final nextLabor = laborCost + service.price;
+      laborCostController.text =
+          nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
+    }
     serviceSuggestions.clear();
     recalculateTotals();
     syncProductsIfPossible();
     scheduleAutoSave();
     update(['maintenanceServiceSuggestions']);
+    update();
+  }
+
+  void removeMaintenanceService(int index) {
+    if (index < 0 || index >= selectedMaintenanceServices.length) return;
+    final service = selectedMaintenanceServices.removeAt(index);
+    final nextLabor = (laborCost - service.price).clamp(0, double.infinity);
+    laborCostController.text =
+        nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
+
+    final line =
+        '${service.name} - ${SalesAmountFormat.display(service.price)}';
+    final lines = descriptionController.text
+        .split('\n')
+        .where((item) => item.trim() != line.trim())
+        .toList();
+    descriptionController.text = lines.join('\n');
+
+    recalculateTotals();
+    syncProductsIfPossible();
+    scheduleAutoSave();
     update();
   }
 
@@ -1121,15 +1157,23 @@ class MaintenanceController extends GetxController {
       }
 
       this.maintenanceId = maintenances['id'].toString();
-      showDeliverySchedule.value = true;
-      deliveryDate.value =
-          DateTime.tryParse(maintenances['receipt_date']?.toString() ?? '') ??
-              DateTime.now();
+      final receiptDate = maintenances['receipt_date']?.toString() ?? '';
+      final receiptTime = maintenances['receipt_time']?.toString() ?? '';
+      final hasSchedule = receiptDate.isNotEmpty && receiptTime.isNotEmpty;
+      showDeliverySchedule.value = hasSchedule;
+      final parsedDate = DateTime.tryParse(receiptDate);
+      if (parsedDate != null) {
+        deliveryDate.value = parsedDate;
+      } else {
+        deliveryDate.value = DateTime.now();
+      }
 
-      final receiptDateTime = DateTime.tryParse(
-          '${maintenances['receipt_date']} ${maintenances['receipt_time']}');
+      final receiptDateTime =
+          hasSchedule ? DateTime.tryParse('$receiptDate $receiptTime') : null;
       if (receiptDateTime != null) {
         deliveryTime.value = TimeOfDay.fromDateTime(receiptDateTime);
+      } else {
+        deliveryTime.value = TimeOfDay.now();
       }
 
       descriptionController.text =
@@ -1166,6 +1210,7 @@ class MaintenanceController extends GetxController {
           billing.laborCost > 0 ? billing.laborCost.toString() : '';
       discountController.text =
           billing.discount > 0 ? billing.discount.toString() : '';
+      await _hydrateSelectedServicesFromDescription();
 
       final files = maintenances['files'];
       if (files is List) {
@@ -1191,6 +1236,27 @@ class MaintenanceController extends GetxController {
     }
   }
 
+  Future<void> _hydrateSelectedServicesFromDescription() async {
+    final description = descriptionController.text;
+    if (description.trim().isEmpty) {
+      selectedMaintenanceServices.clear();
+      return;
+    }
+
+    try {
+      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final services = await datasource.getMaintenanceServices(
+        search: null,
+        activeOnly: false,
+      );
+      selectedMaintenanceServices.assignAll(
+        services.where((service) => description.contains(service.name)),
+      );
+    } catch (_) {
+      selectedMaintenanceServices.clear();
+    }
+  }
+
   void clearControllers() {
     isEdit(false);
     isDelivered(false);
@@ -1205,6 +1271,7 @@ class MaintenanceController extends GetxController {
     laborCostController.clear();
     discountController.clear();
     maintenanceProducts.clear();
+    selectedMaintenanceServices.clear();
     deliveryDate.value = DateTime.now();
     deliveryTime.value = TimeOfDay.now();
     showDeliverySchedule(false);
@@ -1258,9 +1325,12 @@ class MaintenanceController extends GetxController {
         customerId: !selectedSellers.value ? partnerIdController.text : '',
         sellerId: selectedSellers.value ? partnerIdController.text : '',
         description: descriptionController.text,
-        receipDate: deliveryDate.value.toIso8601String().split('T').first,
-        receiptTime:
-            '${deliveryTime.value.hour.toString().padLeft(2, '0')}:${deliveryTime.value.minute.toString().padLeft(2, '0')}',
+        receipDate: showDeliverySchedule.value
+            ? deliveryDate.value.toIso8601String().split('T').first
+            : '',
+        receiptTime: showDeliverySchedule.value
+            ? '${deliveryTime.value.hour.toString().padLeft(2, '0')}:${deliveryTime.value.minute.toString().padLeft(2, '0')}'
+            : '',
         files: selectedMedia,
         status: status,
         laborCost: laborCost,

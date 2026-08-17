@@ -69,6 +69,10 @@ class MaintenanceProductsSection extends StatelessWidget {
                 )
               else
                 _ProductsTable(controller: controller),
+              if (controller.selectedMaintenanceServices.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                _ServicesTable(controller: controller),
+              ],
               SizedBox(height: 8.h),
               _amountField(
                 label: 'maintenanceLaborCost'.tr,
@@ -378,6 +382,164 @@ class _ProductsTable extends StatelessWidget {
                           color: Colors.red.shade500,
                         ),
                         onPressed: () => controller.removeProduct(index),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerText(String value) {
+    return Text(
+      value,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 10.sp,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primaryColor,
+      ),
+    );
+  }
+
+  Widget _headerCell(String value, double width) {
+    return SizedBox(
+      width: width.w,
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 9.sp,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _dataCell(
+    String value,
+    double width, {
+    bool center = false,
+    bool bold = false,
+  }) {
+    return SizedBox(
+      width: width.w,
+      child: Text(
+        value,
+        textAlign: center ? TextAlign.center : TextAlign.start,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 10.sp,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+          color: bold ? AppColors.primaryColor : Colors.grey.shade800,
+        ),
+      ),
+    );
+  }
+}
+
+class _ServicesTable extends StatelessWidget {
+  const _ServicesTable({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocked =
+        controller.selectedStep.value >= 4 || controller.isDelivered.value;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFFDF5),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(7.r)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _headerText('الخدمة')),
+                _headerCell('السعر', 72),
+                if (!isLocked) SizedBox(width: 26.w),
+              ],
+            ),
+          ),
+          ...List.generate(controller.selectedMaintenanceServices.length,
+              (index) {
+            final item = controller.selectedMaintenanceServices[index];
+            final isLast =
+                index == controller.selectedMaintenanceServices.length - 1;
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: isLast
+                    ? null
+                    : Border(
+                        bottom: BorderSide(color: Colors.grey.shade200),
+                      ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.home_repair_service_outlined,
+                          size: 18.sp,
+                          color: AppColors.primaryColor,
+                        ),
+                        SizedBox(width: 6.w),
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _dataCell(
+                    SalesAmountFormat.display(item.price),
+                    72,
+                    center: true,
+                    bold: true,
+                  ),
+                  if (!isLocked)
+                    SizedBox(
+                      width: 26.w,
+                      child: IconButton(
+                        tooltip: 'delete'.tr,
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints.tight(
+                          Size(24.w, 24.w),
+                        ),
+                        icon: Icon(
+                          Icons.close,
+                          size: 16.sp,
+                          color: Colors.red.shade500,
+                        ),
+                        onPressed: () =>
+                            controller.removeMaintenanceService(index),
                       ),
                     ),
                 ],
