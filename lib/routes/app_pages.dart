@@ -1177,6 +1177,12 @@ class AppPages {
       binding: ReportsBinding(),
       transition: _transitionFadeIn,
     ),
+    GetPage(
+      name: AppRoutes.REPORTDETAILSCREEN,
+      page: () => const ReportsDetailScreen(),
+      binding: ReportsBinding(),
+      transition: _transitionFadeIn,
+    ),
 
     // Counters
     GetPage(

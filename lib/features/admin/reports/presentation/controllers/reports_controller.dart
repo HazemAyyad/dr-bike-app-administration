@@ -9,7 +9,7 @@ class ReportsController extends GetxController {
   final ReportsApiService service;
 
   final RxBool isLoading = false.obs;
-  final RxString selectedReport = 'sales'.obs;
+  final RxString selectedReport = ''.obs;
   final RxString selectedPeriod = 'month'.obs;
   final RxString selectedStatus = 'all'.obs;
   final RxString selectedPaymentType = 'all'.obs;
@@ -54,12 +54,6 @@ class ReportsController extends GetxController {
     {'key': 'mixed', 'title': 'مختلط'},
   ];
 
-  @override
-  void onInit() {
-    super.onInit();
-    loadSalesReport();
-  }
-
   Future<void> loadSalesReport() async {
     isLoading(true);
     update();
@@ -83,6 +77,14 @@ class ReportsController extends GetxController {
     } finally {
       isLoading(false);
       update();
+    }
+  }
+
+  Future<void> openReport(String key) async {
+    selectedReport.value = key;
+    update();
+    if (key == 'sales' && salesRows.isEmpty) {
+      await loadSalesReport();
     }
   }
 

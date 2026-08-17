@@ -9,12 +9,19 @@ class ReportsBinding extends Bindings {
   @override
   void dependencies() {
     AppDependencyRegistry.ensureNetworkAndApi();
-    Get.lazyPut(
-      () => ReportsApiService(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut(
-      () => ReportsController(service: Get.find<ReportsApiService>()),
-    );
+    if (!Get.isRegistered<ReportsApiService>() &&
+        !Get.isPrepared<ReportsApiService>()) {
+      Get.lazyPut(
+        () => ReportsApiService(api: Get.find<DioConsumer>()),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<ReportsController>() &&
+        !Get.isPrepared<ReportsController>()) {
+      Get.lazyPut(
+        () => ReportsController(service: Get.find<ReportsApiService>()),
+        fenix: true,
+      );
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/reports_controller.dart';
 
 class ReportsScreen extends GetView<ReportsController> {
@@ -20,95 +21,128 @@ class ReportsScreen extends GetView<ReportsController> {
       body: GetBuilder<ReportsController>(
         builder: (_) => LayoutBuilder(
           builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 720;
-            final content = RefreshIndicator(
-              onRefresh: controller.loadSalesReport,
-              child: ListView(
-                padding: EdgeInsets.all(isCompact ? 12.r : 20.r),
-                children: [
-                  if (isCompact) ...[
-                    _ReportsSelector(controller: controller),
-                    SizedBox(height: 12.h),
-                  ],
-                  _FiltersBar(controller: controller),
-                  SizedBox(height: 14.h),
-                  if (controller.selectedReport.value == 'sales')
-                    _SalesReport(controller: controller)
-                  else
-                    _ComingSoon(controller: controller),
-                ],
+            final columns = constraints.maxWidth > 980
+                ? 4
+                : constraints.maxWidth > 680
+                    ? 3
+                    : constraints.maxWidth > 420
+                        ? 2
+                        : 1;
+            return GridView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                crossAxisSpacing: 10.w,
+                mainAxisSpacing: 10.h,
+                childAspectRatio: constraints.maxWidth > 420 ? 2.35 : 2.85,
               ),
-            );
-
-            if (isCompact) {
-              return content;
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ReportsRail(controller: controller),
-                Expanded(child: content),
-              ],
+              itemCount: controller.reports.length,
+              itemBuilder: (context, index) {
+                final report = controller.reports[index];
+                return _ReportCard(
+                  title: report['title']!,
+                  icon: _iconForReport(report['key']!),
+                  enabled: report['key'] == 'sales',
+                  onTap: () {
+                    controller.openReport(report['key']!);
+                    Get.toNamed(
+                      AppRoutes.REPORTDETAILSCREEN,
+                      arguments: report,
+                    );
+                  },
+                );
+              },
             );
           },
         ),
       ),
     );
   }
+
+  IconData _iconForReport(String key) {
+    switch (key) {
+      case 'sales':
+        return Icons.point_of_sale_outlined;
+      case 'balances':
+        return Icons.account_balance_wallet_outlined;
+      case 'statement':
+        return Icons.receipt_long_outlined;
+      case 'checks':
+        return Icons.fact_check_outlined;
+      case 'boxes':
+        return Icons.account_balance_outlined;
+      case 'inventory':
+        return Icons.inventory_2_outlined;
+      case 'income':
+        return Icons.stacked_line_chart_outlined;
+      case 'sales_returns':
+        return Icons.assignment_return_outlined;
+      default:
+        return Icons.trending_up_outlined;
+    }
+  }
 }
 
-class _ReportsRail extends StatelessWidget {
-  const _ReportsRail({required this.controller});
-
-  final ReportsController controller;
+class ReportsDetailScreen extends GetView<ReportsController> {
+  const ReportsDetailScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 245.w,
-      height: double.infinity,
-      padding: EdgeInsets.all(12.r),
-      color: ThemeService.isDark.value
-          ? AppColors.customGreyColor
-          : AppColors.whiteColor2,
-      child: ListView.separated(
-        itemCount: controller.reports.length,
-        separatorBuilder: (_, __) => SizedBox(height: 7.h),
-        itemBuilder: (context, index) {
-          final report = controller.reports[index];
-          final selected = controller.selectedReport.value == report['key'];
-          return InkWell(
-            borderRadius: BorderRadius.circular(8.r),
-            onTap: () => controller.selectReport(report['key']!),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: selected ? AppColors.primaryColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(8.r),
+    final args = Get.arguments as Map<String, String>?;
+    final reportKey = args?['key'] ?? controller.selectedReport.value;
+    final title = args?['title'] ?? 'التقرير';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controller.selectedReport.value != reportKey) {
+        controller.openReport(reportKey);
+      } else if (reportKey == 'sales' &&
+          controller.salesRows.isEmpty &&
+          !controller.isLoading.value) {
+        controller.loadSalesReport();
+      }
+    });
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: title,
+        action: false,
+        actions: [
+          if (reportKey == 'sales')
+            IconButton(
+              tooltip: 'PDF',
+              onPressed: () =>
+                  Get.snackbar('PDF', 'سيتم ربط تصدير PDF للتقرير'),
+              icon: Icon(
+                Icons.picture_as_pdf_outlined,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.assessment_outlined,
-                    size: 19.sp,
-                    color: selected ? Colors.white : AppColors.primaryColor,
+            ),
+        ],
+      ),
+      body: GetBuilder<ReportsController>(
+        builder: (_) {
+          if (reportKey != 'sales') {
+            return _ComingSoon(controller: controller, reportTitle: title);
+          }
+          return RefreshIndicator(
+            onRefresh: controller.loadSalesReport,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
+                    child: _FiltersBar(controller: controller),
                   ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      report['title']!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected ? Colors.white : null,
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    child: _SalesReport(controller: controller),
                   ),
-                ],
-              ),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 24.h)),
+              ],
             ),
           );
         },
@@ -117,54 +151,84 @@ class _ReportsRail extends StatelessWidget {
   }
 }
 
-class _ReportsSelector extends StatelessWidget {
-  const _ReportsSelector({required this.controller});
+class _ReportCard extends StatelessWidget {
+  const _ReportCard({
+    required this.title,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
 
-  final ReportsController controller;
+  final String title;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: controller.reports.length,
-        separatorBuilder: (_, __) => SizedBox(width: 8.w),
-        itemBuilder: (context, index) {
-          final report = controller.reports[index];
-          final selected = controller.selectedReport.value == report['key'];
-          return ChoiceChip(
-            selected: selected,
-            label: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 150.w),
-              child: Text(
-                report['title']!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    final background = ThemeService.isDark.value
+        ? AppColors.customGreyColor4
+        : AppColors.whiteColor2;
+    return InkWell(
+      borderRadius: BorderRadius.circular(6.r),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(6.r),
+          border: Border.all(
+            color:
+                AppColors.primaryColor.withValues(alpha: enabled ? .24 : .10),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38.w,
+              height: 38.w,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              child: Icon(icon, color: AppColors.primaryColor, size: 21.sp),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    enabled ? 'عرض التقرير' : 'قيد التجهيز',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: enabled ? AppColors.primaryColor : Colors.grey,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
-            avatar: Icon(
-              Icons.assessment_outlined,
-              size: 17.sp,
-              color: selected ? Colors.white : AppColors.primaryColor,
+            Icon(
+              Icons.chevron_left_rounded,
+              color: AppColors.primaryColor,
+              size: 23.sp,
             ),
-            selectedColor: AppColors.primaryColor,
-            labelStyle: TextStyle(
-              color: selected ? Colors.white : null,
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w800,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.r),
-              side: BorderSide(
-                color: selected
-                    ? AppColors.primaryColor
-                    : AppColors.primaryColor.withValues(alpha: .28),
-              ),
-            ),
-            onSelected: (_) => controller.selectReport(report['key']!),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
@@ -188,13 +252,18 @@ class _FiltersBar extends StatelessWidget {
           onChanged: controller.selectPeriod,
         ),
         if (controller.selectedPeriod.value == 'custom')
-          OutlinedButton.icon(
-            onPressed: () => controller.pickCustomRange(context),
-            icon: const Icon(Icons.date_range_outlined),
-            label: Text(
-              controller.fromDate == null || controller.toDate == null
-                  ? 'اختيار الفترة'
-                  : '${_date(controller.fromDate!)} - ${_date(controller.toDate!)}',
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 260.w),
+            child: OutlinedButton.icon(
+              onPressed: () => controller.pickCustomRange(context),
+              icon: const Icon(Icons.date_range_outlined),
+              label: Text(
+                controller.fromDate == null || controller.toDate == null
+                    ? 'اختيار الفترة'
+                    : '${_date(controller.fromDate!)} - ${_date(controller.toDate!)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         _DropdownChip(
@@ -243,7 +312,7 @@ class _DropdownChip extends StatelessWidget {
         decoration: BoxDecoration(
           border:
               Border.all(color: AppColors.primaryColor.withValues(alpha: .35)),
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(6.r),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
@@ -301,7 +370,7 @@ class _SalesReport extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _SummaryGrid(controller: controller),
-        SizedBox(height: 14.h),
+        SizedBox(height: 12.h),
         _SalesTable(controller: controller),
       ],
     );
@@ -359,19 +428,19 @@ class _SummaryGrid extends StatelessWidget {
           itemCount: cards.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            crossAxisSpacing: 9.w,
-            mainAxisSpacing: 9.h,
-            childAspectRatio: 2.9,
+            crossAxisSpacing: 8.w,
+            mainAxisSpacing: 8.h,
+            childAspectRatio: 3.35,
           ),
           itemBuilder: (context, index) {
             final item = cards[index];
             return Container(
-              padding: EdgeInsets.all(12.r),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
+                    ? AppColors.customGreyColor4
                     : AppColors.whiteColor2,
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(6.r),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,14 +451,14 @@ class _SummaryGrid extends StatelessWidget {
                     style:
                         TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
                   ),
-                  SizedBox(height: 5.h),
+                  SizedBox(height: 4.h),
                   Text(
                     '${item['value'] ?? 0}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.primaryColor,
-                      fontSize: 18.sp,
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -408,6 +477,19 @@ class _SalesTable extends StatelessWidget {
 
   final ReportsController controller;
 
+  static const _columns = [
+    'الرقم',
+    'التاريخ',
+    'الزبون',
+    'الصنف',
+    'الكمية',
+    'الإجمالي',
+    'المدفوع',
+    'المتبقي',
+    'الدفع',
+    'الحالة',
+  ];
+
   @override
   Widget build(BuildContext context) {
     if (controller.salesRows.isEmpty) {
@@ -417,48 +499,55 @@ class _SalesTable extends StatelessWidget {
       );
     }
 
+    final tableWidth = 1120.w;
     return Container(
+      height: 470.h,
       decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(6.r),
         border:
-            Border.all(color: AppColors.primaryColor.withValues(alpha: .18)),
-        borderRadius: BorderRadius.circular(8.r),
+            Border.all(color: AppColors.primaryColor.withValues(alpha: .16)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: const WidgetStatePropertyAll(AppColors.primaryColor),
-          headingTextStyle: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-          ),
-          columns: const [
-            DataColumn(label: Text('الرقم')),
-            DataColumn(label: Text('التاريخ')),
-            DataColumn(label: Text('الزبون')),
-            DataColumn(label: Text('الصنف')),
-            DataColumn(label: Text('الكمية')),
-            DataColumn(label: Text('الإجمالي')),
-            DataColumn(label: Text('المدفوع')),
-            DataColumn(label: Text('المتبقي')),
-            DataColumn(label: Text('الدفع')),
-            DataColumn(label: Text('الحالة')),
-          ],
-          rows: controller.salesRows.map((row) {
-            return DataRow(
-              cells: [
-                DataCell(Text('${row['serial_number'] ?? row['id'] ?? ''}')),
-                DataCell(Text('${row['date'] ?? ''}')),
-                DataCell(Text('${row['buyer_name'] ?? ''}')),
-                DataCell(Text('${row['product_name'] ?? ''}')),
-                DataCell(Text('${row['quantity'] ?? ''}')),
-                DataCell(Text(controller.money(row['total']))),
-                DataCell(Text(controller.money(row['paid']))),
-                DataCell(Text(controller.money(row['remaining']))),
-                DataCell(Text(_paymentLabel(row['payment_type']))),
-                DataCell(Text(row['status'] == 'cancelled' ? 'ملغي' : 'فعال')),
+      child: Scrollbar(
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: Column(
+              children: [
+                const _SalesTableHeader(columns: _columns),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: controller.salesRows.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      color: AppColors.primaryColor.withValues(alpha: .08),
+                    ),
+                    itemBuilder: (context, index) {
+                      final row = controller.salesRows[index];
+                      return _SalesTableRow(
+                        cells: [
+                          '${row['serial_number'] ?? row['id'] ?? ''}',
+                          '${row['date'] ?? ''}',
+                          '${row['buyer_name'] ?? ''}',
+                          '${row['product_name'] ?? ''}',
+                          '${row['quantity'] ?? ''}',
+                          controller.money(row['total']),
+                          controller.money(row['paid']),
+                          controller.money(row['remaining']),
+                          _paymentLabel(row['payment_type']),
+                          row['status'] == 'cancelled' ? 'ملغي' : 'فعال',
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ],
-            );
-          }).toList(growable: false),
+            ),
+          ),
         ),
       ),
     );
@@ -478,29 +567,100 @@ class _SalesTable extends StatelessWidget {
   }
 }
 
-class _ComingSoon extends StatelessWidget {
-  const _ComingSoon({required this.controller});
+class _SalesTableHeader extends StatelessWidget {
+  const _SalesTableHeader({required this.columns});
 
-  final ReportsController controller;
+  final List<String> columns;
 
   @override
   Widget build(BuildContext context) {
-    final report = controller.reports.firstWhere(
-      (item) => item['key'] == controller.selectedReport.value,
-      orElse: () => controller.reports.first,
-    );
     return Container(
-      height: 260.h,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : AppColors.whiteColor2,
-        borderRadius: BorderRadius.circular(8.r),
+      height: 43.h,
+      color: AppColors.primaryColor,
+      child: Row(
+        children: columns
+            .map(
+              (column) => _SalesTableCell(
+                text: column,
+                isHeader: true,
+              ),
+            )
+            .toList(growable: false),
       ),
-      child: Text(
-        '${report['title']} قيد التجهيز',
-        style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w800),
+    );
+  }
+}
+
+class _SalesTableRow extends StatelessWidget {
+  const _SalesTableRow({required this.cells});
+
+  final List<String> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44.h,
+      child: Row(
+        children: cells
+            .map((cell) => _SalesTableCell(text: cell))
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+class _SalesTableCell extends StatelessWidget {
+  const _SalesTableCell({required this.text, this.isHeader = false});
+
+  final String text;
+  final bool isHeader;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 112.w,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isHeader ? Colors.white : null,
+              fontSize: isHeader ? 12.sp : 11.5.sp,
+              fontWeight: isHeader ? FontWeight.w900 : FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingSoon extends StatelessWidget {
+  const _ComingSoon({required this.controller, required this.reportTitle});
+
+  final ReportsController controller;
+  final String reportTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.all(16.r),
+        padding: EdgeInsets.all(18.r),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : AppColors.whiteColor2,
+          borderRadius: BorderRadius.circular(6.r),
+        ),
+        child: Text(
+          '$reportTitle قيد التجهيز',
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
