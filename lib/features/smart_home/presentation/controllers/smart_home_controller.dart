@@ -51,6 +51,7 @@ class SmartHomeController extends GetxController {
   final selectedBluetoothDevice = Rxn<SmartHomeBleScanDevice>();
   final deviceControlBusyIds = <int>{}.obs;
   final deviceDetailsBusyIds = <int>{}.obs;
+  String _activeNativeTuyaUid = '';
 
   SmartHomeModel? get selectedHome =>
       homes.firstWhereOrNull((home) => home.isDefault) ??
@@ -87,9 +88,6 @@ class SmartHomeController extends GetxController {
     errorMessage('');
     try {
       nativeStatus.value = await nativeService.getStatus();
-      tuyaUser.value = await apiService.getTuyaUser();
-      await ensureTuyaUserLinked();
-
       if (canViewSmartHomeOwners) {
         final loadedOwners = await apiService.getOwners();
         owners.assignAll(loadedOwners);
@@ -104,6 +102,11 @@ class SmartHomeController extends GetxController {
         owners.clear();
         selectedOwnerId.value = null;
       }
+
+      tuyaUser.value = await apiService.getTuyaUser(
+        userId: selectedOwnerId.value,
+      );
+      await ensureTuyaUserLinked();
 
       final loadedHomes =
           await apiService.getHomes(userId: selectedOwnerId.value);
@@ -191,7 +194,7 @@ class SmartHomeController extends GetxController {
   }
 
   Future<void> ensureTuyaUserLinked() async {
-    if (!nativeStatus.value.initialized || isTuyaUserLinked) return;
+    if (!nativeStatus.value.initialized) return;
 
     final credentials = tuyaUser.value?.uidLogin;
     if (credentials == null ||
@@ -199,6 +202,7 @@ class SmartHomeController extends GetxController {
         credentials.password.isEmpty) {
       return;
     }
+    if (_activeNativeTuyaUid == credentials.uid) return;
 
     isLinkingTuyaUser(true);
     try {
@@ -222,9 +226,12 @@ class SmartHomeController extends GetxController {
         );
         return;
       }
+      _activeNativeTuyaUid =
+          result.uid.isNotEmpty ? result.uid : credentials.uid;
       tuyaUser.value = await apiService.updateTuyaUser(
         tuyaUid: result.uid.isNotEmpty ? result.uid : credentials.uid,
         region: tuyaUser.value?.region,
+        userId: selectedOwnerId.value,
         rawMetadata: {
           'login_type': 'uid',
           'native_message': result.message,
@@ -591,21 +598,31 @@ class SmartHomeController extends GetxController {
         tuyaDeviceId: loaded.tuyaDeviceId,
         tuyaHomeId: _tuyaHomeIdForDevice(loaded),
       );
-      final merged = native.success
-          ? loaded.copyWith(
-              online: native.online,
-              lastStatus:
-                  native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
-              rawMetadata:
-                  native.device.isNotEmpty ? native.device : loaded.rawMetadata,
-              primaryPowerDp: _powerDpFromStatus(
-                native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
-              ),
-              powerOn: _powerStateFromStatus(
-                native.dps.isNotEmpty ? native.dps : loaded.lastStatus,
-              ),
-            )
-          : loaded;
+      var merged = loaded;
+      if (native.success) {
+        final nextStatus =
+            native.dps.isNotEmpty ? native.dps : loaded.lastStatus;
+        final nextMetadata =
+            native.device.isNotEmpty ? native.device : loaded.rawMetadata;
+        merged = loaded.copyWith(
+          online: native.online,
+          lastStatus: nextStatus,
+          rawMetadata: nextMetadata,
+          primaryPowerDp: _powerDpFromStatus(nextStatus),
+          powerOn: _powerStateFromStatus(nextStatus),
+        );
+        final saved = await apiService.updateDeviceStatus(
+          id: loaded.id,
+          online: native.online,
+          lastStatus: nextStatus,
+          rawMetadata: nextMetadata,
+          userId: selectedOwnerId.value,
+        );
+        merged = saved.copyWith(
+          rawMetadata:
+              saved.rawMetadata.isNotEmpty ? saved.rawMetadata : nextMetadata,
+        );
+      }
       _upsertDevice(merged);
       if (!native.success) {
         await _logDeviceControl(

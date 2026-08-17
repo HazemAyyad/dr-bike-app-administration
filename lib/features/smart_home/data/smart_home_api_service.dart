@@ -280,8 +280,13 @@ class SmartHomeApiService {
     });
   }
 
-  Future<SmartHomeTuyaUserModel> getTuyaUser() async {
-    final response = await _api.get(EndPoints.smartTuyaUser);
+  Future<SmartHomeTuyaUserModel> getTuyaUser({int? userId}) async {
+    final response = await _api.get(
+      EndPoints.smartTuyaUser,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
     return SmartHomeTuyaUserModel.fromJson(
       Map<String, dynamic>.from(response.data['tuya_user'] as Map),
     );
@@ -291,12 +296,19 @@ class SmartHomeApiService {
     required String tuyaUid,
     String? region,
     Map<String, dynamic>? rawMetadata,
+    int? userId,
   }) async {
-    final response = await _api.put(EndPoints.smartTuyaUser, data: {
-      'tuya_uid': tuyaUid,
-      if (region != null && region.isNotEmpty) 'region': region,
-      if (rawMetadata != null) 'raw_metadata': rawMetadata,
-    });
+    final response = await _api.put(
+      EndPoints.smartTuyaUser,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'tuya_uid': tuyaUid,
+        if (region != null && region.isNotEmpty) 'region': region,
+        if (rawMetadata != null) 'raw_metadata': rawMetadata,
+      },
+    );
     return SmartHomeTuyaUserModel.fromJson(
       Map<String, dynamic>.from(response.data['tuya_user'] as Map),
     );
@@ -429,11 +441,21 @@ class SmartHomeApiService {
     required int id,
     required bool online,
     required Map<String, dynamic> lastStatus,
+    Map<String, dynamic>? rawMetadata,
+    int? userId,
   }) async {
-    final response = await _api.post(EndPoints.smartDeviceStatus(id), data: {
-      'online': online,
-      'last_status': lastStatus,
-    });
+    final response = await _api.post(
+      EndPoints.smartDeviceStatus(id),
+      queryParameters: {
+        'include_debug': true,
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'online': online,
+        'last_status': lastStatus,
+        if (rawMetadata != null) 'raw_metadata': rawMetadata,
+      },
+    );
     return SmartDeviceModel.fromJson(
       Map<String, dynamic>.from(response.data['device'] as Map),
     );
@@ -453,6 +475,7 @@ class SmartHomeApiService {
     final response = await _api.post(
       EndPoints.smartDeviceControlLog(id),
       queryParameters: {
+        'include_debug': true,
         if (userId != null) 'user_id': userId,
       },
       data: {
