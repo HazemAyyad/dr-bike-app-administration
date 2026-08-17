@@ -1233,6 +1233,9 @@ class _SmartDeviceCard extends StatelessWidget {
     final functions = _visibleFunctions(device).take(4).toList(growable: false);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
+    final powerActive = powerFunction == null
+        ? device.powerOn == true
+        : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
     return Container(
       margin: EdgeInsets.only(bottom: 14.h),
       decoration: BoxDecoration(
@@ -1322,16 +1325,10 @@ class _SmartDeviceCard extends StatelessWidget {
                     _RoundPowerButton(
                       enabled: (powerFunction != null || !hasSchema) && !busy,
                       busy: busy,
-                      active: powerFunction == null
-                          ? device.powerOn == true
-                          : DeviceCapabilityResolver.statusValue(
-                                device,
-                                powerFunction,
-                              ) ==
-                              true,
+                      active: powerActive,
                       onPressed: () => controller.setDevicePower(
                         device: device,
-                        powerOn: device.powerOn != true,
+                        powerOn: !powerActive,
                       ),
                     ),
                   ],
@@ -1349,6 +1346,10 @@ class _SmartDeviceCard extends StatelessWidget {
                           child: _DpsShortcut(
                             label: _functionLabel(function),
                             value: value,
+                            statusLabel: _functionStatusLabel(
+                              function,
+                              value,
+                            ),
                             busy: busy,
                             onTap: function.isBool
                                 ? () => controller.setDeviceDps(
@@ -1416,18 +1417,127 @@ class _SmartDeviceCard extends StatelessWidget {
 
 String _functionLabel(TuyaDeviceFunction function) {
   final name = function.name.trim();
-  if (name.isNotEmpty) return name;
+  if (name.isNotEmpty && !_containsCjk(name)) return name;
   return _friendlyDpsName(function.code);
 }
 
 String _friendlyDpsName(String key) {
-  final clean = key
-      .replaceAll('_', ' ')
-      .replaceAll('switch led', 'switch')
-      .replaceAll('switch', 'Switch')
-      .trim();
+  final ar = Get.locale?.languageCode == 'ar';
+  final code = key.trim().toLowerCase();
+  final mapped = ar
+      ? {
+          'switch': 'تشغيل',
+          'switch_1': 'المفتاح 1',
+          'switch_2': 'المفتاح 2',
+          'switch_3': 'المفتاح 3',
+          'switch_4': 'المفتاح 4',
+          'switch_led': 'الإضاءة',
+          'switch_backlight': 'إضاءة الزر',
+          'control': 'حركة الستارة',
+          'percent_control': 'نسبة الفتح',
+          'relay_status': 'حالة الريليه',
+          'countdown_1': 'مؤقت المفتاح 1',
+          'countdown_2': 'مؤقت المفتاح 2',
+          'cur_calibration': 'معايرة الستارة',
+          'control_back': 'اتجاه المحرك',
+          'tr_timecon': 'وقت المعايرة',
+          'bfbkqgb': 'فتح/إغلاق النسبة',
+        }[code]
+      : {
+          'switch': 'Power',
+          'switch_1': 'Switch 1',
+          'switch_2': 'Switch 2',
+          'switch_3': 'Switch 3',
+          'switch_4': 'Switch 4',
+          'switch_led': 'Light',
+          'switch_backlight': 'Backlight',
+          'control': 'Curtain',
+          'percent_control': 'Open percent',
+          'relay_status': 'Relay status',
+          'countdown_1': 'Switch 1 timer',
+          'countdown_2': 'Switch 2 timer',
+          'cur_calibration': 'Calibration',
+          'control_back': 'Motor direction',
+          'tr_timecon': 'Calibration time',
+          'bfbkqgb': 'Percent open/close',
+        }[code];
+  if (mapped != null) return mapped;
+  final clean = key.replaceAll('_', ' ').trim();
   if (clean.isEmpty) return 'DPS';
   return clean.length > 16 ? '${clean.substring(0, 14)}...' : clean;
+}
+
+String _functionStatusLabel(TuyaDeviceFunction function, dynamic value) {
+  final ar = Get.locale?.languageCode == 'ar';
+  if (value == null) return ar ? 'غير معروف' : 'Unknown';
+  if (function.isBool || value is bool) {
+    return value == true ? (ar ? 'شغال' : 'On') : (ar ? 'مطفي' : 'Off');
+  }
+  if (function.isValue || value is num) {
+    final unit = function.values['unit']?.toString() ?? '';
+    return '$value$unit';
+  }
+  return _friendlyEnumValue(value.toString());
+}
+
+String _friendlyEnumValue(String value) {
+  final ar = Get.locale?.languageCode == 'ar';
+  final key = value.toLowerCase();
+  final mapped = ar
+      ? {
+          'open': 'فتح',
+          'close': 'إغلاق',
+          'stop': 'إيقاف',
+          'continue': 'استمرار',
+          'on': 'تشغيل',
+          'off': 'إطفاء',
+          'memory': 'آخر حالة',
+          'forward': 'أمام',
+          'back': 'عكس',
+          'start': 'بدء',
+          'end': 'إنهاء',
+        }[key]
+      : {
+          'open': 'Open',
+          'close': 'Close',
+          'stop': 'Stop',
+          'continue': 'Continue',
+          'on': 'On',
+          'off': 'Off',
+          'memory': 'Memory',
+          'forward': 'Forward',
+          'back': 'Reverse',
+          'start': 'Start',
+          'end': 'End',
+        }[key];
+  return mapped ?? value;
+}
+
+bool _containsCjk(String value) {
+  return value.runes.any((code) =>
+      (code >= 0x3400 && code <= 0x9FFF) || (code >= 0xF900 && code <= 0xFAFF));
+}
+
+double _snapValue(
+  double raw, {
+  required double min,
+  required double max,
+  required double step,
+}) {
+  final safeStep = step <= 0 ? 1 : step;
+  final clamped = raw.clamp(min, max).toDouble();
+  final offset = ((clamped - min) / safeStep).round();
+  return (min + (offset * safeStep)).clamp(min, max).toDouble();
+}
+
+int? _sliderDivisions({
+  required double min,
+  required double max,
+  required double step,
+}) {
+  if (step <= 0 || max <= min) return null;
+  final divisions = ((max - min) / step).round();
+  return divisions > 0 ? divisions : null;
 }
 
 class _RenameDeviceButton extends StatelessWidget {
@@ -1523,12 +1633,14 @@ class _DpsShortcut extends StatelessWidget {
   const _DpsShortcut({
     required this.label,
     required this.value,
+    required this.statusLabel,
     required this.busy,
     required this.onTap,
   });
 
   final String label;
   final dynamic value;
+  final String statusLabel;
   final bool busy;
   final VoidCallback? onTap;
 
@@ -1579,11 +1691,7 @@ class _DpsShortcut extends StatelessWidget {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  value == true
-                      ? 'ON'
-                      : value == false
-                          ? 'OFF'
-                          : '$value',
+                  statusLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2331,11 +2439,21 @@ class _CurtainCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final disabled = busy || readOnly || commandFunction == null;
+    final currentCommand = commandFunction == null
+        ? null
+        : DeviceCapabilityResolver.statusValue(device, commandFunction!);
     final rawPercent = percentFunction == null
         ? 0
         : DeviceCapabilityResolver.statusValue(device, percentFunction!);
-    final percent =
-        ((rawPercent as num?)?.toDouble() ?? 0).clamp(0, 100).toDouble();
+    final min = _valueSetting(percentFunction, 'min') ?? 0;
+    final max = _valueSetting(percentFunction, 'max') ?? 100;
+    final step = _valueSetting(percentFunction, 'step') ?? 1;
+    final percent = _snapValue(
+      ((rawPercent as num?)?.toDouble() ?? min).clamp(min, max).toDouble(),
+      min: min,
+      max: max,
+      step: step,
+    );
     return Column(
       children: [
         SizedBox(
@@ -2366,7 +2484,7 @@ class _CurtainCommandSurface extends StatelessWidget {
                 top: 44.h,
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_up_rounded,
-                  label: 'open',
+                  label: _friendlyEnumValue('open'),
                   onTap: disabled
                       ? null
                       : () => onDps(commandFunction!.code, 'open'),
@@ -2376,7 +2494,7 @@ class _CurtainCommandSurface extends StatelessWidget {
                 bottom: 40.h,
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_down_rounded,
-                  label: 'close',
+                  label: _friendlyEnumValue('close'),
                   onTap: disabled
                       ? null
                       : () => onDps(commandFunction!.code, 'close'),
@@ -2412,18 +2530,42 @@ class _CurtainCommandSurface extends StatelessWidget {
                   ),
                 ),
               ),
+              Positioned(
+                bottom: 132.h,
+                child: Text(
+                  currentCommand == null
+                      ? (Get.locale?.languageCode == 'ar'
+                          ? 'الحالة غير معروفة'
+                          : 'Unknown status')
+                      : _friendlyEnumValue(currentCommand.toString()),
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ),
             ],
           ),
         ),
         if (percentFunction != null)
           _CurtainPercentSlider(
-            label: device.name,
+            label: _functionLabel(percentFunction!),
             value: percent,
+            min: min,
+            max: max,
+            step: step,
             enabled: !busy && !readOnly,
             onChanged: (value) => onDps(percentFunction!.code, value.round()),
           ),
       ],
     );
+  }
+
+  double? _valueSetting(TuyaDeviceFunction? function, String key) {
+    final raw = function?.values[key];
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw?.toString() ?? '');
   }
 }
 
@@ -2468,12 +2610,18 @@ class _CurtainPercentSlider extends StatefulWidget {
   const _CurtainPercentSlider({
     required this.label,
     required this.value,
+    required this.min,
+    required this.max,
+    required this.step,
     required this.enabled,
     required this.onChanged,
   });
 
   final String label;
   final double value;
+  final double min;
+  final double max;
+  final double step;
   final bool enabled;
   final ValueChanged<double> onChanged;
 
@@ -2487,14 +2635,26 @@ class _CurtainPercentSliderState extends State<_CurtainPercentSlider> {
   @override
   void initState() {
     super.initState();
-    value = widget.value;
+    value = _snapped(widget.value);
   }
 
   @override
   void didUpdateWidget(covariant _CurtainPercentSlider oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) value = widget.value;
+    if (oldWidget.value != widget.value ||
+        oldWidget.min != widget.min ||
+        oldWidget.max != widget.max ||
+        oldWidget.step != widget.step) {
+      value = _snapped(widget.value);
+    }
   }
+
+  double _snapped(double raw) => _snapValue(
+        raw,
+        min: widget.min,
+        max: widget.max,
+        step: widget.step,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -2516,13 +2676,20 @@ class _CurtainPercentSliderState extends State<_CurtainPercentSlider> {
           ),
           Expanded(
             child: Slider(
-              value: value.clamp(0, 100),
-              min: 0,
-              max: 100,
+              value: value.clamp(widget.min, widget.max),
+              min: widget.min,
+              max: widget.max,
+              divisions: _sliderDivisions(
+                min: widget.min,
+                max: widget.max,
+                step: widget.step,
+              ),
               onChanged: widget.enabled
-                  ? (next) => setState(() => value = next)
+                  ? (next) => setState(() => value = _snapped(next))
                   : null,
-              onChangeEnd: widget.enabled ? widget.onChanged : null,
+              onChangeEnd: widget.enabled
+                  ? (next) => widget.onChanged(_snapped(next))
+                  : null,
             ),
           ),
           SizedBox(
