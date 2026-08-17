@@ -422,12 +422,21 @@ class SmartHomeNativeService {
 
   Future<SmartHomeNativeDeviceResult> publishDps({
     required String tuyaDeviceId,
-    required Map<String, dynamic> dps,
+    required String dpId,
+    required String code,
+    required String type,
+    required dynamic value,
   }) async {
     try {
       final result = await _channel.invokeMapMethod<dynamic, dynamic>(
         'publishDps',
-        {'tuyaDeviceId': tuyaDeviceId, 'dps': dps},
+        {
+          'tuyaDeviceId': tuyaDeviceId,
+          'dpId': dpId,
+          'code': code,
+          'type': type,
+          'value': value,
+        },
       );
       return SmartHomeNativeDeviceResult.fromMap(result ?? const {});
     } on MissingPluginException {

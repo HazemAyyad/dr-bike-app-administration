@@ -370,6 +370,7 @@ class SmartHomeApiService {
       queryParameters: {
         if (homeId != null) 'home_id': homeId,
         if (userId != null) 'user_id': userId,
+        'include_debug': true,
       },
     );
     return _extractList(response.data, const ['devices', 'data'])

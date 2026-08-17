@@ -567,7 +567,7 @@ class MainActivity : FlutterFragmentActivity() {
             }
 
             override fun onError(code: String?, error: String?) {
-                result.success(deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(error), ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+                result.success(deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error), ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
                 device.onDestroy()
             }
         })
@@ -580,18 +580,52 @@ class MainActivity : FlutterFragmentActivity() {
         }
 
         val devId = call.argument<String>("tuyaDeviceId") ?: ""
-        val dps = call.argument<Map<String, Any?>>("dps") ?: emptyMap()
-        if (devId.isBlank() || dps.isEmpty()) {
-            result.success(deviceResult(false, "missing_dps_arguments", "Missing Tuya device id or DPS command", null))
+        val requestedDpId = call.argument<String>("dpId") ?: ""
+        val requestedCode = call.argument<String>("code") ?: ""
+        val requestedType = call.argument<String>("type") ?: ""
+        val requestedValue = call.argument<Any?>("value")
+        if (devId.isBlank() || requestedDpId.isBlank()) {
+            result.success(deviceResult(false, "missing_dps_arguments", "Missing Tuya device id or DP id", null))
             return
         }
 
+        val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+        val schema = resolveWritableSchema(bean, requestedDpId, requestedCode)
+        if (schema == null) {
+            val response = deviceResult(false, "unsupported_or_read_only_dp", "No writable Tuya function matched DP $requestedDpId / $requestedCode", bean).toMutableMap()
+            response["submitted"] = mapOf(
+                "dp_id" to requestedDpId,
+                "code" to requestedCode,
+                "type" to requestedType,
+                "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
+            )
+            result.success(response)
+            return
+        }
+
+        val validation = validateTuyaValue(schema, requestedValue)
+        if (!validation.first) {
+            val response = deviceResult(false, "invalid_dp_value", validation.second ?: "Invalid Tuya DP value", bean).toMutableMap()
+            response["resolved_function"] = mapSchemaBean(schema)
+            response["submitted"] = mapOf(
+                "dp_id" to requestedDpId,
+                "code" to requestedCode,
+                "type" to requestedType,
+                "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
+            )
+            result.success(response)
+            return
+        }
+
+        val publishDpId = schema.id?.takeIf { it.isNotBlank() } ?: requestedDpId
+        val dps = linkedMapOf<String, Any?>(publishDpId to requestedValue)
         val device = ThingHomeSdk.newDeviceInstance(devId)
         val payload = JSONObject(dps).toString()
         device.publishDps(payload, object : IResultCallback {
             override fun onSuccess() {
                 val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
                 val response = deviceResult(true, "", "DPS command published", bean).toMutableMap()
+                response["resolved_function"] = mapSchemaBean(schema)
                 val merged = linkedMapOf<String, Any?>()
                 if (bean?.dps != null) merged.putAll(bean.dps)
                 merged.putAll(dps)
@@ -602,18 +636,100 @@ class MainActivity : FlutterFragmentActivity() {
             }
 
             override fun onError(code: String?, error: String?) {
-                result.success(deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(error), ThingHomeSdk.getDataInstance().getDeviceBean(devId)))
+                val latestBean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                val response = deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error), latestBean).toMutableMap()
+                response["resolved_function"] = mapSchemaBean(schema)
+                response["submitted"] = mapOf(
+                    "dp_id" to publishDpId,
+                    "code" to (schema.code ?: requestedCode),
+                    "type" to (schema.type ?: requestedType),
+                    "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
+                )
+                result.success(response)
                 device.onDestroy()
             }
         })
     }
 
+    private fun resolveWritableSchema(
+        deviceBean: DeviceBean?,
+        dpId: String,
+        code: String,
+    ): com.thingclips.smart.android.device.bean.SchemaBean? {
+        val schemaMap = deviceBean?.schemaMap ?: return null
+        val direct = schemaMap[dpId]
+        if (direct != null && isWritableSchema(direct) && (code.isBlank() || direct.code == code || direct.id == dpId)) {
+            return direct
+        }
+        return schemaMap.values.firstOrNull { schema ->
+            isWritableSchema(schema) && (schema.id == dpId || schema.code == code)
+        }
+    }
+
+    private fun isWritableSchema(schema: com.thingclips.smart.android.device.bean.SchemaBean): Boolean {
+        return (schema.mode ?: "").lowercase().contains("w")
+    }
+
+    private fun validateTuyaValue(
+        schema: com.thingclips.smart.android.device.bean.SchemaBean,
+        value: Any?,
+    ): Pair<Boolean, String?> {
+        return when ((schema.type ?: "").lowercase()) {
+            "bool" -> Pair(value is Boolean, "Expected boolean for ${schema.code}")
+            "enum" -> {
+                val range = runCatching {
+                    JSONObject(schema.property ?: "{}").optJSONArray("range")
+                }.getOrNull()
+                val submitted = value?.toString()
+                val valid = submitted != null && (range == null || (0 until range.length()).any { range.optString(it) == submitted })
+                Pair(valid, "Invalid enum value for ${schema.code}")
+            }
+            "value" -> {
+                val number = value as? Number ?: return Pair(false, "Expected numeric value for ${schema.code}")
+                val property = runCatching { JSONObject(schema.property ?: "{}") }.getOrNull()
+                val min = property?.optDouble("min", Double.NaN)
+                val max = property?.optDouble("max", Double.NaN)
+                val submitted = number.toDouble()
+                if (min != null && !min.isNaN() && submitted < min) return Pair(false, "${schema.code} is below min $min")
+                if (max != null && !max.isNaN() && submitted > max) return Pair(false, "${schema.code} is above max $max")
+                Pair(true, null)
+            }
+            "string" -> Pair(value is String, "Expected string for ${schema.code}")
+            else -> Pair(false, "Unsupported Tuya DP type ${schema.type} for ${schema.code}")
+        }
+    }
+
+    private fun mapSchemaBean(schema: com.thingclips.smart.android.device.bean.SchemaBean): Map<String, Any?> {
+        return mapOf(
+            "id" to (schema.id ?: ""),
+            "code" to (schema.code ?: ""),
+            "name" to (schema.name ?: ""),
+            "mode" to (schema.mode ?: ""),
+            "type" to (schema.type ?: ""),
+            "property" to (schema.property ?: ""),
+            "schema_type" to (schema.schemaType ?: ""),
+        )
+    }
     private fun safeTuyaErrorCode(code: String?): String {
         return code?.takeIf { it.isNotBlank() } ?: "tuya_error"
     }
 
     private fun safeTuyaErrorMessage(error: String?): String {
-        return error?.takeIf { it.isNotBlank() } ?: "Tuya returned an empty error message"
+        return safeTuyaErrorMessage(null, error)
+    }
+
+    private fun safeTuyaErrorMessage(code: String?, error: String?): String {
+        val clean = error?.takeIf { it.isNotBlank() }
+        if (clean != null) return clean
+        return when (safeTuyaErrorCode(code)) {
+            "11001" -> "Tuya error 11001: Invalid command format"
+            "11002" -> "Tuya error 11002: Device removed"
+            "11004" -> "Tuya error 11004: Invalid signature"
+            "11005" -> "Tuya error 11005: Failed to send data"
+            "11009" -> "Tuya error 11009: Empty data"
+            "10203" -> "Tuya error 10203: Device offline"
+            else -> "Tuya returned an empty error message"
+        }
     }
     private fun deviceResult(
         success: Boolean,
@@ -689,17 +805,7 @@ class MainActivity : FlutterFragmentActivity() {
     }
     private fun mapSchemaMap(schemaMap: Map<String, com.thingclips.smart.android.device.bean.SchemaBean>?): Map<String, Any?> {
         if (schemaMap == null) return emptyMap()
-        return schemaMap.mapValues { (_, schema) ->
-            mapOf(
-                "id" to (schema.id ?: ""),
-                "code" to (schema.code ?: ""),
-                "name" to (schema.name ?: ""),
-                "mode" to (schema.mode ?: ""),
-                "type" to (schema.type ?: ""),
-                "property" to (schema.property ?: ""),
-                "schema_type" to (schema.schemaType ?: ""),
-            )
-        }
+        return schemaMap.mapValues { (_, schema) -> mapSchemaBean(schema) }
     }
     private fun checkAvailability(): Map<String, Any> {
         val manager = BiometricManager.from(this)
@@ -1071,4 +1177,6 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 }
+
+
 

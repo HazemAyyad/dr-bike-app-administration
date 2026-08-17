@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,7 @@ import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
+import '../../data/tuya_device_capability_resolver.dart';
 import '../controllers/smart_home_controller.dart';
 
 class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
@@ -1176,7 +1178,8 @@ class _SmartDeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
-    final dps = _visibleDps(device).take(4).toList(growable: false);
+    final functions = _visibleFunctions(device).take(4).toList(growable: false);
+    final powerFunction = DeviceCapabilityResolver.resolvePower(device);
     return Container(
       margin: EdgeInsets.only(bottom: 14.h),
       decoration: BoxDecoration(
@@ -1257,9 +1260,15 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     _RoundPowerButton(
-                      enabled: device.canTogglePower && !busy,
+                      enabled: powerFunction != null && !busy,
                       busy: busy,
-                      active: device.powerOn == true,
+                      active: powerFunction == null
+                          ? device.powerOn == true
+                          : DeviceCapabilityResolver.statusValue(
+                                device,
+                                powerFunction,
+                              ) ==
+                              true,
                       onPressed: () => controller.setDevicePower(
                         device: device,
                         powerOn: device.powerOn != true,
@@ -1267,27 +1276,31 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (dps.isNotEmpty) ...[
+                if (functions.isNotEmpty) ...[
                   SizedBox(height: 16.h),
                   Row(
-                    children: dps
-                        .map(
-                          (entry) => Expanded(
-                            child: _DpsShortcut(
-                              label: _dpsLabel(device, entry.key),
-                              value: entry.value,
-                              busy: busy,
-                              onTap: entry.value is bool
-                                  ? () => controller.setDeviceDps(
-                                        device: device,
-                                        commandCode: entry.key,
-                                        value: !(entry.value as bool),
-                                      )
-                                  : null,
-                            ),
+                    children: functions.map(
+                      (function) {
+                        final value = DeviceCapabilityResolver.statusValue(
+                          device,
+                          function,
+                        );
+                        return Expanded(
+                          child: _DpsShortcut(
+                            label: _functionLabel(function),
+                            value: value,
+                            busy: busy,
+                            onTap: function.isBool
+                                ? () => controller.setDeviceDps(
+                                      device: device,
+                                      commandCode: function.code,
+                                      value: value != true,
+                                    )
+                                : null,
                           ),
-                        )
-                        .toList(growable: false),
+                        );
+                      },
+                    ).toList(growable: false),
                   ),
                 ],
               ],
@@ -1298,16 +1311,17 @@ class _SmartDeviceCard extends StatelessWidget {
     );
   }
 
-  List<MapEntry<String, dynamic>> _visibleDps(SmartDeviceModel device) {
-    final entries = device.lastStatus.entries
-        .where((entry) => entry.value is bool || entry.value is num)
+  List<TuyaDeviceFunction> _visibleFunctions(SmartDeviceModel device) {
+    final functions = DeviceCapabilityResolver.writableFunctions(device)
+        .where((item) => item.isBool || item.isValue || item.isEnum)
         .toList(growable: false);
-    entries.sort((a, b) {
-      final ap = a.key == device.primaryPowerDp ? 0 : 1;
-      final bp = b.key == device.primaryPowerDp ? 0 : 1;
-      return ap == bp ? a.key.compareTo(b.key) : ap.compareTo(bp);
+    final power = DeviceCapabilityResolver.resolvePower(device);
+    functions.sort((a, b) {
+      final ap = a.dpId == power?.dpId ? 0 : 1;
+      final bp = b.dpId == power?.dpId ? 0 : 1;
+      return ap == bp ? a.dpId.compareTo(b.dpId) : ap.compareTo(bp);
     });
-    return entries;
+    return functions;
   }
 
   String _deviceSubtitle(SmartDeviceModel device) {
@@ -1340,38 +1354,10 @@ class _SmartDeviceCard extends StatelessWidget {
   }
 }
 
-List<MapEntry<String, dynamic>> _boolDps(Map<String, dynamic> status) {
-  final entries = status.entries
-      .where((entry) => entry.value is bool)
-      .toList(growable: false);
-  entries.sort((a, b) => a.key.compareTo(b.key));
-  return entries;
-}
-
-String _dpsLabel(SmartDeviceModel device, String key) {
-  final fromSchema = _schemaName(device, key);
-  if (fromSchema.isNotEmpty) return fromSchema;
-  return _friendlyDpsName(key);
-}
-
-String _schemaName(SmartDeviceModel device, String key) {
-  final schemaMap = device.rawMetadata['schema_map'];
-  if (schemaMap is! Map) return '';
-
-  final direct = schemaMap[key];
-  if (direct is Map) {
-    final name = direct['name']?.toString().trim() ?? '';
-    if (name.isNotEmpty) return name;
-  }
-
-  for (final raw in schemaMap.values) {
-    if (raw is! Map) continue;
-    final code = raw['code']?.toString();
-    if (code != key) continue;
-    final name = raw['name']?.toString().trim() ?? '';
-    if (name.isNotEmpty) return name;
-  }
-  return '';
+String _functionLabel(TuyaDeviceFunction function) {
+  final name = function.name.trim();
+  if (name.isNotEmpty) return name;
+  return _friendlyDpsName(function.code);
 }
 
 String _friendlyDpsName(String key) {
@@ -1735,6 +1721,10 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
             SizedBox(height: 14.h),
             _DeviceSpecsCard(device: device),
             SizedBox(height: 14.h),
+            if (kDebugMode) ...[
+              _DeviceFunctionsCard(device: device),
+              SizedBox(height: 14.h),
+            ],
             _DpsCard(status: device.lastStatus),
           ],
         );
@@ -1824,23 +1814,23 @@ class _DeviceCommandSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final curtainDp = _curtainCommandDp(device.lastStatus);
-    final boolDps = _boolDps(device.lastStatus);
-    if (_looksLikeCurtain(device) || curtainDp.isNotEmpty) {
+    final curtainCommand = _curtainCommandFunction(device);
+    if (_looksLikeCurtain(device) || curtainCommand != null) {
       return _CurtainCommandSurface(
         device: device,
         busy: busy,
         readOnly: readOnly,
-        commandDp: curtainDp,
-        percentDp: _curtainPercentDp(device.lastStatus),
+        commandFunction: curtainCommand,
+        percentFunction: _curtainPercentFunction(device),
         onDps: onDps,
       );
     }
 
-    if (boolDps.length >= 2) {
+    final boolFunctions = DeviceCapabilityResolver.boolSwitches(device);
+    if (boolFunctions.length >= 2) {
       return _MultiSwitchCommandSurface(
         device: device,
-        entries: boolDps,
+        entries: boolFunctions,
         busy: busy,
         readOnly: readOnly,
         onDps: onDps,
@@ -1864,29 +1854,29 @@ class _DeviceCommandSurface extends StatelessWidget {
         text.contains('بوابة');
   }
 
-  String _curtainCommandDp(Map<String, dynamic> status) {
-    for (final key in const [
-      'control',
-      'control_1',
-      'curtain_control',
-      'mach_operate',
-      'open_close',
-    ]) {
-      if (status.containsKey(key)) return key;
+  TuyaDeviceFunction? _curtainCommandFunction(SmartDeviceModel device) {
+    for (final function in DeviceCapabilityResolver.writableFunctions(device)) {
+      final code = function.code.toLowerCase();
+      if (function.isEnum &&
+          (code.contains('control') ||
+              code.contains('curtain') ||
+              code.contains('mach_operate') ||
+              code.contains('open_close'))) {
+        return function;
+      }
     }
-    return '';
+    return null;
   }
 
-  String _curtainPercentDp(Map<String, dynamic> status) {
-    for (final key in const [
-      'percent_control',
-      'percent_control_1',
-      'percent_state',
-      'position',
-    ]) {
-      if (status[key] is num) return key;
+  TuyaDeviceFunction? _curtainPercentFunction(SmartDeviceModel device) {
+    for (final function in DeviceCapabilityResolver.writableFunctions(device)) {
+      final code = function.code.toLowerCase();
+      if (function.isValue &&
+          (code.contains('percent') || code.contains('position'))) {
+        return function;
+      }
     }
-    return '';
+    return null;
   }
 }
 
@@ -1900,7 +1890,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
   });
 
   final SmartDeviceModel device;
-  final List<MapEntry<String, dynamic>> entries;
+  final List<TuyaDeviceFunction> entries;
   final bool busy;
   final bool readOnly;
   final void Function(String code, dynamic value) onDps;
@@ -1922,13 +1912,15 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
             childAspectRatio: 1.18,
           ),
           itemBuilder: (context, index) {
-            final entry = entries[index];
+            final function = entries[index];
+            final value =
+                DeviceCapabilityResolver.statusValue(device, function);
             return _SwitchChannelButton(
-              label: _dpsLabel(device, entry.key),
-              active: entry.value == true,
+              label: _functionLabel(function),
+              active: value == true,
               busy: busy,
               enabled: enabled,
-              onTap: () => onDps(entry.key, entry.value != true),
+              onTap: () => onDps(function.code, value != true),
             );
           },
         ),
@@ -1940,8 +1932,12 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
                 label: 'OFF',
                 enabled: enabled,
                 onTap: () {
-                  for (final entry in entries) {
-                    if (entry.value == true) onDps(entry.key, false);
+                  for (final function in entries) {
+                    final value = DeviceCapabilityResolver.statusValue(
+                      device,
+                      function,
+                    );
+                    if (value == true) onDps(function.code, false);
                   }
                 },
               ),
@@ -1953,8 +1949,12 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
                 enabled: enabled,
                 active: true,
                 onTap: () {
-                  for (final entry in entries) {
-                    if (entry.value != true) onDps(entry.key, true);
+                  for (final function in entries) {
+                    final value = DeviceCapabilityResolver.statusValue(
+                      device,
+                      function,
+                    );
+                    if (value != true) onDps(function.code, true);
                   }
                 },
               ),
@@ -2107,8 +2107,11 @@ class _PowerCommandSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = device.powerOn == true;
-    final canToggle = device.canTogglePower && !readOnly && !busy;
+    final powerFunction = DeviceCapabilityResolver.resolvePower(device);
+    final active = powerFunction == null
+        ? device.powerOn == true
+        : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
+    final canToggle = powerFunction != null && !readOnly && !busy;
     return SizedBox(
       height: 330.h,
       child: Stack(
@@ -2177,9 +2180,9 @@ class _PowerCommandSurface extends StatelessWidget {
           Positioned(
             bottom: 42.h,
             child: Text(
-              device.primaryPowerDp.isEmpty
-                  ? 'No DPS'
-                  : '${'smartHomeDpsCode'.tr}: ${device.primaryPowerDp}',
+              powerFunction == null
+                  ? 'No writable power function'
+                  : '${'smartHomeDpsCode'.tr}: ${powerFunction.code} (${powerFunction.dpId})',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.customGreyColor5,
                     fontWeight: FontWeight.w700,
@@ -2197,26 +2200,26 @@ class _CurtainCommandSurface extends StatelessWidget {
     required this.device,
     required this.busy,
     required this.readOnly,
-    required this.commandDp,
-    required this.percentDp,
+    required this.commandFunction,
+    required this.percentFunction,
     required this.onDps,
   });
 
   final SmartDeviceModel device;
   final bool busy;
   final bool readOnly;
-  final String commandDp;
-  final String percentDp;
+  final TuyaDeviceFunction? commandFunction;
+  final TuyaDeviceFunction? percentFunction;
   final void Function(String code, dynamic value) onDps;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = busy || readOnly || commandDp.isEmpty;
-    final percent = percentDp.isEmpty
-        ? 0.0
-        : ((device.lastStatus[percentDp] as num?)?.toDouble() ?? 0)
-            .clamp(0, 100)
-            .toDouble();
+    final disabled = busy || readOnly || commandFunction == null;
+    final rawPercent = percentFunction == null
+        ? 0
+        : DeviceCapabilityResolver.statusValue(device, percentFunction!);
+    final percent =
+        ((rawPercent as num?)?.toDouble() ?? 0).clamp(0, 100).toDouble();
     return Column(
       children: [
         SizedBox(
@@ -2248,7 +2251,9 @@ class _CurtainCommandSurface extends StatelessWidget {
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_up_rounded,
                   label: 'open',
-                  onTap: disabled ? null : () => onDps(commandDp, 'open'),
+                  onTap: disabled
+                      ? null
+                      : () => onDps(commandFunction!.code, 'open'),
                 ),
               ),
               Positioned(
@@ -2256,11 +2261,15 @@ class _CurtainCommandSurface extends StatelessWidget {
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_down_rounded,
                   label: 'close',
-                  onTap: disabled ? null : () => onDps(commandDp, 'close'),
+                  onTap: disabled
+                      ? null
+                      : () => onDps(commandFunction!.code, 'close'),
                 ),
               ),
               InkResponse(
-                onTap: disabled ? null : () => onDps(commandDp, 'stop'),
+                onTap: disabled
+                    ? null
+                    : () => onDps(commandFunction!.code, 'stop'),
                 radius: 64.r,
                 child: Container(
                   width: 108.w,
@@ -2290,12 +2299,12 @@ class _CurtainCommandSurface extends StatelessWidget {
             ],
           ),
         ),
-        if (percentDp.isNotEmpty)
+        if (percentFunction != null)
           _CurtainPercentSlider(
             label: device.name,
             value: percent,
             enabled: !busy && !readOnly,
-            onChanged: (value) => onDps(percentDp, value.round()),
+            onChanged: (value) => onDps(percentFunction!.code, value.round()),
           ),
       ],
     );
@@ -2446,6 +2455,50 @@ class _DeviceRenameCard extends StatelessWidget {
             onPressed: enabled ? onSave : null,
             icon: const Icon(Icons.save_rounded),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceFunctionsCard extends StatelessWidget {
+  const _DeviceFunctionsCard({required this.device});
+
+  final SmartDeviceModel device;
+
+  @override
+  Widget build(BuildContext context) {
+    final functions = DeviceCapabilityResolver.functions(device);
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tuya Functions',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          SizedBox(height: 8.h),
+          _SpecRow(label: 'Device ID', value: device.tuyaDeviceId),
+          _SpecRow(label: 'Product ID', value: device.tuyaProductId),
+          _SpecRow(label: 'Category', value: device.category),
+          if (functions.isEmpty)
+            Text(
+              'No Tuya function schema loaded',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.customGreyColor5,
+                    fontWeight: FontWeight.w700,
+                  ),
+            )
+          else
+            ...functions.map(
+              (function) => _SpecRow(
+                label: 'DP ${function.dpId}',
+                value:
+                    'code: ${function.code} | type: ${function.type} | mode: ${function.mode}${function.values.isEmpty ? '' : ' | values: ${function.values}'}',
+              ),
+            ),
         ],
       ),
     );

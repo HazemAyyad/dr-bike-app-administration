@@ -8,6 +8,7 @@ import '../../../../core/services/final_classes.dart';
 import '../../../../core/services/initial_bindings.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
+import '../../data/tuya_device_capability_resolver.dart';
 
 const Duration _smartHomePairingTimeout = Duration(seconds: 150);
 const String _smartHomeWifiSsidKey = 'smart_home_wifi_ssid';
@@ -685,19 +686,80 @@ class SmartHomeController extends GetxController {
       return false;
     }
 
-    final command = <String, dynamic>{commandCode: value};
     deviceControlBusyIds.add(device.id);
     errorMessage('');
     try {
+      final controlDevice = await _deviceWithFunctionMetadata(device);
+      final function = DeviceCapabilityResolver.resolve(
+        controlDevice,
+        commandCode,
+      );
+      if (function == null) {
+        final context = _controlErrorContext(
+          device: controlDevice,
+          requestedCode: commandCode,
+          submittedValue: value,
+        );
+        await _logDeviceControl(
+          device: controlDevice,
+          commandCode: commandCode,
+          commandValue: context,
+          success: false,
+          errorCode: 'unsupported_or_read_only_dp',
+          errorMessage:
+              'No writable Tuya function matched the requested capability.',
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeControlFailed'.tr,
+          code: 'unsupported_or_read_only_dp',
+          message: 'No writable Tuya function matched $commandCode',
+        ));
+        return false;
+      }
+
+      final validation = DeviceCapabilityResolver.validate(function, value);
+      if (!validation.valid) {
+        await _logDeviceControl(
+          device: controlDevice,
+          commandCode: function.code,
+          commandValue: _controlErrorContext(
+            device: controlDevice,
+            requestedCode: commandCode,
+            function: function,
+            submittedValue: value,
+          ),
+          success: false,
+          errorCode: 'invalid_dp_value',
+          errorMessage: validation.message,
+        );
+        errorMessage(formatVisibleError(
+          'smartHomeControlFailed'.tr,
+          code: 'invalid_dp_value',
+          message: validation.message,
+        ));
+        return false;
+      }
+
+      final command = TuyaValidatedCommand(
+        function: function,
+        value: validation.value,
+      );
       final native = await nativeService.publishDps(
-        tuyaDeviceId: device.tuyaDeviceId,
-        dps: command,
+        tuyaDeviceId: controlDevice.tuyaDeviceId,
+        dpId: function.dpId,
+        code: function.code,
+        type: function.type,
+        value: command.value,
       );
       if (!native.success) {
         await _logDeviceControl(
-          device: device,
-          commandCode: commandCode,
-          commandValue: command,
+          device: controlDevice,
+          commandCode: function.code,
+          commandValue: {
+            ...command.toLogValue(),
+            'native_code': native.code,
+            'native_message': native.message,
+          },
           success: false,
           errorCode: native.code,
           errorMessage: native.message,
@@ -710,22 +772,25 @@ class SmartHomeController extends GetxController {
         return false;
       }
 
-      final nextStatus = Map<String, dynamic>.from(device.lastStatus)
-        ..addAll(native.dps.isNotEmpty ? native.dps : command);
+      final nextStatus = Map<String, dynamic>.from(controlDevice.lastStatus)
+        ..addAll(native.dps.isNotEmpty ? native.dps : command.dps);
       final loggedDevice = await apiService.storeControlLog(
-        id: device.id,
-        commandCode: commandCode,
-        commandValue: command,
+        id: controlDevice.id,
+        commandCode: function.code,
+        commandValue: command.toLogValue(),
         success: true,
         lastStatus: nextStatus,
-        online: native.online || device.online,
+        online: native.online || controlDevice.online,
         userId: selectedOwnerId.value,
       );
       final updated = loggedDevice ??
-          device.copyWith(
-            online: native.online || device.online,
+          controlDevice.copyWith(
+            online: native.online || controlDevice.online,
             lastStatus: nextStatus,
-            primaryPowerDp: _powerDpFromStatus(nextStatus),
+            rawMetadata: native.device.isNotEmpty
+                ? native.device
+                : controlDevice.rawMetadata,
+            primaryPowerDp: function.dpId,
             powerOn: _powerStateFromStatus(nextStatus),
           );
       _upsertDevice(updated);
@@ -734,7 +799,12 @@ class SmartHomeController extends GetxController {
       await _logDeviceControl(
         device: device,
         commandCode: commandCode,
-        commandValue: command,
+        commandValue: _controlErrorContext(
+          device: device,
+          requestedCode: commandCode,
+          submittedValue: value,
+          exception: e,
+        ),
         success: false,
         errorCode: 'control_exception',
         errorMessage: e.toString(),
@@ -750,81 +820,58 @@ class SmartHomeController extends GetxController {
     required SmartDeviceModel device,
     required bool powerOn,
   }) async {
-    final dp = device.primaryPowerDp.isNotEmpty
-        ? device.primaryPowerDp
-        : _powerDpFromStatus(device.lastStatus);
-    if (dp.isEmpty) {
+    final controlDevice = await _deviceWithFunctionMetadata(device);
+    final function = DeviceCapabilityResolver.resolvePower(controlDevice);
+    if (function == null) {
       errorMessage('smartHomeNoPowerDps'.tr);
       await _logDeviceControl(
-        device: device,
+        device: controlDevice,
         commandCode: 'power',
-        commandValue: {'power': powerOn},
+        commandValue: _controlErrorContext(
+          device: controlDevice,
+          requestedCode: 'power',
+          submittedValue: powerOn,
+        ),
         success: false,
-        errorCode: 'missing_power_dp',
-        errorMessage: 'No boolean Tuya DPS was found for power control.',
+        errorCode: 'missing_writable_power_function',
+        errorMessage:
+            'No writable boolean Tuya function was found for power control.',
       );
       return false;
     }
 
-    final command = <String, dynamic>{dp: powerOn};
-    deviceControlBusyIds.add(device.id);
-    errorMessage('');
-    try {
-      final native = await nativeService.publishDps(
-        tuyaDeviceId: device.tuyaDeviceId,
-        dps: command,
-      );
-      if (!native.success) {
-        await _logDeviceControl(
-          device: device,
-          commandCode: dp,
-          commandValue: command,
-          success: false,
-          errorCode: native.code,
-          errorMessage: native.message,
-        );
-        errorMessage(formatVisibleError(
-          'smartHomeControlFailed'.tr,
-          code: native.code,
-          message: native.message,
-        ));
-        return false;
-      }
+    return setDeviceDps(
+      device: controlDevice,
+      commandCode: function.code,
+      value: powerOn,
+    );
+  }
 
-      final nextStatus = Map<String, dynamic>.from(device.lastStatus)
-        ..addAll(native.dps.isNotEmpty ? native.dps : command);
-      final loggedDevice = await apiService.storeControlLog(
-        id: device.id,
-        commandCode: dp,
-        commandValue: command,
-        success: true,
-        lastStatus: nextStatus,
-        online: native.online || device.online,
-        userId: selectedOwnerId.value,
-      );
-      final updated = loggedDevice ??
-          device.copyWith(
-            online: native.online || device.online,
-            lastStatus: nextStatus,
-            primaryPowerDp: dp,
-            powerOn: powerOn,
-          );
-      _upsertDevice(updated);
-      return true;
-    } catch (e) {
-      await _logDeviceControl(
-        device: device,
-        commandCode: dp,
-        commandValue: command,
-        success: false,
-        errorCode: 'control_exception',
-        errorMessage: e.toString(),
-      );
-      errorMessage(e.toString());
-      return false;
-    } finally {
-      deviceControlBusyIds.remove(device.id);
-    }
+  Future<SmartDeviceModel> _deviceWithFunctionMetadata(
+    SmartDeviceModel device,
+  ) async {
+    if (DeviceCapabilityResolver.functions(device).isNotEmpty) return device;
+    return loadDeviceDetails(device);
+  }
+
+  Map<String, dynamic> _controlErrorContext({
+    required SmartDeviceModel device,
+    required String requestedCode,
+    required dynamic submittedValue,
+    TuyaDeviceFunction? function,
+    Object? exception,
+  }) {
+    return {
+      'device_id': device.tuyaDeviceId,
+      'product_id': device.tuyaProductId,
+      'category': device.category,
+      'requested_code': requestedCode,
+      'submitted_value': submittedValue,
+      'submitted_value_type': submittedValue.runtimeType.toString(),
+      if (function != null) ...function.toLogValue(submittedValue),
+      if (exception != null) 'exception_type': exception.runtimeType.toString(),
+      'functions': DeviceCapabilityResolver.debugSummary(device)['functions'],
+    };
   }
 
   Future<void> _logDeviceControl({
