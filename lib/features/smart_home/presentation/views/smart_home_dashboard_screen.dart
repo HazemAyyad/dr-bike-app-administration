@@ -1106,61 +1106,86 @@ Future<bool> _showRenameDeviceDialog({
   required SmartHomeController controller,
   required SmartDeviceModel device,
 }) async {
-  final nameController = TextEditingController(text: device.name);
-  var saving = false;
   final result = await Get.dialog<bool>(
-    StatefulBuilder(
-      builder: (context, setState) {
-        return AlertDialog(
-          title: Text('smartHomeRenameDevice'.tr),
-          content: TextField(
-            controller: nameController,
-            enabled: !saving,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(labelText: 'smartHomeDeviceName'.tr),
-            onSubmitted: (_) async {
-              if (saving) return;
-              setState(() => saving = true);
-              final ok = await controller.renameSmartDevice(
-                device: device,
-                name: nameController.text,
-              );
-              if (Get.isDialogOpen == true) Get.back(result: ok);
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: saving ? null : () => Get.back(result: false),
-              child: Text('cancel'.tr),
-            ),
-            ElevatedButton.icon(
-              onPressed: saving
-                  ? null
-                  : () async {
-                      setState(() => saving = true);
-                      final ok = await controller.renameSmartDevice(
-                        device: device,
-                        name: nameController.text,
-                      );
-                      if (Get.isDialogOpen == true) Get.back(result: ok);
-                    },
-              icon: saving
-                  ? SizedBox(
-                      width: 16.r,
-                      height: 16.r,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.save_rounded),
-              label: Text('save'.tr),
-            ),
-          ],
-        );
-      },
+    _RenameDeviceDialog(
+      controller: controller,
+      device: device,
     ),
   );
-  nameController.dispose();
   return result == true;
+}
+
+class _RenameDeviceDialog extends StatefulWidget {
+  const _RenameDeviceDialog({
+    required this.controller,
+    required this.device,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+
+  @override
+  State<_RenameDeviceDialog> createState() => _RenameDeviceDialogState();
+}
+
+class _RenameDeviceDialogState extends State<_RenameDeviceDialog> {
+  late final TextEditingController nameController;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.device.name);
+  }
+
+  Future<void> _save() async {
+    if (saving) return;
+    setState(() => saving = true);
+    final ok = await widget.controller.renameSmartDevice(
+      device: widget.device,
+      name: nameController.text,
+    );
+    if (!mounted) return;
+    Get.back(result: ok);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('smartHomeRenameDevice'.tr),
+      content: TextField(
+        controller: nameController,
+        enabled: !saving,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(labelText: 'smartHomeDeviceName'.tr),
+        onSubmitted: (_) => _save(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: saving ? null : () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton.icon(
+          onPressed: saving ? null : _save,
+          icon: saving
+              ? SizedBox(
+                  width: 16.r,
+                  height: 16.r,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_rounded),
+          label: Text('save'.tr),
+        ),
+      ],
+    );
+  }
 }
 
 Future<bool> _showDeleteDeviceDialog({
