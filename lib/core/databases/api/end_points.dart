@@ -649,6 +649,7 @@ class EndPoints {
   static const String addProjectExpense = 'add/project/expense';
 
   // report information
+  static const String adminSalesReport = 'admin/reports/sales';
   static const String getAllReportInformation = 'get/all/report/information';
   static const String getReportByType = 'get/reprot/by/type';
 

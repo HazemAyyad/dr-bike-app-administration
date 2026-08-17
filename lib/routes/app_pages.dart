@@ -62,6 +62,8 @@ import '../features/admin/checks/presentation/views/new_check_screen.dart';
 import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart';
 import '../features/admin/counters/presentation/binding/counters_binding.dart';
 import '../features/admin/counters/presentation/views/counters_screen.dart';
+import '../features/admin/reports/presentation/bindings/reports_binding.dart';
+import '../features/admin/reports/presentation/views/reports_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
 import '../features/admin/create_tasks/presentation/binding/task_recurrence_binding.dart';
 import '../features/admin/create_tasks/presentation/views/create_task_entry_screen.dart';
@@ -1165,6 +1167,14 @@ class AppPages {
       name: AppRoutes.CATEGORYMANAGEMENTSCREEN,
       page: () => const CategoryManagementScreen(),
       binding: CategoryManagementBinding(),
+      transition: _transitionFadeIn,
+    ),
+
+    // Reports
+    GetPage(
+      name: AppRoutes.REPORTSSCREEN,
+      page: () => const ReportsScreen(),
+      binding: ReportsBinding(),
       transition: _transitionFadeIn,
     ),
 

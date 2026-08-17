@@ -136,6 +136,7 @@ class AppRoutes {
   static const FILESSCREEN = '/FilesScreen';
 
   // Counters
+  static const REPORTSSCREEN = '/ReportsScreen';
   static const COUNTERSSCREEN = '/CountersScreen';
 
   // Goals

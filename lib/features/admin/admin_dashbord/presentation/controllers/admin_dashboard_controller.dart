@@ -75,6 +75,7 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.SALESSCREEN,
       'badgeKey': 'sales',
     },
+    {'id': '73', 'title': 'التقارير', 'route': AppRoutes.REPORTSSCREEN},
     {
       'id': '9',
       'title': 'generalData',
