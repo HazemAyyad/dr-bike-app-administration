@@ -1179,6 +1179,7 @@ class _SmartDeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
     final functions = _visibleFunctions(device).take(4).toList(growable: false);
+    final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
     return Container(
       margin: EdgeInsets.only(bottom: 14.h),
@@ -1260,7 +1261,7 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     _RoundPowerButton(
-                      enabled: powerFunction != null && !busy,
+                      enabled: (powerFunction != null || !hasSchema) && !busy,
                       busy: busy,
                       active: powerFunction == null
                           ? device.powerOn == true
@@ -2108,10 +2109,12 @@ class _PowerCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
+    final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final active = powerFunction == null
         ? device.powerOn == true
         : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
-    final canToggle = powerFunction != null && !readOnly && !busy;
+    final canToggle =
+        (powerFunction != null || !hasSchema) && !readOnly && !busy;
     return SizedBox(
       height: 330.h,
       child: Stack(
@@ -2181,7 +2184,9 @@ class _PowerCommandSurface extends StatelessWidget {
             bottom: 42.h,
             child: Text(
               powerFunction == null
-                  ? 'No writable power function'
+                  ? hasSchema
+                      ? 'No writable power function'
+                      : 'Loading power function'
                   : '${'smartHomeDpsCode'.tr}: ${powerFunction.code} (${powerFunction.dpId})',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.customGreyColor5,
