@@ -869,8 +869,11 @@ class SmartHomeController extends GetxController {
         return false;
       }
 
-      final nextStatus = Map<String, dynamic>.from(controlDevice.lastStatus)
-        ..addAll(native.dps.isNotEmpty ? native.dps : command.dps);
+      final nextStatus =
+          Map<String, dynamic>.from(DeviceCapabilityResolver.statusMap(
+        controlDevice,
+      ))
+            ..addAll(native.dps.isNotEmpty ? native.dps : command.dps);
       final loggedDevice = await apiService.storeControlLog(
         id: controlDevice.id,
         commandCode: function.code,
@@ -880,16 +883,19 @@ class SmartHomeController extends GetxController {
         online: native.online || controlDevice.online,
         userId: selectedOwnerId.value,
       );
-      final updated = loggedDevice ??
-          controlDevice.copyWith(
-            online: native.online || controlDevice.online,
-            lastStatus: nextStatus,
-            rawMetadata: native.device.isNotEmpty
+      final updated = (loggedDevice ?? controlDevice).copyWith(
+        online: native.online || controlDevice.online,
+        lastStatus: loggedDevice?.lastStatus.isNotEmpty == true
+            ? loggedDevice!.lastStatus
+            : nextStatus,
+        rawMetadata: loggedDevice?.rawMetadata.isNotEmpty == true
+            ? loggedDevice!.rawMetadata
+            : (native.device.isNotEmpty
                 ? native.device
-                : controlDevice.rawMetadata,
-            primaryPowerDp: function.dpId,
-            powerOn: _powerStateFromStatus(nextStatus),
-          );
+                : controlDevice.rawMetadata),
+        primaryPowerDp: function.dpId,
+        powerOn: _powerStateFromStatus(nextStatus),
+      );
       _upsertDevice(updated);
       return true;
     } catch (e) {

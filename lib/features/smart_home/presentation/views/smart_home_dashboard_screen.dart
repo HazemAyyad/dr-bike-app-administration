@@ -1900,6 +1900,7 @@ class _DeviceDetailsScreen extends StatefulWidget {
 class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
   late SmartDeviceModel device;
   late final TextEditingController nameController;
+  bool localControlBusy = false;
 
   @override
   void initState() {
@@ -1931,22 +1932,34 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
   }
 
   Future<void> _togglePower(bool value) async {
-    final ok = await widget.controller.setDevicePower(
-      device: device,
-      powerOn: value,
-    );
-    if (!mounted || !ok) return;
-    _syncDeviceFromController();
+    if (localControlBusy) return;
+    setState(() => localControlBusy = true);
+    try {
+      final ok = await widget.controller.setDevicePower(
+        device: device,
+        powerOn: value,
+      );
+      if (!mounted || !ok) return;
+      _syncDeviceFromController();
+    } finally {
+      if (mounted) setState(() => localControlBusy = false);
+    }
   }
 
   Future<void> _sendDps(String code, dynamic value) async {
-    final ok = await widget.controller.setDeviceDps(
-      device: device,
-      commandCode: code,
-      value: value,
-    );
-    if (!mounted || !ok) return;
-    _syncDeviceFromController();
+    if (localControlBusy) return;
+    setState(() => localControlBusy = true);
+    try {
+      final ok = await widget.controller.setDeviceDps(
+        device: device,
+        commandCode: code,
+        value: value,
+      );
+      if (!mounted || !ok) return;
+      _syncDeviceFromController();
+    } finally {
+      if (mounted) setState(() => localControlBusy = false);
+    }
   }
 
   Future<void> _delete() async {
@@ -1992,7 +2005,7 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
       ),
       body: Obx(() {
         final busy = widget.controller.deviceDetailsBusyIds.contains(device.id);
-        final controlling =
+        final controlling = localControlBusy ||
             widget.controller.deviceControlBusyIds.contains(device.id);
         const readOnly = false;
         return ListView(
