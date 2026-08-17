@@ -167,27 +167,50 @@ class _DropdownChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w),
-      decoration: BoxDecoration(
-        border:
-            Border.all(color: AppColors.primaryColor.withValues(alpha: .35)),
-        borderRadius: BorderRadius.circular(8.r),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: 128.w,
+        maxWidth: 188.w,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          items: items
-              .map(
-                (item) => DropdownMenuItem<String>(
-                  value: item['key'],
-                  child: Text(item['title']!),
-                ),
-              )
-              .toList(growable: false),
-          onChanged: (next) {
-            if (next != null) onChanged(next);
-          },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        decoration: BoxDecoration(
+          border:
+              Border.all(color: AppColors.primaryColor.withValues(alpha: .35)),
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            items: items
+                .map(
+                  (item) => DropdownMenuItem<String>(
+                    value: item['key'],
+                    child: Text(
+                      item['title']!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            selectedItemBuilder: (context) => items
+                .map(
+                  (item) => Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      item['title']!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (next) {
+              if (next != null) onChanged(next);
+            },
+          ),
         ),
       ),
     );
