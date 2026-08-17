@@ -1,16 +1,17 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/helpers/video_view.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../data/models/maintenance_service_model.dart';
 import '../../data/repositories/maintenance_implement.dart';
 
@@ -319,6 +320,7 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
   final List<File> _newMedia = [];
+  final ImagePicker _picker = ImagePicker();
   late final Set<int> _keepMediaIds;
   bool _isActive = true;
   bool _saving = false;
@@ -343,14 +345,84 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
   }
 
   Future<void> _pickMedia() async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.media,
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('تصوير صورة أو فيديو'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _captureMedia();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('اختيار صور من الاستديو'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickGalleryImages();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.video_library_outlined),
+                title: const Text('اختيار فيديو من الاستديو'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickGalleryVideo();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-    final paths = result?.paths.whereType<String>().toList() ?? const [];
-    if (paths.isEmpty) return;
+  }
+
+  Future<void> _captureMedia() async {
+    final result = await Get.to<WhatsAppCapture>(
+      () => const WhatsAppCameraScreen(),
+    );
+    if (result == null || result.path.isEmpty) return;
+    final file = File(result.path);
+    if (!await file.exists()) return;
     setState(() {
-      _newMedia.addAll(paths.map((path) => File(path)));
+      if (!_newMedia.any((item) => item.path == file.path)) {
+        _newMedia.add(file);
+      }
+    });
+  }
+
+  Future<void> _pickGalleryImages() async {
+    final images = await _picker.pickMultiImage(imageQuality: 85);
+    if (images.isEmpty) return;
+    setState(() {
+      for (final image in images) {
+        final file = File(image.path);
+        if (!_newMedia.any((item) => item.path == file.path)) {
+          _newMedia.add(file);
+        }
+      }
+    });
+  }
+
+  Future<void> _pickGalleryVideo() async {
+    final video = await _picker.pickVideo(source: ImageSource.gallery);
+    if (video == null) return;
+    final file = File(video.path);
+    setState(() {
+      if (!_newMedia.any((item) => item.path == file.path)) {
+        _newMedia.add(file);
+      }
     });
   }
 
