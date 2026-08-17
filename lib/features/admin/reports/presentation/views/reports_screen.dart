@@ -18,27 +18,40 @@ class ReportsScreen extends GetView<ReportsController> {
         action: false,
       ),
       body: GetBuilder<ReportsController>(
-        builder: (_) => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ReportsRail(controller: controller),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: controller.loadSalesReport,
-                child: ListView(
-                  padding: EdgeInsets.all(20.r),
-                  children: [
-                    _FiltersBar(controller: controller),
-                    SizedBox(height: 14.h),
-                    if (controller.selectedReport.value == 'sales')
-                      _SalesReport(controller: controller)
-                    else
-                      _ComingSoon(controller: controller),
+        builder: (_) => LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 720;
+            final content = RefreshIndicator(
+              onRefresh: controller.loadSalesReport,
+              child: ListView(
+                padding: EdgeInsets.all(isCompact ? 12.r : 20.r),
+                children: [
+                  if (isCompact) ...[
+                    _ReportsSelector(controller: controller),
+                    SizedBox(height: 12.h),
                   ],
-                ),
+                  _FiltersBar(controller: controller),
+                  SizedBox(height: 14.h),
+                  if (controller.selectedReport.value == 'sales')
+                    _SalesReport(controller: controller)
+                  else
+                    _ComingSoon(controller: controller),
+                ],
               ),
-            ),
-          ],
+            );
+
+            if (isCompact) {
+              return content;
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ReportsRail(controller: controller),
+                Expanded(child: content),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -97,6 +110,59 @@ class _ReportsRail extends StatelessWidget {
                 ],
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ReportsSelector extends StatelessWidget {
+  const _ReportsSelector({required this.controller});
+
+  final ReportsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: controller.reports.length,
+        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        itemBuilder: (context, index) {
+          final report = controller.reports[index];
+          final selected = controller.selectedReport.value == report['key'];
+          return ChoiceChip(
+            selected: selected,
+            label: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: 150.w),
+              child: Text(
+                report['title']!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            avatar: Icon(
+              Icons.assessment_outlined,
+              size: 17.sp,
+              color: selected ? Colors.white : AppColors.primaryColor,
+            ),
+            selectedColor: AppColors.primaryColor,
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : null,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w800,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+              side: BorderSide(
+                color: selected
+                    ? AppColors.primaryColor
+                    : AppColors.primaryColor.withValues(alpha: .28),
+              ),
+            ),
+            onSelected: (_) => controller.selectReport(report['key']!),
           );
         },
       ),
@@ -282,7 +348,11 @@ class _SummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth > 900 ? 4 : 2;
+        final columns = constraints.maxWidth > 900
+            ? 4
+            : constraints.maxWidth > 420
+                ? 2
+                : 1;
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
