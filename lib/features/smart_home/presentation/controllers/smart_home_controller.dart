@@ -589,6 +589,7 @@ class SmartHomeController extends GetxController {
       );
       final native = await nativeService.getDeviceStatus(
         tuyaDeviceId: loaded.tuyaDeviceId,
+        tuyaHomeId: _tuyaHomeIdForDevice(loaded),
       );
       final merged = native.success
           ? loaded.copyWith(
@@ -746,6 +747,7 @@ class SmartHomeController extends GetxController {
       );
       final native = await nativeService.publishDps(
         tuyaDeviceId: controlDevice.tuyaDeviceId,
+        tuyaHomeId: _tuyaHomeIdForDevice(controlDevice),
         dpId: function.dpId,
         code: function.code,
         type: function.type,
@@ -852,6 +854,12 @@ class SmartHomeController extends GetxController {
   ) async {
     if (DeviceCapabilityResolver.functions(device).isNotEmpty) return device;
     return loadDeviceDetails(device);
+  }
+
+  String _tuyaHomeIdForDevice(SmartDeviceModel device) {
+    final home =
+        homes.firstWhereOrNull((item) => item.id == device.smartHomeId);
+    return home?.tuyaHomeId ?? selectedHome?.tuyaHomeId ?? '';
   }
 
   Map<String, dynamic> _controlErrorContext({

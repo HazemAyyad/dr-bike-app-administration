@@ -531,18 +531,15 @@ class MainActivity : FlutterFragmentActivity() {
         }
 
         val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val homeId = call.argument<String>("tuyaHomeId") ?: ""
         if (devId.isBlank()) {
             result.success(deviceResult(false, "missing_device_id", "Missing Tuya device id", null))
             return
         }
 
-        val deviceBean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
-        if (deviceBean == null) {
-            result.success(deviceResult(false, "device_not_found", "Device was not found in Tuya cache", null))
-            return
+        withTuyaDeviceBean(devId, homeId, result) { deviceBean ->
+            result.success(deviceResult(true, "", "Device status loaded", deviceBean))
         }
-
-        result.success(deviceResult(true, "", "Device status loaded", deviceBean))
     }
 
     private fun renameTuyaDevice(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
@@ -580,6 +577,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
 
         val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val homeId = call.argument<String>("tuyaHomeId") ?: ""
         val requestedDpId = call.argument<String>("dpId") ?: ""
         val requestedCode = call.argument<String>("code") ?: ""
         val requestedType = call.argument<String>("type") ?: ""
@@ -589,64 +587,124 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
 
-        val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
-        val schema = resolveWritableSchema(bean, requestedDpId, requestedCode)
-        if (schema == null) {
-            val response = deviceResult(false, "unsupported_or_read_only_dp", "No writable Tuya function matched DP $requestedDpId / $requestedCode", bean).toMutableMap()
-            response["submitted"] = mapOf(
-                "dp_id" to requestedDpId,
-                "code" to requestedCode,
-                "type" to requestedType,
-                "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
-            )
-            result.success(response)
-            return
-        }
-
-        val validation = validateTuyaValue(schema, requestedValue)
-        if (!validation.first) {
-            val response = deviceResult(false, "invalid_dp_value", validation.second ?: "Invalid Tuya DP value", bean).toMutableMap()
-            response["resolved_function"] = mapSchemaBean(schema)
-            response["submitted"] = mapOf(
-                "dp_id" to requestedDpId,
-                "code" to requestedCode,
-                "type" to requestedType,
-                "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
-            )
-            result.success(response)
-            return
-        }
-
-        val publishDpId = schema.id?.takeIf { it.isNotBlank() } ?: requestedDpId
-        val dps = linkedMapOf<String, Any?>(publishDpId to requestedValue)
-        val device = ThingHomeSdk.newDeviceInstance(devId)
-        val payload = JSONObject(dps).toString()
-        device.publishDps(payload, object : IResultCallback {
-            override fun onSuccess() {
-                val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
-                val response = deviceResult(true, "", "DPS command published", bean).toMutableMap()
-                response["resolved_function"] = mapSchemaBean(schema)
-                val merged = linkedMapOf<String, Any?>()
-                if (bean?.dps != null) merged.putAll(bean.dps)
-                merged.putAll(dps)
-                response["dps"] = merged
-                response["online"] = bean?.isOnline == true
-                result.success(response)
-                device.onDestroy()
-            }
-
-            override fun onError(code: String?, error: String?) {
-                val latestBean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
-                val response = deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error), latestBean).toMutableMap()
-                response["resolved_function"] = mapSchemaBean(schema)
+        withTuyaDeviceBean(devId, homeId, result) { bean ->
+            val schema = resolveWritableSchema(bean, requestedDpId, requestedCode)
+            if (schema == null) {
+                val response = deviceResult(false, "unsupported_or_read_only_dp", "No writable Tuya function matched DP $requestedDpId / $requestedCode", bean).toMutableMap()
                 response["submitted"] = mapOf(
-                    "dp_id" to publishDpId,
-                    "code" to (schema.code ?: requestedCode),
-                    "type" to (schema.type ?: requestedType),
+                    "dp_id" to requestedDpId,
+                    "code" to requestedCode,
+                    "type" to requestedType,
                     "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
                 )
                 result.success(response)
-                device.onDestroy()
+                return@withTuyaDeviceBean
+            }
+
+            val validation = validateTuyaValue(schema, requestedValue)
+            if (!validation.first) {
+                val response = deviceResult(false, "invalid_dp_value", validation.second ?: "Invalid Tuya DP value", bean).toMutableMap()
+                response["resolved_function"] = mapSchemaBean(schema)
+                response["submitted"] = mapOf(
+                    "dp_id" to requestedDpId,
+                    "code" to requestedCode,
+                    "type" to requestedType,
+                    "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
+                )
+                result.success(response)
+                return@withTuyaDeviceBean
+            }
+
+            val publishDpId = schema.id?.takeIf { it.isNotBlank() } ?: requestedDpId
+            val dps = linkedMapOf<String, Any?>(publishDpId to requestedValue)
+            val device = ThingHomeSdk.newDeviceInstance(devId)
+            val payload = JSONObject(dps).toString()
+            device.publishDps(payload, object : IResultCallback {
+                override fun onSuccess() {
+                    val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                    val response = deviceResult(true, "", "DPS command published", bean).toMutableMap()
+                    response["resolved_function"] = mapSchemaBean(schema)
+                    val merged = linkedMapOf<String, Any?>()
+                    if (bean?.dps != null) merged.putAll(bean.dps)
+                    merged.putAll(dps)
+                    response["dps"] = merged
+                    response["online"] = bean?.isOnline == true
+                    result.success(response)
+                    device.onDestroy()
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    val latestBean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                    val response = deviceResult(false, safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error), latestBean).toMutableMap()
+                    response["resolved_function"] = mapSchemaBean(schema)
+                    response["submitted"] = mapOf(
+                        "dp_id" to publishDpId,
+                        "code" to (schema.code ?: requestedCode),
+                        "type" to (schema.type ?: requestedType),
+                        "value_type" to (requestedValue?.javaClass?.simpleName ?: "null"),
+                    )
+                    result.success(response)
+                    device.onDestroy()
+                }
+            })
+        }
+    }
+
+    private fun withTuyaDeviceBean(
+        devId: String,
+        homeId: String,
+        result: MethodChannel.Result,
+        onReady: (DeviceBean) -> Unit,
+    ) {
+        val cached = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+        if (cached != null) {
+            onReady(cached)
+            return
+        }
+
+        val tuyaHomeId = homeId.toLongOrNull()
+        if (tuyaHomeId == null || tuyaHomeId <= 0L) {
+            result.success(
+                deviceResult(
+                    false,
+                    "device_not_found",
+                    "Device was not found in Tuya cache and no Tuya home id was provided for refresh",
+                    null,
+                )
+            )
+            return
+        }
+
+        val home = ThingHomeSdk.newHomeInstance(tuyaHomeId)
+        home.getHomeDetail(object : IThingHomeResultCallback {
+            override fun onSuccess(bean: HomeBean) {
+                val refreshed = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                if (refreshed == null) {
+                    result.success(
+                        deviceResult(
+                            false,
+                            "device_not_found",
+                            "Device was not found in Tuya cache after home refresh",
+                            null,
+                        )
+                    )
+                    home.onDestroy()
+                    return
+                }
+                onReady(refreshed)
+                home.onDestroy()
+            }
+
+            override fun onError(code: String?, error: String?) {
+                result.success(
+                    deviceResult(
+                        false,
+                        safeTuyaErrorCode(code),
+                        safeTuyaErrorMessage(code, error),
+                        null,
+                    )
+                )
+                home.onDestroy()
             }
         })
     }
