@@ -456,11 +456,11 @@ class _SummaryGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth > 900
+        final columns = constraints.maxWidth > 1100
             ? 4
-            : constraints.maxWidth > 420
+            : constraints.maxWidth < 340
                 ? 2
-                : 1;
+                : 3;
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -469,12 +469,12 @@ class _SummaryGrid extends StatelessWidget {
             crossAxisCount: columns,
             crossAxisSpacing: 8.w,
             mainAxisSpacing: 8.h,
-            childAspectRatio: 3.35,
+            childAspectRatio: 2.55,
           ),
           itemBuilder: (context, index) {
             final item = cards[index];
             return Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
                     ? AppColors.customGreyColor4
@@ -487,8 +487,8 @@ class _SummaryGrid extends StatelessWidget {
                 children: [
                   Text(
                     item['title'].toString(),
-                    style:
-                        TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        fontSize: 10.5.sp, fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 4.h),
                   Text(
@@ -497,7 +497,7 @@ class _SummaryGrid extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.primaryColor,
-                      fontSize: 17.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
