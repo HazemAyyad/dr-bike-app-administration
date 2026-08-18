@@ -188,7 +188,7 @@ void _showFiltersSheet(BuildContext context, ReportsController controller) {
                 ],
               ),
               SizedBox(height: 8.h),
-              _FiltersBar(controller: controller),
+              _FiltersBar(controller: controller, fullWidth: true),
               SizedBox(height: 12.h),
               FilledButton.icon(
                 onPressed: () async {
@@ -274,12 +274,67 @@ class _ReportCard extends StatelessWidget {
 }
 
 class _FiltersBar extends StatelessWidget {
-  const _FiltersBar({required this.controller});
+  const _FiltersBar({required this.controller, this.fullWidth = false});
 
   final ReportsController controller;
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
+    if (fullWidth) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _FilterField(
+            label: 'الفترة',
+            child: _DropdownChip(
+              value: controller.selectedPeriod.value,
+              items: controller.periods,
+              onChanged: controller.selectPeriod,
+              fullWidth: true,
+            ),
+          ),
+          if (controller.selectedPeriod.value == 'custom') ...[
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'من / إلى',
+              child: OutlinedButton.icon(
+                onPressed: () => controller.pickCustomRange(context),
+                icon: const Icon(Icons.date_range_outlined),
+                label: Text(
+                  controller.fromDate == null || controller.toDate == null
+                      ? 'اختيار الفترة'
+                      : '${_date(controller.fromDate!)} - ${_date(controller.toDate!)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+          SizedBox(height: 10.h),
+          _FilterField(
+            label: 'الحالة',
+            child: _DropdownChip(
+              value: controller.selectedStatus.value,
+              items: controller.statuses,
+              onChanged: controller.selectStatus,
+              fullWidth: true,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          _FilterField(
+            label: 'طريقة الدفع',
+            child: _DropdownChip(
+              value: controller.selectedPaymentType.value,
+              items: controller.paymentTypes,
+              onChanged: controller.selectPaymentType,
+              fullWidth: true,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
@@ -328,24 +383,56 @@ class _FiltersBar extends StatelessWidget {
       '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 }
 
+class _FilterField extends StatelessWidget {
+  const _FilterField({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w800,
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor6
+                : AppColors.secondaryColor,
+          ),
+        ),
+        SizedBox(height: 5.h),
+        child,
+      ],
+    );
+  }
+}
+
 class _DropdownChip extends StatelessWidget {
   const _DropdownChip({
     required this.value,
     required this.items,
     required this.onChanged,
+    this.fullWidth = false,
   });
 
   final String value;
   final List<Map<String, String>> items;
   final ValueChanged<String> onChanged;
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: 128.w,
-        maxWidth: 188.w,
-      ),
+      constraints: fullWidth
+          ? const BoxConstraints(minWidth: double.infinity)
+          : BoxConstraints(
+              minWidth: 128.w,
+              maxWidth: 188.w,
+            ),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w),
         decoration: BoxDecoration(
