@@ -21,12 +21,13 @@ abstract class MaintenanceRepository {
     required String customerId,
     required String sellerId,
     required String description,
-    required String receipDate,
-    required String receiptTime,
+    String? receipDate,
+    String? receiptTime,
     required List<File> files,
     required String status,
     double? laborCost,
     double? discount,
+    String? editReason,
   });
 
   Future<Either<Failure, MaintenanceBillingModel>> syncMaintenanceProducts({
@@ -34,6 +35,7 @@ abstract class MaintenanceRepository {
     required List<MaintenanceProductModel> products,
     double? laborCost,
     double? discount,
+    String? editReason,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> deliverMaintenance({
@@ -53,6 +55,8 @@ abstract class MaintenanceRepository {
 
   Future<Either<Failure, Map<String, dynamic>>> requestDailySessionClosing({
     String? note,
+    double? physicalCount,
+    double? floatToKeep,
   });
 
   Future<Either<Failure, List<MaintenanceActivityLogModel>>> getActivityLog({

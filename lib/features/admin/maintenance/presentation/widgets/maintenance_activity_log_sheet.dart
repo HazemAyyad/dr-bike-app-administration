@@ -104,6 +104,25 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
                               style: TextStyle(fontSize: 11.sp),
                             ),
                           ],
+                          if (_reasonText(log).isNotEmpty) ...[
+                            SizedBox(height: 5.h),
+                            _metadataLine(
+                              icon: Icons.edit_note_rounded,
+                              text: 'سبب التعديل: ${_reasonText(log)}',
+                            ),
+                          ],
+                          if (_changeLines(log).isNotEmpty) ...[
+                            SizedBox(height: 5.h),
+                            ..._changeLines(log).map(
+                              (line) => Padding(
+                                padding: EdgeInsets.only(bottom: 3.h),
+                                child: _metadataLine(
+                                  icon: Icons.tune_rounded,
+                                  text: line,
+                                ),
+                              ),
+                            ),
+                          ],
                           SizedBox(height: 6.h),
                           Wrap(
                             spacing: 8.w,
@@ -154,6 +173,103 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _metadataLine({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 13.sp, color: AppColors.customGreyColor5),
+        SizedBox(width: 5.w),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.5.sp,
+              height: 1.25,
+              color: AppColors.customGreyColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _reasonText(MaintenanceActivityLogModel log) {
+    return log.metadata['edit_reason']?.toString().trim() ?? '';
+  }
+
+  List<String> _changeLines(MaintenanceActivityLogModel log) {
+    final changes = log.metadata['changes'];
+    if (changes is Map) {
+      return changes.entries
+          .map((entry) {
+            final value = entry.value;
+            if (value is! Map) return '';
+            final oldValue = _displayValue(value['old']);
+            final newValue = _displayValue(value['new']);
+            return '${_fieldLabel(entry.key.toString())}: $oldValue > $newValue';
+          })
+          .where((line) => line.trim().isNotEmpty)
+          .take(6)
+          .toList();
+    }
+
+    final before = log.metadata['before'];
+    final after = log.metadata['after'];
+    if (before is Map && after is Map) {
+      return [
+        'عدد القطع: ${_itemsCount(before)} > ${_itemsCount(after)}',
+        'إجمالي القطع: ${_displayValue(before['parts_total'])} > ${_displayValue(after['parts_total'])}',
+        'أجرة الصيانة: ${_displayValue(before['labor_cost'])} > ${_displayValue(after['labor_cost'])}',
+        'الخصم: ${_displayValue(before['discount'])} > ${_displayValue(after['discount'])}',
+        'الإجمالي: ${_displayValue(before['invoice_total'])} > ${_displayValue(after['invoice_total'])}',
+      ]
+          .where((line) => !line.endsWith('> -') && line.trim().isNotEmpty)
+          .toList();
+    }
+
+    return const [];
+  }
+
+  int _itemsCount(Map value) {
+    final items = value['items'];
+    return items is List ? items.length : 0;
+  }
+
+  String _displayValue(dynamic value) {
+    if (value == null) return '-';
+    if (value is num) return value.toStringAsFixed(2);
+    if (value is List) return '${value.length}';
+    return value.toString().trim().isEmpty ? '-' : value.toString();
+  }
+
+  String _fieldLabel(String field) {
+    switch (field) {
+      case 'customer_id':
+        return 'الزبون';
+      case 'seller_id':
+        return 'التاجر';
+      case 'description':
+        return 'التفاصيل';
+      case 'receipt_date':
+        return 'تاريخ التسليم';
+      case 'receipt_time':
+        return 'وقت التسليم';
+      case 'status':
+        return 'الحالة';
+      case 'labor_cost':
+        return 'أجرة الصيانة';
+      case 'discount':
+        return 'الخصم';
+      case 'files':
+        return 'الملفات';
+      default:
+        return field;
+    }
   }
 
   String _statusLabel(String? status) {

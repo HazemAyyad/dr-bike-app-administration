@@ -15,12 +15,13 @@ class CreatMaintenanceUsecase {
     required String customerId,
     required String sellerId,
     required String description,
-    required String receipDate,
-    required String receiptTime,
+    String? receipDate,
+    String? receiptTime,
     required List<File> files,
     required String status,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) {
     return maintenanceRepository.creatMaintenance(
       maintenanceId: maintenanceId,
@@ -33,6 +34,7 @@ class CreatMaintenanceUsecase {
       status: status,
       laborCost: laborCost,
       discount: discount,
+      editReason: editReason,
     );
   }
 }

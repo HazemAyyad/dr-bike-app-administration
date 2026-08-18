@@ -9,6 +9,7 @@ class MaintenanceActivityLogModel {
   final String? actorType;
   final String? oldStatus;
   final String? newStatus;
+  final Map<String, dynamic> metadata;
   final String createdAt;
 
   const MaintenanceActivityLogModel({
@@ -20,6 +21,7 @@ class MaintenanceActivityLogModel {
     this.actorType,
     this.oldStatus,
     this.newStatus,
+    this.metadata = const {},
     required this.createdAt,
   });
 
@@ -33,6 +35,9 @@ class MaintenanceActivityLogModel {
       actorType: asNullableString(json['actor_type']),
       oldStatus: asNullableString(json['old_status']),
       newStatus: asNullableString(json['new_status']),
+      metadata: json['metadata'] is Map
+          ? Map<String, dynamic>.from(json['metadata'])
+          : const {},
       createdAt: asString(json['created_at']),
     );
   }

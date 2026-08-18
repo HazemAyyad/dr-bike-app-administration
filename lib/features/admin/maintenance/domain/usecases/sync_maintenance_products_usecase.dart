@@ -14,12 +14,14 @@ class SyncMaintenanceProductsUsecase {
     required List<MaintenanceProductModel> products,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) {
     return maintenanceRepository.syncMaintenanceProducts(
       maintenanceId: maintenanceId,
       products: products,
       laborCost: laborCost,
       discount: discount,
+      editReason: editReason,
     );
   }
 }

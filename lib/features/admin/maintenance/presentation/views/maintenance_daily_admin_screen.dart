@@ -3,8 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_dropdown_field.dart';
-import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
 
 class MaintenanceDailyAdminScreen extends StatefulWidget {
@@ -107,7 +106,7 @@ class _OpenMaintenanceSessions extends StatelessWidget {
               isThreeLine: true,
               trailing: canClose
                   ? TextButton(
-                      onPressed: () => _showCloseSheet(context, item),
+                      onPressed: () => _openCloseScreen(item),
                       child: const Text('إغلاق اليوم'),
                     )
                   : const Icon(Icons.chevron_left),
@@ -117,12 +116,12 @@ class _OpenMaintenanceSessions extends StatelessWidget {
                       .firstWhereOrNull(
                           (row) => _intFrom(row['id']) == pendingId);
                   if (request != null) {
-                    _showRequestSheet(context, request);
+                    _openRequestScreen(request);
                     return;
                   }
                 }
                 if (canClose) {
-                  _showCloseSheet(context, item);
+                  _openCloseScreen(item);
                 }
               },
             ),
@@ -132,59 +131,20 @@ class _OpenMaintenanceSessions extends StatelessWidget {
     );
   }
 
-  Future<void> _showCloseSheet(
-    BuildContext context,
-    Map<String, dynamic> item,
-  ) async {
-    final amount = _doubleFrom(item['expected_closing_balance']);
-    final currency = item['currency']?.toString() ?? 'شيكل';
-    final sessionId = _intFrom(item['session_id'] ?? item['id']);
-    await _MaintenanceDailyCloseSheet.show(
-      context,
-      controller: controller,
-      title: item['employee_name']?.toString() ?? '-',
-      amount: amount,
-      currency: currency,
-      onSubmit: (boxId, note) async {
-        if (sessionId == null) return false;
-        return controller.directCloseMaintenanceDailySession(
-          sessionId,
-          toBoxId: boxId,
-          note: note,
-        );
-      },
+  Future<void> _openCloseScreen(Map<String, dynamic> item) async {
+    await Get.toNamed(
+      AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+      arguments: {'mode': 'direct', 'session': item},
     );
+    await controller.loadMaintenanceDailyAdminData();
   }
 
-  Future<void> _showRequestSheet(
-    BuildContext context,
-    Map<String, dynamic> item,
-  ) async {
-    final amount = _doubleFrom(
-      item['amount_to_transfer'] ?? item['expected_closing_balance'],
+  Future<void> _openRequestScreen(Map<String, dynamic> item) async {
+    await Get.toNamed(
+      AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+      arguments: {'mode': 'review', 'request': item},
     );
-    final currency = item['currency']?.toString() ?? 'شيكل';
-    final requestId = _intFrom(item['id']);
-    await _MaintenanceDailyCloseSheet.show(
-      context,
-      controller: controller,
-      title: item['employee_name']?.toString() ?? '-',
-      amount: amount,
-      currency: currency,
-      allowReject: true,
-      onReject: (note) async {
-        if (requestId == null) return false;
-        return controller.rejectMaintenanceDailyClosing(requestId, note: note);
-      },
-      onSubmit: (boxId, note) async {
-        if (requestId == null) return false;
-        return controller.approveMaintenanceDailyClosing(
-          requestId,
-          toBoxId: boxId,
-          note: note,
-        );
-      },
-    );
+    await controller.loadMaintenanceDailyAdminData();
   }
 }
 
@@ -228,246 +188,15 @@ class _MaintenanceClosingRequests extends StatelessWidget {
               isThreeLine: true,
               trailing: const Icon(Icons.chevron_left),
               onTap: () async {
-                final requestId = _intFrom(item['id']);
-                await _MaintenanceDailyCloseSheet.show(
-                  context,
-                  controller: controller,
-                  title: item['employee_name']?.toString() ?? '-',
-                  amount: _doubleFrom(
-                    item['amount_to_transfer'] ??
-                        item['expected_closing_balance'],
-                  ),
-                  currency: item['currency']?.toString() ?? 'شيكل',
-                  allowReject: true,
-                  onReject: (note) async {
-                    if (requestId == null) return false;
-                    return controller.rejectMaintenanceDailyClosing(
-                      requestId,
-                      note: note,
-                    );
-                  },
-                  onSubmit: (boxId, note) async {
-                    if (requestId == null) return false;
-                    return controller.approveMaintenanceDailyClosing(
-                      requestId,
-                      toBoxId: boxId,
-                      note: note,
-                    );
-                  },
+                await Get.toNamed(
+                  AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+                  arguments: {'mode': 'review', 'request': item},
                 );
+                await controller.loadMaintenanceDailyAdminData();
               },
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _MaintenanceDailyCloseSheet extends StatefulWidget {
-  const _MaintenanceDailyCloseSheet({
-    required this.controller,
-    required this.title,
-    required this.amount,
-    required this.currency,
-    required this.onSubmit,
-    this.allowReject = false,
-    this.onReject,
-  });
-
-  final MaintenanceController controller;
-  final String title;
-  final double amount;
-  final String currency;
-  final bool allowReject;
-  final Future<bool> Function(int? boxId, String? note) onSubmit;
-  final Future<bool> Function(String? note)? onReject;
-
-  static Future<void> show(
-    BuildContext context, {
-    required MaintenanceController controller,
-    required String title,
-    required double amount,
-    required String currency,
-    required Future<bool> Function(int? boxId, String? note) onSubmit,
-    bool allowReject = false,
-    Future<bool> Function(String? note)? onReject,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _MaintenanceDailyCloseSheet(
-        controller: controller,
-        title: title,
-        amount: amount,
-        currency: currency,
-        onSubmit: onSubmit,
-        allowReject: allowReject,
-        onReject: onReject,
-      ),
-    );
-  }
-
-  @override
-  State<_MaintenanceDailyCloseSheet> createState() =>
-      _MaintenanceDailyCloseSheetState();
-}
-
-class _MaintenanceDailyCloseSheetState
-    extends State<_MaintenanceDailyCloseSheet> {
-  final TextEditingController noteController = TextEditingController();
-  ShownBoxesModel? selectedBox;
-
-  @override
-  void dispose() {
-    noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final boxes = widget.controller.paymentBoxes
-        .where(
-          (box) =>
-              box.currency == widget.currency &&
-              box.type != 'daily_maintenance',
-        )
-        .toList();
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(8.w, 0, 8.w, 8.h),
-      padding: EdgeInsets.only(
-        left: 14.w,
-        right: 14.w,
-        top: 14.h,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 14.h,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.title,
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10.h),
-            Wrap(
-              spacing: 8.w,
-              runSpacing: 8.h,
-              children: [
-                _TotalChip(label: 'المبلغ النقدي', value: widget.amount),
-                _TotalChip(label: 'المطلوب ترحيله', value: widget.amount),
-              ],
-            ),
-            if (widget.amount > 0) ...[
-              SizedBox(height: 12.h),
-              CustomDropdownFieldWithSearch(
-                tital: 'صندوق الترحيل',
-                hint: 'اختر صندوق الترحيل',
-                items: boxes,
-                value: selectedBox,
-                onChanged: (value) {
-                  setState(() => selectedBox = value as ShownBoxesModel?);
-                },
-                itemAsString: (item) => item.boxName,
-                compareFn: (a, b) => a.boxId == b.boxId,
-              ),
-            ],
-            SizedBox(height: 12.h),
-            TextField(
-              controller: noteController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'ملاحظة',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                if (widget.allowReject) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        final ok =
-                            await widget.onReject?.call(noteController.text);
-                        if (ok == true && context.mounted) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: const Text('رفض'),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                ],
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (widget.amount > 0 && selectedBox == null) {
-                        Get.snackbar('خطأ', 'يجب اختيار صندوق الترحيل');
-                        return;
-                      }
-                      final ok = await widget.onSubmit(
-                        selectedBox?.boxId,
-                        noteController.text,
-                      );
-                      if (ok && context.mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: const Text('اعتماد الإغلاق'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TotalChip extends StatelessWidget {
-  const _TotalChip({required this.label, required this.value});
-
-  final String label;
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 0.42.sw,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            value.toStringAsFixed(2),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
-          ),
-        ],
       ),
     );
   }

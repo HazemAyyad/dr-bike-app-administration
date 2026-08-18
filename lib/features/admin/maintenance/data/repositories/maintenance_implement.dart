@@ -48,12 +48,13 @@ class MaintenanceImplement implements MaintenanceRepository {
     required String customerId,
     required String sellerId,
     required String description,
-    required String receipDate,
-    required String receiptTime,
+    String? receipDate,
+    String? receiptTime,
     required List<File> files,
     required String status,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -70,6 +71,7 @@ class MaintenanceImplement implements MaintenanceRepository {
         status: status,
         laborCost: laborCost,
         discount: discount,
+        editReason: editReason,
       );
       if (result['status'] == 'success') {
         return Right({
@@ -153,6 +155,7 @@ class MaintenanceImplement implements MaintenanceRepository {
     required List<MaintenanceProductModel> products,
     double? laborCost,
     double? discount,
+    String? editReason,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -163,6 +166,7 @@ class MaintenanceImplement implements MaintenanceRepository {
         products: products,
         laborCost: laborCost,
         discount: discount,
+        editReason: editReason,
       );
       if (result['status'] == 'success') {
         return Right(
@@ -270,6 +274,8 @@ class MaintenanceImplement implements MaintenanceRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> requestDailySessionClosing({
     String? note,
+    double? physicalCount,
+    double? floatToKeep,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -277,6 +283,8 @@ class MaintenanceImplement implements MaintenanceRepository {
     try {
       final result = await maintenanceDatasource.requestDailySessionClosing(
         note: note,
+        physicalCount: physicalCount,
+        floatToKeep: floatToKeep,
       );
       if (result['status'] == 'success') {
         return Right(Map<String, dynamic>.from(result['daily_box'] ?? {}));

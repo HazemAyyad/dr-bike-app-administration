@@ -112,21 +112,6 @@ class NewMaintenanceScreen extends StatelessWidget {
                     SizedBox(height: 10.h),
                     _MaintenanceMediaPicker(controller: controller),
                     SizedBox(height: 20.h),
-                    if (!controller.isDelivered.value &&
-                        !controller.isEdit.value &&
-                        (controller.maintenanceId == null ||
-                            controller.maintenanceId!.isEmpty))
-                      AppButton(
-                        isLoading: controller.isLoading,
-                        text: 'save',
-                        onPressed: () {
-                          controller.createMaintenance(
-                            step: controller.selectedStep.value,
-                            maintenanceId: controller.maintenanceId,
-                            isSave: true,
-                          );
-                        },
-                      ),
                     if (controller.isDelivered.value && controller.isEdit.value)
                       AppButton(
                         isLoading: controller.isLoading,
@@ -148,6 +133,22 @@ class NewMaintenanceScreen extends StatelessWidget {
                         onPressedBack: controller.prevStep,
                         onPressedNext: controller.nextStep,
                       ),
+                    if (!controller.isDelivered.value &&
+                        !controller.isEdit.value &&
+                        (controller.maintenanceId == null ||
+                            controller.maintenanceId!.isEmpty)) ...[
+                      SizedBox(height: 10.h),
+                      AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'save',
+                        onPressed: () {
+                          controller.createMaintenance(
+                            step: controller.selectedStep.value,
+                            maintenanceId: controller.maintenanceId,
+                          );
+                        },
+                      ),
+                    ],
                     SizedBox(height: 16.h),
                   ],
                 ),

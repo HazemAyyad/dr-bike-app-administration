@@ -250,7 +250,7 @@ class NotificationFirebaseService {
   NotificationFirebaseService._();
   static final NotificationFirebaseService instance =
       NotificationFirebaseService._();
-  final firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging get firebaseMessaging => FirebaseMessaging.instance;
   final _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   FlutterLocalNotificationsPlugin get localNotificationsPlugin =>
@@ -274,22 +274,19 @@ class NotificationFirebaseService {
   }
 
   Future<void> intNotification() async {
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] ${kIsWeb ? "web" : Platform.operatingSystem} platform - skipping Firebase Messaging APIs',
+      );
+      finalToken = 'no_token';
+      await GetStorage().write('fcmToken', finalToken);
+      return;
+    }
+
     _logFirebaseProjectDiagnostics();
     await _requestNotificationPermissions();
     await setupFlutterNotifications();
     await _logAndroidChannelDiagnostics();
-
-    if (!_supportsFirebaseMessaging) {
-      debugPrint(
-        '[FCM] ${Platform.operatingSystem} platform — skipping Firebase Messaging APIs',
-      );
-      finalToken = 'no_token';
-      await GetStorage().write('fcmToken', finalToken);
-      debugPrint(
-        '[FCM] Notification service ready without FCM token on ${Platform.operatingSystem}',
-      );
-      return;
-    }
 
     await _refreshFcmToken();
 
