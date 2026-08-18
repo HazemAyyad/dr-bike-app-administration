@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -9,6 +13,7 @@ import 'package:printing/printing.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/reports_controller.dart';
 
@@ -119,9 +124,19 @@ class ReportsDetailScreen extends GetView<ReportsController> {
           ),
           IconButton(
             tooltip: 'PDF',
+            onPressed: () => _downloadReportPdf(title, controller),
+            icon: Icon(
+              Icons.file_download_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+          ),
+          IconButton(
+            tooltip: 'مشاركة PDF',
             onPressed: () => _shareReportPdf(title, controller),
             icon: Icon(
-              Icons.picture_as_pdf_outlined,
+              Icons.ios_share_outlined,
               color: ThemeService.isDark.value
                   ? AppColors.primaryColor
                   : AppColors.secondaryColor,
@@ -351,6 +366,27 @@ class _FiltersBar extends StatelessWidget {
               ),
             ),
           ],
+          if (controller.selectedReport.value == 'statement') ...[
+            _FilterField(
+              label: 'نوع الحساب',
+              child: _DropdownChip(
+                value: controller.selectedPersonType.value,
+                items: controller.personTypes,
+                onChanged: controller.selectPersonType,
+                fullWidth: true,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'الحساب',
+              child: _DropdownChip(
+                value: controller.selectedPersonId.value,
+                items: controller.personItems(),
+                onChanged: controller.selectPerson,
+                fullWidth: true,
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -398,6 +434,18 @@ class _FiltersBar extends StatelessWidget {
             items: controller.checkDirections,
             onChanged: controller.selectCheckDirection,
           ),
+        if (controller.selectedReport.value == 'statement') ...[
+          _DropdownChip(
+            value: controller.selectedPersonType.value,
+            items: controller.personTypes,
+            onChanged: controller.selectPersonType,
+          ),
+          _DropdownChip(
+            value: controller.selectedPersonId.value,
+            items: controller.personItems(),
+            onChanged: controller.selectPerson,
+          ),
+        ],
         IconButton.filledTonal(
           tooltip: 'تطبيق',
           onPressed: controller.loadCurrentReport,
@@ -614,7 +662,7 @@ class _ReportTable extends StatelessWidget {
       );
     }
 
-    final tableWidth = (columns.length * 116.w).clamp(620.w, 1320.w);
+    final tableWidth = columns.length * _SalesTableCell.cellWidth();
     return Container(
       height: 470.h,
       decoration: BoxDecoration(
@@ -665,7 +713,7 @@ class _SalesTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 43.h,
+      constraints: BoxConstraints(minHeight: 43.h),
       color: AppColors.primaryColor,
       child: Row(
         children: columns
@@ -688,12 +736,15 @@ class _SalesTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44.h,
-      child: Row(
-        children: cells
-            .map((cell) => _SalesTableCell(text: cell))
-            .toList(growable: false),
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: 44.h),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: cells
+              .map((cell) => _SalesTableCell(text: cell))
+              .toList(growable: false),
+        ),
       ),
     );
   }
@@ -705,21 +756,22 @@ class _SalesTableCell extends StatelessWidget {
   final String text;
   final bool isHeader;
 
+  static double cellWidth() => 96.w;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 112.w,
+      width: cellWidth(),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
         child: Align(
           alignment: AlignmentDirectional.centerStart,
           child: Text(
             text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: true,
             style: TextStyle(
               color: isHeader ? Colors.white : null,
-              fontSize: isHeader ? 12.sp : 11.5.sp,
+              fontSize: isHeader ? 10.5.sp : 10.sp,
               fontWeight: isHeader ? FontWeight.w900 : FontWeight.w600,
             ),
           ),
@@ -727,6 +779,22 @@ class _SalesTableCell extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _downloadReportPdf(
+  String title,
+  ReportsController controller,
+) async {
+  final bytes = await _ReportsPdfBuilder.build(title, controller);
+  final dir = await _reportsDownloadDirectory();
+  if (!await dir.exists()) {
+    await dir.create(recursive: true);
+  }
+  final fileName = _reportFileName(controller.selectedReport.value);
+  final file = File('${dir.path}${Platform.pathSeparator}$fileName');
+  await file.writeAsBytes(bytes, flush: true);
+  Get.snackbar('PDF', 'تم تنزيل التقرير: $fileName');
+  await OpenFilex.open(file.path);
 }
 
 Future<void> _shareReportPdf(
@@ -738,6 +806,25 @@ Future<void> _shareReportPdf(
     bytes: bytes,
     filename: '${controller.selectedReport.value}_report.pdf',
   );
+}
+
+Future<Directory> _reportsDownloadDirectory() async {
+  final downloads = await getDownloadsDirectory();
+  if (downloads != null) return downloads;
+
+  if (Platform.isAndroid) {
+    final external = await getExternalStorageDirectory();
+    if (external != null) return external;
+  }
+
+  return getApplicationDocumentsDirectory();
+}
+
+String _reportFileName(String key) {
+  final now = DateTime.now();
+  final stamp =
+      '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+  return '${key}_report_$stamp.pdf';
 }
 
 Future<void> _printReport(
@@ -762,6 +849,7 @@ class _ReportsPdfBuilder {
         await rootBundle.load('assets/fonts/Almarai/Almarai-Bold.ttf');
     final regular = pw.Font.ttf(regularData);
     final bold = pw.Font.ttf(boldData);
+    final logo = await _logo();
     final doc = pw.Document();
     final columns = controller.activeColumns();
     final rows = controller.activeRows();
@@ -781,17 +869,39 @@ class _ReportsPdfBuilder {
         theme: pw.ThemeData.withFont(base: regular, bold: bold),
         build: (_) => [
           pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              pw.Text(
-                title,
-                style: pw.TextStyle(font: bold, fontSize: 18),
+              pw.Expanded(
+                child: pw.Text(
+                  'دكتور بايك - تقرير محاسبي',
+                  style: pw.TextStyle(
+                    font: bold,
+                    fontSize: 21,
+                    color: PdfColors.deepPurple600,
+                  ),
+                ),
               ),
-              pw.Text(
-                'من $from إلى $to',
-                style: pw.TextStyle(font: regular, fontSize: 10),
-              ),
+              if (logo != null) pw.Image(logo, height: 78),
             ],
+          ),
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 8, bottom: 10),
+            height: 1.3,
+            color: PdfColors.deepPurple600,
+          ),
+          pw.Center(
+            child: pw.Text(
+              title,
+              style: pw.TextStyle(font: bold, fontSize: 16),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Align(
+            alignment: pw.Alignment.centerLeft,
+            child: pw.Text(
+              'من $from إلى $to',
+              style: pw.TextStyle(font: regular, fontSize: 10),
+            ),
           ),
           pw.SizedBox(height: 10),
           _headerBox(
@@ -817,6 +927,15 @@ class _ReportsPdfBuilder {
     );
 
     return doc.save();
+  }
+
+  static Future<pw.MemoryImage?> _logo() async {
+    try {
+      final data = await rootBundle.load(AssetsManager.darkLogo);
+      return pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
   }
 
   static pw.Widget _headerBox({
@@ -928,7 +1047,6 @@ class _ReportsPdfBuilder {
       padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
       child: pw.Text(
         text,
-        maxLines: 2,
         textDirection: pw.TextDirection.rtl,
         style: pw.TextStyle(font: font, color: color, fontSize: 8.5),
       ),

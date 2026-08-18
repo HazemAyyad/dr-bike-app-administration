@@ -28,6 +28,7 @@ class ReportsApiService {
           if (toDate != null) 'to_date': _formatDate(toDate),
         },
       );
+      _throwIfError(response.data);
       return Map<String, dynamic>.from(response.data['data'] ?? {});
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -47,6 +48,8 @@ class ReportsApiService {
     DateTime? fromDate,
     DateTime? toDate,
     String checkDirection = 'all',
+    String? personType,
+    String? personId,
   }) async {
     try {
       final response = await api.get(
@@ -55,11 +58,36 @@ class ReportsApiService {
           'type': type,
           'period': period,
           'check_direction': checkDirection,
+          if (personType != null && personType.isNotEmpty)
+            'person_type': personType,
+          if (personId != null && personId.isNotEmpty) 'person_id': personId,
           if (fromDate != null) 'from_date': _formatDate(fromDate),
           if (toDate != null) 'to_date': _formatDate(toDate),
         },
       );
+      _throwIfError(response.data);
       return Map<String, dynamic>.from(response.data['data'] ?? {});
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> reportPeople() async {
+    try {
+      final response = await api.get(EndPoints.adminReportsPeople);
+      _throwIfError(response.data);
+      final data = Map<String, dynamic>.from(response.data['data'] ?? {});
+      return (data['people'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -77,5 +105,17 @@ class ReportsApiService {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     return '$year-$month-$day';
+  }
+
+  void _throwIfError(dynamic responseData) {
+    if (responseData is Map && responseData['status'] == 'error') {
+      throw ServerException(
+        ErrorModel(
+          errorMessage: responseData['message'] ?? 'Unknown error',
+          status: responseData['status'] ?? 500,
+          data: responseData['data'] ?? {},
+        ),
+      );
+    }
   }
 }

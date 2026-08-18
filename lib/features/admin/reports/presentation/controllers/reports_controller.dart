@@ -14,6 +14,8 @@ class ReportsController extends GetxController {
   final RxString selectedStatus = 'all'.obs;
   final RxString selectedPaymentType = 'all'.obs;
   final RxString selectedCheckDirection = 'all'.obs;
+  final RxString selectedPersonType = 'customer'.obs;
+  final RxString selectedPersonId = ''.obs;
 
   DateTime? fromDate;
   DateTime? toDate;
@@ -22,6 +24,7 @@ class ReportsController extends GetxController {
   List<Map<String, dynamic>> reportSummary = const [];
   List<String> reportColumns = const [];
   List<Map<String, dynamic>> reportRows = const [];
+  List<Map<String, dynamic>> reportPeople = const [];
   Map<String, dynamic> reportPeriod = const {};
 
   final reports = const [
@@ -65,6 +68,11 @@ class ReportsController extends GetxController {
     {'key': 'outgoing', 'title': 'الصادرة فقط'},
   ];
 
+  final personTypes = const [
+    {'key': 'customer', 'title': 'زبون'},
+    {'key': 'seller', 'title': 'مورد'},
+  ];
+
   Future<void> loadSalesReport() async {
     isLoading(true);
     update();
@@ -105,6 +113,8 @@ class ReportsController extends GetxController {
         fromDate: selectedPeriod.value == 'custom' ? fromDate : null,
         toDate: selectedPeriod.value == 'custom' ? toDate : null,
         checkDirection: selectedCheckDirection.value,
+        personType: type == 'statement' ? selectedPersonType.value : null,
+        personId: type == 'statement' ? selectedPersonId.value : null,
       );
       reportSummary = (data['summary'] as List? ?? const [])
           .whereType<Map>()
@@ -130,6 +140,17 @@ class ReportsController extends GetxController {
     }
   }
 
+  Future<void> loadReportPeople() async {
+    try {
+      reportPeople = await service.reportPeople();
+      update();
+    } catch (e) {
+      reportPeople = const [];
+      Get.snackbar('error'.tr, e.toString());
+      update();
+    }
+  }
+
   Future<void> loadCurrentReport() {
     return selectedReport.value == 'sales'
         ? loadSalesReport()
@@ -142,6 +163,9 @@ class ReportsController extends GetxController {
     if (key == 'sales') {
       await loadSalesReport();
     } else {
+      if (key == 'statement' && reportPeople.isEmpty) {
+        await loadReportPeople();
+      }
       await loadGenericReport();
     }
   }
@@ -174,6 +198,17 @@ class ReportsController extends GetxController {
 
   void selectCheckDirection(String key) {
     selectedCheckDirection.value = key;
+    loadGenericReport();
+  }
+
+  void selectPersonType(String key) {
+    selectedPersonType.value = key;
+    selectedPersonId.value = '';
+    loadGenericReport();
+  }
+
+  void selectPerson(String key) {
+    selectedPersonId.value = key;
     loadGenericReport();
   }
 
@@ -236,6 +271,29 @@ class ReportsController extends GetxController {
 
   List<Map<String, dynamic>> activeRows() {
     return selectedReport.value == 'sales' ? salesRows : reportRows;
+  }
+
+  List<Map<String, String>> personItems() {
+    final rows = reportPeople
+        .where(
+            (person) => person['type']?.toString() == selectedPersonType.value)
+        .map((person) {
+      final name = person['name']?.toString().trim();
+      final phone = person['phone']?.toString().trim();
+      final label = [
+        name == null || name.isEmpty ? 'بدون اسم' : name,
+        if (phone != null && phone.isNotEmpty) phone,
+      ].join(' - ');
+      return {
+        'key': person['id']?.toString() ?? '',
+        'title': label,
+      };
+    }).toList(growable: false);
+
+    return [
+      {'key': '', 'title': 'اختر الحساب'},
+      ...rows,
+    ];
   }
 
   List<String> cellsForRow(Map<String, dynamic> row) {
