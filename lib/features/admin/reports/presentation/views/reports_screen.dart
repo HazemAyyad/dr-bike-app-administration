@@ -119,9 +119,19 @@ class ReportsDetailScreen extends GetView<ReportsController> {
           ),
           IconButton(
             tooltip: 'PDF',
-            onPressed: () => _exportReportPdf(title, controller),
+            onPressed: () => _shareReportPdf(title, controller),
             icon: Icon(
               Icons.picture_as_pdf_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+          ),
+          IconButton(
+            tooltip: 'طباعة',
+            onPressed: () => _printReport(title, controller),
+            icon: Icon(
+              Icons.print_outlined,
               color: ThemeService.isDark.value
                   ? AppColors.primaryColor
                   : AppColors.secondaryColor,
@@ -719,7 +729,18 @@ class _SalesTableCell extends StatelessWidget {
   }
 }
 
-Future<void> _exportReportPdf(
+Future<void> _shareReportPdf(
+  String title,
+  ReportsController controller,
+) async {
+  final bytes = await _ReportsPdfBuilder.build(title, controller);
+  await Printing.sharePdf(
+    bytes: bytes,
+    filename: '${controller.selectedReport.value}_report.pdf',
+  );
+}
+
+Future<void> _printReport(
   String title,
   ReportsController controller,
 ) async {
