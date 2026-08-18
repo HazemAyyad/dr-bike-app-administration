@@ -556,7 +556,7 @@ class _SummaryGrid extends StatelessWidget {
             crossAxisCount: columns,
             crossAxisSpacing: 8.w,
             mainAxisSpacing: 8.h,
-            childAspectRatio: 2.55,
+            childAspectRatio: constraints.maxWidth > 700 ? 2.55 : 1.75,
           ),
           itemBuilder: (context, index) {
             final item = cards[index];
@@ -637,7 +637,6 @@ class _SalesTable extends StatelessWidget {
             Border.all(color: AppColors.primaryColor.withValues(alpha: .16)),
       ),
       child: Scrollbar(
-        thumbVisibility: true,
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
