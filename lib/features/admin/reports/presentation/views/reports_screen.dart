@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -92,10 +96,9 @@ class ReportsDetailScreen extends GetView<ReportsController> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (controller.selectedReport.value != reportKey) {
         controller.openReport(reportKey);
-      } else if (reportKey == 'sales' &&
-          controller.salesRows.isEmpty &&
+      } else if (controller.activeRows().isEmpty &&
           !controller.isLoading.value) {
-        controller.loadSalesReport();
+        controller.loadCurrentReport();
       }
     });
 
@@ -104,44 +107,38 @@ class ReportsDetailScreen extends GetView<ReportsController> {
         title: title,
         action: false,
         actions: [
-          if (reportKey == 'sales')
-            IconButton(
-              tooltip: 'الفلاتر',
-              onPressed: () => _showFiltersSheet(context, controller),
-              icon: Icon(
-                Icons.tune_rounded,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-              ),
+          IconButton(
+            tooltip: 'الفلاتر',
+            onPressed: () => _showFiltersSheet(context, controller),
+            icon: Icon(
+              Icons.tune_rounded,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
             ),
-          if (reportKey == 'sales')
-            IconButton(
-              tooltip: 'PDF',
-              onPressed: () =>
-                  Get.snackbar('PDF', 'سيتم ربط تصدير PDF للتقرير'),
-              icon: Icon(
-                Icons.picture_as_pdf_outlined,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-              ),
+          ),
+          IconButton(
+            tooltip: 'PDF',
+            onPressed: () => _exportReportPdf(title, controller),
+            icon: Icon(
+              Icons.picture_as_pdf_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
             ),
+          ),
         ],
       ),
       body: GetBuilder<ReportsController>(
         builder: (_) {
-          if (reportKey != 'sales') {
-            return _ComingSoon(controller: controller, reportTitle: title);
-          }
           return RefreshIndicator(
-            onRefresh: controller.loadSalesReport,
+            onRefresh: controller.loadCurrentReport,
             child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.w),
-                    child: _SalesReport(controller: controller),
+                    child: _ReportContent(controller: controller),
                   ),
                 ),
                 SliverToBoxAdapter(child: SizedBox(height: 24.h)),
@@ -192,7 +189,7 @@ void _showFiltersSheet(BuildContext context, ReportsController controller) {
               SizedBox(height: 12.h),
               FilledButton.icon(
                 onPressed: () async {
-                  await controller.loadSalesReport();
+                  await controller.loadCurrentReport();
                   Get.back();
                 },
                 icon: const Icon(Icons.check_rounded),
@@ -312,25 +309,38 @@ class _FiltersBar extends StatelessWidget {
             ),
           ],
           SizedBox(height: 10.h),
-          _FilterField(
-            label: 'الحالة',
-            child: _DropdownChip(
-              value: controller.selectedStatus.value,
-              items: controller.statuses,
-              onChanged: controller.selectStatus,
-              fullWidth: true,
+          if (controller.selectedReport.value == 'sales') ...[
+            _FilterField(
+              label: 'الحالة',
+              child: _DropdownChip(
+                value: controller.selectedStatus.value,
+                items: controller.statuses,
+                onChanged: controller.selectStatus,
+                fullWidth: true,
+              ),
             ),
-          ),
-          SizedBox(height: 10.h),
-          _FilterField(
-            label: 'طريقة الدفع',
-            child: _DropdownChip(
-              value: controller.selectedPaymentType.value,
-              items: controller.paymentTypes,
-              onChanged: controller.selectPaymentType,
-              fullWidth: true,
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'طريقة الدفع',
+              child: _DropdownChip(
+                value: controller.selectedPaymentType.value,
+                items: controller.paymentTypes,
+                onChanged: controller.selectPaymentType,
+                fullWidth: true,
+              ),
             ),
-          ),
+          ],
+          if (controller.selectedReport.value == 'checks') ...[
+            _FilterField(
+              label: 'نوع الشيك',
+              child: _DropdownChip(
+                value: controller.selectedCheckDirection.value,
+                items: controller.checkDirections,
+                onChanged: controller.selectCheckDirection,
+                fullWidth: true,
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -360,19 +370,27 @@ class _FiltersBar extends StatelessWidget {
               ),
             ),
           ),
-        _DropdownChip(
-          value: controller.selectedStatus.value,
-          items: controller.statuses,
-          onChanged: controller.selectStatus,
-        ),
-        _DropdownChip(
-          value: controller.selectedPaymentType.value,
-          items: controller.paymentTypes,
-          onChanged: controller.selectPaymentType,
-        ),
+        if (controller.selectedReport.value == 'sales') ...[
+          _DropdownChip(
+            value: controller.selectedStatus.value,
+            items: controller.statuses,
+            onChanged: controller.selectStatus,
+          ),
+          _DropdownChip(
+            value: controller.selectedPaymentType.value,
+            items: controller.paymentTypes,
+            onChanged: controller.selectPaymentType,
+          ),
+        ],
+        if (controller.selectedReport.value == 'checks')
+          _DropdownChip(
+            value: controller.selectedCheckDirection.value,
+            items: controller.checkDirections,
+            onChanged: controller.selectCheckDirection,
+          ),
         IconButton.filledTonal(
           tooltip: 'تطبيق',
-          onPressed: controller.loadSalesReport,
+          onPressed: controller.loadCurrentReport,
           icon: const Icon(Icons.refresh_rounded),
         ),
       ],
@@ -478,14 +496,14 @@ class _DropdownChip extends StatelessWidget {
   }
 }
 
-class _SalesReport extends StatelessWidget {
-  const _SalesReport({required this.controller});
+class _ReportContent extends StatelessWidget {
+  const _ReportContent({required this.controller});
 
   final ReportsController controller;
 
   @override
   Widget build(BuildContext context) {
-    if (controller.isLoading.value && controller.salesRows.isEmpty) {
+    if (controller.isLoading.value && controller.activeRows().isEmpty) {
       return SizedBox(
         height: 360.h,
         child: const Center(child: CircularProgressIndicator()),
@@ -497,7 +515,7 @@ class _SalesReport extends StatelessWidget {
       children: [
         _SummaryGrid(controller: controller),
         SizedBox(height: 12.h),
-        _SalesTable(controller: controller),
+        _ReportTable(controller: controller),
       ],
     );
   }
@@ -510,36 +528,7 @@ class _SummaryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      {
-        'title': 'عدد الفواتير',
-        'value': controller.salesSummary['invoice_count']
-      },
-      {
-        'title': 'الفواتير الفعالة',
-        'value': controller.salesSummary['active_invoice_count'],
-      },
-      {
-        'title': 'المبيعات',
-        'value': controller.money(controller.salesSummary['gross_sales']),
-      },
-      {
-        'title': 'النقدي',
-        'value': controller.money(controller.salesSummary['cash_paid']),
-      },
-      {
-        'title': 'على الدين',
-        'value': controller.money(controller.salesSummary['debt_remaining']),
-      },
-      {
-        'title': 'الخصومات',
-        'value': controller.money(controller.salesSummary['discounts']),
-      },
-      {
-        'title': 'الملغي',
-        'value': controller.money(controller.salesSummary['cancelled_sales']),
-      },
-    ];
+    final cards = controller.activeSummaryCards();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -598,34 +587,24 @@ class _SummaryGrid extends StatelessWidget {
   }
 }
 
-class _SalesTable extends StatelessWidget {
-  const _SalesTable({required this.controller});
+class _ReportTable extends StatelessWidget {
+  const _ReportTable({required this.controller});
 
   final ReportsController controller;
 
-  static const _columns = [
-    'الرقم',
-    'التاريخ',
-    'الزبون',
-    'الصنف',
-    'الكمية',
-    'الإجمالي',
-    'المدفوع',
-    'المتبقي',
-    'الدفع',
-    'الحالة',
-  ];
-
   @override
   Widget build(BuildContext context) {
-    if (controller.salesRows.isEmpty) {
+    final rows = controller.activeRows();
+    final columns = controller.activeColumns();
+
+    if (rows.isEmpty) {
       return SizedBox(
         height: 260.h,
         child: const Center(child: Text('لا يوجد بيانات')),
       );
     }
 
-    final tableWidth = 1120.w;
+    final tableWidth = (columns.length * 116.w).clamp(620.w, 1320.w);
     return Container(
       height: 470.h,
       decoration: BoxDecoration(
@@ -643,29 +622,18 @@ class _SalesTable extends StatelessWidget {
             width: tableWidth,
             child: Column(
               children: [
-                const _SalesTableHeader(columns: _columns),
+                _SalesTableHeader(columns: columns),
                 Expanded(
                   child: ListView.separated(
-                    itemCount: controller.salesRows.length,
+                    itemCount: rows.length,
                     separatorBuilder: (_, __) => Divider(
                       height: 1,
                       color: AppColors.primaryColor.withValues(alpha: .08),
                     ),
                     itemBuilder: (context, index) {
-                      final row = controller.salesRows[index];
+                      final row = rows[index];
                       return _SalesTableRow(
-                        cells: [
-                          '${row['serial_number'] ?? row['id'] ?? ''}',
-                          '${row['date'] ?? ''}',
-                          '${row['buyer_name'] ?? ''}',
-                          '${row['product_name'] ?? ''}',
-                          '${row['quantity'] ?? ''}',
-                          controller.money(row['total']),
-                          controller.money(row['paid']),
-                          controller.money(row['remaining']),
-                          _paymentLabel(row['payment_type']),
-                          row['status'] == 'cancelled' ? 'ملغي' : 'فعال',
-                        ],
+                        cells: controller.cellsForRow(row),
                       );
                     },
                   ),
@@ -676,19 +644,6 @@ class _SalesTable extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _paymentLabel(dynamic value) {
-    switch (value?.toString()) {
-      case 'cash':
-        return 'نقدي';
-      case 'debt':
-        return 'على الدين';
-      case 'mixed':
-        return 'مختلط';
-      default:
-        return 'غير محدد';
-    }
   }
 }
 
@@ -764,28 +719,197 @@ class _SalesTableCell extends StatelessWidget {
   }
 }
 
-class _ComingSoon extends StatelessWidget {
-  const _ComingSoon({required this.controller, required this.reportTitle});
+Future<void> _exportReportPdf(
+  String title,
+  ReportsController controller,
+) async {
+  final bytes = await _ReportsPdfBuilder.build(title, controller);
+  await Printing.layoutPdf(
+    name: '${controller.selectedReport.value}_report.pdf',
+    onLayout: (_) async => bytes,
+  );
+}
 
-  final ReportsController controller;
-  final String reportTitle;
+class _ReportsPdfBuilder {
+  static Future<Uint8List> build(
+    String title,
+    ReportsController controller,
+  ) async {
+    final regularData =
+        await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf');
+    final boldData =
+        await rootBundle.load('assets/fonts/Almarai/Almarai-Bold.ttf');
+    final regular = pw.Font.ttf(regularData);
+    final bold = pw.Font.ttf(boldData);
+    final doc = pw.Document();
+    final columns = controller.activeColumns();
+    final rows = controller.activeRows();
+    final summary = controller.activeSummaryCards().isEmpty
+        ? [
+            {'title': 'عدد السجلات', 'value': rows.length}
+          ]
+        : controller.activeSummaryCards();
+    final from = controller.reportPeriod['from_date']?.toString() ?? '-';
+    final to = controller.reportPeriod['to_date']?.toString() ?? '-';
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: EdgeInsets.all(16.r),
-        padding: EdgeInsets.all(18.r),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor4
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(6.r),
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(22),
+        textDirection: pw.TextDirection.rtl,
+        theme: pw.ThemeData.withFont(base: regular, bold: bold),
+        build: (_) => [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                title,
+                style: pw.TextStyle(font: bold, fontSize: 18),
+              ),
+              pw.Text(
+                'من $from إلى $to',
+                style: pw.TextStyle(font: regular, fontSize: 10),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          _headerBox(
+            regular: regular,
+            bold: bold,
+            rows: [
+              ['اسم التقرير', title],
+              ['الفترة', '$from - $to'],
+              ['تاريخ الطباعة', DateTime.now().toString().split('.').first],
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          _summaryTable(summary, regular: regular, bold: bold),
+          pw.SizedBox(height: 10),
+          _dataTable(
+            columns: columns.isEmpty ? ['البيان'] : columns,
+            rows: rows.map(controller.cellsForRow).toList(growable: false),
+            regular: regular,
+            bold: bold,
+          ),
+        ],
+      ),
+    );
+
+    return doc.save();
+  }
+
+  static pw.Widget _headerBox({
+    required pw.Font regular,
+    required pw.Font bold,
+    required List<List<String>> rows,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        children: rows
+            .map(
+              (row) => pw.SizedBox(
+                width: 235,
+                child: pw.Row(
+                  children: [
+                    pw.Text(
+                      '${row[0]}: ',
+                      style: pw.TextStyle(font: bold, fontSize: 9.5),
+                    ),
+                    pw.Expanded(
+                      child: pw.Text(
+                        row[1],
+                        style: pw.TextStyle(font: regular, fontSize: 9.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  static pw.Widget _summaryTable(
+    List<Map<String, dynamic>> summary, {
+    required pw.Font regular,
+    required pw.Font bold,
+  }) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
+          children: summary
+              .map((item) => _cell(
+                    item['title']?.toString() ?? '',
+                    font: bold,
+                    color: PdfColors.white,
+                  ))
+              .toList(),
         ),
-        child: Text(
-          '$reportTitle قيد التجهيز',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+        pw.TableRow(
+          children: summary
+              .map((item) => _cell(
+                    item['value']?.toString() ?? '0',
+                    font: regular,
+                  ))
+              .toList(),
         ),
+      ],
+    );
+  }
+
+  static pw.Widget _dataTable({
+    required List<String> columns,
+    required List<List<String>> rows,
+    required pw.Font regular,
+    required pw.Font bold,
+  }) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
+          children: columns.reversed
+              .map((column) => _cell(
+                    column,
+                    font: bold,
+                    color: PdfColors.white,
+                  ))
+              .toList(),
+        ),
+        ...rows.map(
+          (row) => pw.TableRow(
+            children: row.reversed
+                .map((value) => _cell(value, font: regular))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _cell(
+    String text, {
+    required pw.Font font,
+    PdfColor? color,
+  }) {
+    return pw.Container(
+      alignment: pw.Alignment.centerRight,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      child: pw.Text(
+        text,
+        maxLines: 2,
+        textDirection: pw.TextDirection.rtl,
+        style: pw.TextStyle(font: font, color: color, fontSize: 8.5),
       ),
     );
   }
