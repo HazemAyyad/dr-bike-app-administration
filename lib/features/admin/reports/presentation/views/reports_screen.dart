@@ -49,10 +49,10 @@ class ReportsScreen extends GetView<ReportsController> {
                 return _ReportCard(
                   title: report['title']!,
                   icon: _iconForReport(report['key']!),
-                  enabled: report['key'] == 'sales',
-                  onTap: () {
-                    controller.openReport(report['key']!);
-                    Get.toNamed(
+                  enabled: true,
+                  onTap: () async {
+                    await controller.openReport(report['key']!);
+                    await Get.toNamed(
                       AppRoutes.REPORTDETAILSCREEN,
                       arguments: report,
                     );
@@ -101,9 +101,16 @@ class ReportsDetailScreen extends GetView<ReportsController> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (controller.selectedReport.value != reportKey) {
         controller.openReport(reportKey);
-      } else if (controller.activeRows().isEmpty &&
-          !controller.isLoading.value) {
+        return;
+      }
+      if (!controller.hasLoadedCurrentReport && !controller.isLoading.value) {
         controller.loadCurrentReport();
+      }
+      if (reportKey == 'statement' &&
+          controller.selectedPersonId.value.isEmpty &&
+          !controller.didPromptStatementFilter) {
+        controller.didPromptStatementFilter = true;
+        _showFiltersSheet(context, controller);
       }
     });
 
@@ -379,10 +386,8 @@ class _FiltersBar extends StatelessWidget {
             SizedBox(height: 10.h),
             _FilterField(
               label: 'الحساب',
-              child: _DropdownChip(
-                value: controller.selectedPersonId.value,
-                items: controller.personItems(),
-                onChanged: controller.selectPerson,
+              child: _PersonSearchField(
+                controller: controller,
                 fullWidth: true,
               ),
             ),
@@ -440,11 +445,7 @@ class _FiltersBar extends StatelessWidget {
             items: controller.personTypes,
             onChanged: controller.selectPersonType,
           ),
-          _DropdownChip(
-            value: controller.selectedPersonId.value,
-            items: controller.personItems(),
-            onChanged: controller.selectPerson,
-          ),
+          _PersonSearchField(controller: controller),
         ],
         IconButton.filledTonal(
           tooltip: 'تطبيق',
@@ -552,6 +553,144 @@ class _DropdownChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PersonSearchField extends StatelessWidget {
+  const _PersonSearchField({
+    required this.controller,
+    this.fullWidth = false,
+  });
+
+  final ReportsController controller;
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = controller.personItems().firstWhere(
+          (item) => item['key'] == controller.selectedPersonId.value,
+          orElse: () => {'key': '', 'title': 'اختر الحساب'},
+        );
+
+    return ConstrainedBox(
+      constraints: fullWidth
+          ? const BoxConstraints(minWidth: double.infinity)
+          : BoxConstraints(minWidth: 128.w, maxWidth: 220.w),
+      child: OutlinedButton.icon(
+        onPressed: () => _showPersonSearchSheet(context, controller),
+        icon: const Icon(Icons.person_search_outlined),
+        label: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            selected['title'] ?? 'اختر الحساب',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showPersonSearchSheet(
+  BuildContext context,
+  ReportsController controller,
+) {
+  final searchController = TextEditingController();
+  Get.bottomSheet(
+    StatefulBuilder(
+      builder: (context, setState) {
+        final query = searchController.text.trim().toLowerCase();
+        final people = controller.personItems().where((item) {
+          if ((item['key'] ?? '').isEmpty) return false;
+          if (query.isEmpty) return true;
+          return (item['title'] ?? '').toLowerCase().contains(query);
+        }).toList(growable: false);
+
+        return Container(
+          height: MediaQuery.of(context).size.height * .78,
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person_search_outlined,
+                        color: AppColors.primaryColor),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'اختيار الحساب',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: Get.back,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                TextField(
+                  controller: searchController,
+                  autofocus: true,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    hintText: 'ابحث بالاسم أو الهاتف',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    isDense: true,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Expanded(
+                  child: people.isEmpty
+                      ? const Center(child: Text('لا يوجد نتائج'))
+                      : ListView.separated(
+                          itemCount: people.length,
+                          separatorBuilder: (_, __) => Divider(height: 1.h),
+                          itemBuilder: (context, index) {
+                            final person = people[index];
+                            final selected = person['key'] ==
+                                controller.selectedPersonId.value;
+                            return ListTile(
+                              dense: true,
+                              selected: selected,
+                              leading: Icon(
+                                selected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.person_outline,
+                                color: selected ? AppColors.primaryColor : null,
+                              ),
+                              title: Text(
+                                person['title'] ?? '',
+                                maxLines: 2,
+                              ),
+                              onTap: () {
+                                controller.selectPerson(person['key'] ?? '');
+                                Get.back();
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
 }
 
 class _ReportContent extends StatelessWidget {

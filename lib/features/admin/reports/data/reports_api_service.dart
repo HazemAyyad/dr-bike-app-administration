@@ -112,7 +112,9 @@ class ReportsApiService {
       throw ServerException(
         ErrorModel(
           errorMessage: responseData['message'] ?? 'Unknown error',
-          status: responseData['status'] ?? 500,
+          status: responseData['status'] is int
+              ? responseData['status'] as int
+              : 500,
           data: responseData['data'] ?? {},
         ),
       );

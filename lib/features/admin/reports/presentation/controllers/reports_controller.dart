@@ -9,6 +9,8 @@ class ReportsController extends GetxController {
   final ReportsApiService service;
 
   final RxBool isLoading = false.obs;
+  bool hasLoadedCurrentReport = false;
+  bool didPromptStatementFilter = false;
   final RxString selectedReport = ''.obs;
   final RxString selectedPeriod = 'month'.obs;
   final RxString selectedStatus = 'all'.obs;
@@ -74,6 +76,7 @@ class ReportsController extends GetxController {
   ];
 
   Future<void> loadSalesReport() async {
+    hasLoadedCurrentReport = false;
     isLoading(true);
     update();
     try {
@@ -95,6 +98,7 @@ class ReportsController extends GetxController {
       salesRows = const [];
       Get.snackbar('error'.tr, e.toString());
     } finally {
+      hasLoadedCurrentReport = true;
       isLoading(false);
       update();
     }
@@ -104,6 +108,7 @@ class ReportsController extends GetxController {
     final type = selectedReport.value;
     if (type.isEmpty || type == 'sales') return;
 
+    hasLoadedCurrentReport = false;
     isLoading(true);
     update();
     try {
@@ -135,6 +140,7 @@ class ReportsController extends GetxController {
       reportPeriod = const {};
       Get.snackbar('error'.tr, e.toString());
     } finally {
+      hasLoadedCurrentReport = true;
       isLoading(false);
       update();
     }
@@ -158,6 +164,7 @@ class ReportsController extends GetxController {
   }
 
   Future<void> openReport(String key) async {
+    resetFiltersForReport(key);
     selectedReport.value = key;
     update();
     if (key == 'sales') {
@@ -171,8 +178,28 @@ class ReportsController extends GetxController {
   }
 
   void selectReport(String key) {
+    resetFiltersForReport(key);
     selectedReport.value = key;
     update();
+  }
+
+  void resetFiltersForReport(String key) {
+    selectedPeriod.value = 'month';
+    selectedStatus.value = 'all';
+    selectedPaymentType.value = 'all';
+    selectedCheckDirection.value = 'all';
+    selectedPersonType.value = 'customer';
+    selectedPersonId.value = '';
+    fromDate = null;
+    toDate = null;
+    salesSummary = const {};
+    salesRows = const [];
+    reportSummary = const [];
+    reportColumns = const [];
+    reportRows = const [];
+    reportPeriod = const {};
+    hasLoadedCurrentReport = false;
+    didPromptStatementFilter = false;
   }
 
   void selectPeriod(String key) {
@@ -328,6 +355,7 @@ class ReportsController extends GetxController {
           '${row['currency'] ?? ''}',
           money(row['balance_after']),
           '${row['box'] ?? ''}',
+          '${row['source'] ?? ''}',
           '${row['note'] ?? ''}',
         ];
       case 'checks':
