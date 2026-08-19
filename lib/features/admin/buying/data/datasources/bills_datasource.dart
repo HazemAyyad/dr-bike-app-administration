@@ -300,6 +300,44 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> uploadPurchaseAttachments({
+    required String billId,
+    required List<MultipartFile> files,
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) async {
+    try {
+      final formData = FormData();
+      formData.fields.add(MapEntry('bill_id', billId));
+      formData.fields.add(MapEntry('category', category));
+      if (attachableType != null && attachableType.isNotEmpty) {
+        formData.fields.add(MapEntry('attachable_type', attachableType));
+      }
+      if (attachableId != null && attachableId.isNotEmpty) {
+        formData.fields.add(MapEntry('attachable_id', attachableId));
+      }
+      for (final file in files) {
+        formData.files.add(MapEntry('files[]', file));
+      }
+      final response = await api.post(
+        EndPoints.purchaseAttachments,
+        data: formData,
+        isFormData: false,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // get Bill Details
   Future<dynamic> getBillDetails({
     required String billId,

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:doctorbike/core/helpers/helpers.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -275,6 +277,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         isDownload: isDownload,
       );
       billDetails = BillDetailsModel.fromJson(_billDetailsMap(result));
+      purchaseTimeline.assignAll(
+        billDetails!.timeline.map((event) => event.toJson()).toList(),
+      );
       loadPurchaseTimeline(billId);
     }
 
@@ -293,6 +298,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       TextEditingController();
   final TextEditingController purchasePaymentNoteController =
       TextEditingController();
+  final TextEditingController amanatQuantityController =
+      TextEditingController();
+  final TextEditingController amanatUnitPriceController =
+      TextEditingController();
+  final TextEditingController amanatNoteController = TextEditingController();
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -399,6 +409,15 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     purchasePaymentNoteController.clear();
   }
 
+  void prepareAmanatAction({
+    required String quantity,
+    String? unitPrice,
+  }) {
+    amanatQuantityController.text = quantity;
+    amanatUnitPriceController.text = unitPrice ?? '';
+    amanatNoteController.clear();
+  }
+
   Future<void> payShownPurchase(
     BuildContext context, {
     required String amount,
@@ -476,6 +495,100 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
     isTimelineLoading(false);
     update();
+  }
+
+  Future<void> purchaseShownAmanat(
+    BuildContext context, {
+    required String amanatId,
+  }) async {
+    final quantity = amanatQuantityController.text.trim();
+    final unitPrice = amanatUnitPriceController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    if (unitPrice.isEmpty || (num.tryParse(unitPrice) ?? 0) < 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال سعر صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.purchaseAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        unitPrice: unitPrice,
+      ),
+    );
+  }
+
+  Future<void> returnShownAmanat(
+    BuildContext context, {
+    required String amanatId,
+  }) async {
+    final quantity = amanatQuantityController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.returnAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        note: amanatNoteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> pickAndUploadPurchaseAttachments(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+      withData: false,
+    );
+    if (!context.mounted) return;
+    if (picked == null || picked.files.isEmpty) return;
+    final multipart = <dio.MultipartFile>[];
+    for (final file in picked.files) {
+      if (file.path == null) continue;
+      multipart.add(
+        await dio.MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        ),
+      );
+    }
+    if (!context.mounted) return;
+    if (multipart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'تعذر قراءة الملفات المختارة',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.uploadAttachments(
+        billId: details.billId.toString(),
+        files: multipart,
+        category: 'evidence',
+      ),
+    );
   }
 
   Future<void> _runWorkflowAction(
@@ -624,6 +737,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     sellerIdController.dispose();
     discountController.dispose();
     searchController.dispose();
+    purchasePaymentAmountController.dispose();
+    purchasePaymentNoteController.dispose();
+    amanatQuantityController.dispose();
+    amanatUnitPriceController.dispose();
+    amanatNoteController.dispose();
     super.onClose();
   }
 }

@@ -2,6 +2,7 @@ import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 
@@ -10,6 +11,7 @@ import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/bills_widgets/bill_details.dart';
 import '../../widgets/bills_widgets/bill_seller_details.dart';
@@ -203,6 +205,79 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
+          if (_activeAmanatItems(details).isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            const _SectionTitle(text: 'الأمانات'),
+            SizedBox(height: 8.h),
+            ..._activeAmanatItems(details).map(
+              (item) => _AmanatRow(
+                item: item,
+                onPurchase: () => _showAmanatSheet(
+                  context,
+                  item: item,
+                  isPurchase: true,
+                ),
+                onReturn: () => _showAmanatSheet(
+                  context,
+                  item: item,
+                  isPurchase: false,
+                ),
+              ),
+            ),
+          ],
+          if (details.attachments.isNotEmpty || page != '1') ...[
+            SizedBox(height: 14.h),
+            Row(
+              children: [
+                const Expanded(child: _SectionTitle(text: 'المرفقات')),
+                IconButton(
+                  tooltip: 'رفع مرفق',
+                  onPressed: controller.isWorkflowLoading.value
+                      ? null
+                      : () =>
+                          controller.pickAndUploadPurchaseAttachments(context),
+                  icon: Icon(
+                    Icons.upload_file_outlined,
+                    color: AppColors.primaryColor,
+                    size: 22.sp,
+                  ),
+                ),
+              ],
+            ),
+            if (details.attachments.isEmpty)
+              const _MutedText(text: 'لا توجد مرفقات بعد')
+            else
+              ...details.attachments.map(
+                (attachment) => _AttachmentRow(attachment: attachment),
+              ),
+          ],
+          if (details.payments.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            const _SectionTitle(text: 'الدفعات'),
+            SizedBox(height: 8.h),
+            ...details.payments.take(4).map(
+                  (payment) => _InfoLine(
+                    title: payment.amount,
+                    subtitle: [
+                      payment.paymentType,
+                      payment.boxName,
+                      payment.paidAt,
+                    ].where((e) => e.isNotEmpty).join(' • '),
+                  ),
+                ),
+          ],
+          if (details.returns.isNotEmpty) ...[
+            SizedBox(height: 14.h),
+            const _SectionTitle(text: 'المرتجعات'),
+            SizedBox(height: 8.h),
+            ...details.returns.take(4).map(
+                  (ret) => _InfoLine(
+                    title: '${ret.totalValue} - ${ret.status}',
+                    subtitle:
+                        '${ret.createdAt}${ret.items.isEmpty ? '' : ' • ${ret.items.length} منتجات'}',
+                  ),
+                ),
+          ],
           if (controller.isTimelineLoading.value) ...[
             SizedBox(height: 12.h),
             const Center(child: CircularProgressIndicator()),
@@ -325,6 +400,115 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
       },
     );
   }
+
+  List<_AmanatListItem> _activeAmanatItems(BillDetailsModel details) {
+    return details.products.expand((product) {
+      return product.amanatStocks
+          .where((amanat) => amanat.remainingQuantity > 0)
+          .map((amanat) => _AmanatListItem(product: product, amanat: amanat));
+    }).toList();
+  }
+
+  Future<void> _showAmanatSheet(
+    BuildContext context, {
+    required _AmanatListItem item,
+    required bool isPurchase,
+  }) async {
+    controller.prepareAmanatAction(
+      quantity: item.amanat.remainingQuantity.toString(),
+      unitPrice: item.amanat.negotiatedUnitPrice == '0'
+          ? item.product.price
+          : item.amanat.negotiatedUnitPrice,
+    );
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20.w,
+            right: 20.w,
+            top: 18.h,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18.h,
+          ),
+          child: GetBuilder<BillsController>(
+            builder: (controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPurchase ? 'شراء الأمانة' : 'إرجاع الأمانة للمورد',
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16.sp,
+                        ),
+                  ),
+                  SizedBox(height: 6.h),
+                  _MutedText(
+                    text:
+                        '${item.product.productName} • المتبقي ${item.amanat.remainingQuantity}',
+                  ),
+                  SizedBox(height: 14.h),
+                  CustomTextField(
+                    label: 'quantity',
+                    hintText: 'quantity',
+                    controller: controller.amanatQuantityController,
+                    keyboardType: TextInputType.number,
+                    validator: (value) => null,
+                  ),
+                  if (isPurchase) ...[
+                    SizedBox(height: 12.h),
+                    CustomTextField(
+                      label: 'price',
+                      hintText: 'price',
+                      controller: controller.amanatUnitPriceController,
+                      keyboardType: TextInputType.number,
+                      validator: (value) => null,
+                    ),
+                  ] else ...[
+                    SizedBox(height: 12.h),
+                    CustomTextField(
+                      label: 'notes',
+                      hintText: 'notes',
+                      controller: controller.amanatNoteController,
+                      isRequired: false,
+                      validator: (value) => null,
+                    ),
+                  ],
+                  SizedBox(height: 18.h),
+                  AppButton(
+                    isLoading: controller.isWorkflowLoading,
+                    text: isPurchase ? 'شراء' : 'إرجاع',
+                    onPressed: () async {
+                      if (isPurchase) {
+                        await controller.purchaseShownAmanat(
+                          context,
+                          amanatId: item.amanat.id.toString(),
+                        );
+                      } else {
+                        await controller.returnShownAmanat(
+                          context,
+                          amanatId: item.amanat.id.toString(),
+                        );
+                      }
+                      if (sheetContext.mounted) {
+                        Navigator.of(sheetContext).pop();
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _StatusChip extends StatelessWidget {
@@ -349,6 +533,186 @@ class _StatusChip extends StatelessWidget {
               fontSize: 11.sp,
             ),
       ),
+    );
+  }
+}
+
+class _AmanatListItem {
+  final BillProductModel product;
+  final PurchaseAmanatUiModel amanat;
+
+  const _AmanatListItem({
+    required this.product,
+    required this.amanat,
+  });
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+
+  const _SectionTitle({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 13.sp,
+          ),
+    );
+  }
+}
+
+class _MutedText extends StatelessWidget {
+  final String text;
+
+  const _MutedText({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+            color: Colors.grey.shade700,
+            fontSize: 11.sp,
+          ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _InfoLine({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6.h),
+      child: Row(
+        children: [
+          Icon(Icons.circle, size: 6.sp, color: AppColors.primaryColor),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              subtitle.isEmpty ? title : '$title • $subtitle',
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade700,
+                    fontSize: 11.sp,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AmanatRow extends StatelessWidget {
+  final _AmanatListItem item;
+  final VoidCallback onPurchase;
+  final VoidCallback onReturn;
+
+  const _AmanatRow({
+    required this.item,
+    required this.onPurchase,
+    required this.onReturn,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.product.productName,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.sp,
+                ),
+          ),
+          SizedBox(height: 4.h),
+          _MutedText(
+            text:
+                'المتبقي ${item.amanat.remainingQuantity} من ${item.amanat.quantity} • السعر ${item.amanat.negotiatedUnitPrice}',
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPurchase,
+                  icon: Icon(Icons.shopping_cart_checkout, size: 16.sp),
+                  label: const Text('شراء'),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onReturn,
+                  icon: Icon(Icons.assignment_return_outlined, size: 16.sp),
+                  label: const Text('إرجاع'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentRow extends StatelessWidget {
+  final PurchaseAttachmentUiModel attachment;
+
+  const _AttachmentRow({required this.attachment});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        Icons.attach_file,
+        color: AppColors.primaryColor,
+        size: 20.sp,
+      ),
+      title: Text(
+        attachment.fileName.isEmpty ? 'مرفق' : attachment.fileName,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 12.sp,
+            ),
+      ),
+      subtitle: Text(
+        [attachment.category, attachment.createdAt]
+            .where((e) => e.isNotEmpty)
+            .join(' • '),
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: Colors.grey.shade700,
+              fontSize: 11.sp,
+            ),
+      ),
+      onTap: attachment.url.isEmpty
+          ? null
+          : () => launchUrl(
+                Uri.parse(attachment.url),
+                mode: LaunchMode.externalApplication,
+              ),
     );
   }
 }

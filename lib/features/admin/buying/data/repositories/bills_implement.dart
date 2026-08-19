@@ -185,6 +185,31 @@ class BillsImplement implements BillsRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> uploadPurchaseAttachments({
+    required String billId,
+    required List<dynamic> files,
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.uploadPurchaseAttachments(
+        billId: billId,
+        files: files.cast(),
+        category: category,
+        attachableType: attachableType,
+        attachableId: attachableId,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // add bill
   @override
   Future<Either<Failure, String>> addBill({

@@ -89,4 +89,20 @@ class PurchaseWorkflowUsecase {
   Future<dynamic> timeline({required String billId}) {
     return billsRepository.purchaseTimeline(billId: billId);
   }
+
+  Future<Either<Failure, String>> uploadAttachments({
+    required String billId,
+    required List<dynamic> files,
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) {
+    return billsRepository.uploadPurchaseAttachments(
+      billId: billId,
+      files: files,
+      category: category,
+      attachableType: attachableType,
+      attachableId: attachableId,
+    );
+  }
 }

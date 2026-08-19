@@ -13,6 +13,11 @@ class BillDetailsModel {
   final String finalTotal;
   final String paidAmount;
   final String remainingAmount;
+  final String customerId;
+  final List<PurchasePaymentUiModel> payments;
+  final List<PurchaseReturnUiModel> returns;
+  final List<PurchaseAttachmentUiModel> attachments;
+  final List<PurchaseTimelineUiModel> timeline;
 
   BillDetailsModel({
     required this.billId,
@@ -26,6 +31,11 @@ class BillDetailsModel {
     required this.finalTotal,
     required this.paidAmount,
     required this.remainingAmount,
+    required this.customerId,
+    required this.payments,
+    required this.returns,
+    required this.attachments,
+    required this.timeline,
   });
 
   factory BillDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +55,23 @@ class BillDetailsModel {
       finalTotal: asString(j['final_total'], asString(j['total_bill'], '0')),
       paidAmount: asString(j['paid_amount'], '0'),
       remainingAmount: asString(j['remaining_amount'], '0'),
+      customerId: asString(j['customer_id']),
+      payments: mapList(
+        j['payments'],
+        (Map<String, dynamic> m) => PurchasePaymentUiModel.fromJson(m),
+      ),
+      returns: mapList(
+        j['returns'],
+        (Map<String, dynamic> m) => PurchaseReturnUiModel.fromJson(m),
+      ),
+      attachments: mapList(
+        j['attachments'],
+        (Map<String, dynamic> m) => PurchaseAttachmentUiModel.fromJson(m),
+      ),
+      timeline: mapList(
+        j['timeline'],
+        (Map<String, dynamic> m) => PurchaseTimelineUiModel.fromJson(m),
+      ),
     );
   }
 
@@ -61,6 +88,11 @@ class BillDetailsModel {
       'final_total': finalTotal,
       'paid_amount': paidAmount,
       'remaining_amount': remainingAmount,
+      'customer_id': customerId,
+      'payments': payments.map((e) => e.toJson()).toList(),
+      'returns': returns.map((e) => e.toJson()).toList(),
+      'attachments': attachments.map((e) => e.toJson()).toList(),
+      'timeline': timeline.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -82,6 +114,9 @@ class BillProductModel {
   final num receivedOwnedQuantity;
   final num remainingQuantity;
   final num custodyQuantity;
+  final num damagedQuantity;
+  final num mismatchedQuantity;
+  final List<PurchaseAmanatUiModel> amanatStocks;
 
   BillProductModel({
     required this.billId,
@@ -100,6 +135,9 @@ class BillProductModel {
     required this.receivedOwnedQuantity,
     required this.remainingQuantity,
     required this.custodyQuantity,
+    required this.damagedQuantity,
+    required this.mismatchedQuantity,
+    required this.amanatStocks,
   });
 
   factory BillProductModel.fromJson(Map<String, dynamic> json) {
@@ -121,6 +159,12 @@ class BillProductModel {
       receivedOwnedQuantity: asDouble(j['received_owned_quantity']),
       remainingQuantity: asDouble(j['remaining_quantity']),
       custodyQuantity: asDouble(j['custody_quantity']),
+      damagedQuantity: asDouble(j['damaged_quantity']),
+      mismatchedQuantity: asDouble(j['mismatched_quantity']),
+      amanatStocks: mapList(
+        j['amanat_stocks'],
+        (Map<String, dynamic> m) => PurchaseAmanatUiModel.fromJson(m),
+      ),
     );
   }
 
@@ -142,6 +186,238 @@ class BillProductModel {
       'received_owned_quantity': receivedOwnedQuantity,
       'remaining_quantity': remainingQuantity,
       'custody_quantity': custodyQuantity,
+      'damaged_quantity': damagedQuantity,
+      'mismatched_quantity': mismatchedQuantity,
+      'amanat_stocks': amanatStocks.map((e) => e.toJson()).toList(),
     };
   }
+}
+
+class PurchaseAmanatUiModel {
+  final int id;
+  final num quantity;
+  final num remainingQuantity;
+  final String status;
+  final String negotiatedUnitPrice;
+  final String notes;
+
+  PurchaseAmanatUiModel({
+    required this.id,
+    required this.quantity,
+    required this.remainingQuantity,
+    required this.status,
+    required this.negotiatedUnitPrice,
+    required this.notes,
+  });
+
+  factory PurchaseAmanatUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchaseAmanatUiModel(
+      id: asInt(j['id']),
+      quantity: asDouble(j['quantity']),
+      remainingQuantity: asDouble(j['remaining_quantity']),
+      status: asString(j['status']),
+      negotiatedUnitPrice: asString(j['negotiated_unit_price'], '0'),
+      notes: asString(j['notes']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'quantity': quantity,
+        'remaining_quantity': remainingQuantity,
+        'status': status,
+        'negotiated_unit_price': negotiatedUnitPrice,
+        'notes': notes,
+      };
+}
+
+class PurchasePaymentUiModel {
+  final int id;
+  final String amount;
+  final String paymentType;
+  final String paidAt;
+  final String boxId;
+  final String boxName;
+  final String note;
+
+  PurchasePaymentUiModel({
+    required this.id,
+    required this.amount,
+    required this.paymentType,
+    required this.paidAt,
+    required this.boxId,
+    required this.boxName,
+    required this.note,
+  });
+
+  factory PurchasePaymentUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchasePaymentUiModel(
+      id: asInt(j['id']),
+      amount: asString(j['amount'], '0'),
+      paymentType: asString(j['payment_type']),
+      paidAt: asString(j['paid_at']),
+      boxId: asString(j['box_id']),
+      boxName: asString(j['box_name']),
+      note: asString(j['note']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'amount': amount,
+        'payment_type': paymentType,
+        'paid_at': paidAt,
+        'box_id': boxId,
+        'box_name': boxName,
+        'note': note,
+      };
+}
+
+class PurchaseReturnUiModel {
+  final int id;
+  final String status;
+  final String totalValue;
+  final String createdAt;
+  final List<PurchaseReturnItemUiModel> items;
+
+  PurchaseReturnUiModel({
+    required this.id,
+    required this.status,
+    required this.totalValue,
+    required this.createdAt,
+    required this.items,
+  });
+
+  factory PurchaseReturnUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchaseReturnUiModel(
+      id: asInt(j['id']),
+      status: asString(j['status']),
+      totalValue: asString(j['total_value'], '0'),
+      createdAt: asString(j['created_at']),
+      items: mapList(
+        j['items'],
+        (Map<String, dynamic> m) => PurchaseReturnItemUiModel.fromJson(m),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'status': status,
+        'total_value': totalValue,
+        'created_at': createdAt,
+        'items': items.map((e) => e.toJson()).toList(),
+      };
+}
+
+class PurchaseReturnItemUiModel {
+  final int id;
+  final String productName;
+  final num quantity;
+  final String unitPrice;
+
+  PurchaseReturnItemUiModel({
+    required this.id,
+    required this.productName,
+    required this.quantity,
+    required this.unitPrice,
+  });
+
+  factory PurchaseReturnItemUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchaseReturnItemUiModel(
+      id: asInt(j['id']),
+      productName: asString(j['product_name']),
+      quantity: asDouble(j['quantity']),
+      unitPrice: asString(j['unit_price'], '0'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'product_name': productName,
+        'quantity': quantity,
+        'unit_price': unitPrice,
+      };
+}
+
+class PurchaseAttachmentUiModel {
+  final int id;
+  final String fileName;
+  final String category;
+  final String url;
+  final String mimeType;
+  final int size;
+  final String createdAt;
+
+  PurchaseAttachmentUiModel({
+    required this.id,
+    required this.fileName,
+    required this.category,
+    required this.url,
+    required this.mimeType,
+    required this.size,
+    required this.createdAt,
+  });
+
+  factory PurchaseAttachmentUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchaseAttachmentUiModel(
+      id: asInt(j['id']),
+      fileName: asString(j['file_name']),
+      category: asString(j['category']),
+      url: asString(j['url']),
+      mimeType: asString(j['mime_type']),
+      size: asInt(j['size']),
+      createdAt: asString(j['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'file_name': fileName,
+        'category': category,
+        'url': url,
+        'mime_type': mimeType,
+        'size': size,
+        'created_at': createdAt,
+      };
+}
+
+class PurchaseTimelineUiModel {
+  final int id;
+  final String action;
+  final String title;
+  final String description;
+  final String createdAt;
+
+  PurchaseTimelineUiModel({
+    required this.id,
+    required this.action,
+    required this.title,
+    required this.description,
+    required this.createdAt,
+  });
+
+  factory PurchaseTimelineUiModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return PurchaseTimelineUiModel(
+      id: asInt(j['id']),
+      action: asString(j['action']),
+      title: asString(j['title']),
+      description: asString(j['description']),
+      createdAt: asString(j['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'action': action,
+        'title': title,
+        'description': description,
+        'created_at': createdAt,
+      };
 }
