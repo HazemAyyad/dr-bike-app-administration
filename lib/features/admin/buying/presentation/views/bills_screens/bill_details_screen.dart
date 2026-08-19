@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/helpers/app_button.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/bills_widgets/bill_details.dart';
 import '../../widgets/bills_widgets/bill_seller_details.dart';
@@ -60,6 +61,11 @@ class BillDetailsScreen extends GetView<BillsController> {
                 child: Column(
                   children: [
                     BillDetails(page: page),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 15.w),
+                      child: _PurchaseWorkflowPanel(page: page),
+                    ),
+                    SizedBox(height: 10.h),
                     const BillSellerDetails(),
                     SizedBox(height: 10.h),
                     page == '3' || page == '4'
@@ -71,6 +77,115 @@ class BillDetailsScreen extends GetView<BillsController> {
             },
           )
         ],
+      ),
+    );
+  }
+}
+
+class _PurchaseWorkflowPanel extends GetView<BillsController> {
+  final String page;
+
+  const _PurchaseWorkflowPanel({required this.page});
+
+  @override
+  Widget build(BuildContext context) {
+    final details = controller.billDetails!;
+    final canReceive = page != '1' &&
+        details.workflowStatus != 'finalized' &&
+        details.products.any((item) => item.remainingQuantity > 0);
+    final canFinalize = page != '1' &&
+        details.workflowStatus != 'finalized' &&
+        details.products.any((item) => item.receivedOwnedQuantity > 0);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border:
+            Border.all(color: AppColors.primaryColor.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _StatusChip(
+                label: 'حالة الاستلام',
+                value: details.workflowStatus.isEmpty
+                    ? 'awaiting_receiving'
+                    : details.workflowStatus,
+              ),
+              _StatusChip(
+                label: 'حالة الدفع',
+                value: details.paymentStatus.isEmpty
+                    ? 'unpaid'
+                    : details.paymentStatus,
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'المستلم: ${details.products.fold<num>(0, (sum, p) => sum + p.receivedOwnedQuantity)} / المطلوب: ${details.products.fold<num>(0, (sum, p) => sum + p.orderedQuantity)}',
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.sp,
+                ),
+          ),
+          if (details.finalTotal != '0' || details.paidAmount != '0') ...[
+            SizedBox(height: 6.h),
+            Text(
+              'الإجمالي النهائي: ${details.finalTotal} | المدفوع: ${details.paidAmount} | المتبقي: ${details.remainingAmount}',
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: Colors.grey.shade700,
+                    fontSize: 12.sp,
+                  ),
+            ),
+          ],
+          if (canReceive || canFinalize) SizedBox(height: 12.h),
+          if (canReceive)
+            AppButton(
+              isLoading: controller.isWorkflowLoading,
+              text: 'استلام الكميات المتبقية',
+              onPressed: () => controller.receiveAllShownItems(context),
+            ),
+          if (canReceive && canFinalize) SizedBox(height: 8.h),
+          if (canFinalize)
+            AppButton(
+              isLoading: controller.isWorkflowLoading,
+              text: 'اعتماد الفاتورة بدون دفعة',
+              onPressed: () => controller.finalizeShownPurchase(context),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatusChip({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Text(
+        '$label: $value',
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.sp,
+            ),
       ),
     );
   }

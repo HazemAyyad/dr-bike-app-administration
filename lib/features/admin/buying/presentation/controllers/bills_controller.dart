@@ -19,6 +19,7 @@ import '../../data/models/bills_models/bills_model.dart';
 import '../../domain/usecases/bills_usecases/add_bill_usecase.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/get_billt_details_usecase.dart';
+import '../../domain/usecases/purchase_workflow_usecase.dart';
 import 'buying_serves.dart';
 import 'return_purchases_controller.dart';
 
@@ -50,6 +51,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final AddBillUsecase addBillUsecase;
   final GetBilltDetailsUsecase getBilltDetailsUsecase;
+  final PurchaseWorkflowUsecase purchaseWorkflowUsecase;
 
   BillsController({
     required this.getBillsUsecase,
@@ -57,6 +59,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     required this.allCustomersSellersUsecase,
     required this.addBillUsecase,
     required this.getBilltDetailsUsecase,
+    required this.purchaseWorkflowUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -173,7 +176,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (kDebugMode) {
       debugParseLog(
         'BillsController.getBills',
-        'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? (bills as Map).keys.toList() : []}',
+        'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? bills.keys.toList() : []}',
       );
     }
     final allBillsTasks = mapListFromResponseKey(
@@ -191,7 +194,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (kDebugMode) {
       debugParseLog(
         'BillsController.getBills',
-        'archive rawType=${billsArchive.runtimeType} keys=${billsArchive is Map ? (billsArchive as Map).keys.toList() : []}',
+        'archive rawType=${billsArchive.runtimeType} keys=${billsArchive is Map ? billsArchive.keys.toList() : []}',
       );
     }
     final billsArchiveTasks = mapListFromResponseKey(
@@ -275,6 +278,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   final RxBool isAddLoading = false.obs;
+  final RxBool isWorkflowLoading = false.obs;
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -313,6 +317,101 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     });
 
     isAddLoading(false);
+    update();
+  }
+
+  Future<void> receiveAllShownItems(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final items = details.products
+        .map((product) => {
+              'bill_item_id': product.billItemId,
+              'accepted_quantity': product.remainingQuantity,
+              'unit_price': product.price,
+            })
+        .where((item) => (item['accepted_quantity'] as num) > 0)
+        .toList();
+    if (items.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'لا توجد كميات متبقية للاستلام',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: items,
+      ),
+    );
+  }
+
+  Future<void> finalizeShownPurchase(
+    BuildContext context, {
+    String initialPayment = '0',
+    String? boxId,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.finalize(
+        billId: details.billId.toString(),
+        initialPayment: initialPayment,
+        boxId: boxId,
+      ),
+    );
+  }
+
+  Future<void> payShownPurchase(
+    BuildContext context, {
+    required String amount,
+    required String boxId,
+    String? note,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.pay(
+        billId: details.billId.toString(),
+        amount: amount,
+        boxId: boxId,
+        note: note,
+      ),
+    );
+  }
+
+  Future<void> _runWorkflowAction(
+    BuildContext context,
+    Future<dynamic> future,
+  ) async {
+    isWorkflowLoading(true);
+    update();
+    final result = await future;
+    result.fold((failure) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message'],
+      );
+    }, (success) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: success,
+      );
+      if (billDetails != null) {
+        getBillDetails(
+          context: context,
+          billId: billDetails!.billId.toString(),
+        );
+      }
+      getBills();
+    });
+    isWorkflowLoading(false);
     update();
   }
 

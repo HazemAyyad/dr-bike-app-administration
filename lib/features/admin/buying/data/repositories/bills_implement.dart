@@ -28,6 +28,105 @@ class BillsImplement implements BillsRepository {
     }
   }
 
+  Either<Failure, String> _messageResult(dynamic result) {
+    if (result is Map && result['status'] == 'success') {
+      return Right((result['message'] ?? 'success').toString());
+    }
+    if (result is Map) {
+      return Left(ValidationFailure(
+        (result['message'] ?? 'Unknown error').toString(),
+        Map<String, dynamic>.from(result),
+      ));
+    }
+    return const Right('success');
+  }
+
+  @override
+  Future<Either<Failure, String>> receivePurchase({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.receivePurchase(
+        billId: billId,
+        items: items,
+        notes: notes,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> finalizePurchase({
+    required String billId,
+    String initialPayment = '0',
+    String? boxId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.finalizePurchase(
+        billId: billId,
+        initialPayment: initialPayment,
+        boxId: boxId,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> payPurchase({
+    required String billId,
+    required String amount,
+    required String boxId,
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.payPurchase(
+        billId: billId,
+        amount: amount,
+        boxId: boxId,
+        note: note,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> purchaseAmanat({
+    required String amanatId,
+    required String quantity,
+    required String unitPrice,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.purchaseAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        unitPrice: unitPrice,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // add bill
   @override
   Future<Either<Failure, String>> addBill({

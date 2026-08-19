@@ -11,6 +11,7 @@ import '../../domain/usecases/purchase_orders_usecases/cancel_bill_usecase.dart'
 import '../../domain/usecases/get_billt_details_usecase.dart';
 import '../../domain/usecases/purchase_orders_usecases/change_one_status_usecase.dart';
 import '../../domain/usecases/purchase_orders_usecases/change_status_usecase.dart';
+import '../../domain/usecases/purchase_workflow_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
 import '../controllers/bills_controller.dart';
 import '../controllers/purchase_orders_controller.dart';
@@ -34,6 +35,9 @@ class BuyingBinding extends Bindings {
           billsRepository: Get.find<BillsImplement>(),
         ),
         getBilltDetailsUsecase: GetBilltDetailsUsecase(
+          billsRepository: Get.find<BillsImplement>(),
+        ),
+        purchaseWorkflowUsecase: PurchaseWorkflowUsecase(
           billsRepository: Get.find<BillsImplement>(),
         ),
       ),
