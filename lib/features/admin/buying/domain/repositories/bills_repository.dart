@@ -13,6 +13,55 @@ abstract class BillsRepository {
     required String total,
   });
 
+  Future<Either<Failure, String>> receivePurchase({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? notes,
+  });
+
+  Future<Either<Failure, String>> finalizePurchase({
+    required String billId,
+    String initialPayment,
+    String? boxId,
+  });
+
+  Future<Either<Failure, String>> payPurchase({
+    required String billId,
+    required String amount,
+    required String boxId,
+    String? note,
+  });
+
+  Future<Either<Failure, String>> paySupplierAccount({
+    required String sellerId,
+    required String amount,
+    required String boxId,
+    String? note,
+    bool allocateOldestFirst,
+  });
+
+  Future<Either<Failure, String>> purchaseAmanat({
+    required String amanatId,
+    required String quantity,
+    required String unitPrice,
+  });
+
+  Future<Either<Failure, String>> returnAmanat({
+    required String amanatId,
+    required String quantity,
+    String? note,
+  });
+
+  Future<dynamic> purchaseTimeline({required String billId});
+
+  Future<Either<Failure, String>> uploadPurchaseAttachments({
+    required String billId,
+    required List<dynamic> files,
+    String category,
+    String? attachableType,
+    String? attachableId,
+  });
+
   Future<dynamic> getBillDetails({
     required String billId,
     required bool isDownload,

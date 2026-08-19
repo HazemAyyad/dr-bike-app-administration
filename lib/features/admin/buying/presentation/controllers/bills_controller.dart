@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:doctorbike/core/helpers/helpers.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,6 +13,8 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/models/check_model.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
@@ -19,6 +23,7 @@ import '../../data/models/bills_models/bills_model.dart';
 import '../../domain/usecases/bills_usecases/add_bill_usecase.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/get_billt_details_usecase.dart';
+import '../../domain/usecases/purchase_workflow_usecase.dart';
 import 'buying_serves.dart';
 import 'return_purchases_controller.dart';
 
@@ -50,6 +55,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final AddBillUsecase addBillUsecase;
   final GetBilltDetailsUsecase getBilltDetailsUsecase;
+  final PurchaseWorkflowUsecase purchaseWorkflowUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   BillsController({
     required this.getBillsUsecase,
@@ -57,6 +64,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     required this.allCustomersSellersUsecase,
     required this.addBillUsecase,
     required this.getBilltDetailsUsecase,
+    required this.purchaseWorkflowUsecase,
+    required this.getShownBoxUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -173,7 +182,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (kDebugMode) {
       debugParseLog(
         'BillsController.getBills',
-        'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? (bills as Map).keys.toList() : []}',
+        'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? bills.keys.toList() : []}',
       );
     }
     final allBillsTasks = mapListFromResponseKey(
@@ -191,7 +200,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (kDebugMode) {
       debugParseLog(
         'BillsController.getBills',
-        'archive rawType=${billsArchive.runtimeType} keys=${billsArchive is Map ? (billsArchive as Map).keys.toList() : []}',
+        'archive rawType=${billsArchive.runtimeType} keys=${billsArchive is Map ? billsArchive.keys.toList() : []}',
       );
     }
     final billsArchiveTasks = mapListFromResponseKey(
@@ -268,6 +277,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         isDownload: isDownload,
       );
       billDetails = BillDetailsModel.fromJson(_billDetailsMap(result));
+      purchaseTimeline.assignAll(
+        billDetails!.timeline.map((event) => event.toJson()).toList(),
+      );
+      loadPurchaseTimeline(billId);
     }
 
     isAddLoading(false);
@@ -275,6 +288,21 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   final RxBool isAddLoading = false.obs;
+  final RxBool isWorkflowLoading = false.obs;
+  final RxBool isTimelineLoading = false.obs;
+  final RxList<Map<String, dynamic>> purchaseTimeline =
+      <Map<String, dynamic>>[].obs;
+  final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
+  final Rxn<ShownBoxesModel> selectedPurchaseBox = Rxn<ShownBoxesModel>();
+  final TextEditingController purchasePaymentAmountController =
+      TextEditingController();
+  final TextEditingController purchasePaymentNoteController =
+      TextEditingController();
+  final TextEditingController amanatQuantityController =
+      TextEditingController();
+  final TextEditingController amanatUnitPriceController =
+      TextEditingController();
+  final TextEditingController amanatNoteController = TextEditingController();
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -316,6 +344,332 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  Future<void> receiveAllShownItems(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final items = details.products
+        .map((product) => {
+              'bill_item_id': product.billItemId,
+              'accepted_quantity': product.remainingQuantity,
+              'unit_price': product.price,
+            })
+        .where((item) => (item['accepted_quantity'] as num) > 0)
+        .toList();
+    if (items.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'لا توجد كميات متبقية للاستلام',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: items,
+      ),
+    );
+  }
+
+  Future<void> finalizeShownPurchase(
+    BuildContext context, {
+    String initialPayment = '0',
+    String? boxId,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.finalize(
+        billId: details.billId.toString(),
+        initialPayment: initialPayment,
+        boxId: boxId,
+      ),
+    );
+  }
+
+  Future<void> loadPurchaseBoxes() async {
+    if (purchaseBoxes.isNotEmpty) return;
+    final boxes = await getShownBoxUsecase.call(screen: 0);
+    purchaseBoxes.assignAll(boxes);
+    if (boxes.isNotEmpty) {
+      selectedPurchaseBox.value = boxes.first;
+    }
+    update();
+  }
+
+  void selectPurchaseBox(ShownBoxesModel? box) {
+    selectedPurchaseBox.value = box;
+    update();
+  }
+
+  void preparePaymentAmount({String? amount}) {
+    purchasePaymentAmountController.text = amount ?? '';
+    purchasePaymentNoteController.clear();
+  }
+
+  void prepareAmanatAction({
+    required String quantity,
+    String? unitPrice,
+  }) {
+    amanatQuantityController.text = quantity;
+    amanatUnitPriceController.text = unitPrice ?? '';
+    amanatNoteController.clear();
+  }
+
+  Future<void> payShownPurchase(
+    BuildContext context, {
+    required String amount,
+    required String boxId,
+    String? note,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.pay(
+        billId: details.billId.toString(),
+        amount: amount,
+        boxId: boxId,
+        note: note,
+      ),
+    );
+  }
+
+  Future<void> paySupplierAccountForShownSeller(BuildContext context) async {
+    final details = billDetails;
+    final box = selectedPurchaseBox.value;
+    if (details == null) return;
+    if (details.sellerId.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'لا يوجد مورد مرتبط بالفاتورة',
+      );
+      return;
+    }
+    if (box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق',
+      );
+      return;
+    }
+    final amount = purchasePaymentAmountController.text.trim();
+    if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال مبلغ صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.paySupplierAccount(
+        sellerId: details.sellerId,
+        amount: amount,
+        boxId: box.boxId.toString(),
+        note: purchasePaymentNoteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> loadPurchaseTimeline(String billId) async {
+    isTimelineLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.timeline(billId: billId);
+      purchaseTimeline.assignAll(
+        mapListFromResponseKey(
+          result,
+          'timeline',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.purchaseTimeline',
+        ),
+      );
+    } catch (_) {
+      purchaseTimeline.clear();
+    }
+    isTimelineLoading(false);
+    update();
+  }
+
+  Future<void> purchaseShownAmanat(
+    BuildContext context, {
+    required String amanatId,
+  }) async {
+    final quantity = amanatQuantityController.text.trim();
+    final unitPrice = amanatUnitPriceController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    if (unitPrice.isEmpty || (num.tryParse(unitPrice) ?? 0) < 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال سعر صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.purchaseAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        unitPrice: unitPrice,
+      ),
+    );
+  }
+
+  Future<void> returnShownAmanat(
+    BuildContext context, {
+    required String amanatId,
+  }) async {
+    final quantity = amanatQuantityController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.returnAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        note: amanatNoteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> pickAndUploadPurchaseAttachments(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+      withData: false,
+    );
+    if (!context.mounted) return;
+    if (picked == null || picked.files.isEmpty) return;
+    final multipart = <dio.MultipartFile>[];
+    for (final file in picked.files) {
+      if (file.path == null) continue;
+      multipart.add(
+        await dio.MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        ),
+      );
+    }
+    if (!context.mounted) return;
+    if (multipart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'تعذر قراءة الملفات المختارة',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.uploadAttachments(
+        billId: details.billId.toString(),
+        files: multipart,
+        category: 'evidence',
+      ),
+    );
+  }
+
+  Future<void> _runWorkflowAction(
+    BuildContext context,
+    Future<dynamic> future,
+  ) async {
+    isWorkflowLoading(true);
+    update();
+    final result = await future;
+    result.fold((failure) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message'],
+      );
+    }, (success) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: success,
+      );
+      if (billDetails != null) {
+        getBillDetails(
+          context: context,
+          billId: billDetails!.billId.toString(),
+        );
+      }
+      getBills();
+    });
+    isWorkflowLoading(false);
+    update();
+  }
+
+  Future<void> submitShownPurchasePayment(BuildContext context) async {
+    final box = selectedPurchaseBox.value;
+    if (box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق',
+      );
+      return;
+    }
+    final amount = purchasePaymentAmountController.text.trim();
+    if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال مبلغ صحيح',
+      );
+      return;
+    }
+    await payShownPurchase(
+      context,
+      amount: amount,
+      boxId: box.boxId.toString(),
+      note: purchasePaymentNoteController.text.trim(),
+    );
+  }
+
+  Future<void> finalizeShownPurchaseWithInitialPayment(
+    BuildContext context,
+  ) async {
+    final box = selectedPurchaseBox.value;
+    final amount = purchasePaymentAmountController.text.trim();
+    final parsed = num.tryParse(amount) ?? 0;
+    if (parsed > 0 && box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق للدفعة الأولية',
+      );
+      return;
+    }
+    await finalizeShownPurchase(
+      context,
+      initialPayment: parsed > 0 ? amount : '0',
+      boxId: box?.boxId.toString(),
+    );
+  }
+
   final allBillsSearch = <String, List<BillDataModel>>{}.obs;
   final allBillsArchiveSearch = <String, List<BillDataModel>>{}.obs;
 
@@ -352,6 +706,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     getBills();
     getAllProducts();
     getAllSellers();
+    loadPurchaseBoxes();
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
     animController = AnimationController(
@@ -382,6 +737,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     sellerIdController.dispose();
     discountController.dispose();
     searchController.dispose();
+    purchasePaymentAmountController.dispose();
+    purchasePaymentNoteController.dispose();
+    amanatQuantityController.dispose();
+    amanatUnitPriceController.dispose();
+    amanatNoteController.dispose();
     super.onClose();
   }
 }

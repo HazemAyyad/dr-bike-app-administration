@@ -113,6 +113,231 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> receivePurchase({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseReceive,
+        data: {
+          'bill_id': billId,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+          'items': items,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> finalizePurchase({
+    required String billId,
+    String initialPayment = '0',
+    String? boxId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseFinalize,
+        data: {
+          'bill_id': billId,
+          'initial_payment': initialPayment,
+          if (boxId != null && boxId.isNotEmpty) 'box_id': boxId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> payPurchase({
+    required String billId,
+    required String amount,
+    required String boxId,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchasePayment,
+        data: {
+          'bill_id': billId,
+          'amount': amount,
+          'box_id': boxId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> paySupplierAccount({
+    required String sellerId,
+    required String amount,
+    required String boxId,
+    String? note,
+    bool allocateOldestFirst = true,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseAccountPayment,
+        data: {
+          'seller_id': sellerId,
+          'amount': amount,
+          'box_id': boxId,
+          'allocate_oldest_first': allocateOldestFirst,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseAmanat({
+    required String amanatId,
+    required String quantity,
+    required String unitPrice,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseAmanatPurchase,
+        data: {
+          'amanat_id': amanatId,
+          'quantity': quantity,
+          'unit_price': unitPrice,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> returnAmanat({
+    required String amanatId,
+    required String quantity,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseAmanatReturn,
+        data: {
+          'amanat_id': amanatId,
+          'quantity': quantity,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseTimeline({required String billId}) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseTimeline,
+        queryParameters: {'bill_id': billId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> uploadPurchaseAttachments({
+    required String billId,
+    required List<MultipartFile> files,
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) async {
+    try {
+      final formData = FormData();
+      formData.fields.add(MapEntry('bill_id', billId));
+      formData.fields.add(MapEntry('category', category));
+      if (attachableType != null && attachableType.isNotEmpty) {
+        formData.fields.add(MapEntry('attachable_type', attachableType));
+      }
+      if (attachableId != null && attachableId.isNotEmpty) {
+        formData.fields.add(MapEntry('attachable_id', attachableId));
+      }
+      for (final file in files) {
+        formData.files.add(MapEntry('files[]', file));
+      }
+      final response = await api.post(
+        EndPoints.purchaseAttachments,
+        data: formData,
+        isFormData: false,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // get Bill Details
   Future<dynamic> getBillDetails({
     required String billId,
@@ -127,8 +352,7 @@ class BillsDatasource {
       );
       final raw = response.data;
       if (kDebugMode && !isDownload) {
-        final ep =
-            isDownload ? EndPoints.billReport : EndPoints.getBillDetails;
+        final ep = isDownload ? EndPoints.billReport : EndPoints.getBillDetails;
         debugParseLog(
           'BillsDatasource.getBillDetails',
           'endpoint=$ep billId=$billId rawKeys=${asMap(raw).keys.toList()}',
