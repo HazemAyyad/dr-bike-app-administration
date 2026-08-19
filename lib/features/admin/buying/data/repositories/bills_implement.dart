@@ -107,6 +107,31 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> paySupplierAccount({
+    required String sellerId,
+    required String amount,
+    required String boxId,
+    String? note,
+    bool allocateOldestFirst = true,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.paySupplierAccount(
+        sellerId: sellerId,
+        amount: amount,
+        boxId: boxId,
+        note: note,
+        allocateOldestFirst: allocateOldestFirst,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,
@@ -124,6 +149,39 @@ class BillsImplement implements BillsRepository {
       return _messageResult(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> returnAmanat({
+    required String amanatId,
+    required String quantity,
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.returnAmanat(
+        amanatId: amanatId,
+        quantity: quantity,
+        note: note,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseTimeline({required String billId}) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseTimeline(billId: billId);
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

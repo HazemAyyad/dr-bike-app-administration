@@ -46,6 +46,22 @@ class PurchaseWorkflowUsecase {
     );
   }
 
+  Future<Either<Failure, String>> paySupplierAccount({
+    required String sellerId,
+    required String amount,
+    required String boxId,
+    String? note,
+    bool allocateOldestFirst = true,
+  }) {
+    return billsRepository.paySupplierAccount(
+      sellerId: sellerId,
+      amount: amount,
+      boxId: boxId,
+      note: note,
+      allocateOldestFirst: allocateOldestFirst,
+    );
+  }
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,
@@ -56,5 +72,21 @@ class PurchaseWorkflowUsecase {
       quantity: quantity,
       unitPrice: unitPrice,
     );
+  }
+
+  Future<Either<Failure, String>> returnAmanat({
+    required String amanatId,
+    required String quantity,
+    String? note,
+  }) {
+    return billsRepository.returnAmanat(
+      amanatId: amanatId,
+      quantity: quantity,
+      note: note,
+    );
+  }
+
+  Future<dynamic> timeline({required String billId}) {
+    return billsRepository.purchaseTimeline(billId: billId);
   }
 }

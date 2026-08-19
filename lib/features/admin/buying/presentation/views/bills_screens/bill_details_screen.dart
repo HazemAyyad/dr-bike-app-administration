@@ -186,6 +186,52 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
+          if (details.sellerId.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            AppButton(
+              isLoading: controller.isWorkflowLoading,
+              text: 'دفعة على حساب المورد',
+              onPressed: () => _showPurchasePaymentSheet(
+                context,
+                title: 'دفعة على حساب المورد',
+                primaryText: 'تسجيل وتخصيص للأقدم',
+                initialAmount: details.remainingAmount == '0'
+                    ? ''
+                    : details.remainingAmount,
+                onSubmit: () =>
+                    controller.paySupplierAccountForShownSeller(context),
+              ),
+            ),
+          ],
+          if (controller.isTimelineLoading.value) ...[
+            SizedBox(height: 12.h),
+            const Center(child: CircularProgressIndicator()),
+          ] else if (controller.purchaseTimeline.isNotEmpty) ...[
+            SizedBox(height: 12.h),
+            Text(
+              'سجل الحركة',
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+            ),
+            SizedBox(height: 8.h),
+            ...controller.purchaseTimeline.take(5).map((event) {
+              final title = event['title']?.toString() ?? '';
+              final description = event['description']?.toString() ?? '';
+              final createdAt = event['created_at']?.toString() ?? '';
+              return Padding(
+                padding: EdgeInsets.only(bottom: 6.h),
+                child: Text(
+                  '$createdAt — ${title.isEmpty ? description : title}',
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: Colors.grey.shade700,
+                        fontSize: 11.sp,
+                      ),
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );

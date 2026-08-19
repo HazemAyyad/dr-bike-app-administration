@@ -275,6 +275,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         isDownload: isDownload,
       );
       billDetails = BillDetailsModel.fromJson(_billDetailsMap(result));
+      loadPurchaseTimeline(billId);
     }
 
     isAddLoading(false);
@@ -283,6 +284,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   final RxBool isAddLoading = false.obs;
   final RxBool isWorkflowLoading = false.obs;
+  final RxBool isTimelineLoading = false.obs;
+  final RxList<Map<String, dynamic>> purchaseTimeline =
+      <Map<String, dynamic>>[].obs;
   final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
   final Rxn<ShownBoxesModel> selectedPurchaseBox = Rxn<ShownBoxesModel>();
   final TextEditingController purchasePaymentAmountController =
@@ -412,6 +416,66 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         note: note,
       ),
     );
+  }
+
+  Future<void> paySupplierAccountForShownSeller(BuildContext context) async {
+    final details = billDetails;
+    final box = selectedPurchaseBox.value;
+    if (details == null) return;
+    if (details.sellerId.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'لا يوجد مورد مرتبط بالفاتورة',
+      );
+      return;
+    }
+    if (box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق',
+      );
+      return;
+    }
+    final amount = purchasePaymentAmountController.text.trim();
+    if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال مبلغ صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.paySupplierAccount(
+        sellerId: details.sellerId,
+        amount: amount,
+        boxId: box.boxId.toString(),
+        note: purchasePaymentNoteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> loadPurchaseTimeline(String billId) async {
+    isTimelineLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.timeline(billId: billId);
+      purchaseTimeline.assignAll(
+        mapListFromResponseKey(
+          result,
+          'timeline',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.purchaseTimeline',
+        ),
+      );
+    } catch (_) {
+      purchaseTimeline.clear();
+    }
+    isTimelineLoading(false);
+    update();
   }
 
   Future<void> _runWorkflowAction(

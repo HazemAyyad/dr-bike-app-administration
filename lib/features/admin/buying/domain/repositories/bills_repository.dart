@@ -32,11 +32,27 @@ abstract class BillsRepository {
     String? note,
   });
 
+  Future<Either<Failure, String>> paySupplierAccount({
+    required String sellerId,
+    required String amount,
+    required String boxId,
+    String? note,
+    bool allocateOldestFirst,
+  });
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,
     required String unitPrice,
   });
+
+  Future<Either<Failure, String>> returnAmanat({
+    required String amanatId,
+    required String quantity,
+    String? note,
+  });
+
+  Future<dynamic> purchaseTimeline({required String billId});
 
   Future<dynamic> getBillDetails({
     required String billId,
