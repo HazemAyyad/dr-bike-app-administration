@@ -21,6 +21,8 @@ class AppSettingsService {
   static const _salesVarianceCacheKey =
       'app_settings_sales_daily_variance_alert_threshold';
   static const _salesMaxFloatCacheKey = 'app_settings_sales_daily_max_float';
+  static const _inventoryCostingMethodCacheKey =
+      'app_settings_inventory_costing_method';
   static const defaultAdminFabOptions = <String>{
     'newInvoice',
     'newEmployee',
@@ -50,6 +52,8 @@ class AppSettingsService {
   }.obs;
   final RxBool shiplyEnabled = true.obs;
   final RxBool shiplyIsTestMode = true.obs;
+  final RxString inventoryCostingMethod = 'fifo'.obs;
+  final RxString inventoryCostingMethodEffectiveFrom = ''.obs;
   final RxMap<String, AppUpdatePlatformSettings> appUpdateSettings =
       <String, AppUpdatePlatformSettings>{
     'android': AppUpdatePlatformSettings.defaults('android'),
@@ -94,6 +98,13 @@ class AppSettingsService {
     final cachedMaxFloat = FinalClasses.getStorage.read(_salesMaxFloatCacheKey);
     if (cachedMaxFloat is Map) {
       _applyMaxFloatMap(cachedMaxFloat);
+    }
+    final cachedCosting = FinalClasses.getStorage.read(
+      _inventoryCostingMethodCacheKey,
+    );
+    if (cachedCosting != null) {
+      inventoryCostingMethod.value =
+          _normalizeInventoryCostingMethod(cachedCosting.toString());
     }
 
     final api = _api;
@@ -166,6 +177,18 @@ class AppSettingsService {
           if (appUpdate is Map) {
             _applyAppUpdateSettings(appUpdate);
           }
+          final costing = settings['inventory_costing_method']?.toString();
+          if (costing != null) {
+            final method = _normalizeInventoryCostingMethod(costing);
+            inventoryCostingMethod.value = method;
+            await FinalClasses.getStorage.write(
+              _inventoryCostingMethodCacheKey,
+              method,
+            );
+          }
+          inventoryCostingMethodEffectiveFrom.value =
+              settings['inventory_costing_method_effective_from']?.toString() ??
+                  '';
         }
       }
       _loaded = true;
@@ -245,6 +268,36 @@ class AppSettingsService {
       if (data is Map && data['status']?.toString() == 'success') {
         shiplyEnabled.value = enabled;
         shiplyIsTestMode.value = testMode;
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateInventoryCostingMethod(String method) async {
+    final api = _api;
+    if (api == null) return false;
+
+    final normalized = _normalizeInventoryCostingMethod(method);
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {'inventory_costing_method': normalized},
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        final settings = data['settings'];
+        inventoryCostingMethod.value = normalized;
+        if (settings is Map) {
+          inventoryCostingMethodEffectiveFrom.value =
+              settings['inventory_costing_method_effective_from']?.toString() ??
+                  '';
+        }
+        await FinalClasses.getStorage.write(
+          _inventoryCostingMethodCacheKey,
+          normalized,
+        );
         return true;
       }
     } catch (_) {}
@@ -435,6 +488,10 @@ class AppSettingsService {
   String _normalizePasswordResetOtpDeliveryMethod(String raw) {
     final method = raw.trim().toLowerCase();
     return const {'email', 'admin', 'sms'}.contains(method) ? method : 'email';
+  }
+
+  String _normalizeInventoryCostingMethod(String raw) {
+    return raw.trim() == 'moving_average' ? 'moving_average' : 'fifo';
   }
 
   void _applyAppUpdateSettings(Map<dynamic, dynamic> raw) {
