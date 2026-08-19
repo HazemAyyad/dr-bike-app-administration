@@ -11,6 +11,8 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/models/check_model.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
@@ -52,6 +54,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final AddBillUsecase addBillUsecase;
   final GetBilltDetailsUsecase getBilltDetailsUsecase;
   final PurchaseWorkflowUsecase purchaseWorkflowUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   BillsController({
     required this.getBillsUsecase,
@@ -60,6 +63,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     required this.addBillUsecase,
     required this.getBilltDetailsUsecase,
     required this.purchaseWorkflowUsecase,
+    required this.getShownBoxUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -279,6 +283,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   final RxBool isAddLoading = false.obs;
   final RxBool isWorkflowLoading = false.obs;
+  final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
+  final Rxn<ShownBoxesModel> selectedPurchaseBox = Rxn<ShownBoxesModel>();
+  final TextEditingController purchasePaymentAmountController =
+      TextEditingController();
+  final TextEditingController purchasePaymentNoteController =
+      TextEditingController();
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -365,6 +375,26 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<void> loadPurchaseBoxes() async {
+    if (purchaseBoxes.isNotEmpty) return;
+    final boxes = await getShownBoxUsecase.call(screen: 0);
+    purchaseBoxes.assignAll(boxes);
+    if (boxes.isNotEmpty) {
+      selectedPurchaseBox.value = boxes.first;
+    }
+    update();
+  }
+
+  void selectPurchaseBox(ShownBoxesModel? box) {
+    selectedPurchaseBox.value = box;
+    update();
+  }
+
+  void preparePaymentAmount({String? amount}) {
+    purchasePaymentAmountController.text = amount ?? '';
+    purchasePaymentNoteController.clear();
+  }
+
   Future<void> payShownPurchase(
     BuildContext context, {
     required String amount,
@@ -415,6 +445,54 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  Future<void> submitShownPurchasePayment(BuildContext context) async {
+    final box = selectedPurchaseBox.value;
+    if (box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق',
+      );
+      return;
+    }
+    final amount = purchasePaymentAmountController.text.trim();
+    if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال مبلغ صحيح',
+      );
+      return;
+    }
+    await payShownPurchase(
+      context,
+      amount: amount,
+      boxId: box.boxId.toString(),
+      note: purchasePaymentNoteController.text.trim(),
+    );
+  }
+
+  Future<void> finalizeShownPurchaseWithInitialPayment(
+    BuildContext context,
+  ) async {
+    final box = selectedPurchaseBox.value;
+    final amount = purchasePaymentAmountController.text.trim();
+    final parsed = num.tryParse(amount) ?? 0;
+    if (parsed > 0 && box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق للدفعة الأولية',
+      );
+      return;
+    }
+    await finalizeShownPurchase(
+      context,
+      initialPayment: parsed > 0 ? amount : '0',
+      boxId: box?.boxId.toString(),
+    );
+  }
+
   final allBillsSearch = <String, List<BillDataModel>>{}.obs;
   final allBillsArchiveSearch = <String, List<BillDataModel>>{}.obs;
 
@@ -451,6 +529,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     getBills();
     getAllProducts();
     getAllSellers();
+    loadPurchaseBoxes();
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
     animController = AnimationController(

@@ -7,6 +7,9 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/app_button.dart';
+import '../../../../../../core/helpers/custom_dropdown_field.dart';
+import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/bills_widgets/bill_details.dart';
 import '../../widgets/bills_widgets/bill_seller_details.dart';
@@ -96,6 +99,9 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
     final canFinalize = page != '1' &&
         details.workflowStatus != 'finalized' &&
         details.products.any((item) => item.receivedOwnedQuantity > 0);
+    final canPay = details.workflowStatus == 'finalized' &&
+        details.paymentStatus != 'paid' &&
+        details.remainingAmount != '0';
 
     return Container(
       width: double.infinity,
@@ -156,11 +162,121 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
           if (canFinalize)
             AppButton(
               isLoading: controller.isWorkflowLoading,
-              text: 'اعتماد الفاتورة بدون دفعة',
-              onPressed: () => controller.finalizeShownPurchase(context),
+              text: 'اعتماد الفاتورة',
+              onPressed: () => _showPurchasePaymentSheet(
+                context,
+                title: 'اعتماد الفاتورة',
+                primaryText: 'اعتماد',
+                initialAmount: '0',
+                onSubmit: () =>
+                    controller.finalizeShownPurchaseWithInitialPayment(context),
+              ),
             ),
+          if (canPay) ...[
+            if (canReceive || canFinalize) SizedBox(height: 8.h),
+            AppButton(
+              isLoading: controller.isWorkflowLoading,
+              text: 'تسجيل دفعة مورد',
+              onPressed: () => _showPurchasePaymentSheet(
+                context,
+                title: 'تسجيل دفعة مورد',
+                primaryText: 'تسجيل الدفعة',
+                initialAmount: details.remainingAmount,
+                onSubmit: () => controller.submitShownPurchasePayment(context),
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _showPurchasePaymentSheet(
+    BuildContext context, {
+    required String title,
+    required String primaryText,
+    required String initialAmount,
+    required Future<void> Function() onSubmit,
+  }) async {
+    await controller.loadPurchaseBoxes();
+    controller.preparePaymentAmount(amount: initialAmount);
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20.w,
+            right: 20.w,
+            top: 18.h,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18.h,
+          ),
+          child: GetBuilder<BillsController>(
+            builder: (controller) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16.sp,
+                        ),
+                  ),
+                  SizedBox(height: 14.h),
+                  CustomDropdownFieldWithSearch(
+                    tital: 'boxName',
+                    hint: 'boxNameExample',
+                    items: controller.purchaseBoxes,
+                    value: controller.selectedPurchaseBox.value,
+                    onChanged: (value) {
+                      controller.selectPurchaseBox(
+                        value is ShownBoxesModel ? value : null,
+                      );
+                    },
+                    itemAsString: (item) =>
+                        '${item.boxName} (${item.currency})',
+                    compareFn: (a, b) => a.boxId == b.boxId,
+                  ),
+                  SizedBox(height: 12.h),
+                  CustomTextField(
+                    label: 'cashValue',
+                    hintText: 'totalExample',
+                    controller: controller.purchasePaymentAmountController,
+                    keyboardType: TextInputType.number,
+                    validator: (value) => null,
+                  ),
+                  SizedBox(height: 12.h),
+                  CustomTextField(
+                    label: 'notes',
+                    hintText: 'notes',
+                    controller: controller.purchasePaymentNoteController,
+                    isRequired: false,
+                    validator: (value) => null,
+                  ),
+                  SizedBox(height: 18.h),
+                  AppButton(
+                    isLoading: controller.isWorkflowLoading,
+                    text: primaryText,
+                    onPressed: () async {
+                      await onSubmit();
+                      if (sheetContext.mounted) {
+                        Navigator.of(sheetContext).pop();
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

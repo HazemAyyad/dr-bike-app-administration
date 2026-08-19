@@ -1,4 +1,6 @@
 import 'package:doctorbike/features/admin/buying/domain/usecases/get_bills_usecase.dart';
+import 'package:doctorbike/features/admin/boxes/data/repositories/boxes_implement.dart';
+import 'package:doctorbike/features/admin/boxes/domain/usecases/get_shown_box_usecase.dart';
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:doctorbike/features/admin/sales/data/repositories/sales_implement.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_all_products_usecase.dart';
@@ -39,6 +41,9 @@ class BuyingBinding extends Bindings {
         ),
         purchaseWorkflowUsecase: PurchaseWorkflowUsecase(
           billsRepository: Get.find<BillsImplement>(),
+        ),
+        getShownBoxUsecase: GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
         ),
       ),
     );
