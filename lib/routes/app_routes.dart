@@ -162,6 +162,7 @@ class AppRoutes {
   static const PURCHASEORDERSSCREEN = '/PurchaseOrdersScreen';
   // return purchases
   static const RETURNPURCHASESSCREEN = '/ReturnPurchasesScreen';
+  static const CREATEPURCHASERETURNSCREEN = '/CreatePurchaseReturnScreen';
 
   // Product Management
   static const PRODUCTMANAGEMENTSCREEN = '/ProductManagementScreen';

@@ -78,6 +78,28 @@ class PurchaseWorkflowUsecase {
     );
   }
 
+  Future<Either<Failure, String>> createPurchaseReturn({
+    String sellerId = '',
+    String customerId = '',
+    String? billId,
+    required List<dynamic> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  }) {
+    return billsRepository.createPurchaseReturn(
+      sellerId: sellerId,
+      customerId: customerId,
+      billId: billId,
+      products: products.cast(),
+      total: total,
+      resolution: resolution,
+      refundBoxId: refundBoxId,
+      note: note,
+    );
+  }
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

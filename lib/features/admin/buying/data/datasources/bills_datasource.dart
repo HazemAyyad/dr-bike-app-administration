@@ -260,6 +260,51 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> createPurchaseReturn({
+    String sellerId = '',
+    String customerId = '',
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  }) async {
+    final Map<String, dynamic> data = {
+      if (sellerId.isNotEmpty) 'seller_id': sellerId,
+      if (customerId.isNotEmpty) 'customer_id': customerId,
+      if (billId != null && billId.isNotEmpty) 'bill_id': billId,
+      if (total.isNotEmpty) 'total': total,
+      'resolution': resolution,
+      if (refundBoxId != null && refundBoxId.isNotEmpty)
+        'refund_box_id': refundBoxId,
+      if (note != null && note.isNotEmpty) 'note': note,
+    };
+    for (var i = 0; i < products.length; i++) {
+      data['products[$i][product_id]'] = products[i].productIdController.text;
+      data['products[$i][quantity]'] = products[i].quantityController.text;
+      data['products[$i][purchase_price]'] = products[i].priceController.text;
+    }
+
+    try {
+      final response = await api.post(
+        EndPoints.addReturnPurchase,
+        data: data,
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> purchaseAmanat({
     required String amanatId,
     required String quantity,

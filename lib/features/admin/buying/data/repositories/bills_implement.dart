@@ -156,6 +156,37 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> createPurchaseReturn({
+    String sellerId = '',
+    String customerId = '',
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.createPurchaseReturn(
+        sellerId: sellerId,
+        customerId: customerId,
+        billId: billId,
+        products: products,
+        total: total,
+        resolution: resolution,
+        refundBoxId: refundBoxId,
+        note: note,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

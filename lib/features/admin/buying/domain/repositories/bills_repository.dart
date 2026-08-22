@@ -49,6 +49,17 @@ abstract class BillsRepository {
     String? currency,
   });
 
+  Future<Either<Failure, String>> createPurchaseReturn({
+    String sellerId,
+    String customerId,
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  });
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

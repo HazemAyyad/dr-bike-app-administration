@@ -360,6 +360,115 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  void preparePurchaseReturnForm() {
+    purchaseReturnResolution.value = 'supplier_credit';
+    purchaseReturnNoteController.clear();
+    purchaseProductSearch.value = '';
+    selectedPurchaseSource.value = null;
+    sellerIdController.clear();
+    customerIdController.clear();
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
+    purchaseCart.clear();
+    totalCost.value = 0;
+    update();
+  }
+
+  void changePurchaseReturnResolution(String value) {
+    purchaseReturnResolution.value = value;
+    update();
+  }
+
+  Future<void> createPurchaseReturnFromCart(BuildContext context) async {
+    final source = selectedPurchaseSource.value;
+    if (source == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار مصدر المرتجع',
+      );
+      return;
+    }
+    if (purchaseCart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إضافة منتجات للمرتجع',
+      );
+      return;
+    }
+    for (final item in purchaseCart) {
+      if (item.quantity <= 0 || item.unitPrice <= 0) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'تأكد من الكميات والأسعار',
+        );
+        return;
+      }
+    }
+    if (purchaseReturnResolution.value == 'cash_refund' &&
+        selectedPurchaseBox.value == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق للاسترداد النقدي',
+      );
+      return;
+    }
+
+    billModel.assignAll(purchaseCart.map((item) {
+      final row = BillModel();
+      row.productIdController.text = item.product.id;
+      row.quantityController.text = item.quantityController.text.trim();
+      row.priceController.text = item.priceController.text.trim();
+      return row;
+    }).toList());
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+
+    isWorkflowLoading(true);
+    update();
+    final result = await purchaseWorkflowUsecase.createPurchaseReturn(
+      sellerId:
+          source.hasSeller ? (source.sellerId ?? source.id).toString() : '',
+      customerId:
+          source.hasSeller ? '' : (source.customerId ?? source.id).toString(),
+      products: billModel,
+      total: totalCost.value.toString(),
+      resolution: purchaseReturnResolution.value,
+      refundBoxId: purchaseReturnResolution.value == 'cash_refund'
+          ? selectedPurchaseBox.value?.boxId.toString()
+          : null,
+      note: purchaseReturnNoteController.text.trim(),
+    );
+
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message']?.toString() ?? failure.errMessage,
+        );
+      },
+      (success) {
+        Get.find<ReturnPurchasesController>().getReturnBills();
+        preparePurchaseReturnForm();
+        Get.back();
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isWorkflowLoading(false);
+    update();
+  }
+
   Future<void> createPurchaseFromCart(BuildContext context) async {
     final source = selectedPurchaseSource.value;
     if (source == null) {
@@ -561,6 +670,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       TextEditingController();
   final TextEditingController purchasePaymentNoteController =
       TextEditingController();
+  final TextEditingController purchaseReturnNoteController =
+      TextEditingController();
   final TextEditingController amanatQuantityController =
       TextEditingController();
   final TextEditingController amanatUnitPriceController =
@@ -570,6 +681,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       <PurchaseReceivingRowModel>[].obs;
   final RxList<PurchaseOpenBillAllocationModel> openPurchaseBills =
       <PurchaseOpenBillAllocationModel>[].obs;
+  final RxString purchaseReturnResolution = 'supplier_credit'.obs;
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -1118,6 +1230,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
     purchasePaymentAmountController.dispose();
     purchasePaymentNoteController.dispose();
+    purchaseReturnNoteController.dispose();
     amanatQuantityController.dispose();
     amanatUnitPriceController.dispose();
     amanatNoteController.dispose();

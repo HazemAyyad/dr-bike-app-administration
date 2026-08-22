@@ -8,7 +8,6 @@ import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
-import '../../controllers/bills_controller.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../widgets/return_purchases_widgets/return_purchases_list.dart';
 
@@ -106,8 +105,7 @@ class ReturnPurchasesScreen extends GetView<ReturnPurchasesController> {
         width: 55.w,
         child: FloatingActionButton(
           onPressed: () {
-            Get.find<BillsController>().isaddNewBill = '3';
-            Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+            Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN);
           },
           backgroundColor: AppColors.secondaryColor,
           elevation: 2.0,
