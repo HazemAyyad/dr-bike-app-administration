@@ -290,6 +290,19 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                     fontSize: 13.sp,
                   ),
             ),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => _showFullTimelineSheet(context),
+                icon: Icon(Icons.history, size: 16.sp),
+                label: const Text('عرض كل الحركات'),
+              ),
+            ),
             SizedBox(height: 8.h),
             ...controller.purchaseTimeline.take(5).map((event) {
               final title = event['title']?.toString() ?? '';
@@ -309,6 +322,97 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _showFullTimelineSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.82,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return ListView.separated(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
+              itemCount: controller.purchaseTimeline.length + 1,
+              separatorBuilder: (_, __) => SizedBox(height: 8.h),
+              itemBuilder: (_, index) {
+                if (index == 0) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'كل حركات الفاتورة',
+                          style:
+                              Theme.of(context).textTheme.titleMedium!.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16.sp,
+                                  ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  );
+                }
+                final event = controller.purchaseTimeline[index - 1];
+                final title = event['title']?.toString() ?? '';
+                final description = event['description']?.toString() ?? '';
+                final createdAt = event['created_at']?.toString() ?? '';
+                final sourceType = event['source_type']?.toString() ?? '';
+                return Container(
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title.isEmpty ? description : title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                      if (description.isNotEmpty && title.isNotEmpty) ...[
+                        SizedBox(height: 4.h),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 11.sp,
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: 6.h),
+                      _MutedText(
+                        text: [
+                          if (createdAt.isNotEmpty) createdAt,
+                          if (sourceType.isNotEmpty) sourceType,
+                        ].join(' • '),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
