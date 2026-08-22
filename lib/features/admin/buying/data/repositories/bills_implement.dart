@@ -215,6 +215,7 @@ class BillsImplement implements BillsRepository {
   Future<Either<Failure, String>> addBill({
     required String page,
     required String sellerId,
+    String customerId = '',
     required List<BillModel> products,
     required String total,
   }) async {
@@ -225,6 +226,7 @@ class BillsImplement implements BillsRepository {
       final result = await billsDataSource.addBill(
         page: page,
         sellerId: sellerId,
+        customerId: customerId,
         products: products,
         total: total,
       );

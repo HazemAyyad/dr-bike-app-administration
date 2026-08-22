@@ -9,6 +9,7 @@ abstract class BillsRepository {
   Future<Either<Failure, String>> addBill({
     required String page,
     required String sellerId,
+    String customerId,
     required List<BillModel> products,
     required String total,
   });

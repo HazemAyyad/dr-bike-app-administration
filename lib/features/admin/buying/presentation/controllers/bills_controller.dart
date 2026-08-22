@@ -71,9 +71,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
 
   final TextEditingController sellerIdController = TextEditingController();
+  final TextEditingController customerIdController = TextEditingController();
   final TextEditingController discountController = TextEditingController();
 
   final TextEditingController searchController = TextEditingController();
+  final TextEditingController purchaseNotesController = TextEditingController();
+  final TextEditingController purchaseProductSearchController =
+      TextEditingController();
 
   final billModel = <BillModel>[BillModel()].obs;
 
@@ -134,11 +138,162 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   // get all sellers
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
+  final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
+  final Rxn<PurchaseSourceModel> selectedPurchaseSource =
+      Rxn<PurchaseSourceModel>();
+  final RxList<PurchaseCartItemModel> purchaseCart =
+      <PurchaseCartItemModel>[].obs;
+  final RxString purchaseProductSearch = ''.obs;
+
+  List<PurchaseSourceModel> get purchaseSources {
+    final byName = <String, PurchaseSourceModel>{};
+    for (final seller in allSellersList) {
+      final key = seller.name.trim().toLowerCase();
+      byName[key] = PurchaseSourceModel(
+        id: seller.id,
+        name: seller.name,
+        phone: seller.phone,
+        hasSeller: true,
+        hasCustomer: false,
+      );
+    }
+    for (final customer in allCustomersList) {
+      final key = customer.name.trim().toLowerCase();
+      final current = byName[key];
+      byName[key] = PurchaseSourceModel(
+        id: current?.id ?? customer.id,
+        name: current?.name ?? customer.name,
+        phone:
+            current?.phone.isNotEmpty == true ? current!.phone : customer.phone,
+        hasSeller: current?.hasSeller == true,
+        hasCustomer: true,
+        customerId: customer.id,
+        sellerId: current?.sellerId ?? current?.id,
+      );
+    }
+    return byName.values.toList()..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  List<ProductModel> get filteredPurchaseProducts {
+    final query = purchaseProductSearch.value.trim().toLowerCase();
+    if (query.isEmpty) return products;
+    return products.where((product) {
+      return product.nameAr.toLowerCase().contains(query) ||
+          product.displayProductCode.toLowerCase().contains(query);
+    }).toList();
+  }
+
   void getAllSellers() async {
     final resultSellers =
         await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
     allSellersList.assignAll(resultSellers);
     isLoading(false);
+  }
+
+  Future<void> getAllPurchaseSources() async {
+    final resultCustomers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_customers,
+    );
+    final resultSellers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_sellers,
+    );
+    allCustomersList.assignAll(resultCustomers);
+    allSellersList.assignAll(resultSellers);
+    update();
+  }
+
+  void selectPurchaseSource(PurchaseSourceModel? source) {
+    selectedPurchaseSource.value = source;
+    sellerIdController.clear();
+    customerIdController.clear();
+    if (source == null) {
+      update();
+      return;
+    }
+    if (source.hasSeller) {
+      sellerIdController.text = (source.sellerId ?? source.id).toString();
+    } else if (source.hasCustomer) {
+      customerIdController.text = (source.customerId ?? source.id).toString();
+    }
+    update();
+  }
+
+  void onPurchaseProductSearchChanged(String value) {
+    purchaseProductSearch.value = value;
+    update();
+  }
+
+  void addProductToPurchaseCart(ProductModel product) {
+    final index =
+        purchaseCart.indexWhere((item) => item.product.id == product.id);
+    if (index >= 0) {
+      purchaseCart[index].quantityController.text =
+          ((num.tryParse(purchaseCart[index].quantityController.text) ?? 0) + 1)
+              .toString();
+      purchaseCart.refresh();
+    } else {
+      purchaseCart.add(PurchaseCartItemModel(product: product));
+    }
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  void removePurchaseCartItem(PurchaseCartItemModel item) {
+    item.dispose();
+    purchaseCart.remove(item);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  void calculatePurchaseCartTotal() {
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+    update();
+  }
+
+  Future<void> createPurchaseFromCart(BuildContext context) async {
+    final source = selectedPurchaseSource.value;
+    if (source == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار مصدر الشراء',
+      );
+      return;
+    }
+    if (purchaseCart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إضافة منتجات للفاتورة',
+      );
+      return;
+    }
+    for (final item in purchaseCart) {
+      if (item.quantity <= 0 || item.unitPrice < 0) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'تأكد من الكميات والأسعار',
+        );
+        return;
+      }
+    }
+
+    billModel.assignAll(purchaseCart.map((item) {
+      final row = BillModel();
+      row.productIdController.text = item.product.id;
+      row.quantityController.text = item.quantityController.text.trim();
+      row.priceController.text = item.priceController.text.trim();
+      return row;
+    }).toList());
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+    addBill(context);
   }
 
   RxBool isLoading = false.obs;
@@ -310,6 +465,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     final result = await addBillUsecase.call(
       page: isaddNewBill,
       sellerId: sellerIdController.text,
+      customerId: customerIdController.text,
       products: billModel,
       total: totalCost.value.toString(),
     );
@@ -323,7 +479,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }, (success) {
       Future.delayed(const Duration(seconds: 1), () {
         sellerIdController.clear();
+        customerIdController.clear();
         discountController.clear();
+        purchaseNotesController.clear();
+        selectedPurchaseSource.value = null;
+        for (final item in purchaseCart) {
+          item.dispose();
+        }
+        purchaseCart.clear();
         totalCost.value = 0;
         billModel.map((e) => e.productIdController.clear()).toList();
         billModel.map((e) => e.quantityController.clear()).toList();
@@ -705,7 +868,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void onInit() {
     getBills();
     getAllProducts();
-    getAllSellers();
+    getAllPurchaseSources();
     loadPurchaseBoxes();
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
@@ -735,8 +898,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;
     sellerIdController.dispose();
+    customerIdController.dispose();
     discountController.dispose();
     searchController.dispose();
+    purchaseNotesController.dispose();
+    purchaseProductSearchController.dispose();
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
     purchasePaymentAmountController.dispose();
     purchasePaymentNoteController.dispose();
     amanatQuantityController.dispose();
@@ -769,6 +938,55 @@ class BillModel {
 
   void onClose() {
     productIdController.dispose();
+    quantityController.dispose();
+    priceController.dispose();
+  }
+}
+
+class PurchaseSourceModel {
+  final int id;
+  final String name;
+  final String phone;
+  final bool hasSeller;
+  final bool hasCustomer;
+  final int? sellerId;
+  final int? customerId;
+
+  const PurchaseSourceModel({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.hasSeller,
+    required this.hasCustomer,
+    this.sellerId,
+    this.customerId,
+  });
+
+  String get typeLabel {
+    if (hasSeller && hasCustomer) return 'مورد + زبون';
+    if (hasSeller) return 'مورد';
+    return 'زبون';
+  }
+}
+
+class PurchaseCartItemModel {
+  final ProductModel product;
+  final TextEditingController quantityController;
+  final TextEditingController priceController;
+
+  PurchaseCartItemModel({required this.product})
+      : quantityController = TextEditingController(text: '1'),
+        priceController = TextEditingController(
+          text: product.purchaseCost > 0
+              ? product.purchaseCost.toStringAsFixed(2)
+              : '',
+        );
+
+  num get quantity => num.tryParse(quantityController.text.trim()) ?? 0;
+  num get unitPrice => num.tryParse(priceController.text.trim()) ?? 0;
+  num get total => quantity * unitPrice;
+
+  void dispose() {
     quantityController.dispose();
     priceController.dispose();
   }

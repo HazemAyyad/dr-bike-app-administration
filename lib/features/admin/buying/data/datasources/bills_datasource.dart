@@ -68,6 +68,7 @@ class BillsDatasource {
   Future<dynamic> addBill({
     required String page,
     required String sellerId,
+    String customerId = '',
     required List<BillModel> products,
     required String total,
   }) async {
@@ -75,6 +76,7 @@ class BillsDatasource {
 
     for (var i = 0; i < products.length; i++) {
       if (sellerId.isNotEmpty) productsList['seller_id'] = sellerId;
+      if (customerId.isNotEmpty) productsList['customer_id'] = customerId;
       if (products[i].productIdController.text.isNotEmpty) {
         productsList['products[$i][product_id]'] =
             products[i].productIdController.text;
@@ -94,7 +96,7 @@ class BillsDatasource {
       final response = await api.post(
         page == '3'
             ? EndPoints.addReturnPurchase
-            : sellerId.isEmpty
+            : sellerId.isEmpty && customerId.isEmpty
                 ? EndPoints.addBillQuantity
                 : EndPoints.addBill,
         data: productsList,
