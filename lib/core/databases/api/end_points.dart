@@ -726,6 +726,7 @@ class EndPoints {
   static const String purchaseFinalize = 'purchase/finalize';
   static const String purchasePayment = 'purchase/payment';
   static const String purchaseAccountPayment = 'purchase/account/payment';
+  static const String purchaseAccountOpenBills = 'purchase/account/open-bills';
   static const String purchaseAmanatPurchase = 'purchase/amanat/purchase';
   static const String purchaseAmanatReturn = 'purchase/amanat/return';
   static const String purchaseTimeline = 'purchase/timeline';

@@ -199,21 +199,52 @@ class BillsDatasource {
   }
 
   Future<dynamic> paySupplierAccount({
-    required String sellerId,
+    String sellerId = '',
+    String customerId = '',
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst = true,
+    List<Map<String, dynamic>> allocations = const [],
   }) async {
     try {
       final response = await api.post(
         EndPoints.purchaseAccountPayment,
         data: {
-          'seller_id': sellerId,
+          if (sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId.isNotEmpty) 'customer_id': customerId,
           'amount': amount,
           'box_id': boxId,
           'allocate_oldest_first': allocateOldestFirst,
+          if (allocations.isNotEmpty) 'allocations': allocations,
           if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId = '',
+    String customerId = '',
+    String? currency,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseAccountOpenBills,
+        queryParameters: {
+          if (sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId.isNotEmpty) 'customer_id': customerId,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
         },
       );
       return response.data;

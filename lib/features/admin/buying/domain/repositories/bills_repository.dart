@@ -34,11 +34,19 @@ abstract class BillsRepository {
   });
 
   Future<Either<Failure, String>> paySupplierAccount({
-    required String sellerId,
+    String sellerId,
+    String customerId,
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst,
+    List<Map<String, dynamic>> allocations,
+  });
+
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId,
+    String customerId,
+    String? currency,
   });
 
   Future<Either<Failure, String>> purchaseAmanat({

@@ -188,18 +188,19 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
-          if (details.sellerId.isNotEmpty) ...[
+          if (details.sellerId.isNotEmpty || details.customerId.isNotEmpty) ...[
             SizedBox(height: 8.h),
             AppButton(
               isLoading: controller.isWorkflowLoading,
-              text: 'دفعة على حساب المورد',
+              text: 'دفعة على حساب المصدر',
               onPressed: () => _showPurchasePaymentSheet(
                 context,
-                title: 'دفعة على حساب المورد',
-                primaryText: 'تسجيل وتخصيص للأقدم',
+                title: 'دفعة على حساب المصدر',
+                primaryText: 'تسجيل الدفعة',
                 initialAmount: details.remainingAmount == '0'
                     ? ''
                     : details.remainingAmount,
+                showAllocations: true,
                 onSubmit: () =>
                     controller.paySupplierAccountForShownSeller(context),
               ),
@@ -422,9 +423,13 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
     required String primaryText,
     required String initialAmount,
     required Future<void> Function() onSubmit,
+    bool showAllocations = false,
   }) async {
     await controller.loadPurchaseBoxes();
     controller.preparePaymentAmount(amount: initialAmount);
+    if (showAllocations) {
+      await controller.loadOpenPurchaseAccountBills();
+    }
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -485,6 +490,10 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                     isRequired: false,
                     validator: (value) => null,
                   ),
+                  if (showAllocations) ...[
+                    SizedBox(height: 14.h),
+                    _ManualAllocationSection(controller: controller),
+                  ],
                   SizedBox(height: 18.h),
                   AppButton(
                     isLoading: controller.isWorkflowLoading,
@@ -692,6 +701,94 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ManualAllocationSection extends StatelessWidget {
+  final BillsController controller;
+
+  const _ManualAllocationSection({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.isOpenPurchaseBillsLoading.value) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (controller.openPurchaseBills.isEmpty) {
+      return const _MutedText(text: 'لا توجد فواتير مفتوحة لهذا المصدر');
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'توزيع يدوي على الفواتير',
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 13.sp,
+              ),
+        ),
+        SizedBox(height: 4.h),
+        const _MutedText(text: 'اتركها فارغة ليتم التخصيص للأقدم تلقائياً'),
+        SizedBox(height: 8.h),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: 260.h),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: controller.openPurchaseBills.length,
+            separatorBuilder: (_, __) => SizedBox(height: 8.h),
+            itemBuilder: (_, index) {
+              final bill = controller.openPurchaseBills[index];
+              return Container(
+                padding: EdgeInsets.all(10.w),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'فاتورة #${bill.billId}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.sp,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: bill.fillRemaining,
+                          child: const Text('كامل المتبقي'),
+                        ),
+                      ],
+                    ),
+                    _MutedText(
+                      text:
+                          'الإجمالي ${bill.finalTotal.toStringAsFixed(2)} | المدفوع ${bill.paidAmount.toStringAsFixed(2)} | المتبقي ${bill.remainingAmount.toStringAsFixed(2)} ${bill.currency}',
+                    ),
+                    SizedBox(height: 8.h),
+                    TextField(
+                      controller: bill.amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        labelText: 'مبلغ التخصيص',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

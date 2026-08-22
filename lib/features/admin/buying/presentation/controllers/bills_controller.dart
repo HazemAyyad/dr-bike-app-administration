@@ -552,6 +552,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isAddLoading = false.obs;
   final RxBool isWorkflowLoading = false.obs;
   final RxBool isTimelineLoading = false.obs;
+  final RxBool isOpenPurchaseBillsLoading = false.obs;
   final RxList<Map<String, dynamic>> purchaseTimeline =
       <Map<String, dynamic>>[].obs;
   final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
@@ -567,6 +568,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController amanatNoteController = TextEditingController();
   final RxList<PurchaseReceivingRowModel> receivingRows =
       <PurchaseReceivingRowModel>[].obs;
+  final RxList<PurchaseOpenBillAllocationModel> openPurchaseBills =
+      <PurchaseOpenBillAllocationModel>[].obs;
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -727,6 +730,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void preparePaymentAmount({String? amount}) {
     purchasePaymentAmountController.text = amount ?? '';
     purchasePaymentNoteController.clear();
+    clearOpenPurchaseBills();
+  }
+
+  void clearOpenPurchaseBills() {
+    for (final bill in openPurchaseBills) {
+      bill.dispose();
+    }
+    openPurchaseBills.clear();
   }
 
   void prepareAmanatAction({
@@ -757,15 +768,48 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<void> loadOpenPurchaseAccountBills() async {
+    final details = billDetails;
+    if (details == null) return;
+    final sellerId = details.sellerId;
+    final customerId = details.customerId;
+    if (sellerId.isEmpty && customerId.isEmpty) return;
+    isOpenPurchaseBillsLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.openAccountBills(
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: selectedPurchaseBox.value?.currency,
+      );
+      clearOpenPurchaseBills();
+      openPurchaseBills.assignAll(
+        mapListFromResponseKey(
+          result,
+          'bills',
+          (Map<String, dynamic> m) =>
+              PurchaseOpenBillAllocationModel.fromJson(m),
+          debugScope: 'BillsController.openPurchaseAccountBills',
+        ),
+      );
+    } catch (_) {
+      clearOpenPurchaseBills();
+    }
+    isOpenPurchaseBillsLoading(false);
+    update();
+  }
+
   Future<void> paySupplierAccountForShownSeller(BuildContext context) async {
     final details = billDetails;
     final box = selectedPurchaseBox.value;
     if (details == null) return;
-    if (details.sellerId.isEmpty) {
+    final sellerId = details.sellerId;
+    final customerId = details.customerId;
+    if (sellerId.isEmpty && customerId.isEmpty) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
-        message: 'لا يوجد مورد مرتبط بالفاتورة',
+        message: 'لا يوجد مصدر مرتبط بالفاتورة',
       );
       return;
     }
@@ -786,13 +830,20 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       );
       return;
     }
+    final allocations = openPurchaseBills
+        .map((bill) => bill.toAllocation())
+        .whereType<Map<String, dynamic>>()
+        .toList();
     await _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.paySupplierAccount(
-        sellerId: details.sellerId,
+        sellerId: sellerId,
+        customerId: customerId,
         amount: amount,
         boxId: box.boxId.toString(),
         note: purchasePaymentNoteController.text.trim(),
+        allocateOldestFirst: allocations.isEmpty,
+        allocations: allocations,
       ),
     );
   }
@@ -1073,6 +1124,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     for (final row in receivingRows) {
       row.dispose();
     }
+    clearOpenPurchaseBills();
     super.onClose();
   }
 }
@@ -1238,5 +1290,55 @@ class PurchaseReceivingRowModel {
     unitPriceController.dispose();
     reasonController.dispose();
     notesController.dispose();
+  }
+}
+
+class PurchaseOpenBillAllocationModel {
+  final int billId;
+  final String sourceName;
+  final String currency;
+  final num finalTotal;
+  final num paidAmount;
+  final num remainingAmount;
+  final String finalizedAt;
+  final TextEditingController amountController = TextEditingController();
+
+  PurchaseOpenBillAllocationModel({
+    required this.billId,
+    required this.sourceName,
+    required this.currency,
+    required this.finalTotal,
+    required this.paidAmount,
+    required this.remainingAmount,
+    required this.finalizedAt,
+  });
+
+  factory PurchaseOpenBillAllocationModel.fromJson(Map<String, dynamic> json) {
+    return PurchaseOpenBillAllocationModel(
+      billId: asInt(json['id']),
+      sourceName: asString(json['source_name']),
+      currency: asString(json['currency']),
+      finalTotal: asDouble(json['final_total']),
+      paidAmount: asDouble(json['paid_amount']),
+      remainingAmount: asDouble(json['remaining_amount']),
+      finalizedAt: asString(json['finalized_at']),
+    );
+  }
+
+  Map<String, dynamic>? toAllocation() {
+    final amount = double.tryParse(amountController.text.trim()) ?? 0;
+    if (amount <= 0) return null;
+    return {
+      'bill_id': billId,
+      'amount': amount,
+    };
+  }
+
+  void fillRemaining() {
+    amountController.text = remainingAmount.toStringAsFixed(2);
+  }
+
+  void dispose() {
+    amountController.dispose();
   }
 }

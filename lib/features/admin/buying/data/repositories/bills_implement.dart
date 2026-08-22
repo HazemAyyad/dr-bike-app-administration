@@ -108,11 +108,13 @@ class BillsImplement implements BillsRepository {
 
   @override
   Future<Either<Failure, String>> paySupplierAccount({
-    required String sellerId,
+    String sellerId = '',
+    String customerId = '',
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst = true,
+    List<Map<String, dynamic>> allocations = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -120,14 +122,36 @@ class BillsImplement implements BillsRepository {
     try {
       final result = await billsDataSource.paySupplierAccount(
         sellerId: sellerId,
+        customerId: customerId,
         amount: amount,
         boxId: boxId,
         note: note,
         allocateOldestFirst: allocateOldestFirst,
+        allocations: allocations,
       );
       return _messageResult(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId = '',
+    String customerId = '',
+    String? currency,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseAccountOpenBills(
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: currency,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

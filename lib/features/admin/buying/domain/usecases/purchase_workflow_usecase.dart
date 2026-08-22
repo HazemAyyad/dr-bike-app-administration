@@ -47,18 +47,34 @@ class PurchaseWorkflowUsecase {
   }
 
   Future<Either<Failure, String>> paySupplierAccount({
-    required String sellerId,
+    String sellerId = '',
+    String customerId = '',
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst = true,
+    List<Map<String, dynamic>> allocations = const [],
   }) {
     return billsRepository.paySupplierAccount(
       sellerId: sellerId,
+      customerId: customerId,
       amount: amount,
       boxId: boxId,
       note: note,
       allocateOldestFirst: allocateOldestFirst,
+      allocations: allocations,
+    );
+  }
+
+  Future<dynamic> openAccountBills({
+    String sellerId = '',
+    String customerId = '',
+    String? currency,
+  }) {
+    return billsRepository.purchaseAccountOpenBills(
+      sellerId: sellerId,
+      customerId: customerId,
+      currency: currency,
     );
   }
 
