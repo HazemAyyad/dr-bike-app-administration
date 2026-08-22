@@ -87,10 +87,19 @@ class BillDetailsScreen extends GetView<BillsController> {
   }
 }
 
-class _PurchaseWorkflowPanel extends GetView<BillsController> {
+class _PurchaseWorkflowPanel extends StatefulWidget {
   final String page;
 
   const _PurchaseWorkflowPanel({required this.page});
+
+  @override
+  State<_PurchaseWorkflowPanel> createState() => _PurchaseWorkflowPanelState();
+}
+
+class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
+  BillsController get controller => Get.find<BillsController>();
+  String get page => widget.page;
+  int _selectedSection = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -153,15 +162,22 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                   ),
             ),
           ],
-          if (canReceive || canFinalize) SizedBox(height: 12.h),
-          if (canReceive)
+          SizedBox(height: 12.h),
+          _PurchaseDetailsSectionTabs(
+            selected: _selectedSection,
+            onChanged: (value) => setState(() => _selectedSection = value),
+          ),
+          if ((canReceive || canFinalize) && _selectedSection == 0)
+            SizedBox(height: 12.h),
+          if (canReceive && _selectedSection == 0)
             AppButton(
               isLoading: controller.isWorkflowLoading,
               text: 'مراجعة واستلام الأصناف',
               onPressed: () => _showReceivingSheet(context),
             ),
-          if (canReceive && canFinalize) SizedBox(height: 8.h),
-          if (canFinalize)
+          if (canReceive && canFinalize && _selectedSection == 0)
+            SizedBox(height: 8.h),
+          if (canFinalize && _selectedSection == 0)
             AppButton(
               isLoading: controller.isWorkflowLoading,
               text: 'اعتماد الفاتورة',
@@ -177,7 +193,7 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                     controller.finalizeShownPurchaseWithInitialPayment(context),
               ),
             ),
-          if (canPay) ...[
+          if (canPay && _selectedSection == 0) ...[
             if (canReceive || canFinalize) SizedBox(height: 8.h),
             AppButton(
               isLoading: controller.isWorkflowLoading,
@@ -194,7 +210,9 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
-          if (details.sellerId.isNotEmpty || details.customerId.isNotEmpty) ...[
+          if (_selectedSection == 0 &&
+              (details.sellerId.isNotEmpty ||
+                  details.customerId.isNotEmpty)) ...[
             SizedBox(height: 8.h),
             AppButton(
               isLoading: controller.isWorkflowLoading,
@@ -217,7 +235,25 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
-          if (_activeAmanatItems(details).isNotEmpty) ...[
+          if (_selectedSection == 1) ...[
+            SizedBox(height: 14.h),
+            Row(
+              children: [
+                const Expanded(child: _SectionTitle(text: 'الأصناف والاستلام')),
+                if (canReceive)
+                  TextButton.icon(
+                    onPressed: () => _showReceivingSheet(context),
+                    icon: Icon(Icons.fact_check_outlined, size: 16.sp),
+                    label: const Text('استلام'),
+                  ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            ...details.products
+                .map((item) => _PurchaseItemOverviewRow(item: item)),
+          ],
+          if (_selectedSection == 3 &&
+              _activeAmanatItems(details).isNotEmpty) ...[
             SizedBox(height: 14.h),
             const _SectionTitle(text: 'الأمانات'),
             SizedBox(height: 8.h),
@@ -237,7 +273,7 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
-          if (_issueItems(details).isNotEmpty) ...[
+          if (_selectedSection == 2 && _issueItems(details).isNotEmpty) ...[
             SizedBox(height: 14.h),
             const _SectionTitle(text: 'مشاكل تحتاج تسوية'),
             SizedBox(height: 8.h),
@@ -263,7 +299,16 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
               ),
             ),
           ],
-          if (details.attachments.isNotEmpty || page != '1') ...[
+          if (_selectedSection == 2 && _issueItems(details).isEmpty) ...[
+            SizedBox(height: 14.h),
+            const _MutedText(text: 'لا توجد مشاكل تالف أو غير مطابق مفتوحة'),
+          ],
+          if (_selectedSection == 3 && _activeAmanatItems(details).isEmpty) ...[
+            SizedBox(height: 14.h),
+            const _MutedText(text: 'لا توجد أمانات مفتوحة لهذه الفاتورة'),
+          ],
+          if (_selectedSection == 6 &&
+              (details.attachments.isNotEmpty || page != '1')) ...[
             SizedBox(height: 14.h),
             Row(
               children: [
@@ -289,7 +334,7 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                 (attachment) => _AttachmentRow(attachment: attachment),
               ),
           ],
-          if (details.payments.isNotEmpty) ...[
+          if (_selectedSection == 4 && details.payments.isNotEmpty) ...[
             SizedBox(height: 14.h),
             const _SectionTitle(text: 'الدفعات'),
             SizedBox(height: 8.h),
@@ -304,7 +349,11 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                   ),
                 ),
           ],
-          if (details.returns.isNotEmpty) ...[
+          if (_selectedSection == 4 && details.payments.isEmpty) ...[
+            SizedBox(height: 14.h),
+            const _MutedText(text: 'لا توجد دفعات مسجلة بعد'),
+          ],
+          if (_selectedSection == 5 && details.returns.isNotEmpty) ...[
             SizedBox(height: 14.h),
             const _SectionTitle(text: 'المرتجعات'),
             SizedBox(height: 8.h),
@@ -316,10 +365,15 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                   ),
                 ),
           ],
-          if (controller.isTimelineLoading.value) ...[
+          if (_selectedSection == 5 && details.returns.isEmpty) ...[
+            SizedBox(height: 14.h),
+            const _MutedText(text: 'لا توجد مرتجعات لهذه الفاتورة'),
+          ],
+          if (_selectedSection == 7 && controller.isTimelineLoading.value) ...[
             SizedBox(height: 12.h),
             const Center(child: CircularProgressIndicator()),
-          ] else if (controller.purchaseTimeline.isNotEmpty) ...[
+          ] else if (_selectedSection == 7 &&
+              controller.purchaseTimeline.isNotEmpty) ...[
             SizedBox(height: 12.h),
             Text(
               'سجل الحركة',
@@ -357,6 +411,10 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                 ),
               );
             }),
+          ],
+          if (_selectedSection == 7 && controller.purchaseTimeline.isEmpty) ...[
+            SizedBox(height: 14.h),
+            const _MutedText(text: 'لا توجد حركات ظاهرة بعد'),
           ],
         ],
       ),
@@ -1224,6 +1282,174 @@ class _ReceivingValidityHint extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PurchaseDetailsSectionTabs extends StatelessWidget {
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  const _PurchaseDetailsSectionTabs({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  static const _sections = [
+    _PurchaseDetailsSection(Icons.dashboard_outlined, 'ملخص'),
+    _PurchaseDetailsSection(Icons.inventory_2_outlined, 'استلام'),
+    _PurchaseDetailsSection(Icons.report_problem_outlined, 'مشاكل'),
+    _PurchaseDetailsSection(Icons.handshake_outlined, 'أمانات'),
+    _PurchaseDetailsSection(Icons.payments_outlined, 'دفعات'),
+    _PurchaseDetailsSection(Icons.assignment_return_outlined, 'مرتجعات'),
+    _PurchaseDetailsSection(Icons.attach_file_outlined, 'مرفقات'),
+    _PurchaseDetailsSection(Icons.history, 'حركة'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(_sections.length, (index) {
+          final section = _sections[index];
+          final isSelected = selected == index;
+          return Padding(
+            padding: EdgeInsetsDirectional.only(end: 8.w),
+            child: ChoiceChip(
+              selected: isSelected,
+              avatar: Icon(
+                section.icon,
+                size: 15.sp,
+                color: isSelected ? Colors.white : AppColors.primaryColor,
+              ),
+              label: Text(section.label),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade800,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.sp,
+              ),
+              selectedColor: AppColors.primaryColor,
+              backgroundColor: Colors.grey.shade50,
+              side: BorderSide(
+                color:
+                    isSelected ? AppColors.primaryColor : Colors.grey.shade200,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              onSelected: (_) => onChanged(index),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _PurchaseDetailsSection {
+  final IconData icon;
+  final String label;
+
+  const _PurchaseDetailsSection(this.icon, this.label);
+}
+
+class _PurchaseItemOverviewRow extends StatelessWidget {
+  final BillProductModel item;
+
+  const _PurchaseItemOverviewRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasIssue = item.damagedQuantity > 0 || item.mismatchedQuantity > 0;
+    final hasAmanat = item.amanatStocks.any((a) => a.remainingQuantity > 0);
+    final missingQuantity = num.tryParse(item.missingAmount) ?? 0;
+    final extraQuantity = num.tryParse(item.extraAmount) ?? 0;
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.productName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+                ),
+              ),
+              Icon(
+                item.remainingQuantity <= 0
+                    ? Icons.check_circle_outline
+                    : Icons.pending_actions_outlined,
+                color: item.remainingQuantity <= 0
+                    ? const Color(0xFF15803D)
+                    : AppColors.primaryColor,
+                size: 18.sp,
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 6.w,
+            runSpacing: 6.h,
+            children: [
+              _StatusChip(
+                label: 'مطلوب',
+                value: item.orderedQuantity.toString(),
+              ),
+              _StatusChip(
+                label: 'مستلم',
+                value: item.receivedOwnedQuantity.toString(),
+              ),
+              _StatusChip(
+                label: 'متبقي',
+                value: item.remainingQuantity.toString(),
+              ),
+              if (missingQuantity > 0)
+                _StatusChip(
+                  label: 'ناقص',
+                  value: missingQuantity.toString(),
+                ),
+              if (extraQuantity > 0)
+                _StatusChip(
+                  label: 'زائد',
+                  value: extraQuantity.toString(),
+                ),
+              if (item.damagedQuantity > 0)
+                _StatusChip(
+                  label: 'تالف',
+                  value: item.damagedQuantity.toString(),
+                ),
+              if (item.mismatchedQuantity > 0)
+                _StatusChip(
+                  label: 'غير مطابق',
+                  value: item.mismatchedQuantity.toString(),
+                ),
+            ],
+          ),
+          if (hasIssue || hasAmanat) ...[
+            SizedBox(height: 8.h),
+            _MutedText(
+              text: [
+                if (hasIssue) 'يحتاج مراجعة من تبويب المشاكل',
+                if (hasAmanat) 'يوجد أمانة مفتوحة',
+              ].join(' • '),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
