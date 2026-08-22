@@ -1096,7 +1096,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
-  Future<void> pickAndUploadPurchaseAttachments(BuildContext context) async {
+  Future<void> pickAndUploadPurchaseAttachments(
+    BuildContext context, {
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) async {
     final details = billDetails;
     if (details == null) return;
     final picked = await FilePicker.platform.pickFiles(
@@ -1130,7 +1135,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       purchaseWorkflowUsecase.uploadAttachments(
         billId: details.billId.toString(),
         files: multipart,
-        category: 'evidence',
+        category: category,
+        attachableType: attachableType,
+        attachableId: attachableId,
       ),
     );
   }

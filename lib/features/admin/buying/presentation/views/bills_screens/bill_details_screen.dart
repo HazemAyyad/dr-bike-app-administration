@@ -170,6 +170,9 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                 title: 'اعتماد الفاتورة',
                 primaryText: 'اعتماد',
                 initialAmount: '0',
+                attachmentCategory: 'initial_payment_evidence',
+                attachableType: 'bill',
+                attachableId: details.billId.toString(),
                 onSubmit: () =>
                     controller.finalizeShownPurchaseWithInitialPayment(context),
               ),
@@ -184,6 +187,9 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                 title: 'تسجيل دفعة مورد',
                 primaryText: 'تسجيل الدفعة',
                 initialAmount: details.remainingAmount,
+                attachmentCategory: 'purchase_payment_evidence',
+                attachableType: 'bill',
+                attachableId: details.billId.toString(),
                 onSubmit: () => controller.submitShownPurchasePayment(context),
               ),
             ),
@@ -201,6 +207,11 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                     ? ''
                     : details.remainingAmount,
                 showAllocations: true,
+                attachmentCategory: 'account_payment_evidence',
+                attachableType: 'purchase_account_payment',
+                attachableId: details.sellerId.isNotEmpty
+                    ? details.sellerId
+                    : details.customerId,
                 onSubmit: () =>
                     controller.paySupplierAccountForShownSeller(context),
               ),
@@ -450,6 +461,9 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
     required String initialAmount,
     required Future<void> Function() onSubmit,
     bool showAllocations = false,
+    String? attachmentCategory,
+    String? attachableType,
+    String? attachableId,
   }) async {
     await controller.loadPurchaseBoxes();
     controller.preparePaymentAmount(amount: initialAmount);
@@ -519,6 +533,20 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                   if (showAllocations) ...[
                     SizedBox(height: 14.h),
                     _ManualAllocationSection(controller: controller),
+                  ],
+                  if (attachmentCategory != null) ...[
+                    SizedBox(height: 12.h),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          controller.pickAndUploadPurchaseAttachments(
+                        context,
+                        category: attachmentCategory,
+                        attachableType: attachableType,
+                        attachableId: attachableId,
+                      ),
+                      icon: const Icon(Icons.upload_file_outlined),
+                      label: const Text('رفع إثبات'),
+                    ),
                   ],
                   SizedBox(height: 18.h),
                   AppButton(
@@ -707,6 +735,20 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                       validator: (value) => null,
                     ),
                   ],
+                  SizedBox(height: 12.h),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        controller.pickAndUploadPurchaseAttachments(
+                      context,
+                      category: isPurchase
+                          ? 'amanat_purchase_evidence'
+                          : 'amanat_return_evidence',
+                      attachableType: 'purchase_amanat_stock',
+                      attachableId: item.amanat.id.toString(),
+                    ),
+                    icon: const Icon(Icons.upload_file_outlined),
+                    label: const Text('رفع مرفق'),
+                  ),
                   SizedBox(height: 18.h),
                   AppButton(
                     isLoading: controller.isWorkflowLoading,
@@ -845,6 +887,20 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
                       controller: controller.issueNotesController,
                       isRequired: false,
                       validator: (_) => null,
+                    ),
+                    SizedBox(height: 12.h),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          controller.pickAndUploadPurchaseAttachments(
+                        context,
+                        category: issueType == 'damaged'
+                            ? 'damaged_evidence'
+                            : 'mismatch_evidence',
+                        attachableType: 'bill_item',
+                        attachableId: product.billItemId.toString(),
+                      ),
+                      icon: const Icon(Icons.upload_file_outlined),
+                      label: const Text('رفع دليل'),
                     ),
                     SizedBox(height: 16.h),
                     AppButton(
