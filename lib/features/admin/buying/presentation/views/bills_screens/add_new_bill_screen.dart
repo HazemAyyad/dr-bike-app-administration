@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
+import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/bills_controller.dart';
 
@@ -693,6 +694,8 @@ class _PurchaseCartRow extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
+    final intelligence = controller.purchasePriceIntelligence[item.product.id];
+    final loading = controller.purchasePriceLoading.contains(item.product.id);
     return Container(
       padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
@@ -752,7 +755,181 @@ class _PurchaseCartRow extends GetView<BillsController> {
               ),
             ],
           ),
+          SizedBox(height: 8.h),
+          if (loading)
+            LinearProgressIndicator(
+              minHeight: 2.h,
+              color: AppColors.primaryColor,
+            )
+          else if (intelligence != null && intelligence.isNotEmpty)
+            _PurchasePriceIntelBox(
+              item: item,
+              intelligence: intelligence,
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _PurchasePriceIntelBox extends GetView<BillsController> {
+  const _PurchasePriceIntelBox({
+    required this.item,
+    required this.intelligence,
+  });
+
+  final PurchaseCartItemModel item;
+  final Map<String, dynamic> intelligence;
+
+  @override
+  Widget build(BuildContext context) {
+    final supplierLast = asString(intelligence['supplier_last_price']);
+    final latest = asString(intelligence['latest_price']);
+    final lowest = asString(intelligence['lowest_price']);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 4.h,
+            children: [
+              if (lowest.isNotEmpty)
+                _IntelChip(label: 'أقل سعر', value: lowest),
+              if (supplierLast.isNotEmpty)
+                _IntelChip(label: 'آخر سعر للمصدر', value: supplierLast),
+              if (latest.isNotEmpty)
+                _IntelChip(label: 'آخر سعر عام', value: latest),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => _showHistory(context),
+            icon: Icon(Icons.history, size: 16.sp),
+            label: const Text('عرض سجل الأسعار'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showHistory(BuildContext context) async {
+    final history = mapList(
+      intelligence['history'],
+      (Map<String, dynamic> m) => m,
+    );
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.35,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollController) {
+            return ListView.separated(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
+              itemCount: history.length + 1,
+              separatorBuilder: (_, __) => SizedBox(height: 8.h),
+              itemBuilder: (_, index) {
+                if (index == 0) {
+                  return Text(
+                    'سجل أسعار ${item.product.nameAr}',
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16.sp,
+                        ),
+                  );
+                }
+                final row = history[index - 1];
+                final price = asString(row['unit_price']);
+                final quantity = asString(row['quantity']);
+                final date = asString(row['priced_at']);
+                final sellerId = asString(row['seller_id']);
+                final customerId = asString(row['customer_id']);
+                return ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  title: Text(
+                    '$price ₪',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                  subtitle: Text(
+                    [
+                      if (quantity.isNotEmpty) 'كمية $quantity',
+                      if (sellerId.isNotEmpty) 'مورد #$sellerId',
+                      if (customerId.isNotEmpty) 'زبون #$customerId',
+                      if (date.isNotEmpty) date,
+                    ].join(' • '),
+                  ),
+                  trailing: TextButton(
+                    onPressed: price.isEmpty
+                        ? null
+                        : () {
+                            controller.applyHistoricalPurchasePrice(
+                              item: item,
+                              price: price,
+                            );
+                            Navigator.of(sheetContext).pop();
+                          },
+                    child: const Text('استخدام'),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _IntelChip extends StatelessWidget {
+  const _IntelChip({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Text(
+        '$label: $value ₪',
+        style: TextStyle(
+          color: AppColors.primaryColor,
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

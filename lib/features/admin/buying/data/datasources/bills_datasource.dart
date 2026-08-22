@@ -302,6 +302,34 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchasePriceIntelligence,
+        queryParameters: {
+          'product_id': productId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId != null && customerId.isNotEmpty)
+            'customer_id': customerId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> uploadPurchaseAttachments({
     required String billId,
     required List<MultipartFile> files,

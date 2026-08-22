@@ -55,6 +55,12 @@ abstract class BillsRepository {
 
   Future<dynamic> purchaseTimeline({required String billId});
 
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  });
+
   Future<Either<Failure, String>> uploadPurchaseAttachments({
     required String billId,
     required List<dynamic> files,

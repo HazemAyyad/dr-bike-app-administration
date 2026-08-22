@@ -186,6 +186,26 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchasePriceIntelligence(
+        productId: productId,
+        sellerId: sellerId,
+        customerId: customerId,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> uploadPurchaseAttachments({
     required String billId,
     required List<dynamic> files,

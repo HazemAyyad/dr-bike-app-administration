@@ -144,6 +144,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final RxList<PurchaseCartItemModel> purchaseCart =
       <PurchaseCartItemModel>[].obs;
   final RxString purchaseProductSearch = ''.obs;
+  final RxMap<String, Map<String, dynamic>> purchasePriceIntelligence =
+      <String, Map<String, dynamic>>{}.obs;
+  final RxSet<String> purchasePriceLoading = <String>{}.obs;
 
   List<PurchaseSourceModel> get purchaseSources {
     final byName = <String, PurchaseSourceModel>{};
@@ -234,6 +237,55 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     } else {
       purchaseCart.add(PurchaseCartItemModel(product: product));
     }
+    loadPurchasePriceIntelligence(product.id);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  Future<void> loadPurchasePriceIntelligence(String productId) async {
+    if (purchasePriceLoading.contains(productId)) return;
+    purchasePriceLoading.add(productId);
+    update();
+    try {
+      final source = selectedPurchaseSource.value;
+      final result = await purchaseWorkflowUsecase.priceIntelligence(
+        productId: productId,
+        sellerId: source?.hasSeller == true
+            ? (source?.sellerId ?? source?.id).toString()
+            : null,
+        customerId: source?.hasSeller == true
+            ? null
+            : (source?.customerId ?? source?.id).toString(),
+      );
+      final data = asMap(result);
+      final intelligence = asMap(data['price_intelligence']);
+      purchasePriceIntelligence[productId] = intelligence;
+      final suggested = asString(intelligence['suggested_price']);
+      PurchaseCartItemModel? item;
+      for (final row in purchaseCart) {
+        if (row.product.id == productId) {
+          item = row;
+          break;
+        }
+      }
+      if (item != null &&
+          item.priceController.text.trim().isEmpty &&
+          suggested.isNotEmpty) {
+        item.priceController.text = suggested;
+      }
+    } catch (_) {
+      purchasePriceIntelligence.remove(productId);
+    }
+    purchasePriceLoading.remove(productId);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  void applyHistoricalPurchasePrice({
+    required PurchaseCartItemModel item,
+    required String price,
+  }) {
+    item.priceController.text = price;
     calculatePurchaseCartTotal();
     update();
   }

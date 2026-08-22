@@ -90,6 +90,18 @@ class PurchaseWorkflowUsecase {
     return billsRepository.purchaseTimeline(billId: billId);
   }
 
+  Future<dynamic> priceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  }) {
+    return billsRepository.purchasePriceIntelligence(
+      productId: productId,
+      sellerId: sellerId,
+      customerId: customerId,
+    );
+  }
+
   Future<Either<Failure, String>> uploadAttachments({
     required String billId,
     required List<dynamic> files,
