@@ -677,6 +677,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController amanatUnitPriceController =
       TextEditingController();
   final TextEditingController amanatNoteController = TextEditingController();
+  final TextEditingController issueQuantityController = TextEditingController();
+  final TextEditingController issueUnitPriceController =
+      TextEditingController();
+  final TextEditingController issueAdjustmentController =
+      TextEditingController();
+  final TextEditingController issueReasonController = TextEditingController();
+  final TextEditingController issueNotesController = TextEditingController();
   final RxList<PurchaseReceivingRowModel> receivingRows =
       <PurchaseReceivingRowModel>[].obs;
   final RxList<PurchaseOpenBillAllocationModel> openPurchaseBills =
@@ -861,6 +868,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     amanatNoteController.clear();
   }
 
+  void prepareIssueResolution({
+    required String quantity,
+    String? unitPrice,
+  }) {
+    issueQuantityController.text = quantity;
+    issueUnitPriceController.text = unitPrice ?? '';
+    issueAdjustmentController.clear();
+    issueReasonController.clear();
+    issueNotesController.clear();
+  }
+
   Future<void> payShownPurchase(
     BuildContext context, {
     required String amount,
@@ -1031,6 +1049,49 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         amanatId: amanatId,
         quantity: quantity,
         note: amanatNoteController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> resolveShownIssue(
+    BuildContext context, {
+    required BillProductModel product,
+    required String issueType,
+    required String resolution,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    final quantity = issueQuantityController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    if ((resolution == 'accept_with_discount' ||
+            resolution == 'accept_negotiated_price') &&
+        ((num.tryParse(issueUnitPriceController.text.trim()) ?? -1) < 0)) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال سعر تفاوضي صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.resolveIssue(
+        billId: details.billId.toString(),
+        billItemId: product.billItemId.toString(),
+        issueType: issueType,
+        resolution: resolution,
+        quantity: quantity,
+        negotiatedUnitPrice: issueUnitPriceController.text.trim(),
+        financialAdjustment: issueAdjustmentController.text.trim(),
+        reason: issueReasonController.text.trim(),
+        notes: issueNotesController.text.trim(),
       ),
     );
   }
@@ -1234,6 +1295,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     amanatQuantityController.dispose();
     amanatUnitPriceController.dispose();
     amanatNoteController.dispose();
+    issueQuantityController.dispose();
+    issueUnitPriceController.dispose();
+    issueAdjustmentController.dispose();
+    issueReasonController.dispose();
+    issueNotesController.dispose();
     for (final row in receivingRows) {
       row.dispose();
     }

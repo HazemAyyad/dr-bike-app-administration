@@ -359,6 +359,47 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseIssueResolve,
+        data: {
+          'bill_id': billId,
+          'bill_item_id': billItemId,
+          'issue_type': issueType,
+          'resolution': resolution,
+          'quantity': quantity,
+          if (negotiatedUnitPrice != null && negotiatedUnitPrice.isNotEmpty)
+            'negotiated_unit_price': negotiatedUnitPrice,
+          if (financialAdjustment != null && financialAdjustment.isNotEmpty)
+            'financial_adjustment': financialAdjustment,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> purchaseTimeline({required String billId}) async {
     try {
       final response = await api.get(

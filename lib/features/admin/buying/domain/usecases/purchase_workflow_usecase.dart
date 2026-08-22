@@ -124,6 +124,30 @@ class PurchaseWorkflowUsecase {
     );
   }
 
+  Future<Either<Failure, String>> resolveIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  }) {
+    return billsRepository.resolvePurchaseIssue(
+      billId: billId,
+      billItemId: billItemId,
+      issueType: issueType,
+      resolution: resolution,
+      quantity: quantity,
+      negotiatedUnitPrice: negotiatedUnitPrice,
+      financialAdjustment: financialAdjustment,
+      reason: reason,
+      notes: notes,
+    );
+  }
+
   Future<dynamic> timeline({required String billId}) {
     return billsRepository.purchaseTimeline(billId: billId);
   }

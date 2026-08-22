@@ -229,6 +229,39 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.resolvePurchaseIssue(
+        billId: billId,
+        billItemId: billItemId,
+        issueType: issueType,
+        resolution: resolution,
+        quantity: quantity,
+        negotiatedUnitPrice: negotiatedUnitPrice,
+        financialAdjustment: financialAdjustment,
+        reason: reason,
+        notes: notes,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<dynamic> purchaseTimeline({required String billId}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();

@@ -72,6 +72,18 @@ abstract class BillsRepository {
     String? note,
   });
 
+  Future<Either<Failure, String>> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  });
+
   Future<dynamic> purchaseTimeline({required String billId});
 
   Future<dynamic> purchasePriceIntelligence({
