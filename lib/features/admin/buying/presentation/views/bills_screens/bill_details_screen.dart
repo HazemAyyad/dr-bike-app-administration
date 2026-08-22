@@ -157,8 +157,8 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
           if (canReceive)
             AppButton(
               isLoading: controller.isWorkflowLoading,
-              text: 'استلام الكميات المتبقية',
-              onPressed: () => controller.receiveAllShownItems(context),
+              text: 'مراجعة واستلام الأصناف',
+              onPressed: () => _showReceivingSheet(context),
             ),
           if (canReceive && canFinalize) SizedBox(height: 8.h),
           if (canFinalize)
@@ -401,6 +401,87 @@ class _PurchaseWorkflowPanel extends GetView<BillsController> {
     );
   }
 
+  Future<void> _showReceivingSheet(BuildContext context) async {
+    controller.prepareReceivingRows();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.88,
+          minChildSize: 0.55,
+          maxChildSize: 0.96,
+          expand: false,
+          builder: (_, scrollController) {
+            return GetBuilder<BillsController>(
+              builder: (controller) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 8.h),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'مراجعة الاستلام',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium!
+                                  .copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16.sp,
+                                  ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: scrollController,
+                        padding: EdgeInsets.fromLTRB(18.w, 0, 18.w, 16.h),
+                        itemCount: controller.receivingRows.length,
+                        separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                        itemBuilder: (_, index) {
+                          return _ReceivingRowCard(
+                            row: controller.receivingRows[index],
+                          );
+                        },
+                      ),
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 14.h),
+                        child: AppButton(
+                          isLoading: controller.isWorkflowLoading,
+                          text: 'تسجيل الاستلام',
+                          onPressed: () async {
+                            await controller.submitReviewedReceiving(context);
+                            if (sheetContext.mounted) {
+                              Navigator.of(sheetContext).pop();
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   List<_AmanatListItem> _activeAmanatItems(BillDetailsModel details) {
     return details.products.expand((product) {
       return product.amanatStocks
@@ -533,6 +614,191 @@ class _StatusChip extends StatelessWidget {
               fontSize: 11.sp,
             ),
       ),
+    );
+  }
+}
+
+class _ReceivingRowCard extends GetView<BillsController> {
+  final PurchaseReceivingRowModel row;
+
+  const _ReceivingRowCard({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    final product = row.product;
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  product.productName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+                ),
+              ),
+              _StatusChip(
+                label: 'متبقي',
+                value: product.remainingQuantity.toString(),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          _MutedText(
+            text:
+                'المطلوب ${product.orderedQuantity} • مستلم سابقاً ${product.receivedOwnedQuantity}',
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  label: 'وصل فعلياً',
+                  hintText: '0',
+                  controller: row.deliveredNowController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: CustomTextField(
+                  label: 'مقبول',
+                  hintText: '0',
+                  controller: row.acceptedController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  label: 'ناقص',
+                  hintText: '0',
+                  controller: row.missingController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: CustomTextField(
+                  label: 'زائد/أمانة',
+                  hintText: '0',
+                  controller: row.extraController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  label: 'تالف',
+                  hintText: '0',
+                  controller: row.damagedController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: CustomTextField(
+                  label: 'غير مطابق',
+                  hintText: '0',
+                  controller: row.mismatchedController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => controller.update(),
+                  validator: (_) => null,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          CustomTextField(
+            label: 'price',
+            hintText: 'price',
+            controller: row.unitPriceController,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => controller.update(),
+            validator: (_) => null,
+          ),
+          SizedBox(height: 8.h),
+          CustomTextField(
+            label: 'سبب / وصف',
+            hintText: 'سبب / وصف',
+            controller: row.reasonController,
+            isRequired: false,
+            validator: (_) => null,
+          ),
+          SizedBox(height: 8.h),
+          CustomTextField(
+            label: 'notes',
+            hintText: 'notes',
+            controller: row.notesController,
+            isRequired: false,
+            validator: (_) => null,
+          ),
+          SizedBox(height: 8.h),
+          _ReceivingValidityHint(row: row),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceivingValidityHint extends StatelessWidget {
+  final PurchaseReceivingRowModel row;
+
+  const _ReceivingValidityHint({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = row.isEmpty || row.isValid;
+    return Row(
+      children: [
+        Icon(
+          ok ? Icons.check_circle_outline : Icons.error_outline,
+          color: ok ? const Color(0xFF15803D) : Colors.red,
+          size: 16.sp,
+        ),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: Text(
+            ok
+                ? 'جاهز عند إدخال كميات'
+                : 'الكميات غير متوازنة أو تتجاوز المتبقي',
+            style: TextStyle(
+              color: ok ? const Color(0xFF15803D) : Colors.red,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

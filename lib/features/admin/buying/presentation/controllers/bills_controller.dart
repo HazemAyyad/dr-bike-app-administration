@@ -510,6 +510,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController amanatUnitPriceController =
       TextEditingController();
   final TextEditingController amanatNoteController = TextEditingController();
+  final RxList<PurchaseReceivingRowModel> receivingRows =
+      <PurchaseReceivingRowModel>[].obs;
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -575,6 +577,54 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         context: context,
         title: 'error'.tr,
         message: 'لا توجد كميات متبقية للاستلام',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: items,
+      ),
+    );
+  }
+
+  void prepareReceivingRows() {
+    for (final row in receivingRows) {
+      row.dispose();
+    }
+    final details = billDetails;
+    receivingRows.clear();
+    if (details == null) return;
+    receivingRows.assignAll(
+      details.products
+          .where((product) => product.remainingQuantity > 0)
+          .map((product) => PurchaseReceivingRowModel(product: product)),
+    );
+    update();
+  }
+
+  Future<void> submitReviewedReceiving(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final items = <Map<String, dynamic>>[];
+    for (final row in receivingRows) {
+      if (row.isEmpty) continue;
+      if (!row.isValid) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'راجع كميات ${row.product.productName}',
+        );
+        return;
+      }
+      items.add(row.toApiMap());
+    }
+    if (items.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال استلام لصنف واحد على الأقل',
       );
       return;
     }
@@ -963,6 +1013,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     amanatQuantityController.dispose();
     amanatUnitPriceController.dispose();
     amanatNoteController.dispose();
+    for (final row in receivingRows) {
+      row.dispose();
+    }
     super.onClose();
   }
 }
@@ -1041,5 +1094,92 @@ class PurchaseCartItemModel {
   void dispose() {
     quantityController.dispose();
     priceController.dispose();
+  }
+}
+
+class PurchaseReceivingRowModel {
+  final BillProductModel product;
+  final TextEditingController deliveredNowController;
+  final TextEditingController acceptedController;
+  final TextEditingController missingController;
+  final TextEditingController extraController;
+  final TextEditingController damagedController;
+  final TextEditingController mismatchedController;
+  final TextEditingController unitPriceController;
+  final TextEditingController reasonController;
+  final TextEditingController notesController;
+
+  PurchaseReceivingRowModel({required this.product})
+      : deliveredNowController = TextEditingController(),
+        acceptedController = TextEditingController(),
+        missingController = TextEditingController(),
+        extraController = TextEditingController(),
+        damagedController = TextEditingController(),
+        mismatchedController = TextEditingController(),
+        unitPriceController = TextEditingController(text: product.price),
+        reasonController = TextEditingController(),
+        notesController = TextEditingController();
+
+  num get deliveredNow => _num(deliveredNowController);
+  num get accepted => _num(acceptedController);
+  num get missing => _num(missingController);
+  num get extra => _num(extraController);
+  num get damaged => _num(damagedController);
+  num get mismatched => _num(mismatchedController);
+
+  bool get isEmpty =>
+      accepted <= 0 &&
+      missing <= 0 &&
+      extra <= 0 &&
+      damaged <= 0 &&
+      mismatched <= 0;
+
+  bool get isValid {
+    if (accepted < 0 ||
+        missing < 0 ||
+        extra < 0 ||
+        damaged < 0 ||
+        mismatched < 0) {
+      return false;
+    }
+    if (accepted > product.remainingQuantity) return false;
+    if (accepted + missing > product.remainingQuantity) return false;
+    if (deliveredNow > 0 &&
+        accepted + extra + damaged + mismatched > deliveredNow) {
+      return false;
+    }
+    return true;
+  }
+
+  Map<String, dynamic> toApiMap() {
+    return {
+      'bill_item_id': product.billItemId,
+      'accepted_quantity': accepted,
+      'missing_quantity': missing,
+      'extra_quantity': extra,
+      'damaged_quantity': damaged,
+      'mismatched_quantity': mismatched,
+      'unit_price': unitPriceController.text.trim(),
+      if (reasonController.text.trim().isNotEmpty)
+        'reason': reasonController.text.trim(),
+      if (notesController.text.trim().isNotEmpty)
+        'notes': notesController.text.trim(),
+    };
+  }
+
+  num _num(TextEditingController controller) {
+    return num.tryParse(controller.text.trim()) ?? 0;
+  }
+
+  void dispose() {
+    deliveredNowController.dispose();
+    acceptedController.dispose();
+    missingController.dispose();
+    extraController.dispose();
+    damagedController.dispose();
+    mismatchedController.dispose();
+    unitPriceController.dispose();
+    reasonController.dispose();
+    notesController.dispose();
   }
 }
