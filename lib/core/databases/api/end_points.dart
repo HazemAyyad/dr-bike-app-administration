@@ -731,6 +731,8 @@ class EndPoints {
   static const String purchaseTimeline = 'purchase/timeline';
   static const String purchaseAttachments = 'purchase/attachments';
   static const String purchasePriceIntelligence = 'purchase/price-intelligence';
+  static const String purchaseAmanatIndex = 'purchase/amanat';
+  static const String purchaseDiscrepancies = 'purchase/discrepancies';
   static const String addBillQuantity = 'add/quantity/bill';
   static const String addReturnPurchase = 'add/return/purchase';
   static const String getBillDetails = 'get/bill/details';

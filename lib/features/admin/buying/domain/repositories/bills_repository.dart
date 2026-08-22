@@ -61,6 +61,16 @@ abstract class BillsRepository {
     String? customerId,
   });
 
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  });
+
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  });
+
   Future<Either<Failure, String>> uploadPurchaseAttachments({
     required String billId,
     required List<dynamic> files,

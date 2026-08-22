@@ -330,6 +330,56 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseAmanatIndex,
+        queryParameters: {
+          if (status != null && status.isNotEmpty) 'status': status,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseDiscrepancies,
+        queryParameters: {
+          if (type != null && type.isNotEmpty) 'type': type,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> uploadPurchaseAttachments({
     required String billId,
     required List<MultipartFile> files,

@@ -147,6 +147,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final RxMap<String, Map<String, dynamic>> purchasePriceIntelligence =
       <String, Map<String, dynamic>>{}.obs;
   final RxSet<String> purchasePriceLoading = <String>{}.obs;
+  final RxBool isAmanatDashboardLoading = false.obs;
+  final RxBool isDiscrepanciesDashboardLoading = false.obs;
+  final RxList<Map<String, dynamic>> amanatDashboard =
+      <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> discrepanciesDashboard =
+      <Map<String, dynamic>>[].obs;
 
   List<PurchaseSourceModel> get purchaseSources {
     final byName = <String, PurchaseSourceModel>{};
@@ -278,6 +284,55 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
     purchasePriceLoading.remove(productId);
     calculatePurchaseCartTotal();
+    update();
+  }
+
+  Future<void> loadAmanatDashboard({String? status, String? search}) async {
+    isAmanatDashboardLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.amanatIndex(
+        status: status,
+        search: search,
+      );
+      amanatDashboard.assignAll(
+        mapListFromResponseKey(
+          result,
+          'amanat',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.amanatDashboard',
+        ),
+      );
+    } catch (_) {
+      amanatDashboard.clear();
+    }
+    isAmanatDashboardLoading(false);
+    update();
+  }
+
+  Future<void> loadDiscrepanciesDashboard({
+    String? type,
+    String? search,
+  }) async {
+    isDiscrepanciesDashboardLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.discrepancies(
+        type: type,
+        search: search,
+      );
+      discrepanciesDashboard.assignAll(
+        mapListFromResponseKey(
+          result,
+          'discrepancies',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.discrepanciesDashboard',
+        ),
+      );
+    } catch (_) {
+      discrepanciesDashboard.clear();
+    }
+    isDiscrepanciesDashboardLoading(false);
     update();
   }
 
@@ -972,6 +1027,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     getAllProducts();
     getAllPurchaseSources();
     loadPurchaseBoxes();
+    loadAmanatDashboard();
+    loadDiscrepanciesDashboard();
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
     animController = AnimationController(

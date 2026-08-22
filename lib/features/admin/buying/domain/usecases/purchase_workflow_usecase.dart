@@ -102,6 +102,26 @@ class PurchaseWorkflowUsecase {
     );
   }
 
+  Future<dynamic> amanatIndex({
+    String? status,
+    String? search,
+  }) {
+    return billsRepository.purchaseAmanatIndex(
+      status: status,
+      search: search,
+    );
+  }
+
+  Future<dynamic> discrepancies({
+    String? type,
+    String? search,
+  }) {
+    return billsRepository.purchaseDiscrepancies(
+      type: type,
+      search: search,
+    );
+  }
+
   Future<Either<Failure, String>> uploadAttachments({
     required String billId,
     required List<dynamic> files,

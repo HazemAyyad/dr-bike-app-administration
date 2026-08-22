@@ -206,6 +206,42 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseAmanatIndex(
+        status: status,
+        search: search,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseDiscrepancies(
+        type: type,
+        search: search,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> uploadPurchaseAttachments({
     required String billId,
     required List<dynamic> files,
