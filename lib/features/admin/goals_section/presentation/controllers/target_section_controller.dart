@@ -390,7 +390,6 @@ class TargetSectionController extends GetxController {
           const Duration(milliseconds: 800),
           () {
             Get.back();
-            Get.back();
           },
         );
         Helpers.showCustomDialogSuccess(
