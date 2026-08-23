@@ -104,7 +104,8 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     final canFinalize = page != '1' &&
         details.workflowStatus != 'finalized' &&
         details.products.any((item) => item.receivedOwnedQuantity > 0);
-    final canPay = details.paymentStatus != 'paid' &&
+    final canPay = details.workflowStatus == 'finalized' &&
+        details.paymentStatus != 'paid' &&
         (double.tryParse(details.remainingAmount) ?? 0) > 0;
     final totalOrdered = details.products.fold<num>(
       0,
@@ -162,6 +163,15 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           ),
           onFinalize: () => _showFinalizationSheet(context),
         ),
+        if (details.workflowStatus != 'finalized' &&
+            details.paymentStatus != 'paid') ...[
+          SizedBox(height: 8.h),
+          const _InlineNotice(
+            icon: Icons.info_outline,
+            title:
+                'الدفع على الفاتورة يظهر بعد الاستلام والاعتماد. قبل الاعتماد استخدم دفعة على حساب المصدر إذا بدك تسجل مبلغ للمورد.',
+          ),
+        ],
         SizedBox(height: 10.h),
         _PurchaseDetailsSectionTabs(
           selected: _selectedSection,
@@ -745,8 +755,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                           isLoading: controller.isWorkflowLoading,
                           text: 'تسجيل الاستلام',
                           onPressed: () async {
-                            await controller.submitReviewedReceiving(context);
-                            if (sheetContext.mounted) {
+                            final result = await controller
+                                .submitReviewedReceiving(context);
+                            if (result && sheetContext.mounted) {
                               Navigator.of(sheetContext).pop();
                             }
                           },
@@ -1367,15 +1378,15 @@ class _ActionNoticeCard extends StatelessWidget {
   const _ActionNoticeCard({
     required this.icon,
     required this.title,
-    required this.buttonText,
-    required this.onPressed,
+    this.buttonText,
+    this.onPressed,
     this.primary = false,
   });
 
   final IconData icon;
   final String title;
-  final String buttonText;
-  final VoidCallback onPressed;
+  final String? buttonText;
+  final VoidCallback? onPressed;
   final bool primary;
 
   @override
@@ -1401,7 +1412,8 @@ class _ActionNoticeCard extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.sp),
             ),
           ),
-          TextButton(onPressed: onPressed, child: Text(buttonText)),
+          if (buttonText != null && onPressed != null)
+            TextButton(onPressed: onPressed, child: Text(buttonText!)),
         ],
       ),
     );
@@ -1560,6 +1572,14 @@ class _PaymentsTab extends StatelessWidget {
             text: 'تسجيل دفعة',
             isSafeArea: false,
             onPressed: onPay,
+          ),
+        ] else if (details.workflowStatus != 'finalized' &&
+            details.paymentStatus != 'paid') ...[
+          SizedBox(height: 8.h),
+          const _InlineNotice(
+            icon: Icons.lock_clock_outlined,
+            title:
+                'دفعة الفاتورة تتاح بعد الاستلام والاعتماد. لتسجيل مبلغ قبل الاعتماد استخدم دفعة على حساب المصدر من تبويب الملخص.',
           ),
         ],
         SizedBox(height: 12.h),
@@ -1726,14 +1746,14 @@ class _InlineNotice extends StatelessWidget {
   const _InlineNotice({
     required this.icon,
     required this.title,
-    required this.actionText,
-    required this.onPressed,
+    this.actionText,
+    this.onPressed,
   });
 
   final IconData icon;
   final String title;
-  final String actionText;
-  final VoidCallback onPressed;
+  final String? actionText;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1874,6 +1894,33 @@ class _ReceivingRowCard extends GetView<BillsController> {
                 'المطلوب ${product.orderedQuantity} • مستلم سابقاً ${product.receivedOwnedQuantity}',
           ),
           SizedBox(height: 10.h),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    row.deliveredNowController.text =
+                        product.remainingQuantity.toString();
+                    controller.update();
+                  },
+                  icon: Icon(Icons.done_all_outlined, size: 16.sp),
+                  label: const Text('استلام كامل'),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    row.deliveredNowController.text = '0';
+                    controller.update();
+                  },
+                  icon: Icon(Icons.remove_done_outlined, size: 16.sp),
+                  label: const Text('لم يصل شيء'),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
           CustomTextField(
             label: 'وصل فعلياً',
             hintText: 'أدخل الكمية التي وصلت من المورد',
@@ -1944,6 +1991,14 @@ class _ReceivingRowCard extends GetView<BillsController> {
                   controller.update();
                 },
               ),
+              _ReceivingIssueToggle(
+                label: 'تعديل السعر',
+                selected: row.editUnitPrice,
+                onSelected: (value) {
+                  row.setIssueEnabled('price', value);
+                  controller.update();
+                },
+              ),
             ],
           ),
           if (row.hasExtra) ...[
@@ -1979,15 +2034,17 @@ class _ReceivingRowCard extends GetView<BillsController> {
               validator: (_) => null,
             ),
           ],
-          SizedBox(height: 8.h),
-          CustomTextField(
-            label: 'price',
-            hintText: 'price',
-            controller: row.unitPriceController,
-            keyboardType: TextInputType.number,
-            onChanged: (_) => controller.update(),
-            validator: (_) => null,
-          ),
+          if (row.editUnitPrice) ...[
+            SizedBox(height: 8.h),
+            CustomTextField(
+              label: 'price',
+              hintText: 'price',
+              controller: row.unitPriceController,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => controller.update(),
+              validator: (_) => null,
+            ),
+          ],
           if (missing > 0 ||
               row.hasExtra ||
               row.hasDamaged ||

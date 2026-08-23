@@ -891,9 +891,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  Future<void> receiveAllShownItems(BuildContext context) async {
+  Future<bool> receiveAllShownItems(BuildContext context) async {
     final details = billDetails;
-    if (details == null) return;
+    if (details == null) return false;
     final items = details.products
         .map((product) => {
               'bill_item_id': product.billItemId,
@@ -908,9 +908,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'لا توجد كميات متبقية للاستلام',
       );
-      return;
+      return false;
     }
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.receive(
         billId: details.billId.toString(),
@@ -934,9 +934,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  Future<void> submitReviewedReceiving(BuildContext context) async {
+  Future<bool> submitReviewedReceiving(BuildContext context) async {
     final details = billDetails;
-    if (details == null) return;
+    if (details == null) return false;
     final items = <Map<String, dynamic>>[];
     for (final row in receivingRows) {
       if (row.isEmpty) continue;
@@ -946,7 +946,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
           title: 'error'.tr,
           message: 'راجع كميات ${row.product.productName}',
         );
-        return;
+        return false;
       }
       items.add(row.toApiMap());
     }
@@ -956,9 +956,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال استلام لصنف واحد على الأقل',
       );
-      return;
+      return false;
     }
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.receive(
         billId: details.billId.toString(),
@@ -1082,10 +1082,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  Future<void> paySupplierAccountForShownSeller(BuildContext context) async {
+  Future<bool> paySupplierAccountForShownSeller(BuildContext context) async {
     final details = billDetails;
     final box = selectedPurchaseBox.value;
-    if (details == null) return;
+    if (details == null) return false;
     final sellerId = details.sellerId;
     final customerId = details.customerId;
     if (sellerId.isEmpty && customerId.isEmpty) {
@@ -1094,7 +1094,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'لا يوجد مصدر مرتبط بالفاتورة',
       );
-      return;
+      return false;
     }
     if (box == null) {
       Helpers.showCustomDialogError(
@@ -1102,7 +1102,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب اختيار صندوق',
       );
-      return;
+      return false;
     }
     final amount = purchasePaymentAmountController.text.trim();
     if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
@@ -1111,13 +1111,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال مبلغ صحيح',
       );
-      return;
+      return false;
     }
     final allocations = openPurchaseBills
         .map((bill) => bill.toAllocation())
         .whereType<Map<String, dynamic>>()
         .toList();
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.paySupplierAccount(
         sellerId: sellerId,
@@ -1604,6 +1604,7 @@ class PurchaseReceivingRowModel {
   bool hasExtra = false;
   bool hasDamaged = false;
   bool hasMismatched = false;
+  bool editUnitPrice = false;
 
   PurchaseReceivingRowModel({required this.product})
       : deliveredNowController = TextEditingController(),
@@ -1703,6 +1704,10 @@ class PurchaseReceivingRowModel {
       case 'mismatched':
         hasMismatched = enabled;
         if (!enabled) mismatchedController.clear();
+        break;
+      case 'price':
+        editUnitPrice = enabled;
+        if (!enabled) unitPriceController.text = product.price;
         break;
     }
   }

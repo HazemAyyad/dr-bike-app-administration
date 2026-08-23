@@ -78,6 +78,7 @@ class _PurchaseBillCard extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
+    final canReviewReceiving = _canReviewReceiving(bill);
     return InkWell(
       borderRadius: BorderRadius.circular(10.r),
       onTap: () {
@@ -174,6 +175,26 @@ class _PurchaseBillCard extends GetView<BillsController> {
                 ),
               ),
             ),
+            if (canReviewReceiving)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                child: IconButton(
+                  tooltip: 'مراجعة الاستلام',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    controller.getBillDetails(
+                      context: context,
+                      billId: bill.id.toString(),
+                    );
+                    Get.toNamed(AppRoutes.BILLDETAILSSCREEN, arguments: '2');
+                  },
+                  icon: Icon(
+                    Icons.fact_check_outlined,
+                    color: AppColors.primaryColor,
+                    size: 24.sp,
+                  ),
+                ),
+              ),
             Container(
               constraints: BoxConstraints(minWidth: 72.w, maxWidth: 110.w),
               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
@@ -219,6 +240,22 @@ class _PurchaseBillCard extends GetView<BillsController> {
         ),
       ),
     );
+  }
+
+  bool _canReviewReceiving(BillDataModel bill) {
+    final workflow = bill.workflowStatus.toLowerCase();
+    final status = bill.status.toLowerCase();
+    if (workflow == 'finalized' ||
+        workflow == 'received' ||
+        status == 'finished' ||
+        status == 'cancelled') {
+      return false;
+    }
+    return workflow.isEmpty ||
+        workflow == 'awaiting_receiving' ||
+        workflow == 'partially_received' ||
+        workflow == 'awaiting_finalization' ||
+        status == 'unfinished';
   }
 
   String _workflowLabel(String status) {
