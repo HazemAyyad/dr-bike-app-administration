@@ -461,6 +461,8 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                     width: 170.w,
                     child: AppButton(
                       isLoading: controller.isAddLoading,
+                      isSafeArea: false,
+                      height: 46.h,
                       text: 'createBill',
                       onPressed: () =>
                           controller.createPurchaseFromCart(context),
@@ -589,6 +591,8 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                   SizedBox(height: 14.h),
                   AppButton(
                     isLoading: controller.isAddLoading,
+                    isSafeArea: false,
+                    height: 46.h,
                     text: 'createBill',
                     onPressed: () async {
                       await controller.createPurchaseFromCart(context);
