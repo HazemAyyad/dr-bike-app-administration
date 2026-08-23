@@ -1330,49 +1330,53 @@ class _RoomsStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => SizedBox(
-        height: 42.h,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: controller.rooms.length + 2,
-          separatorBuilder: (_, __) => SizedBox(width: 8.w),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return _RoomChip(
-                label: 'smartHomeAllDevices'.tr,
-                selected: controller.selectedRoomId.value == null,
-                onTap: () => controller.selectRoom(null),
-              );
-            }
-            if (index == controller.rooms.length + 1) {
-              return _RoomAddChip(
-                onTap: () => _showRoomDialog(controller: controller),
-              );
-            }
-            final room = controller.rooms[index - 1];
-            return _RoomChip(
+      () {
+        final selectedRoomId = controller.selectedRoomId.value;
+        final chips = <Widget>[
+          _RoomChip(
+            key: const ValueKey('room:all'),
+            label: 'smartHomeAllDevices'.tr,
+            selected: selectedRoomId == null,
+            onTap: () => controller.selectRoom(null),
+          ),
+          for (final room in controller.rooms)
+            _RoomChip(
+              key: ValueKey('room:${room.id}'),
               label: room.name,
-              selected: controller.selectedRoomId.value == room.id,
+              selected: selectedRoomId == room.id,
               onTap: () => controller.selectRoom(room.id),
               onLongPress: () => _showRoomActions(
                 controller: controller,
                 room: room,
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          _RoomAddChip(
+            key: const ValueKey('room:add'),
+            onTap: () => _showRoomDialog(controller: controller),
+          ),
+        ];
+        return SizedBox(
+          height: 42.h,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: chips.length,
+            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+            itemBuilder: (context, index) => chips[index],
+          ),
+        );
+      },
     );
   }
 }
 
 class _RoomChip extends StatelessWidget {
   const _RoomChip({
+    Key? key,
     required this.label,
     required this.selected,
     required this.onTap,
     this.onLongPress,
-  });
+  }) : super(key: key);
 
   final String label;
   final bool selected;
@@ -1412,7 +1416,7 @@ class _RoomChip extends StatelessWidget {
 }
 
 class _RoomAddChip extends StatelessWidget {
-  const _RoomAddChip({required this.onTap});
+  const _RoomAddChip({Key? key, required this.onTap}) : super(key: key);
 
   final VoidCallback onTap;
 
