@@ -2,6 +2,7 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,17 @@ import '../../../../../../routes/app_routes.dart';
 import '../../../../sales/data/models/product_model.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
+
+void _logModernPurchaseBuildError(
+  String scope,
+  Object error,
+  StackTrace stackTrace,
+) {
+  if (kDebugMode) {
+    debugPrint('ModernPurchaseScreen.$scope build failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+}
 
 class AddNewBillScreen extends GetView<BillsController> {
   const AddNewBillScreen({Key? key}) : super(key: key);
@@ -239,7 +251,7 @@ class _ModernPurchaseScreen extends StatefulWidget {
 }
 
 class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
-  BillsController get controller => Get.find<BillsController>();
+  late final BillsController controller = Get.find<BillsController>();
 
   @override
   void initState() {
@@ -262,96 +274,145 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'إنشاء فاتورة شراء',
-        action: false,
+      appBar: AppBar(
+        title: const Text('إنشاء فاتورة شراء'),
+        centerTitle: false,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.secondaryColor,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
         actions: [
           GetBuilder<BillsController>(
-            builder: (controller) => Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: () => _showCartSheet(context),
-                  icon: Icon(
-                    Icons.shopping_cart_outlined,
-                    color: AppColors.primaryColor,
-                    size: 26.sp,
-                  ),
-                ),
-                if (controller.purchaseCart.isNotEmpty)
-                  Positioned(
-                    top: 6.h,
-                    right: 6.w,
-                    child: Container(
-                      padding: EdgeInsets.all(4.w),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${controller.purchaseCart.length}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
+            builder: (controller) {
+              try {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      onPressed: () => _showCartSheet(context),
+                      icon: Icon(
+                        Icons.shopping_cart_outlined,
+                        color: AppColors.primaryColor,
+                        size: 26.sp,
                       ),
                     ),
-                  ),
-              ],
-            ),
+                    if (controller.purchaseCart.isNotEmpty)
+                      Positioned(
+                        top: 6.h,
+                        right: 6.w,
+                        child: Container(
+                          padding: EdgeInsets.all(4.w),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${controller.purchaseCart.length}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              } catch (error, stackTrace) {
+                _logModernPurchaseBuildError('cart action', error, stackTrace);
+                return IconButton(
+                  onPressed: () => _showCartSheet(context),
+                  icon: const Icon(Icons.shopping_cart_outlined),
+                );
+              }
+            },
           ),
         ],
       ),
-      body: ColoredBox(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
         color: Colors.white,
-        child: GetBuilder<BillsController>(
-          builder: (controller) {
-            final products = controller.filteredPurchaseProducts;
-            return Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
-                  child: Column(
-                    children: [
-                      _PurchaseSourceSelector(
-                        source: controller.selectedPurchaseSource.value,
-                        status: controller.purchaseSourcesStatus.value,
-                        onTap: () => _showSourceSheet(context),
-                        onRetry: controller.retryPurchaseSources,
-                      ),
-                      SizedBox(height: 10.h),
-                      TextField(
-                        controller: controller.purchaseProductSearchController,
-                        decoration: InputDecoration(
-                          hintText: 'ابحث عن منتج للشراء',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 10.h,
-                          ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
+                child: Column(
+                  children: [
+                    GetBuilder<BillsController>(
+                      builder: (controller) {
+                        try {
+                          return _PurchaseSourceSelector(
+                            source: controller.selectedPurchaseSource.value,
+                            status: controller.purchaseSourcesStatus.value,
+                            onTap: () => _showSourceSheet(context),
+                            onRetry: controller.retryPurchaseSources,
+                          );
+                        } catch (error, stackTrace) {
+                          _logModernPurchaseBuildError(
+                            'source selector',
+                            error,
+                            stackTrace,
+                          );
+                          return _PurchaseInlineError(
+                            text: 'تعذر عرض مصدر الشراء',
+                            onRetry: controller.retryPurchaseSources,
+                          );
+                        }
+                      },
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.purchaseProductSearchController,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث عن منتج للشراء',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
-                        onChanged: controller.onPurchaseProductSearchChanged,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
+                        ),
                       ),
-                    ],
-                  ),
+                      onChanged: controller.onPurchaseProductSearchChanged,
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: _PurchaseProductsContent(
-                    products: products,
-                    status: controller.purchaseProductsStatus.value,
-                    hasSearch: controller.purchaseProductSearch.value
-                        .trim()
-                        .isNotEmpty,
-                    onRetry: controller.retryPurchaseProducts,
-                  ),
+              ),
+              Expanded(
+                child: GetBuilder<BillsController>(
+                  builder: (controller) {
+                    try {
+                      final products = controller.filteredPurchaseProducts;
+                      return _PurchaseProductsContent(
+                        products: products,
+                        status: controller.purchaseProductsStatus.value,
+                        hasSearch: controller.purchaseProductSearch.value
+                            .trim()
+                            .isNotEmpty,
+                        onRetry: controller.retryPurchaseProducts,
+                      );
+                    } catch (error, stackTrace) {
+                      _logModernPurchaseBuildError(
+                        'products content',
+                        error,
+                        stackTrace,
+                      );
+                      return _PurchaseContentMessage(
+                        icon: Icons.error_outline_rounded,
+                        title: 'تعذر عرض المنتجات',
+                        actionLabel: 'إعادة المحاولة',
+                        onAction: controller.retryPurchaseProducts,
+                      );
+                    }
+                  },
                 ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -627,6 +688,49 @@ class _PurchaseSourceSelector extends GetView<BillsController> {
               const Icon(Icons.keyboard_arrow_down),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PurchaseInlineError extends StatelessWidget {
+  const _PurchaseInlineError({
+    required this.text,
+    required this.onRetry,
+  });
+
+  final String text;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, color: Colors.red),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w700,
+                fontSize: 12.sp,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
     );
   }
