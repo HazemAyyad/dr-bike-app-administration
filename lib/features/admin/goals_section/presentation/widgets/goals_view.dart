@@ -46,7 +46,7 @@ class GoalsView extends StatelessWidget {
               childAspectRatio: 1,
               mainAxisSpacing: 10.h,
               crossAxisSpacing: 10.w,
-              mainAxisExtent: 180.h,
+              mainAxisExtent: 194.h,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
@@ -169,9 +169,7 @@ class GoalsView extends StatelessWidget {
                                   height: 65,
                                   width: 65,
                                   child: CircularProgressIndicator(
-                                    value: (double.parse(
-                                            goal.achievementPercentage) /
-                                        100),
+                                    value: (achievement / 100).clamp(0.0, 1.0),
                                     strokeWidth: 6,
                                     backgroundColor: Colors.grey.shade300,
                                     valueColor: AlwaysStoppedAnimation<Color>(

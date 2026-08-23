@@ -303,7 +303,7 @@ class _EmployeeSharedGoalsSection extends GetView<EmployeeDashbordController> {
           ),
           SizedBox(height: 8.h),
           SizedBox(
-            height: 118.h,
+            height: 132.h,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: goals.length,
@@ -378,6 +378,8 @@ class _EmployeeGoalCard extends StatelessWidget {
                 SizedBox(height: 5.h),
                 Text(
                   goal.statusLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
                         color: color,
                         fontWeight: FontWeight.w800,
