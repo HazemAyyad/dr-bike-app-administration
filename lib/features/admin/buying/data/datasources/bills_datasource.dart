@@ -68,6 +68,7 @@ class BillsDatasource {
   Future<dynamic> addBill({
     required String page,
     required String sellerId,
+    String customerId = '',
     required List<BillModel> products,
     required String total,
   }) async {
@@ -75,6 +76,7 @@ class BillsDatasource {
 
     for (var i = 0; i < products.length; i++) {
       if (sellerId.isNotEmpty) productsList['seller_id'] = sellerId;
+      if (customerId.isNotEmpty) productsList['customer_id'] = customerId;
       if (products[i].productIdController.text.isNotEmpty) {
         productsList['products[$i][product_id]'] =
             products[i].productIdController.text;
@@ -94,7 +96,7 @@ class BillsDatasource {
       final response = await api.post(
         page == '3'
             ? EndPoints.addReturnPurchase
-            : sellerId.isEmpty
+            : sellerId.isEmpty && customerId.isEmpty
                 ? EndPoints.addBillQuantity
                 : EndPoints.addBill,
         data: productsList,
@@ -197,22 +199,98 @@ class BillsDatasource {
   }
 
   Future<dynamic> paySupplierAccount({
-    required String sellerId,
+    String sellerId = '',
+    String customerId = '',
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst = true,
+    List<Map<String, dynamic>> allocations = const [],
   }) async {
     try {
       final response = await api.post(
         EndPoints.purchaseAccountPayment,
         data: {
-          'seller_id': sellerId,
+          if (sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId.isNotEmpty) 'customer_id': customerId,
           'amount': amount,
           'box_id': boxId,
           'allocate_oldest_first': allocateOldestFirst,
+          if (allocations.isNotEmpty) 'allocations': allocations,
           if (note != null && note.isNotEmpty) 'note': note,
         },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId = '',
+    String customerId = '',
+    String? currency,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseAccountOpenBills,
+        queryParameters: {
+          if (sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId.isNotEmpty) 'customer_id': customerId,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> createPurchaseReturn({
+    String sellerId = '',
+    String customerId = '',
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  }) async {
+    final Map<String, dynamic> data = {
+      if (sellerId.isNotEmpty) 'seller_id': sellerId,
+      if (customerId.isNotEmpty) 'customer_id': customerId,
+      if (billId != null && billId.isNotEmpty) 'bill_id': billId,
+      if (total.isNotEmpty) 'total': total,
+      'resolution': resolution,
+      if (refundBoxId != null && refundBoxId.isNotEmpty)
+        'refund_box_id': refundBoxId,
+      if (note != null && note.isNotEmpty) 'note': note,
+    };
+    for (var i = 0; i < products.length; i++) {
+      data['products[$i][product_id]'] = products[i].productIdController.text;
+      data['products[$i][quantity]'] = products[i].quantityController.text;
+      data['products[$i][purchase_price]'] = products[i].priceController.text;
+    }
+
+    try {
+      final response = await api.post(
+        EndPoints.addReturnPurchase,
+        data: data,
+        isFormData: true,
       );
       return response.data;
     } on DioException catch (e) {
@@ -281,11 +359,130 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseIssueResolve,
+        data: {
+          'bill_id': billId,
+          'bill_item_id': billItemId,
+          'issue_type': issueType,
+          'resolution': resolution,
+          'quantity': quantity,
+          if (negotiatedUnitPrice != null && negotiatedUnitPrice.isNotEmpty)
+            'negotiated_unit_price': negotiatedUnitPrice,
+          if (financialAdjustment != null && financialAdjustment.isNotEmpty)
+            'financial_adjustment': financialAdjustment,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> purchaseTimeline({required String billId}) async {
     try {
       final response = await api.get(
         EndPoints.purchaseTimeline,
         queryParameters: {'bill_id': billId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchasePriceIntelligence,
+        queryParameters: {
+          'product_id': productId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (customerId != null && customerId.isNotEmpty)
+            'customer_id': customerId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseAmanatIndex,
+        queryParameters: {
+          if (status != null && status.isNotEmpty) 'status': status,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.purchaseDiscrepancies,
+        queryParameters: {
+          if (type != null && type.isNotEmpty) 'type': type,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
       );
       return response.data;
     } on DioException catch (e) {

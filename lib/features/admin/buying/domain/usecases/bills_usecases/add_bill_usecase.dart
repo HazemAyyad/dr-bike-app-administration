@@ -11,6 +11,7 @@ class AddBillUsecase {
 
   Future<Either<Failure, String>> call({
     required String sellerId,
+    String customerId = '',
     required List<BillModel> products,
     required String total,
     required String page,
@@ -18,6 +19,7 @@ class AddBillUsecase {
     return billsRepository.addBill(
       page: page,
       sellerId: sellerId,
+      customerId: customerId,
       products: products,
       total: total,
     );

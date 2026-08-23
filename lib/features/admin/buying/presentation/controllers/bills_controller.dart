@@ -71,9 +71,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
 
   final TextEditingController sellerIdController = TextEditingController();
+  final TextEditingController customerIdController = TextEditingController();
   final TextEditingController discountController = TextEditingController();
 
   final TextEditingController searchController = TextEditingController();
+  final TextEditingController purchaseNotesController = TextEditingController();
+  final TextEditingController purchaseProductSearchController =
+      TextEditingController();
 
   final billModel = <BillModel>[BillModel()].obs;
 
@@ -134,11 +138,378 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   // get all sellers
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
+  final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
+  final Rxn<PurchaseSourceModel> selectedPurchaseSource =
+      Rxn<PurchaseSourceModel>();
+  final RxList<PurchaseCartItemModel> purchaseCart =
+      <PurchaseCartItemModel>[].obs;
+  final RxString purchaseProductSearch = ''.obs;
+  final RxMap<String, Map<String, dynamic>> purchasePriceIntelligence =
+      <String, Map<String, dynamic>>{}.obs;
+  final RxSet<String> purchasePriceLoading = <String>{}.obs;
+  final RxBool isAmanatDashboardLoading = false.obs;
+  final RxBool isDiscrepanciesDashboardLoading = false.obs;
+  final RxList<Map<String, dynamic>> amanatDashboard =
+      <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> discrepanciesDashboard =
+      <Map<String, dynamic>>[].obs;
+
+  List<PurchaseSourceModel> get purchaseSources {
+    final byName = <String, PurchaseSourceModel>{};
+    for (final seller in allSellersList) {
+      final key = seller.name.trim().toLowerCase();
+      byName[key] = PurchaseSourceModel(
+        id: seller.id,
+        name: seller.name,
+        phone: seller.phone,
+        hasSeller: true,
+        hasCustomer: false,
+      );
+    }
+    for (final customer in allCustomersList) {
+      final key = customer.name.trim().toLowerCase();
+      final current = byName[key];
+      byName[key] = PurchaseSourceModel(
+        id: current?.id ?? customer.id,
+        name: current?.name ?? customer.name,
+        phone:
+            current?.phone.isNotEmpty == true ? current!.phone : customer.phone,
+        hasSeller: current?.hasSeller == true,
+        hasCustomer: true,
+        customerId: customer.id,
+        sellerId: current?.sellerId ?? current?.id,
+      );
+    }
+    return byName.values.toList()..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  List<ProductModel> get filteredPurchaseProducts {
+    final query = purchaseProductSearch.value.trim().toLowerCase();
+    if (query.isEmpty) return products;
+    return products.where((product) {
+      return product.nameAr.toLowerCase().contains(query) ||
+          product.displayProductCode.toLowerCase().contains(query);
+    }).toList();
+  }
+
   void getAllSellers() async {
     final resultSellers =
         await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
     allSellersList.assignAll(resultSellers);
     isLoading(false);
+  }
+
+  Future<void> getAllPurchaseSources() async {
+    final resultCustomers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_customers,
+    );
+    final resultSellers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_sellers,
+    );
+    allCustomersList.assignAll(resultCustomers);
+    allSellersList.assignAll(resultSellers);
+    update();
+  }
+
+  void selectPurchaseSource(PurchaseSourceModel? source) {
+    selectedPurchaseSource.value = source;
+    sellerIdController.clear();
+    customerIdController.clear();
+    if (source == null) {
+      update();
+      return;
+    }
+    if (source.hasSeller) {
+      sellerIdController.text = (source.sellerId ?? source.id).toString();
+    } else if (source.hasCustomer) {
+      customerIdController.text = (source.customerId ?? source.id).toString();
+    }
+    update();
+  }
+
+  void onPurchaseProductSearchChanged(String value) {
+    purchaseProductSearch.value = value;
+    update();
+  }
+
+  void addProductToPurchaseCart(ProductModel product) {
+    final index =
+        purchaseCart.indexWhere((item) => item.product.id == product.id);
+    if (index >= 0) {
+      purchaseCart[index].quantityController.text =
+          ((num.tryParse(purchaseCart[index].quantityController.text) ?? 0) + 1)
+              .toString();
+      purchaseCart.refresh();
+    } else {
+      purchaseCart.add(PurchaseCartItemModel(product: product));
+    }
+    loadPurchasePriceIntelligence(product.id);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  Future<void> loadPurchasePriceIntelligence(String productId) async {
+    if (purchasePriceLoading.contains(productId)) return;
+    purchasePriceLoading.add(productId);
+    update();
+    try {
+      final source = selectedPurchaseSource.value;
+      final result = await purchaseWorkflowUsecase.priceIntelligence(
+        productId: productId,
+        sellerId: source?.hasSeller == true
+            ? (source?.sellerId ?? source?.id).toString()
+            : null,
+        customerId: source?.hasSeller == true
+            ? null
+            : (source?.customerId ?? source?.id).toString(),
+      );
+      final data = asMap(result);
+      final intelligence = asMap(data['price_intelligence']);
+      purchasePriceIntelligence[productId] = intelligence;
+      final suggested = asString(intelligence['suggested_price']);
+      PurchaseCartItemModel? item;
+      for (final row in purchaseCart) {
+        if (row.product.id == productId) {
+          item = row;
+          break;
+        }
+      }
+      if (item != null &&
+          item.priceController.text.trim().isEmpty &&
+          suggested.isNotEmpty) {
+        item.priceController.text = suggested;
+      }
+    } catch (_) {
+      purchasePriceIntelligence.remove(productId);
+    }
+    purchasePriceLoading.remove(productId);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  Future<void> loadAmanatDashboard({String? status, String? search}) async {
+    isAmanatDashboardLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.amanatIndex(
+        status: status,
+        search: search,
+      );
+      amanatDashboard.assignAll(
+        mapListFromResponseKey(
+          result,
+          'amanat',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.amanatDashboard',
+        ),
+      );
+    } catch (_) {
+      amanatDashboard.clear();
+    }
+    isAmanatDashboardLoading(false);
+    update();
+  }
+
+  Future<void> loadDiscrepanciesDashboard({
+    String? type,
+    String? search,
+  }) async {
+    isDiscrepanciesDashboardLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.discrepancies(
+        type: type,
+        search: search,
+      );
+      discrepanciesDashboard.assignAll(
+        mapListFromResponseKey(
+          result,
+          'discrepancies',
+          (Map<String, dynamic> m) => m,
+          debugScope: 'BillsController.discrepanciesDashboard',
+        ),
+      );
+    } catch (_) {
+      discrepanciesDashboard.clear();
+    }
+    isDiscrepanciesDashboardLoading(false);
+    update();
+  }
+
+  void applyHistoricalPurchasePrice({
+    required PurchaseCartItemModel item,
+    required String price,
+  }) {
+    item.priceController.text = price;
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  void removePurchaseCartItem(PurchaseCartItemModel item) {
+    item.dispose();
+    purchaseCart.remove(item);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
+  void calculatePurchaseCartTotal() {
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+    update();
+  }
+
+  void preparePurchaseReturnForm() {
+    purchaseReturnResolution.value = 'supplier_credit';
+    purchaseReturnNoteController.clear();
+    purchaseProductSearch.value = '';
+    selectedPurchaseSource.value = null;
+    sellerIdController.clear();
+    customerIdController.clear();
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
+    purchaseCart.clear();
+    totalCost.value = 0;
+    update();
+  }
+
+  void changePurchaseReturnResolution(String value) {
+    purchaseReturnResolution.value = value;
+    update();
+  }
+
+  Future<void> createPurchaseReturnFromCart(BuildContext context) async {
+    final source = selectedPurchaseSource.value;
+    if (source == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار مصدر المرتجع',
+      );
+      return;
+    }
+    if (purchaseCart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إضافة منتجات للمرتجع',
+      );
+      return;
+    }
+    for (final item in purchaseCart) {
+      if (item.quantity <= 0 || item.unitPrice <= 0) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'تأكد من الكميات والأسعار',
+        );
+        return;
+      }
+    }
+    if (purchaseReturnResolution.value == 'cash_refund' &&
+        selectedPurchaseBox.value == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق للاسترداد النقدي',
+      );
+      return;
+    }
+
+    billModel.assignAll(purchaseCart.map((item) {
+      final row = BillModel();
+      row.productIdController.text = item.product.id;
+      row.quantityController.text = item.quantityController.text.trim();
+      row.priceController.text = item.priceController.text.trim();
+      return row;
+    }).toList());
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+
+    isWorkflowLoading(true);
+    update();
+    final result = await purchaseWorkflowUsecase.createPurchaseReturn(
+      sellerId:
+          source.hasSeller ? (source.sellerId ?? source.id).toString() : '',
+      customerId:
+          source.hasSeller ? '' : (source.customerId ?? source.id).toString(),
+      products: billModel,
+      total: totalCost.value.toString(),
+      resolution: purchaseReturnResolution.value,
+      refundBoxId: purchaseReturnResolution.value == 'cash_refund'
+          ? selectedPurchaseBox.value?.boxId.toString()
+          : null,
+      note: purchaseReturnNoteController.text.trim(),
+    );
+
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message']?.toString() ?? failure.errMessage,
+        );
+      },
+      (success) {
+        Get.find<ReturnPurchasesController>().getReturnBills();
+        preparePurchaseReturnForm();
+        Get.back();
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isWorkflowLoading(false);
+    update();
+  }
+
+  Future<void> createPurchaseFromCart(BuildContext context) async {
+    final source = selectedPurchaseSource.value;
+    if (source == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار مصدر الشراء',
+      );
+      return;
+    }
+    if (purchaseCart.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إضافة منتجات للفاتورة',
+      );
+      return;
+    }
+    for (final item in purchaseCart) {
+      if (item.quantity <= 0 || item.unitPrice < 0) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'تأكد من الكميات والأسعار',
+        );
+        return;
+      }
+    }
+
+    billModel.assignAll(purchaseCart.map((item) {
+      final row = BillModel();
+      row.productIdController.text = item.product.id;
+      row.quantityController.text = item.quantityController.text.trim();
+      row.priceController.text = item.priceController.text.trim();
+      return row;
+    }).toList());
+    totalCost.value = purchaseCart.fold<int>(
+      0,
+      (sum, item) => sum + item.total.round(),
+    );
+    addBill(context);
   }
 
   RxBool isLoading = false.obs;
@@ -290,6 +661,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isAddLoading = false.obs;
   final RxBool isWorkflowLoading = false.obs;
   final RxBool isTimelineLoading = false.obs;
+  final RxBool isOpenPurchaseBillsLoading = false.obs;
   final RxList<Map<String, dynamic>> purchaseTimeline =
       <Map<String, dynamic>>[].obs;
   final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
@@ -298,11 +670,25 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       TextEditingController();
   final TextEditingController purchasePaymentNoteController =
       TextEditingController();
+  final TextEditingController purchaseReturnNoteController =
+      TextEditingController();
   final TextEditingController amanatQuantityController =
       TextEditingController();
   final TextEditingController amanatUnitPriceController =
       TextEditingController();
   final TextEditingController amanatNoteController = TextEditingController();
+  final TextEditingController issueQuantityController = TextEditingController();
+  final TextEditingController issueUnitPriceController =
+      TextEditingController();
+  final TextEditingController issueAdjustmentController =
+      TextEditingController();
+  final TextEditingController issueReasonController = TextEditingController();
+  final TextEditingController issueNotesController = TextEditingController();
+  final RxList<PurchaseReceivingRowModel> receivingRows =
+      <PurchaseReceivingRowModel>[].obs;
+  final RxList<PurchaseOpenBillAllocationModel> openPurchaseBills =
+      <PurchaseOpenBillAllocationModel>[].obs;
+  final RxString purchaseReturnResolution = 'supplier_credit'.obs;
   String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
@@ -310,6 +696,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     final result = await addBillUsecase.call(
       page: isaddNewBill,
       sellerId: sellerIdController.text,
+      customerId: customerIdController.text,
       products: billModel,
       total: totalCost.value.toString(),
     );
@@ -323,7 +710,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }, (success) {
       Future.delayed(const Duration(seconds: 1), () {
         sellerIdController.clear();
+        customerIdController.clear();
         discountController.clear();
+        purchaseNotesController.clear();
+        selectedPurchaseSource.value = null;
+        for (final item in purchaseCart) {
+          item.dispose();
+        }
+        purchaseCart.clear();
         totalCost.value = 0;
         billModel.map((e) => e.productIdController.clear()).toList();
         billModel.map((e) => e.quantityController.clear()).toList();
@@ -372,6 +766,54 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  void prepareReceivingRows() {
+    for (final row in receivingRows) {
+      row.dispose();
+    }
+    final details = billDetails;
+    receivingRows.clear();
+    if (details == null) return;
+    receivingRows.assignAll(
+      details.products
+          .where((product) => product.remainingQuantity > 0)
+          .map((product) => PurchaseReceivingRowModel(product: product)),
+    );
+    update();
+  }
+
+  Future<void> submitReviewedReceiving(BuildContext context) async {
+    final details = billDetails;
+    if (details == null) return;
+    final items = <Map<String, dynamic>>[];
+    for (final row in receivingRows) {
+      if (row.isEmpty) continue;
+      if (!row.isValid) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'راجع كميات ${row.product.productName}',
+        );
+        return;
+      }
+      items.add(row.toApiMap());
+    }
+    if (items.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال استلام لصنف واحد على الأقل',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: items,
+      ),
+    );
+  }
+
   Future<void> finalizeShownPurchase(
     BuildContext context, {
     String initialPayment = '0',
@@ -407,6 +849,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void preparePaymentAmount({String? amount}) {
     purchasePaymentAmountController.text = amount ?? '';
     purchasePaymentNoteController.clear();
+    clearOpenPurchaseBills();
+  }
+
+  void clearOpenPurchaseBills() {
+    for (final bill in openPurchaseBills) {
+      bill.dispose();
+    }
+    openPurchaseBills.clear();
   }
 
   void prepareAmanatAction({
@@ -416,6 +866,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     amanatQuantityController.text = quantity;
     amanatUnitPriceController.text = unitPrice ?? '';
     amanatNoteController.clear();
+  }
+
+  void prepareIssueResolution({
+    required String quantity,
+    String? unitPrice,
+  }) {
+    issueQuantityController.text = quantity;
+    issueUnitPriceController.text = unitPrice ?? '';
+    issueAdjustmentController.clear();
+    issueReasonController.clear();
+    issueNotesController.clear();
   }
 
   Future<void> payShownPurchase(
@@ -437,15 +898,48 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<void> loadOpenPurchaseAccountBills() async {
+    final details = billDetails;
+    if (details == null) return;
+    final sellerId = details.sellerId;
+    final customerId = details.customerId;
+    if (sellerId.isEmpty && customerId.isEmpty) return;
+    isOpenPurchaseBillsLoading(true);
+    update();
+    try {
+      final result = await purchaseWorkflowUsecase.openAccountBills(
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: selectedPurchaseBox.value?.currency,
+      );
+      clearOpenPurchaseBills();
+      openPurchaseBills.assignAll(
+        mapListFromResponseKey(
+          result,
+          'bills',
+          (Map<String, dynamic> m) =>
+              PurchaseOpenBillAllocationModel.fromJson(m),
+          debugScope: 'BillsController.openPurchaseAccountBills',
+        ),
+      );
+    } catch (_) {
+      clearOpenPurchaseBills();
+    }
+    isOpenPurchaseBillsLoading(false);
+    update();
+  }
+
   Future<void> paySupplierAccountForShownSeller(BuildContext context) async {
     final details = billDetails;
     final box = selectedPurchaseBox.value;
     if (details == null) return;
-    if (details.sellerId.isEmpty) {
+    final sellerId = details.sellerId;
+    final customerId = details.customerId;
+    if (sellerId.isEmpty && customerId.isEmpty) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
-        message: 'لا يوجد مورد مرتبط بالفاتورة',
+        message: 'لا يوجد مصدر مرتبط بالفاتورة',
       );
       return;
     }
@@ -466,13 +960,20 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       );
       return;
     }
+    final allocations = openPurchaseBills
+        .map((bill) => bill.toAllocation())
+        .whereType<Map<String, dynamic>>()
+        .toList();
     await _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.paySupplierAccount(
-        sellerId: details.sellerId,
+        sellerId: sellerId,
+        customerId: customerId,
         amount: amount,
         boxId: box.boxId.toString(),
         note: purchasePaymentNoteController.text.trim(),
+        allocateOldestFirst: allocations.isEmpty,
+        allocations: allocations,
       ),
     );
   }
@@ -552,7 +1053,55 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
-  Future<void> pickAndUploadPurchaseAttachments(BuildContext context) async {
+  Future<void> resolveShownIssue(
+    BuildContext context, {
+    required BillProductModel product,
+    required String issueType,
+    required String resolution,
+  }) async {
+    final details = billDetails;
+    if (details == null) return;
+    final quantity = issueQuantityController.text.trim();
+    if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال كمية صحيحة',
+      );
+      return;
+    }
+    if ((resolution == 'accept_with_discount' ||
+            resolution == 'accept_negotiated_price') &&
+        ((num.tryParse(issueUnitPriceController.text.trim()) ?? -1) < 0)) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال سعر تفاوضي صحيح',
+      );
+      return;
+    }
+    await _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.resolveIssue(
+        billId: details.billId.toString(),
+        billItemId: product.billItemId.toString(),
+        issueType: issueType,
+        resolution: resolution,
+        quantity: quantity,
+        negotiatedUnitPrice: issueUnitPriceController.text.trim(),
+        financialAdjustment: issueAdjustmentController.text.trim(),
+        reason: issueReasonController.text.trim(),
+        notes: issueNotesController.text.trim(),
+      ),
+    );
+  }
+
+  Future<void> pickAndUploadPurchaseAttachments(
+    BuildContext context, {
+    String category = 'evidence',
+    String? attachableType,
+    String? attachableId,
+  }) async {
     final details = billDetails;
     if (details == null) return;
     final picked = await FilePicker.platform.pickFiles(
@@ -586,7 +1135,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       purchaseWorkflowUsecase.uploadAttachments(
         billId: details.billId.toString(),
         files: multipart,
-        category: 'evidence',
+        category: category,
+        attachableType: attachableType,
+        attachableId: attachableId,
       ),
     );
   }
@@ -705,8 +1256,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void onInit() {
     getBills();
     getAllProducts();
-    getAllSellers();
+    getAllPurchaseSources();
     loadPurchaseBoxes();
+    loadAmanatDashboard();
+    loadDiscrepanciesDashboard();
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
     animController = AnimationController(
@@ -735,13 +1288,29 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;
     sellerIdController.dispose();
+    customerIdController.dispose();
     discountController.dispose();
     searchController.dispose();
+    purchaseNotesController.dispose();
+    purchaseProductSearchController.dispose();
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
     purchasePaymentAmountController.dispose();
     purchasePaymentNoteController.dispose();
+    purchaseReturnNoteController.dispose();
     amanatQuantityController.dispose();
     amanatUnitPriceController.dispose();
     amanatNoteController.dispose();
+    issueQuantityController.dispose();
+    issueUnitPriceController.dispose();
+    issueAdjustmentController.dispose();
+    issueReasonController.dispose();
+    issueNotesController.dispose();
+    for (final row in receivingRows) {
+      row.dispose();
+    }
+    clearOpenPurchaseBills();
     super.onClose();
   }
 }
@@ -771,5 +1340,191 @@ class BillModel {
     productIdController.dispose();
     quantityController.dispose();
     priceController.dispose();
+  }
+}
+
+class PurchaseSourceModel {
+  final int id;
+  final String name;
+  final String phone;
+  final bool hasSeller;
+  final bool hasCustomer;
+  final int? sellerId;
+  final int? customerId;
+
+  const PurchaseSourceModel({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.hasSeller,
+    required this.hasCustomer,
+    this.sellerId,
+    this.customerId,
+  });
+
+  String get typeLabel {
+    if (hasSeller && hasCustomer) return 'مورد + زبون';
+    if (hasSeller) return 'مورد';
+    return 'زبون';
+  }
+}
+
+class PurchaseCartItemModel {
+  final ProductModel product;
+  final TextEditingController quantityController;
+  final TextEditingController priceController;
+
+  PurchaseCartItemModel({required this.product})
+      : quantityController = TextEditingController(text: '1'),
+        priceController = TextEditingController(
+          text: product.purchaseCost > 0
+              ? product.purchaseCost.toStringAsFixed(2)
+              : '',
+        );
+
+  num get quantity => num.tryParse(quantityController.text.trim()) ?? 0;
+  num get unitPrice => num.tryParse(priceController.text.trim()) ?? 0;
+  num get total => quantity * unitPrice;
+
+  void dispose() {
+    quantityController.dispose();
+    priceController.dispose();
+  }
+}
+
+class PurchaseReceivingRowModel {
+  final BillProductModel product;
+  final TextEditingController deliveredNowController;
+  final TextEditingController acceptedController;
+  final TextEditingController missingController;
+  final TextEditingController extraController;
+  final TextEditingController damagedController;
+  final TextEditingController mismatchedController;
+  final TextEditingController unitPriceController;
+  final TextEditingController reasonController;
+  final TextEditingController notesController;
+
+  PurchaseReceivingRowModel({required this.product})
+      : deliveredNowController = TextEditingController(),
+        acceptedController = TextEditingController(),
+        missingController = TextEditingController(),
+        extraController = TextEditingController(),
+        damagedController = TextEditingController(),
+        mismatchedController = TextEditingController(),
+        unitPriceController = TextEditingController(text: product.price),
+        reasonController = TextEditingController(),
+        notesController = TextEditingController();
+
+  num get deliveredNow => _num(deliveredNowController);
+  num get accepted => _num(acceptedController);
+  num get missing => _num(missingController);
+  num get extra => _num(extraController);
+  num get damaged => _num(damagedController);
+  num get mismatched => _num(mismatchedController);
+
+  bool get isEmpty =>
+      accepted <= 0 &&
+      missing <= 0 &&
+      extra <= 0 &&
+      damaged <= 0 &&
+      mismatched <= 0;
+
+  bool get isValid {
+    if (accepted < 0 ||
+        missing < 0 ||
+        extra < 0 ||
+        damaged < 0 ||
+        mismatched < 0) {
+      return false;
+    }
+    if (accepted > product.remainingQuantity) return false;
+    if (accepted + missing > product.remainingQuantity) return false;
+    if (deliveredNow > 0 &&
+        accepted + extra + damaged + mismatched > deliveredNow) {
+      return false;
+    }
+    return true;
+  }
+
+  Map<String, dynamic> toApiMap() {
+    return {
+      'bill_item_id': product.billItemId,
+      'accepted_quantity': accepted,
+      'missing_quantity': missing,
+      'extra_quantity': extra,
+      'damaged_quantity': damaged,
+      'mismatched_quantity': mismatched,
+      'unit_price': unitPriceController.text.trim(),
+      if (reasonController.text.trim().isNotEmpty)
+        'reason': reasonController.text.trim(),
+      if (notesController.text.trim().isNotEmpty)
+        'notes': notesController.text.trim(),
+    };
+  }
+
+  num _num(TextEditingController controller) {
+    return num.tryParse(controller.text.trim()) ?? 0;
+  }
+
+  void dispose() {
+    deliveredNowController.dispose();
+    acceptedController.dispose();
+    missingController.dispose();
+    extraController.dispose();
+    damagedController.dispose();
+    mismatchedController.dispose();
+    unitPriceController.dispose();
+    reasonController.dispose();
+    notesController.dispose();
+  }
+}
+
+class PurchaseOpenBillAllocationModel {
+  final int billId;
+  final String sourceName;
+  final String currency;
+  final num finalTotal;
+  final num paidAmount;
+  final num remainingAmount;
+  final String finalizedAt;
+  final TextEditingController amountController = TextEditingController();
+
+  PurchaseOpenBillAllocationModel({
+    required this.billId,
+    required this.sourceName,
+    required this.currency,
+    required this.finalTotal,
+    required this.paidAmount,
+    required this.remainingAmount,
+    required this.finalizedAt,
+  });
+
+  factory PurchaseOpenBillAllocationModel.fromJson(Map<String, dynamic> json) {
+    return PurchaseOpenBillAllocationModel(
+      billId: asInt(json['id']),
+      sourceName: asString(json['source_name']),
+      currency: asString(json['currency']),
+      finalTotal: asDouble(json['final_total']),
+      paidAmount: asDouble(json['paid_amount']),
+      remainingAmount: asDouble(json['remaining_amount']),
+      finalizedAt: asString(json['finalized_at']),
+    );
+  }
+
+  Map<String, dynamic>? toAllocation() {
+    final amount = double.tryParse(amountController.text.trim()) ?? 0;
+    if (amount <= 0) return null;
+    return {
+      'bill_id': billId,
+      'amount': amount,
+    };
+  }
+
+  void fillRemaining() {
+    amountController.text = remainingAmount.toStringAsFixed(2);
+  }
+
+  void dispose() {
+    amountController.dispose();
   }
 }

@@ -7,7 +7,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../buying/presentation/views/buying_screen.dart';
 
 class FinancialAffairsScreen extends StatelessWidget {
   const FinancialAffairsScreen({Key? key}) : super(key: key);
@@ -29,21 +28,21 @@ class FinancialAffairsScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                MainPageWidget(
+                _FinancialTile(
                   onTap: () {
                     Get.toNamed(AppRoutes.ASSETSSCREEN);
                   },
                   icon: AssetsManager.solarIcon,
                   title: 'assets'.tr,
                 ),
-                MainPageWidget(
+                _FinancialTile(
                   onTap: () {
                     Get.toNamed(AppRoutes.THEEXPENSESSCREEN);
                   },
                   icon: AssetsManager.cashIcon,
                   title: 'theExpenses'.tr,
                 ),
-                MainPageWidget(
+                _FinancialTile(
                   onTap: () {
                     Get.toNamed(AppRoutes.OFFICIALPAPERSSCREEN);
                   },
@@ -54,6 +53,49 @@ class FinancialAffairsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FinancialTile extends StatelessWidget {
+  final VoidCallback onTap;
+  final String icon;
+  final String title;
+
+  const _FinancialTile({
+    required this.onTap,
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+        child: Row(
+          children: [
+            Image.asset(icon, width: 28.w, height: 28.w),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15.sp,
+                    ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.primaryColor,
+              size: 22.sp,
+            ),
+          ],
+        ),
       ),
     );
   }

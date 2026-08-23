@@ -108,11 +108,13 @@ class BillsImplement implements BillsRepository {
 
   @override
   Future<Either<Failure, String>> paySupplierAccount({
-    required String sellerId,
+    String sellerId = '',
+    String customerId = '',
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst = true,
+    List<Map<String, dynamic>> allocations = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -120,10 +122,63 @@ class BillsImplement implements BillsRepository {
     try {
       final result = await billsDataSource.paySupplierAccount(
         sellerId: sellerId,
+        customerId: customerId,
         amount: amount,
         boxId: boxId,
         note: note,
         allocateOldestFirst: allocateOldestFirst,
+        allocations: allocations,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId = '',
+    String customerId = '',
+    String? currency,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseAccountOpenBills(
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: currency,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> createPurchaseReturn({
+    String sellerId = '',
+    String customerId = '',
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.createPurchaseReturn(
+        sellerId: sellerId,
+        customerId: customerId,
+        billId: billId,
+        products: products,
+        total: total,
+        resolution: resolution,
+        refundBoxId: refundBoxId,
+        note: note,
       );
       return _messageResult(result);
     } on ServerException catch (e) {
@@ -174,12 +229,101 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await billsDataSource.resolvePurchaseIssue(
+        billId: billId,
+        billItemId: billItemId,
+        issueType: issueType,
+        resolution: resolution,
+        quantity: quantity,
+        negotiatedUnitPrice: negotiatedUnitPrice,
+        financialAdjustment: financialAdjustment,
+        reason: reason,
+        notes: notes,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<dynamic> purchaseTimeline({required String billId}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
       return await billsDataSource.purchaseTimeline(billId: billId);
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchasePriceIntelligence(
+        productId: productId,
+        sellerId: sellerId,
+        customerId: customerId,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseAmanatIndex(
+        status: status,
+        search: search,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await billsDataSource.purchaseDiscrepancies(
+        type: type,
+        search: search,
+      );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
@@ -215,6 +359,7 @@ class BillsImplement implements BillsRepository {
   Future<Either<Failure, String>> addBill({
     required String page,
     required String sellerId,
+    String customerId = '',
     required List<BillModel> products,
     required String total,
   }) async {
@@ -225,6 +370,7 @@ class BillsImplement implements BillsRepository {
       final result = await billsDataSource.addBill(
         page: page,
         sellerId: sellerId,
+        customerId: customerId,
         products: products,
         total: total,
       );

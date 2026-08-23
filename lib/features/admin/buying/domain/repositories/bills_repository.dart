@@ -9,6 +9,7 @@ abstract class BillsRepository {
   Future<Either<Failure, String>> addBill({
     required String page,
     required String sellerId,
+    String customerId,
     required List<BillModel> products,
     required String total,
   });
@@ -33,11 +34,30 @@ abstract class BillsRepository {
   });
 
   Future<Either<Failure, String>> paySupplierAccount({
-    required String sellerId,
+    String sellerId,
+    String customerId,
     required String amount,
     required String boxId,
     String? note,
     bool allocateOldestFirst,
+    List<Map<String, dynamic>> allocations,
+  });
+
+  Future<dynamic> purchaseAccountOpenBills({
+    String sellerId,
+    String customerId,
+    String? currency,
+  });
+
+  Future<Either<Failure, String>> createPurchaseReturn({
+    String sellerId,
+    String customerId,
+    String? billId,
+    required List<BillModel> products,
+    required String total,
+    required String resolution,
+    String? refundBoxId,
+    String? note,
   });
 
   Future<Either<Failure, String>> purchaseAmanat({
@@ -52,7 +72,35 @@ abstract class BillsRepository {
     String? note,
   });
 
+  Future<Either<Failure, String>> resolvePurchaseIssue({
+    required String billId,
+    required String billItemId,
+    required String issueType,
+    required String resolution,
+    required String quantity,
+    String? negotiatedUnitPrice,
+    String? financialAdjustment,
+    String? reason,
+    String? notes,
+  });
+
   Future<dynamic> purchaseTimeline({required String billId});
+
+  Future<dynamic> purchasePriceIntelligence({
+    required String productId,
+    String? sellerId,
+    String? customerId,
+  });
+
+  Future<dynamic> purchaseAmanatIndex({
+    String? status,
+    String? search,
+  });
+
+  Future<dynamic> purchaseDiscrepancies({
+    String? type,
+    String? search,
+  });
 
   Future<Either<Failure, String>> uploadPurchaseAttachments({
     required String billId,
