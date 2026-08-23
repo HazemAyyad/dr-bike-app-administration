@@ -123,15 +123,36 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   List<String> tabs = ['bills', 'archive'];
 
   RxInt currentTab = 0.obs;
+  final RxBool isPurchaseSearchVisible = false.obs;
+  final RxString purchaseBillStateFilter = 'all'.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
+    _applyPurchaseBillFilters();
+    update();
+  }
+
+  void togglePurchaseSearch() {
+    isPurchaseSearchVisible.value = !isPurchaseSearchVisible.value;
+    update();
+  }
+
+  void closePurchaseSearch() {
+    searchController.clear();
+    isPurchaseSearchVisible.value = false;
+    _applyPurchaseBillFilters();
+    update();
+  }
+
+  void changePurchaseBillStateFilter(String value) {
+    purchaseBillStateFilter.value = value;
+    _applyPurchaseBillFilters();
     update();
   }
 
   // get all products
   final List<ProductModel> products = [];
-  void getAllProducts() async {
+  Future<void> getAllProducts() async {
     final result = await getAllProductsUsecase.call();
     products.assignAll(result);
     update();
@@ -564,7 +585,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       debugScope: 'BillsController.getBills.unfinished',
     );
     BuyingServes().allBillsTasks.value = groupByDate(allBillsTasks);
-    allBillsSearch.assignAll(BuyingServes().allBillsTasks);
+    _applyPurchaseBillFilters();
     isLoading(false);
     update();
 
@@ -582,7 +603,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       debugScope: 'BillsController.getBills.archive',
     );
     BuyingServes().allBillsArchiveTasks.value = groupByDate(billsArchiveTasks);
-    allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
+    _applyPurchaseBillFilters();
 
     isLoading(false);
     update();
@@ -1225,31 +1246,65 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final allBillsSearch = <String, List<BillDataModel>>{}.obs;
   final allBillsArchiveSearch = <String, List<BillDataModel>>{}.obs;
 
-  void searchBar(String value) {
-    if (value.isNotEmpty) {
-      allBillsSearch.value = Map.fromEntries(
-        BuyingServes().allBillsTasks.entries.map((entry) {
-          final filteredBills = entry.value
-              .where((bill) =>
-                  bill.seller.toLowerCase().contains(value.toLowerCase()))
-              .toList();
-          return MapEntry(entry.key, filteredBills);
-        }).where((entry) => entry.value.isNotEmpty),
-      );
-
-      allBillsArchiveSearch.value = Map.fromEntries(
-        BuyingServes().allBillsArchiveTasks.entries.map((entry) {
-          final filteredBills = entry.value
-              .where((bill) =>
-                  bill.seller.toLowerCase().contains(value.toLowerCase()))
-              .toList();
-          return MapEntry(entry.key, filteredBills);
-        }).where((entry) => entry.value.isNotEmpty),
-      );
-    } else {
-      allBillsSearch.assignAll(BuyingServes().allBillsTasks);
-      allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
+  bool _billMatchesState(BillDataModel bill, String filter) {
+    if (filter == 'all') return true;
+    final haystack = [
+      bill.status,
+      bill.workflowStatus,
+      bill.paymentStatus,
+    ].join(' ').toLowerCase();
+    switch (filter) {
+      case 'awaiting_receiving':
+        return haystack.contains('awaiting_receiving') ||
+            haystack.contains('draft');
+      case 'partially_received':
+        return haystack.contains('partially_received');
+      case 'receiving_issues':
+        return haystack.contains('issue') ||
+            haystack.contains('discrep') ||
+            haystack.contains('damaged') ||
+            haystack.contains('mismatch');
+      case 'awaiting_finalization':
+        return haystack.contains('awaiting_finalization') ||
+            haystack.contains('received');
+      case 'unpaid':
+        return haystack.contains('unpaid');
+      case 'partially_paid':
+        return haystack.contains('partial');
+      case 'paid':
+        return haystack.contains('paid') && !haystack.contains('unpaid');
+      default:
+        return haystack.contains(filter.toLowerCase());
     }
+  }
+
+  Map<String, List<BillDataModel>> _filterBillGroups(
+    Map<String, List<BillDataModel>> source,
+  ) {
+    final query = searchController.text.trim().toLowerCase();
+    final state = purchaseBillStateFilter.value;
+    return Map.fromEntries(
+      source.entries.map((entry) {
+        final filteredBills = entry.value.where((bill) {
+          final textMatches = query.isEmpty ||
+              bill.seller.toLowerCase().contains(query) ||
+              bill.id.toString().contains(query);
+          return textMatches && _billMatchesState(bill, state);
+        }).toList();
+        return MapEntry(entry.key, filteredBills);
+      }).where((entry) => entry.value.isNotEmpty),
+    );
+  }
+
+  void _applyPurchaseBillFilters() {
+    allBillsSearch.assignAll(_filterBillGroups(BuyingServes().allBillsTasks));
+    allBillsArchiveSearch
+        .assignAll(_filterBillGroups(BuyingServes().allBillsArchiveTasks));
+  }
+
+  void searchBar(String value) {
+    searchController.text = value;
+    _applyPurchaseBillFilters();
     update();
   }
 

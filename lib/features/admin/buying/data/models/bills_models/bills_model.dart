@@ -32,6 +32,8 @@ class BillDataModel {
   final String seller;
   final String createdAt;
   final String status;
+  final String workflowStatus;
+  final String paymentStatus;
 
   BillDataModel({
     required this.id,
@@ -39,6 +41,8 @@ class BillDataModel {
     required this.seller,
     required this.createdAt,
     required this.status,
+    required this.workflowStatus,
+    required this.paymentStatus,
   });
 
   factory BillDataModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +61,8 @@ class BillDataModel {
         j['created_at'] ?? j['date'] ?? j['createdAt'],
       ),
       status: asString(j['status']),
+      workflowStatus: asString(j['workflow_status']),
+      paymentStatus: asString(j['payment_status']),
     );
   }
 
@@ -67,6 +73,8 @@ class BillDataModel {
       'seller': seller,
       'created_at': createdAt,
       'status': status,
+      'workflow_status': workflowStatus,
+      'payment_status': paymentStatus,
     };
   }
 }
