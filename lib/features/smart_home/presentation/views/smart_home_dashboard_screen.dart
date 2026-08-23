@@ -1127,7 +1127,7 @@ class _LocationFormSheetState extends State<_LocationFormSheet> {
     );
     if (!mounted) return;
     if (ok) {
-      Get.back<void>();
+      Navigator.of(context).pop();
       return;
     }
     setState(() => saving = false);
@@ -1466,7 +1466,7 @@ class _RoomFormDialogState extends State<_RoomFormDialog> {
           );
     if (!mounted) return;
     if (ok) {
-      Get.back<void>();
+      Navigator.of(context).pop();
       return;
     }
     setState(() => saving = false);
@@ -1976,7 +1976,7 @@ class _MoveDeviceSheetState extends State<_MoveDeviceSheet> {
     );
     if (!mounted) return;
     if (ok) {
-      Get.back<void>();
+      Navigator.of(context).pop();
       return;
     }
     setState(() => movingTargetKey = null);

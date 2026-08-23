@@ -183,7 +183,7 @@ class SmartHomeController extends GetxController {
         selectedRoomId.value = null;
       }
       await _loadSelectedHomeData();
-      await refreshLoadedDeviceStatuses();
+      _refreshLoadedDeviceStatusesInBackground();
     } finally {
       isRefreshing(false);
     }
@@ -926,7 +926,7 @@ class SmartHomeController extends GetxController {
           : 'home:$smartHomeId';
       selectedRoomId.value = smartRoomId;
       await _loadSelectedHomeData();
-      await refreshLoadedDeviceStatuses();
+      _refreshLoadedDeviceStatusesInBackground();
       Get.snackbar('smartHomeMoveDevice'.tr, 'smartHomeDeviceMoved'.tr);
       return true;
     } catch (e) {
@@ -1245,6 +1245,12 @@ class SmartHomeController extends GetxController {
         // Dashboard loading should stay responsive if one device cannot refresh.
       }
     }
+  }
+
+  void _refreshLoadedDeviceStatusesInBackground() {
+    refreshLoadedDeviceStatuses().catchError((_) {
+      // Native status refresh is best-effort and must not block UI updates.
+    });
   }
 
   String _tuyaHomeIdForDevice(SmartDeviceModel device) {
