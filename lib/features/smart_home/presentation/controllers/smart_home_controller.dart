@@ -176,11 +176,17 @@ class SmartHomeController extends GetxController {
   }
 
   Future<void> selectLocationKey(String key) async {
-    if (selectedLocationKey.value == key) return;
-    selectedLocationKey.value = key;
-    selectedRoomId.value = null;
-    await _loadSelectedHomeData();
-    await refreshLoadedDeviceStatuses();
+    isRefreshing(true);
+    try {
+      if (selectedLocationKey.value != key) {
+        selectedLocationKey.value = key;
+        selectedRoomId.value = null;
+      }
+      await _loadSelectedHomeData();
+      await refreshLoadedDeviceStatuses();
+    } finally {
+      isRefreshing(false);
+    }
   }
 
   void selectRoom(int? roomId) {
@@ -906,6 +912,7 @@ class SmartHomeController extends GetxController {
     required int? smartRoomId,
   }) async {
     deviceControlBusyIds.add(device.id);
+    isRefreshing(true);
     try {
       final updated = await apiService.moveDevice(
         id: device.id,
@@ -914,6 +921,10 @@ class SmartHomeController extends GetxController {
         userId: selectedOwnerId.value,
       );
       _upsertDevice(updated);
+      selectedLocationKey.value = smartHomeId == null
+          ? smartHomeUnassignedLocationKey
+          : 'home:$smartHomeId';
+      selectedRoomId.value = smartRoomId;
       await _loadSelectedHomeData();
       await refreshLoadedDeviceStatuses();
       Get.snackbar('smartHomeMoveDevice'.tr, 'smartHomeDeviceMoved'.tr);
@@ -923,6 +934,7 @@ class SmartHomeController extends GetxController {
       return false;
     } finally {
       deviceControlBusyIds.remove(device.id);
+      isRefreshing(false);
     }
   }
 

@@ -61,6 +61,13 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 actionLabel: 'addDevice'.tr,
                 onAction: _showAddDeviceDialog,
               ),
+              if (controller.isRefreshing.value) ...[
+                SizedBox(height: 8.h),
+                LinearProgressIndicator(
+                  minHeight: 3.h,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ],
               SizedBox(height: 8.h),
               _DevicesList(controller: controller),
             ],
@@ -858,11 +865,11 @@ class _SmartLocationSelector extends StatelessWidget {
         Expanded(
           child: PopupMenuButton<String>(
             tooltip: 'smartHomeSelectLocation'.tr,
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'add') {
                 _showLocationDialog(controller: controller);
               } else {
-                controller.selectLocationKey(value);
+                await controller.selectLocationKey(value);
               }
             },
             itemBuilder: (_) => [
@@ -1752,7 +1759,7 @@ Future<void> _showMoveDeviceSheet({
   );
 }
 
-class _MoveDeviceSheet extends StatelessWidget {
+class _MoveDeviceSheet extends StatefulWidget {
   const _MoveDeviceSheet({
     required this.controller,
     required this.device,
@@ -1762,13 +1769,28 @@ class _MoveDeviceSheet extends StatelessWidget {
   final SmartDeviceModel device;
 
   @override
+  State<_MoveDeviceSheet> createState() => _MoveDeviceSheetState();
+}
+
+class _MoveDeviceSheetState extends State<_MoveDeviceSheet> {
+  late final Future<Map<int, List<SmartRoomModel>>> roomsFuture;
+  String? movingTargetKey;
+
+  @override
+  void initState() {
+    super.initState();
+    roomsFuture = _loadRoomsByHome();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _BottomSheetPanel(
       child: FutureBuilder<Map<int, List<SmartRoomModel>>>(
-        future: _loadRoomsByHome(),
+        future: roomsFuture,
         builder: (context, snapshot) {
           final roomsByHome =
               snapshot.data ?? const <int, List<SmartRoomModel>>{};
+          final moving = movingTargetKey != null;
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1783,26 +1805,29 @@ class _MoveDeviceSheet extends StatelessWidget {
               _MoveTargetTile(
                 icon: Icons.inventory_2_outlined,
                 label: 'smartHomeUnassignedDevices'.tr,
-                selected: device.smartHomeId == null,
-                onTap: () => _move(null, null),
+                selected: widget.device.smartHomeId == null,
+                busy: movingTargetKey == _moveTargetKey(null, null),
+                onTap: moving ? null : () => _move(null, null),
               ),
-              ...controller.homes.expand((home) {
+              ...widget.controller.homes.expand((home) {
                 final rooms = roomsByHome[home.id] ?? const <SmartRoomModel>[];
                 return [
                   _MoveTargetTile(
                     icon: _locationIcon(home.type),
                     label: _locationLabel(home),
-                    selected: device.smartHomeId == home.id &&
-                        device.smartRoomId == null,
-                    onTap: () => _move(home.id, null),
+                    selected: widget.device.smartHomeId == home.id &&
+                        widget.device.smartRoomId == null,
+                    busy: movingTargetKey == _moveTargetKey(home.id, null),
+                    onTap: moving ? null : () => _move(home.id, null),
                   ),
                   ...rooms.map(
                     (room) => _MoveTargetTile(
                       icon: Icons.meeting_room_outlined,
                       label: room.name,
                       indent: true,
-                      selected: device.smartRoomId == room.id,
-                      onTap: () => _move(home.id, room.id),
+                      selected: widget.device.smartRoomId == room.id,
+                      busy: movingTargetKey == _moveTargetKey(home.id, room.id),
+                      onTap: moving ? null : () => _move(home.id, room.id),
                     ),
                   ),
                 ];
@@ -1821,23 +1846,33 @@ class _MoveDeviceSheet extends StatelessWidget {
 
   Future<Map<int, List<SmartRoomModel>>> _loadRoomsByHome() async {
     final result = <int, List<SmartRoomModel>>{};
-    for (final home in controller.homes) {
-      result[home.id] = await controller.apiService.getRooms(
+    for (final home in widget.controller.homes) {
+      result[home.id] = await widget.controller.apiService.getRooms(
         home.id,
-        userId: controller.selectedOwnerId.value,
+        userId: widget.controller.selectedOwnerId.value,
       );
     }
     return result;
   }
 
   Future<void> _move(int? homeId, int? roomId) async {
-    final ok = await controller.moveSmartDevice(
-      device: device,
+    final targetKey = _moveTargetKey(homeId, roomId);
+    setState(() => movingTargetKey = targetKey);
+    final ok = await widget.controller.moveSmartDevice(
+      device: widget.device,
       smartHomeId: homeId,
       smartRoomId: roomId,
     );
-    if (ok) Get.back<void>();
+    if (!mounted) return;
+    if (ok) {
+      Get.back<void>();
+      return;
+    }
+    setState(() => movingTargetKey = null);
   }
+
+  String _moveTargetKey(int? homeId, int? roomId) =>
+      '${homeId ?? 'unassigned'}:${roomId ?? 'none'}';
 }
 
 class _MoveTargetTile extends StatelessWidget {
@@ -1846,13 +1881,15 @@ class _MoveTargetTile extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.busy = false,
     this.indent = false,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool busy;
   final bool indent;
 
   @override
@@ -1862,7 +1899,15 @@ class _MoveTargetTile extends StatelessWidget {
       contentPadding: EdgeInsetsDirectional.only(start: indent ? 28.w : 0),
       leading: Icon(icon, color: selected ? AppColors.primaryColor : null),
       title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: selected ? const Icon(Icons.check_rounded) : null,
+      trailing: busy
+          ? SizedBox(
+              width: 18.r,
+              height: 18.r,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            )
+          : selected
+              ? const Icon(Icons.check_rounded)
+              : null,
       onTap: onTap,
     );
   }
