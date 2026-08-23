@@ -923,6 +923,7 @@ class MainActivity : FlutterFragmentActivity() {
     private fun mapDeviceBean(device: DeviceBean): Map<String, Any?> {
         return mapOf(
             "tuya_device_id" to (device.devId ?: ""),
+            "tuya_home_id" to device.homeId.toString(),
             "tuya_product_id" to device.productId,
             "tuya_uuid" to device.uuid,
             "name" to (device.name ?: "Smart device"),

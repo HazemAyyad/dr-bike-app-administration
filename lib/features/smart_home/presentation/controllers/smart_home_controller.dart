@@ -1255,9 +1255,37 @@ class SmartHomeController extends GetxController {
   }
 
   String _tuyaHomeIdForDevice(SmartDeviceModel device) {
+    final metadataHomeId = _tuyaHomeIdFromMetadata(device.rawMetadata);
+    if (metadataHomeId.isNotEmpty) return metadataHomeId;
+
     final home =
         homes.firstWhereOrNull((item) => item.id == device.smartHomeId);
-    return home?.tuyaHomeId ?? selectedHome?.tuyaHomeId ?? '';
+    if (home?.tuyaHomeId.isNotEmpty == true) return home!.tuyaHomeId;
+
+    final selectedTuyaHomeId = selectedHome?.tuyaHomeId ?? '';
+    if (selectedTuyaHomeId.isNotEmpty) return selectedTuyaHomeId;
+
+    return homes
+            .firstWhereOrNull((item) => item.tuyaHomeId.trim().isNotEmpty)
+            ?.tuyaHomeId ??
+        '';
+  }
+
+  String _tuyaHomeIdFromMetadata(Map<String, dynamic> metadata) {
+    for (final key in const [
+      'tuya_home_id',
+      'tuyaHomeId',
+      'home_id',
+      'homeId',
+    ]) {
+      final value = metadata[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty && value != '0') return value;
+    }
+    final rawDevice = metadata['device'];
+    if (rawDevice is Map) {
+      return _tuyaHomeIdFromMetadata(Map<String, dynamic>.from(rawDevice));
+    }
+    return '';
   }
 
   Map<String, dynamic> _controlErrorContext({
