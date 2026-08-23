@@ -13,6 +13,7 @@ import '../../data/tuya_device_capability_resolver.dart';
 const Duration _smartHomePairingTimeout = Duration(seconds: 150);
 const String _smartHomeWifiSsidKey = 'smart_home_wifi_ssid';
 const String _smartHomeWifiPasswordKey = 'smart_home_wifi_password';
+const String smartHomeUnassignedLocationKey = 'unassigned';
 
 class SmartHomeWifiCredentials {
   const SmartHomeWifiCredentials({required this.ssid, required this.password});
@@ -40,6 +41,8 @@ class SmartHomeController extends GetxController {
   ).obs;
   final owners = <SmartHomeOwnerModel>[].obs;
   final selectedOwnerId = RxnInt();
+  final selectedLocationKey = ''.obs;
+  final selectedRoomId = RxnInt();
   final homes = <SmartHomeModel>[].obs;
   final rooms = <SmartRoomModel>[].obs;
   final devices = <SmartDeviceModel>[].obs;
@@ -54,9 +57,32 @@ class SmartHomeController extends GetxController {
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
   String _activeNativeTuyaUid = '';
 
-  SmartHomeModel? get selectedHome =>
-      homes.firstWhereOrNull((home) => home.isDefault) ??
-      (homes.isNotEmpty ? homes.first : null);
+  SmartHomeModel? get selectedHome {
+    final key = selectedLocationKey.value;
+    if (key.startsWith('home:')) {
+      final id = int.tryParse(key.substring(5));
+      final selected = homes.firstWhereOrNull((home) => home.id == id);
+      if (selected != null) return selected;
+    }
+    return homes.firstWhereOrNull((home) => home.isDefault) ??
+        (homes.isNotEmpty ? homes.first : null);
+  }
+
+  bool get isUnassignedSelected =>
+      selectedLocationKey.value == smartHomeUnassignedLocationKey;
+
+  List<SmartDeviceModel> get visibleDevices {
+    if (isUnassignedSelected) {
+      return devices
+          .where((device) => device.smartHomeId == null)
+          .toList(growable: false);
+    }
+    final roomId = selectedRoomId.value;
+    if (roomId == null) return devices.toList(growable: false);
+    return devices
+        .where((device) => device.smartRoomId == roomId)
+        .toList(growable: false);
+  }
 
   int get devicesCount => selectedHome?.devicesCount ?? devices.length;
   int get onlineDevicesCount =>
@@ -122,6 +148,7 @@ class SmartHomeController extends GetxController {
       } else {
         homes.assignAll(loadedHomes);
       }
+      _ensureSelectedLocation();
       await _loadSelectedHomeData();
     } catch (e) {
       errorMessage(e.toString());
@@ -142,7 +169,114 @@ class SmartHomeController extends GetxController {
   Future<void> selectOwner(int? ownerId) async {
     if (!canViewSmartHomeOwners || selectedOwnerId.value == ownerId) return;
     selectedOwnerId.value = ownerId;
+    selectedLocationKey.value = '';
+    selectedRoomId.value = null;
     await refreshData();
+  }
+
+  Future<void> selectLocationKey(String key) async {
+    if (selectedLocationKey.value == key) return;
+    selectedLocationKey.value = key;
+    selectedRoomId.value = null;
+    await _loadSelectedHomeData();
+  }
+
+  void selectRoom(int? roomId) {
+    selectedRoomId.value = roomId;
+  }
+
+  Future<bool> createLocation({
+    required String name,
+    required String type,
+  }) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty) return false;
+    isRefreshing(true);
+    try {
+      final created = await apiService.createHome(
+        cleanName,
+        type: type,
+        userId: selectedOwnerId.value,
+      );
+      homes.add(created);
+      selectedLocationKey.value = 'home:${created.id}';
+      selectedRoomId.value = null;
+      await _loadSelectedHomeData();
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      isRefreshing(false);
+    }
+  }
+
+  Future<bool> createRoom(String name) async {
+    final home = selectedHome;
+    final cleanName = name.trim();
+    if (home == null || cleanName.isEmpty || isUnassignedSelected) {
+      return false;
+    }
+    isRefreshing(true);
+    try {
+      final room = await apiService.createRoom(
+        homeId: home.id,
+        name: cleanName,
+        userId: selectedOwnerId.value,
+      );
+      rooms.add(room);
+      selectedRoomId.value = room.id;
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      isRefreshing(false);
+    }
+  }
+
+  Future<bool> renameRoom({
+    required SmartRoomModel room,
+    required String name,
+  }) async {
+    final cleanName = name.trim();
+    if (cleanName.isEmpty || cleanName == room.name) return false;
+    isRefreshing(true);
+    try {
+      final updated = await apiService.updateRoom(
+        id: room.id,
+        name: cleanName,
+        userId: selectedOwnerId.value,
+      );
+      final index = rooms.indexWhere((item) => item.id == updated.id);
+      if (index >= 0) rooms[index] = updated;
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      isRefreshing(false);
+    }
+  }
+
+  Future<bool> deleteRoom(SmartRoomModel room) async {
+    isRefreshing(true);
+    try {
+      await apiService.deleteRoom(id: room.id, userId: selectedOwnerId.value);
+      rooms.removeWhere((item) => item.id == room.id);
+      if (selectedRoomId.value == room.id) selectedRoomId.value = null;
+      devices.assignAll(devices
+          .map((device) => device.smartRoomId == room.id
+              ? device.copyWith(smartRoomId: null)
+              : device)
+          .toList(growable: false));
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      isRefreshing(false);
+    }
   }
 
   Future<SmartHomeWifiCredentials> savedWifiCredentials() async {
@@ -733,6 +867,58 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<bool> updateDeviceFunctionSettings({
+    required SmartDeviceModel device,
+    required SmartDeviceFunctionModel function,
+    String? displayName,
+    int? sortOrder,
+    bool? isVisible,
+  }) async {
+    deviceControlBusyIds.add(device.id);
+    try {
+      final updated = await apiService.updateDeviceFunction(
+        deviceId: device.id,
+        functionId: function.id,
+        displayName: displayName?.trim(),
+        sortOrder: sortOrder,
+        isVisible: isVisible,
+        userId: selectedOwnerId.value,
+      );
+      _upsertDevice(updated);
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
+  Future<bool> moveSmartDevice({
+    required SmartDeviceModel device,
+    required int? smartHomeId,
+    required int? smartRoomId,
+  }) async {
+    deviceControlBusyIds.add(device.id);
+    try {
+      final updated = await apiService.moveDevice(
+        id: device.id,
+        smartHomeId: smartHomeId,
+        smartRoomId: smartRoomId,
+        userId: selectedOwnerId.value,
+      );
+      _upsertDevice(updated);
+      await _loadSelectedHomeData();
+      Get.snackbar('smartHomeMoveDevice'.tr, 'smartHomeDeviceMoved'.tr);
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
   Future<bool> deleteSmartDevice({
     required SmartDeviceModel device,
   }) async {
@@ -1093,6 +1279,16 @@ class SmartHomeController extends GetxController {
   }
 
   Future<void> _loadSelectedHomeData() async {
+    if (isUnassignedSelected) {
+      rooms.clear();
+      final loadedDevices = await apiService.getDevices(
+        unassigned: true,
+        userId: selectedOwnerId.value,
+      );
+      devices.assignAll(loadedDevices);
+      return;
+    }
+
     final home = selectedHome;
     if (home == null) {
       rooms.clear();
@@ -1109,5 +1305,20 @@ class SmartHomeController extends GetxController {
     );
     rooms.assignAll(loadedRooms);
     devices.assignAll(loadedDevices);
+  }
+
+  void _ensureSelectedLocation() {
+    if (selectedLocationKey.value == smartHomeUnassignedLocationKey) return;
+    final selectedId = selectedLocationKey.value.startsWith('home:')
+        ? int.tryParse(selectedLocationKey.value.substring(5))
+        : null;
+    final stillExists =
+        selectedId != null && homes.any((home) => home.id == selectedId);
+    if (stillExists) return;
+    final next = homes.firstWhereOrNull((home) => home.isDefault) ??
+        (homes.isNotEmpty ? homes.first : null);
+    selectedLocationKey.value =
+        next == null ? smartHomeUnassignedLocationKey : 'home:${next.id}';
+    selectedRoomId.value = null;
   }
 }

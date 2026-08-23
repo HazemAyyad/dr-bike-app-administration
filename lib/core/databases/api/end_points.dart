@@ -118,6 +118,7 @@ class EndPoints {
   static const String smartHomes = 'smart-home/homes';
   static String smartHome(int id) => 'smart-home/homes/$id';
   static String smartHomeRooms(int homeId) => 'smart-home/homes/$homeId/rooms';
+  static String smartRoom(int id) => 'smart-home/rooms/$id';
   static const String smartDevices = 'smart-home/devices';
   static const String smartDevicesRegister = 'smart-home/devices/register';
   static String smartDevice(int id) => 'smart-home/devices/$id';

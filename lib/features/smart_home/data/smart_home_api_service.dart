@@ -196,8 +196,9 @@ class SmartDeviceFunctionModel {
 
 class SmartDeviceModel {
   final int id;
-  final int smartHomeId;
+  final int? smartHomeId;
   final int? smartRoomId;
+  final String roomName;
   final String tuyaDeviceId;
   final String tuyaProductId;
   final String tuyaUuid;
@@ -219,6 +220,7 @@ class SmartDeviceModel {
     required this.id,
     required this.smartHomeId,
     required this.smartRoomId,
+    required this.roomName,
     required this.tuyaDeviceId,
     required this.tuyaProductId,
     required this.tuyaUuid,
@@ -240,6 +242,8 @@ class SmartDeviceModel {
   bool get canTogglePower => primaryPowerDp.isNotEmpty;
 
   SmartDeviceModel copyWith({
+    Object? smartHomeId = _noValue,
+    Object? smartRoomId = _noValue,
     String? name,
     bool? online,
     Object? powerOn = _noValue,
@@ -250,8 +254,13 @@ class SmartDeviceModel {
   }) =>
       SmartDeviceModel(
         id: id,
-        smartHomeId: smartHomeId,
-        smartRoomId: smartRoomId,
+        smartHomeId:
+            smartHomeId == _noValue ? this.smartHomeId : smartHomeId as int?,
+        smartRoomId:
+            smartRoomId == _noValue ? this.smartRoomId : smartRoomId as int?,
+        roomName: smartRoomId == _noValue
+            ? roomName
+            : (smartRoomId == null ? '' : roomName),
         tuyaDeviceId: tuyaDeviceId,
         tuyaProductId: tuyaProductId,
         tuyaUuid: tuyaUuid,
@@ -274,10 +283,14 @@ class SmartDeviceModel {
     final rawStatus = json['last_status'];
     final rawMetadata = json['raw_metadata'];
     final rawFunctions = json['functions'];
+    final rawHomeId = json['smart_home_id'];
+    final rawRoom = json['room'];
     return SmartDeviceModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
-      smartHomeId: int.tryParse(json['smart_home_id']?.toString() ?? '') ?? 0,
+      smartHomeId:
+          rawHomeId == null ? null : int.tryParse(rawHomeId.toString()),
       smartRoomId: int.tryParse(json['smart_room_id']?.toString() ?? ''),
+      roomName: rawRoom is Map ? rawRoom['name']?.toString() ?? '' : '',
       tuyaDeviceId: json['tuya_device_id']?.toString() ?? '',
       tuyaProductId: json['tuya_product_id']?.toString() ?? '',
       tuyaUuid: json['tuya_uuid']?.toString() ?? '',
@@ -410,14 +423,56 @@ class SmartHomeApiService {
         .toList();
   }
 
-  Future<SmartHomeModel> createHome(String name, {String type = 'home'}) async {
-    final response = await _api.post(EndPoints.smartHomes, data: {
-      'name': name,
-      'type': type,
-      'is_default': true,
-    });
+  Future<SmartHomeModel> createHome(
+    String name, {
+    String type = 'home',
+    int? userId,
+  }) async {
+    final response = await _api.post(
+      EndPoints.smartHomes,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'name': name,
+        'type': type,
+        'is_default': true,
+      },
+    );
     return SmartHomeModel.fromJson(
       Map<String, dynamic>.from(response.data['home'] as Map),
+    );
+  }
+
+  Future<SmartHomeModel> updateHome({
+    required int id,
+    String? name,
+    String? type,
+    bool? isDefault,
+    int? userId,
+  }) async {
+    final response = await _api.put(
+      EndPoints.smartHome(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        if (name != null) 'name': name,
+        if (type != null) 'type': type,
+        if (isDefault != null) 'is_default': isDefault,
+      },
+    );
+    return SmartHomeModel.fromJson(
+      Map<String, dynamic>.from(response.data['home'] as Map),
+    );
+  }
+
+  Future<void> deleteHome({required int id, int? userId}) async {
+    await _api.delete(
+      EndPoints.smartHome(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
     );
   }
 
@@ -447,11 +502,61 @@ class SmartHomeApiService {
         .toList();
   }
 
-  Future<List<SmartDeviceModel>> getDevices({int? homeId, int? userId}) async {
+  Future<SmartRoomModel> createRoom({
+    required int homeId,
+    required String name,
+    int? userId,
+  }) async {
+    final response = await _api.post(
+      EndPoints.smartHomeRooms(homeId),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {'name': name},
+    );
+    return SmartRoomModel.fromJson(
+      Map<String, dynamic>.from(response.data['room'] as Map),
+    );
+  }
+
+  Future<SmartRoomModel> updateRoom({
+    required int id,
+    required String name,
+    int? userId,
+  }) async {
+    final response = await _api.put(
+      EndPoints.smartRoom(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {'name': name},
+    );
+    return SmartRoomModel.fromJson(
+      Map<String, dynamic>.from(response.data['room'] as Map),
+    );
+  }
+
+  Future<void> deleteRoom({required int id, int? userId}) async {
+    await _api.delete(
+      EndPoints.smartRoom(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
+  }
+
+  Future<List<SmartDeviceModel>> getDevices({
+    int? homeId,
+    bool unassigned = false,
+    int? userId,
+  }) async {
     final response = await _api.get(
       EndPoints.smartDevices,
       queryParameters: {
-        if (homeId != null) 'home_id': homeId,
+        if (unassigned)
+          'home_id': 'unassigned'
+        else if (homeId != null)
+          'home_id': homeId,
         if (userId != null) 'user_id': userId,
         'include_debug': true,
       },
@@ -513,6 +618,45 @@ class SmartHomeApiService {
         if (displayName != null) 'display_name': displayName,
         if (sortOrder != null) 'sort_order': sortOrder,
         if (isVisible != null) 'is_visible': isVisible,
+      },
+    );
+    return SmartDeviceModel.fromJson(
+      Map<String, dynamic>.from(response.data['device'] as Map),
+    );
+  }
+
+  Future<List<SmartDeviceFunctionModel>> getDeviceFunctions({
+    required int deviceId,
+    int? userId,
+  }) async {
+    final response = await _api.get(
+      EndPoints.smartDeviceFunctions(deviceId),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+    );
+    return _extractList(response.data, const ['functions'])
+        .whereType<Map>()
+        .map((item) =>
+            SmartDeviceFunctionModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.id > 0 && item.code.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<SmartDeviceModel> moveDevice({
+    required int id,
+    int? smartHomeId,
+    int? smartRoomId,
+    int? userId,
+  }) async {
+    final response = await _api.patch(
+      EndPoints.smartDeviceLocation(id),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'smart_home_id': smartHomeId,
+        'smart_room_id': smartRoomId,
       },
     );
     return SmartDeviceModel.fromJson(

@@ -48,18 +48,14 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 _OwnerFilter(controller: controller),
                 SizedBox(height: 14.h),
               ],
-              _HomeSummaryCard(controller: controller),
-              SizedBox(height: 16.h),
+              _SmartLocationSelector(controller: controller),
+              SizedBox(height: 10.h),
               _NativeStatusCard(controller: controller),
-              SizedBox(height: 16.h),
-              _SectionHeader(
-                title: 'rooms'.tr,
-                actionLabel: 'addRoom'.tr,
-                onAction: () => _notReady('addRoom'.tr),
-              ),
-              SizedBox(height: 8.h),
-              _RoomsStrip(controller: controller),
-              SizedBox(height: 18.h),
+              if (!controller.isUnassignedSelected) ...[
+                SizedBox(height: 12.h),
+                _RoomsStrip(controller: controller),
+              ],
+              SizedBox(height: 14.h),
               _SectionHeader(
                 title: 'devices'.tr,
                 actionLabel: 'addDevice'.tr,
@@ -851,55 +847,243 @@ class _OwnerFilter extends StatelessWidget {
   }
 }
 
-class _HomeSummaryCard extends StatelessWidget {
-  const _HomeSummaryCard({required this.controller});
+class _SmartLocationSelector extends StatelessWidget {
+  const _SmartLocationSelector({required this.controller});
 
   final SmartHomeController controller;
 
   @override
   Widget build(BuildContext context) {
-    final home = controller.selectedHome;
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor,
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            home?.name.isNotEmpty == true
-                ? home!.name
-                : 'smartHomeDefaultName'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Colors.white,
-                  fontSize: 21.sp,
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          SizedBox(height: 14.h),
-          Row(
-            children: [
-              Expanded(
-                child: _MetricTile(
-                  label: 'devices'.tr,
-                  value: controller.devicesCount.toString(),
-                ),
-              ),
-              Expanded(
-                child: _MetricTile(
-                  label: 'online'.tr,
-                  value: controller.onlineDevicesCount.toString(),
+    final selectedLabel = controller.isUnassignedSelected
+        ? 'smartHomeUnassignedDevices'.tr
+        : _locationLabel(controller.selectedHome);
+    final selectedIcon = controller.isUnassignedSelected
+        ? Icons.inventory_2_outlined
+        : _locationIcon(controller.selectedHome?.type ?? 'home');
+    return Row(
+      children: [
+        Expanded(
+          child: PopupMenuButton<String>(
+            tooltip: 'smartHomeSelectLocation'.tr,
+            onSelected: (value) {
+              if (value == 'add') {
+                _showLocationDialog(controller: controller);
+              } else {
+                controller.selectLocationKey(value);
+              }
+            },
+            itemBuilder: (_) => [
+              ...controller.homes.map(
+                (home) => PopupMenuItem<String>(
+                  value: 'home:${home.id}',
+                  child: _LocationMenuRow(
+                    icon: _locationIcon(home.type),
+                    label: _locationLabel(home),
+                  ),
                 ),
               ),
-              Expanded(
-                child: _MetricTile(
-                  label: 'offline'.tr,
-                  value: controller.offlineDevicesCount.toString(),
+              PopupMenuItem<String>(
+                value: smartHomeUnassignedLocationKey,
+                child: _LocationMenuRow(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'smartHomeUnassignedDevices'.tr,
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
+                value: 'add',
+                child: _LocationMenuRow(
+                  icon: Icons.add_rounded,
+                  label: 'smartHomeAddLocation'.tr,
                 ),
               ),
             ],
+            child: Container(
+              height: 42.h,
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
+              decoration: BoxDecoration(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.whiteColor2,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(selectedIcon, size: 20.r, color: AppColors.primaryColor),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      selectedLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13.sp,
+                          ),
+                    ),
+                  ),
+                  const Icon(Icons.keyboard_arrow_down_rounded),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        IconButton.filledTonal(
+          tooltip: 'smartHomeAddLocation'.tr,
+          onPressed: () => _showLocationDialog(controller: controller),
+          icon: const Icon(Icons.add_rounded),
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationMenuRow extends StatelessWidget {
+  const _LocationMenuRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20.r, color: AppColors.primaryColor),
+        SizedBox(width: 10.w),
+        Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
+      ],
+    );
+  }
+}
+
+IconData _locationIcon(String type) {
+  return type == 'company' ? Icons.apartment_rounded : Icons.home_outlined;
+}
+
+String _locationLabel(SmartHomeModel? home) {
+  if (home == null) return 'smartHomeDefaultName'.tr;
+  return home.name.isNotEmpty ? home.name : 'smartHomeDefaultName'.tr;
+}
+
+String _deviceLocationSummary(SmartDeviceModel device) {
+  if (device.smartHomeId == null) return 'smartHomeUnassignedDevices'.tr;
+  if (device.roomName.trim().isNotEmpty) return device.roomName;
+  return 'smartHomeLocationOnly'.tr;
+}
+
+Future<void> _showLocationDialog({
+  required SmartHomeController controller,
+}) async {
+  await Get.bottomSheet<void>(
+    _LocationFormSheet(controller: controller),
+    isScrollControlled: true,
+  );
+}
+
+class _LocationFormSheet extends StatefulWidget {
+  const _LocationFormSheet({required this.controller});
+
+  final SmartHomeController controller;
+
+  @override
+  State<_LocationFormSheet> createState() => _LocationFormSheetState();
+}
+
+class _LocationFormSheetState extends State<_LocationFormSheet> {
+  late final TextEditingController nameController;
+  String type = 'home';
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+  }
+
+  Future<void> _save() async {
+    if (saving) return;
+    final cleanName = nameController.text.trim();
+    if (cleanName.isEmpty) {
+      Get.snackbar(
+          'smartHomeAddLocation'.tr, 'smartHomeLocationNameRequired'.tr);
+      return;
+    }
+    setState(() => saving = true);
+    final ok = await widget.controller.createLocation(
+      name: cleanName,
+      type: type,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Get.back<void>();
+      return;
+    }
+    setState(() => saving = false);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _BottomSheetPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'smartHomeAddLocation'.tr,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  selected: type == 'home',
+                  label: Text('smartHomeHomeType'.tr),
+                  avatar: const Icon(Icons.home_outlined),
+                  onSelected: (_) => setState(() => type = 'home'),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: ChoiceChip(
+                  selected: type == 'company',
+                  label: Text('smartHomeCompanyType'.tr),
+                  avatar: const Icon(Icons.apartment_rounded),
+                  onSelected: (_) => setState(() => type = 'company'),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          TextField(
+            controller: nameController,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: 'smartHomeLocationName'.tr),
+            onSubmitted: (_) => _save(),
+          ),
+          SizedBox(height: 14.h),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: saving ? null : _save,
+              icon: saving
+                  ? SizedBox(
+                      width: 16.r,
+                      height: 16.r,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded),
+              label: Text('save'.tr),
+            ),
           ),
         ],
       ),
@@ -907,35 +1091,27 @@ class _HomeSummaryCard extends StatelessWidget {
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({required this.label, required this.value});
+class _BottomSheetPanel extends StatelessWidget {
+  const _BottomSheetPanel({required this.child});
 
-  final String label;
-  final String value;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: Colors.white,
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w900,
-              ),
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          18.w,
+          14.h,
+          18.w,
+          18.h + MediaQuery.of(context).viewInsets.bottom,
         ),
-        SizedBox(height: 3.h),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: Colors.white.withOpacity(.85),
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(14.r)),
         ),
-      ],
+        child: child,
+      ),
     );
   }
 }
@@ -1039,37 +1215,246 @@ class _RoomsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.rooms.isEmpty) {
-      return _EmptyState(text: 'noRoomsYet'.tr);
-    }
     return SizedBox(
-      height: 46.h,
+      height: 42.h,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: controller.rooms.length,
+        itemCount: controller.rooms.length + 2,
         separatorBuilder: (_, __) => SizedBox(width: 8.w),
         itemBuilder: (context, index) {
-          final room = controller.rooms[index];
-          return Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : AppColors.whiteColor2,
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Text(
-              room.name,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
+          if (index == 0) {
+            return _RoomChip(
+              label: 'smartHomeAllDevices'.tr,
+              selected: controller.selectedRoomId.value == null,
+              onTap: () => controller.selectRoom(null),
+            );
+          }
+          if (index == controller.rooms.length + 1) {
+            return _RoomAddChip(
+              onTap: () => _showRoomDialog(controller: controller),
+            );
+          }
+          final room = controller.rooms[index - 1];
+          return _RoomChip(
+            label: room.name,
+            selected: controller.selectedRoomId.value == room.id,
+            onTap: () => controller.selectRoom(room.id),
+            onLongPress: () => _showRoomActions(
+              controller: controller,
+              room: room,
             ),
           );
         },
       ),
     );
+  }
+}
+
+class _RoomChip extends StatelessWidget {
+  const _RoomChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.onLongPress,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? AppColors.primaryColor
+          : (ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : AppColors.whiteColor2),
+      borderRadius: BorderRadius.circular(8.r),
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          constraints: BoxConstraints(minWidth: 58.w),
+          padding: EdgeInsets.symmetric(horizontal: 13.w),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: selected ? Colors.white : null,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoomAddChip extends StatelessWidget {
+  const _RoomAddChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      tooltip: 'addRoom'.tr,
+      onPressed: onTap,
+      icon: const Icon(Icons.add_rounded),
+    );
+  }
+}
+
+Future<void> _showRoomDialog({
+  required SmartHomeController controller,
+  SmartRoomModel? room,
+}) async {
+  await Get.dialog<void>(
+    _RoomFormDialog(controller: controller, room: room),
+  );
+}
+
+class _RoomFormDialog extends StatefulWidget {
+  const _RoomFormDialog({required this.controller, this.room});
+
+  final SmartHomeController controller;
+  final SmartRoomModel? room;
+
+  @override
+  State<_RoomFormDialog> createState() => _RoomFormDialogState();
+}
+
+class _RoomFormDialogState extends State<_RoomFormDialog> {
+  late final TextEditingController nameController;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.room?.name ?? '');
+  }
+
+  Future<void> _save() async {
+    if (saving) return;
+    final cleanName = nameController.text.trim();
+    if (cleanName.isEmpty) {
+      Get.snackbar('addRoom'.tr, 'smartHomeRoomNameRequired'.tr);
+      return;
+    }
+    setState(() => saving = true);
+    final ok = widget.room == null
+        ? await widget.controller.createRoom(cleanName)
+        : await widget.controller.renameRoom(
+            room: widget.room!,
+            name: cleanName,
+          );
+    if (!mounted) return;
+    if (ok) {
+      Get.back<void>();
+      return;
+    }
+    setState(() => saving = false);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title:
+          Text(widget.room == null ? 'addRoom'.tr : 'smartHomeRenameRoom'.tr),
+      content: TextField(
+        controller: nameController,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(labelText: 'smartHomeRoomName'.tr),
+        onSubmitted: (_) => _save(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: saving ? null : () => Get.back<void>(),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton.icon(
+          onPressed: saving ? null : _save,
+          icon: saving
+              ? SizedBox(
+                  width: 16.r,
+                  height: 16.r,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_rounded),
+          label: Text('save'.tr),
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _showRoomActions({
+  required SmartHomeController controller,
+  required SmartRoomModel room,
+}) async {
+  await Get.bottomSheet<void>(
+    _BottomSheetPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit_rounded),
+            title: Text('smartHomeRenameRoom'.tr),
+            onTap: () {
+              Get.back<void>();
+              _showRoomDialog(controller: controller, room: room);
+            },
+          ),
+          ListTile(
+            leading:
+                Icon(Icons.delete_outline_rounded, color: Colors.red.shade600),
+            title: Text('smartHomeDeleteRoom'.tr),
+            onTap: () {
+              Get.back<void>();
+              _confirmDeleteRoom(controller: controller, room: room);
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _confirmDeleteRoom({
+  required SmartHomeController controller,
+  required SmartRoomModel room,
+}) async {
+  final ok = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text('smartHomeDeleteRoom'.tr),
+      content: Text('smartHomeDeleteRoomConfirm'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => Get.back(result: true),
+          icon: const Icon(Icons.delete_outline_rounded),
+          label: Text('delete'.tr),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) {
+    await controller.deleteRoom(room);
   }
 }
 
@@ -1080,11 +1465,12 @@ class _DevicesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.devices.isEmpty) {
+    final visibleDevices = controller.visibleDevices;
+    if (visibleDevices.isEmpty) {
       return _EmptyState(text: 'noDevicesYet'.tr);
     }
     return Column(
-      children: controller.devices
+      children: visibleDevices
           .map(
             (device) => _SmartDeviceCard(
               controller: controller,
@@ -1363,6 +1749,255 @@ Future<bool> _showDeleteDeviceDialog({
   return result == true;
 }
 
+Future<void> _showMoveDeviceSheet({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  await Get.bottomSheet<void>(
+    _MoveDeviceSheet(controller: controller, device: device),
+    isScrollControlled: true,
+  );
+}
+
+class _MoveDeviceSheet extends StatelessWidget {
+  const _MoveDeviceSheet({
+    required this.controller,
+    required this.device,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+
+  @override
+  Widget build(BuildContext context) {
+    return _BottomSheetPanel(
+      child: FutureBuilder<Map<int, List<SmartRoomModel>>>(
+        future: _loadRoomsByHome(),
+        builder: (context, snapshot) {
+          final roomsByHome =
+              snapshot.data ?? const <int, List<SmartRoomModel>>{};
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'smartHomeMoveDevice'.tr,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              SizedBox(height: 8.h),
+              _MoveTargetTile(
+                icon: Icons.inventory_2_outlined,
+                label: 'smartHomeUnassignedDevices'.tr,
+                selected: device.smartHomeId == null,
+                onTap: () => _move(null, null),
+              ),
+              ...controller.homes.expand((home) {
+                final rooms = roomsByHome[home.id] ?? const <SmartRoomModel>[];
+                return [
+                  _MoveTargetTile(
+                    icon: _locationIcon(home.type),
+                    label: _locationLabel(home),
+                    selected: device.smartHomeId == home.id &&
+                        device.smartRoomId == null,
+                    onTap: () => _move(home.id, null),
+                  ),
+                  ...rooms.map(
+                    (room) => _MoveTargetTile(
+                      icon: Icons.meeting_room_outlined,
+                      label: room.name,
+                      indent: true,
+                      selected: device.smartRoomId == room.id,
+                      onTap: () => _move(home.id, room.id),
+                    ),
+                  ),
+                ];
+              }),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                Padding(
+                  padding: EdgeInsets.all(12.w),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<Map<int, List<SmartRoomModel>>> _loadRoomsByHome() async {
+    final result = <int, List<SmartRoomModel>>{};
+    for (final home in controller.homes) {
+      result[home.id] = await controller.apiService.getRooms(
+        home.id,
+        userId: controller.selectedOwnerId.value,
+      );
+    }
+    return result;
+  }
+
+  Future<void> _move(int? homeId, int? roomId) async {
+    final ok = await controller.moveSmartDevice(
+      device: device,
+      smartHomeId: homeId,
+      smartRoomId: roomId,
+    );
+    if (ok) Get.back<void>();
+  }
+}
+
+class _MoveTargetTile extends StatelessWidget {
+  const _MoveTargetTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.indent = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool indent;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsetsDirectional.only(start: indent ? 28.w : 0),
+      leading: Icon(icon, color: selected ? AppColors.primaryColor : null),
+      title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: selected ? const Icon(Icons.check_rounded) : null,
+      onTap: onTap,
+    );
+  }
+}
+
+Future<void> _showManageChannelsSheet({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  await Get.bottomSheet<void>(
+    _ManageChannelsSheet(controller: controller, device: device),
+    isScrollControlled: true,
+  );
+}
+
+class _ManageChannelsSheet extends StatelessWidget {
+  const _ManageChannelsSheet({
+    required this.controller,
+    required this.device,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+
+  @override
+  Widget build(BuildContext context) {
+    return _BottomSheetPanel(
+      child: Obx(() {
+        final current = controller.devices.firstWhereOrNull(
+              (item) => item.id == device.id,
+            ) ??
+            device;
+        final functions = _primarySwitchesForManagement(current);
+        final metadata = functions
+            .map((function) =>
+                MapEntry(function, _functionMetadata(current, function)))
+            .where((entry) => entry.value != null)
+            .toList(growable: false);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'smartHomeManageChannels'.tr,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            SizedBox(height: 8.h),
+            if (metadata.isEmpty)
+              Text('smartHomeSwitchMetadataMissing'.tr)
+            else
+              ...metadata.asMap().entries.map((indexed) {
+                final index = indexed.key;
+                final entry = indexed.value;
+                final function = entry.key;
+                final item = entry.value!;
+                return ListTile(
+                  dense: true,
+                  leading: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkResponse(
+                        onTap: index == 0
+                            ? null
+                            : () => controller.updateDeviceFunctionSettings(
+                                  device: current,
+                                  function: item,
+                                  sortOrder: item.sortOrder - 1,
+                                ),
+                        child:
+                            Icon(Icons.keyboard_arrow_up_rounded, size: 18.r),
+                      ),
+                      InkResponse(
+                        onTap: index == metadata.length - 1
+                            ? null
+                            : () => controller.updateDeviceFunctionSettings(
+                                  device: current,
+                                  function: item,
+                                  sortOrder: item.sortOrder + 1,
+                                ),
+                        child:
+                            Icon(Icons.keyboard_arrow_down_rounded, size: 18.r),
+                      ),
+                    ],
+                  ),
+                  title: Text(
+                    _functionLabelForDevice(current, function),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Wrap(
+                    spacing: 2.w,
+                    children: [
+                      IconButton(
+                        tooltip: 'smartHomeEditSwitchName'.tr,
+                        onPressed: () => _showRenameFunctionDialog(
+                          controller: controller,
+                          device: current,
+                          function: function,
+                        ),
+                        icon: const Icon(Icons.edit_rounded),
+                      ),
+                      IconButton(
+                        tooltip: item.isVisible
+                            ? 'smartHomeHideChannel'.tr
+                            : 'smartHomeShowChannel'.tr,
+                        onPressed: () =>
+                            controller.updateDeviceFunctionSettings(
+                          device: current,
+                          function: item,
+                          isVisible: !item.isVisible,
+                        ),
+                        icon: Icon(item.isVisible
+                            ? Icons.visibility_rounded
+                            : Icons.visibility_off_rounded),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        );
+      }),
+    );
+  }
+}
+
 class _SmartDeviceCard extends StatelessWidget {
   const _SmartDeviceCard({
     required this.controller,
@@ -1378,6 +2013,7 @@ class _SmartDeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
     final functions = _visiblePrimarySwitches(device);
+    final curtainCommand = _dashboardCurtainCommand(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
     final powerActive = powerFunction == null
@@ -1453,22 +2089,53 @@ class _SmartDeviceCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    _RenameDeviceButton(
+                    _OnlineDot(online: device.online),
+                    PopupMenuButton<String>(
                       enabled: !busy,
-                      onPressed: () => _showRenameDeviceDialog(
-                        controller: controller,
-                        device: device,
-                      ),
+                      tooltip: 'settings'.tr,
+                      onSelected: (value) {
+                        if (value == 'rename') {
+                          _showRenameDeviceDialog(
+                            controller: controller,
+                            device: device,
+                          );
+                        } else if (value == 'move') {
+                          _showMoveDeviceSheet(
+                            controller: controller,
+                            device: device,
+                          );
+                        } else if (value == 'channels') {
+                          _showManageChannelsSheet(
+                            controller: controller,
+                            device: device,
+                          );
+                        } else if (value == 'delete') {
+                          _showDeleteDeviceDialog(
+                            controller: controller,
+                            device: device,
+                          );
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'rename',
+                          child: Text('smartHomeRenameDevice'.tr),
+                        ),
+                        PopupMenuItem(
+                          value: 'move',
+                          child: Text('smartHomeMoveDevice'.tr),
+                        ),
+                        PopupMenuItem(
+                          value: 'channels',
+                          child: Text('smartHomeManageChannels'.tr),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('smartHomeDeleteDevice'.tr),
+                        ),
+                      ],
+                      icon: const Icon(Icons.more_vert_rounded),
                     ),
-                    _DeleteDeviceButton(
-                      enabled: !busy,
-                      onPressed: () => _showDeleteDeviceDialog(
-                        controller: controller,
-                        device: device,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
                     _RoundPowerButton(
                       enabled: (powerFunction != null || !hasSchema) && !busy,
                       busy: busy,
@@ -1480,7 +2147,17 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (functions.isNotEmpty) ...[
+                if (curtainCommand != null) ...[
+                  SizedBox(height: 12.h),
+                  _CurtainMiniControls(
+                    enabled: !busy,
+                    onCommand: (value) => controller.setDeviceDps(
+                      device: device,
+                      commandCode: curtainCommand.code,
+                      value: value,
+                    ),
+                  ),
+                ] else if (functions.isNotEmpty) ...[
                   SizedBox(height: 16.h),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -1532,6 +2209,8 @@ class _SmartDeviceCard extends StatelessWidget {
   }
 
   String _deviceSubtitle(SmartDeviceModel device) {
+    if (device.roomName.trim().isNotEmpty) return device.roomName;
+    if (device.smartHomeId == null) return 'smartHomeUnassignedDevices'.tr;
     if (device.category.isNotEmpty) return device.category;
     if (device.protocol.isNotEmpty) return device.protocol.toUpperCase();
     if (device.productName.isNotEmpty &&
@@ -1568,6 +2247,94 @@ bool _looksLikeCurtainDevice(SmartDeviceModel device) {
       text.contains('blind') ||
       text.contains('ستار') ||
       text.contains('بوابة');
+}
+
+TuyaDeviceFunction? _dashboardCurtainCommand(SmartDeviceModel device) {
+  if (!_looksLikeCurtainDevice(device)) return null;
+  for (final function in DeviceCapabilityResolver.writableFunctions(device)) {
+    final code = function.code.toLowerCase();
+    if (function.isEnum &&
+        (code == 'control' ||
+            code.contains('curtain') ||
+            code.contains('mach_operate') ||
+            code.contains('open_close'))) {
+      return function;
+    }
+  }
+  return null;
+}
+
+class _CurtainMiniControls extends StatelessWidget {
+  const _CurtainMiniControls({
+    required this.enabled,
+    required this.onCommand,
+  });
+
+  final bool enabled;
+  final ValueChanged<String> onCommand;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _MiniCommandButton(
+          icon: Icons.keyboard_arrow_up_rounded,
+          label: _friendlyEnumValue('open'),
+          enabled: enabled,
+          onTap: () => onCommand('open'),
+        ),
+        SizedBox(width: 8.w),
+        _MiniCommandButton(
+          icon: Icons.pause_rounded,
+          label: _friendlyEnumValue('stop'),
+          enabled: enabled,
+          onTap: () => onCommand('stop'),
+        ),
+        SizedBox(width: 8.w),
+        _MiniCommandButton(
+          icon: Icons.keyboard_arrow_down_rounded,
+          label: _friendlyEnumValue('close'),
+          enabled: enabled,
+          onTap: () => onCommand('close'),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniCommandButton extends StatelessWidget {
+  const _MiniCommandButton({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: OutlinedButton.icon(
+        onPressed: enabled ? onTap : null,
+        icon: Icon(icon, size: 18.r),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        ),
+      ),
+    );
+  }
 }
 
 String _deviceMainStatusLabel(SmartDeviceModel device) {
@@ -1653,6 +2420,28 @@ List<TuyaDeviceFunction> _visiblePrimarySwitches(SmartDeviceModel device) {
     final metadata = metadataByCode[item.code];
     return metadata == null || metadata.isVisible;
   }).toList(growable: false);
+  entries.sort((a, b) {
+    final am = metadataByCode[a.code];
+    final bm = metadataByCode[b.code];
+    final order = (am?.sortOrder ?? 9999).compareTo(bm?.sortOrder ?? 9999);
+    if (order != 0) return order;
+    final ai = int.tryParse(a.dpId);
+    final bi = int.tryParse(b.dpId);
+    if (ai != null && bi != null) return ai.compareTo(bi);
+    return a.dpId.compareTo(b.dpId);
+  });
+  return entries;
+}
+
+List<TuyaDeviceFunction> _primarySwitchesForManagement(
+  SmartDeviceModel device,
+) {
+  final metadataByCode = {
+    for (final item in device.functions)
+      if (item.code.isNotEmpty) item.code: item,
+  };
+  final entries =
+      DeviceCapabilityResolver.boolSwitches(device).toList(growable: false);
   entries.sort((a, b) {
     final am = metadataByCode[a.code];
     final bm = metadataByCode[b.code];
@@ -1805,41 +2594,6 @@ int? _sliderDivisions({
   if (step <= 0 || max <= min) return null;
   final divisions = ((max - min) / step).round();
   return divisions > 0 ? divisions : null;
-}
-
-class _RenameDeviceButton extends StatelessWidget {
-  const _RenameDeviceButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      tooltip: 'smartHomeRenameDevice'.tr,
-      onPressed: enabled ? onPressed : null,
-      icon: const Icon(Icons.edit_rounded),
-    );
-  }
-}
-
-class _DeleteDeviceButton extends StatelessWidget {
-  const _DeleteDeviceButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      tooltip: 'smartHomeDeleteDevice'.tr,
-      onPressed: enabled ? onPressed : null,
-      icon: const Icon(Icons.delete_outline_rounded),
-      style: IconButton.styleFrom(
-        foregroundColor: Colors.red.shade600,
-      ),
-    );
-  }
 }
 
 class _RoundPowerButton extends StatelessWidget {
@@ -2021,6 +2775,27 @@ class _OnlinePill extends StatelessWidget {
               color: online ? Colors.green : AppColors.customGreyColor5,
               fontWeight: FontWeight.w800,
             ),
+      ),
+    );
+  }
+}
+
+class _OnlineDot extends StatelessWidget {
+  const _OnlineDot({required this.online});
+
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: online ? 'online'.tr : 'offline'.tr,
+      child: Container(
+        width: 9.r,
+        height: 9.r,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: online ? Colors.green : AppColors.customGreyColor5,
+        ),
       ),
     );
   }
@@ -2297,7 +3072,7 @@ class _DeviceHero extends StatelessWidget {
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  device.tuyaDeviceId,
+                  _deviceLocationSummary(device),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2370,6 +3145,7 @@ class _DeviceCommandSurface extends StatelessWidget {
           _AuxiliaryControlsSurface(
             device: device,
             entries: auxiliary,
+            title: 'smartHomeAdvancedControls'.tr,
             busy: busy,
             readOnly: readOnly,
             onDps: onDps,
@@ -2393,6 +3169,7 @@ class _DeviceCommandSurface extends StatelessWidget {
           _AuxiliaryControlsSurface(
             device: device,
             entries: auxiliary,
+            title: 'smartHomeAdvancedControls'.tr,
             busy: busy,
             readOnly: readOnly,
             onDps: onDps,
@@ -2412,6 +3189,7 @@ class _DeviceCommandSurface extends StatelessWidget {
         _AuxiliaryControlsSurface(
           device: device,
           entries: auxiliary,
+          title: 'smartHomeAdvancedControls'.tr,
           busy: busy,
           readOnly: readOnly,
           onDps: onDps,
@@ -2553,6 +3331,7 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
   const _AuxiliaryControlsSurface({
     required this.device,
     required this.entries,
+    required this.title,
     required this.busy,
     required this.readOnly,
     required this.onDps,
@@ -2560,6 +3339,7 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
 
   final SmartDeviceModel device;
   final List<TuyaDeviceFunction> entries;
+  final String title;
   final bool busy;
   final bool readOnly;
   final void Function(String code, dynamic value) onDps;
@@ -2568,65 +3348,144 @@ class _AuxiliaryControlsSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
     final enabled = !busy && !readOnly;
+    final grouped = <String, List<TuyaDeviceFunction>>{};
+    for (final function in entries) {
+      grouped
+          .putIfAbsent(_secondarySectionTitle(function), () => [])
+          .add(function);
+    }
     return Padding(
       padding: EdgeInsets.only(top: 12.h),
       child: Column(
-        children: entries.map((function) {
-          final value = DeviceCapabilityResolver.statusValue(device, function);
-          final active = value == true;
-          final statusColor =
-              active ? const Color(0xFF28C79A) : AppColors.customGreyColor5;
-          return Container(
-            margin: EdgeInsets.only(bottom: 8.h),
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : Colors.white,
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: Colors.black.withOpacity(.05)),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: grouped.entries.expand((section) {
+          return [
+            Padding(
+              padding: EdgeInsets.only(bottom: 7.h, top: 4.h),
+              child: Text(
+                section.key,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  _functionIcon(function),
-                  color: statusColor,
+            ...section.value.map((function) {
+              final value =
+                  DeviceCapabilityResolver.statusValue(device, function);
+              final active = value == true;
+              final statusColor =
+                  active ? const Color(0xFF28C79A) : AppColors.customGreyColor5;
+              return Container(
+                margin: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.black.withOpacity(.05)),
                 ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _functionLabel(function),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                            ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _functionIcon(function),
+                      color: statusColor,
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _secondaryFunctionLabel(device, function),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            _functionStatusLabel(function, value),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: statusColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        _functionStatusLabel(function, value),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: statusColor,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    _AuxiliaryControlAction(
+                      function: function,
+                      value: value,
+                      enabled: enabled,
+                      onDps: onDps,
+                    ),
+                  ],
                 ),
-                _AuxiliaryControlAction(
-                  function: function,
-                  value: value,
-                  enabled: enabled,
-                  onDps: onDps,
-                ),
-              ],
-            ),
-          );
+              );
+            }),
+          ];
         }).toList(growable: false),
       ),
     );
   }
+}
+
+String _secondarySectionTitle(TuyaDeviceFunction function) {
+  final code = function.code.toLowerCase();
+  if (code.contains('countdown') || code.contains('timer')) {
+    return 'smartHomeTimers'.tr;
+  }
+  if (code.contains('backlight') ||
+      code.contains('relay') ||
+      code.contains('inching') ||
+      code.contains('calibration') ||
+      code.contains('control_back') ||
+      code.contains('direction')) {
+    return 'smartHomeDeviceSettings'.tr;
+  }
+  return 'smartHomeAdvancedControls'.tr;
+}
+
+String _secondaryFunctionLabel(
+  SmartDeviceModel device,
+  TuyaDeviceFunction function,
+) {
+  final code = function.code.toLowerCase();
+  final ar = Get.locale?.languageCode == 'ar';
+  final countdown = RegExp(r'countdown_(\d+)').firstMatch(code);
+  if (countdown != null) {
+    final switchCode = 'switch_${countdown.group(1)}';
+    final related = device.functions.firstWhereOrNull(
+      (item) => item.code.toLowerCase() == switchCode,
+    );
+    final relatedName = related?.displayName.trim().isNotEmpty == true
+        ? related!.displayName.trim()
+        : _defaultSwitchLabel(switchCode);
+    return ar ? 'مؤقت $relatedName' : '$relatedName timer';
+  }
+  final mapped = ar
+      ? {
+          'switch_backlight': 'إضاءة المؤشر',
+          'relay_status': 'حالة التشغيل بعد عودة الكهرباء',
+          'switch_inching': 'نبضة تشغيل',
+          'cur_calibration': 'معايرة الستارة',
+          'control_back': 'اتجاه المحرك',
+          'tr_timecon': 'وقت المعايرة',
+        }[code]
+      : {
+          'switch_backlight': 'Indicator light',
+          'relay_status': 'Power-on state after outage',
+          'switch_inching': 'Inching pulse',
+          'cur_calibration': 'Curtain calibration',
+          'control_back': 'Motor direction',
+          'tr_timecon': 'Calibration time',
+        }[code];
+  if (mapped != null) return mapped;
+  return _functionLabelForDevice(device, function);
 }
 
 class _AuxiliaryControlAction extends StatelessWidget {
@@ -2674,8 +3533,113 @@ class _AuxiliaryControlAction extends StatelessWidget {
         ),
       );
     }
+    if (function.isValue) {
+      return IconButton(
+        tooltip: 'smartHomeEditValue'.tr,
+        onPressed: enabled
+            ? () => _showValueControlDialog(
+                  function: function,
+                  value: value,
+                  onDps: onDps,
+                )
+            : null,
+        icon: const Icon(Icons.tune_rounded),
+      );
+    }
+    if (function.isString && function.writable) {
+      return IconButton(
+        tooltip: 'smartHomeEditValue'.tr,
+        onPressed: enabled
+            ? () => _showTextControlDialog(
+                  function: function,
+                  value: value?.toString() ?? '',
+                  onDps: onDps,
+                )
+            : null,
+        icon: const Icon(Icons.edit_note_rounded),
+      );
+    }
     return const SizedBox(width: 8);
   }
+}
+
+Future<void> _showValueControlDialog({
+  required TuyaDeviceFunction function,
+  required dynamic value,
+  required void Function(String code, dynamic value) onDps,
+}) async {
+  final min = _doubleValue(function.values['min']) ?? 0;
+  final max = _doubleValue(function.values['max']) ?? 86400;
+  final step = _doubleValue(function.values['step']) ?? 1;
+  final current = (_doubleValue(value) ?? min).clamp(min, max).toDouble();
+  var next = _snapValue(current, min: min, max: max, step: step);
+  final result = await Get.dialog<num>(
+    StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Text('smartHomeEditValue'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Slider(
+                value: next.clamp(min, max),
+                min: min,
+                max: max,
+                divisions: _sliderDivisions(min: min, max: max, step: step),
+                onChanged: (value) => setState(
+                  () =>
+                      next = _snapValue(value, min: min, max: max, step: step),
+                ),
+              ),
+              Text(next.round().toString()),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back<num>(),
+              child: Text('cancel'.tr),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.back<num>(result: next.round()),
+              child: Text('save'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  if (result != null) onDps(function.code, result);
+}
+
+Future<void> _showTextControlDialog({
+  required TuyaDeviceFunction function,
+  required String value,
+  required void Function(String code, dynamic value) onDps,
+}) async {
+  final controller = TextEditingController(text: value);
+  final result = await Get.dialog<String>(
+    AlertDialog(
+      title: Text('smartHomeEditValue'.tr),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (value) => Get.back<String>(result: value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back<String>(),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () => Get.back<String>(result: controller.text),
+          child: Text('save'.tr),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  if (result != null) onDps(function.code, result);
 }
 
 IconData _functionIcon(TuyaDeviceFunction function) {
