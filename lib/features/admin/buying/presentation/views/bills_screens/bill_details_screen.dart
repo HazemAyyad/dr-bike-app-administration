@@ -2,6 +2,7 @@ import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:doctorbike/core/helpers/show_no_data.dart';
@@ -13,9 +14,6 @@ import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../controllers/bills_controller.dart';
-import '../../widgets/bills_widgets/bill_details.dart';
-import '../../widgets/bills_widgets/bill_seller_details.dart';
-import '../../widgets/bills_widgets/bill_title.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
 
 class BillDetailsScreen extends GetView<BillsController> {
@@ -26,7 +24,9 @@ class BillDetailsScreen extends GetView<BillsController> {
     final String page = Get.arguments;
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'billDetails',
+        title: controller.billDetails == null
+            ? 'تفاصيل فاتورة شراء'
+            : 'فاتورة شراء #${controller.billDetails!.billId}',
         action: false,
         actions: [
           IconButton(
@@ -47,9 +47,6 @@ class BillDetailsScreen extends GetView<BillsController> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-          SliverToBoxAdapter(child: BillTitle(page: page)),
-          SliverToBoxAdapter(child: SizedBox(height: 15.h)),
           GetBuilder<BillsController>(
             builder: (controller) {
               if (controller.isAddLoading.value) {
@@ -63,20 +60,17 @@ class BillDetailsScreen extends GetView<BillsController> {
                 );
               }
               return SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    BillDetails(page: page),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 15.w),
-                      child: _PurchaseWorkflowPanel(page: page),
-                    ),
-                    SizedBox(height: 10.h),
-                    const BillSellerDetails(),
-                    SizedBox(height: 10.h),
-                    page == '3' || page == '4'
-                        ? CancelBill(billId: controller.billDetails!.billId)
-                        : const SizedBox.shrink(),
-                  ],
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 26.h),
+                  child: Column(
+                    children: [
+                      _PurchaseWorkflowPanel(page: page),
+                      if (page == '3' || page == '4') ...[
+                        SizedBox(height: 10.h),
+                        CancelBill(billId: controller.billDetails!.billId),
+                      ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -112,315 +106,378 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
         details.products.any((item) => item.receivedOwnedQuantity > 0);
     final canPay = details.workflowStatus == 'finalized' &&
         details.paymentStatus != 'paid' &&
-        details.remainingAmount != '0';
+        (double.tryParse(details.remainingAmount) ?? 0) > 0;
+    final totalOrdered = details.products.fold<num>(
+      0,
+      (sum, p) => sum + p.orderedQuantity,
+    );
+    final totalReceived = details.products.fold<num>(
+      0,
+      (sum, p) => sum + p.receivedOwnedQuantity,
+    );
+    final totalRemaining = details.products.fold<num>(
+      0,
+      (sum, p) => sum + p.remainingQuantity,
+    );
+    final issueItems = _issueItems(details);
+    final amanatItems = _activeAmanatItems(details);
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8.r),
-        border:
-            Border.all(color: AppColors.primaryColor.withValues(alpha: 0.14)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _PurchaseSummaryHeader(
+          details: details,
+          sourceType: _sourceTypeLabel(details),
+          workflowLabel: _workflowLabel(details.workflowStatus),
+          receivingLabel: _receivingLabel(details, totalRemaining),
+          paymentLabel: _paymentLabel(details.paymentStatus),
+          totalText: _money(details.finalTotal == '0'
+              ? details.totalBill
+              : details.finalTotal),
+          paidText: _money(details.paidAmount),
+          remainingText: _money(details.remainingAmount),
+        ),
+        SizedBox(height: 10.h),
+        _ContextualActionCards(
+          remainingItems: details.products
+              .where((item) => item.remainingQuantity > 0)
+              .length,
+          issueCount: issueItems.length,
+          amanatCount: amanatItems.length,
+          remainingAmount: details.remainingAmount,
+          canReceive: canReceive,
+          canPay: canPay,
+          canFinalize: canFinalize,
+          onReceive: () => _showReceivingSheet(context),
+          onIssues: () => setState(() => _selectedSection = 2),
+          onAmanat: () => setState(() => _selectedSection = 3),
+          onPay: () => _showPurchasePaymentSheet(
+            context,
+            title: 'تسجيل دفعة مورد',
+            primaryText: 'تسجيل الدفعة',
+            initialAmount: details.remainingAmount,
+            attachmentCategory: 'purchase_payment_evidence',
+            attachableType: 'bill',
+            attachableId: details.billId.toString(),
+            onSubmit: () => controller.submitShownPurchasePayment(context),
+          ),
+          onFinalize: () => _showFinalizationSheet(context),
+        ),
+        SizedBox(height: 10.h),
+        _PurchaseDetailsSectionTabs(
+          selected: _selectedSection,
+          onChanged: (value) => setState(() => _selectedSection = value),
+        ),
+        SizedBox(height: 12.h),
+        if (_selectedSection == 0)
+          _SummaryTab(
+            details: details,
+            sourceType: _sourceTypeLabel(details),
+            totalOrdered: totalOrdered,
+            totalReceived: totalReceived,
+            totalRemaining: totalRemaining,
+            issueItems: issueItems,
+            onIssuesTap: () => setState(() => _selectedSection = 2),
+            onAccountPayment:
+                (details.sellerId.isNotEmpty || details.customerId.isNotEmpty)
+                    ? () => _showPurchasePaymentSheet(
+                          context,
+                          title: 'دفعة على حساب المصدر',
+                          primaryText: 'تسجيل الدفعة',
+                          initialAmount: details.remainingAmount == '0'
+                              ? ''
+                              : details.remainingAmount,
+                          showAllocations: true,
+                          attachmentCategory: 'account_payment_evidence',
+                          attachableType: 'purchase_account_payment',
+                          attachableId: details.sellerId.isNotEmpty
+                              ? details.sellerId
+                              : details.customerId,
+                          onSubmit: () =>
+                              controller.paySupplierAccountForShownSeller(
+                            context,
+                          ),
+                        )
+                    : null,
+          ),
+        if (_selectedSection == 1) ...[
+          Row(
             children: [
-              _StatusChip(
-                label: 'حالة الاستلام',
-                value: details.workflowStatus.isEmpty
-                    ? 'awaiting_receiving'
-                    : details.workflowStatus,
+              const Expanded(child: _SectionTitle(text: 'الأصناف والاستلام')),
+              if (canReceive)
+                TextButton.icon(
+                  onPressed: () => _showReceivingSheet(context),
+                  icon: Icon(Icons.fact_check_outlined, size: 16.sp),
+                  label: const Text('استلام'),
+                ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          if (canReceive)
+            _InlineNotice(
+              icon: Icons.inventory_outlined,
+              title:
+                  'متبقي ${details.products.where((item) => item.remainingQuantity > 0).length} أصناف للاستلام',
+              actionText: 'بدء مراجعة الاستلام',
+              onPressed: () => _showReceivingSheet(context),
+            ),
+          if (canReceive) SizedBox(height: 8.h),
+          ...details.products
+              .map((item) => _PurchaseItemOverviewRow(item: item)),
+        ],
+        if (_selectedSection == 3 && amanatItems.isNotEmpty) ...[
+          const _SectionTitle(text: 'الأمانات'),
+          SizedBox(height: 8.h),
+          ...amanatItems.map(
+            (item) => _AmanatRow(
+              item: item,
+              onPurchase: () => _showAmanatSheet(
+                context,
+                item: item,
+                isPurchase: true,
               ),
-              _StatusChip(
-                label: 'حالة الدفع',
-                value: details.paymentStatus.isEmpty
-                    ? 'unpaid'
-                    : details.paymentStatus,
+              onReturn: () => _showAmanatSheet(
+                context,
+                item: item,
+                isPurchase: false,
+              ),
+            ),
+          ),
+        ],
+        if (_selectedSection == 2 && issueItems.isNotEmpty) ...[
+          const _SectionTitle(text: 'الفروقات المفتوحة'),
+          SizedBox(height: 8.h),
+          ...issueItems.map(
+            (item) => _IssueRow(
+              product: item,
+              onResolveDamaged: item.damagedQuantity > 0
+                  ? () => _showIssueResolutionSheet(
+                        context,
+                        product: item,
+                        issueType: 'damaged',
+                        quantity: item.damagedQuantity,
+                      )
+                  : null,
+              onResolveMismatched: item.mismatchedQuantity > 0
+                  ? () => _showIssueResolutionSheet(
+                        context,
+                        product: item,
+                        issueType: 'mismatched',
+                        quantity: item.mismatchedQuantity,
+                      )
+                  : null,
+            ),
+          ),
+        ],
+        if (_selectedSection == 2 && issueItems.isEmpty)
+          const _EmptyTabState(text: 'لا توجد فروقات غير معالجة'),
+        if (_selectedSection == 3 && amanatItems.isEmpty)
+          const _EmptyTabState(text: 'لا توجد أمانات في هذه الفاتورة'),
+        if (_selectedSection == 6) ...[
+          Row(
+            children: [
+              const Expanded(child: _SectionTitle(text: 'المرفقات')),
+              IconButton(
+                tooltip: 'رفع مرفق',
+                onPressed: controller.isWorkflowLoading.value
+                    ? null
+                    : () =>
+                        controller.pickAndUploadPurchaseAttachments(context),
+                icon: Icon(
+                  Icons.upload_file_outlined,
+                  color: AppColors.primaryColor,
+                  size: 22.sp,
+                ),
               ),
             ],
           ),
-          SizedBox(height: 10.h),
-          Text(
-            'المستلم: ${details.products.fold<num>(0, (sum, p) => sum + p.receivedOwnedQuantity)} / المطلوب: ${details.products.fold<num>(0, (sum, p) => sum + p.orderedQuantity)}',
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.sp,
-                ),
-          ),
-          if (details.finalTotal != '0' || details.paidAmount != '0') ...[
-            SizedBox(height: 6.h),
-            Text(
-              'الإجمالي النهائي: ${details.finalTotal} | المدفوع: ${details.paidAmount} | المتبقي: ${details.remainingAmount}',
-              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    color: Colors.grey.shade700,
-                    fontSize: 12.sp,
-                  ),
-            ),
-          ],
-          SizedBox(height: 12.h),
-          _PurchaseDetailsSectionTabs(
-            selected: _selectedSection,
-            onChanged: (value) => setState(() => _selectedSection = value),
-          ),
-          if ((canReceive || canFinalize) && _selectedSection == 0)
-            SizedBox(height: 12.h),
-          if (canReceive && _selectedSection == 0)
-            AppButton(
-              isLoading: controller.isWorkflowLoading,
-              text: 'مراجعة واستلام الأصناف',
-              onPressed: () => _showReceivingSheet(context),
-            ),
-          if (canReceive && canFinalize && _selectedSection == 0)
-            SizedBox(height: 8.h),
-          if (canFinalize && _selectedSection == 0)
-            AppButton(
-              isLoading: controller.isWorkflowLoading,
-              text: 'اعتماد الفاتورة',
-              onPressed: () => _showPurchasePaymentSheet(
-                context,
-                title: 'اعتماد الفاتورة',
-                primaryText: 'اعتماد',
-                initialAmount: '0',
-                attachmentCategory: 'initial_payment_evidence',
-                attachableType: 'bill',
-                attachableId: details.billId.toString(),
-                onSubmit: () =>
-                    controller.finalizeShownPurchaseWithInitialPayment(context),
-              ),
-            ),
-          if (canPay && _selectedSection == 0) ...[
-            if (canReceive || canFinalize) SizedBox(height: 8.h),
-            AppButton(
-              isLoading: controller.isWorkflowLoading,
-              text: 'تسجيل دفعة مورد',
-              onPressed: () => _showPurchasePaymentSheet(
-                context,
-                title: 'تسجيل دفعة مورد',
-                primaryText: 'تسجيل الدفعة',
-                initialAmount: details.remainingAmount,
-                attachmentCategory: 'purchase_payment_evidence',
-                attachableType: 'bill',
-                attachableId: details.billId.toString(),
-                onSubmit: () => controller.submitShownPurchasePayment(context),
-              ),
-            ),
-          ],
-          if (_selectedSection == 0 &&
-              (details.sellerId.isNotEmpty ||
-                  details.customerId.isNotEmpty)) ...[
-            SizedBox(height: 8.h),
-            AppButton(
-              isLoading: controller.isWorkflowLoading,
-              text: 'دفعة على حساب المصدر',
-              onPressed: () => _showPurchasePaymentSheet(
-                context,
-                title: 'دفعة على حساب المصدر',
-                primaryText: 'تسجيل الدفعة',
-                initialAmount: details.remainingAmount == '0'
-                    ? ''
-                    : details.remainingAmount,
-                showAllocations: true,
-                attachmentCategory: 'account_payment_evidence',
-                attachableType: 'purchase_account_payment',
-                attachableId: details.sellerId.isNotEmpty
-                    ? details.sellerId
-                    : details.customerId,
-                onSubmit: () =>
-                    controller.paySupplierAccountForShownSeller(context),
-              ),
-            ),
-          ],
-          if (_selectedSection == 1) ...[
-            SizedBox(height: 14.h),
-            Row(
-              children: [
-                const Expanded(child: _SectionTitle(text: 'الأصناف والاستلام')),
-                if (canReceive)
-                  TextButton.icon(
-                    onPressed: () => _showReceivingSheet(context),
-                    icon: Icon(Icons.fact_check_outlined, size: 16.sp),
-                    label: const Text('استلام'),
-                  ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            ...details.products
-                .map((item) => _PurchaseItemOverviewRow(item: item)),
-          ],
-          if (_selectedSection == 3 &&
-              _activeAmanatItems(details).isNotEmpty) ...[
-            SizedBox(height: 14.h),
-            const _SectionTitle(text: 'الأمانات'),
-            SizedBox(height: 8.h),
-            ..._activeAmanatItems(details).map(
-              (item) => _AmanatRow(
-                item: item,
-                onPurchase: () => _showAmanatSheet(
-                  context,
-                  item: item,
-                  isPurchase: true,
-                ),
-                onReturn: () => _showAmanatSheet(
-                  context,
-                  item: item,
-                  isPurchase: false,
-                ),
-              ),
-            ),
-          ],
-          if (_selectedSection == 2 && _issueItems(details).isNotEmpty) ...[
-            SizedBox(height: 14.h),
-            const _SectionTitle(text: 'مشاكل تحتاج تسوية'),
-            SizedBox(height: 8.h),
-            ..._issueItems(details).map(
-              (item) => _IssueRow(
-                product: item,
-                onResolveDamaged: item.damagedQuantity > 0
-                    ? () => _showIssueResolutionSheet(
-                          context,
-                          product: item,
-                          issueType: 'damaged',
-                          quantity: item.damagedQuantity,
-                        )
-                    : null,
-                onResolveMismatched: item.mismatchedQuantity > 0
-                    ? () => _showIssueResolutionSheet(
-                          context,
-                          product: item,
-                          issueType: 'mismatched',
-                          quantity: item.mismatchedQuantity,
-                        )
-                    : null,
-              ),
-            ),
-          ],
-          if (_selectedSection == 2 && _issueItems(details).isEmpty) ...[
-            SizedBox(height: 14.h),
-            const _MutedText(text: 'لا توجد مشاكل تالف أو غير مطابق مفتوحة'),
-          ],
-          if (_selectedSection == 3 && _activeAmanatItems(details).isEmpty) ...[
-            SizedBox(height: 14.h),
-            const _MutedText(text: 'لا توجد أمانات مفتوحة لهذه الفاتورة'),
-          ],
-          if (_selectedSection == 6 &&
-              (details.attachments.isNotEmpty || page != '1')) ...[
-            SizedBox(height: 14.h),
-            Row(
-              children: [
-                const Expanded(child: _SectionTitle(text: 'المرفقات')),
-                IconButton(
-                  tooltip: 'رفع مرفق',
-                  onPressed: controller.isWorkflowLoading.value
-                      ? null
-                      : () =>
-                          controller.pickAndUploadPurchaseAttachments(context),
-                  icon: Icon(
-                    Icons.upload_file_outlined,
-                    color: AppColors.primaryColor,
-                    size: 22.sp,
+          if (details.attachments.isEmpty)
+            const _EmptyTabState(text: 'لا توجد مرفقات')
+          else
+            ..._groupAttachments(details.attachments).entries.map(
+                  (entry) => _AttachmentGroup(
+                    title: entry.key,
+                    attachments: entry.value,
                   ),
                 ),
-              ],
-            ),
-            if (details.attachments.isEmpty)
-              const _MutedText(text: 'لا توجد مرفقات بعد')
-            else
-              ...details.attachments.map(
-                (attachment) => _AttachmentRow(attachment: attachment),
-              ),
-          ],
-          if (_selectedSection == 4 && details.payments.isNotEmpty) ...[
-            SizedBox(height: 14.h),
-            const _SectionTitle(text: 'الدفعات'),
-            SizedBox(height: 8.h),
-            ...details.payments.take(4).map(
-                  (payment) => _InfoLine(
-                    title: payment.amount,
-                    subtitle: [
-                      payment.paymentType,
-                      payment.boxName,
-                      payment.paidAt,
-                    ].where((e) => e.isNotEmpty).join(' • '),
-                  ),
-                ),
-          ],
-          if (_selectedSection == 4 && details.payments.isEmpty) ...[
-            SizedBox(height: 14.h),
-            const _MutedText(text: 'لا توجد دفعات مسجلة بعد'),
-          ],
-          if (_selectedSection == 5 && details.returns.isNotEmpty) ...[
-            SizedBox(height: 14.h),
-            const _SectionTitle(text: 'المرتجعات'),
-            SizedBox(height: 8.h),
-            ...details.returns.take(4).map(
-                  (ret) => _InfoLine(
-                    title: '${ret.totalValue} - ${ret.status}',
-                    subtitle:
-                        '${ret.createdAt}${ret.items.isEmpty ? '' : ' • ${ret.items.length} منتجات'}',
-                  ),
-                ),
-          ],
-          if (_selectedSection == 5 && details.returns.isEmpty) ...[
-            SizedBox(height: 14.h),
-            const _MutedText(text: 'لا توجد مرتجعات لهذه الفاتورة'),
-          ],
-          if (_selectedSection == 7 && controller.isTimelineLoading.value) ...[
-            SizedBox(height: 12.h),
-            const Center(child: CircularProgressIndicator()),
-          ] else if (_selectedSection == 7 &&
-              controller.purchaseTimeline.isNotEmpty) ...[
-            SizedBox(height: 12.h),
-            Text(
-              'سجل الحركة',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.sp,
-                  ),
-            ),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () => _showFullTimelineSheet(context),
-                icon: Icon(Icons.history, size: 16.sp),
-                label: const Text('عرض كل الحركات'),
-              ),
-            ),
-            SizedBox(height: 8.h),
-            ...controller.purchaseTimeline.take(5).map((event) {
-              final title = event['title']?.toString() ?? '';
-              final description = event['description']?.toString() ?? '';
-              final createdAt = event['created_at']?.toString() ?? '';
-              return Padding(
-                padding: EdgeInsets.only(bottom: 6.h),
-                child: Text(
-                  '$createdAt — ${title.isEmpty ? description : title}',
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: Colors.grey.shade700,
-                        fontSize: 11.sp,
-                      ),
-                ),
-              );
-            }),
-          ],
-          if (_selectedSection == 7 && controller.purchaseTimeline.isEmpty) ...[
-            SizedBox(height: 14.h),
-            const _MutedText(text: 'لا توجد حركات ظاهرة بعد'),
-          ],
         ],
-      ),
+        if (_selectedSection == 4)
+          _PaymentsTab(
+            details: details,
+            canPay: canPay,
+            onPay: () => _showPurchasePaymentSheet(
+              context,
+              title: 'تسجيل دفعة مورد',
+              primaryText: 'تسجيل الدفعة',
+              initialAmount: details.remainingAmount,
+              attachmentCategory: 'purchase_payment_evidence',
+              attachableType: 'bill',
+              attachableId: details.billId.toString(),
+              onSubmit: () => controller.submitShownPurchasePayment(context),
+            ),
+          ),
+        if (_selectedSection == 5 && details.returns.isNotEmpty) ...[
+          const _SectionTitle(text: 'المرتجعات'),
+          SizedBox(height: 8.h),
+          ...details.returns.map((ret) => _ReturnCard(ret: ret)),
+        ],
+        if (_selectedSection == 5 && details.returns.isEmpty)
+          const _EmptyTabState(text: 'لا توجد مرتجعات مرتبطة بهذه الفاتورة'),
+        if (_selectedSection == 7 && controller.isTimelineLoading.value) ...[
+          const Center(child: CircularProgressIndicator()),
+        ] else if (_selectedSection == 7 &&
+            controller.purchaseTimeline.isNotEmpty) ...[
+          const _SectionTitle(text: 'الحركات'),
+          SizedBox(height: 8.h),
+          ...controller.purchaseTimeline.map(
+            (event) => _TimelineCard(event: event),
+          ),
+        ],
+        if (_selectedSection == 7 && controller.purchaseTimeline.isEmpty)
+          const _EmptyTabState(text: 'لا توجد حركات ظاهرة بعد'),
+      ],
     );
   }
 
+  String _money(String value) {
+    final amount = double.tryParse(value) ?? 0;
+    return '${intl.NumberFormat('#,##0.00').format(amount)} ₪';
+  }
+
+  String _workflowLabel(String status) {
+    switch (status) {
+      case 'finalized':
+        return 'مكتملة';
+      case 'awaiting_finalization':
+        return 'بانتظار الاعتماد';
+      case 'partially_received':
+        return 'مستلم جزئياً';
+      default:
+        return status.isEmpty ? 'بانتظار الاستلام' : status;
+    }
+  }
+
+  String _receivingLabel(BillDetailsModel details, num totalRemaining) {
+    if (totalRemaining <= 0) return 'مستلم بالكامل';
+    final received = details.products.fold<num>(
+      0,
+      (sum, p) => sum + p.receivedOwnedQuantity,
+    );
+    return received > 0 ? 'مستلم جزئياً' : 'بانتظار الاستلام';
+  }
+
+  String _paymentLabel(String status) {
+    switch (status) {
+      case 'paid':
+        return 'مدفوعة';
+      case 'partially_paid':
+      case 'partial':
+        return 'مدفوعة جزئياً';
+      case 'unpaid':
+      case '':
+        return 'غير مدفوعة';
+      default:
+        return status;
+    }
+  }
+
+  String _sourceTypeLabel(BillDetailsModel details) {
+    final hasSeller = details.sellerId.isNotEmpty;
+    final hasCustomer = details.customerId.isNotEmpty;
+    if (hasSeller && hasCustomer) return 'مورد + زبون';
+    if (hasSeller) return 'مورد';
+    if (hasCustomer) return 'زبون';
+    return 'مصدر شراء';
+  }
+
+  Map<String, List<PurchaseAttachmentUiModel>> _groupAttachments(
+    List<PurchaseAttachmentUiModel> attachments,
+  ) {
+    final groups = <String, List<PurchaseAttachmentUiModel>>{};
+    for (final attachment in attachments) {
+      final key = _attachmentContextLabel(attachment.category);
+      groups.putIfAbsent(key, () => []).add(attachment);
+    }
+    return groups;
+  }
+
+  String _attachmentContextLabel(String category) {
+    if (category.contains('payment')) return 'الدفعات';
+    if (category.contains('damaged')) return 'التالف';
+    if (category.contains('mismatch')) return 'غير المطابق';
+    if (category.contains('amanat')) return 'الأمانات';
+    if (category.contains('return')) return 'المرتجعات';
+    if (category.contains('receiv')) return 'الاستلام';
+    if (category.contains('settlement')) return 'التسويات';
+    return 'فاتورة المورد';
+  }
+
+  Future<void> _showFinalizationSheet(BuildContext context) async {
+    final details = controller.billDetails!;
+    final openIssues = _issueItems(details).length;
+    final remaining = details.products
+        .where((item) => item.remainingQuantity > 0)
+        .fold<num>(0, (sum, item) => sum + item.remainingQuantity);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 22.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'اعتماد الفاتورة',
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16.sp,
+                    ),
+              ),
+              SizedBox(height: 12.h),
+              _InfoLine(
+                  title: 'الإجمالي النهائي',
+                  subtitle: _money(details.finalTotal)),
+              _InfoLine(
+                  title: 'المتبقي للاستلام', subtitle: remaining.toString()),
+              _InfoLine(
+                  title: 'الفروقات المفتوحة', subtitle: openIssues.toString()),
+              if (openIssues > 0) ...[
+                SizedBox(height: 10.h),
+                const _MutedText(
+                  text: 'لا يمكن اعتماد الفاتورة قبل معالجة الفروقات التالية',
+                ),
+              ],
+              SizedBox(height: 16.h),
+              AppButton(
+                isLoading: controller.isWorkflowLoading,
+                text: 'اعتماد',
+                onPressed: openIssues > 0
+                    ? null
+                    : () async {
+                        await controller
+                            .finalizeShownPurchaseWithInitialPayment(
+                          context,
+                        );
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Kept for older entry points that may still call the full timeline sheet.
+  // ignore: unused_element
   Future<void> _showFullTimelineSheet(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -1071,6 +1128,678 @@ class _ManualAllocationSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PurchaseMoney {
+  static String format(String value) {
+    final amount = double.tryParse(value) ?? 0;
+    return '${intl.NumberFormat('#,##0.00').format(amount)} ₪';
+  }
+}
+
+class _PurchaseSummaryHeader extends StatelessWidget {
+  const _PurchaseSummaryHeader({
+    required this.details,
+    required this.sourceType,
+    required this.workflowLabel,
+    required this.receivingLabel,
+    required this.paymentLabel,
+    required this.totalText,
+    required this.paidText,
+    required this.remainingText,
+  });
+
+  final BillDetailsModel details;
+  final String sourceType;
+  final String workflowLabel;
+  final String receivingLabel;
+  final String paymentLabel;
+  final String totalText;
+  final String paidText;
+  final String remainingText;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42.w,
+                height: 42.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  color: AppColors.primaryColor,
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      details.sellerName.isEmpty
+                          ? 'مصدر غير معروف'
+                          : details.sellerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15.sp,
+                          ),
+                    ),
+                    SizedBox(height: 3.h),
+                    _MutedText(
+                      text:
+                          '$sourceType • فاتورة #${details.billId} • ${details.createdAt}',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 6.w,
+            runSpacing: 6.h,
+            children: [
+              _StatusChip(label: 'سير العمل', value: workflowLabel),
+              _StatusChip(label: 'الاستلام', value: receivingLabel),
+              _StatusChip(label: 'الدفع', value: paymentLabel),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Expanded(
+                child: _MoneyBlock(label: 'الإجمالي النهائي', value: totalText),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(child: _MoneyBlock(label: 'المدفوع', value: paidText)),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: _MoneyBlock(
+                  label: 'المتبقي',
+                  value: remainingText,
+                  highlighted: true,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoneyBlock extends StatelessWidget {
+  const _MoneyBlock({
+    required this.label,
+    required this.value,
+    this.highlighted = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? AppColors.primaryColor.withValues(alpha: 0.08)
+            : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 10.sp),
+          ),
+          SizedBox(height: 4.h),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: highlighted ? AppColors.primaryColor : Colors.black87,
+                fontWeight: FontWeight.w800,
+                fontSize: 13.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContextualActionCards extends StatelessWidget {
+  const _ContextualActionCards({
+    required this.remainingItems,
+    required this.issueCount,
+    required this.amanatCount,
+    required this.remainingAmount,
+    required this.canReceive,
+    required this.canPay,
+    required this.canFinalize,
+    required this.onReceive,
+    required this.onIssues,
+    required this.onAmanat,
+    required this.onPay,
+    required this.onFinalize,
+  });
+
+  final int remainingItems;
+  final int issueCount;
+  final int amanatCount;
+  final String remainingAmount;
+  final bool canReceive;
+  final bool canPay;
+  final bool canFinalize;
+  final VoidCallback onReceive;
+  final VoidCallback onIssues;
+  final VoidCallback onAmanat;
+  final VoidCallback onPay;
+  final VoidCallback onFinalize;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <Widget>[
+      if (canReceive && remainingItems > 0)
+        _ActionNoticeCard(
+          icon: Icons.inventory_outlined,
+          title: 'يوجد $remainingItems أصناف بانتظار الاستلام',
+          buttonText: 'مراجعة الاستلام',
+          onPressed: onReceive,
+        ),
+      if (issueCount > 0)
+        _ActionNoticeCard(
+          icon: Icons.report_problem_outlined,
+          title: 'يوجد $issueCount فرق غير معالج',
+          buttonText: 'معالجة الفروقات',
+          onPressed: onIssues,
+        ),
+      if (canPay)
+        _ActionNoticeCard(
+          icon: Icons.payments_outlined,
+          title: 'المتبقي للمورد: ${_PurchaseMoney.format(remainingAmount)}',
+          buttonText: 'تسجيل دفعة',
+          onPressed: onPay,
+        ),
+      if (amanatCount > 0)
+        _ActionNoticeCard(
+          icon: Icons.handshake_outlined,
+          title: 'يوجد $amanatCount قطعة أمانة',
+          buttonText: 'عرض الأمانات',
+          onPressed: onAmanat,
+        ),
+      if (canFinalize)
+        _ActionNoticeCard(
+          icon: Icons.fact_check_outlined,
+          title: 'الفاتورة جاهزة للمراجعة والاعتماد',
+          buttonText: 'اعتماد الفاتورة',
+          onPressed: onFinalize,
+          primary: true,
+        ),
+    ];
+    if (cards.isEmpty) return const SizedBox.shrink();
+    return Column(children: cards);
+  }
+}
+
+class _ActionNoticeCard extends StatelessWidget {
+  const _ActionNoticeCard({
+    required this.icon,
+    required this.title,
+    required this.buttonText,
+    required this.onPressed,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String buttonText;
+  final VoidCallback onPressed;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: primary
+            ? AppColors.primaryColor.withValues(alpha: 0.08)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border:
+            Border.all(color: AppColors.primaryColor.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primaryColor, size: 20.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.sp),
+            ),
+          ),
+          TextButton(onPressed: onPressed, child: Text(buttonText)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryTab extends StatelessWidget {
+  const _SummaryTab({
+    required this.details,
+    required this.sourceType,
+    required this.totalOrdered,
+    required this.totalReceived,
+    required this.totalRemaining,
+    required this.issueItems,
+    required this.onIssuesTap,
+    required this.onAccountPayment,
+  });
+
+  final BillDetailsModel details;
+  final String sourceType;
+  final num totalOrdered;
+  final num totalReceived;
+  final num totalRemaining;
+  final List<BillProductModel> issueItems;
+  final VoidCallback onIssuesTap;
+  final VoidCallback? onAccountPayment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _DetailsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionTitle(text: 'معلومات الشراء'),
+              SizedBox(height: 8.h),
+              _InfoLine(title: 'المورد / الشخص', subtitle: details.sellerName),
+              _InfoLine(title: 'نوع المصدر', subtitle: sourceType),
+              _InfoLine(title: 'رقم الفاتورة', subtitle: '#${details.billId}'),
+              _InfoLine(title: 'التاريخ', subtitle: details.createdAt),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _DetailsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionTitle(text: 'الملخص المالي'),
+              SizedBox(height: 8.h),
+              _InfoLine(
+                title: 'الإجمالي الأولي',
+                subtitle: _PurchaseMoney.format(details.totalBill),
+              ),
+              _InfoLine(
+                title: 'الإجمالي النهائي',
+                subtitle: _PurchaseMoney.format(details.finalTotal),
+              ),
+              _InfoLine(
+                title: 'المدفوع',
+                subtitle: _PurchaseMoney.format(details.paidAmount),
+              ),
+              _InfoLine(
+                title: 'المتبقي',
+                subtitle: _PurchaseMoney.format(details.remainingAmount),
+              ),
+              if (onAccountPayment != null)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: onAccountPayment,
+                    icon: Icon(Icons.account_balance_wallet_outlined,
+                        size: 16.sp),
+                    label: const Text('دفعة على حساب المصدر'),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _DetailsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionTitle(text: 'ملخص الاستلام'),
+              SizedBox(height: 8.h),
+              _InfoLine(
+                  title: 'عدد الأصناف', subtitle: '${details.products.length}'),
+              _InfoLine(title: 'المطلوب', subtitle: totalOrdered.toString()),
+              _InfoLine(title: 'مستلم', subtitle: totalReceived.toString()),
+              _InfoLine(title: 'متبقي', subtitle: totalRemaining.toString()),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        if (issueItems.isEmpty)
+          const _EmptyTabState(text: 'لا توجد فروقات غير معالجة')
+        else
+          _InlineNotice(
+            icon: Icons.report_problem_outlined,
+            title: 'يوجد ${issueItems.length} فروقات مفتوحة',
+            actionText: 'عرض الفروقات',
+            onPressed: onIssuesTap,
+          ),
+      ],
+    );
+  }
+}
+
+class _PaymentsTab extends StatelessWidget {
+  const _PaymentsTab({
+    required this.details,
+    required this.canPay,
+    required this.onPay,
+  });
+
+  final BillDetailsModel details;
+  final bool canPay;
+  final VoidCallback onPay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MoneyBlock(
+                label: 'الإجمالي',
+                value: _PurchaseMoney.format(details.finalTotal),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: _MoneyBlock(
+                label: 'المدفوع',
+                value: _PurchaseMoney.format(details.paidAmount),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: _MoneyBlock(
+                label: 'المتبقي',
+                value: _PurchaseMoney.format(details.remainingAmount),
+                highlighted: true,
+              ),
+            ),
+          ],
+        ),
+        if (canPay) ...[
+          SizedBox(height: 8.h),
+          AppButton(
+            text: 'تسجيل دفعة',
+            isSafeArea: false,
+            onPressed: onPay,
+          ),
+        ],
+        SizedBox(height: 12.h),
+        const _SectionTitle(text: 'سجل الدفعات'),
+        SizedBox(height: 8.h),
+        if (details.payments.isEmpty)
+          const _EmptyTabState(text: 'لا توجد دفعات مسجلة بعد')
+        else
+          ...details.payments.map((payment) => _PaymentCard(payment: payment)),
+      ],
+    );
+  }
+}
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({required this.payment});
+
+  final PurchasePaymentUiModel payment;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailsCard(
+      margin: EdgeInsets.only(bottom: 8.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${payment.paidAt} — ${_PurchaseMoney.format(payment.amount)}',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp),
+          ),
+          SizedBox(height: 4.h),
+          _MutedText(
+            text: [
+              if (payment.boxName.isNotEmpty) payment.boxName,
+              if (payment.paymentType.isNotEmpty) payment.paymentType,
+              if (payment.note.isNotEmpty) payment.note,
+            ].join(' • '),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReturnCard extends StatelessWidget {
+  const _ReturnCard({required this.ret});
+
+  final PurchaseReturnUiModel ret;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailsCard(
+      margin: EdgeInsets.only(bottom: 8.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'مرتجع #${ret.id}',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp),
+                ),
+              ),
+              _StatusChip(label: 'الحالة', value: ret.status),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          _MutedText(
+            text:
+                '${ret.createdAt} • ${ret.items.length} أصناف • ${_PurchaseMoney.format(ret.totalValue)}',
+          ),
+          if (ret.items.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            _MutedText(
+              text: ret.items
+                  .map((item) => '${item.productName} × ${item.quantity}')
+                  .join(' • '),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentGroup extends StatelessWidget {
+  const _AttachmentGroup({
+    required this.title,
+    required this.attachments,
+  });
+
+  final String title;
+  final List<PurchaseAttachmentUiModel> attachments;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailsCard(
+      margin: EdgeInsets.only(bottom: 8.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(text: title),
+          SizedBox(height: 6.h),
+          ...attachments
+              .map((attachment) => _AttachmentRow(attachment: attachment)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineCard extends StatelessWidget {
+  const _TimelineCard({required this.event});
+
+  final Map<String, dynamic> event;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = event['title']?.toString() ?? '';
+    final description = event['description']?.toString() ?? '';
+    final createdAt = event['created_at']?.toString() ?? '';
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.history, color: AppColors.primaryColor, size: 18.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.isEmpty ? description : title,
+                  style:
+                      TextStyle(fontWeight: FontWeight.w800, fontSize: 12.sp),
+                ),
+                if (description.isNotEmpty && title.isNotEmpty) ...[
+                  SizedBox(height: 3.h),
+                  _MutedText(text: description),
+                ],
+                if (createdAt.isNotEmpty) ...[
+                  SizedBox(height: 4.h),
+                  _MutedText(text: createdAt),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineNotice extends StatelessWidget {
+  const _InlineNotice({
+    required this.icon,
+    required this.title,
+    required this.actionText,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String title;
+  final String actionText;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ActionNoticeCard(
+      icon: icon,
+      title: title,
+      buttonText: actionText,
+      onPressed: onPressed,
+    );
+  }
+}
+
+class _EmptyTabState extends StatelessWidget {
+  const _EmptyTabState({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 18.h),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.grey.shade700, fontSize: 12.sp),
+      ),
+    );
+  }
+}
+
+class _DetailsCard extends StatelessWidget {
+  const _DetailsCard({
+    required this.child,
+    this.margin,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? margin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: margin,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border:
+            Border.all(color: AppColors.primaryColor.withValues(alpha: 0.10)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(24),
+            blurRadius: 6.r,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }

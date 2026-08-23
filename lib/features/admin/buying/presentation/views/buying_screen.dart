@@ -4,10 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
+import '../widgets/bills_widgets/bills_list.dart';
 
 class BuyingScreen extends GetView<BillsController> {
   const BuyingScreen({Key? key}) : super(key: key);
@@ -18,7 +20,7 @@ class BuyingScreen extends GetView<BillsController> {
       BuyingBinding().dependencies();
     }
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: const CustomAppBar(
           title: 'purchasesandReturns',
@@ -38,9 +40,10 @@ class BuyingScreen extends GetView<BillsController> {
                   unselectedLabelColor: Colors.black54,
                   indicatorColor: AppColors.primaryColor,
                   tabs: [
-                    Tab(text: 'الفواتير'),
+                    Tab(text: 'فواتير الشراء'),
+                    Tab(text: 'المرتجعات'),
                     Tab(text: 'الأمانات'),
-                    Tab(text: 'المشاكل'),
+                    Tab(text: 'الفروقات'),
                   ],
                 ),
               ),
@@ -48,7 +51,8 @@ class BuyingScreen extends GetView<BillsController> {
             Expanded(
               child: TabBarView(
                 children: [
-                  _PurchaseHomeActions(),
+                  _PurchaseInvoicesTab(),
+                  const _ReturnPurchasesEntryTab(),
                   const _AmanatDashboardTab(),
                   const _DiscrepanciesDashboardTab(),
                 ],
@@ -61,32 +65,82 @@ class BuyingScreen extends GetView<BillsController> {
   }
 }
 
-class _PurchaseHomeActions extends GetView<BillsController> {
+class _PurchaseInvoicesTab extends GetView<BillsController> {
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<BillsController>(
+      builder: (controller) {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.allBillsSearch.isEmpty) {
+          return const Center(child: ShowNoData());
+        }
+        final months =
+            controller.allBillsSearch.keys.toList().reversed.toList();
+        return RefreshIndicator(
+          onRefresh: () async => controller.getBills(),
+          child: ListView.builder(
+            padding: EdgeInsets.only(bottom: 90.h),
+            itemCount: months.length + 2,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
+                  child: _ActionTile(
+                    icon: Icons.add_shopping_cart_outlined,
+                    title: 'فاتورة شراء جديدة',
+                    subtitle: 'اختيار مصدر، منتجات، كميات وأسعار قبل الاستلام',
+                    onTap: () {
+                      controller.isaddNewBill = '1';
+                      Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+                    },
+                  ),
+                );
+              }
+              if (index == 1) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 4.h),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => Get.toNamed(AppRoutes.BILLSSCREEN),
+                      icon: Icon(Icons.open_in_new, size: 16.sp),
+                      label: const Text('فتح شاشة الفواتير الكاملة'),
+                    ),
+                  ),
+                );
+              }
+              final month = months[index - 2];
+              final bills = controller.allBillsSearch[month] ?? [];
+              return BillsList(month: month, bills: bills, page: '1');
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReturnPurchasesEntryTab extends StatelessWidget {
+  const _ReturnPurchasesEntryTab();
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
       children: [
         _ActionTile(
-          icon: Icons.add_shopping_cart_outlined,
-          title: 'فاتورة شراء جديدة',
-          subtitle: 'اختيار مصدر، منتجات، كميات وأسعار قبل الاستلام',
-          onTap: () {
-            controller.isaddNewBill = '1';
-            Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
-          },
-        ),
-        _ActionTile(
-          icon: Icons.receipt_long_outlined,
-          title: 'فواتير الشراء',
-          subtitle: 'متابعة الاستلام، الاعتماد، الدفعات والمرفقات',
-          onTap: () => Get.toNamed(AppRoutes.BILLSSCREEN),
-        ),
-        _ActionTile(
           icon: Icons.assignment_return_outlined,
           title: 'مرتجعات الشراء',
           subtitle: 'متابعة المرتجعات وتسويات الموردين',
           onTap: () => Get.toNamed(AppRoutes.RETURNPURCHASESSCREEN),
+        ),
+        _ActionTile(
+          icon: Icons.add_circle_outline,
+          title: 'إنشاء مرتجع شراء',
+          subtitle: 'اختيار فاتورة وأصناف وتسوية المرتجع',
+          onTap: () => Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN),
         ),
         _ActionTile(
           icon: Icons.inventory_outlined,
