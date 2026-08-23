@@ -34,6 +34,16 @@ class BillDataModel {
   final String status;
   final String workflowStatus;
   final String paymentStatus;
+  final String finalTotal;
+  final String paidAmount;
+  final String remainingAmount;
+  final String currency;
+  final int itemsCount;
+  final int receivingIssuesCount;
+  final num missingQuantityTotal;
+  final num extraQuantityTotal;
+  final num damagedQuantityTotal;
+  final num mismatchedQuantityTotal;
 
   BillDataModel({
     required this.id,
@@ -43,6 +53,16 @@ class BillDataModel {
     required this.status,
     required this.workflowStatus,
     required this.paymentStatus,
+    required this.finalTotal,
+    required this.paidAmount,
+    required this.remainingAmount,
+    required this.currency,
+    required this.itemsCount,
+    required this.receivingIssuesCount,
+    required this.missingQuantityTotal,
+    required this.extraQuantityTotal,
+    required this.damagedQuantityTotal,
+    required this.mismatchedQuantityTotal,
   });
 
   factory BillDataModel.fromJson(Map<String, dynamic> json) {
@@ -62,9 +82,31 @@ class BillDataModel {
       ),
       status: asString(j['status']),
       workflowStatus: asString(j['workflow_status']),
-      paymentStatus: asString(j['payment_status']),
+      paymentStatus: asString(j['payment_status'], 'unpaid'),
+      finalTotal: asString(j['final_total'], asString(j['total'], '0.0')),
+      paidAmount: asString(j['paid_amount'], '0'),
+      remainingAmount: asString(j['remaining_amount'], '0'),
+      currency: asString(j['currency'], 'شيكل'),
+      itemsCount: asInt(j['items_count']),
+      receivingIssuesCount: asInt(j['receiving_issues_count']),
+      missingQuantityTotal: asDouble(j['missing_quantity_total']),
+      extraQuantityTotal: asDouble(j['extra_quantity_total']),
+      damagedQuantityTotal: asDouble(j['damaged_quantity_total']),
+      mismatchedQuantityTotal: asDouble(j['mismatched_quantity_total']),
     );
   }
+
+  bool get canQuickPay =>
+      workflowStatus == 'finalized' &&
+      paymentStatus != 'paid' &&
+      (double.tryParse(remainingAmount) ?? 0) > 0;
+
+  bool get hasReceivingSummary =>
+      receivingIssuesCount > 0 ||
+      missingQuantityTotal > 0 ||
+      extraQuantityTotal > 0 ||
+      damagedQuantityTotal > 0 ||
+      mismatchedQuantityTotal > 0;
 
   Map<String, dynamic> toJson() {
     return {
@@ -75,6 +117,16 @@ class BillDataModel {
       'status': status,
       'workflow_status': workflowStatus,
       'payment_status': paymentStatus,
+      'final_total': finalTotal,
+      'paid_amount': paidAmount,
+      'remaining_amount': remainingAmount,
+      'currency': currency,
+      'items_count': itemsCount,
+      'receiving_issues_count': receivingIssuesCount,
+      'missing_quantity_total': missingQuantityTotal,
+      'extra_quantity_total': extraQuantityTotal,
+      'damaged_quantity_total': damagedQuantityTotal,
+      'mismatched_quantity_total': mismatchedQuantityTotal,
     };
   }
 }

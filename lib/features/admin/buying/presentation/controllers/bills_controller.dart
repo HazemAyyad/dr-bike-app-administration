@@ -1051,6 +1051,61 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<bool> payPurchaseBillFromList(
+    BuildContext context, {
+    required BillDataModel bill,
+  }) async {
+    final box = selectedPurchaseBox.value;
+    if (box == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق',
+      );
+      return false;
+    }
+    final amount = purchasePaymentAmountController.text.trim();
+    if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب إدخال مبلغ صحيح',
+      );
+      return false;
+    }
+
+    isWorkflowLoading(true);
+    update();
+    final result = await purchaseWorkflowUsecase.pay(
+      billId: bill.id.toString(),
+      amount: amount,
+      boxId: box.boxId.toString(),
+      note: purchasePaymentNoteController.text.trim(),
+    );
+    var ok = false;
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        ok = true;
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+        getBills();
+      },
+    );
+    isWorkflowLoading(false);
+    update();
+    return ok;
+  }
+
   Future<void> loadOpenPurchaseAccountBills() async {
     final details = billDetails;
     if (details == null) return;
