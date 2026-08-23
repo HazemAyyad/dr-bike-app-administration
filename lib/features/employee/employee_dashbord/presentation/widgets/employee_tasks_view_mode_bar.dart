@@ -19,22 +19,22 @@ class EmployeeTasksViewModeBar extends GetView<EmployeeDashbordController> {
             _chip(
               label: 'tasksViewDaily'.tr,
               selected: mode == EmployeeDashbordController.tasksViewDaily,
-              onTap: () =>
-                  controller.setTasksViewMode(EmployeeDashbordController.tasksViewDaily),
+              onTap: () => controller
+                  .setTasksViewMode(EmployeeDashbordController.tasksViewDaily),
             ),
             SizedBox(width: 6.w),
             _chip(
               label: 'tasksViewWeekly'.tr,
               selected: mode == EmployeeDashbordController.tasksViewWeekly,
-              onTap: () =>
-                  controller.setTasksViewMode(EmployeeDashbordController.tasksViewWeekly),
+              onTap: () => controller
+                  .setTasksViewMode(EmployeeDashbordController.tasksViewWeekly),
             ),
             SizedBox(width: 6.w),
             _chip(
               label: 'tasksViewMonthly'.tr,
               selected: mode == EmployeeDashbordController.tasksViewMonthly,
-              onTap: () =>
-                  controller.setTasksViewMode(EmployeeDashbordController.tasksViewMonthly),
+              onTap: () => controller.setTasksViewMode(
+                  EmployeeDashbordController.tasksViewMonthly),
             ),
           ],
         ),
@@ -54,9 +54,8 @@ class EmployeeTasksViewModeBar extends GetView<EmployeeDashbordController> {
           padding: EdgeInsets.symmetric(vertical: 7.h),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.operationalPurple
-                : AppColors.whiteColor,
+            color:
+                selected ? AppColors.operationalPurple : AppColors.whiteColor,
             borderRadius: BorderRadius.circular(8.r),
             border: Border.all(
               color: selected

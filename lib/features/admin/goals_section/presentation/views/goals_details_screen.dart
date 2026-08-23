@@ -22,6 +22,16 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
         action: false,
         actions: [
           Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            child: IconButton(
+              onPressed: () => _showShareGoalDialog(context),
+              icon: const Icon(
+                Icons.group_add_outlined,
+                size: 30,
+              ),
+            ),
+          ),
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.w),
             child: IconButton(
               onPressed: () => controller.editGoal(),
@@ -65,6 +75,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
             final achievement =
                 double.tryParse(goal.achievementPercentage) ?? 0;
             final progress = (achievement / 100).clamp(0.0, 1.0);
+            final progressColor = _goalProgressColor(achievement);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,9 +119,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                                     strokeWidth: 8,
                                     backgroundColor: Colors.grey.shade300,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      achievement >= 100
-                                          ? Colors.green
-                                          : AppColors.operationalPurple,
+                                      progressColor,
                                     ),
                                   ),
                                 ),
@@ -184,6 +193,13 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                             discription: goal.products![index].name,
                           ),
                         ),
+                      if (goal.sharedEmployees.isNotEmpty)
+                        ...goal.sharedEmployees.map(
+                          (e) => SupTextAndDis(
+                            title: 'sharedEmployees',
+                            discription: e.name,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -243,4 +259,97 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
       ),
     );
   }
+
+  void _showShareGoalDialog(BuildContext context) {
+    final goal = controller.goalDetailsList?.goal;
+    if (goal == null) return;
+    final selected = goal.sharedEmployees.map((e) => e.id).toSet();
+
+    Get.dialog(
+      Dialog(
+        backgroundColor:
+            ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.all(14.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'shareGoal'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Get.back(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 330.h,
+                    child: ListView.builder(
+                      itemCount: controller.employeeList.length,
+                      itemBuilder: (context, index) {
+                        final employee = controller.employeeList[index];
+                        final id = employee.id.toString();
+                        return CheckboxListTile(
+                          value: selected.contains(id),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == true) {
+                                selected.add(id);
+                              } else {
+                                selected.remove(id);
+                              }
+                            });
+                          },
+                          title: Text(employee.employeeName),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44.h,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.operationalPurple,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                      ),
+                      onPressed: () => controller.shareGoalWithEmployees(
+                        employeeIds: selected.toList(),
+                      ),
+                      child: Text(
+                        'done'.tr,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+Color _goalProgressColor(double achievement) {
+  if (achievement >= 100) return const Color(0xFFD4AF37);
+  if (achievement >= 80) return Colors.green;
+  if (achievement >= 50) return AppColors.operationalPurple;
+  return Colors.redAccent;
 }

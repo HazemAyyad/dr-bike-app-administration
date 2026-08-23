@@ -82,12 +82,13 @@ class EmployeeTodayAttendanceCard extends GetView<EmployeeDashbordController> {
                       Text(
                         AttendanceHistoryController.formatMinutes(
                             day.workedMinutes),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.secondaryColor,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeService.isDark.value
+                                      ? AppColors.customGreyColor6
+                                      : AppColors.secondaryColor,
+                                ),
                       ),
                       if (day.currentlyIn)
                         Text(

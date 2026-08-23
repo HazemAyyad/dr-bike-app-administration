@@ -97,8 +97,9 @@ class EmployeeDashbordDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),

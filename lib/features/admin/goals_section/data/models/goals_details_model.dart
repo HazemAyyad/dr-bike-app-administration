@@ -226,6 +226,7 @@ class Goal {
   final List<GoalStoreSection> storeSections;
   final List<Product>? products;
   final List<Person>? people;
+  final List<SharedEmployee> sharedEmployees;
   final Box? box;
   final Employee? employee;
 
@@ -250,6 +251,7 @@ class Goal {
     this.storeSections = const [],
     this.products,
     this.people,
+    this.sharedEmployees = const [],
     this.box,
     this.employee,
   });
@@ -282,6 +284,10 @@ class Goal {
       ),
       products: mapList(j['products'], (m) => Product.fromJson(m)),
       people: mapList(j['people'], (m) => Person.fromJson(m)),
+      sharedEmployees: mapList(
+        j['shared_employees'],
+        (m) => SharedEmployee.fromJson(m),
+      ),
       box: j['box'] == null ? null : Box.fromJson(asMap(j['box'])),
       employee: j['employee'] == null
           ? null
@@ -310,6 +316,7 @@ class Goal {
         'store_sections': storeSections.map((x) => x.toJson()).toList(),
         'products': products?.map((x) => x.toJson()).toList(),
         'people': people?.map((x) => x.toJson()).toList(),
+        'shared_employees': sharedEmployees.map((x) => x.toJson()).toList(),
         'box': box?.toJson(),
         'employee': employee?.toJson(),
       };
@@ -423,6 +430,26 @@ class Person {
         'customer_name': customerName,
         'seller_id': sellerId,
         'seller_name': sellerName,
+      };
+}
+
+class SharedEmployee {
+  final String id;
+  final String name;
+
+  SharedEmployee({required this.id, required this.name});
+
+  factory SharedEmployee.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return SharedEmployee(
+      id: asString(j['employee_id']),
+      name: asString(j['employee_name']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'employee_id': id,
+        'employee_name': name,
       };
 }
 

@@ -836,6 +836,7 @@ class EmployeeDashbordController extends GetxController
       user: result.user,
       tasks: result.tasks,
       todayTasksSummary: summary,
+      sharedGoals: result.sharedGoals,
       weeklyDaysOff: result.weeklyDaysOff,
       dashboardBadges: result.dashboardBadges,
     );

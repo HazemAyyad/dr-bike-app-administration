@@ -44,8 +44,7 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
         ),
         SizedBox(height: 8.h),
         Obx(() {
-          final summary =
-              controller.employeeData.value?.todayTasksSummary ??
+          final summary = controller.employeeData.value?.todayTasksSummary ??
               const TodayTasksSummary();
           return Material(
             color: Colors.transparent,
@@ -53,74 +52,74 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
               onTap: controller.openTasksTab,
               borderRadius: BorderRadius.circular(12.r),
               child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12.r),
-              color: AppColors.operationalPurple.withValues(alpha: 0.08),
-              border: Border.all(
-                color: AppColors.operationalPurple.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'todayTasksProgress'.tr,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.operationalNavy,
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.r),
+                  color: AppColors.operationalPurple.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: AppColors.operationalPurple.withValues(alpha: 0.2),
                   ),
                 ),
-                SizedBox(height: 6.h),
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${summary.progressPercent}%',
+                      'todayTasksProgress'.tr,
                       style: TextStyle(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.operationalPurple,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.operationalNavy,
                       ),
                     ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'todayTasksProgressSubtitle'.trParams({
-                              'done': '${summary.completed}',
-                              'total': '${summary.total}',
-                            }),
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: AppColors.customGreyColor5,
-                            ),
+                    SizedBox(height: 6.h),
+                    Row(
+                      children: [
+                        Text(
+                          '${summary.progressPercent}%',
+                          style: TextStyle(
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.operationalPurple,
                           ),
-                          SizedBox(height: 4.h),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4.r),
-                            child: LinearProgressIndicator(
-                              value: summary.total > 0
-                                  ? summary.progressPercent / 100
-                                  : 0,
-                              minHeight: 6.h,
-                              color: AppColors.operationalPurple,
-                              backgroundColor: AppColors.operationalSurface,
-                            ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'todayTasksProgressSubtitle'.trParams({
+                                  'done': '${summary.completed}',
+                                  'total': '${summary.total}',
+                                }),
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: AppColors.customGreyColor5,
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4.r),
+                                child: LinearProgressIndicator(
+                                  value: summary.total > 0
+                                      ? summary.progressPercent / 100
+                                      : 0,
+                                  minHeight: 6.h,
+                                  color: AppColors.operationalPurple,
+                                  backgroundColor: AppColors.operationalSurface,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      );
+          );
         }),
         SizedBox(height: 8.h),
         GetBuilder<EmployeeDashbordController>(
@@ -331,7 +330,8 @@ class _CompactAttendanceStrip extends StatelessWidget {
       final checkOutLabel = formatClock(checkOut);
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-        decoration: _cardDecoration(accent: AppColors.secondaryColor.withValues(alpha: 0.25)),
+        decoration: _cardDecoration(
+            accent: AppColors.secondaryColor.withValues(alpha: 0.25)),
         child: Row(
           children: [
             Icon(
@@ -357,7 +357,8 @@ class _CompactAttendanceStrip extends StatelessWidget {
                     [
                       if (checkInLabel != null) checkInLabel,
                       if (checkOutLabel != null) '→ $checkOutLabel',
-                      AttendanceHistoryController.formatMinutes(day!.workedMinutes),
+                      AttendanceHistoryController.formatMinutes(
+                          day!.workedMinutes),
                     ].join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

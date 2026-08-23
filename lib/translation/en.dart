@@ -1164,6 +1164,8 @@ const Map<String, String> en = {
   'chooseProducts': 'Choose products',
   'selectedProducts': 'Selected products',
   'store_sections': 'Store Location',
+  'shareGoal': 'Share goal',
+  'sharedEmployees': 'Shared employees',
   'cancelTarget': 'Delete Target',
   'transferGoal': 'Transfer Goal',
 

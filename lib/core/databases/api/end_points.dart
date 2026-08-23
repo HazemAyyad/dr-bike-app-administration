@@ -706,6 +706,7 @@ class EndPoints {
   static const String getAllGoals = 'get/all/goals';
   static const String addGoal = 'add/goal';
   static const String editGoal = 'edit/goal';
+  static const String shareGoal = 'share/goal';
   static const String showGoal = 'show/goal';
   static const String deleteGoal = 'delete/goal';
   static const String transferGoal = 'transfer/goal';

@@ -12,6 +12,7 @@ class GoalsModel {
   final DateTime createdAt;
   final DateTime startDate;
   final DateTime dueDate;
+  final GoalStatusMeta statusMeta;
 
   GoalsModel({
     required this.id,
@@ -25,6 +26,7 @@ class GoalsModel {
     required this.createdAt,
     required this.startDate,
     required this.dueDate,
+    required this.statusMeta,
   });
 
   factory GoalsModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class GoalsModel {
       createdAt: parseApiDateTime(j['created_at']),
       startDate: parseApiDateTime(j['start_date']),
       dueDate: parseApiDateTime(j['due_date']),
+      statusMeta: GoalStatusMeta.fromJson(asMap(j['status_meta'])),
     );
   }
 
@@ -57,6 +60,33 @@ class GoalsModel {
       'created_at': createdAt.toIso8601String(),
       'start_date': startDate.toIso8601String(),
       'due_date': dueDate.toIso8601String(),
+      'status_meta': statusMeta.toJson(),
     };
   }
+}
+
+class GoalStatusMeta {
+  final String key;
+  final String label;
+  final String color;
+
+  const GoalStatusMeta({
+    this.key = 'behind',
+    this.label = '',
+    this.color = 'red',
+  });
+
+  factory GoalStatusMeta.fromJson(Map<String, dynamic> json) {
+    return GoalStatusMeta(
+      key: asString(json['status_key'], 'behind'),
+      label: asString(json['status_label']),
+      color: asString(json['status_color'], 'red'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'status_key': key,
+        'status_label': label,
+        'status_color': color,
+      };
 }

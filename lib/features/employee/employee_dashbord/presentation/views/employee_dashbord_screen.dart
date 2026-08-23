@@ -12,6 +12,7 @@ import '../../../../../features/bottom_nav_bar/controllers/bottom_nav_bar_contro
 import '../../../../../routes/app_routes.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.dart';
+import '../../data/models/dashbord_employee_details_model.dart';
 import '../controllers/employee_dashbord_controller.dart';
 import '../binding/employee_dashbord_binding.dart';
 import '../helpers/employee_task_visibility.dart';
@@ -143,6 +144,8 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                 // بطاقات الإحصائيات
                 const EmployeeHomeStatisticsCard(),
                 SizedBox(height: 15.h),
+                const _EmployeeSharedGoalsSection(),
+                SizedBox(height: 12.h),
                 // أزرار الوظائف
                 Obx(
                   () {
@@ -273,6 +276,140 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
     );
+  }
+}
+
+class _EmployeeSharedGoalsSection extends GetView<EmployeeDashbordController> {
+  const _EmployeeSharedGoalsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final goals = controller.employeeData.value?.sharedGoals ?? const [];
+      if (goals.isEmpty) return const SizedBox.shrink();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'targetSection'.tr,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w800,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor5
+                      : AppColors.operationalNavy,
+                ),
+          ),
+          SizedBox(height: 8.h),
+          SizedBox(
+            height: 118.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: goals.length,
+              separatorBuilder: (_, __) => SizedBox(width: 8.w),
+              itemBuilder: (context, index) =>
+                  _EmployeeGoalCard(goal: goals[index]),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+class _EmployeeGoalCard extends StatelessWidget {
+  const _EmployeeGoalCard({required this.goal});
+
+  final EmployeeSharedGoal goal;
+
+  @override
+  Widget build(BuildContext context) {
+    final achievement = double.tryParse(goal.achievementPercentage) ?? 0;
+    final color = _goalStatusColor(goal.statusColor);
+    return Container(
+      width: 210.w,
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: 54.h,
+                width: 54.h,
+                child: CircularProgressIndicator(
+                  value: (achievement / 100).clamp(0.0, 1.0),
+                  strokeWidth: 6,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+              Text(
+                '${achievement.toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ],
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  goal.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                SizedBox(height: 5.h),
+                Text(
+                  goal.statusLabel,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  '${goal.currentValue} / ${goal.targetedValue}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _goalStatusColor(String color) {
+  switch (color) {
+    case 'gold':
+      return const Color(0xFFD4AF37);
+    case 'green':
+      return Colors.green;
+    case 'blue':
+      return AppColors.operationalPurple;
+    case 'red':
+    default:
+      return Colors.redAccent;
   }
 }
 

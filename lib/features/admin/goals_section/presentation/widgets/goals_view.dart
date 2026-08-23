@@ -57,6 +57,9 @@ class GoalsView extends StatelessWidget {
                             .toList()[index]
                         : controller.archiveGoalsFilterList.reversed
                             .toList()[index];
+                final achievement =
+                    double.tryParse(goal.achievementPercentage) ?? 0;
+                final progressColor = _goalStatusColor(goal.statusMeta.color);
                 return GestureDetector(
                   onLongPress: () {
                     controller.currentTab.value == 2
@@ -172,11 +175,7 @@ class GoalsView extends StatelessWidget {
                                     strokeWidth: 6,
                                     backgroundColor: Colors.grey.shade300,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      double.parse(
-                                                  goal.achievementPercentage) >=
-                                              100
-                                          ? Colors.green
-                                          : AppColors.primaryColor,
+                                      progressColor,
                                     ),
                                   ),
                                 ),
@@ -185,6 +184,28 @@ class GoalsView extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 10.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: progressColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20.r),
+                          ),
+                          child: Text(
+                            goal.statusMeta.label.isEmpty
+                                ? _goalStatusLabel(achievement)
+                                : goal.statusMeta.label,
+                            style:
+                                Theme.of(context).textTheme.bodySmall!.copyWith(
+                                      fontSize: 9.sp,
+                                      color: progressColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                          ),
+                        ),
+                        SizedBox(height: 5.h),
                         Flexible(
                           child: Text(
                             goal.name,
@@ -336,4 +357,25 @@ class DeleteGoalDialog extends GetView<TargetSectionController> {
       ),
     );
   }
+}
+
+Color _goalStatusColor(String color) {
+  switch (color) {
+    case 'gold':
+      return const Color(0xFFD4AF37);
+    case 'green':
+      return Colors.green;
+    case 'blue':
+      return AppColors.operationalPurple;
+    case 'red':
+    default:
+      return Colors.redAccent;
+  }
+}
+
+String _goalStatusLabel(double achievement) {
+  if (achievement >= 100) return 'محقق';
+  if (achievement >= 80) return 'ممتاز';
+  if (achievement >= 50) return 'قيد التقدم';
+  return 'متأخر';
 }

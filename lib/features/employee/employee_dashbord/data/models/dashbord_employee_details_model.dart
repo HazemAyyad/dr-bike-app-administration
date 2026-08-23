@@ -17,6 +17,7 @@ class DashbordEmployeeDetailsModel {
   final User user;
   final List<Task> tasks;
   final TodayTasksSummary todayTasksSummary;
+  final List<EmployeeSharedGoal> sharedGoals;
   final List<String> weeklyDaysOff;
   final Map<String, int> dashboardBadges;
 
@@ -35,6 +36,7 @@ class DashbordEmployeeDetailsModel {
     required this.user,
     required this.tasks,
     this.todayTasksSummary = const TodayTasksSummary(),
+    this.sharedGoals = const [],
     this.weeklyDaysOff = const [],
     this.dashboardBadges = const {},
   });
@@ -63,8 +65,47 @@ class DashbordEmployeeDetailsModel {
       todayTasksSummary: TodayTasksSummary.fromJson(
         asMap(json['today_tasks_summary']),
       ),
+      sharedGoals: mapList(
+        json['shared_goals'],
+        (Map<String, dynamic> m) => EmployeeSharedGoal.fromJson(m),
+      ),
       weeklyDaysOff: asStringList(json['weekly_days_off']),
       dashboardBadges: _parseDashboardBadges(json['dashboard_badges']),
+    );
+  }
+}
+
+class EmployeeSharedGoal {
+  final int id;
+  final String name;
+  final String currentValue;
+  final String targetedValue;
+  final String achievementPercentage;
+  final String statusLabel;
+  final String statusColor;
+  final String dueDate;
+
+  const EmployeeSharedGoal({
+    required this.id,
+    required this.name,
+    required this.currentValue,
+    required this.targetedValue,
+    required this.achievementPercentage,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.dueDate,
+  });
+
+  factory EmployeeSharedGoal.fromJson(Map<String, dynamic> json) {
+    return EmployeeSharedGoal(
+      id: asInt(json['id']),
+      name: asString(json['name']),
+      currentValue: asString(json['current_value'], '0'),
+      targetedValue: asString(json['targeted_value'], '0'),
+      achievementPercentage: asString(json['achievement_percentage'], '0'),
+      statusLabel: asString(json['status_label']),
+      statusColor: asString(json['status_color'], 'red'),
+      dueDate: asString(json['due_date']),
     );
   }
 }

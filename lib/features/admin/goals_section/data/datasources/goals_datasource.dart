@@ -105,6 +105,33 @@ class GoalsDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> shareGoal({
+    required String goalId,
+    required List<String> employeeIds,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.shareGoal,
+        data: {
+          'goal_id': goalId,
+          for (var i = 0; i < employeeIds.length; i++)
+            'employee_ids[$i]': employeeIds[i],
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // get goal details
   Future<dynamic> getGoalDetails({
     required String goalId,

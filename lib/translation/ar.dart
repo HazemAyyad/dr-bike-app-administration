@@ -1153,6 +1153,8 @@ const Map<String, String> ar = {
   'chooseProducts': 'اختيار المنتجات',
   'selectedProducts': 'المنتجات المختارة',
   'store_sections': 'التصنيف المكاني',
+  'shareGoal': 'مشاركة الهدف',
+  'sharedEmployees': 'الموظفين المشاركين',
   'cancelTarget': 'إلغاء الهدف',
   'transferGoal': 'نقل الهدف',
 

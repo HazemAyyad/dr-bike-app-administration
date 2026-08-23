@@ -16,6 +16,7 @@ import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
+import '../../data/datasources/goals_datasource.dart';
 import '../../data/models/goals_details_model.dart';
 import '../../data/models/goals_model.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
@@ -459,6 +460,44 @@ class TargetSectionController extends GetxController {
       },
     );
     isAddLoading(false);
+  }
+
+  Future<void> shareGoalWithEmployees({
+    required List<String> employeeIds,
+  }) async {
+    if (goalDetailsList == null) return;
+    isAddLoading(true);
+    update();
+    try {
+      final response = await Get.find<GoalsDatasource>().shareGoal(
+        goalId: goalDetailsList!.goal.id.toString(),
+        employeeIds: employeeIds,
+      );
+      if (response['status'] == 'success') {
+        Get.back();
+        getGoalDetails(goalId: goalDetailsList!.goal.id.toString());
+        Get.snackbar(
+          'success'.tr,
+          response['message']?.toString() ?? 'success'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          response['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isAddLoading(false);
+      update();
+    }
   }
 
   // get all products
