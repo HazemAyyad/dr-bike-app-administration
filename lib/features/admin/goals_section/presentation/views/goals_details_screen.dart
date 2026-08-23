@@ -47,7 +47,6 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                 ),
               );
             }
-            final goal = controller.goalDetailsList!.goal;
             if (controller.goalDetailsList == null) {
               return Center(
                 child: Column(
@@ -60,6 +59,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                 ),
               );
             }
+            final goal = controller.goalDetailsList!.goal;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +198,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                     title: 'date',
                     discription: showData(goal.dueDate),
                   ),
-                if (goal.notes!.isNotEmpty)
+                if ((goal.notes ?? '').isNotEmpty)
                   SupTextAndDis(
                     title: 'notes',
                     discription: goal.notes!,
