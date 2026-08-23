@@ -39,113 +39,104 @@ class GoalsView extends StatelessWidget {
 
         return SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1,
-              mainAxisSpacing: 10.h,
-              crossAxisSpacing: 10.w,
-              mainAxisExtent: 168.h,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final goal = controller.currentTab.value == 0
-                    ? controller.globalGoalsFilterList.reversed.toList()[index]
-                    : controller.currentTab.value == 1
-                        ? controller.privateGoalsFilterList.reversed
-                            .toList()[index]
-                        : controller.archiveGoalsFilterList.reversed
-                            .toList()[index];
-                final achievement =
-                    double.tryParse(goal.achievementPercentage) ?? 0;
-                final progressColor = _goalStatusColor(goal.statusMeta.color);
-                return GestureDetector(
-                  onLongPress: () {
-                    controller.currentTab.value == 2
-                        ? Get.dialog(
-                            Dialog(
-                              backgroundColor: ThemeService.isDark.value
-                                  ? AppColors.darkColor
-                                  : AppColors.whiteColor,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.r)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '${'delete'.tr} ${goal.name}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge!
-                                          .copyWith(
-                                            color: ThemeService.isDark.value
-                                                ? AppColors.whiteColor
-                                                : AppColors.secondaryColor,
-                                            fontSize: 18.sp,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                    SizedBox(height: 20.h),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Expanded(
-                                          child: AppButton(
-                                            isSafeArea: false,
-                                            text: 'cancel'.tr,
-                                            onPressed: () {
-                                              Get.back();
-                                            },
-                                          ),
+          sliver: SliverList.separated(
+            itemBuilder: (context, index) {
+              final goal = controller.currentTab.value == 0
+                  ? controller.globalGoalsFilterList.reversed.toList()[index]
+                  : controller.currentTab.value == 1
+                      ? controller.privateGoalsFilterList.reversed
+                          .toList()[index]
+                      : controller.archiveGoalsFilterList.reversed
+                          .toList()[index];
+              final achievement =
+                  double.tryParse(goal.achievementPercentage) ?? 0;
+              final progressColor = _goalStatusColor(goal.statusMeta.color);
+              return GestureDetector(
+                onLongPress: () {
+                  controller.currentTab.value == 2
+                      ? Get.dialog(
+                          Dialog(
+                            backgroundColor: ThemeService.isDark.value
+                                ? AppColors.darkColor
+                                : AppColors.whiteColor,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.r)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${'delete'.tr} ${goal.name}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge!
+                                        .copyWith(
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.whiteColor
+                                              : AppColors.secondaryColor,
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w700,
                                         ),
-                                        SizedBox(width: 10.w),
-                                        Expanded(
-                                          child: AppButton(
-                                            isLoading: controller.isAddLoading,
-                                            isSafeArea: false,
-                                            color: Colors.red,
-                                            text: 'clear'.tr,
-                                            onPressed: () {
-                                              controller.getGoalDetails(
-                                                goalId: goal.id.toString(),
-                                                isCancel: null,
-                                                isTransfer: null,
-                                                isDelete: true,
-                                              );
-                                            },
-                                          ),
+                                  ),
+                                  SizedBox(height: 20.h),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: AppButton(
+                                          isSafeArea: false,
+                                          text: 'cancel'.tr,
+                                          onPressed: () {
+                                            Get.back();
+                                          },
                                         ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      ),
+                                      SizedBox(width: 10.w),
+                                      Expanded(
+                                        child: AppButton(
+                                          isLoading: controller.isAddLoading,
+                                          isSafeArea: false,
+                                          color: Colors.red,
+                                          text: 'clear'.tr,
+                                          onPressed: () {
+                                            controller.getGoalDetails(
+                                              goalId: goal.id.toString(),
+                                              isCancel: null,
+                                              isTransfer: null,
+                                              isDelete: true,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                          )
-                        : Get.dialog(DeleteGoalDialog(goal: goal));
-                  },
-                  onTap: () => {
-                    controller.getGoalDetails(goalId: goal.id.toString()),
-                    Get.toNamed(AppRoutes.TARGETDETAILSSCREEN),
-                  },
-                  child: _GoalSummaryCard(
-                    goal: goal,
-                    achievement: achievement,
-                    progressColor: progressColor,
-                  ),
-                );
-              },
-              childCount: controller.currentTab.value == 0
-                  ? controller.globalGoalsFilterList.toList().length
-                  : controller.currentTab.value == 1
-                      ? controller.privateGoalsFilterList.toList().length
-                      : controller.archiveGoalsFilterList.toList().length,
-            ),
+                          ),
+                        )
+                      : Get.dialog(DeleteGoalDialog(goal: goal));
+                },
+                onTap: () => {
+                  controller.getGoalDetails(goalId: goal.id.toString()),
+                  Get.toNamed(AppRoutes.TARGETDETAILSSCREEN),
+                },
+                child: _GoalSummaryCard(
+                  goal: goal,
+                  achievement: achievement,
+                  progressColor: progressColor,
+                ),
+              );
+            },
+            itemCount: controller.currentTab.value == 0
+                ? controller.globalGoalsFilterList.toList().length
+                : controller.currentTab.value == 1
+                    ? controller.privateGoalsFilterList.toList().length
+                    : controller.archiveGoalsFilterList.toList().length,
+            separatorBuilder: (_, __) => SizedBox(height: 10.h),
           ),
         );
       },
@@ -170,7 +161,8 @@ class _GoalSummaryCard extends StatelessWidget {
     final target = double.tryParse(goal.targetValue) ?? 0;
     final progress = (achievement / 100).clamp(0.0, 1.0);
     return Container(
-      padding: EdgeInsets.all(10.w),
+      constraints: BoxConstraints(minHeight: 124.h),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor
@@ -178,111 +170,114 @@ class _GoalSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: progressColor.withValues(alpha: 0.22)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Stack(
+            alignment: Alignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  goal.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w900,
-                        color: ThemeService.isDark.value
-                            ? Colors.white
-                            : AppColors.operationalNavy,
-                      ),
+              SizedBox(
+                height: 68.h,
+                width: 68.h,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 7,
+                  backgroundColor: Colors.grey.shade300,
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
               ),
-              SizedBox(width: 7.w),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    height: 48.h,
-                    width: 48.h,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 5,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              Text(
+                '${achievement.toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w900,
+                      color: progressColor,
                     ),
-                  ),
-                  Text(
-                    '${achievement.toStringAsFixed(0)}%',
-                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w900,
-                          color: progressColor,
-                        ),
-                  ),
-                ],
               ),
             ],
           ),
-          SizedBox(height: 7.h),
-          Wrap(
-            spacing: 5.w,
-            runSpacing: 5.h,
-            children: [
-              _GoalPill(
-                label: goal.statusMeta.label.isEmpty
-                    ? _goalStatusLabel(achievement)
-                    : goal.statusMeta.label,
-                color: progressColor,
-              ),
-              if (goal.scope.isNotEmpty)
-                _GoalPill(
-                  label: goal.scope.tr,
-                  color: AppColors.operationalPurple,
-                  soft: true,
-                ),
-            ],
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: _MiniMetric(
-                  title: 'currentValue',
-                  value: _compactNumber(current),
-                ),
-              ),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: _MiniMetric(
-                  title: 'targetValue',
-                  value: _compactNumber(target),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_month_outlined,
-                size: 14.sp,
-                color: AppColors.customGreyColor5,
-              ),
-              SizedBox(width: 4.w),
-              Expanded(
-                child: Text(
-                  showData(goal.dueDate.toIso8601String()),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        fontSize: 10.sp,
-                        color: AppColors.customGreyColor5,
-                        fontWeight: FontWeight.w700,
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        goal.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                              color: ThemeService.isDark.value
+                                  ? Colors.white
+                                  : AppColors.operationalNavy,
+                            ),
                       ),
+                    ),
+                    SizedBox(width: 8.w),
+                    _GoalPill(
+                      label: goal.statusMeta.label.isEmpty
+                          ? _goalStatusLabel(achievement)
+                          : goal.statusMeta.label,
+                      color: progressColor,
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(height: 8.h),
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: [
+                    if (goal.scope.isNotEmpty)
+                      _GoalPill(
+                        label: goal.scope.tr,
+                        color: AppColors.operationalPurple,
+                        soft: true,
+                      ),
+                    _GoalPill(
+                      label: goal.calculationMode.tr,
+                      color: AppColors.operationalNavy,
+                      soft: true,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MiniMetric(
+                        title: 'currentValue',
+                        value: _compactNumber(current),
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: _MiniMetric(
+                        title: 'targetValue',
+                        value: _compactNumber(target),
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: _MiniMetric(
+                        title: 'date',
+                        value: showData(goal.dueDate.toIso8601String()),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 24.sp,
+            color: AppColors.customGreyColor5,
           ),
         ],
       ),
@@ -304,7 +299,8 @@ class _GoalPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+      constraints: BoxConstraints(maxWidth: 135.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: soft ? 0.08 : 0.12),
         borderRadius: BorderRadius.circular(20.r),
@@ -314,7 +310,7 @@ class _GoalPill extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontSize: 9.sp,
+              fontSize: 10.sp,
               color: color,
               fontWeight: FontWeight.w900,
             ),
@@ -335,7 +331,7 @@ class _MiniMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: AppColors.operationalSurface,
         borderRadius: BorderRadius.circular(7.r),
