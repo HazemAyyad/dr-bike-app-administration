@@ -233,12 +233,93 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
             await controller.deleteEmployee(widget.employee.id.toString());
           }
         },
+        onSuspend: () async {
+          Navigator.of(ctx).pop();
+          final confirmed = await _confirmSuspend(context);
+          if (confirmed) {
+            await controller.suspendEmployee(widget.employee.id.toString());
+          }
+        },
+        onRestore: () async {
+          Navigator.of(ctx).pop();
+          final confirmed = await _confirmRestore(context);
+          if (confirmed) {
+            await controller.restoreSuspendedEmployee(
+              widget.employee.id.toString(),
+            );
+          }
+        },
         onChangePassword: () {
           Navigator.of(ctx).pop();
           _showChangePasswordDialog(context);
         },
       ),
     );
+  }
+
+  Future<bool> _confirmSuspend(BuildContext context) async {
+    return _confirmStatusChange(
+      context,
+      title: 'suspendEmployeeConfirmTitle'.tr,
+      body: 'suspendEmployeeConfirmBody'.trParams({
+        'name': widget.employee.employeeName,
+      }),
+      action: 'suspendEmployeeAction'.tr,
+      color: const Color(0xFFF97316),
+    );
+  }
+
+  Future<bool> _confirmRestore(BuildContext context) async {
+    return _confirmStatusChange(
+      context,
+      title: 'restoreEmployeeConfirmTitle'.tr,
+      body: 'restoreEmployeeConfirmBody'.trParams({
+        'name': widget.employee.employeeName,
+      }),
+      action: 'restoreEmployeeAction'.tr,
+      color: const Color(0xFF16A34A),
+    );
+  }
+
+  Future<bool> _confirmStatusChange(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String action,
+    required Color color,
+  }) async {
+    final isDark = ThemeService.isDark.value;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        backgroundColor: isDark ? AppColors.customGreyColor : Colors.white,
+        title: Text(
+          title,
+          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+        ),
+        content: Text(body, style: TextStyle(fontSize: 13.sp)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    return result == true;
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {
@@ -944,12 +1025,16 @@ class _EmployeeActionsSheet extends StatelessWidget {
     required this.employee,
     required this.onView,
     required this.onDelete,
+    required this.onSuspend,
+    required this.onRestore,
     required this.onChangePassword,
   });
 
   final EmployeeEntity employee;
   final VoidCallback onView;
   final VoidCallback onDelete;
+  final VoidCallback onSuspend;
+  final VoidCallback onRestore;
   final VoidCallback onChangePassword;
 
   @override
@@ -1037,6 +1122,20 @@ class _EmployeeActionsSheet extends StatelessWidget {
                 label: 'changeEmployeePassword'.tr,
                 color: AppColors.operationalPurple,
                 onTap: onChangePassword,
+              ),
+            if (canDeleteEmployees && !employee.isSuspended)
+              _ActionTile(
+                icon: Icons.pause_circle_outline_rounded,
+                label: 'suspendEmployeeAction'.tr,
+                color: const Color(0xFFF97316),
+                onTap: onSuspend,
+              ),
+            if (canDeleteEmployees && employee.isSuspended)
+              _ActionTile(
+                icon: Icons.play_circle_outline_rounded,
+                label: 'restoreEmployeeAction'.tr,
+                color: const Color(0xFF16A34A),
+                onTap: onRestore,
               ),
             if (canDeleteEmployees)
               _ActionTile(
