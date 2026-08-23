@@ -3702,7 +3702,7 @@ class _SwitchChannelButton extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(18.r),
         child: Container(
-          padding: EdgeInsets.all(14.w),
+          padding: EdgeInsets.all(10.w),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18.r),
             border: Border.all(
@@ -3718,53 +3718,67 @@ class _SwitchChannelButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              Container(
-                width: 58.r,
-                height: 58.r,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: active ? activeColor : Colors.grey.shade300,
-                ),
-                child: Center(
-                  child: busy
-                      ? SizedBox(
-                          width: 18.r,
-                          height: 18.r,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(
-                          Icons.power_settings_new_rounded,
-                          color: Colors.white,
-                          size: 30.r,
-                        ),
-                ),
-              ),
-              SizedBox(height: 12.h),
-              Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: active ? activeColor : AppColors.customGreyColor5,
-                      fontWeight: FontWeight.w900,
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 50.r,
+                      height: 50.r,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: active ? activeColor : Colors.grey.shade300,
+                      ),
+                      child: Center(
+                        child: busy
+                            ? SizedBox(
+                                width: 18.r,
+                                height: 18.r,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Icon(
+                                Icons.power_settings_new_rounded,
+                                color: Colors.white,
+                                size: 26.r,
+                              ),
+                      ),
                     ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: active
+                                ? activeColor
+                                : AppColors.customGreyColor5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 4.h),
-              IconButton(
-                tooltip: 'smartHomeEditSwitchName'.tr,
-                onPressed: onEdit,
-                visualDensity: VisualDensity.compact,
-                icon: Icon(
-                  Icons.edit_rounded,
-                  size: 16.r,
-                  color: AppColors.customGreyColor5,
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: IconButton(
+                  tooltip: 'smartHomeEditSwitchName'.tr,
+                  onPressed: onEdit,
+                  visualDensity: VisualDensity.compact,
+                  constraints: BoxConstraints.tight(Size(32.r, 32.r)),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    size: 15.r,
+                    color: AppColors.customGreyColor5,
+                  ),
                 ),
               ),
             ],
