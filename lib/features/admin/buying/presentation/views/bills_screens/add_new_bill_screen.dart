@@ -268,8 +268,8 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
         title: 'addNewBill',
         action: false,
         actions: [
-          Obx(
-            () => Stack(
+          GetBuilder<BillsController>(
+            builder: (controller) => Stack(
               clipBehavior: Clip.none,
               children: [
                 IconButton(
@@ -307,86 +307,96 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
       ),
       body: ColoredBox(
         color: Colors.white,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
-              child: Column(
-                children: [
-                  _PurchaseSourceSelector(
-                    onTap: () => _showSourceSheet(context),
-                  ),
-                  SizedBox(height: 10.h),
-                  TextField(
-                    controller: controller.purchaseProductSearchController,
-                    decoration: InputDecoration(
-                      hintText: 'ابحث عن منتج للشراء',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+        child: GetBuilder<BillsController>(
+          builder: (controller) {
+            final products = controller.filteredPurchaseProducts;
+            return Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
+                  child: Column(
+                    children: [
+                      _PurchaseSourceSelector(
+                        source: controller.selectedPurchaseSource.value,
+                        onTap: () => _showSourceSheet(context),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 10.h,
-                      ),
-                    ),
-                    onChanged: controller.onPurchaseProductSearchChanged,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _isBootstrapping
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(),
-                          SizedBox(height: 10.h),
-                          Text(
-                            'جاري تحميل المنتجات',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(color: Colors.grey.shade700),
+                      SizedBox(height: 10.h),
+                      TextField(
+                        controller: controller.purchaseProductSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'ابحث عن منتج للشراء',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
-                        ],
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 10.h,
+                          ),
+                        ),
+                        onChanged: controller.onPurchaseProductSearchChanged,
                       ),
-                    )
-                  : controller.filteredPurchaseProducts.isEmpty
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _isBootstrapping
                       ? Center(
-                          child: Text(
-                            'لا توجد منتجات',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: Colors.grey.shade700,
-                                ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(),
+                              SizedBox(height: 10.h),
+                              Text(
+                                'جاري تحميل المنتجات',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(color: Colors.grey.shade700),
+                              ),
+                            ],
                           ),
                         )
-                      : GridView.builder(
-                          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 10.h,
-                            crossAxisSpacing: 10.w,
-                            childAspectRatio: 0.72,
-                          ),
-                          itemCount: controller.filteredPurchaseProducts.length,
-                          itemBuilder: (_, index) {
-                            final product =
-                                controller.filteredPurchaseProducts[index];
-                            return _PurchaseProductCard(
-                              product: product,
-                              onTap: () =>
-                                  controller.addProductToPurchaseCart(product),
-                            );
-                          },
-                        ),
-            ),
-          ],
+                      : products.isEmpty
+                          ? Center(
+                              child: Text(
+                                controller.purchaseProductSearch.value
+                                        .trim()
+                                        .isEmpty
+                                    ? 'لا توجد منتجات متاحة'
+                                    : 'لا توجد نتائج مطابقة',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: Colors.grey.shade700,
+                                    ),
+                              ),
+                            )
+                          : GridView.builder(
+                              padding:
+                                  EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 10.h,
+                                crossAxisSpacing: 10.w,
+                                childAspectRatio: 0.72,
+                              ),
+                              itemCount: products.length,
+                              itemBuilder: (_, index) {
+                                final product = products[index];
+                                return _PurchaseProductCard(
+                                  product: product,
+                                  onTap: () => controller
+                                      .addProductToPurchaseCart(product),
+                                );
+                              },
+                            ),
+                ),
+              ],
+            );
+          },
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -582,13 +592,16 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
 }
 
 class _PurchaseSourceSelector extends GetView<BillsController> {
-  const _PurchaseSourceSelector({required this.onTap});
+  const _PurchaseSourceSelector({
+    required this.source,
+    required this.onTap,
+  });
 
+  final PurchaseSourceModel? source;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final source = controller.selectedPurchaseSource.value;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12.r),

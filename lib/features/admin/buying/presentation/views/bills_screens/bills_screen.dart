@@ -47,10 +47,12 @@ class BillsScreen extends GetView<BillsController> {
             child: Padding(
               padding: EdgeInsets.only(top: 8.h),
               child: Center(
-                child: AppTabs(
-                  tabs: controller.tabs,
-                  currentTab: controller.currentTab,
-                  changeTab: controller.changeTab,
+                child: GetBuilder<BillsController>(
+                  builder: (controller) => AppTabs(
+                    tabs: controller.tabs,
+                    currentTab: controller.currentTab,
+                    changeTab: controller.changeTab,
+                  ),
                 ),
               ),
             ),
@@ -187,45 +189,48 @@ class _PurchaseBillStateFilters extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44.h,
-      child: Obx(
-        () => ListView.separated(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          scrollDirection: Axis.horizontal,
-          itemCount: _states.length,
-          separatorBuilder: (_, __) => SizedBox(width: 8.w),
-          itemBuilder: (_, index) {
-            final state = _states[index];
-            final selected =
-                controller.purchaseBillStateFilter.value == state.value;
-            return ChoiceChip(
-              selected: selected,
-              avatar: Icon(
-                state.icon,
-                size: 15.sp,
-                color: selected ? Colors.white : AppColors.primaryColor,
-              ),
-              label: Text(state.label),
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.grey.shade800,
-                fontWeight: FontWeight.w700,
-                fontSize: 11.sp,
-              ),
-              selectedColor: AppColors.primaryColor,
-              backgroundColor: Colors.grey.shade50,
-              side: BorderSide(
-                color: selected ? AppColors.primaryColor : Colors.grey.shade200,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              onSelected: (_) =>
-                  controller.changePurchaseBillStateFilter(state.value),
-            );
-          },
-        ),
-      ),
+    return GetBuilder<BillsController>(
+      builder: (controller) {
+        final selectedState = controller.purchaseBillStateFilter.value;
+        return SizedBox(
+          height: 44.h,
+          child: ListView.separated(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            scrollDirection: Axis.horizontal,
+            itemCount: _states.length,
+            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+            itemBuilder: (_, index) {
+              final state = _states[index];
+              final selected = selectedState == state.value;
+              return ChoiceChip(
+                selected: selected,
+                avatar: Icon(
+                  state.icon,
+                  size: 15.sp,
+                  color: selected ? Colors.white : AppColors.primaryColor,
+                ),
+                label: Text(state.label),
+                labelStyle: TextStyle(
+                  color: selected ? Colors.white : Colors.grey.shade800,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11.sp,
+                ),
+                selectedColor: AppColors.primaryColor,
+                backgroundColor: Colors.grey.shade50,
+                side: BorderSide(
+                  color:
+                      selected ? AppColors.primaryColor : Colors.grey.shade200,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                onSelected: (_) =>
+                    controller.changePurchaseBillStateFilter(state.value),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
