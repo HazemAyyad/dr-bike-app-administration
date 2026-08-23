@@ -104,8 +104,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     final canFinalize = page != '1' &&
         details.workflowStatus != 'finalized' &&
         details.products.any((item) => item.receivedOwnedQuantity > 0);
-    final canPay = details.workflowStatus == 'finalized' &&
-        details.paymentStatus != 'paid' &&
+    final canPay = details.paymentStatus != 'paid' &&
         (double.tryParse(details.remainingAmount) ?? 0) > 0;
     final totalOrdered = details.products.fold<num>(
       0,
@@ -574,7 +573,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     required String title,
     required String primaryText,
     required String initialAmount,
-    required Future<void> Function() onSubmit,
+    required Future<dynamic> Function() onSubmit,
     bool showAllocations = false,
     String? attachmentCategory,
     String? attachableType,
@@ -668,8 +667,8 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                     isLoading: controller.isWorkflowLoading,
                     text: primaryText,
                     onPressed: () async {
-                      await onSubmit();
-                      if (sheetContext.mounted) {
+                      final result = await onSubmit();
+                      if (result != false && sheetContext.mounted) {
                         Navigator.of(sheetContext).pop();
                       }
                     },
@@ -1838,6 +1837,9 @@ class _ReceivingRowCard extends GetView<BillsController> {
   @override
   Widget build(BuildContext context) {
     final product = row.product;
+    final hasDelivered = row.hasDeliveredEntry;
+    final accepted = row.autoAccepted;
+    final missing = row.autoMissing;
     return Container(
       padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
@@ -1872,83 +1874,111 @@ class _ReceivingRowCard extends GetView<BillsController> {
                 'المطلوب ${product.orderedQuantity} • مستلم سابقاً ${product.receivedOwnedQuantity}',
           ),
           SizedBox(height: 10.h),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  label: 'وصل فعلياً',
-                  hintText: '0',
-                  controller: row.deliveredNowController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'مقبول',
-                  hintText: '0',
-                  controller: row.acceptedController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
-                ),
-              ),
-            ],
+          CustomTextField(
+            label: 'وصل فعلياً',
+            hintText: 'أدخل الكمية التي وصلت من المورد',
+            controller: row.deliveredNowController,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => controller.update(),
+            validator: (_) => null,
           ),
           SizedBox(height: 8.h),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  label: 'ناقص',
-                  hintText: '0',
-                  controller: row.missingController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(9.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Wrap(
+              spacing: 6.w,
+              runSpacing: 6.h,
+              children: [
+                _StatusChip(
+                  label: 'سيُضاف للمخزون',
+                  value: hasDelivered ? accepted.toString() : '0',
                 ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'زائد/أمانة',
-                  hintText: '0',
-                  controller: row.extraController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
+                _StatusChip(
+                  label: 'ناقص تلقائي',
+                  value: hasDelivered ? missing.toString() : '0',
                 ),
-              ),
-            ],
+                if (row.extra > 0)
+                  _StatusChip(label: 'أمانة', value: row.extra.toString()),
+                if (row.damaged > 0)
+                  _StatusChip(label: 'تالف', value: row.damaged.toString()),
+                if (row.mismatched > 0)
+                  _StatusChip(
+                    label: 'غير مطابق',
+                    value: row.mismatched.toString(),
+                  ),
+              ],
+            ),
           ),
           SizedBox(height: 8.h),
-          Row(
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
             children: [
-              Expanded(
-                child: CustomTextField(
-                  label: 'تالف',
-                  hintText: '0',
-                  controller: row.damagedController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
-                ),
+              _ReceivingIssueToggle(
+                label: 'زائد / أمانة',
+                selected: row.hasExtra,
+                onSelected: (value) {
+                  row.setIssueEnabled('extra', value);
+                  controller.update();
+                },
               ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'غير مطابق',
-                  hintText: '0',
-                  controller: row.mismatchedController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.update(),
-                  validator: (_) => null,
-                ),
+              _ReceivingIssueToggle(
+                label: 'تالف',
+                selected: row.hasDamaged,
+                onSelected: (value) {
+                  row.setIssueEnabled('damaged', value);
+                  controller.update();
+                },
+              ),
+              _ReceivingIssueToggle(
+                label: 'غير مطابق',
+                selected: row.hasMismatched,
+                onSelected: (value) {
+                  row.setIssueEnabled('mismatched', value);
+                  controller.update();
+                },
               ),
             ],
           ),
+          if (row.hasExtra) ...[
+            SizedBox(height: 8.h),
+            CustomTextField(
+              label: 'كمية الزائد / الأمانة',
+              hintText: '0',
+              controller: row.extraController,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => controller.update(),
+              validator: (_) => null,
+            ),
+          ],
+          if (row.hasDamaged) ...[
+            SizedBox(height: 8.h),
+            CustomTextField(
+              label: 'كمية التالف',
+              hintText: '0',
+              controller: row.damagedController,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => controller.update(),
+              validator: (_) => null,
+            ),
+          ],
+          if (row.hasMismatched) ...[
+            SizedBox(height: 8.h),
+            CustomTextField(
+              label: 'كمية غير المطابق',
+              hintText: '0',
+              controller: row.mismatchedController,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => controller.update(),
+              validator: (_) => null,
+            ),
+          ],
           SizedBox(height: 8.h),
           CustomTextField(
             label: 'price',
@@ -1958,26 +1988,54 @@ class _ReceivingRowCard extends GetView<BillsController> {
             onChanged: (_) => controller.update(),
             validator: (_) => null,
           ),
-          SizedBox(height: 8.h),
-          CustomTextField(
-            label: 'سبب / وصف',
-            hintText: 'سبب / وصف',
-            controller: row.reasonController,
-            isRequired: false,
-            validator: (_) => null,
-          ),
-          SizedBox(height: 8.h),
-          CustomTextField(
-            label: 'notes',
-            hintText: 'notes',
-            controller: row.notesController,
-            isRequired: false,
-            validator: (_) => null,
-          ),
+          if (missing > 0 ||
+              row.hasExtra ||
+              row.hasDamaged ||
+              row.hasMismatched) ...[
+            SizedBox(height: 8.h),
+            CustomTextField(
+              label: 'سبب / وصف',
+              hintText: 'سبب الفرق إن وجد',
+              controller: row.reasonController,
+              isRequired: false,
+              validator: (_) => null,
+            ),
+          ],
           SizedBox(height: 8.h),
           _ReceivingValidityHint(row: row),
         ],
       ),
+    );
+  }
+}
+
+class _ReceivingIssueToggle extends StatelessWidget {
+  const _ReceivingIssueToggle({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      selected: selected,
+      label: Text(label),
+      selectedColor: AppColors.primaryColor,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: selected ? AppColors.primaryColor : Colors.grey.shade300,
+      ),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : Colors.grey.shade800,
+        fontWeight: FontWeight.w700,
+        fontSize: 11.sp,
+      ),
+      onSelected: onSelected,
     );
   }
 }

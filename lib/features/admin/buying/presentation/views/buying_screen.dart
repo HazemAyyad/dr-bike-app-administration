@@ -9,7 +9,9 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
+import '../controllers/return_purchases_controller.dart';
 import '../widgets/bills_widgets/bills_list.dart';
+import '../widgets/return_purchases_widgets/return_purchases_list.dart';
 
 class BuyingScreen extends GetView<BillsController> {
   const BuyingScreen({Key? key}) : super(key: key);
@@ -74,7 +76,24 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
           return const Center(child: CircularProgressIndicator());
         }
         if (controller.allBillsSearch.isEmpty) {
-          return const Center(child: ShowNoData());
+          return ListView(
+            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
+            children: [
+              _PrimaryActionRow(
+                primaryText: 'فاتورة شراء جديدة',
+                primaryIcon: Icons.add_shopping_cart_outlined,
+                onPrimary: () {
+                  controller.isaddNewBill = '1';
+                  Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+                },
+                secondaryText: 'كل الفواتير',
+                secondaryIcon: Icons.receipt_long_outlined,
+                onSecondary: () => Get.toNamed(AppRoutes.BILLSSCREEN),
+              ),
+              SizedBox(height: 80.h),
+              const ShowNoData(),
+            ],
+          );
         }
         final months =
             controller.allBillsSearch.keys.toList().reversed.toList();
@@ -82,36 +101,25 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
           onRefresh: () async => controller.getBills(),
           child: ListView.builder(
             padding: EdgeInsets.only(bottom: 90.h),
-            itemCount: months.length + 2,
+            itemCount: months.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
-                  child: _ActionTile(
-                    icon: Icons.add_shopping_cart_outlined,
-                    title: 'فاتورة شراء جديدة',
-                    subtitle: 'اختيار مصدر، منتجات، كميات وأسعار قبل الاستلام',
-                    onTap: () {
+                  child: _PrimaryActionRow(
+                    primaryText: 'فاتورة شراء جديدة',
+                    primaryIcon: Icons.add_shopping_cart_outlined,
+                    onPrimary: () {
                       controller.isaddNewBill = '1';
                       Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
                     },
+                    secondaryText: 'كل الفواتير',
+                    secondaryIcon: Icons.receipt_long_outlined,
+                    onSecondary: () => Get.toNamed(AppRoutes.BILLSSCREEN),
                   ),
                 );
               }
-              if (index == 1) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 4.h),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: () => Get.toNamed(AppRoutes.BILLSSCREEN),
-                      icon: Icon(Icons.open_in_new, size: 16.sp),
-                      label: const Text('فتح شاشة الفواتير الكاملة'),
-                    ),
-                  ),
-                );
-              }
-              final month = months[index - 2];
+              final month = months[index - 1];
               final bills = controller.allBillsSearch[month] ?? [];
               return BillsList(month: month, bills: bills, page: '1');
             },
@@ -122,31 +130,105 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
   }
 }
 
-class _ReturnPurchasesEntryTab extends StatelessWidget {
+class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
   const _ReturnPurchasesEntryTab();
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
+    return GetBuilder<ReturnPurchasesController>(
+      builder: (controller) {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final months =
+            controller.returnPurchasesSearch.keys.toList().reversed.toList();
+        return RefreshIndicator(
+          onRefresh: () async => controller.getReturnBills(),
+          child: ListView.builder(
+            padding: EdgeInsets.only(bottom: 90.h),
+            itemCount: months.isEmpty ? 2 : months.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
+                  child: _PrimaryActionRow(
+                    primaryText: 'إنشاء مرتجع',
+                    primaryIcon: Icons.add_circle_outline,
+                    onPrimary: () =>
+                        Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN),
+                    secondaryText: 'كل المرتجعات',
+                    secondaryIcon: Icons.assignment_return_outlined,
+                    onSecondary: () =>
+                        Get.toNamed(AppRoutes.RETURNPURCHASESSCREEN),
+                  ),
+                );
+              }
+              if (months.isEmpty) {
+                return Padding(
+                  padding: EdgeInsets.only(top: 80.h),
+                  child: const ShowNoData(),
+                );
+              }
+              final month = months[index - 1];
+              final returns = controller.returnPurchasesSearch[month] ?? [];
+              return ReturnPurchasesList(month: month, bills: returns);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PrimaryActionRow extends StatelessWidget {
+  const _PrimaryActionRow({
+    required this.primaryText,
+    required this.primaryIcon,
+    required this.onPrimary,
+    required this.secondaryText,
+    required this.secondaryIcon,
+    required this.onSecondary,
+  });
+
+  final String primaryText;
+  final IconData primaryIcon;
+  final VoidCallback onPrimary;
+  final String secondaryText;
+  final IconData secondaryIcon;
+  final VoidCallback onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        _ActionTile(
-          icon: Icons.assignment_return_outlined,
-          title: 'مرتجعات الشراء',
-          subtitle: 'متابعة المرتجعات وتسويات الموردين',
-          onTap: () => Get.toNamed(AppRoutes.RETURNPURCHASESSCREEN),
+        Expanded(
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            onPressed: onPrimary,
+            icon: Icon(primaryIcon, size: 18.sp),
+            label: Text(primaryText),
+          ),
         ),
-        _ActionTile(
-          icon: Icons.add_circle_outline,
-          title: 'إنشاء مرتجع شراء',
-          subtitle: 'اختيار فاتورة وأصناف وتسوية المرتجع',
-          onTap: () => Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN),
-        ),
-        _ActionTile(
-          icon: Icons.inventory_outlined,
-          title: 'طلبات الشراء القديمة',
-          subtitle: 'مراجعة الحالات القديمة لحين إكمال نقلها',
-          onTap: () => Get.toNamed(AppRoutes.PURCHASEORDERSSCREEN),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primaryColor,
+              side: const BorderSide(color: AppColors.primaryColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            onPressed: onSecondary,
+            icon: Icon(secondaryIcon, size: 18.sp),
+            label: Text(secondaryText),
+          ),
         ),
       ],
     );
@@ -236,31 +318,6 @@ class _DiscrepanciesDashboardTab extends GetView<BillsController> {
           ),
         );
       },
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseTile(
-      onTap: onTap,
-      icon: icon,
-      title: title,
-      subtitle: subtitle,
-      trailing: const Icon(Icons.chevron_left),
     );
   }
 }

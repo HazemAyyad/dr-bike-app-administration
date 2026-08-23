@@ -1025,15 +1025,15 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     issueNotesController.clear();
   }
 
-  Future<void> payShownPurchase(
+  Future<bool> payShownPurchase(
     BuildContext context, {
     required String amount,
     required String boxId,
     String? note,
   }) async {
     final details = billDetails;
-    if (details == null) return;
-    await _runWorkflowAction(
+    if (details == null) return false;
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.pay(
         billId: details.billId.toString(),
@@ -1288,7 +1288,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
-  Future<void> _runWorkflowAction(
+  Future<bool> _runWorkflowAction(
     BuildContext context,
     Future<dynamic> future,
   ) async {
@@ -1317,9 +1317,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     });
     isWorkflowLoading(false);
     update();
+    return result.isRight();
   }
 
-  Future<void> submitShownPurchasePayment(BuildContext context) async {
+  Future<bool> submitShownPurchasePayment(BuildContext context) async {
     final box = selectedPurchaseBox.value;
     if (box == null) {
       Helpers.showCustomDialogError(
@@ -1327,7 +1328,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب اختيار صندوق',
       );
-      return;
+      return false;
     }
     final amount = purchasePaymentAmountController.text.trim();
     if (amount.isEmpty || (num.tryParse(amount) ?? 0) <= 0) {
@@ -1336,9 +1337,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال مبلغ صحيح',
       );
-      return;
+      return false;
     }
-    await payShownPurchase(
+    return payShownPurchase(
       context,
       amount: amount,
       boxId: box.boxId.toString(),
@@ -1583,6 +1584,9 @@ class PurchaseReceivingRowModel {
   final TextEditingController unitPriceController;
   final TextEditingController reasonController;
   final TextEditingController notesController;
+  bool hasExtra = false;
+  bool hasDamaged = false;
+  bool hasMismatched = false;
 
   PurchaseReceivingRowModel({required this.product})
       : deliveredNowController = TextEditingController(),
@@ -1601,8 +1605,25 @@ class PurchaseReceivingRowModel {
   num get extra => _num(extraController);
   num get damaged => _num(damagedController);
   num get mismatched => _num(mismatchedController);
+  bool get hasDeliveredEntry => deliveredNowController.text.trim().isNotEmpty;
+
+  num get autoAccepted {
+    if (!hasDeliveredEntry || deliveredNow <= 0) return 0;
+    final issueTotal = extra + damaged + mismatched;
+    final owned = deliveredNow - extra - damaged - mismatched;
+    if (owned <= 0 || issueTotal >= deliveredNow) return 0;
+    return owned > product.remainingQuantity
+        ? product.remainingQuantity
+        : owned;
+  }
+
+  num get autoMissing {
+    final missing = product.remainingQuantity - autoAccepted;
+    return missing > 0 ? missing : 0;
+  }
 
   bool get isEmpty =>
+      !hasDeliveredEntry &&
       accepted <= 0 &&
       missing <= 0 &&
       extra <= 0 &&
@@ -1617,23 +1638,29 @@ class PurchaseReceivingRowModel {
         mismatched < 0) {
       return false;
     }
-    if (accepted > product.remainingQuantity) return false;
-    if (accepted + missing > product.remainingQuantity) return false;
-    if (deliveredNow > 0 &&
-        accepted + extra + damaged + mismatched > deliveredNow) {
+    final effectiveAccepted = hasDeliveredEntry ? autoAccepted : accepted;
+    final effectiveMissing = hasDeliveredEntry ? autoMissing : missing;
+    if (effectiveAccepted > product.remainingQuantity) return false;
+    if (effectiveAccepted + effectiveMissing > product.remainingQuantity) {
+      return false;
+    }
+    if (hasDeliveredEntry &&
+        effectiveAccepted + extra + damaged + mismatched > deliveredNow) {
       return false;
     }
     return true;
   }
 
   Map<String, dynamic> toApiMap() {
+    final effectiveAccepted = hasDeliveredEntry ? autoAccepted : accepted;
+    final effectiveMissing = hasDeliveredEntry ? autoMissing : missing;
     return {
       'bill_item_id': product.billItemId,
-      'accepted_quantity': accepted,
-      'missing_quantity': missing,
-      'extra_quantity': extra,
-      'damaged_quantity': damaged,
-      'mismatched_quantity': mismatched,
+      'accepted_quantity': effectiveAccepted,
+      'missing_quantity': effectiveMissing,
+      'extra_quantity': hasExtra ? extra : 0,
+      'damaged_quantity': hasDamaged ? damaged : 0,
+      'mismatched_quantity': hasMismatched ? mismatched : 0,
       'unit_price': unitPriceController.text.trim(),
       if (reasonController.text.trim().isNotEmpty)
         'reason': reasonController.text.trim(),
@@ -1644,6 +1671,23 @@ class PurchaseReceivingRowModel {
 
   num _num(TextEditingController controller) {
     return num.tryParse(controller.text.trim()) ?? 0;
+  }
+
+  void setIssueEnabled(String type, bool enabled) {
+    switch (type) {
+      case 'extra':
+        hasExtra = enabled;
+        if (!enabled) extraController.clear();
+        break;
+      case 'damaged':
+        hasDamaged = enabled;
+        if (!enabled) damagedController.clear();
+        break;
+      case 'mismatched':
+        hasMismatched = enabled;
+        if (!enabled) mismatchedController.clear();
+        break;
+    }
   }
 
   void dispose() {
