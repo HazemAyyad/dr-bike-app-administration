@@ -47,6 +47,8 @@ class TargetSectionController extends GetxController {
   final TextEditingController targetNameController = TextEditingController();
   final TextEditingController targetScopeController = TextEditingController();
   final TextEditingController formController = TextEditingController();
+  final TextEditingController calculationModeController =
+      TextEditingController(text: 'total');
 
   final TextEditingController targetTypeController = TextEditingController();
   final TextEditingController customerAndSellerIdController =
@@ -105,8 +107,23 @@ class TargetSectionController extends GetxController {
   final List<ProjectProductModel> productsIds = [];
 
   final RxBool targetTimeController = false.obs;
+  final RxBool startTimeController = false.obs;
 
+  final Rx<DateTime> selectedStartTime = DateTime.now().obs;
   final Rx<DateTime> selectedTime = DateTime.now().obs;
+
+  final List<String> calculationModes = ['total', 'detailed'];
+
+  bool get supportsTotalMode => [
+        'total_sell_values',
+        'net_profit',
+        'sell_pieces',
+        'purchase_pieces',
+        'total_purchase_values',
+      ].contains(targetTypeController.text);
+
+  bool get isDetailedMode =>
+      !supportsTotalMode || calculationModeController.text == 'detailed';
 
   void getAllGoal() async {
     GoalsServices().globalGoalsList.isEmpty
@@ -232,11 +249,13 @@ class TargetSectionController extends GetxController {
     isAddLoading(true);
     update();
     final goal = goalDetailsList!.goal;
+    calculationModeController.text = goal.calculationMode.isEmpty
+        ? (goal.form.isEmpty ? 'total' : 'detailed')
+        : goal.calculationMode;
     targetNameController.text = goal.name;
     targetScopeController.text = goal.scope;
     targetTypeController.text = goal.type;
     targetValueController.text = goal.targetedValue;
-    currentValueController.text = goal.currentValue;
     notesController.text = goal.notes ?? '';
     formController.text = goal.form;
     if (goal.employee != null) {
@@ -266,7 +285,9 @@ class TargetSectionController extends GetxController {
     if (goal.subCategories!.isNotEmpty) {
       subCategoriesIdController.text = goal.subCategories!.first.id.toString();
     }
-    selectedTime.value = DateTime.parse(goal.dueDate);
+    selectedStartTime.value =
+        DateTime.tryParse(goal.startDate) ?? DateTime.now();
+    selectedTime.value = DateTime.tryParse(goal.dueDate) ?? DateTime.now();
     isAddLoading(false);
     update();
   }
@@ -283,9 +304,12 @@ class TargetSectionController extends GetxController {
     currentValueController.clear();
     notesController.clear();
     formController.clear();
+    calculationModeController.text = 'total';
     employeeIdController.clear();
     customerAndSellerIdController.clear();
     boxIdController.clear();
+    selectedStartTime.value = DateTime.now();
+    selectedTime.value = DateTime.now();
   }
 
   // add Goal
@@ -296,16 +320,18 @@ class TargetSectionController extends GetxController {
       name: targetNameController.text,
       type: targetTypeController.text,
       form: formController.text,
+      calculationMode:
+          supportsTotalMode ? calculationModeController.text : 'detailed',
       targetedValue: targetValueController.text,
       notes: notesController.text,
       scope: targetScopeController.text,
-      currentValue: currentValueController.text,
       employeeId: employeeIdController.text,
       sellerId: isSeller.value ? customerAndSellerIdController.text : '',
       customerId: !isSeller.value ? customerAndSellerIdController.text : '',
       boxId: boxIdController.text,
       mainCategoriesId: mainCategoriesIdController.text,
       subCategoriesId: subCategoriesIdController.text,
+      startDate: selectedStartTime.value,
       dueDate: selectedTime.value,
       productsIds: productsIds,
     );
@@ -342,6 +368,7 @@ class TargetSectionController extends GetxController {
         targetNameController.clear();
         targetTypeController.clear();
         formController.clear();
+        calculationModeController.text = 'total';
         targetValueController.clear();
         notesController.clear();
         targetScopeController.clear();
@@ -351,6 +378,7 @@ class TargetSectionController extends GetxController {
         boxIdController.clear();
         mainCategoriesIdController.clear();
         subCategoriesIdController.clear();
+        selectedStartTime.value = DateTime.now();
         selectedTime.value = DateTime.now();
         productsIds.clear();
 

@@ -70,13 +70,38 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                   controller.boxIdController.clear();
 
                   controller.targetTypeController.text = value!;
+                  controller.calculationModeController.text =
+                      controller.supportsTotalMode ? 'total' : 'detailed';
                   controller.update();
                 },
                 isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 10.h),
+              if (controller.supportsTotalMode)
+                CustomDropdownField(
+                  isRequired: true,
+                  label: 'calculationMode',
+                  hint: 'calculationMode',
+                  value: controller.calculationModeController.text.isEmpty
+                      ? null
+                      : controller.calculationModeController.text,
+                  items: controller.calculationModes,
+                  onChanged: (value) {
+                    controller.calculationModeController.text = value!;
+                    if (value == 'total') {
+                      controller.formController.clear();
+                      controller.mainCategoriesIdController.clear();
+                      controller.subCategoriesIdController.clear();
+                      controller.productIdController.clear();
+                      controller.productsIds.clear();
+                      controller.customerAndSellerIdController.clear();
+                    }
+                    controller.update();
+                  },
+                ),
+              if (controller.supportsTotalMode) SizedBox(height: 10.h),
               const TargetTypeFormatWidget(),
-              const OptionsWidget(),
+              if (controller.isDetailedMode) const OptionsWidget(),
               GetBuilder<TargetSectionController>(
                 builder: (controller) {
                   if (controller.productsIds.isEmpty) {
@@ -140,24 +165,21 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
               ),
               SizedBox(height: 10.h),
               CustomTextField(
-                enabled: !controller.isEdit.value,
                 label: 'targetValue',
                 hintText: 'targetValueExample',
                 controller: controller.targetValueController,
                 keyboardType: TextInputType.number,
               ),
-              if (controller.isEdit.value)
-                Column(
-                  children: [
-                    SizedBox(height: 10.h),
-                    CustomTextField(
-                      label: 'currentValue',
-                      hintText: 'targetValueExample',
-                      controller: controller.currentValueController,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
+              SizedBox(height: 10.h),
+              CustomCalendar(
+                label: 'fromDate',
+                selectedDay: controller.selectedStartTime,
+                onTap: () {
+                  controller.startTimeController.value =
+                      !controller.startTimeController.value;
+                },
+                isVisible: controller.startTimeController,
+              ),
               SizedBox(height: 10.h),
               CustomCalendar(
                 label: 'date',

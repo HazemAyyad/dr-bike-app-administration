@@ -37,8 +37,8 @@ class GoalsDatasource {
     required String name,
     required String type,
     required String form,
+    required String calculationMode,
     required String targetedValue,
-    required String currentValue,
     required String notes,
     required String scope,
     required String customerId,
@@ -48,6 +48,7 @@ class GoalsDatasource {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required DateTime startDate,
     required DateTime dueDate,
   }) async {
     final Map<String, dynamic> productsList = {};
@@ -67,9 +68,9 @@ class GoalsDatasource {
           if (goalId != null) 'goal_id': goalId,
           'name': name,
           'type': type,
-          'form': form,
+          if (form.isNotEmpty) 'form': form,
+          'calculation_mode': calculationMode,
           'targeted_value': targetedValue,
-          if (currentValue.isNotEmpty) 'current_value': currentValue,
           'notes': notes,
           'scope': scope,
           if (customerId.isNotEmpty) 'people[0][customer_id]': customerId,
@@ -83,6 +84,7 @@ class GoalsDatasource {
           if (subCategoriesId.isNotEmpty)
             'sub_categories[0][sub_category_id]': subCategoriesId,
           if (employeeId.isNotEmpty) 'employee_id': employeeId,
+          'start_date': startDate,
           'due_date': dueDate,
         },
         isFormData: true,

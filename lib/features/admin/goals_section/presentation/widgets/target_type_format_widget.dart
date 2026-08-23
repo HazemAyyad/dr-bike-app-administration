@@ -309,6 +309,9 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
         if (controller.targetTypeController.text.isEmpty) {
           return const SizedBox.shrink();
         }
+        if (!controller.isDetailedMode) {
+          return const SizedBox.shrink();
+        }
         return Column(
           children: [
             CustomDropdownField(

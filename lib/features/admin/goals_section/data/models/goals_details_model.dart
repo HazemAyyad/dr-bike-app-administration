@@ -208,6 +208,7 @@ class Goal {
   final int id;
   final String name;
   final String type;
+  final String calculationMode;
   final String achievementPercentage;
   final String currentValue;
   final String targetedValue;
@@ -217,6 +218,7 @@ class Goal {
   final String isCanceled;
   final String form;
   final String scope;
+  final String startDate;
   final String dueDate;
 
   final List<Category>? mainCategories;
@@ -230,6 +232,7 @@ class Goal {
     required this.id,
     required this.name,
     required this.type,
+    required this.calculationMode,
     required this.achievementPercentage,
     required this.currentValue,
     required this.targetedValue,
@@ -239,6 +242,7 @@ class Goal {
     required this.isCanceled,
     required this.form,
     required this.scope,
+    required this.startDate,
     required this.dueDate,
     this.mainCategories,
     this.subCategories,
@@ -254,6 +258,7 @@ class Goal {
       id: asInt(j['id']),
       name: asString(j['name']),
       type: asString(j['type']),
+      calculationMode: asString(j['calculation_mode'], 'total'),
       achievementPercentage: asString(j['achievement_percentage']),
       currentValue: asString(j['current_value']),
       targetedValue: asString(j['targeted_value']),
@@ -263,8 +268,10 @@ class Goal {
       isCanceled: asString(j['is_canceled']),
       form: asString(j['form']),
       scope: asString(j['scope']),
+      startDate: asString(j['start_date']),
       dueDate: asString(j['due_date']),
-      mainCategories: mapList(j['main_categories'], (m) => Category.fromJson(m)),
+      mainCategories:
+          mapList(j['main_categories'], (m) => Category.fromJson(m)),
       subCategories:
           mapList(j['sub_categories'], (m) => SubCategory.fromJson(m)),
       products: mapList(j['products'], (m) => Product.fromJson(m)),
@@ -280,6 +287,7 @@ class Goal {
         'id': id,
         'name': name,
         'type': type,
+        'calculation_mode': calculationMode,
         'achievement_percentage': achievementPercentage,
         'current_value': currentValue,
         'targeted_value': targetedValue,
@@ -289,6 +297,7 @@ class Goal {
         'is_canceled': isCanceled,
         'form': form,
         'scope': scope,
+        'start_date': startDate,
         'due_date': dueDate,
         'main_categories': mainCategories?.map((x) => x.toJson()).toList(),
         'sub_categories': subCategories?.map((x) => x.toJson()).toList(),

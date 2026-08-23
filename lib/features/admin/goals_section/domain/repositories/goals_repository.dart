@@ -12,8 +12,8 @@ abstract class GoalsRepository {
     required String name,
     required String type,
     required String form,
+    required String calculationMode,
     required String targetedValue,
-    required String currentValue,
     required String notes,
     required String scope,
     required String customerId,
@@ -23,6 +23,7 @@ abstract class GoalsRepository {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required DateTime startDate,
     required DateTime dueDate,
   });
 

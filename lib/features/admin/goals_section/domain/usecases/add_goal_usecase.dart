@@ -14,8 +14,8 @@ class AddGoalUsecase {
     required String name,
     required String type,
     required String form,
+    required String calculationMode,
     required String targetedValue,
-    required String currentValue,
     required String notes,
     required String scope,
     required String customerId,
@@ -25,6 +25,7 @@ class AddGoalUsecase {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required DateTime startDate,
     required DateTime dueDate,
   }) async {
     return await goalsRepository.addGoal(
@@ -32,8 +33,8 @@ class AddGoalUsecase {
       name: name,
       type: type,
       form: form,
+      calculationMode: calculationMode,
       targetedValue: targetedValue,
-      currentValue: currentValue,
       notes: notes,
       scope: scope,
       customerId: customerId,
@@ -43,6 +44,7 @@ class AddGoalUsecase {
       productsIds: productsIds,
       mainCategoriesId: mainCategoriesId,
       subCategoriesId: subCategoriesId,
+      startDate: startDate,
       dueDate: dueDate,
     );
   }

@@ -33,8 +33,8 @@ class GoalsImplement implements GoalsRepository {
     required String name,
     required String type,
     required String form,
+    required String calculationMode,
     required String targetedValue,
-    required String currentValue,
     required String notes,
     required String scope,
     required String customerId,
@@ -44,6 +44,7 @@ class GoalsImplement implements GoalsRepository {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required DateTime startDate,
     required DateTime dueDate,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -55,8 +56,8 @@ class GoalsImplement implements GoalsRepository {
         name: name,
         type: type,
         form: form,
+        calculationMode: calculationMode,
         targetedValue: targetedValue,
-        currentValue: currentValue,
         notes: notes,
         scope: scope,
         customerId: customerId,
@@ -65,6 +66,7 @@ class GoalsImplement implements GoalsRepository {
         boxId: boxId,
         mainCategoriesId: mainCategoriesId,
         subCategoriesId: subCategoriesId,
+        startDate: startDate,
         dueDate: dueDate,
         productsIds: productsIds,
       );
