@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
+import '../controllers/purchase_orders_controller.dart';
 import '../controllers/return_purchases_controller.dart';
 import '../widgets/bills_widgets/bills_list.dart';
 import '../widgets/return_purchases_widgets/return_purchases_list.dart';
@@ -21,8 +23,9 @@ class BuyingScreen extends GetView<BillsController> {
     if (!Get.isRegistered<BillsController>()) {
       BuyingBinding().dependencies();
     }
+
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         appBar: const CustomAppBar(
           title: 'purchasesandReturns',
@@ -43,9 +46,8 @@ class BuyingScreen extends GetView<BillsController> {
                   indicatorColor: AppColors.primaryColor,
                   tabs: [
                     Tab(text: 'فواتير الشراء'),
-                    Tab(text: 'المرتجعات'),
-                    Tab(text: 'الأمانات'),
-                    Tab(text: 'الفروقات'),
+                    Tab(text: 'استلام طلبات الشراء'),
+                    Tab(text: 'مردودات المشتريات'),
                   ],
                 ),
               ),
@@ -54,9 +56,8 @@ class BuyingScreen extends GetView<BillsController> {
               child: TabBarView(
                 children: [
                   _PurchaseInvoicesTab(),
+                  const _PurchaseOrdersEntryTab(),
                   const _ReturnPurchasesEntryTab(),
-                  const _AmanatDashboardTab(),
-                  const _DiscrepanciesDashboardTab(),
                 ],
               ),
             ),
@@ -166,104 +167,156 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
   }
 }
 
+class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
+  const _PurchaseOrdersEntryTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: AppTabs(
+            tabs: controller.tabs,
+            currentTab: controller.currentTab,
+            changeTab: controller.changeTab,
+          ),
+        ),
+        SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+        SliverToBoxAdapter(
+          child: _BuyingSearchBar(
+            onChanged: controller.searchBar,
+          ),
+        ),
+        SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+        GetBuilder<PurchaseOrdersController>(
+          builder: (controller) {
+            if (controller.isLoading.value) {
+              return const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final current = controller.currentTab.value;
+            final source = current == 0
+                ? controller.unprocessedSearch
+                : current == 1
+                    ? controller.notMatchedSearch
+                    : current == 2
+                        ? controller.completedSearch
+                        : controller.depositsSearch;
+
+            if (source.isEmpty) {
+              return const SliverFillRemaining(
+                child: Center(child: ShowNoData()),
+              );
+            }
+
+            final months = source.keys.toList().reversed.toList();
+            return SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, section) {
+                  final month = months[section];
+                  final bills = source[month]!.reversed.toList();
+                  return BillsList(
+                    month: month,
+                    bills: bills,
+                    page: current == 0
+                        ? '2'
+                        : current == 2
+                            ? '1'
+                            : current == 1
+                                ? '3'
+                                : '4',
+                  );
+                },
+                childCount: months.length,
+              ),
+            );
+          },
+        ),
+        SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+      ],
+    );
+  }
+}
+
 class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
   const _ReturnPurchasesEntryTab();
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<ReturnPurchasesController>(
-      builder: (controller) {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final months =
-            controller.returnPurchasesSearch.keys.toList().reversed.toList();
-        return RefreshIndicator(
-          onRefresh: () async => controller.getReturnBills(),
-          child: ListView.builder(
-            padding: EdgeInsets.only(bottom: 90.h),
-            itemCount: months.isEmpty ? 2 : months.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
-                  child: _PrimaryActionRow(
-                    primaryText: 'إنشاء مرتجع',
-                    primaryIcon: Icons.add_circle_outline,
-                    onPrimary: () =>
-                        Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN),
-                    secondaryText: 'كل المرتجعات',
-                    secondaryIcon: Icons.assignment_return_outlined,
-                    onSecondary: () =>
-                        Get.toNamed(AppRoutes.RETURNPURCHASESSCREEN),
+    return Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: AppTabs(
+                tabs: controller.tabs,
+                currentTab: controller.currentTab,
+                changeTab: controller.changeTab,
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+            SliverToBoxAdapter(
+              child: _BuyingSearchBar(
+                onChanged: controller.searchBar,
+              ),
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+            GetBuilder<ReturnPurchasesController>(
+              builder: (controller) {
+                if (controller.isLoading.value) {
+                  return const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final source = controller.currentTab.value == 0
+                    ? controller.returnPurchasesSearch
+                    : controller.deliveredPurchasesSearch;
+
+                if (source.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: Center(child: ShowNoData()),
+                  );
+                }
+
+                final months = source.keys.toList().reversed.toList();
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, section) {
+                      final month = months[section];
+                      final bills = source[month]!.reversed.toList();
+                      return ReturnPurchasesList(month: month, bills: bills);
+                    },
+                    childCount: months.length,
                   ),
                 );
-              }
-              if (months.isEmpty) {
-                return Padding(
-                  padding: EdgeInsets.only(top: 80.h),
-                  child: const ShowNoData(),
-                );
-              }
-              final month = months[index - 1];
-              final returns = controller.returnPurchasesSearch[month] ?? [];
-              return ReturnPurchasesList(month: month, bills: returns);
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PrimaryActionRow extends StatelessWidget {
-  const _PrimaryActionRow({
-    required this.primaryText,
-    required this.primaryIcon,
-    required this.onPrimary,
-    required this.secondaryText,
-    required this.secondaryIcon,
-    required this.onSecondary,
-  });
-
-  final String primaryText;
-  final IconData primaryIcon;
-  final VoidCallback onPrimary;
-  final String secondaryText;
-  final IconData secondaryIcon;
-  final VoidCallback onSecondary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
+              },
             ),
-            onPressed: onPrimary,
-            icon: Icon(primaryIcon, size: 18.sp),
-            label: Text(primaryText),
-          ),
+            SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+          ],
         ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primaryColor,
-              side: const BorderSide(color: AppColors.primaryColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
+        PositionedDirectional(
+          start: 18.w,
+          bottom: 18.h,
+          child: SizedBox(
+            height: 55.h,
+            width: 55.w,
+            child: FloatingActionButton(
+              heroTag: 'buying_returns_fab',
+              onPressed: () {
+                Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN);
+              },
+              backgroundColor: AppColors.secondaryColor,
+              elevation: 2.0,
+              shape: const CircleBorder(),
+              child: Icon(
+                Icons.add,
+                color: AppColors.whiteColor,
+                size: 42.sp,
               ),
             ),
-            onPressed: onSecondary,
-            icon: Icon(secondaryIcon, size: 18.sp),
-            label: Text(secondaryText),
           ),
         ),
       ],
@@ -271,259 +324,26 @@ class _PrimaryActionRow extends StatelessWidget {
   }
 }
 
-class _AmanatDashboardTab extends GetView<BillsController> {
-  const _AmanatDashboardTab();
+class _BuyingSearchBar extends StatelessWidget {
+  const _BuyingSearchBar({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<BillsController>(
-      builder: (controller) {
-        if (controller.isAmanatDashboardLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.amanatDashboard.isEmpty) {
-          return const _EmptyState(text: 'لا توجد أمانات حالياً');
-        }
-        return RefreshIndicator(
-          onRefresh: () => controller.loadAmanatDashboard(),
-          child: ListView.separated(
-            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
-            itemCount: controller.amanatDashboard.length,
-            separatorBuilder: (_, __) => SizedBox(height: 10.h),
-            itemBuilder: (_, index) {
-              final row = controller.amanatDashboard[index];
-              return _InfoCard(
-                icon: Icons.inventory_2_outlined,
-                title: asString(row['product_name'], 'منتج'),
-                subtitle:
-                    '${asString(row['source_name'], 'مصدر غير معروف')} • فاتورة #${asString(row['bill_id'])}',
-                chips: [
-                  'الكمية ${asString(row['remaining_quantity'])}',
-                  asString(row['status']),
-                  '${asString(row['age_days'], '0')} يوم',
-                ],
-                onTap: () => _openBill(row['bill_id']),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _DiscrepanciesDashboardTab extends GetView<BillsController> {
-  const _DiscrepanciesDashboardTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<BillsController>(
-      builder: (controller) {
-        if (controller.isDiscrepanciesDashboardLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.discrepanciesDashboard.isEmpty) {
-          return const _EmptyState(text: 'لا توجد مشاكل استلام حالياً');
-        }
-        return RefreshIndicator(
-          onRefresh: () => controller.loadDiscrepanciesDashboard(),
-          child: ListView.separated(
-            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
-            itemCount: controller.discrepanciesDashboard.length,
-            separatorBuilder: (_, __) => SizedBox(height: 10.h),
-            itemBuilder: (_, index) {
-              final row = controller.discrepanciesDashboard[index];
-              return _InfoCard(
-                icon: Icons.report_problem_outlined,
-                title: asString(row['product_name'], 'منتج'),
-                subtitle:
-                    '${asString(row['source_name'], 'مصدر غير معروف')} • فاتورة #${asString(row['bill_id'])}',
-                chips: [
-                  if (asDouble(row['missing_quantity']) > 0)
-                    'ناقص ${asString(row['missing_quantity'])}',
-                  if (asDouble(row['extra_quantity']) > 0)
-                    'أمانة ${asString(row['extra_quantity'])}',
-                  if (asDouble(row['damaged_quantity']) > 0)
-                    'تالف ${asString(row['damaged_quantity'])}',
-                  if (asDouble(row['mismatched_quantity']) > 0)
-                    'غير مطابق ${asString(row['mismatched_quantity'])}',
-                ],
-                onTap: () => _openBill(row['bill_id']),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.chips,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final List<String> chips;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return _BaseTile(
-      onTap: onTap,
-      icon: icon,
-      title: title,
-      subtitle: subtitle,
-      trailing: const Icon(Icons.open_in_new),
-      footer: Wrap(
-        spacing: 6.w,
-        runSpacing: 6.h,
-        children: chips
-            .where((chip) => chip.trim().isNotEmpty)
-            .map((chip) => _MiniChip(text: chip))
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _BaseTile extends StatelessWidget {
-  const _BaseTile({
-    required this.onTap,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-    this.footer,
-  });
-
-  final VoidCallback onTap;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-  final Widget? footer;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10.r),
-      child: Container(
-        margin: EdgeInsets.only(bottom: 10.h),
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: Colors.grey.shade200),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 50.w),
+      child: SearchBar(
+        shadowColor: WidgetStateProperty.all(Colors.transparent),
+        leading: const Icon(Icons.search),
+        hintText: 'search'.tr,
+        backgroundColor: WidgetStateProperty.all(
+          ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : AppColors.customGreyColor7,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 38.w,
-                  height: 38.w,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                  child: Icon(icon, color: AppColors.primaryColor, size: 21.sp),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                      SizedBox(height: 3.h),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 11.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                trailing,
-              ],
-            ),
-            if (footer != null) ...[
-              SizedBox(height: 10.h),
-              footer!,
-            ],
-          ],
-        ),
+        onChanged: onChanged,
       ),
     );
   }
-}
-
-class _MiniChip extends StatelessWidget {
-  const _MiniChip({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: AppColors.primaryColor,
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        text,
-        style: TextStyle(color: Colors.grey.shade700, fontSize: 13.sp),
-      ),
-    );
-  }
-}
-
-void _openBill(dynamic billId) {
-  final id = asString(billId);
-  if (id.isEmpty) return;
-  Get.find<BillsController>().getBillDetails(
-    context: Get.context!,
-    billId: id,
-  );
-  Get.toNamed(AppRoutes.BILLDETAILSSCREEN, arguments: '2');
 }
