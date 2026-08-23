@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -346,6 +347,19 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     addProductToPurchaseCart(product);
   }
 
+  void togglePurchaseProductSelection(ProductModel product) {
+    final index =
+        purchaseCart.indexWhere((item) => item.product.id == product.id);
+    if (index >= 0) {
+      removePurchaseCartItem(purchaseCart[index]);
+      return;
+    }
+    purchaseCart.add(PurchaseCartItemModel(product: product));
+    loadPurchasePriceIntelligence(product.id);
+    calculatePurchaseCartTotal();
+    update();
+  }
+
   void decrementPurchaseProduct(String productId) {
     final index =
         purchaseCart.indexWhere((item) => item.product.id == productId);
@@ -611,6 +625,23 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         return;
       }
     }
+    final paid = num.tryParse(purchasePaymentAmountController.text.trim()) ?? 0;
+    if (paid < 0 || paid > totalCost.value) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'تأكد من المبلغ المدفوع',
+      );
+      return;
+    }
+    if (paid > 0 && selectedPurchaseBox.value == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يجب اختيار صندوق للمبلغ المدفوع',
+      );
+      return;
+    }
 
     billModel.assignAll(purchaseCart.map((item) {
       final row = BillModel();
@@ -827,6 +858,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         customerIdController.clear();
         discountController.clear();
         purchaseNotesController.clear();
+        purchasePaymentAmountController.clear();
+        purchasePaymentNoteController.clear();
         selectedPurchaseSource.value = null;
         for (final item in purchaseCart) {
           item.dispose();
@@ -836,8 +869,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         billModel.map((e) => e.productIdController.clear()).toList();
         billModel.map((e) => e.quantityController.clear()).toList();
         billModel.map((e) => e.priceController.clear()).toList();
-        Get.back();
-        Get.back();
+        Get.offNamed(AppRoutes.BILLSSCREEN);
       });
       getBills();
       Get.find<ReturnPurchasesController>().getReturnBills();

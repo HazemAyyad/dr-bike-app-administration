@@ -11,8 +11,8 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../routes/app_routes.dart';
-import '../../../../sales/presentation/widgets/new_instant_sale/instant_sale_qty_stepper.dart';
 import '../../../../sales/data/models/product_model.dart';
+import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
 
@@ -581,47 +581,107 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
           builder: (_, scrollController) {
             return GetBuilder<BillsController>(
               builder: (controller) {
-                return ListView.separated(
-                  controller: scrollController,
-                  padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
-                  itemCount: controller.purchaseSources.length + 1,
-                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                  itemBuilder: (_, index) {
-                    if (index == 0) {
-                      return Text(
-                        'مصدر الشراء',
-                        style:
-                            Theme.of(context).textTheme.titleMedium!.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16.sp,
-                                ),
-                      );
-                    }
-                    final source = controller.purchaseSources[index - 1];
-                    return ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      title: Text(
-                        source.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.sp,
+                return DefaultTabController(
+                  length: 2,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'اختيار المورد / الزبون',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium!
+                                    .copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16.sp,
+                                    ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
                         ),
-                      ),
-                      subtitle: Text(source.typeLabel),
-                      trailing: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.primaryColor,
-                      ),
-                      onTap: () {
-                        controller.selectPurchaseSource(source);
-                        Navigator.of(sheetContext).pop();
-                      },
-                    );
-                  },
+                        SizedBox(height: 10.h),
+                        Container(
+                          height: 44.h,
+                          padding: EdgeInsets.all(4.w),
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.primaryColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: TabBar(
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicator: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10.r),
+                              border: Border.all(
+                                color: AppColors.primaryColor
+                                    .withValues(alpha: 0.18),
+                              ),
+                            ),
+                            labelColor: AppColors.primaryColor,
+                            unselectedLabelColor: Colors.grey.shade700,
+                            labelStyle: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            tabs: const [
+                              Tab(text: 'مورد'),
+                              Tab(text: 'زبون'),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+                        Expanded(
+                          child: TabBarView(
+                            children: [
+                              _PurchaseSourceList(
+                                emptyText: 'لا يوجد موردين',
+                                items: controller.allSellersList,
+                                sourceBuilder: (seller) => PurchaseSourceModel(
+                                  id: seller.id,
+                                  name: seller.name,
+                                  phone: seller.phone,
+                                  hasSeller: true,
+                                  hasCustomer: false,
+                                  sellerId: seller.id,
+                                ),
+                                onSelected: (source) {
+                                  controller.selectPurchaseSource(source);
+                                  Navigator.of(sheetContext).pop();
+                                },
+                              ),
+                              _PurchaseSourceList(
+                                emptyText: 'لا يوجد زبائن',
+                                items: controller.allCustomersList,
+                                sourceBuilder: (customer) =>
+                                    PurchaseSourceModel(
+                                  id: customer.id,
+                                  name: customer.name,
+                                  phone: customer.phone,
+                                  hasSeller: false,
+                                  hasCustomer: true,
+                                  customerId: customer.id,
+                                ),
+                                onSelected: (source) {
+                                  controller.selectPurchaseSource(source);
+                                  Navigator.of(sheetContext).pop();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             );
@@ -695,14 +755,11 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                     if (controller.purchaseCart.isEmpty)
                       const Text('لا توجد منتجات في السلة')
                     else
-                      ...controller.purchaseCart.map(
-                        (item) => Padding(
-                          padding: EdgeInsets.only(bottom: 10.h),
-                          child: _PurchaseCartRow(item: item),
-                        ),
-                      ),
+                      const _PurchaseCheckoutTable(),
                     SizedBox(height: 8.h),
-                    _PurchaseCheckoutSummary(total: controller.totalCost.value),
+                    const _PurchasePaymentSection(),
+                    SizedBox(height: 10.h),
+                    const _PurchaseCheckoutSummary(),
                     SizedBox(height: 14.h),
                     AppButton(
                       isLoading: controller.isAddLoading,
@@ -711,9 +768,6 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                       text: 'createBill',
                       onPressed: () async {
                         await controller.createPurchaseFromCart(context);
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
                       },
                     ),
                   ],
@@ -781,7 +835,77 @@ class _PurchaseProductsContent extends GetView<BillsController> {
         final product = products[index];
         return _PurchaseProductCard(
           product: product,
-          onTap: () => controller.addProductToPurchaseCart(product),
+          onTap: () => controller.togglePurchaseProductSelection(product),
+        );
+      },
+    );
+  }
+}
+
+class _PurchaseSourceList extends StatelessWidget {
+  const _PurchaseSourceList({
+    required this.emptyText,
+    required this.items,
+    required this.sourceBuilder,
+    required this.onSelected,
+  });
+
+  final String emptyText;
+  final List<dynamic> items;
+  final PurchaseSourceModel Function(dynamic item) sourceBuilder;
+  final ValueChanged<PurchaseSourceModel> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(
+        child: Text(
+          emptyText,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: items.length,
+      separatorBuilder: (_, __) => SizedBox(height: 8.h),
+      itemBuilder: (_, index) {
+        final source = sourceBuilder(items[index]);
+        return ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.r),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          leading: CircleAvatar(
+            backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
+            child: Icon(
+              source.hasSeller
+                  ? Icons.storefront_outlined
+                  : Icons.person_outline_rounded,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          title: Text(
+            source.name,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13.sp,
+            ),
+          ),
+          subtitle: Text(
+            source.phone.isEmpty ? source.typeLabel : source.phone,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: const Icon(
+            Icons.chevron_left,
+            color: AppColors.primaryColor,
+          ),
+          onTap: () => onSelected(source),
         );
       },
     );
@@ -857,13 +981,80 @@ class _PurchaseCheckoutSourceTile extends StatelessWidget {
   }
 }
 
-class _PurchaseCheckoutSummary extends StatelessWidget {
-  const _PurchaseCheckoutSummary({required this.total});
-
-  final int total;
+class _PurchasePaymentSection extends GetView<BillsController> {
+  const _PurchasePaymentSection();
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'طريقة الدفع',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: AppColors.primaryColor,
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: CustomDropdownFieldWithSearch(
+                tital: 'الصندوق',
+                hint: 'اختر الصندوق',
+                items: controller.purchaseBoxes,
+                value: controller.selectedPurchaseBox.value,
+                onChanged: (value) => controller.selectPurchaseBox(value),
+                itemAsString: (box) =>
+                    '${box.boxName} - (${box.totalBalance} ${box.currency})',
+                compareFn: (a, b) => a.boxId == b.boxId,
+                isRequired: false,
+                titalTextStyle: TextStyle(
+                  color: Colors.grey.shade800,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            IconButton(
+              onPressed: () => Get.toNamed(AppRoutes.CREATEBOXESSCREEN)
+                  ?.then((_) => controller.loadPurchaseBoxes()),
+              icon: Icon(
+                Icons.add_circle_rounded,
+                color: AppColors.primaryColor,
+                size: 34.sp,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12.h),
+        CustomTextField(
+          label: 'قيمة المبلغ المدفوع',
+          hintText: '0',
+          controller: controller.purchasePaymentAmountController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => controller.update(),
+        ),
+      ],
+    );
+  }
+}
+
+class _PurchaseCheckoutSummary extends GetView<BillsController> {
+  const _PurchaseCheckoutSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    final total = controller.totalCost.value;
+    final paid =
+        num.tryParse(controller.purchasePaymentAmountController.text.trim()) ??
+            0;
+    final remaining = total - paid;
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -873,27 +1064,64 @@ class _PurchaseCheckoutSummary extends StatelessWidget {
           color: AppColors.primaryColor.withValues(alpha: 0.16),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Text(
-              'إجمالي الفاتورة',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+          _PurchaseSummaryLine(
+            label: 'إجمالي الفاتورة',
+            value: '$total ₪',
+            color: AppColors.primaryColor,
           ),
-          Text(
-            '$total ₪',
-            style: TextStyle(
-              color: AppColors.primaryColor,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w900,
-            ),
+          SizedBox(height: 8.h),
+          _PurchaseSummaryLine(
+            label: 'المبلغ المدفوع',
+            value: '${paid.toStringAsFixed(2)} ₪',
+            color: Colors.green,
+          ),
+          SizedBox(height: 8.h),
+          _PurchaseSummaryLine(
+            label: 'المتبقي',
+            value: '${remaining.toStringAsFixed(2)} ₪',
+            color: remaining > 0 ? Colors.black87 : Colors.green,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PurchaseSummaryLine extends StatelessWidget {
+  const _PurchaseSummaryLine({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1115,20 +1343,16 @@ class _PurchaseProductCard extends GetView<BillsController> {
                           ),
                         ),
                         SizedBox(
-                          height: 20.h,
-                          child: Center(
-                            child: InstantSaleQtyStepper(
-                              compact: true,
-                              quantity: qty,
-                              canDecrement: inCart,
-                              canIncrement: true,
-                              onDecrement: inCart
-                                  ? () => controller
-                                      .decrementPurchaseProduct(product.id)
-                                  : null,
-                              onIncrement: () =>
-                                  controller.incrementPurchaseProduct(product),
-                            ),
+                          height: 22.h,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _PurchaseSelectButton(
+                                selected: inCart,
+                                onTap: () => controller
+                                    .togglePurchaseProductSelection(product),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1150,6 +1374,46 @@ class _PurchaseProductCard extends GetView<BillsController> {
     if (section.isEmpty) return code;
     if (code.isEmpty) return section;
     return '$section - $code';
+  }
+}
+
+class _PurchaseSelectButton extends StatelessWidget {
+  const _PurchaseSelectButton({
+    required this.selected,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? AppColors.primaryColor.withValues(alpha: 0.12)
+          : AppColors.primaryColor.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6.r),
+        side: BorderSide(
+          color: selected
+              ? AppColors.primaryColor
+              : AppColors.primaryColor.withValues(alpha: 0.35),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6.r),
+        child: SizedBox(
+          width: 46.w,
+          height: 22.h,
+          child: Icon(
+            selected ? Icons.check : Icons.add,
+            size: 14.sp,
+            color: AppColors.primaryColor,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1212,86 +1476,239 @@ class _PurchaseStockBadge extends StatelessWidget {
   }
 }
 
-class _PurchaseCartRow extends GetView<BillsController> {
-  const _PurchaseCartRow({required this.item});
+class _PurchaseCheckoutTable extends GetView<BillsController> {
+  const _PurchaseCheckoutTable();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: 520.w),
+          child: Column(
+            children: [
+              Container(
+                color: AppColors.primaryColor.withValues(alpha: 0.08),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                child: Row(
+                  children: [
+                    _PurchaseTableHeaderCell('الصنف', width: 185.w),
+                    _PurchaseTableHeaderCell('الكمية', width: 78.w),
+                    _PurchaseTableHeaderCell('السعر', width: 92.w),
+                    _PurchaseTableHeaderCell('الإجمالي', width: 90.w),
+                    SizedBox(width: 42.w),
+                  ],
+                ),
+              ),
+              ...controller.purchaseCart.map(
+                (item) => _PurchaseCheckoutTableRow(item: item),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseTableHeaderCell extends StatelessWidget {
+  const _PurchaseTableHeaderCell(this.text, {required this.width});
+
+  final String text;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: AppColors.primaryColor,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseCheckoutTableRow extends GetView<BillsController> {
+  const _PurchaseCheckoutTableRow({required this.item});
 
   final PurchaseCartItemModel item;
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = item.product.preferredImageUrl;
+    final hasImage = imageUrl.trim().isNotEmpty && imageUrl != 'no image';
     final intelligence = controller.purchasePriceIntelligence[item.product.id];
     final loading = controller.purchasePriceLoading.contains(item.product.id);
+
     return Container(
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Expanded(
+              SizedBox(
+                width: 185.w,
+                child: Row(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8.r),
+                      onTap: hasImage
+                          ? () => openProductImageViewer(
+                                context,
+                                imageUrl,
+                                imageUrls: item.product.allImageUrlsInPriority,
+                                title: item.product.nameAr,
+                              )
+                          : null,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.r),
+                        child: SizedBox(
+                          width: 38.w,
+                          height: 38.w,
+                          child: hasImage
+                              ? ProductPriorityImage(
+                                  imageUrls:
+                                      item.product.allImageUrlsInPriority,
+                                  fit: BoxFit.cover,
+                                  placeholder: _PurchaseProductImagePlaceholder(
+                                    iconSize: 18.sp,
+                                  ),
+                                  missingPlaceholder:
+                                      _PurchaseProductImagePlaceholder(
+                                    iconSize: 18.sp,
+                                  ),
+                                )
+                              : _PurchaseProductImagePlaceholder(
+                                  iconSize: 18.sp,
+                                ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        item.product.nameAr,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _PurchaseTableInput(
+                width: 78.w,
+                controller: item.quantityController,
+                onChanged: (_) => controller.calculatePurchaseCartTotal(),
+              ),
+              SizedBox(width: 8.w),
+              _PurchaseTableInput(
+                width: 92.w,
+                controller: item.priceController,
+                onChanged: (_) => controller.calculatePurchaseCartTotal(),
+              ),
+              SizedBox(
+                width: 90.w,
                 child: Text(
-                  item.product.nameAr,
-                  overflow: TextOverflow.ellipsis,
+                  '${item.total.toStringAsFixed(2)} ₪',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.sp,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () => controller.removePurchaseCartItem(item),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  label: 'quantity',
-                  hintText: 'quantity',
-                  controller: item.quantityController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.calculatePurchaseCartTotal(),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'price',
-                  hintText: 'price',
-                  controller: item.priceController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => controller.calculatePurchaseCartTotal(),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Text(
-                '${item.total.toStringAsFixed(2)} ₪',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.sp,
+              SizedBox(
+                width: 42.w,
+                child: IconButton(
+                  onPressed: () => controller.removePurchaseCartItem(item),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 20.sp,
+                  ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 8.h),
-          if (loading)
+          if (loading) ...[
+            SizedBox(height: 6.h),
             LinearProgressIndicator(
               minHeight: 2.h,
               color: AppColors.primaryColor,
-            )
-          else if (intelligence != null && intelligence.isNotEmpty)
-            _PurchasePriceIntelBox(
-              item: item,
-              intelligence: intelligence,
             ),
+          ] else if (intelligence != null && intelligence.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            _PurchasePriceIntelBox(item: item, intelligence: intelligence),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _PurchaseTableInput extends StatelessWidget {
+  const _PurchaseTableInput({
+    required this.width,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final double width;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 38.h,
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.center,
+        onChanged: onChanged,
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w800,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(9.r),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(9.r),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(9.r),
+            borderSide: const BorderSide(color: AppColors.primaryColor),
+          ),
+        ),
       ),
     );
   }
