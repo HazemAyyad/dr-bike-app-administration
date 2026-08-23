@@ -2165,6 +2165,9 @@ class _SmartDeviceCard extends StatelessWidget {
     final curtainCommand = _dashboardCurtainCommand(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
+    final showHeaderPowerButton = functions.isEmpty &&
+        curtainCommand == null &&
+        (powerFunction != null || !hasSchema);
     final powerActive = powerFunction == null
         ? device.powerOn == true
         : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
@@ -2285,15 +2288,16 @@ class _SmartDeviceCard extends StatelessWidget {
                       ],
                       icon: const Icon(Icons.more_vert_rounded),
                     ),
-                    _RoundPowerButton(
-                      enabled: (powerFunction != null || !hasSchema) && !busy,
-                      busy: busy,
-                      active: powerActive,
-                      onPressed: () => controller.setDevicePower(
-                        device: device,
-                        powerOn: !powerActive,
+                    if (showHeaderPowerButton)
+                      _RoundPowerButton(
+                        enabled: !busy,
+                        busy: busy,
+                        active: powerActive,
+                        onPressed: () => controller.setDevicePower(
+                          device: device,
+                          powerOn: !powerActive,
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 if (curtainCommand != null) ...[

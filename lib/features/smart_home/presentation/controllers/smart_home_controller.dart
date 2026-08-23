@@ -191,6 +191,7 @@ class SmartHomeController extends GetxController {
 
   void selectRoom(int? roomId) {
     selectedRoomId.value = roomId;
+    selectedRoomId.refresh();
   }
 
   Future<bool> createLocation({
@@ -865,7 +866,7 @@ class SmartHomeController extends GetxController {
         displayName: cleanName,
         userId: selectedOwnerId.value,
       );
-      _upsertDevice(updated);
+      _upsertDevice(_mergeDevicePreservingRuntimeData(device, updated));
       Get.snackbar(
         'smartHomeEditSwitchName'.tr,
         'smartHomeSwitchNameUpdated'.tr,
@@ -896,7 +897,7 @@ class SmartHomeController extends GetxController {
         isVisible: isVisible,
         userId: selectedOwnerId.value,
       );
-      _upsertDevice(updated);
+      _upsertDevice(_mergeDevicePreservingRuntimeData(device, updated));
       return true;
     } catch (e) {
       errorMessage(e.toString());
@@ -1311,6 +1312,29 @@ class SmartHomeController extends GetxController {
     } else {
       devices.add(device);
     }
+  }
+
+  SmartDeviceModel _mergeDevicePreservingRuntimeData(
+    SmartDeviceModel current,
+    SmartDeviceModel updated,
+  ) {
+    final existing = devices.firstWhereOrNull((item) => item.id == updated.id);
+    final fallback = existing ?? current;
+    final updatedHasSchema =
+        DeviceCapabilityResolver.functions(updated).isNotEmpty;
+    return updated.copyWith(
+      lastStatus: updated.lastStatus.isNotEmpty
+          ? updated.lastStatus
+          : fallback.lastStatus,
+      rawMetadata:
+          updatedHasSchema ? updated.rawMetadata : fallback.rawMetadata,
+      functions:
+          updated.functions.isNotEmpty ? updated.functions : fallback.functions,
+      primaryPowerDp: updated.primaryPowerDp.isNotEmpty
+          ? updated.primaryPowerDp
+          : fallback.primaryPowerDp,
+      powerOn: updated.powerOn ?? fallback.powerOn,
+    );
   }
 
   String _powerDpFromStatus(Map<String, dynamic> status) {
