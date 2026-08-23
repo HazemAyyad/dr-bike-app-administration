@@ -150,6 +150,7 @@ class SmartHomeController extends GetxController {
       }
       _ensureSelectedLocation();
       await _loadSelectedHomeData();
+      await refreshLoadedDeviceStatuses();
     } catch (e) {
       errorMessage(e.toString());
     } finally {
@@ -179,6 +180,7 @@ class SmartHomeController extends GetxController {
     selectedLocationKey.value = key;
     selectedRoomId.value = null;
     await _loadSelectedHomeData();
+    await refreshLoadedDeviceStatuses();
   }
 
   void selectRoom(int? roomId) {
@@ -909,6 +911,7 @@ class SmartHomeController extends GetxController {
       );
       _upsertDevice(updated);
       await _loadSelectedHomeData();
+      await refreshLoadedDeviceStatuses();
       Get.snackbar('smartHomeMoveDevice'.tr, 'smartHomeDeviceMoved'.tr);
       return true;
     } catch (e) {
@@ -1178,6 +1181,54 @@ class SmartHomeController extends GetxController {
   ) async {
     if (DeviceCapabilityResolver.functions(device).isNotEmpty) return device;
     return loadDeviceDetails(device);
+  }
+
+  Future<void> refreshLoadedDeviceStatuses() async {
+    if (!nativeStatus.value.initialized || !isTuyaUserLinked) return;
+    final snapshot = devices.toList(growable: false);
+    for (final device in snapshot) {
+      if (device.tuyaDeviceId.trim().isEmpty) continue;
+      final tuyaHomeId = _tuyaHomeIdForDevice(device);
+      if (tuyaHomeId.trim().isEmpty) continue;
+      try {
+        final native = await nativeService.getDeviceStatus(
+          tuyaDeviceId: device.tuyaDeviceId,
+          tuyaHomeId: tuyaHomeId,
+        );
+        if (!native.success) {
+          _deviceRefreshFailures[device.id] = {
+            'code': native.code,
+            'message': native.message,
+            'tuya_home_id': tuyaHomeId,
+          };
+          continue;
+        }
+
+        final nextStatus =
+            native.dps.isNotEmpty ? native.dps : device.lastStatus;
+        final nextMetadata =
+            native.device.isNotEmpty ? native.device : device.rawMetadata;
+        final saved = await apiService.updateDeviceStatus(
+          id: device.id,
+          online: native.online,
+          lastStatus: nextStatus,
+          rawMetadata: nextMetadata,
+          userId: selectedOwnerId.value,
+        );
+        _upsertDevice(saved.copyWith(
+          online: native.online,
+          lastStatus:
+              saved.lastStatus.isNotEmpty ? saved.lastStatus : nextStatus,
+          rawMetadata:
+              saved.rawMetadata.isNotEmpty ? saved.rawMetadata : nextMetadata,
+          primaryPowerDp: _powerDpFromStatus(nextStatus),
+          powerOn: _powerStateFromStatus(nextStatus),
+        ));
+        _deviceRefreshFailures.remove(device.id);
+      } catch (_) {
+        // Dashboard loading should stay responsive if one device cannot refresh.
+      }
+    }
   }
 
   String _tuyaHomeIdForDevice(SmartDeviceModel device) {

@@ -1574,7 +1574,7 @@ class _RenameFunctionDialogState extends State<_RenameFunctionDialog> {
     );
     if (!mounted) return;
     if (ok) {
-      Get.back(result: true);
+      Navigator.of(context, rootNavigator: true).pop(true);
       return;
     }
     setState(() => saving = false);
@@ -2941,6 +2941,15 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
     Get.back<void>();
   }
 
+  Future<void> _move() async {
+    await _showMoveDeviceSheet(
+      controller: widget.controller,
+      device: device,
+    );
+    if (!mounted) return;
+    await _load();
+  }
+
   void _syncDeviceFromController() {
     final updated = widget.controller.devices.firstWhereOrNull(
       (item) => item.id == device.id,
@@ -2961,6 +2970,11 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
         scrolledUnderElevation: 0,
         title: Text('smartHomeDeviceDetails'.tr),
         actions: [
+          IconButton(
+            tooltip: 'smartHomeMoveDevice'.tr,
+            onPressed: _move,
+            icon: const Icon(Icons.swap_horiz_rounded),
+          ),
           IconButton(
             tooltip: 'smartHomeDeleteDevice'.tr,
             onPressed: _delete,
@@ -3257,6 +3271,10 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = !busy && !readOnly;
+    bool isOn(TuyaDeviceFunction function) =>
+        DeviceCapabilityResolver.statusValue(device, function) == true;
+    final allOn = entries.isNotEmpty && entries.every(isOn);
+    final allOff = entries.isNotEmpty && entries.every((item) => !isOn(item));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -3292,6 +3310,8 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
               child: _AllSwitchesButton(
                 label: 'smartHomeAllOff'.tr,
                 enabled: enabled,
+                active: allOff,
+                activeColor: const Color(0xFFE05252),
                 onTap: () {
                   for (final function in entries) {
                     final value = DeviceCapabilityResolver.statusValue(
@@ -3308,7 +3328,8 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
               child: _AllSwitchesButton(
                 label: 'smartHomeAllOn'.tr,
                 enabled: enabled,
-                active: true,
+                active: allOn,
+                activeColor: const Color(0xFF28C79A),
                 onTap: () {
                   for (final function in entries) {
                     final value = DeviceCapabilityResolver.statusValue(
@@ -3767,11 +3788,13 @@ class _AllSwitchesButton extends StatelessWidget {
     required this.enabled,
     required this.onTap,
     this.active = false,
+    this.activeColor = const Color(0xFF28C79A),
   });
 
   final String label;
   final bool enabled;
   final bool active;
+  final Color activeColor;
   final VoidCallback onTap;
 
   @override
@@ -3779,12 +3802,14 @@ class _AllSwitchesButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: enabled ? onTap : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: active ? const Color(0xFF28C79A) : Colors.white,
+        backgroundColor: active ? activeColor : Colors.white,
         foregroundColor: active ? Colors.white : AppColors.customGreyColor5,
         minimumSize: Size.fromHeight(54.h),
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-        elevation: 0,
+        elevation: active ? 6 : 0,
+        shadowColor:
+            active ? activeColor.withValues(alpha: .36) : Colors.transparent,
       ),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
     );
