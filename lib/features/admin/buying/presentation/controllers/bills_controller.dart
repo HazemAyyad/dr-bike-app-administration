@@ -134,6 +134,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void getAllProducts() async {
     final result = await getAllProductsUsecase.call();
     products.assignAll(result);
+    update();
   }
 
   // get all sellers

@@ -10,6 +10,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
 
 class AddNewBillScreen extends GetView<BillsController> {
@@ -17,6 +18,9 @@ class AddNewBillScreen extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BillsController>()) {
+      BuyingBinding().dependencies();
+    }
     if (controller.isaddNewBill == '1') {
       return const _ModernPurchaseScreen();
     }
@@ -226,8 +230,29 @@ class AddNewBillScreen extends GetView<BillsController> {
   }
 }
 
-class _ModernPurchaseScreen extends GetView<BillsController> {
+class _ModernPurchaseScreen extends StatefulWidget {
   const _ModernPurchaseScreen();
+
+  @override
+  State<_ModernPurchaseScreen> createState() => _ModernPurchaseScreenState();
+}
+
+class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
+  BillsController get controller => Get.find<BillsController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (controller.products.isEmpty) {
+        controller.getAllProducts();
+      }
+      if (controller.purchaseSources.isEmpty) {
+        controller.getAllPurchaseSources();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -304,35 +329,57 @@ class _ModernPurchaseScreen extends GetView<BillsController> {
                 ),
               ),
               Expanded(
-                child: controller.filteredPurchaseProducts.isEmpty
+                child: controller.products.isEmpty &&
+                        controller.purchaseProductSearch.value.isEmpty
                     ? Center(
-                        child: Text(
-                          'لا توجد منتجات',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: Colors.grey.shade700,
-                                  ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            SizedBox(height: 10.h),
+                            Text(
+                              'جاري تحميل المنتجات',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(color: Colors.grey.shade700),
+                            ),
+                          ],
                         ),
                       )
-                    : GridView.builder(
-                        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10.h,
-                          crossAxisSpacing: 10.w,
-                          childAspectRatio: 0.72,
-                        ),
-                        itemCount: controller.filteredPurchaseProducts.length,
-                        itemBuilder: (_, index) {
-                          final product =
-                              controller.filteredPurchaseProducts[index];
-                          return _PurchaseProductCard(
-                            product: product,
-                            onTap: () =>
-                                controller.addProductToPurchaseCart(product),
-                          );
-                        },
-                      ),
+                    : controller.filteredPurchaseProducts.isEmpty
+                        ? Center(
+                            child: Text(
+                              'لا توجد منتجات',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: Colors.grey.shade700,
+                                  ),
+                            ),
+                          )
+                        : GridView.builder(
+                            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 10.h,
+                              crossAxisSpacing: 10.w,
+                              childAspectRatio: 0.72,
+                            ),
+                            itemCount:
+                                controller.filteredPurchaseProducts.length,
+                            itemBuilder: (_, index) {
+                              final product =
+                                  controller.filteredPurchaseProducts[index];
+                              return _PurchaseProductCard(
+                                product: product,
+                                onTap: () => controller
+                                    .addProductToPurchaseCart(product),
+                              );
+                            },
+                          ),
               ),
             ],
           );
