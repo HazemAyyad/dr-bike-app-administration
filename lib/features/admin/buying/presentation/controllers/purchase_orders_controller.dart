@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
@@ -101,50 +102,78 @@ class PurchaseOrdersController extends GetxController {
       return Map.fromEntries(sortedEntries);
     }
 
-    final unprocessed = await getBillsUsecase.call(page: '2');
-    final unprocessedList = mapListFromResponseKey(
-      unprocessed,
+    try {
+      final unprocessedList = await _loadBillPageSafely(
+        page: '2',
+        debugScope: 'PurchaseOrdersController.unprocessed',
+        fallback: BuyingServes().unprocessedTasks.values.expand((e) => e),
+      );
+      BuyingServes().unprocessedTasks.value = groupByDate(unprocessedList);
+      unprocessedSearch.assignAll(BuyingServes().unprocessedTasks);
+      isLoading(false);
+      update();
+
+      final notMatchedList = await _loadBillPageSafely(
+        page: '3',
+        debugScope: 'PurchaseOrdersController.notMatched',
+        fallback: BuyingServes().notMatchedTasks.values.expand((e) => e),
+      );
+      BuyingServes().notMatchedTasks.value = groupByDate(notMatchedList);
+      notMatchedSearch.assignAll(BuyingServes().notMatchedTasks);
+
+      final completedList = await _loadBillPageSafely(
+        page: '4',
+        debugScope: 'PurchaseOrdersController.completed',
+        fallback: BuyingServes().completedTasks.values.expand((e) => e),
+      );
+      BuyingServes().completedTasks.value = groupByDate(completedList);
+      completedSearch.assignAll(BuyingServes().completedTasks);
+
+      final depositsList = await _loadBillPageSafely(
+        page: '5',
+        debugScope: 'PurchaseOrdersController.deposits',
+        fallback: BuyingServes().depositsTasks.values.expand((e) => e),
+      );
+      BuyingServes().depositsTasks.value = groupByDate(depositsList);
+      depositsSearch.assignAll(BuyingServes().depositsTasks);
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('PurchaseOrdersController.getBills failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    } finally {
+      isLoading(false);
+      update();
+    }
+  }
+
+  Future<List<BillDataModel>> _loadBillPageSafely({
+    required String page,
+    required String debugScope,
+    required Iterable<BillDataModel> fallback,
+  }) async {
+    try {
+      return await _loadBillPage(page: page, debugScope: debugScope);
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('PurchaseOrdersController.$debugScope failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      return fallback.toList();
+    }
+  }
+
+  Future<List<BillDataModel>> _loadBillPage({
+    required String page,
+    required String debugScope,
+  }) async {
+    final result = await getBillsUsecase.call(page: page);
+    return mapListFromResponseKey(
+      result,
       'bills',
       (Map<String, dynamic> m) => BillDataModel.fromJson(m),
-      debugScope: 'PurchaseOrdersController.unprocessed',
+      debugScope: debugScope,
     );
-    BuyingServes().unprocessedTasks.value = groupByDate(unprocessedList);
-    unprocessedSearch.assignAll(BuyingServes().unprocessedTasks);
-    isLoading(false);
-    update();
-
-    final notMatched = await getBillsUsecase.call(page: '3');
-    final notMatchedList = mapListFromResponseKey(
-      notMatched,
-      'bills',
-      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
-      debugScope: 'PurchaseOrdersController.notMatched',
-    );
-    BuyingServes().notMatchedTasks.value = groupByDate(notMatchedList);
-    notMatchedSearch.assignAll(BuyingServes().notMatchedTasks);
-
-    final completed = await getBillsUsecase.call(page: '4');
-    final completedList = mapListFromResponseKey(
-      completed,
-      'bills',
-      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
-      debugScope: 'PurchaseOrdersController.completed',
-    );
-    BuyingServes().completedTasks.value = groupByDate(completedList);
-    completedSearch.assignAll(BuyingServes().completedTasks);
-
-    final deposits = await getBillsUsecase.call(page: '5');
-    final depositsList = mapListFromResponseKey(
-      deposits,
-      'bills',
-      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
-      debugScope: 'PurchaseOrdersController.deposits',
-    );
-    BuyingServes().depositsTasks.value = groupByDate(depositsList);
-    depositsSearch.assignAll(BuyingServes().depositsTasks);
-
-    isLoading(false);
-    update();
   }
 
   RxBool isLoading2 = false.obs;
