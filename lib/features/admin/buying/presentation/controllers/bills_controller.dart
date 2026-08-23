@@ -96,16 +96,16 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  final RxInt totalCost = 0.obs;
+  final RxDouble totalCost = 0.0.obs;
 
   void calculateGrandTotal() {
-    int cost = 0;
+    double cost = 0;
 
     for (BillModel item in billModel) {
-      cost += item.totalPrice.value.toInt();
+      cost += item.totalPrice.value;
     }
     if (discountController.text.isNotEmpty) {
-      cost -= int.parse(discountController.text);
+      cost -= double.tryParse(discountController.text) ?? 0;
     }
 
     totalCost.value = cost;
@@ -320,7 +320,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
               .toString();
       purchaseCart.refresh();
     } else {
-      purchaseCart.add(PurchaseCartItemModel(product: product));
+      purchaseCart.add(_createPurchaseCartItem(product));
     }
     loadPurchasePriceIntelligence(product.id);
     calculatePurchaseCartTotal();
@@ -354,7 +354,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       removePurchaseCartItem(purchaseCart[index]);
       return;
     }
-    purchaseCart.add(PurchaseCartItemModel(product: product));
+    purchaseCart.add(_createPurchaseCartItem(product));
     loadPurchasePriceIntelligence(product.id);
     calculatePurchaseCartTotal();
     update();
@@ -481,11 +481,18 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void calculatePurchaseCartTotal() {
-    totalCost.value = purchaseCart.fold<int>(
+    totalCost.value = purchaseCart.fold<double>(
       0,
-      (sum, item) => sum + item.total.round(),
+      (sum, item) => sum + item.total.toDouble(),
     );
     update();
+  }
+
+  PurchaseCartItemModel _createPurchaseCartItem(ProductModel product) {
+    return PurchaseCartItemModel(
+      product: product,
+      onChanged: calculatePurchaseCartTotal,
+    );
   }
 
   void preparePurchaseReturnForm() {
@@ -553,9 +560,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       row.priceController.text = item.priceController.text.trim();
       return row;
     }).toList());
-    totalCost.value = purchaseCart.fold<int>(
+    totalCost.value = purchaseCart.fold<double>(
       0,
-      (sum, item) => sum + item.total.round(),
+      (sum, item) => sum + item.total.toDouble(),
     );
 
     isWorkflowLoading(true);
@@ -650,9 +657,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       row.priceController.text = item.priceController.text.trim();
       return row;
     }).toList());
-    totalCost.value = purchaseCart.fold<int>(
+    totalCost.value = purchaseCart.fold<double>(
       0,
-      (sum, item) => sum + item.total.round(),
+      (sum, item) => sum + item.total.toDouble(),
     );
     addBill(context);
   }
@@ -1554,20 +1561,30 @@ class PurchaseCartItemModel {
   final ProductModel product;
   final TextEditingController quantityController;
   final TextEditingController priceController;
+  final VoidCallback? onChanged;
 
-  PurchaseCartItemModel({required this.product})
+  PurchaseCartItemModel({required this.product, this.onChanged})
       : quantityController = TextEditingController(text: '1'),
         priceController = TextEditingController(
           text: product.purchaseCost > 0
               ? product.purchaseCost.toStringAsFixed(2)
               : '',
-        );
+        ) {
+    if (onChanged != null) {
+      quantityController.addListener(onChanged!);
+      priceController.addListener(onChanged!);
+    }
+  }
 
   num get quantity => num.tryParse(quantityController.text.trim()) ?? 0;
   num get unitPrice => num.tryParse(priceController.text.trim()) ?? 0;
   num get total => quantity * unitPrice;
 
   void dispose() {
+    if (onChanged != null) {
+      quantityController.removeListener(onChanged!);
+      priceController.removeListener(onChanged!);
+    }
     quantityController.dispose();
     priceController.dispose();
   }

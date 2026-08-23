@@ -27,6 +27,8 @@ void _logModernPurchaseBuildError(
   }
 }
 
+String _purchaseMoney(num value) => '${value.toStringAsFixed(2)} ₪';
+
 class AddNewBillScreen extends GetView<BillsController> {
   const AddNewBillScreen({Key? key}) : super(key: key);
 
@@ -113,7 +115,8 @@ class AddNewBillScreen extends GetView<BillsController> {
                                 child: CustomTextField(
                                   enabled: false,
                                   label: 'total',
-                                  hintText: item.totalPrice.toString(),
+                                  hintText:
+                                      item.totalPrice.value.toStringAsFixed(2),
                                   validator: (p0) => null,
                                 ),
                               ),
@@ -207,7 +210,7 @@ class AddNewBillScreen extends GetView<BillsController> {
                 GetBuilder<BillsController>(
                   builder: (controller) {
                     return Text(
-                      ' ${'totalBill'.tr}: ${controller.totalCost.toString()}',
+                      ' ${'totalBill'.tr}: ${_purchaseMoney(controller.totalCost.value)}',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w700,
@@ -354,56 +357,116 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
             children: [
               Padding(
                 padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: controller.purchaseProductSearchController,
-                        decoration: InputDecoration(
-                          hintText: 'بحث منتج للشراء...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 10.h,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller:
+                                controller.purchaseProductSearchController,
+                            decoration: InputDecoration(
+                              hintText: 'ابحث عن منتج للشراء',
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12.w,
+                                vertical: 10.h,
+                              ),
+                            ),
+                            onChanged:
+                                controller.onPurchaseProductSearchChanged,
                           ),
                         ),
-                        onChanged: controller.onPurchaseProductSearchChanged,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    GetBuilder<BillsController>(
-                      builder: (controller) => SizedBox(
-                        height: 48.h,
-                        width: 48.h,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
+                        SizedBox(width: 8.w),
+                        GetBuilder<BillsController>(
+                          builder: (controller) => SizedBox(
+                            height: 48.h,
+                            width: 48.h,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                              onPressed: () => _showSourceSheet(context),
+                              child: controller.purchaseSourcesStatus.value ==
+                                      PurchaseLoadStatus.loading
+                                  ? SizedBox(
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      controller.selectedPurchaseSource.value ==
+                                              null
+                                          ? Icons.person_search_outlined
+                                          : Icons.person_pin_circle_outlined,
+                                      size: 22.sp,
+                                    ),
                             ),
                           ),
-                          onPressed: () => _showSourceSheet(context),
-                          child: controller.purchaseSourcesStatus.value ==
-                                  PurchaseLoadStatus.loading
-                              ? SizedBox(
-                                  width: 18.w,
-                                  height: 18.w,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Icon(
-                                  controller.selectedPurchaseSource.value ==
-                                          null
-                                      ? Icons.person_search_outlined
-                                      : Icons.person_pin_circle_outlined,
-                                  size: 22.sp,
-                                ),
                         ),
-                      ),
+                      ],
+                    ),
+                    SizedBox(height: 8.h),
+                    GetBuilder<BillsController>(
+                      builder: (controller) {
+                        final source = controller.selectedPurchaseSource.value;
+                        return InkWell(
+                          onTap: () => _showSourceSheet(context),
+                          borderRadius: BorderRadius.circular(12.r),
+                          child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 10.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor
+                                  .withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: AppColors.primaryColor
+                                    .withValues(alpha: 0.16),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.person_search_outlined,
+                                  color: AppColors.primaryColor,
+                                  size: 20.sp,
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: Text(
+                                    source == null
+                                        ? 'اختر المورد أو الزبون'
+                                        : '${source.name} • ${source.typeLabel}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.primaryColor,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_left,
+                                  color: AppColors.primaryColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -521,7 +584,7 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                           ),
                         ),
                         Text(
-                          '$count القطع • ${controller.totalCost.value} ₪',
+                          '$count القطع • ${_purchaseMoney(controller.totalCost.value)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -842,7 +905,7 @@ class _PurchaseProductsContent extends GetView<BillsController> {
   }
 }
 
-class _PurchaseSourceList extends StatelessWidget {
+class _PurchaseSourceList extends StatefulWidget {
   const _PurchaseSourceList({
     required this.emptyText,
     required this.items,
@@ -856,58 +919,113 @@ class _PurchaseSourceList extends StatelessWidget {
   final ValueChanged<PurchaseSourceModel> onSelected;
 
   @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Center(
-        child: Text(
-          emptyText,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-    }
+  State<_PurchaseSourceList> createState() => _PurchaseSourceListState();
+}
 
-    return ListView.separated(
-      itemCount: items.length,
-      separatorBuilder: (_, __) => SizedBox(height: 8.h),
-      itemBuilder: (_, index) {
-        final source = sourceBuilder(items[index]);
-        return ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.r),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          leading: CircleAvatar(
-            backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
-            child: Icon(
-              source.hasSeller
-                  ? Icons.storefront_outlined
-                  : Icons.person_outline_rounded,
-              color: AppColors.primaryColor,
+class _PurchaseSourceListState extends State<_PurchaseSourceList> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sources = widget.items.map(widget.sourceBuilder).where((source) {
+      final query = _query.trim().toLowerCase();
+      if (query.isEmpty) return true;
+      return source.name.toLowerCase().contains(query) ||
+          source.phone.toLowerCase().contains(query) ||
+          source.typeLabel.toLowerCase().contains(query);
+    }).toList();
+
+    return Column(
+      children: [
+        TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'ابحث بالاسم أو رقم الهاتف',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.w,
+              vertical: 10.h,
             ),
           ),
-          title: Text(
-            source.name,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 13.sp,
-            ),
-          ),
-          subtitle: Text(
-            source.phone.isEmpty ? source.typeLabel : source.phone,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: const Icon(
-            Icons.chevron_left,
-            color: AppColors.primaryColor,
-          ),
-          onTap: () => onSelected(source),
-        );
-      },
+          onChanged: (value) => setState(() => _query = value),
+        ),
+        SizedBox(height: 10.h),
+        Expanded(
+          child: sources.isEmpty
+              ? Center(
+                  child: Text(
+                    _query.isEmpty ? widget.emptyText : 'لا توجد نتائج',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: sources.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (_, index) {
+                    final source = sources[index];
+                    return ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            AppColors.primaryColor.withValues(alpha: 0.1),
+                        child: Icon(
+                          source.hasSeller
+                              ? Icons.storefront_outlined
+                              : Icons.person_outline_rounded,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                      title: Text(
+                        source.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                      subtitle: Text(
+                        [
+                          source.typeLabel,
+                          if (source.phone.isNotEmpty) source.phone,
+                        ].join(' • '),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_left,
+                        color: AppColors.primaryColor,
+                      ),
+                      onTap: () => widget.onSelected(source),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -1068,7 +1186,7 @@ class _PurchaseCheckoutSummary extends GetView<BillsController> {
         children: [
           _PurchaseSummaryLine(
             label: 'إجمالي الفاتورة',
-            value: '$total ₪',
+            value: _purchaseMoney(total),
             color: AppColors.primaryColor,
           ),
           SizedBox(height: 8.h),
@@ -1144,7 +1262,7 @@ class _PurchaseContentMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(24.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
