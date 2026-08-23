@@ -227,6 +227,7 @@ class Goal {
   final List<Product>? products;
   final List<Person>? people;
   final List<SharedEmployee> sharedEmployees;
+  final List<GoalProgressPoint> progressHistory;
   final Box? box;
   final Employee? employee;
 
@@ -252,6 +253,7 @@ class Goal {
     this.products,
     this.people,
     this.sharedEmployees = const [],
+    this.progressHistory = const [],
     this.box,
     this.employee,
   });
@@ -288,6 +290,10 @@ class Goal {
         j['shared_employees'],
         (m) => SharedEmployee.fromJson(m),
       ),
+      progressHistory: mapList(
+        j['progress_history'],
+        (m) => GoalProgressPoint.fromJson(m),
+      ),
       box: j['box'] == null ? null : Box.fromJson(asMap(j['box'])),
       employee: j['employee'] == null
           ? null
@@ -317,8 +323,36 @@ class Goal {
         'products': products?.map((x) => x.toJson()).toList(),
         'people': people?.map((x) => x.toJson()).toList(),
         'shared_employees': sharedEmployees.map((x) => x.toJson()).toList(),
+        'progress_history': progressHistory.map((x) => x.toJson()).toList(),
         'box': box?.toJson(),
         'employee': employee?.toJson(),
+      };
+}
+
+class GoalProgressPoint {
+  final String date;
+  final String currentValue;
+  final String achievementPercentage;
+
+  GoalProgressPoint({
+    required this.date,
+    required this.currentValue,
+    required this.achievementPercentage,
+  });
+
+  factory GoalProgressPoint.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return GoalProgressPoint(
+      date: asString(j['date']),
+      currentValue: asString(j['current_value']),
+      achievementPercentage: asString(j['achievement_percentage']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'date': date,
+        'current_value': currentValue,
+        'achievement_percentage': achievementPercentage,
       };
 }
 
