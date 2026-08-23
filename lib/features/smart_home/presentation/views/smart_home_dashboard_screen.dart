@@ -138,8 +138,8 @@ class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(14.w),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor
@@ -152,14 +152,14 @@ class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
         children: [
           Row(
             children: [
-              SkeletonCircle(size: 42.r),
-              SizedBox(width: 10.w),
+              SkeletonCircle(size: 34.r),
+              SizedBox(width: 8.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SkeletonBlock(width: double.infinity, height: 14.h),
-                    SizedBox(height: 7.h),
+                    SkeletonBlock(width: double.infinity, height: 12.h),
+                    SizedBox(height: 5.h),
                     SkeletonBlock(width: 120.w, height: 9.h),
                   ],
                 ),
@@ -167,13 +167,13 @@ class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
               SkeletonBlock(width: 30.w, height: 30.w, radius: 999),
             ],
           ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 10.h),
           Row(
             children: [
               Expanded(
                 child: SkeletonBlock(
                   width: double.infinity,
-                  height: 72.h,
+                  height: 54.h,
                   radius: 8,
                 ),
               ),
@@ -181,7 +181,7 @@ class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
               Expanded(
                 child: SkeletonBlock(
                   width: double.infinity,
-                  height: 72.h,
+                  height: 54.h,
                   radius: 8,
                 ),
               ),
@@ -2172,17 +2172,17 @@ class _SmartDeviceCard extends StatelessWidget {
         ? device.powerOn == true
         : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
     return Container(
-      margin: EdgeInsets.only(bottom: 14.h),
+      margin: EdgeInsets.only(bottom: 9.h),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor
             : Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.045),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(.035),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -2190,27 +2190,27 @@ class _SmartDeviceCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onOpen,
-          borderRadius: BorderRadius.circular(18.r),
+          borderRadius: BorderRadius.circular(12.r),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 16.h),
+            padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 11.h),
             child: Column(
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 48.w,
-                      height: 58.h,
+                      width: 38.w,
+                      height: 42.h,
                       decoration: BoxDecoration(
                         color: AppColors.primaryColor.withOpacity(.08),
-                        borderRadius: BorderRadius.circular(10.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Icon(
                         _iconForCategory(device.category),
                         color: AppColors.primaryColor,
-                        size: 26.r,
+                        size: 21.r,
                       ),
                     ),
-                    SizedBox(width: 12.w),
+                    SizedBox(width: 9.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2224,10 +2224,10 @@ class _SmartDeviceCard extends StatelessWidget {
                                 .titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 15.sp,
+                                  fontSize: 14.sp,
                                 ),
                           ),
-                          SizedBox(height: 4.h),
+                          SizedBox(height: 2.h),
                           Text(
                             _deviceSubtitle(device),
                             maxLines: 1,
@@ -2245,6 +2245,7 @@ class _SmartDeviceCard extends StatelessWidget {
                     PopupMenuButton<String>(
                       enabled: !busy,
                       tooltip: 'settings'.tr,
+                      padding: EdgeInsets.zero,
                       onSelected: (value) {
                         if (value == 'rename') {
                           _showRenameDeviceDialog(
@@ -2286,7 +2287,7 @@ class _SmartDeviceCard extends StatelessWidget {
                           child: Text('smartHomeDeleteDevice'.tr),
                         ),
                       ],
-                      icon: const Icon(Icons.more_vert_rounded),
+                      icon: Icon(Icons.more_vert_rounded, size: 20.r),
                     ),
                     if (showHeaderPowerButton)
                       _RoundPowerButton(
@@ -2301,7 +2302,7 @@ class _SmartDeviceCard extends StatelessWidget {
                   ],
                 ),
                 if (curtainCommand != null) ...[
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 9.h),
                   _CurtainMiniControls(
                     enabled: !busy,
                     onCommand: (value) => controller.setDeviceDps(
@@ -2311,7 +2312,7 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ),
                 ] else if (functions.isNotEmpty) ...[
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 9.h),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -2321,7 +2322,7 @@ class _SmartDeviceCard extends StatelessWidget {
                           function,
                         );
                         return SizedBox(
-                          width: 92.w,
+                          width: 76.w,
                           child: _DpsShortcut(
                             label: _functionLabelForDevice(device, function),
                             value: value,
@@ -2827,79 +2828,64 @@ class _DpsShortcut extends StatelessWidget {
     final active = value == true || (value is num && value != 0);
     final enabled = onTap != null && !busy;
     final activeColor = const Color(0xFF28C79A);
-    return Opacity(
-      opacity: active || enabled ? 1 : .42,
-      child: Material(
-        color: active ? activeColor.withOpacity(.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12.r),
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(12.r),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (busy && onTap != null)
-                  SizedBox(
-                    width: 18.r,
-                    height: 18.r,
-                    child: const CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Icon(
-                    value is bool
-                        ? Icons.power_settings_new_rounded
-                        : Icons.tune_rounded,
-                    color: active ? activeColor : AppColors.customGreyColor5,
-                    size: 22.r,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      toggled: value is bool ? active : null,
+      label: '$label, $statusLabel',
+      child: Opacity(
+        opacity: active || enabled ? 1 : .42,
+        child: Material(
+          color: active ? activeColor.withOpacity(.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(9.r),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            onLongPress: onLongPress,
+            borderRadius: BorderRadius.circular(9.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 6.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (busy && onTap != null)
+                    SizedBox(
+                      width: 16.r,
+                      height: 16.r,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    Icon(
+                      value is bool
+                          ? Icons.power_settings_new_rounded
+                          : Icons.tune_rounded,
+                      color: active ? activeColor : AppColors.customGreyColor5,
+                      size: 19.r,
+                    ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              active ? activeColor : AppColors.customGreyColor5,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10.sp,
+                        ),
                   ),
-                SizedBox(height: 5.h),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            active ? activeColor : AppColors.customGreyColor5,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11.sp,
-                      ),
-                ),
-                SizedBox(height: 2.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        statusLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: active
-                                  ? activeColor
-                                  : AppColors.customGreyColor5,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10.sp,
-                            ),
-                      ),
+                  SizedBox(height: 1.h),
+                  InkResponse(
+                    onTap: onEdit,
+                    radius: 11.r,
+                    child: Icon(
+                      Icons.edit_rounded,
+                      size: 11.r,
+                      color: AppColors.customGreyColor5,
                     ),
-                    SizedBox(width: 2.w),
-                    InkResponse(
-                      onTap: onEdit,
-                      radius: 12.r,
-                      child: Icon(
-                        Icons.edit_rounded,
-                        size: 12.r,
-                        color: AppColors.customGreyColor5,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
