@@ -10,6 +10,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../sales/data/models/product_model.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
 
@@ -239,24 +240,21 @@ class _ModernPurchaseScreen extends StatefulWidget {
 
 class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   BillsController get controller => Get.find<BillsController>();
-  bool _isBootstrapping = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      try {
-        if (controller.products.isEmpty) {
-          await controller.getAllProducts();
-        }
-        if (controller.purchaseSources.isEmpty) {
-          await controller.getAllPurchaseSources();
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isBootstrapping = false);
-        }
+      if (controller.products.isEmpty &&
+          controller.purchaseProductsStatus.value !=
+              PurchaseLoadStatus.loading) {
+        controller.getAllProducts();
+      }
+      if (controller.purchaseSources.isEmpty &&
+          controller.purchaseSourcesStatus.value !=
+              PurchaseLoadStatus.loading) {
+        controller.getAllPurchaseSources();
       }
     });
   }
@@ -265,7 +263,7 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'addNewBill',
+        title: 'إنشاء فاتورة شراء',
         action: false,
         actions: [
           GetBuilder<BillsController>(
@@ -318,7 +316,9 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                     children: [
                       _PurchaseSourceSelector(
                         source: controller.selectedPurchaseSource.value,
+                        status: controller.purchaseSourcesStatus.value,
                         onTap: () => _showSourceSheet(context),
+                        onRetry: controller.retryPurchaseSources,
                       ),
                       SizedBox(height: 10.h),
                       TextField(
@@ -340,59 +340,14 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _isBootstrapping
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const CircularProgressIndicator(),
-                              SizedBox(height: 10.h),
-                              Text(
-                                'جاري تحميل المنتجات',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(color: Colors.grey.shade700),
-                              ),
-                            ],
-                          ),
-                        )
-                      : products.isEmpty
-                          ? Center(
-                              child: Text(
-                                controller.purchaseProductSearch.value
-                                        .trim()
-                                        .isEmpty
-                                    ? 'لا توجد منتجات متاحة'
-                                    : 'لا توجد نتائج مطابقة',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: Colors.grey.shade700,
-                                    ),
-                              ),
-                            )
-                          : GridView.builder(
-                              padding:
-                                  EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 10.h,
-                                crossAxisSpacing: 10.w,
-                                childAspectRatio: 0.72,
-                              ),
-                              itemCount: products.length,
-                              itemBuilder: (_, index) {
-                                final product = products[index];
-                                return _PurchaseProductCard(
-                                  product: product,
-                                  onTap: () => controller
-                                      .addProductToPurchaseCart(product),
-                                );
-                              },
-                            ),
+                  child: _PurchaseProductsContent(
+                    products: products,
+                    status: controller.purchaseProductsStatus.value,
+                    hasSearch: controller.purchaseProductSearch.value
+                        .trim()
+                        .isNotEmpty,
+                    onRetry: controller.retryPurchaseProducts,
+                  ),
                 ),
               ],
             );
@@ -594,16 +549,22 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
 class _PurchaseSourceSelector extends GetView<BillsController> {
   const _PurchaseSourceSelector({
     required this.source,
+    required this.status,
     required this.onTap,
+    required this.onRetry,
   });
 
   final PurchaseSourceModel? source;
+  final PurchaseLoadStatus status;
   final VoidCallback onTap;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = status == PurchaseLoadStatus.loading;
+    final hasError = status == PurchaseLoadStatus.error;
     return InkWell(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(12.r),
       child: Container(
         width: double.infinity,
@@ -625,7 +586,9 @@ class _PurchaseSourceSelector extends GetView<BillsController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    source?.name ?? 'اختر المورد أو الزبون',
+                    isLoading
+                        ? 'جاري تحميل الموردين...'
+                        : source?.name ?? 'اختر المورد أو الزبون',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
@@ -634,16 +597,146 @@ class _PurchaseSourceSelector extends GetView<BillsController> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    source?.typeLabel ?? 'مصدر الشراء',
+                    hasError
+                        ? 'تعذر تحميل الموردين'
+                        : source?.typeLabel ?? 'مصدر الشراء',
                     style: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: hasError ? Colors.red : Colors.grey.shade700,
                       fontSize: 11.sp,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down),
+            if (isLoading)
+              SizedBox(
+                width: 18.w,
+                height: 18.w,
+                child: CircularProgressIndicator(strokeWidth: 2.w),
+              )
+            else if (hasError)
+              IconButton(
+                tooltip: 'إعادة المحاولة',
+                onPressed: onRetry,
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.primaryColor,
+                ),
+              )
+            else
+              const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseProductsContent extends GetView<BillsController> {
+  const _PurchaseProductsContent({
+    required this.products,
+    required this.status,
+    required this.hasSearch,
+    required this.onRetry,
+  });
+
+  final List<ProductModel> products;
+  final PurchaseLoadStatus status;
+  final bool hasSearch;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == PurchaseLoadStatus.loading ||
+        status == PurchaseLoadStatus.idle) {
+      return const _PurchaseContentMessage(
+        icon: Icons.inventory_2_outlined,
+        title: 'جاري تحميل المنتجات',
+        loading: true,
+      );
+    }
+
+    if (status == PurchaseLoadStatus.error) {
+      return _PurchaseContentMessage(
+        icon: Icons.error_outline_rounded,
+        title: 'تعذر تحميل المنتجات',
+        actionLabel: 'إعادة المحاولة',
+        onAction: onRetry,
+      );
+    }
+
+    if (products.isEmpty) {
+      return _PurchaseContentMessage(
+        icon: Icons.search_off_rounded,
+        title: hasSearch ? 'لا توجد نتائج مطابقة' : 'لا توجد منتجات',
+      );
+    }
+
+    return GridView.builder(
+      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 120.h),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10.h,
+        crossAxisSpacing: 10.w,
+        childAspectRatio: 0.72,
+      ),
+      itemCount: products.length,
+      itemBuilder: (_, index) {
+        final product = products[index];
+        return _PurchaseProductCard(
+          product: product,
+          onTap: () => controller.addProductToPurchaseCart(product),
+        );
+      },
+    );
+  }
+}
+
+class _PurchaseContentMessage extends StatelessWidget {
+  const _PurchaseContentMessage({
+    required this.icon,
+    required this.title,
+    this.loading = false,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool loading;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loading)
+              const CircularProgressIndicator()
+            else
+              Icon(icon, color: AppColors.primaryColor, size: 36.sp),
+            SizedBox(height: 12.h),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.sp,
+                  ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              SizedBox(height: 10.h),
+              OutlinedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(actionLabel!),
+              ),
+            ],
           ],
         ),
       ),
@@ -657,7 +750,7 @@ class _PurchaseProductCard extends GetView<BillsController> {
     required this.onTap,
   });
 
-  final dynamic product;
+  final ProductModel product;
   final VoidCallback onTap;
 
   @override

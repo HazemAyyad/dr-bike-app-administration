@@ -49,6 +49,8 @@ Map<String, dynamic> _billDetailsMap(dynamic result) {
   return asMap(raw);
 }
 
+enum PurchaseLoadStatus { idle, loading, success, empty, error }
+
 class BillsController extends GetxController with GetTickerProviderStateMixin {
   final GetBillsUsecase getBillsUsecase;
   final GetAllProductsUsecase getAllProductsUsecase;
@@ -151,10 +153,37 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   // get all products
-  final List<ProductModel> products = [];
+  final RxList<ProductModel> products = <ProductModel>[].obs;
+  final Rx<PurchaseLoadStatus> purchaseProductsStatus =
+      PurchaseLoadStatus.idle.obs;
+  final Rx<PurchaseLoadStatus> purchaseSourcesStatus =
+      PurchaseLoadStatus.idle.obs;
+  String purchaseProductsError = '';
+  String purchaseSourcesError = '';
+
   Future<void> getAllProducts() async {
-    final result = await getAllProductsUsecase.call();
-    products.assignAll(result);
+    if (purchaseProductsStatus.value == PurchaseLoadStatus.loading) return;
+
+    purchaseProductsStatus.value = PurchaseLoadStatus.loading;
+    purchaseProductsError = '';
+    update();
+
+    try {
+      final result = await getAllProductsUsecase.call();
+      products.assignAll(result);
+      purchaseProductsStatus.value = products.isEmpty
+          ? PurchaseLoadStatus.empty
+          : PurchaseLoadStatus.success;
+    } catch (error, stackTrace) {
+      purchaseProductsError = error.toString();
+      purchaseProductsStatus.value = PurchaseLoadStatus.error;
+      products.clear();
+      if (kDebugMode) {
+        debugPrint('BillsController.getAllProducts failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+
     update();
   }
 
@@ -222,15 +251,42 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> getAllPurchaseSources() async {
-    final resultCustomers = await allCustomersSellersUsecase.call(
-      endPoint: EndPoints.all_customers,
-    );
-    final resultSellers = await allCustomersSellersUsecase.call(
-      endPoint: EndPoints.all_sellers,
-    );
-    allCustomersList.assignAll(resultCustomers);
-    allSellersList.assignAll(resultSellers);
+    if (purchaseSourcesStatus.value == PurchaseLoadStatus.loading) return;
+
+    purchaseSourcesStatus.value = PurchaseLoadStatus.loading;
+    purchaseSourcesError = '';
     update();
+
+    try {
+      final resultCustomers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_customers,
+      );
+      final resultSellers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_sellers,
+      );
+      allCustomersList.assignAll(resultCustomers);
+      allSellersList.assignAll(resultSellers);
+      purchaseSourcesStatus.value = purchaseSources.isEmpty
+          ? PurchaseLoadStatus.empty
+          : PurchaseLoadStatus.success;
+    } catch (error, stackTrace) {
+      purchaseSourcesError = error.toString();
+      purchaseSourcesStatus.value = PurchaseLoadStatus.error;
+      if (kDebugMode) {
+        debugPrint('BillsController.getAllPurchaseSources failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+
+    update();
+  }
+
+  void retryPurchaseProducts() {
+    getAllProducts();
+  }
+
+  void retryPurchaseSources() {
+    getAllPurchaseSources();
   }
 
   void selectPurchaseSource(PurchaseSourceModel? source) {
