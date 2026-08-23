@@ -226,11 +226,14 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
     super.initState();
     ssidController = TextEditingController();
     passwordController = TextEditingController();
-    widget.controller.errorMessage('');
-    widget.controller.bluetoothDevices.clear();
-    widget.controller.selectedBluetoothDevice.value = null;
     _loadWifi();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scanNearby());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.controller.errorMessage('');
+      widget.controller.bluetoothDevices.clear();
+      widget.controller.selectedBluetoothDevice.value = null;
+      _scanNearby();
+    });
   }
 
   Future<void> _loadWifi() async {
