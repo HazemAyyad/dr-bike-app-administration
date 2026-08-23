@@ -6,11 +6,10 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../../core/services/theme_service.dart';
-import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/bills_widgets/bills_list.dart';
 
@@ -19,6 +18,9 @@ class BillsScreen extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BillsController>()) {
+      BuyingBinding().dependencies();
+    }
     return Scaffold(
       appBar: const CustomAppBar(
         title: 'newBill',
@@ -36,7 +38,7 @@ class BillsScreen extends GetView<BillsController> {
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 50.w),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: SearchBar(
                 shadowColor: WidgetStateProperty.all(Colors.transparent),
                 leading: const Icon(
@@ -101,35 +103,15 @@ class BillsScreen extends GetView<BillsController> {
           SliverToBoxAdapter(child: SizedBox(height: 50.h)),
         ],
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: () => controller.toggleAddMenu(),
-        opacityAnimation: controller.sizeAnimation,
-        sizeAnimation: controller.opacityAnimation,
-        // addList: controller.addList,
-        customWidget: Column(
-          children: [
-            BuildAddMenuItem(
-              title: 'addNewBill',
-              iconAsset: AssetsManager.invoiceIcon,
-              route: AppRoutes.ADDNEWBILLSCREEN,
-              onTap: () {
-                controller.isaddNewBill = '1';
-                controller.toggleAddMenu();
-              },
-            ),
-            SizedBox(height: 10.h),
-            BuildAddMenuItem(
-              title: 'addNewQuantityBill',
-              iconAsset: AssetsManager.invoiceIcon,
-              route: AppRoutes.ADDNEWBILLSCREEN,
-              onTap: () {
-                controller.isaddNewBill = '2';
-                controller.toggleAddMenu();
-              },
-            ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.primaryColor,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_shopping_cart_outlined),
+        label: Text('addNewBill'.tr),
+        onPressed: () {
+          controller.isaddNewBill = '1';
+          Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+        },
       ),
     );
   }

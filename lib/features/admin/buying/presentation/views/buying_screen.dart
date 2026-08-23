@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
 
 class BuyingScreen extends GetView<BillsController> {
@@ -13,6 +14,9 @@ class BuyingScreen extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BillsController>()) {
+      BuyingBinding().dependencies();
+    }
     return DefaultTabController(
       length: 3,
       child: Scaffold(

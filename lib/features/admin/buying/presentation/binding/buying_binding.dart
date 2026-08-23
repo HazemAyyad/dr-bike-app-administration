@@ -22,56 +22,62 @@ import '../controllers/return_purchases_controller.dart';
 class BuyingBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(
-      () => BillsController(
-        getBillsUsecase: GetBillsUsecase(
-          billsRepository: Get.find<BillsImplement>(),
+    if (!Get.isRegistered<BillsController>()) {
+      Get.put(
+        BillsController(
+          getBillsUsecase: GetBillsUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          getAllProductsUsecase: GetAllProductsUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          allCustomersSellersUsecase: AllCustomersSellersUsecase(
+            checksRepository: Get.find<ChecksImplement>(),
+          ),
+          addBillUsecase: AddBillUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          getBilltDetailsUsecase: GetBilltDetailsUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          purchaseWorkflowUsecase: PurchaseWorkflowUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          getShownBoxUsecase: GetShownBoxUsecase(
+            boxesRepository: Get.find<BoxesImplement>(),
+          ),
         ),
-        getAllProductsUsecase: GetAllProductsUsecase(
-          salesRepository: Get.find<SalesImplement>(),
+      );
+    }
+    if (!Get.isRegistered<PurchaseOrdersController>()) {
+      Get.put(
+        PurchaseOrdersController(
+          getBillsUsecase: GetBillsUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          cancelBillUsecase: CancelBillUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          changeStatusUsecase: ChangeStatusUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          changeOneStatusUsecase: ChangeOneStatusUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
         ),
-        allCustomersSellersUsecase: AllCustomersSellersUsecase(
-          checksRepository: Get.find<ChecksImplement>(),
+      );
+    }
+    if (!Get.isRegistered<ReturnPurchasesController>()) {
+      Get.put(
+        ReturnPurchasesController(
+          getBillsUsecase: GetBillsUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
+          changeReturnToDeliveredUsecase: ChangeReturnToDeliveredUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
         ),
-        addBillUsecase: AddBillUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        getBilltDetailsUsecase: GetBilltDetailsUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        purchaseWorkflowUsecase: PurchaseWorkflowUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        getShownBoxUsecase: GetShownBoxUsecase(
-          boxesRepository: Get.find<BoxesImplement>(),
-        ),
-      ),
-    );
-    Get.lazyPut(
-      () => PurchaseOrdersController(
-        getBillsUsecase: GetBillsUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        cancelBillUsecase: CancelBillUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        changeStatusUsecase: ChangeStatusUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        changeOneStatusUsecase: ChangeOneStatusUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-      ),
-    );
-    Get.lazyPut(
-      () => ReturnPurchasesController(
-        getBillsUsecase: GetBillsUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-        changeReturnToDeliveredUsecase: ChangeReturnToDeliveredUsecase(
-          billsRepository: Get.find<BillsImplement>(),
-        ),
-      ),
-    );
+      );
+    }
   }
 }
