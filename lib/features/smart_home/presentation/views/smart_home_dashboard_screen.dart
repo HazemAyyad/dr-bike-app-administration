@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/app_colors.dart';
+import '../../../../core/widgets/skeleton_loading.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
@@ -24,53 +25,45 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 fontWeight: FontWeight.w800,
               ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'refresh'.tr,
-            onPressed: controller.refreshData,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
       ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.homes.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        final showInitialSkeleton =
+            controller.isLoading.value && controller.homes.isEmpty;
+        final showDeviceSkeleton =
+            controller.isRefreshing.value && !showInitialSkeleton;
 
         return RefreshIndicator(
           onRefresh: controller.refreshData,
           child: ListView(
             padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
-            children: [
-              if (controller.errorMessage.value.isNotEmpty)
-                _ErrorBanner(message: controller.errorMessage.value),
-              if (controller.canViewSmartHomeOwners) ...[
-                _OwnerFilter(controller: controller),
-                SizedBox(height: 14.h),
-              ],
-              _SmartLocationSelector(controller: controller),
-              SizedBox(height: 10.h),
-              _NativeStatusCard(controller: controller),
-              if (!controller.isUnassignedSelected) ...[
-                SizedBox(height: 12.h),
-                _RoomsStrip(controller: controller),
-              ],
-              SizedBox(height: 14.h),
-              _SectionHeader(
-                title: 'devices'.tr,
-                actionLabel: 'addDevice'.tr,
-                onAction: _showAddDeviceDialog,
-              ),
-              if (controller.isRefreshing.value) ...[
-                SizedBox(height: 8.h),
-                LinearProgressIndicator(
-                  minHeight: 3.h,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ],
-              SizedBox(height: 8.h),
-              _DevicesList(controller: controller),
-            ],
+            children: showInitialSkeleton
+                ? const [_SmartHomeDashboardSkeleton()]
+                : [
+                    if (controller.errorMessage.value.isNotEmpty)
+                      _ErrorBanner(message: controller.errorMessage.value),
+                    if (controller.canViewSmartHomeOwners) ...[
+                      _OwnerFilter(controller: controller),
+                      SizedBox(height: 14.h),
+                    ],
+                    _SmartLocationSelector(controller: controller),
+                    SizedBox(height: 10.h),
+                    _NativeStatusCard(controller: controller),
+                    if (!controller.isUnassignedSelected) ...[
+                      SizedBox(height: 12.h),
+                      _RoomsStrip(controller: controller),
+                    ],
+                    SizedBox(height: 14.h),
+                    _SectionHeader(
+                      title: 'devices'.tr,
+                      actionLabel: 'addDevice'.tr,
+                      onAction: _showAddDeviceDialog,
+                    ),
+                    SizedBox(height: 8.h),
+                    if (showDeviceSkeleton)
+                      const _SmartHomeDeviceListSkeleton()
+                    else
+                      _DevicesList(controller: controller),
+                  ],
           ),
         );
       }),
@@ -79,6 +72,124 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
 
   Future<void> _showAddDeviceDialog() async {
     await Get.to<void>(() => _AddDeviceFlowScreen(controller: controller));
+  }
+}
+
+class _SmartHomeDashboardSkeleton extends StatelessWidget {
+  const _SmartHomeDashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SkeletonBlock(width: double.infinity, height: 42.h, radius: 8),
+        SizedBox(height: 10.h),
+        SkeletonBlock(width: double.infinity, height: 86.h, radius: 8),
+        SizedBox(height: 12.h),
+        SizedBox(
+          height: 34.h,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (_, index) => SkeletonBlock(
+              width: index == 0 ? 62.w : 88.w,
+              height: 34.h,
+              radius: 999,
+            ),
+            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+            itemCount: 4,
+          ),
+        ),
+        SizedBox(height: 18.h),
+        Row(
+          children: [
+            SkeletonBlock(width: 88.w, height: 18.h),
+            const Spacer(),
+            SkeletonBlock(width: 78.w, height: 32.h, radius: 999),
+          ],
+        ),
+        SizedBox(height: 10.h),
+        const _SmartHomeDeviceListSkeleton(count: 4),
+      ],
+    );
+  }
+}
+
+class _SmartHomeDeviceListSkeleton extends StatelessWidget {
+  const _SmartHomeDeviceListSkeleton({this.count = 3});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        count,
+        (index) => const _SmartHomeDeviceCardSkeleton(),
+      ),
+    );
+  }
+}
+
+class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
+  const _SmartHomeDeviceCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.black.withValues(alpha: .05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              SkeletonCircle(size: 42.r),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(width: double.infinity, height: 14.h),
+                    SizedBox(height: 7.h),
+                    SkeletonBlock(width: 120.w, height: 9.h),
+                  ],
+                ),
+              ),
+              SkeletonBlock(width: 30.w, height: 30.w, radius: 999),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Expanded(
+                child: SkeletonBlock(
+                  width: double.infinity,
+                  height: 72.h,
+                  radius: 8,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: SkeletonBlock(
+                  width: double.infinity,
+                  height: 72.h,
+                  radius: 8,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
