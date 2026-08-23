@@ -292,7 +292,7 @@ class _GoalHeroCard extends StatelessWidget {
   }
 }
 
-class _GoalProgressChart extends StatelessWidget {
+class _GoalProgressChart extends StatefulWidget {
   const _GoalProgressChart({
     required this.history,
     required this.achievement,
@@ -304,11 +304,44 @@ class _GoalProgressChart extends StatelessWidget {
   final Color progressColor;
 
   @override
+  State<_GoalProgressChart> createState() => _GoalProgressChartState();
+}
+
+class _GoalProgressChartState extends State<_GoalProgressChart> {
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex =
+        math.max(0, widget.history.lastIndexWhere((e) => e.hasData));
+  }
+
+  @override
+  void didUpdateWidget(covariant _GoalProgressChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.history.length != widget.history.length) {
+      _selectedIndex =
+          math.max(0, widget.history.lastIndexWhere((e) => e.hasData));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final points = history
-        .map((e) => double.tryParse(e.achievementPercentage) ?? 0)
-        .toList();
-    final chartPoints = points.length >= 2 ? points : [0.0, achievement];
+    final history = widget.history.isEmpty
+        ? [
+            GoalProgressPoint(
+              date: DateTime.now().toIso8601String(),
+              currentValue: '',
+              achievementPercentage: widget.achievement.toStringAsFixed(2),
+              hasData: true,
+            ),
+          ]
+        : widget.history;
+    final selected = history[_selectedIndex.clamp(0, history.length - 1)];
+    final selectedAchievement =
+        double.tryParse(selected.achievementPercentage) ?? 0;
+    final selectedCurrent = double.tryParse(selected.currentValue);
 
     return _Panel(
       child: Column(
@@ -319,7 +352,7 @@ class _GoalProgressChart extends StatelessWidget {
               Icon(
                 Icons.stacked_line_chart_rounded,
                 size: 20.sp,
-                color: progressColor,
+                color: widget.progressColor,
               ),
               SizedBox(width: 6.w),
               Expanded(
@@ -332,7 +365,7 @@ class _GoalProgressChart extends StatelessWidget {
                 ),
               ),
               Text(
-                history.isEmpty ? 'اليوم'.tr : '${history.length} ${'date'.tr}',
+                '${history.length} ${'date'.tr}',
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: AppColors.customGreyColor5,
                       fontWeight: FontWeight.w700,
@@ -341,43 +374,108 @@ class _GoalProgressChart extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h),
-          SizedBox(
-            height: 118.h,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _ProgressChartPainter(
-                values: chartPoints,
-                color: progressColor,
-                gridColor: ThemeService.isDark.value
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : AppColors.operationalNavy.withValues(alpha: 0.08),
-              ),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) => _selectPoint(
+                  details.localPosition.dx,
+                  width,
+                  history.length,
+                ),
+                onHorizontalDragUpdate: (details) => _selectPoint(
+                  details.localPosition.dx,
+                  width,
+                  history.length,
+                ),
+                child: SizedBox(
+                  height: 138.h,
+                  width: double.infinity,
+                  child: CustomPaint(
+                    painter: _ProgressChartPainter(
+                      points: history,
+                      selectedIndex: _selectedIndex,
+                      color: widget.progressColor,
+                      gridColor: ThemeService.isDark.value
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : AppColors.operationalNavy.withValues(alpha: 0.08),
+                      mutedColor:
+                          AppColors.customGreyColor5.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          if (history.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            Row(
+          SizedBox(height: 10.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+            decoration: BoxDecoration(
+              color: widget.progressColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Row(
               children: [
+                Icon(
+                  selected.hasData
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.info_outline_rounded,
+                  color: widget.progressColor,
+                  size: 18.sp,
+                ),
+                SizedBox(width: 8.w),
                 Expanded(
-                  child: Text(
-                    showData(history.first.date),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        showData(selected.date),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        selected.hasData
+                            ? '${'currentValue'.tr}: ${selectedCurrent == null ? '-' : _compactNumber(selectedCurrent)}'
+                            : 'لا يوجد تسجيل لهذا اليوم',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              color: AppColors.customGreyColor5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  showData(history.last.date),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  selected.hasData
+                      ? '${selectedAchievement.toStringAsFixed(0)}%'
+                      : '-',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: widget.progressColor,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
               ],
             ),
-          ],
+          ),
         ],
       ),
     );
+  }
+
+  void _selectPoint(double localDx, double width, int count) {
+    if (count <= 1 || width <= 0) return;
+    final index = ((localDx.clamp(0, width) / width) * (count - 1)).round();
+    if (index != _selectedIndex) {
+      setState(() => _selectedIndex = index);
+    }
   }
 }
 
@@ -714,14 +812,18 @@ class _SoftChip extends StatelessWidget {
 
 class _ProgressChartPainter extends CustomPainter {
   _ProgressChartPainter({
-    required this.values,
+    required this.points,
+    required this.selectedIndex,
     required this.color,
     required this.gridColor,
+    required this.mutedColor,
   });
 
-  final List<double> values;
+  final List<GoalProgressPoint> points;
+  final int selectedIndex;
   final Color color;
   final Color gridColor;
+  final Color mutedColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -733,23 +835,41 @@ class _ProgressChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    final maxValue = math.max(100.0, values.reduce(math.max));
-    final points = <Offset>[];
-    for (var i = 0; i < values.length; i++) {
-      final x = values.length == 1
+    final values = points
+        .where((point) => point.hasData)
+        .map((point) => double.tryParse(point.achievementPercentage) ?? 0)
+        .toList();
+    final maxValue = math.max(
+      100.0,
+      values.isEmpty ? 100.0 : values.reduce(math.max),
+    );
+    final offsets = <Offset?>[];
+    for (var i = 0; i < points.length; i++) {
+      final x = points.length == 1
           ? size.width
-          : size.width * i / (values.length - 1);
-      final y = size.height -
-          ((values[i].clamp(0, maxValue) / maxValue) * size.height);
-      points.add(Offset(x, y));
+          : size.width * i / (points.length - 1);
+      if (!points[i].hasData) {
+        offsets.add(null);
+        continue;
+      }
+      final value = double.tryParse(points[i].achievementPercentage) ?? 0;
+      final y =
+          size.height - ((value.clamp(0, maxValue) / maxValue) * size.height);
+      offsets.add(Offset(x, y));
     }
 
-    final fillPath = Path()..moveTo(points.first.dx, size.height);
-    for (final point in points) {
+    final dataOffsets = offsets.whereType<Offset>().toList();
+    if (dataOffsets.isEmpty) {
+      _drawSelectedGuide(canvas, size);
+      return;
+    }
+
+    final fillPath = Path()..moveTo(dataOffsets.first.dx, size.height);
+    for (final point in dataOffsets) {
       fillPath.lineTo(point.dx, point.dy);
     }
     fillPath
-      ..lineTo(points.last.dx, size.height)
+      ..lineTo(dataOffsets.last.dx, size.height)
       ..close();
 
     canvas.drawPath(
@@ -765,31 +885,81 @@ class _ProgressChartPainter extends CustomPainter {
         ).createShader(Offset.zero & size),
     );
 
-    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (final point in points.skip(1)) {
-      linePath.lineTo(point.dx, point.dy);
+    Path? linePath;
+    for (final point in offsets) {
+      if (point == null) continue;
+      if (linePath == null) {
+        linePath = Path()..moveTo(point.dx, point.dy);
+      } else {
+        linePath.lineTo(point.dx, point.dy);
+      }
     }
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = color
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
+    if (linePath != null) {
+      canvas.drawPath(
+        linePath,
+        Paint()
+          ..color = color
+          ..strokeWidth = 3
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+    }
 
     final dotPaint = Paint()..color = color;
-    for (final point in points) {
+    for (final point in dataOffsets) {
       canvas.drawCircle(point, 3.4, dotPaint);
     }
+
+    _drawSelectedGuide(canvas, size);
+  }
+
+  void _drawSelectedGuide(Canvas canvas, Size size) {
+    final clampedIndex =
+        selectedIndex.clamp(0, math.max(0, points.length - 1)).toInt();
+    final x = points.length <= 1
+        ? size.width
+        : size.width * clampedIndex / (points.length - 1);
+    final guidePaint = Paint()
+      ..color = mutedColor
+      ..strokeWidth = 1.4;
+    canvas.drawLine(Offset(x, 0), Offset(x, size.height), guidePaint);
+
+    final point = points[clampedIndex];
+    if (!point.hasData) {
+      canvas.drawCircle(
+        Offset(x, size.height - 8),
+        4,
+        Paint()
+          ..color = mutedColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+      return;
+    }
+
+    final values = points
+        .where((point) => point.hasData)
+        .map((point) => double.tryParse(point.achievementPercentage) ?? 0)
+        .toList();
+    final maxValue = math.max(
+      100.0,
+      values.isEmpty ? 100.0 : values.reduce(math.max),
+    );
+    final value = double.tryParse(point.achievementPercentage) ?? 0;
+    final y =
+        size.height - ((value.clamp(0, maxValue) / maxValue) * size.height);
+    canvas.drawCircle(Offset(x, y), 6, Paint()..color = color);
+    canvas.drawCircle(Offset(x, y), 3, Paint()..color = Colors.white);
   }
 
   @override
   bool shouldRepaint(covariant _ProgressChartPainter oldDelegate) {
-    return oldDelegate.values != values ||
+    return oldDelegate.points != points ||
+        oldDelegate.selectedIndex != selectedIndex ||
         oldDelegate.color != color ||
-        oldDelegate.gridColor != gridColor;
+        oldDelegate.gridColor != gridColor ||
+        oldDelegate.mutedColor != mutedColor;
   }
 }
 

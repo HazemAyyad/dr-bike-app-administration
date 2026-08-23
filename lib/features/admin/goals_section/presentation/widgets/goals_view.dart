@@ -4,7 +4,6 @@ import 'package:doctorbike/features/admin/goals_section/data/models/goals_model.
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/show_no_data.dart';
@@ -46,7 +45,7 @@ class GoalsView extends StatelessWidget {
               childAspectRatio: 1,
               mainAxisSpacing: 10.h,
               crossAxisSpacing: 10.w,
-              mainAxisExtent: 194.h,
+              mainAxisExtent: 168.h,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
@@ -134,141 +133,10 @@ class GoalsView extends StatelessWidget {
                     controller.getGoalDetails(goalId: goal.id.toString()),
                     Get.toNamed(AppRoutes.TARGETDETAILSSCREEN),
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.whiteColor2,
-                      borderRadius: BorderRadius.circular(9.r),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(height: 10.h),
-                        Center(
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Text(
-                                '${goal.achievementPercentage}%',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      fontSize: 10.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: ThemeService.isDark.value
-                                          ? AppColors.whiteColor2
-                                          : AppColors.blackColor,
-                                    ),
-                              ),
-                              Center(
-                                child: SizedBox(
-                                  height: 65,
-                                  width: 65,
-                                  child: CircularProgressIndicator(
-                                    value: (achievement / 100).clamp(0.0, 1.0),
-                                    strokeWidth: 6,
-                                    backgroundColor: Colors.grey.shade300,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      progressColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 2.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: progressColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20.r),
-                          ),
-                          child: Text(
-                            goal.statusMeta.label.isEmpty
-                                ? _goalStatusLabel(achievement)
-                                : goal.statusMeta.label,
-                            style:
-                                Theme.of(context).textTheme.bodySmall!.copyWith(
-                                      fontSize: 9.sp,
-                                      color: progressColor,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                          ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Flexible(
-                          child: Text(
-                            goal.name,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.whiteColor2
-                                      : AppColors.blackColor,
-                                ),
-                          ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Text(
-                          '${'targetValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.targetValue))}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.whiteColor2
-                                        : AppColors.blackColor,
-                                  ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Text(
-                          '${'currentValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.currentValue))}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.whiteColor2
-                                        : AppColors.blackColor,
-                                  ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Text(
-                          showData(goal.dueDate),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.whiteColor2
-                                        : AppColors.blackColor,
-                                  ),
-                        ),
-                      ],
-                    ),
+                  child: _GoalSummaryCard(
+                    goal: goal,
+                    achievement: achievement,
+                    progressColor: progressColor,
                   ),
                 );
               },
@@ -281,6 +149,222 @@ class GoalsView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _GoalSummaryCard extends StatelessWidget {
+  const _GoalSummaryCard({
+    required this.goal,
+    required this.achievement,
+    required this.progressColor,
+  });
+
+  final GoalsModel goal;
+  final double achievement;
+  final Color progressColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = double.tryParse(goal.currentValue) ?? 0;
+    final target = double.tryParse(goal.targetValue) ?? 0;
+    final progress = (achievement / 100).clamp(0.0, 1.0);
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: progressColor.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  goal.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w900,
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.operationalNavy,
+                      ),
+                ),
+              ),
+              SizedBox(width: 7.w),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: 48.h,
+                    width: 48.h,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 5,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    ),
+                  ),
+                  Text(
+                    '${achievement.toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w900,
+                          color: progressColor,
+                        ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: 7.h),
+          Wrap(
+            spacing: 5.w,
+            runSpacing: 5.h,
+            children: [
+              _GoalPill(
+                label: goal.statusMeta.label.isEmpty
+                    ? _goalStatusLabel(achievement)
+                    : goal.statusMeta.label,
+                color: progressColor,
+              ),
+              if (goal.scope.isNotEmpty)
+                _GoalPill(
+                  label: goal.scope.tr,
+                  color: AppColors.operationalPurple,
+                  soft: true,
+                ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Expanded(
+                child: _MiniMetric(
+                  title: 'currentValue',
+                  value: _compactNumber(current),
+                ),
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: _MiniMetric(
+                  title: 'targetValue',
+                  value: _compactNumber(target),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 14.sp,
+                color: AppColors.customGreyColor5,
+              ),
+              SizedBox(width: 4.w),
+              Expanded(
+                child: Text(
+                  showData(goal.dueDate.toIso8601String()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        fontSize: 10.sp,
+                        color: AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalPill extends StatelessWidget {
+  const _GoalPill({
+    required this.label,
+    required this.color,
+    this.soft = false,
+  });
+
+  final String label;
+  final Color color;
+  final bool soft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: soft ? 0.08 : 0.12),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontSize: 9.sp,
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+      ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  const _MiniMetric({
+    required this.title,
+    required this.value,
+  });
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.operationalSurface,
+        borderRadius: BorderRadius.circular(7.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.tr,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  fontSize: 9.sp,
+                  color: AppColors.customGreyColor5,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -376,4 +460,11 @@ String _goalStatusLabel(double achievement) {
   if (achievement >= 80) return 'ممتاز';
   if (achievement >= 50) return 'قيد التقدم';
   return 'متأخر';
+}
+
+String _compactNumber(double value) {
+  if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+  if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}K';
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toStringAsFixed(2);
 }

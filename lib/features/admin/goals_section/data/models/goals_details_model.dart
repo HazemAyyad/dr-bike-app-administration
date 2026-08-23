@@ -333,11 +333,13 @@ class GoalProgressPoint {
   final String date;
   final String currentValue;
   final String achievementPercentage;
+  final bool hasData;
 
   GoalProgressPoint({
     required this.date,
     required this.currentValue,
     required this.achievementPercentage,
+    required this.hasData,
   });
 
   factory GoalProgressPoint.fromJson(Map<String, dynamic> json) {
@@ -346,6 +348,7 @@ class GoalProgressPoint {
       date: asString(j['date']),
       currentValue: asString(j['current_value']),
       achievementPercentage: asString(j['achievement_percentage']),
+      hasData: asBool(j['has_data']),
     );
   }
 
@@ -353,6 +356,7 @@ class GoalProgressPoint {
         'date': date,
         'current_value': currentValue,
         'achievement_percentage': achievementPercentage,
+        'has_data': hasData,
       };
 }
 
