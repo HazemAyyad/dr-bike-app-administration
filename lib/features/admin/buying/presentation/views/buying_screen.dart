@@ -62,7 +62,70 @@ class BuyingScreen extends GetView<BillsController> {
             ),
           ],
         ),
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: AppColors.primaryColor,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('إضافة'),
+          onPressed: () => _showPurchaseCreateActions(context),
+        ),
       ),
+    );
+  }
+
+  void _showPurchaseCreateActions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 18.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'إضافة عملية شراء',
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16.sp,
+                      ),
+                ),
+                SizedBox(height: 10.h),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        AppColors.primaryColor.withValues(alpha: 0.1),
+                    child: const Icon(
+                      Icons.add_shopping_cart_outlined,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                  title: const Text('إنشاء فاتورة شراء جديدة'),
+                  subtitle: const Text('اختيار مورد أو زبون ثم إضافة المنتجات'),
+                  trailing: const Icon(
+                    Icons.chevron_left,
+                    color: AppColors.primaryColor,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    controller.isaddNewBill = '1';
+                    Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -76,23 +139,12 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
           return const Center(child: CircularProgressIndicator());
         }
         if (controller.allBillsSearch.isEmpty) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 24.h),
-            children: [
-              _PrimaryActionRow(
-                primaryText: 'فاتورة شراء جديدة',
-                primaryIcon: Icons.add_shopping_cart_outlined,
-                onPrimary: () {
-                  controller.isaddNewBill = '1';
-                  Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
-                },
-                secondaryText: 'كل الفواتير',
-                secondaryIcon: Icons.receipt_long_outlined,
-                onSecondary: () => Get.toNamed(AppRoutes.BILLSSCREEN),
-              ),
-              SizedBox(height: 80.h),
-              const ShowNoData(),
-            ],
+          return RefreshIndicator(
+            onRefresh: () async => controller.getBills(),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(16.w, 80.h, 16.w, 24.h),
+              children: const [ShowNoData()],
+            ),
           );
         }
         final months =
@@ -101,25 +153,9 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
           onRefresh: () async => controller.getBills(),
           child: ListView.builder(
             padding: EdgeInsets.only(bottom: 90.h),
-            itemCount: months.length + 1,
+            itemCount: months.length,
             itemBuilder: (context, index) {
-              if (index == 0) {
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 10.h),
-                  child: _PrimaryActionRow(
-                    primaryText: 'فاتورة شراء جديدة',
-                    primaryIcon: Icons.add_shopping_cart_outlined,
-                    onPrimary: () {
-                      controller.isaddNewBill = '1';
-                      Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
-                    },
-                    secondaryText: 'كل الفواتير',
-                    secondaryIcon: Icons.receipt_long_outlined,
-                    onSecondary: () => Get.toNamed(AppRoutes.BILLSSCREEN),
-                  ),
-                );
-              }
-              final month = months[index - 1];
+              final month = months[index];
               final bills = controller.allBillsSearch[month] ?? [];
               return BillsList(month: month, bills: bills, page: '1');
             },
