@@ -2305,6 +2305,10 @@ class _SmartDeviceCard extends StatelessWidget {
                   SizedBox(height: 9.h),
                   _CurtainMiniControls(
                     enabled: !busy,
+                    currentCommand: DeviceCapabilityResolver.statusValue(
+                      device,
+                      curtainCommand,
+                    )?.toString(),
                     onCommand: (value) => controller.setDeviceDps(
                       device: device,
                       commandCode: curtainCommand.code,
@@ -2421,19 +2425,23 @@ TuyaDeviceFunction? _dashboardCurtainCommand(SmartDeviceModel device) {
 class _CurtainMiniControls extends StatelessWidget {
   const _CurtainMiniControls({
     required this.enabled,
+    required this.currentCommand,
     required this.onCommand,
   });
 
   final bool enabled;
+  final String? currentCommand;
   final ValueChanged<String> onCommand;
 
   @override
   Widget build(BuildContext context) {
+    final activeCommand = _normalizedCurtainCommand(currentCommand);
     return Row(
       children: [
         _MiniCommandButton(
           icon: Icons.keyboard_arrow_up_rounded,
           label: _friendlyEnumValue('open'),
+          active: activeCommand == 'open',
           enabled: enabled,
           onTap: () => onCommand('open'),
         ),
@@ -2441,6 +2449,7 @@ class _CurtainMiniControls extends StatelessWidget {
         _MiniCommandButton(
           icon: Icons.pause_rounded,
           label: _friendlyEnumValue('stop'),
+          active: activeCommand == 'stop',
           enabled: enabled,
           onTap: () => onCommand('stop'),
         ),
@@ -2448,6 +2457,7 @@ class _CurtainMiniControls extends StatelessWidget {
         _MiniCommandButton(
           icon: Icons.keyboard_arrow_down_rounded,
           label: _friendlyEnumValue('close'),
+          active: activeCommand == 'close',
           enabled: enabled,
           onTap: () => onCommand('close'),
         ),
@@ -2460,17 +2470,20 @@ class _MiniCommandButton extends StatelessWidget {
   const _MiniCommandButton({
     required this.icon,
     required this.label,
+    required this.active,
     required this.enabled,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final bool active;
   final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = const Color(0xFF28C79A);
     return Expanded(
       child: OutlinedButton.icon(
         onPressed: enabled ? onTap : null,
@@ -2482,6 +2495,13 @@ class _MiniCommandButton extends StatelessWidget {
         ),
         style: OutlinedButton.styleFrom(
           visualDensity: VisualDensity.compact,
+          foregroundColor: active ? activeColor : null,
+          backgroundColor: active ? activeColor.withValues(alpha: .12) : null,
+          side: BorderSide(
+            color: active
+                ? activeColor
+                : AppColors.customGreyColor5.withValues(alpha: .22),
+          ),
           padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
@@ -2489,6 +2509,20 @@ class _MiniCommandButton extends StatelessWidget {
       ),
     );
   }
+}
+
+String _normalizedCurtainCommand(String? value) {
+  final clean = value?.trim().toLowerCase() ?? '';
+  if (clean == 'open' || clean == 'opened' || clean == 'opening') {
+    return 'open';
+  }
+  if (clean == 'close' || clean == 'closed' || clean == 'closing') {
+    return 'close';
+  }
+  if (clean == 'stop' || clean == 'stopped' || clean == 'pause') {
+    return 'stop';
+  }
+  return clean;
 }
 
 String _deviceMainStatusLabel(SmartDeviceModel device) {
@@ -4120,6 +4154,8 @@ class _CurtainCommandSurface extends StatelessWidget {
                 : 'Unknown status')
             : '${_functionLabel(percentFunction!)}: ${percent.round()}%')
         : _friendlyEnumValue(currentCommand.toString());
+    final activeCommand = _normalizedCurtainCommand(currentCommand?.toString());
+    final stopActive = activeCommand == 'stop';
     return Column(
       children: [
         SizedBox(
@@ -4151,6 +4187,7 @@ class _CurtainCommandSurface extends StatelessWidget {
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_up_rounded,
                   label: _friendlyEnumValue('open'),
+                  active: activeCommand == 'open',
                   onTap: disabled
                       ? null
                       : () => onDps(commandFunction!.code, 'open'),
@@ -4161,6 +4198,7 @@ class _CurtainCommandSurface extends StatelessWidget {
                 child: _CurtainActionButton(
                   icon: Icons.keyboard_arrow_down_rounded,
                   label: _friendlyEnumValue('close'),
+                  active: activeCommand == 'close',
                   onTap: disabled
                       ? null
                       : () => onDps(commandFunction!.code, 'close'),
@@ -4176,10 +4214,12 @@ class _CurtainCommandSurface extends StatelessWidget {
                   height: 108.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
+                    color: stopActive
+                        ? const Color(0xFF28C79A).withValues(alpha: .14)
+                        : Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(.12),
+                        color: Colors.black.withValues(alpha: .12),
                         blurRadius: 22,
                         offset: const Offset(0, 10),
                       ),
@@ -4190,7 +4230,9 @@ class _CurtainCommandSurface extends StatelessWidget {
                         ? const CircularProgressIndicator(strokeWidth: 2)
                         : Icon(
                             Icons.pause_rounded,
-                            color: AppColors.customGreyColor5,
+                            color: stopActive
+                                ? const Color(0xFF28C79A)
+                                : AppColors.customGreyColor5,
                             size: 56.r,
                           ),
                   ),
@@ -4239,28 +4281,37 @@ class _CurtainActionButton extends StatelessWidget {
   const _CurtainActionButton({
     required this.icon,
     required this.label,
+    required this.active,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final bool active;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final color = active ? const Color(0xFF28C79A) : AppColors.customGreyColor5;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(42.r),
-      child: Padding(
+      child: Container(
         padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xFF28C79A).withOpacity(.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(42.r),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 42.r, color: AppColors.customGreyColor5),
+            Icon(icon, size: 42.r, color: color),
             Text(
               label,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.customGreyColor5,
+                    color: color,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0,
                   ),
