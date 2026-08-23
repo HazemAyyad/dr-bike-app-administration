@@ -1488,8 +1488,8 @@ class _PurchaseCheckoutTable extends GetView<BillsController> {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: 520.w),
+        child: SizedBox(
+          width: 520.w,
           child: Column(
             children: [
               Container(
