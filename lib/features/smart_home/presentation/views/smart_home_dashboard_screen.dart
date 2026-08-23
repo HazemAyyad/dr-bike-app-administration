@@ -1115,6 +1115,125 @@ Future<bool> _showRenameDeviceDialog({
   return result == true;
 }
 
+Future<bool> _showRenameFunctionDialog({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+  required TuyaDeviceFunction function,
+}) async {
+  final metadata = _functionMetadata(device, function);
+  if (metadata == null) {
+    Get.snackbar(
+      'smartHomeEditSwitchName'.tr,
+      'smartHomeSwitchMetadataMissing'.tr,
+    );
+    return false;
+  }
+  final result = await Get.dialog<bool>(
+    _RenameFunctionDialog(
+      controller: controller,
+      device: device,
+      function: function,
+      metadata: metadata,
+    ),
+  );
+  return result == true;
+}
+
+class _RenameFunctionDialog extends StatefulWidget {
+  const _RenameFunctionDialog({
+    required this.controller,
+    required this.device,
+    required this.function,
+    required this.metadata,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+  final TuyaDeviceFunction function;
+  final SmartDeviceFunctionModel metadata;
+
+  @override
+  State<_RenameFunctionDialog> createState() => _RenameFunctionDialogState();
+}
+
+class _RenameFunctionDialogState extends State<_RenameFunctionDialog> {
+  late final TextEditingController nameController;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(
+      text: widget.metadata.displayName.trim().isNotEmpty
+          ? widget.metadata.displayName
+          : _functionLabelForDevice(widget.device, widget.function),
+    );
+  }
+
+  Future<void> _save() async {
+    if (saving) return;
+    final cleanName = nameController.text.trim();
+    if (cleanName.isEmpty) {
+      Get.snackbar(
+        'smartHomeEditSwitchName'.tr,
+        'smartHomeSwitchNameRequired'.tr,
+      );
+      return;
+    }
+    setState(() => saving = true);
+    final ok = await widget.controller.renameDeviceFunction(
+      device: widget.device,
+      function: widget.metadata,
+      displayName: cleanName,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Get.back(result: true);
+      return;
+    }
+    setState(() => saving = false);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('smartHomeEditSwitchName'.tr),
+      content: TextField(
+        controller: nameController,
+        enabled: !saving,
+        autofocus: true,
+        maxLength: 80,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(labelText: 'smartHomeSwitchName'.tr),
+        onSubmitted: (_) => _save(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: saving ? null : () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton.icon(
+          onPressed: saving ? null : _save,
+          icon: saving
+              ? SizedBox(
+                  width: 16.r,
+                  height: 16.r,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_rounded),
+          label: Text('save'.tr),
+        ),
+      ],
+    );
+  }
+}
+
 class _RenameDeviceDialog extends StatefulWidget {
   const _RenameDeviceDialog({
     required this.controller,
@@ -1258,7 +1377,7 @@ class _SmartDeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
-    final functions = _visibleFunctions(device);
+    final functions = _visiblePrimarySwitches(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
     final powerActive = powerFunction == null
@@ -1374,13 +1493,23 @@ class _SmartDeviceCard extends StatelessWidget {
                         return SizedBox(
                           width: 92.w,
                           child: _DpsShortcut(
-                            label: _functionLabel(function),
+                            label: _functionLabelForDevice(device, function),
                             value: value,
                             statusLabel: _functionStatusLabel(
                               function,
                               value,
                             ),
                             busy: busy,
+                            onLongPress: () => _showRenameFunctionDialog(
+                              controller: controller,
+                              device: device,
+                              function: function,
+                            ),
+                            onEdit: () => _showRenameFunctionDialog(
+                              controller: controller,
+                              device: device,
+                              function: function,
+                            ),
                             onTap: function.isBool
                                 ? () => controller.setDeviceDps(
                                       device: device,
@@ -1400,25 +1529,6 @@ class _SmartDeviceCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<TuyaDeviceFunction> _visibleFunctions(SmartDeviceModel device) {
-    final functions = DeviceCapabilityResolver.writableFunctions(device)
-        .where(
-          (item) => item.isBool || item.isValue || item.isEnum || item.isString,
-        )
-        .toList(growable: false);
-    final power = DeviceCapabilityResolver.resolvePower(device);
-    functions.sort((a, b) {
-      final ap = a.dpId == power?.dpId ? 0 : 1;
-      final bp = b.dpId == power?.dpId ? 0 : 1;
-      if (ap != bp) return ap.compareTo(bp);
-      final ai = int.tryParse(a.dpId);
-      final bi = int.tryParse(b.dpId);
-      if (ai != null && bi != null) return ai.compareTo(bi);
-      return a.dpId.compareTo(b.dpId);
-    });
-    return functions;
   }
 
   String _deviceSubtitle(SmartDeviceModel device) {
@@ -1492,7 +1602,7 @@ String _deviceMainStatusLabel(SmartDeviceModel device) {
   if (power == null) return '';
   final value = DeviceCapabilityResolver.statusValue(device, power);
   if (value is! bool) return '';
-  return '${_functionLabel(power)}: ${_onOffLabel(value)}';
+  return '${_functionLabelForDevice(device, power)}: ${_onOffLabel(value)}';
 }
 
 TuyaDeviceFunction? _functionByCode(
@@ -1512,16 +1622,77 @@ String _functionLabel(TuyaDeviceFunction function) {
   return _friendlyDpsName(function.code);
 }
 
+String _functionLabelForDevice(
+  SmartDeviceModel device,
+  TuyaDeviceFunction function,
+) {
+  final metadata = _functionMetadata(device, function);
+  final displayName = metadata?.displayName.trim() ?? '';
+  if (displayName.isNotEmpty) return displayName;
+  if (_isPrimarySwitchCode(function.code)) {
+    return _defaultSwitchLabel(function.code);
+  }
+  return _functionLabel(function);
+}
+
+SmartDeviceFunctionModel? _functionMetadata(
+  SmartDeviceModel device,
+  TuyaDeviceFunction function,
+) {
+  return device.functions.firstWhereOrNull((item) =>
+      item.code == function.code ||
+      (item.dpId.isNotEmpty && item.dpId == function.dpId));
+}
+
+List<TuyaDeviceFunction> _visiblePrimarySwitches(SmartDeviceModel device) {
+  final metadataByCode = {
+    for (final item in device.functions)
+      if (item.code.isNotEmpty) item.code: item,
+  };
+  final entries = DeviceCapabilityResolver.boolSwitches(device).where((item) {
+    final metadata = metadataByCode[item.code];
+    return metadata == null || metadata.isVisible;
+  }).toList(growable: false);
+  entries.sort((a, b) {
+    final am = metadataByCode[a.code];
+    final bm = metadataByCode[b.code];
+    final order = (am?.sortOrder ?? 9999).compareTo(bm?.sortOrder ?? 9999);
+    if (order != 0) return order;
+    final ai = int.tryParse(a.dpId);
+    final bi = int.tryParse(b.dpId);
+    if (ai != null && bi != null) return ai.compareTo(bi);
+    return a.dpId.compareTo(b.dpId);
+  });
+  return entries;
+}
+
+bool _isPrimarySwitchCode(String code) {
+  final clean = code.toLowerCase();
+  return clean == 'switch' ||
+      clean == 'switch_led' ||
+      RegExp(r'^switch_\d+$').hasMatch(clean);
+}
+
+String _defaultSwitchLabel(String code) {
+  final ar = Get.locale?.languageCode == 'ar';
+  final match = RegExp(r'^switch_(\d+)$').firstMatch(code.toLowerCase());
+  if (match != null) {
+    return ar ? 'المفتاح ${match.group(1)}' : 'Switch ${match.group(1)}';
+  }
+  if (code.toLowerCase() == 'switch_led') return ar ? 'الإضاءة' : 'Light';
+  return ar ? 'المفتاح' : 'Switch';
+}
+
 String _friendlyDpsName(String key) {
   final ar = Get.locale?.languageCode == 'ar';
   final code = key.trim().toLowerCase();
   final mapped = ar
       ? {
           'switch': 'تشغيل',
-          'switch_1': 'تشغيل / إطفاء 1',
-          'switch_2': 'تشغيل / إطفاء 2',
-          'switch_3': 'تشغيل / إطفاء 3',
-          'switch_4': 'تشغيل / إطفاء 4',
+          'switch_1': 'المفتاح 1',
+          'switch_2': 'المفتاح 2',
+          'switch_3': 'المفتاح 3',
+          'switch_4': 'المفتاح 4',
           'switch_led': 'الإضاءة',
           'switch_backlight': 'إضاءة زر الجهاز',
           'control': 'حركة الستارة',
@@ -1732,6 +1903,8 @@ class _DpsShortcut extends StatelessWidget {
     required this.statusLabel,
     required this.busy,
     required this.onTap,
+    required this.onLongPress,
+    required this.onEdit,
   });
 
   final String label;
@@ -1739,6 +1912,8 @@ class _DpsShortcut extends StatelessWidget {
   final String statusLabel;
   final bool busy;
   final VoidCallback? onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1752,6 +1927,7 @@ class _DpsShortcut extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         child: InkWell(
           onTap: enabled ? onTap : null,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(12.r),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
@@ -1786,16 +1962,35 @@ class _DpsShortcut extends StatelessWidget {
                       ),
                 ),
                 SizedBox(height: 2.h),
-                Text(
-                  statusLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color:
-                            active ? activeColor : AppColors.customGreyColor5,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 10.sp,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        statusLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: active
+                                  ? activeColor
+                                  : AppColors.customGreyColor5,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 10.sp,
+                            ),
                       ),
+                    ),
+                    SizedBox(width: 2.w),
+                    InkResponse(
+                      onTap: onEdit,
+                      radius: 12.r,
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 12.r,
+                        color: AppColors.customGreyColor5,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2021,6 +2216,11 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
               readOnly: readOnly,
               onPowerChanged: _togglePower,
               onDps: _sendDps,
+              onRenameFunction: (function) => _showRenameFunctionDialog(
+                controller: widget.controller,
+                device: device,
+                function: function,
+              ).then((_) => _syncDeviceFromController()),
             ),
             SizedBox(height: 14.h),
             _DeviceRenameCard(
@@ -2142,6 +2342,7 @@ class _DeviceCommandSurface extends StatelessWidget {
     required this.readOnly,
     required this.onPowerChanged,
     required this.onDps,
+    required this.onRenameFunction,
   });
 
   final SmartDeviceModel device;
@@ -2149,6 +2350,7 @@ class _DeviceCommandSurface extends StatelessWidget {
   final bool readOnly;
   final ValueChanged<bool> onPowerChanged;
   final void Function(String code, dynamic value) onDps;
+  final ValueChanged<TuyaDeviceFunction> onRenameFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -2176,7 +2378,7 @@ class _DeviceCommandSurface extends StatelessWidget {
       );
     }
 
-    final boolFunctions = DeviceCapabilityResolver.boolSwitches(device);
+    final boolFunctions = _visiblePrimarySwitches(device);
     if (boolFunctions.length >= 2) {
       return Column(
         children: [
@@ -2186,6 +2388,7 @@ class _DeviceCommandSurface extends StatelessWidget {
             busy: busy,
             readOnly: readOnly,
             onDps: onDps,
+            onRenameFunction: onRenameFunction,
           ),
           _AuxiliaryControlsSurface(
             device: device,
@@ -2263,6 +2466,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
     required this.busy,
     required this.readOnly,
     required this.onDps,
+    required this.onRenameFunction,
   });
 
   final SmartDeviceModel device;
@@ -2270,6 +2474,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
   final bool busy;
   final bool readOnly;
   final void Function(String code, dynamic value) onDps;
+  final ValueChanged<TuyaDeviceFunction> onRenameFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -2292,10 +2497,12 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
             final value =
                 DeviceCapabilityResolver.statusValue(device, function);
             return _SwitchChannelButton(
-              label: _functionLabel(function),
+              label: _functionLabelForDevice(device, function),
               active: value == true,
               busy: busy,
               enabled: enabled,
+              onLongPress: () => onRenameFunction(function),
+              onEdit: () => onRenameFunction(function),
               onTap: () => onDps(function.code, value != true),
             );
           },
@@ -2305,7 +2512,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
           children: [
             Expanded(
               child: _AllSwitchesButton(
-                label: _onOffLabel(false),
+                label: 'smartHomeAllOff'.tr,
                 enabled: enabled,
                 onTap: () {
                   for (final function in entries) {
@@ -2321,7 +2528,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
             SizedBox(width: 12.w),
             Expanded(
               child: _AllSwitchesButton(
-                label: _onOffLabel(true),
+                label: 'smartHomeAllOn'.tr,
                 enabled: enabled,
                 active: true,
                 onTap: () {
@@ -2492,6 +2699,8 @@ class _SwitchChannelButton extends StatelessWidget {
     required this.active,
     required this.busy,
     required this.enabled,
+    required this.onLongPress,
+    required this.onEdit,
     required this.onTap,
   });
 
@@ -2499,6 +2708,8 @@ class _SwitchChannelButton extends StatelessWidget {
   final bool active;
   final bool busy;
   final bool enabled;
+  final VoidCallback onLongPress;
+  final VoidCallback onEdit;
   final VoidCallback onTap;
 
   @override
@@ -2510,6 +2721,7 @@ class _SwitchChannelButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(18.r),
       child: InkWell(
         onTap: enabled ? onTap : null,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(18.r),
         child: Container(
           padding: EdgeInsets.all(14.w),
@@ -2567,12 +2779,15 @@ class _SwitchChannelButton extends StatelessWidget {
                     ),
               ),
               SizedBox(height: 4.h),
-              Text(
-                _onOffLabel(active),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: active ? activeColor : AppColors.customGreyColor5,
-                      fontWeight: FontWeight.w900,
-                    ),
+              IconButton(
+                tooltip: 'smartHomeEditSwitchName'.tr,
+                onPressed: onEdit,
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  Icons.edit_rounded,
+                  size: 16.r,
+                  color: AppColors.customGreyColor5,
+                ),
               ),
             ],
           ),
@@ -2708,7 +2923,7 @@ class _PowerCommandSurface extends StatelessWidget {
                       : (Get.locale?.languageCode == 'ar'
                           ? 'تحميل أمر التشغيل'
                           : 'Loading power function')
-                  : _functionLabel(powerFunction),
+                  : _functionLabelForDevice(device, powerFunction),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.customGreyColor5,
                     fontWeight: FontWeight.w700,
@@ -3141,8 +3356,9 @@ List<MapEntry<String, String>> _dpsStatusRows(SmartDeviceModel device) {
   return entries.map((entry) {
     final dpId = entry.key.toString();
     final function = byDpId[dpId];
-    final label =
-        function == null ? dpId : '$dpId - ${_functionLabel(function)}';
+    final label = function == null
+        ? dpId
+        : '$dpId - ${_functionLabelForDevice(device, function)}';
     final value = function == null
         ? _rawStatusLabel(entry.value)
         : _functionStatusLabel(function, entry.value);

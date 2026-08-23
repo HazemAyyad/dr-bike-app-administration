@@ -701,6 +701,38 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<bool> renameDeviceFunction({
+    required SmartDeviceModel device,
+    required SmartDeviceFunctionModel function,
+    required String displayName,
+  }) async {
+    final cleanName = displayName.trim();
+    if (cleanName.isEmpty || cleanName == function.displayName.trim()) {
+      return false;
+    }
+
+    deviceControlBusyIds.add(device.id);
+    try {
+      final updated = await apiService.updateDeviceFunction(
+        deviceId: device.id,
+        functionId: function.id,
+        displayName: cleanName,
+        userId: selectedOwnerId.value,
+      );
+      _upsertDevice(updated);
+      Get.snackbar(
+        'smartHomeEditSwitchName'.tr,
+        'smartHomeSwitchNameUpdated'.tr,
+      );
+      return true;
+    } catch (e) {
+      errorMessage(e.toString());
+      return false;
+    } finally {
+      deviceControlBusyIds.remove(device.id);
+    }
+  }
+
   Future<bool> deleteSmartDevice({
     required SmartDeviceModel device,
   }) async {

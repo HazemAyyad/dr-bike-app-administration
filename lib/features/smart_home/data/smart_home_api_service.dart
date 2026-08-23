@@ -96,6 +96,7 @@ class SmartHomeModel {
   final int id;
   final String name;
   final String tuyaHomeId;
+  final String type;
   final String status;
   final bool isDefault;
   final int devicesCount;
@@ -106,6 +107,7 @@ class SmartHomeModel {
     required this.id,
     required this.name,
     required this.tuyaHomeId,
+    required this.type,
     required this.status,
     required this.isDefault,
     required this.devicesCount,
@@ -117,6 +119,7 @@ class SmartHomeModel {
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
         name: json['name']?.toString() ?? '',
         tuyaHomeId: json['tuya_home_id']?.toString() ?? '',
+        type: json['type']?.toString() ?? 'home',
         status: json['status']?.toString() ?? 'active',
         isDefault: json['is_default'] == true,
         devicesCount:
@@ -153,6 +156,44 @@ class SmartRoomModel {
       );
 }
 
+class SmartDeviceFunctionModel {
+  final int id;
+  final int smartDeviceId;
+  final String dpId;
+  final String code;
+  final String displayName;
+  final String functionType;
+  final String icon;
+  final int sortOrder;
+  final bool isVisible;
+
+  const SmartDeviceFunctionModel({
+    required this.id,
+    required this.smartDeviceId,
+    required this.dpId,
+    required this.code,
+    required this.displayName,
+    required this.functionType,
+    required this.icon,
+    required this.sortOrder,
+    required this.isVisible,
+  });
+
+  factory SmartDeviceFunctionModel.fromJson(Map<String, dynamic> json) =>
+      SmartDeviceFunctionModel(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        smartDeviceId:
+            int.tryParse(json['smart_device_id']?.toString() ?? '') ?? 0,
+        dpId: json['dp_id']?.toString() ?? '',
+        code: json['code']?.toString() ?? '',
+        displayName: json['display_name']?.toString() ?? '',
+        functionType: json['function_type']?.toString() ?? '',
+        icon: json['icon']?.toString() ?? '',
+        sortOrder: int.tryParse(json['sort_order']?.toString() ?? '') ?? 0,
+        isVisible: json['is_visible'] != false,
+      );
+}
+
 class SmartDeviceModel {
   final int id;
   final int smartHomeId;
@@ -172,6 +213,7 @@ class SmartDeviceModel {
   final bool? powerOn;
   final Map<String, dynamic> lastStatus;
   final Map<String, dynamic> rawMetadata;
+  final List<SmartDeviceFunctionModel> functions;
 
   const SmartDeviceModel({
     required this.id,
@@ -192,6 +234,7 @@ class SmartDeviceModel {
     required this.powerOn,
     required this.lastStatus,
     required this.rawMetadata,
+    required this.functions,
   });
 
   bool get canTogglePower => primaryPowerDp.isNotEmpty;
@@ -203,6 +246,7 @@ class SmartDeviceModel {
     String? primaryPowerDp,
     Map<String, dynamic>? lastStatus,
     Map<String, dynamic>? rawMetadata,
+    List<SmartDeviceFunctionModel>? functions,
   }) =>
       SmartDeviceModel(
         id: id,
@@ -223,11 +267,13 @@ class SmartDeviceModel {
         powerOn: powerOn == _noValue ? this.powerOn : powerOn as bool?,
         lastStatus: lastStatus ?? this.lastStatus,
         rawMetadata: rawMetadata ?? this.rawMetadata,
+        functions: functions ?? this.functions,
       );
 
   factory SmartDeviceModel.fromJson(Map<String, dynamic> json) {
     final rawStatus = json['last_status'];
     final rawMetadata = json['raw_metadata'];
+    final rawFunctions = json['functions'];
     return SmartDeviceModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       smartHomeId: int.tryParse(json['smart_home_id']?.toString() ?? '') ?? 0,
@@ -247,6 +293,15 @@ class SmartDeviceModel {
       powerOn: json['power_on'] is bool ? json['power_on'] as bool : null,
       lastStatus: _mapFromDynamic(rawStatus),
       rawMetadata: _mapFromDynamic(rawMetadata),
+      functions: rawFunctions is List
+          ? rawFunctions
+              .whereType<Map>()
+              .map((item) => SmartDeviceFunctionModel.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ))
+              .where((item) => item.id > 0 && item.code.isNotEmpty)
+              .toList(growable: false)
+          : const <SmartDeviceFunctionModel>[],
     );
   }
 }
@@ -355,9 +410,10 @@ class SmartHomeApiService {
         .toList();
   }
 
-  Future<SmartHomeModel> createHome(String name) async {
+  Future<SmartHomeModel> createHome(String name, {String type = 'home'}) async {
     final response = await _api.post(EndPoints.smartHomes, data: {
       'name': name,
+      'type': type,
       'is_default': true,
     });
     return SmartHomeModel.fromJson(
@@ -433,6 +489,30 @@ class SmartHomeApiService {
       },
       data: {
         'name': name,
+      },
+    );
+    return SmartDeviceModel.fromJson(
+      Map<String, dynamic>.from(response.data['device'] as Map),
+    );
+  }
+
+  Future<SmartDeviceModel> updateDeviceFunction({
+    required int deviceId,
+    required int functionId,
+    String? displayName,
+    int? sortOrder,
+    bool? isVisible,
+    int? userId,
+  }) async {
+    final response = await _api.patch(
+      EndPoints.smartDeviceFunction(deviceId, functionId),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        if (displayName != null) 'display_name': displayName,
+        if (sortOrder != null) 'sort_order': sortOrder,
+        if (isVisible != null) 'is_visible': isVisible,
       },
     );
     return SmartDeviceModel.fromJson(

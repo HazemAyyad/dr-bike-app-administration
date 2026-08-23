@@ -3118,6 +3118,13 @@ const Map<String, String> en = {
   'smartHomeRenameDevice': 'Rename device',
   'smartHomeDeviceRenamed': 'Device name updated',
   'smartHomeRenameFailed': 'Failed to rename device',
+  'smartHomeEditSwitchName': 'Edit switch name',
+  'smartHomeSwitchName': 'Switch name',
+  'smartHomeSwitchNameRequired': 'Switch name is required',
+  'smartHomeSwitchNameUpdated': 'Switch name updated',
+  'smartHomeSwitchMetadataMissing': 'Switch metadata is not ready yet',
+  'smartHomeAllOn': 'All on',
+  'smartHomeAllOff': 'All off',
   'smartHomeDeleteDevice': 'Delete device',
   'smartHomeDeleteDeviceConfirm':
       'Delete @name? It will be removed from Tuya and Doctor Bike.',
