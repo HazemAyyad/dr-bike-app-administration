@@ -59,10 +59,7 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
               _SectionHeader(
                 title: 'devices'.tr,
                 actionLabel: 'addDevice'.tr,
-                onAction: controller.canViewSmartHomeOwners &&
-                        controller.selectedOwnerId.value != null
-                    ? () => _notReady('smartHomeAdminReadOnly'.tr)
-                    : _showAddDeviceDialog,
+                onAction: _showAddDeviceDialog,
               ),
               SizedBox(height: 8.h),
               _DevicesList(controller: controller),
@@ -71,10 +68,6 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
         );
       }),
     );
-  }
-
-  void _notReady(String title) {
-    Get.snackbar(title, 'smartHomeComingSoon'.tr);
   }
 
   Future<void> _showAddDeviceDialog() async {

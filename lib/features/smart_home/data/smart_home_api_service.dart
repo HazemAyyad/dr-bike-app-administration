@@ -479,10 +479,17 @@ class SmartHomeApiService {
   Future<SmartHomeModel> updateHomeTuyaId({
     required int homeId,
     required String tuyaHomeId,
+    int? userId,
   }) async {
-    final response = await _api.put(EndPoints.smartHome(homeId), data: {
-      'tuya_home_id': tuyaHomeId,
-    });
+    final response = await _api.put(
+      EndPoints.smartHome(homeId),
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'tuya_home_id': tuyaHomeId,
+      },
+    );
     return SmartHomeModel.fromJson(
       Map<String, dynamic>.from(response.data['home'] as Map),
     );
@@ -737,26 +744,33 @@ class SmartHomeApiService {
     required int smartHomeId,
     int? smartRoomId,
     required Map<String, dynamic> device,
+    int? userId,
   }) async {
-    final response = await _api.post(EndPoints.smartDevicesRegister, data: {
-      'smart_home_id': smartHomeId,
-      if (smartRoomId != null) 'smart_room_id': smartRoomId,
-      'tuya_device_id': device['tuya_device_id']?.toString() ?? '',
-      'tuya_product_id': device['tuya_product_id']?.toString(),
-      'tuya_uuid': device['tuya_uuid']?.toString(),
-      'name': device['name']?.toString().isNotEmpty == true
-          ? device['name'].toString()
-          : 'smartDevice'.tr,
-      'category': device['category']?.toString(),
-      'product_name': device['product_name']?.toString(),
-      'icon': device['icon']?.toString(),
-      'protocol': device['protocol']?.toString() ?? 'wifi',
-      'online': device['online'] == true,
-      'raw_metadata': device,
-      'last_status': device['last_status'] is Map
-          ? Map<String, dynamic>.from(device['last_status'] as Map)
-          : <String, dynamic>{},
-    });
+    final response = await _api.post(
+      EndPoints.smartDevicesRegister,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'smart_home_id': smartHomeId,
+        if (smartRoomId != null) 'smart_room_id': smartRoomId,
+        'tuya_device_id': device['tuya_device_id']?.toString() ?? '',
+        'tuya_product_id': device['tuya_product_id']?.toString(),
+        'tuya_uuid': device['tuya_uuid']?.toString(),
+        'name': device['name']?.toString().isNotEmpty == true
+            ? device['name'].toString()
+            : 'smartDevice'.tr,
+        'category': device['category']?.toString(),
+        'product_name': device['product_name']?.toString(),
+        'icon': device['icon']?.toString(),
+        'protocol': device['protocol']?.toString() ?? 'wifi',
+        'online': device['online'] == true,
+        'raw_metadata': device,
+        'last_status': device['last_status'] is Map
+            ? Map<String, dynamic>.from(device['last_status'] as Map)
+            : <String, dynamic>{},
+      },
+    );
     return SmartDeviceModel.fromJson(
       Map<String, dynamic>.from(response.data['device'] as Map),
     );

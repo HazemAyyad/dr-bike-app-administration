@@ -404,6 +404,7 @@ class SmartHomeController extends GetxController {
     activeHome = await apiService.updateHomeTuyaId(
       homeId: activeHome.id,
       tuyaHomeId: nativeHome.tuyaHomeId,
+      userId: selectedOwnerId.value,
     );
     final index = homes.indexWhere((item) => item.id == activeHome.id);
     if (index >= 0) {
@@ -543,6 +544,7 @@ class SmartHomeController extends GetxController {
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
         device: pairing.device,
+        userId: selectedOwnerId.value,
       );
       final existing = devices.indexWhere((item) => item.id == registered.id);
       if (existing >= 0) {
@@ -637,6 +639,7 @@ class SmartHomeController extends GetxController {
         activeHome = await apiService.updateHomeTuyaId(
           homeId: activeHome.id,
           tuyaHomeId: nativeHome.tuyaHomeId,
+          userId: selectedOwnerId.value,
         );
         final index = homes.indexWhere((item) => item.id == activeHome.id);
         if (index >= 0) {
@@ -690,6 +693,7 @@ class SmartHomeController extends GetxController {
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
         device: pairing.device,
+        userId: selectedOwnerId.value,
       );
       final existing = devices.indexWhere((item) => item.id == registered.id);
       if (existing >= 0) {
