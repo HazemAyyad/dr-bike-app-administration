@@ -326,6 +326,42 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  int purchaseCartQtyForProduct(String productId) {
+    for (final item in purchaseCart) {
+      if (item.product.id == productId) {
+        return item.quantity.toInt();
+      }
+    }
+    return 0;
+  }
+
+  int get purchaseCartDistinctCount => purchaseCart.length;
+
+  int get purchaseCartTotalPieces => purchaseCart.fold<int>(
+        0,
+        (sum, item) => sum + item.quantity.toInt(),
+      );
+
+  void incrementPurchaseProduct(ProductModel product) {
+    addProductToPurchaseCart(product);
+  }
+
+  void decrementPurchaseProduct(String productId) {
+    final index =
+        purchaseCart.indexWhere((item) => item.product.id == productId);
+    if (index < 0) return;
+    final item = purchaseCart[index];
+    final nextQty = item.quantity - 1;
+    if (nextQty <= 0) {
+      removePurchaseCartItem(item);
+      return;
+    }
+    item.quantityController.text = nextQty.toInt().toString();
+    purchaseCart.refresh();
+    calculatePurchaseCartTotal();
+    update();
+  }
+
   Future<void> loadPurchasePriceIntelligence(String productId) async {
     if (purchasePriceLoading.contains(productId)) return;
     purchasePriceLoading.add(productId);
