@@ -1150,6 +1150,9 @@ const Map<String, String> ar = {
   'mainValue': 'القيمة الرئيسية',
   'followUp': 'الهدف تابع لـ',
   'productName': 'أسم المنتج',
+  'chooseProducts': 'اختيار المنتجات',
+  'selectedProducts': 'المنتجات المختارة',
+  'store_sections': 'التصنيف المكاني',
   'cancelTarget': 'إلغاء الهدف',
   'transferGoal': 'نقل الهدف',
 

@@ -99,6 +99,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                             onChanged: (value) {
                               controller.mainCategoriesIdController.clear();
                               controller.subCategoriesIdController.clear();
+                              controller.storeSectionIdController.clear();
                               controller.productIdController.clear();
                               controller.employeeIdController.clear();
                               controller.boxIdController.clear();
@@ -165,6 +166,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                       onChanged: (value) {
                         controller.mainCategoriesIdController.clear();
                         controller.subCategoriesIdController.clear();
+                        controller.storeSectionIdController.clear();
                         controller.productIdController.clear();
                         controller.customerAndSellerIdController.clear();
                         controller.boxIdController.clear();
@@ -277,6 +279,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                       onChanged: (value) {
                         controller.mainCategoriesIdController.clear();
                         controller.subCategoriesIdController.clear();
+                        controller.storeSectionIdController.clear();
                         controller.productIdController.clear();
                         controller.customerAndSellerIdController.clear();
                         controller.employeeIdController.clear();
@@ -335,12 +338,16 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                 controller.productsIds.clear();
                 controller.mainCategoriesIdController.clear();
                 controller.subCategoriesIdController.clear();
+                controller.storeSectionIdController.clear();
                 controller.productIdController.clear();
                 controller.customerAndSellerIdController.clear();
                 controller.employeeIdController.clear();
                 controller.boxIdController.clear();
 
                 controller.formController.text = value!;
+                if (value == 'store_sections') {
+                  controller.getStoreSections();
+                }
                 controller.update();
               },
             ),

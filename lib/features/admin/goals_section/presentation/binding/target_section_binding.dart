@@ -23,6 +23,7 @@ class TargetSectionBinding extends Bindings {
     AppDependencyRegistry.ensureChecks();
     AppDependencyRegistry.ensureBoxes();
     AppDependencyRegistry.ensureSales();
+    AppDependencyRegistry.ensureStock();
 
     Get.lazyPut(
       () => TargetSectionController(

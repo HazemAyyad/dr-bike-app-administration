@@ -44,6 +44,7 @@ class GoalsImplement implements GoalsRepository {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required String storeSectionId,
     required DateTime startDate,
     required DateTime dueDate,
   }) async {
@@ -66,6 +67,7 @@ class GoalsImplement implements GoalsRepository {
         boxId: boxId,
         mainCategoriesId: mainCategoriesId,
         subCategoriesId: subCategoriesId,
+        storeSectionId: storeSectionId,
         startDate: startDate,
         dueDate: dueDate,
         productsIds: productsIds,

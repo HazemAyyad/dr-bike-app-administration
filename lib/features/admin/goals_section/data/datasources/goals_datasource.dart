@@ -48,6 +48,7 @@ class GoalsDatasource {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required String storeSectionId,
     required DateTime startDate,
     required DateTime dueDate,
   }) async {
@@ -83,6 +84,8 @@ class GoalsDatasource {
             'main_categories[0][main_category_id]': mainCategoriesId,
           if (subCategoriesId.isNotEmpty)
             'sub_categories[0][sub_category_id]': subCategoriesId,
+          if (storeSectionId.isNotEmpty)
+            'store_sections[0][store_section_id]': storeSectionId,
           if (employeeId.isNotEmpty) 'employee_id': employeeId,
           'start_date': startDate,
           'due_date': dueDate,

@@ -223,6 +223,7 @@ class Goal {
 
   final List<Category>? mainCategories;
   final List<SubCategory>? subCategories;
+  final List<GoalStoreSection> storeSections;
   final List<Product>? products;
   final List<Person>? people;
   final Box? box;
@@ -246,6 +247,7 @@ class Goal {
     required this.dueDate,
     this.mainCategories,
     this.subCategories,
+    this.storeSections = const [],
     this.products,
     this.people,
     this.box,
@@ -274,6 +276,10 @@ class Goal {
           mapList(j['main_categories'], (m) => Category.fromJson(m)),
       subCategories:
           mapList(j['sub_categories'], (m) => SubCategory.fromJson(m)),
+      storeSections: mapList(
+        j['store_sections'],
+        (m) => GoalStoreSection.fromJson(m),
+      ),
       products: mapList(j['products'], (m) => Product.fromJson(m)),
       people: mapList(j['people'], (m) => Person.fromJson(m)),
       box: j['box'] == null ? null : Box.fromJson(asMap(j['box'])),
@@ -301,10 +307,31 @@ class Goal {
         'due_date': dueDate,
         'main_categories': mainCategories?.map((x) => x.toJson()).toList(),
         'sub_categories': subCategories?.map((x) => x.toJson()).toList(),
+        'store_sections': storeSections.map((x) => x.toJson()).toList(),
         'products': products?.map((x) => x.toJson()).toList(),
         'people': people?.map((x) => x.toJson()).toList(),
         'box': box?.toJson(),
         'employee': employee?.toJson(),
+      };
+}
+
+class GoalStoreSection {
+  final String id;
+  final String name;
+
+  GoalStoreSection({required this.id, required this.name});
+
+  factory GoalStoreSection.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return GoalStoreSection(
+      id: asString(j['store_section_id']),
+      name: asString(j['store_section_name']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'store_section_id': id,
+        'store_section_name': name,
       };
 }
 

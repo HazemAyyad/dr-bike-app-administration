@@ -23,6 +23,7 @@ abstract class GoalsRepository {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required String storeSectionId,
     required DateTime startDate,
     required DateTime dueDate,
   });

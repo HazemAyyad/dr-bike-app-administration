@@ -6,8 +6,8 @@ import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../projects/data/models/project_details_model.dart';
 import '../controllers/target_section_controller.dart';
+import 'goal_products_picker_sheet.dart';
 
 class OptionsWidget extends StatelessWidget {
   const OptionsWidget({Key? key}) : super(key: key);
@@ -85,6 +85,7 @@ class OptionsWidget extends StatelessWidget {
                       onChanged: (value) {
                         controller.mainCategoriesIdController.clear();
                         controller.subCategoriesIdController.clear();
+                        controller.storeSectionIdController.clear();
                         controller.productIdController.clear();
                         controller.employeeIdController.clear();
                         controller.boxIdController.clear();
@@ -118,81 +119,53 @@ class OptionsWidget extends StatelessWidget {
           );
         }
         if (controller.formController.text == 'products') {
-          return CustomDropdownFieldWithSearch(
-            tital: 'productName'.tr,
-            hint: 'itemExample',
-            items: controller.products,
-            onChanged: (value) {
-              if (value != null) {
-                if (!controller.productsIds
-                    .map((e) => e.productId)
-                    .contains(value.id.toString())) {
-                  controller.productsIds.add(
-                    ProjectProductModel(
-                      productId: value.id,
-                      productName: value.nameAr,
-                    ),
-                  );
-                }
-                controller.update();
-              }
-            },
-            itemAsString: (u) => u.nameAr,
-            compareFn: (a, b) => a.id == b.id,
-            validator: (value) => null,
-            isEnabled: !controller.isEdit.value,
+          return SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                side: const BorderSide(color: AppColors.operationalPurple),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+              ),
+              onPressed: controller.isEdit.value
+                  ? null
+                  : () => showGoalProductsPickerSheet(context),
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: Text(
+                controller.productsIds.isEmpty
+                    ? 'chooseProducts'.tr
+                    : '${'selectedProducts'.tr}: ${controller.productsIds.length}',
+              ),
+            ),
           );
         }
 
-        if (controller.formController.text == 'main_categories') {
+        if (controller.formController.text == 'store_sections') {
           return CustomDropdownFieldWithSearch(
-            tital: 'main_categories',
-            hint: 'main_categories',
-            value: controller.mainCategoriesIdController.text.isEmpty
+            tital: 'store_sections'.tr,
+            hint: 'store_sections'.tr,
+            value: controller.storeSectionIdController.text.isEmpty
                 ? null
-                : controller.categories.firstWhereOrNull(
+                : controller.storeSections.firstWhereOrNull(
                     (e) =>
                         e.id.toString() ==
-                        controller.mainCategoriesIdController.text,
+                        controller.storeSectionIdController.text,
                   ),
-            items: controller.categories,
-            onChanged: (value) {
-              controller.subCategoriesIdController.clear();
-              controller.productIdController.clear();
-              controller.customerAndSellerIdController.clear();
-              controller.employeeIdController.clear();
-              controller.boxIdController.clear();
-
-              controller.mainCategoriesIdController.text = value.id.toString();
-            },
-            itemAsString: (f) => f.nameAr,
-            compareFn: (a, b) => a.id == b.id,
-            validator: (value) => null,
-            isEnabled: !controller.isEdit.value,
-          );
-        }
-        if (controller.formController.text == 'sub_categories') {
-          return CustomDropdownFieldWithSearch(
-            tital: 'sub_categories',
-            hint: 'sub_categories',
-            value: controller.subCategoriesIdController.text.isEmpty
-                ? null
-                : controller.subCategories.firstWhereOrNull(
-                    (e) =>
-                        e.id.toString() ==
-                        controller.subCategoriesIdController.text,
-                  ),
-            items: controller.subCategories,
+            items: controller.storeSections,
             onChanged: (value) {
               controller.mainCategoriesIdController.clear();
-              controller.productIdController.clear();
+              controller.subCategoriesIdController.clear();
               controller.customerAndSellerIdController.clear();
               controller.employeeIdController.clear();
               controller.boxIdController.clear();
+              controller.productIdController.clear();
+              controller.productsIds.clear();
 
-              controller.subCategoriesIdController.text = value.id.toString();
+              controller.storeSectionIdController.text = value.id.toString();
             },
-            itemAsString: (f) => f.nameAr,
+            itemAsString: (f) => f.name,
             compareFn: (a, b) => a.id == b.id,
             validator: (value) => null,
             isEnabled: !controller.isEdit.value,

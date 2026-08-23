@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -13,6 +14,8 @@ import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../projects/data/models/project_details_model.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
+import '../../../stock/data/datasources/stock_datasource.dart';
+import '../../../stock/data/models/store_section_model.dart';
 import '../../data/models/goals_details_model.dart';
 import '../../data/models/goals_model.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
@@ -64,6 +67,8 @@ class TargetSectionController extends GetxController {
       TextEditingController();
   final TextEditingController subCategoriesIdController =
       TextEditingController();
+  final TextEditingController storeSectionIdController =
+      TextEditingController();
 
   final currentTab = 0.obs;
   final tabs = ['generalTarget', 'specialTarget', 'archive'].obs;
@@ -92,14 +97,12 @@ class TargetSectionController extends GetxController {
     'deposit_to_box'
   ];
   List<String> options1 = [
-    'main_categories',
-    'sub_categories',
+    'store_sections',
     'products',
   ];
 
   List<String> options3 = [
-    'main_categories',
-    'sub_categories',
+    'store_sections',
     'products',
     'people',
   ];
@@ -111,6 +114,8 @@ class TargetSectionController extends GetxController {
 
   final Rx<DateTime> selectedStartTime = DateTime.now().obs;
   final Rx<DateTime> selectedTime = DateTime.now().obs;
+  final RxBool isStoreSectionsLoading = false.obs;
+  final RxList<StoreSectionModel> storeSections = <StoreSectionModel>[].obs;
 
   final List<String> calculationModes = ['total', 'detailed'];
 
@@ -124,6 +129,49 @@ class TargetSectionController extends GetxController {
 
   bool get isDetailedMode =>
       !supportsTotalMode || calculationModeController.text == 'detailed';
+
+  Future<void> pickStartDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedStartTime.value,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    selectedStartTime.value = DateTime(picked.year, picked.month, picked.day);
+    if (selectedTime.value.isBefore(selectedStartTime.value)) {
+      selectedTime.value = selectedStartTime.value;
+    }
+    update();
+  }
+
+  Future<void> pickDueDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedTime.value.isBefore(selectedStartTime.value)
+          ? selectedStartTime.value
+          : selectedTime.value,
+      firstDate: selectedStartTime.value,
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    selectedTime.value = DateTime(picked.year, picked.month, picked.day);
+    update();
+  }
+
+  Future<void> getStoreSections({bool force = false}) async {
+    if (!force && storeSections.isNotEmpty) return;
+    isStoreSectionsLoading(true);
+    update();
+    try {
+      AppDependencyRegistry.ensureStock();
+      final sections = await Get.find<StockDatasource>().getStoreSections();
+      storeSections.assignAll(sections.where((section) => section.isActive));
+    } finally {
+      isStoreSectionsLoading(false);
+      update();
+    }
+  }
 
   void getAllGoal() async {
     GoalsServices().globalGoalsList.isEmpty
@@ -242,6 +290,7 @@ class TargetSectionController extends GetxController {
     boxIdController.clear();
     mainCategoriesIdController.clear();
     subCategoriesIdController.clear();
+    storeSectionIdController.clear();
     productsIds.clear();
     selectedTime.value = DateTime.now();
 
@@ -285,6 +334,9 @@ class TargetSectionController extends GetxController {
     if (goal.subCategories!.isNotEmpty) {
       subCategoriesIdController.text = goal.subCategories!.first.id.toString();
     }
+    if (goal.storeSections.isNotEmpty) {
+      storeSectionIdController.text = goal.storeSections.first.id.toString();
+    }
     selectedStartTime.value =
         DateTime.tryParse(goal.startDate) ?? DateTime.now();
     selectedTime.value = DateTime.tryParse(goal.dueDate) ?? DateTime.now();
@@ -308,6 +360,11 @@ class TargetSectionController extends GetxController {
     employeeIdController.clear();
     customerAndSellerIdController.clear();
     boxIdController.clear();
+    mainCategoriesIdController.clear();
+    subCategoriesIdController.clear();
+    storeSectionIdController.clear();
+    productIdController.clear();
+    productsIds.clear();
     selectedStartTime.value = DateTime.now();
     selectedTime.value = DateTime.now();
   }
@@ -331,6 +388,7 @@ class TargetSectionController extends GetxController {
       boxId: boxIdController.text,
       mainCategoriesId: mainCategoriesIdController.text,
       subCategoriesId: subCategoriesIdController.text,
+      storeSectionId: storeSectionIdController.text,
       startDate: selectedStartTime.value,
       dueDate: selectedTime.value,
       productsIds: productsIds,
@@ -378,6 +436,7 @@ class TargetSectionController extends GetxController {
         boxIdController.clear();
         mainCategoriesIdController.clear();
         subCategoriesIdController.clear();
+        storeSectionIdController.clear();
         selectedStartTime.value = DateTime.now();
         selectedTime.value = DateTime.now();
         productsIds.clear();
@@ -523,6 +582,7 @@ class TargetSectionController extends GetxController {
     getAllProducts();
     getAllCategories();
     getAllSubCategories();
+    getStoreSections();
     getAllCustomersAndSellers();
     globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
     privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
@@ -544,6 +604,11 @@ class TargetSectionController extends GetxController {
     targetScopeController.dispose();
     employeeIdController.dispose();
     boxIdController.dispose();
+    productIdController.dispose();
+    mainCategoriesIdController.dispose();
+    subCategoriesIdController.dispose();
+    storeSectionIdController.dispose();
     formController.dispose();
+    calculationModeController.dispose();
   }
 }

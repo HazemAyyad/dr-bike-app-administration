@@ -1,16 +1,15 @@
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_calendar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../create_tasks/presentation/widgets/task_form_section_card.dart';
 import '../../../projects/data/models/project_details_model.dart';
-import '../../../projects/presentation/widgets/product_details_widgets/sup_text_and_dis.dart';
 import '../controllers/target_section_controller.dart';
 import '../widgets/options_widget.dart';
 import '../widgets/target_type_format_widget.dart';
@@ -95,6 +94,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                   controller.formController.clear();
                                   controller.mainCategoriesIdController.clear();
                                   controller.subCategoriesIdController.clear();
+                                  controller.storeSectionIdController.clear();
                                   controller.productIdController.clear();
                                   controller.customerAndSellerIdController
                                       .clear();
@@ -130,6 +130,8 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                       controller.mainCategoriesIdController
                                           .clear();
                                       controller.subCategoriesIdController
+                                          .clear();
+                                      controller.storeSectionIdController
                                           .clear();
                                       controller.productIdController.clear();
                                       controller.productsIds.clear();
@@ -171,24 +173,16 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                           title: 'date',
                           child: Column(
                             children: [
-                              CustomCalendar(
+                              _GoalDateField(
                                 label: 'fromDate',
-                                selectedDay: controller.selectedStartTime,
-                                onTap: () {
-                                  controller.startTimeController.value =
-                                      !controller.startTimeController.value;
-                                },
-                                isVisible: controller.startTimeController,
+                                date: controller.selectedStartTime.value,
+                                onTap: () => controller.pickStartDate(context),
                               ),
                               SizedBox(height: 8.h),
-                              CustomCalendar(
+                              _GoalDateField(
                                 label: 'date',
-                                selectedDay: controller.selectedTime,
-                                onTap: () {
-                                  controller.targetTimeController.value =
-                                      !controller.targetTimeController.value;
-                                },
-                                isVisible: controller.targetTimeController,
+                                date: controller.selectedTime.value,
+                                onTap: () => controller.pickDueDate(context),
                               ),
                             ],
                           ),
@@ -217,48 +211,163 @@ class _SelectedGoalProducts extends GetView<TargetSectionController> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      children: [
-        Container(
-          margin: EdgeInsets.symmetric(vertical: 8.h, horizontal: 28.w),
-          height: 1.h,
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 10.h),
+      decoration: BoxDecoration(
+        border: Border.all(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor6
               : AppColors.customGreyColor3,
         ),
-        ...List.generate(
-          controller.productsIds.length,
-          (index) {
-            final ProjectProductModel product = controller.productsIds[index];
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: AppColors.operationalPurple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
+            ),
+            child: Row(
               children: [
-                Flexible(
-                  child: SupTextAndDis(
-                    showLine: false,
-                    title: '${'productName'.tr} ${index + 1}',
-                    discription: product.productName,
+                SizedBox(width: 34.w, child: Text('#'.tr)),
+                Expanded(
+                  child: Text(
+                    'productName'.tr,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
-                    controller.productsIds.removeAt(index);
-                    controller.update();
-                  },
-                  icon: Icon(
-                    Icons.highlight_remove_rounded,
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
-                    size: 25.sp,
-                  ),
-                ),
+                SizedBox(width: 40.w),
               ],
-            );
-          },
+            ),
+          ),
+          ...List.generate(
+            controller.productsIds.length,
+            (index) {
+              final ProjectProductModel product = controller.productsIds[index];
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor3,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 34.w,
+                      child: Text('${index + 1}'),
+                    ),
+                    Expanded(
+                      child: Text(
+                        product.productName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        controller.productsIds.removeAt(index);
+                        controller.update();
+                      },
+                      icon: Icon(
+                        Icons.highlight_remove_rounded,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                        size: 23.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalDateField extends StatelessWidget {
+  const _GoalDateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
+
+  final String label;
+  final DateTime date;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(10.r),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+        decoration: BoxDecoration(
+          color: AppColors.whiteColor,
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(
+            color: AppColors.operationalNavy.withValues(alpha: 0.14),
+          ),
         ),
-      ],
+        child: Row(
+          children: [
+            Container(
+              height: 34.h,
+              width: 34.h,
+              decoration: BoxDecoration(
+                color: AppColors.operationalPurple.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(
+                Icons.calendar_month_outlined,
+                color: AppColors.operationalPurple,
+                size: 20.sp,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label.tr,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: AppColors.customGreyColor5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    showData(date.toIso8601String()),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.operationalNavy,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.customGreyColor5,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

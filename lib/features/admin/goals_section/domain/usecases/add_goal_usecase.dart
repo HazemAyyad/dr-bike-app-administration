@@ -25,6 +25,7 @@ class AddGoalUsecase {
     required List<ProjectProductModel> productsIds,
     required String mainCategoriesId,
     required String subCategoriesId,
+    required String storeSectionId,
     required DateTime startDate,
     required DateTime dueDate,
   }) async {
@@ -44,6 +45,7 @@ class AddGoalUsecase {
       productsIds: productsIds,
       mainCategoriesId: mainCategoriesId,
       subCategoriesId: subCategoriesId,
+      storeSectionId: storeSectionId,
       startDate: startDate,
       dueDate: dueDate,
     );
