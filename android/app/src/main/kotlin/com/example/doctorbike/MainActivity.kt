@@ -923,7 +923,7 @@ class MainActivity : FlutterFragmentActivity() {
     private fun mapDeviceBean(device: DeviceBean): Map<String, Any?> {
         return mapOf(
             "tuya_device_id" to (device.devId ?: ""),
-            "tuya_home_id" to device.homeId.toString(),
+            "tuya_home_id" to deviceHomeId(device),
             "tuya_product_id" to device.productId,
             "tuya_uuid" to device.uuid,
             "name" to (device.name ?: "Smart device"),
@@ -937,6 +937,29 @@ class MainActivity : FlutterFragmentActivity() {
             "schema" to (device.schema ?: ""),
         )
     }
+
+    private fun deviceHomeId(device: DeviceBean): String {
+        val getterValue = runCatching {
+            val getter = device.javaClass.methods.firstOrNull { method ->
+                method.parameterTypes.isEmpty() &&
+                    (method.name == "getHomeId" || method.name == "getHomeID")
+            }
+            getter?.invoke(device)?.toString()
+        }.getOrNull()
+        if (!getterValue.isNullOrBlank() && getterValue != "0") return getterValue
+
+        val fieldValue = runCatching {
+            val field = device.javaClass.declaredFields.firstOrNull { field ->
+                field.name == "homeId" || field.name == "homeID"
+            }
+            field?.isAccessible = true
+            field?.get(device)?.toString()
+        }.getOrNull()
+        if (!fieldValue.isNullOrBlank() && fieldValue != "0") return fieldValue
+
+        return ""
+    }
+
     private fun mapSchemaMap(schemaMap: Map<String, com.thingclips.smart.android.device.bean.SchemaBean>?): Map<String, Any?> {
         if (schemaMap == null) return emptyMap()
         return schemaMap.mapValues { (_, schema) -> mapSchemaBean(schema) }
