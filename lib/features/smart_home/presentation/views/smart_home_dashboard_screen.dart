@@ -1326,36 +1326,38 @@ class _RoomsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 42.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: controller.rooms.length + 2,
-        separatorBuilder: (_, __) => SizedBox(width: 8.w),
-        itemBuilder: (context, index) {
-          if (index == 0) {
+    return Obx(
+      () => SizedBox(
+        height: 42.h,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: controller.rooms.length + 2,
+          separatorBuilder: (_, __) => SizedBox(width: 8.w),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _RoomChip(
+                label: 'smartHomeAllDevices'.tr,
+                selected: controller.selectedRoomId.value == null,
+                onTap: () => controller.selectRoom(null),
+              );
+            }
+            if (index == controller.rooms.length + 1) {
+              return _RoomAddChip(
+                onTap: () => _showRoomDialog(controller: controller),
+              );
+            }
+            final room = controller.rooms[index - 1];
             return _RoomChip(
-              label: 'smartHomeAllDevices'.tr,
-              selected: controller.selectedRoomId.value == null,
-              onTap: () => controller.selectRoom(null),
+              label: room.name,
+              selected: controller.selectedRoomId.value == room.id,
+              onTap: () => controller.selectRoom(room.id),
+              onLongPress: () => _showRoomActions(
+                controller: controller,
+                room: room,
+              ),
             );
-          }
-          if (index == controller.rooms.length + 1) {
-            return _RoomAddChip(
-              onTap: () => _showRoomDialog(controller: controller),
-            );
-          }
-          final room = controller.rooms[index - 1];
-          return _RoomChip(
-            label: room.name,
-            selected: controller.selectedRoomId.value == room.id,
-            onTap: () => controller.selectRoom(room.id),
-            onLongPress: () => _showRoomActions(
-              controller: controller,
-              room: room,
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -1576,25 +1578,29 @@ class _DevicesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleDevices = controller.visibleDevices;
-    if (visibleDevices.isEmpty) {
-      return _EmptyState(text: 'noDevicesYet'.tr);
-    }
-    return Column(
-      children: visibleDevices
-          .map(
-            (device) => _SmartDeviceCard(
-              controller: controller,
-              device: device,
-              onOpen: () => Get.to<void>(
-                () => _DeviceDetailsScreen(
+    return Obx(
+      () {
+        final visibleDevices = controller.visibleDevices;
+        if (visibleDevices.isEmpty) {
+          return _EmptyState(text: 'noDevicesYet'.tr);
+        }
+        return Column(
+          children: visibleDevices
+              .map(
+                (device) => _SmartDeviceCard(
                   controller: controller,
-                  initialDevice: device,
+                  device: device,
+                  onOpen: () => Get.to<void>(
+                    () => _DeviceDetailsScreen(
+                      controller: controller,
+                      initialDevice: device,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
-          .toList(growable: false),
+              )
+              .toList(growable: false),
+        );
+      },
     );
   }
 }
@@ -3810,9 +3816,39 @@ Future<void> _showTextControlDialog({
   required String value,
   required void Function(String code, dynamic value) onDps,
 }) async {
-  final controller = TextEditingController(text: value);
   final result = await Get.dialog<String>(
-    AlertDialog(
+    _TextControlDialog(initialValue: value),
+  );
+  if (result != null) onDps(function.code, result);
+}
+
+class _TextControlDialog extends StatefulWidget {
+  const _TextControlDialog({required this.initialValue});
+
+  final String initialValue;
+
+  @override
+  State<_TextControlDialog> createState() => _TextControlDialogState();
+}
+
+class _TextControlDialogState extends State<_TextControlDialog> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
       title: Text('smartHomeEditValue'.tr),
       content: TextField(
         controller: controller,
@@ -3830,10 +3866,8 @@ Future<void> _showTextControlDialog({
           child: Text('save'.tr),
         ),
       ],
-    ),
-  );
-  controller.dispose();
-  if (result != null) onDps(function.code, result);
+    );
+  }
 }
 
 IconData _functionIcon(TuyaDeviceFunction function) {
