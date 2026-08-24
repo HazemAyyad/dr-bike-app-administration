@@ -57,6 +57,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                 hintText: 'notesExample',
                                 controller: controller.notesController,
                                 keyboardType: TextInputType.multiline,
+                                textInputAction: TextInputAction.newline,
                                 minLines: 2,
                                 maxLines: 5,
                                 validator: (_) => null,
