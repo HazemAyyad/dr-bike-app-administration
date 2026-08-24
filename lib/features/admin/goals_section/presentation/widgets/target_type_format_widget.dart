@@ -45,6 +45,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                                     controller.customerAndSellerIdController
                                         .clear();
                                     controller.isSeller.value = false;
+                                    controller.update();
                                   },
                                 ),
                               ),
@@ -63,6 +64,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                                     controller.customerAndSellerIdController
                                         .text = '';
                                     controller.isSeller.value = true;
+                                    controller.update();
                                   },
                                 ),
                               )
@@ -106,6 +108,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
 
                               controller.customerAndSellerIdController.text =
                                   value.id.toString();
+                              controller.update();
                             },
                             itemAsString: (f) => f.name,
                             validator: (value) => null,
@@ -132,6 +135,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                       onChanged: (value) {
                         controller.employeeIdController.text =
                             value.id.toString();
+                        controller.update();
                       },
                       itemAsString: (f) => f.employeeName,
                       compareFn: (a, b) => a.id == b.id,
@@ -173,6 +177,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
 
                         controller.employeeIdController.text =
                             value.id.toString();
+                        controller.update();
                       },
                       itemAsString: (f) => f.employeeName,
                       compareFn: (a, b) => a.id == b.id,
@@ -286,6 +291,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
 
                         controller.boxIdController.text =
                             value.boxId.toString();
+                        controller.update();
                       },
                       itemAsString: (f) => f.boxName,
                       compareFn: (a, b) => a.boxId == b.boxId,

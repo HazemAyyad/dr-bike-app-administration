@@ -92,6 +92,7 @@ class OptionsWidget extends StatelessWidget {
 
                         controller.customerAndSellerIdController.text =
                             value.id.toString();
+                        controller.update();
                       },
                       itemAsString: (f) => f.name,
                       compareFn: (a, b) => a.id == b.id,
@@ -164,6 +165,7 @@ class OptionsWidget extends StatelessWidget {
               controller.productsIds.clear();
 
               controller.storeSectionIdController.text = value.id.toString();
+              controller.update();
             },
             itemAsString: (f) => f.name,
             compareFn: (a, b) => a.id == b.id,
