@@ -54,6 +54,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                 label: 'notes',
                                 hintText: 'notesExample',
                                 controller: controller.notesController,
+                                keyboardType: TextInputType.multiline,
                                 minLines: 2,
                                 maxLines: 5,
                                 validator: (_) => null,
@@ -107,41 +108,15 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                           ? 'total'
                                           : 'detailed';
                                   controller.update();
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    if (context.mounted) {
+                                      _showGoalFollowUpSheet(context);
+                                    }
+                                  });
                                 },
                                 isEnabled: !controller.isEdit.value,
                               ),
-                              if (controller.supportsTotalMode) ...[
-                                SizedBox(height: 8.h),
-                                CustomDropdownField(
-                                  isRequired: true,
-                                  label: 'calculationMode',
-                                  hint: 'calculationMode',
-                                  value: controller.calculationModeController
-                                          .text.isEmpty
-                                      ? null
-                                      : controller
-                                          .calculationModeController.text,
-                                  items: controller.calculationModes,
-                                  onChanged: (value) {
-                                    controller.calculationModeController.text =
-                                        value!;
-                                    if (value == 'total') {
-                                      controller.formController.clear();
-                                      controller.mainCategoriesIdController
-                                          .clear();
-                                      controller.subCategoriesIdController
-                                          .clear();
-                                      controller.storeSectionIdController
-                                          .clear();
-                                      controller.productIdController.clear();
-                                      controller.productsIds.clear();
-                                      controller.customerAndSellerIdController
-                                          .clear();
-                                    }
-                                    controller.update();
-                                  },
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -308,15 +283,15 @@ class _GoalFollowUpSummary extends GetView<TargetSectionController> {
     }
     return items;
   }
+}
 
-  void _showGoalFollowUpSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _GoalFollowUpSheet(),
-    );
-  }
+void _showGoalFollowUpSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _GoalFollowUpSheet(),
+  );
 }
 
 class _SummaryItem {
@@ -370,6 +345,32 @@ class _GoalFollowUpSheet extends GetView<TargetSectionController> {
                 child: GetBuilder<TargetSectionController>(
                   builder: (_) => Column(
                     children: [
+                      if (controller.supportsTotalMode) ...[
+                        CustomDropdownField(
+                          isRequired: true,
+                          label: 'calculationMode',
+                          hint: 'calculationMode',
+                          value:
+                              controller.calculationModeController.text.isEmpty
+                                  ? null
+                                  : controller.calculationModeController.text,
+                          items: controller.calculationModes,
+                          onChanged: (value) {
+                            controller.calculationModeController.text = value!;
+                            if (value == 'total') {
+                              controller.formController.clear();
+                              controller.mainCategoriesIdController.clear();
+                              controller.subCategoriesIdController.clear();
+                              controller.storeSectionIdController.clear();
+                              controller.productIdController.clear();
+                              controller.productsIds.clear();
+                              controller.customerAndSellerIdController.clear();
+                            }
+                            controller.update();
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                      ],
                       const TargetTypeFormatWidget(),
                       if (controller.isDetailedMode) const OptionsWidget(),
                     ],
