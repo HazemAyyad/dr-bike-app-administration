@@ -438,8 +438,11 @@ class LedgerTransaction {
   /// نص يُعرض للمستخدم (ملاحظة أو وصف مصدر مثل بيع فوري #123).
   String get displayDescription {
     final n = note?.trim();
-    if (n != null && n.isNotEmpty) return n;
     final s = sourceLabel?.trim();
+    if (n != null && n.isNotEmpty && s != null && s.isNotEmpty) {
+      return '$n • $s';
+    }
+    if (n != null && n.isNotEmpty) return n;
     if (s != null && s.isNotEmpty) return s;
     return '';
   }

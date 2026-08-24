@@ -50,6 +50,7 @@ class PurchaseOrdersScreen extends GetView<PurchaseOrdersController> {
               ),
             ),
             SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+            const SliverToBoxAdapter(child: PurchaseBillsTableHeader()),
             GetBuilder<PurchaseOrdersController>(
               builder: (controller) {
                 if (controller.isLoading.value) {
@@ -86,35 +87,22 @@ class PurchaseOrdersScreen extends GetView<PurchaseOrdersController> {
                   delegate: SliverChildBuilderDelegate(
                     (context, section) {
                       final month = controller.currentTab.value == 0
-                          ? controller.unprocessedSearch.keys
-                              .toList()
-                              .reversed
-                              .toList()[section]
+                          ? controller.unprocessedSearch.keys.toList()[section]
                           : controller.currentTab.value == 1
                               ? controller.notMatchedSearch.keys
-                                  .toList()
-                                  .reversed
                                   .toList()[section]
                               : controller.currentTab.value == 2
                                   ? controller.completedSearch.keys
-                                      .toList()
-                                      .reversed
                                       .toList()[section]
                                   : controller.depositsSearch.keys
-                                      .toList()
-                                      .reversed
                                       .toList()[section];
                       final bills = controller.currentTab.value == 0
-                          ? controller.unprocessedSearch[month]!.reversed
-                              .toList()
+                          ? controller.unprocessedSearch[month]!
                           : controller.currentTab.value == 1
-                              ? controller.notMatchedSearch[month]!.reversed
-                                  .toList()
+                              ? controller.notMatchedSearch[month]!
                               : controller.currentTab.value == 2
-                                  ? controller.completedSearch[month]!.reversed
-                                      .toList()
-                                  : controller.depositsSearch[month]!.reversed
-                                      .toList();
+                                  ? controller.completedSearch[month]!
+                                  : controller.depositsSearch[month]!;
 
                       return BillsList(
                         month: month,

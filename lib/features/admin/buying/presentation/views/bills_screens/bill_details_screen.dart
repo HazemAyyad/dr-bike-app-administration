@@ -31,22 +31,6 @@ class BillDetailsScreen extends GetView<BillsController> {
             ? 'تفاصيل فاتورة شراء'
             : 'فاتورة شراء #${controller.billDetails!.billId}',
         action: false,
-        actions: [
-          IconButton(
-            onPressed: () {
-              controller.getBillDetails(
-                context: context,
-                billId: controller.billDetails!.billId.toString(),
-                isDownload: true,
-              );
-            },
-            icon: Icon(
-              Icons.file_download_outlined,
-              color: AppColors.primaryColor,
-              size: 30.sp,
-            ),
-          )
-        ],
       ),
       body: AppPullToRefresh(
         onRefresh: () async {
@@ -79,6 +63,8 @@ class BillDetailsScreen extends GetView<BillsController> {
                     padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 26.h),
                     child: Column(
                       children: [
+                        const _PurchaseInvoicePrintActions(),
+                        SizedBox(height: 10.h),
                         _PurchaseWorkflowPanel(page: page),
                         if (page == '3' || page == '4') ...[
                           SizedBox(height: 10.h),
@@ -92,6 +78,59 @@ class BillDetailsScreen extends GetView<BillsController> {
             )
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PurchaseInvoicePrintActions extends GetView<BillsController> {
+  const _PurchaseInvoicePrintActions();
+
+  @override
+  Widget build(BuildContext context) {
+    final details = controller.billDetails;
+    if (details == null) return const SizedBox.shrink();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'فاتورة شراء #${details.billId}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryColor,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'حفظ PDF',
+            onPressed: () => controller.getBillDetails(
+              context: context,
+              billId: details.billId.toString(),
+              isDownload: true,
+            ),
+            icon: const Icon(Icons.file_download_outlined),
+          ),
+          IconButton(
+            tooltip: 'pdf'.tr,
+            onPressed: controller.shareShownPurchaseBillPdf,
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
+          IconButton(
+            tooltip: 'print'.tr,
+            onPressed: controller.printShownPurchaseBillPdf,
+            icon: const Icon(Icons.print_outlined),
+          ),
+        ],
       ),
     );
   }

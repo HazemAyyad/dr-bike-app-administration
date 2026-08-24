@@ -76,18 +76,12 @@ class ReturnPurchasesScreen extends GetView<ReturnPurchasesController> {
                     (context, section) {
                       final month = controller.currentTab.value == 0
                           ? controller.returnPurchasesSearch.keys
-                              .toList()
-                              .reversed
                               .toList()[section]
                           : controller.deliveredPurchasesSearch.keys
-                              .toList()
-                              .reversed
                               .toList()[section];
                       final bills = controller.currentTab.value == 0
-                          ? controller.returnPurchasesSearch[month]!.reversed
-                              .toList()
-                          : controller.deliveredPurchasesSearch[month]!.reversed
-                              .toList();
+                          ? controller.returnPurchasesSearch[month]!
+                          : controller.deliveredPurchasesSearch[month]!;
 
                       return ReturnPurchasesList(
                         month: month,

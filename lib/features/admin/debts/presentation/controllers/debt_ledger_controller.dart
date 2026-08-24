@@ -771,8 +771,6 @@ class DebtLedgerController extends GetxController {
         await _openMaintenanceInvoice(sourceId);
         return true;
       case 'purchase_invoice':
-      case 'purchase_initial_payment':
-      case 'purchase_payment':
         await _openPurchaseInvoice(sourceId);
         return true;
       case 'incoming_check':
@@ -832,6 +830,14 @@ class DebtLedgerController extends GetxController {
       );
     }
     await Get.toNamed(AppRoutes.BILLDETAILSSCREEN, arguments: '0');
+  }
+
+  Future<void> openPurchaseInvoiceFromTransaction(
+    LedgerTransaction transaction,
+  ) async {
+    final sourceId = transaction.sourceId;
+    if (sourceId == null || sourceId <= 0) return;
+    await _openPurchaseInvoice(sourceId);
   }
 
   Future<void> deleteTransaction(int id) async {

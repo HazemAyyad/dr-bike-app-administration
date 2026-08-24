@@ -26,6 +26,9 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
       final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
       final personName = controller.selectedPerson?.name ?? '';
       final balanceColor = controller.balanceColor(tx.balanceAfter);
+      final canOpenPurchaseInvoice = tx.source == 'purchase_payment' ||
+          tx.source == 'purchase_initial_payment' ||
+          tx.source == 'purchase_invoice';
 
       return Directionality(
         textDirection: TextDirection.rtl,
@@ -127,6 +130,35 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                                 fontSize: 14.sp,
                                 color: Colors.grey.shade800,
                                 height: 1.35,
+                              ),
+                            ),
+                          ],
+                          if (canOpenPurchaseInvoice) ...[
+                            SizedBox(height: 12.h),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: LedgerColors.primaryBlue,
+                                side: BorderSide(
+                                  color: LedgerColors.primaryBlue.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                              onPressed: () => controller
+                                  .openPurchaseInvoiceFromTransaction(tx),
+                              icon: Icon(
+                                Icons.receipt_long_outlined,
+                                size: 18.sp,
+                              ),
+                              label: Text(
+                                'فتح فاتورة الشراء #${tx.sourceId ?? ''}',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],

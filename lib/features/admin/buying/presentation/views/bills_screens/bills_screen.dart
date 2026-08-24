@@ -98,6 +98,7 @@ class BillsScreen extends GetView<BillsController> {
             ),
             const SliverToBoxAdapter(child: _PurchaseBillStateFilters()),
             SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+            const SliverToBoxAdapter(child: PurchaseBillsTableHeader()),
             GetBuilder<BillsController>(
               builder: (controller) {
                 if (controller.isLoading.value) {
@@ -122,13 +123,8 @@ class BillsScreen extends GetView<BillsController> {
                   delegate: SliverChildBuilderDelegate(
                     (context, section) {
                       final month = controller.currentTab.value == 0
-                          ? controller.allBillsSearch.keys
-                              .toList()
-                              .reversed
-                              .toList()[section]
+                          ? controller.allBillsSearch.keys.toList()[section]
                           : controller.allBillsArchiveSearch.keys
-                              .toList()
-                              .reversed
                               .toList()[section];
                       final bills = controller.currentTab.value == 0
                           ? controller.allBillsSearch[month]

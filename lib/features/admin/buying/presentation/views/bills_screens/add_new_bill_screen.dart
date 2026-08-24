@@ -1749,9 +1749,10 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
                 onChanged: (_) => controller.calculatePurchaseCartTotal(),
               ),
               SizedBox(width: 8.w),
-              _PurchaseTableInput(
-                width: 92.w,
-                controller: item.priceController,
+              _PurchasePriceInputWithHistory(
+                item: item,
+                intelligence: intelligence,
+                loading: loading,
                 onChanged: (_) => controller.calculatePurchaseCartTotal(),
               ),
               SizedBox(
@@ -1850,6 +1851,79 @@ class _PurchaseTableInput extends StatelessWidget {
   }
 }
 
+class _PurchasePriceInputWithHistory extends StatelessWidget {
+  const _PurchasePriceInputWithHistory({
+    required this.item,
+    required this.intelligence,
+    required this.loading,
+    required this.onChanged,
+  });
+
+  final PurchaseCartItemModel item;
+  final Map<String, dynamic>? intelligence;
+  final bool loading;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasHistory = mapList(
+      intelligence?['history'],
+      (Map<String, dynamic> m) => m,
+    ).isNotEmpty;
+
+    return SizedBox(
+      width: 92.w,
+      child: Row(
+        children: [
+          Expanded(
+            child: _PurchaseTableInput(
+              width: double.infinity,
+              controller: item.priceController,
+              onChanged: onChanged,
+            ),
+          ),
+          SizedBox(width: 2.w),
+          SizedBox(
+            width: 24.w,
+            height: 38.h,
+            child: loading
+                ? Padding(
+                    padding: EdgeInsets.all(6.w),
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primaryColor,
+                    ),
+                  )
+                : IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(
+                      minWidth: 24.w,
+                      minHeight: 24.h,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'عرض سجل الأسعار',
+                    onPressed: hasHistory
+                        ? () => showPurchasePriceHistorySheet(
+                              context,
+                              item: item,
+                              intelligence: intelligence!,
+                            )
+                        : null,
+                    icon: Icon(
+                      Icons.history,
+                      size: 16.sp,
+                      color: hasHistory
+                          ? AppColors.primaryColor
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PurchasePriceIntelBox extends GetView<BillsController> {
   const _PurchasePriceIntelBox({
     required this.item,
@@ -1893,7 +1967,11 @@ class _PurchasePriceIntelBox extends GetView<BillsController> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            onPressed: () => _showHistory(context),
+            onPressed: () => showPurchasePriceHistorySheet(
+              context,
+              item: item,
+              intelligence: intelligence,
+            ),
             icon: Icon(Icons.history, size: 16.sp),
             label: const Text('عرض سجل الأسعار'),
           ),
@@ -1901,87 +1979,132 @@ class _PurchasePriceIntelBox extends GetView<BillsController> {
       ),
     );
   }
+}
 
-  Future<void> _showHistory(BuildContext context) async {
-    final history = mapList(
-      intelligence['history'],
-      (Map<String, dynamic> m) => m,
-    );
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-      ),
-      builder: (sheetContext) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.65,
-          minChildSize: 0.35,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (_, scrollController) {
-            return ListView.separated(
-              controller: scrollController,
-              padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
-              itemCount: history.length + 1,
-              separatorBuilder: (_, __) => SizedBox(height: 8.h),
-              itemBuilder: (_, index) {
-                if (index == 0) {
-                  return Text(
-                    'سجل أسعار ${item.product.nameAr}',
-                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16.sp,
-                        ),
-                  );
-                }
-                final row = history[index - 1];
-                final price = asString(row['unit_price']);
-                final quantity = asString(row['quantity']);
-                final date = asString(row['priced_at']);
-                final sellerId = asString(row['seller_id']);
-                final customerId = asString(row['customer_id']);
-                return ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                    side: BorderSide(color: Colors.grey.shade200),
-                  ),
-                  title: Text(
-                    '$price ₪',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                  subtitle: Text(
-                    [
-                      if (quantity.isNotEmpty) 'كمية $quantity',
-                      if (sellerId.isNotEmpty) 'مورد #$sellerId',
-                      if (customerId.isNotEmpty) 'زبون #$customerId',
-                      if (date.isNotEmpty) date,
-                    ].join(' • '),
-                  ),
-                  trailing: TextButton(
-                    onPressed: price.isEmpty
-                        ? null
-                        : () {
-                            controller.applyHistoricalPurchasePrice(
-                              item: item,
-                              price: price,
-                            );
-                            Navigator.of(sheetContext).pop();
-                          },
-                    child: const Text('استخدام'),
-                  ),
+Future<void> showPurchasePriceHistorySheet(
+  BuildContext context, {
+  required PurchaseCartItemModel item,
+  required Map<String, dynamic> intelligence,
+}) async {
+  final history = mapList(
+    intelligence['history'],
+    (Map<String, dynamic> m) => m,
+  );
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+    ),
+    builder: (sheetContext) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.35,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) {
+          return ListView.separated(
+            controller: scrollController,
+            padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
+            itemCount: history.length + 1,
+            separatorBuilder: (_, __) => SizedBox(height: 8.h),
+            itemBuilder: (_, index) {
+              if (index == 0) {
+                return Text(
+                  'سجل أسعار ${item.product.nameAr}',
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16.sp,
+                      ),
                 );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
+              }
+              final row = history[index - 1];
+              final price = asString(row['unit_price']);
+              final quantity = asString(row['quantity']);
+              final date = asString(
+                row['created_at_label'],
+                asString(row['date_label'], asString(row['priced_at'])),
+              );
+              final partyName = asString(row['party_name']);
+              final partyType = asString(row['party_type_label']);
+              final reason = asString(row['reason_label']);
+              final contextNote = asString(row['context_note']);
+              final sellerId = asString(row['seller_id']);
+              final customerId = asString(row['customer_id']);
+              return ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$price ₪',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    ),
+                    if (reason.isNotEmpty)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 3.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          reason,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.primaryColor,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10.sp,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                subtitle: Text(
+                  [
+                    if (quantity.isNotEmpty) 'كمية $quantity',
+                    if (partyName.isNotEmpty)
+                      '${partyType.isEmpty ? 'الطرف' : partyType}: $partyName'
+                    else if (sellerId.isNotEmpty)
+                      'مورد #$sellerId'
+                    else if (customerId.isNotEmpty)
+                      'زبون #$customerId',
+                    if (date.isNotEmpty) date,
+                    if (reason.isNotEmpty) reason,
+                    if (contextNote.isNotEmpty) contextNote,
+                  ].join(' • '),
+                ),
+                trailing: TextButton(
+                  onPressed: price.isEmpty
+                      ? null
+                      : () {
+                          Get.find<BillsController>()
+                              .applyHistoricalPurchasePrice(
+                            item: item,
+                            price: price,
+                          );
+                          Navigator.of(sheetContext).pop();
+                        },
+                  child: const Text('استخدام'),
+                ),
+              );
+            },
+          );
+        },
+      );
+    },
+  );
 }
 
 class _IntelChip extends StatelessWidget {

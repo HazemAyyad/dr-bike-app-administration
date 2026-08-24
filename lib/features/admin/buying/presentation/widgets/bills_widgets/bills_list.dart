@@ -50,7 +50,6 @@ class BillsList extends GetView<BillsController> {
             ),
             child: Column(
               children: [
-                const _PurchaseTableHeader(),
                 _PurchaseMonthDivider(month: month, count: bills.length),
                 ...bills.map(
                   (bill) => _PurchaseBillCard(
@@ -69,6 +68,28 @@ class BillsList extends GetView<BillsController> {
   }
 }
 
+class PurchaseBillsTableHeader extends StatelessWidget {
+  const PurchaseBillsTableHeader({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : Colors.white,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: const _PurchaseTableHeader(),
+      ),
+    );
+  }
+}
+
 class _PurchaseTableHeader extends StatelessWidget {
   const _PurchaseTableHeader();
 
@@ -80,11 +101,10 @@ class _PurchaseTableHeader extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 7.w),
       child: const Row(
         children: [
-          _HeaderCell('فاتورة', flex: 18),
-          _HeaderCell('النوع', flex: 13),
-          _HeaderCell('الإجمالي', flex: 22),
-          _HeaderCell('القطع', flex: 10),
-          _HeaderCell('الطرف', flex: 25),
+          _HeaderCell('فاتورة', flex: 19),
+          _HeaderCell('الإجمالي', flex: 27),
+          _HeaderCell('القطع', flex: 11),
+          _HeaderCell('الطرف', flex: 31),
           _HeaderCell('الحالة', flex: 22),
         ],
       ),
@@ -183,22 +203,14 @@ class _PurchaseBillCard extends GetView<BillsController> {
         child: Row(
           children: [
             Expanded(
-              flex: 18,
+              flex: 19,
               child: _InvoiceCell(
                 billId: bill.id,
                 status: _invoiceStatusLabel(bill.status),
               ),
             ),
             Expanded(
-              flex: 13,
-              child: _CompactTextCell(
-                text: _sourceTypeLabel(bill),
-                color: AppColors.primaryColor,
-                weight: FontWeight.w700,
-              ),
-            ),
-            Expanded(
-              flex: 22,
+              flex: 27,
               child: _AmountCell(
                 total: totalText,
                 remaining: _formatMoney(bill.remainingAmount),
@@ -206,15 +218,18 @@ class _PurchaseBillCard extends GetView<BillsController> {
               ),
             ),
             Expanded(
-              flex: 10,
+              flex: 11,
               child: _CompactTextCell(
                 text: bill.itemsCount.toString(),
                 weight: FontWeight.w800,
               ),
             ),
             Expanded(
-              flex: 25,
-              child: _PartyCell(name: bill.seller),
+              flex: 31,
+              child: _PartyCell(
+                name: bill.seller,
+                typeLabel: _sourceTypeLabel(bill),
+              ),
             ),
             Expanded(
               flex: 22,
@@ -377,12 +392,10 @@ class _InvoiceCell extends StatelessWidget {
 class _CompactTextCell extends StatelessWidget {
   const _CompactTextCell({
     required this.text,
-    this.color,
     this.weight = FontWeight.w600,
   });
 
   final String text;
-  final Color? color;
   final FontWeight weight;
 
   @override
@@ -395,10 +408,9 @@ class _CompactTextCell extends StatelessWidget {
       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
             fontSize: 11.sp,
             fontWeight: weight,
-            color: color ??
-                (ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : Colors.black87),
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor6
+                : Colors.black87,
           ),
     );
   }
@@ -465,25 +477,44 @@ class _AmountCell extends StatelessWidget {
 }
 
 class _PartyCell extends StatelessWidget {
-  const _PartyCell({required this.name});
+  const _PartyCell({required this.name, required this.typeLabel});
 
   final String name;
+  final String typeLabel;
 
   @override
   Widget build(BuildContext context) {
     final display =
         name.trim().isEmpty || name == 'no seller' ? 'غير محدد' : name.trim();
-    return Text(
-      display,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontSize: 12.sp,
-            height: 1.25,
-            fontWeight: FontWeight.w800,
-            color: Colors.black87,
-          ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          display,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                fontSize: 12.sp,
+                height: 1.15,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+              ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          typeLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                fontSize: 9.sp,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryColor,
+              ),
+        ),
+      ],
     );
   }
 }

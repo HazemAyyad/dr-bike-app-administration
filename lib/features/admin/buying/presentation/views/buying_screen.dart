@@ -185,16 +185,17 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
             ),
           );
         }
-        final months =
-            controller.allBillsSearch.keys.toList().reversed.toList();
+        final months = controller.allBillsSearch.keys.toList();
         return AppPullToRefresh(
           onRefresh: controller.getBills,
           child: ListView.builder(
             physics: kRefreshableScrollPhysics,
             padding: EdgeInsets.only(bottom: 90.h),
-            itemCount: months.length,
+            itemCount: months.length + 1,
             itemBuilder: (context, index) {
-              final month = months[index];
+              if (index == 0) return const PurchaseBillsTableHeader();
+              final monthIndex = index - 1;
+              final month = months[monthIndex];
               final bills = controller.allBillsSearch[month] ?? [];
               return BillsList(month: month, bills: bills, page: '1');
             },
@@ -398,6 +399,7 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
             ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          const SliverToBoxAdapter(child: PurchaseBillsTableHeader()),
           GetBuilder<PurchaseOrdersController>(
             builder: (controller) {
               if (controller.isLoading.value) {
@@ -421,12 +423,12 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
                 );
               }
 
-              final months = source.keys.toList().reversed.toList();
+              final months = source.keys.toList();
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, section) {
                     final month = months[section];
-                    final bills = source[month]!.reversed.toList();
+                    final bills = source[month]!;
                     return BillsList(
                       month: month,
                       bills: bills,
@@ -495,12 +497,12 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
                     );
                   }
 
-                  final months = source.keys.toList().reversed.toList();
+                  final months = source.keys.toList();
                   return SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, section) {
                         final month = months[section];
-                        final bills = source[month]!.reversed.toList();
+                        final bills = source[month]!;
                         return ReturnPurchasesList(month: month, bills: bills);
                       },
                       childCount: months.length,

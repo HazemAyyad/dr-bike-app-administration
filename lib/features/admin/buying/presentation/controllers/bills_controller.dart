@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
@@ -749,6 +750,48 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   // get bill details
   BillDetailsModel? billDetails;
+  String get purchaseBillPdfFileName {
+    final id = billDetails?.billId.toString() ?? 'purchase';
+    final safeSeller = (billDetails?.sellerName ?? 'supplier')
+        .replaceAll(RegExp(r'[^A-Za-z0-9_\-\u0600-\u06FF]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
+    return 'purchase_invoice_${id}_$safeSeller.pdf';
+  }
+
+  Future<Uint8List?> fetchPurchaseBillPdfBytes(String billId) async {
+    try {
+      final response = await getBilltDetailsUsecase.call(
+        billId: billId,
+        isDownload: true,
+      );
+      if (response is Uint8List) return response;
+      if (response is List<int>) return Uint8List.fromList(response);
+      return null;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+      return null;
+    }
+  }
+
+  Future<void> shareShownPurchaseBillPdf() async {
+    final details = billDetails;
+    if (details == null) return;
+    final bytes = await fetchPurchaseBillPdfBytes(details.billId.toString());
+    if (bytes == null) return;
+    await Printing.sharePdf(bytes: bytes, filename: purchaseBillPdfFileName);
+  }
+
+  Future<void> printShownPurchaseBillPdf() async {
+    final details = billDetails;
+    if (details == null) return;
+    final bytes = await fetchPurchaseBillPdfBytes(details.billId.toString());
+    if (bytes == null) return;
+    await Printing.layoutPdf(
+      name: purchaseBillPdfFileName,
+      onLayout: (_) async => bytes,
+    );
+  }
+
   Future<void> getBillDetails({
     required BuildContext context,
     required String billId,
