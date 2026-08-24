@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:doctorbike/core/helpers/full_screen_image_viewer.dart';
 import 'package:doctorbike/core/helpers/product_priority_image.dart';
+import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -375,7 +377,10 @@ class _GoalFollowUpSheet extends GetView<TargetSectionController> {
                         SizedBox(height: 10.h),
                       ],
                       const TargetTypeFormatWidget(),
-                      if (controller.isDetailedMode) const OptionsWidget(),
+                      if (controller.isDetailedMode) ...[
+                        const OptionsWidget(),
+                        const _SelectedGoalProducts(),
+                      ],
                     ],
                   ),
                 ),
@@ -596,17 +601,31 @@ class _SelectedGoalProductRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(6.r),
-            child: SizedBox(
-              width: 38.w,
-              height: 38.w,
-              child: imageUrls.isEmpty
-                  ? const _SelectedProductPlaceholder()
-                  : ProductPriorityImage(
-                      imageUrls: imageUrls,
-                      fit: BoxFit.cover,
-                      placeholder: const _SelectedProductPlaceholder(),
-                      missingPlaceholder: const _SelectedProductPlaceholder(),
-                    ),
+            child: InkWell(
+              onTap: imageUrls.isEmpty
+                  ? null
+                  : () {
+                      final resolved =
+                          imageUrls.map(ShowNetImage.getPhoto).toList();
+                      FullScreenZoomImage.open(
+                        context,
+                        resolved.first,
+                        imageUrls: resolved,
+                        title: product.productName,
+                      );
+                    },
+              child: SizedBox(
+                width: 38.w,
+                height: 38.w,
+                child: imageUrls.isEmpty
+                    ? const _SelectedProductPlaceholder()
+                    : ProductPriorityImage(
+                        imageUrls: imageUrls,
+                        fit: BoxFit.cover,
+                        placeholder: const _SelectedProductPlaceholder(),
+                        missingPlaceholder: const _SelectedProductPlaceholder(),
+                      ),
+              ),
             ),
           ),
           SizedBox(width: 8.w),
