@@ -146,17 +146,10 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                           ),
                         ),
                         if (controller.targetTypeController.text.isNotEmpty)
-                          TaskFormSectionCard(
+                          const TaskFormSectionCard(
                             compact: _compact,
                             title: 'followUp',
-                            child: Column(
-                              children: [
-                                const TargetTypeFormatWidget(),
-                                if (controller.isDetailedMode)
-                                  const OptionsWidget(),
-                                const _SelectedGoalProducts(),
-                              ],
-                            ),
+                            child: _GoalFollowUpSummary(),
                           ),
                         TaskFormSectionCard(
                           compact: _compact,
@@ -197,6 +190,290 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
             const _GoalSaveBar(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GoalFollowUpSummary extends GetView<TargetSectionController> {
+  const _GoalFollowUpSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _summaryItems();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              side: const BorderSide(color: AppColors.operationalPurple),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: controller.isEdit.value
+                ? null
+                : () => _showGoalFollowUpSheet(context),
+            icon: Icon(
+              items.isEmpty ? Icons.tune_rounded : Icons.edit_note_rounded,
+            ),
+            label: Text(
+              items.isEmpty ? 'options'.tr : '${'edit'.tr} ${'options'.tr}',
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: AppColors.operationalPurple,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        ),
+        if (items.isEmpty) ...[
+          SizedBox(height: 10.h),
+          const _EmptySummaryHint(text: 'اختر التفاصيل المرتبطة بصيغة الهدف'),
+        ] else ...[
+          SizedBox(height: 10.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: items
+                .map((item) => _SummaryChip(
+                      title: item.title,
+                      value: item.value,
+                    ))
+                .toList(),
+          ),
+        ],
+        const _SelectedGoalProducts(),
+      ],
+    );
+  }
+
+  List<_SummaryItem> _summaryItems() {
+    final items = <_SummaryItem>[];
+    if (controller.calculationModeController.text.isNotEmpty) {
+      items.add(_SummaryItem(
+        'calculationMode',
+        controller.calculationModeController.text.tr,
+      ));
+    }
+    if (controller.formController.text.isNotEmpty) {
+      items.add(_SummaryItem('options', controller.formController.text.tr));
+    }
+    final employee = controller.employeeList.firstWhereOrNull(
+      (e) => e.id.toString() == controller.employeeIdController.text,
+    );
+    if (employee != null) {
+      items.add(_SummaryItem('employeeName', employee.employeeName));
+    }
+    final box = controller.shownBoxes.firstWhereOrNull(
+      (e) => e.boxId.toString() == controller.boxIdController.text,
+    );
+    if (box != null) {
+      items.add(_SummaryItem('boxName', box.boxName));
+    }
+    final storeSection = controller.storeSections.firstWhereOrNull(
+      (e) => e.id.toString() == controller.storeSectionIdController.text,
+    );
+    if (storeSection != null) {
+      items.add(_SummaryItem('store_sections', storeSection.name));
+    }
+    final personName = controller.isSeller.value == false
+        ? controller.allCustomersList
+            .firstWhereOrNull(
+              (e) =>
+                  e.id.toString() ==
+                  controller.customerAndSellerIdController.text,
+            )
+            ?.name
+        : controller.allSellersList
+            .firstWhereOrNull(
+              (e) =>
+                  e.id.toString() ==
+                  controller.customerAndSellerIdController.text,
+            )
+            ?.name;
+    if ((personName ?? '').isNotEmpty) {
+      items.add(_SummaryItem(
+        controller.isSeller.value == false ? 'customerName' : 'sellerName',
+        personName!,
+      ));
+    }
+    if (controller.productsIds.isNotEmpty) {
+      items.add(_SummaryItem(
+        'selectedProducts',
+        '${controller.productsIds.length}',
+      ));
+    }
+    return items;
+  }
+
+  void _showGoalFollowUpSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _GoalFollowUpSheet(),
+    );
+  }
+}
+
+class _SummaryItem {
+  const _SummaryItem(this.title, this.value);
+
+  final String title;
+  final String value;
+}
+
+class _GoalFollowUpSheet extends GetView<TargetSectionController> {
+  const _GoalFollowUpSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.82,
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'followUp'.tr,
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w900,
+                            color: ThemeService.isDark.value
+                                ? Colors.white
+                                : AppColors.operationalNavy,
+                          ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+                child: GetBuilder<TargetSectionController>(
+                  builder: (_) => Column(
+                    children: [
+                      const TargetTypeFormatWidget(),
+                      if (controller.isDetailedMode) const OptionsWidget(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
+              child: SizedBox(
+                width: double.infinity,
+                height: 44.h,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.operationalPurple,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                  onPressed: () {
+                    controller.update();
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'done'.tr,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.title, required this.value});
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 158.w,
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.operationalPurple.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.tr,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  fontSize: 10.sp,
+                  color: AppColors.customGreyColor5,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          SizedBox(height: 3.h),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  fontWeight: FontWeight.w900,
+                  height: 1.25,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptySummaryHint extends StatelessWidget {
+  const _EmptySummaryHint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: AppColors.operationalNavy.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              color: AppColors.customGreyColor5,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../projects/data/models/project_details_model.dart';
 import '../../../sales/data/models/product_model.dart';
@@ -81,61 +82,57 @@ Future<void> showGoalProductsPickerSheet(BuildContext context) async {
                     ),
                   ),
                   SizedBox(height: 8.h),
+                  if (selected.isNotEmpty)
+                    SizedBox(
+                      height: 38.h,
+                      child: ListView.separated(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: selected.length,
+                        separatorBuilder: (_, __) => SizedBox(width: 6.w),
+                        itemBuilder: (_, index) {
+                          final item = selected.values.elementAt(index);
+                          return Chip(
+                            label: Text(
+                              item.productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            onDeleted: () => setState(
+                              () => selected.remove(item.productId),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   Expanded(
-                    child: ListView.separated(
+                    child: GridView.builder(
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            MediaQuery.of(context).size.width > 700 ? 4 : 2,
+                        crossAxisSpacing: 8.w,
+                        mainAxisSpacing: 8.h,
+                        mainAxisExtent: 176.h,
+                      ),
                       itemCount: products.length,
-                      separatorBuilder: (_, __) => Divider(height: 1.h),
                       itemBuilder: (context, index) {
                         final ProductModel product = products[index];
                         final isSelected = selected.containsKey(product.id);
-                        return ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 4.w),
-                          onTap: () {
-                            setState(() {
-                              if (isSelected) {
-                                selected.remove(product.id);
-                              } else {
-                                selected[product.id] = ProjectProductModel(
-                                  productId: product.id,
-                                  productName: product.nameAr,
-                                );
-                              }
-                            });
-                          },
-                          leading: Checkbox(
-                            value: isSelected,
-                            onChanged: (_) {
-                              setState(() {
-                                if (isSelected) {
-                                  selected.remove(product.id);
-                                } else {
-                                  selected[product.id] = ProjectProductModel(
-                                    productId: product.id,
-                                    productName: product.nameAr,
-                                  );
-                                }
-                              });
-                            },
-                          ),
-                          title: Text(
-                            product.nameAr,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          subtitle: Text(
-                            [
-                              product.displayProductCode,
-                              if ((product.storeSectionName ?? '').isNotEmpty)
-                                product.storeSectionName!,
-                            ].join(' - '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        return _GoalProductPickerCard(
+                          product: product,
+                          isSelected: isSelected,
+                          onTap: () => setState(() {
+                            if (isSelected) {
+                              selected.remove(product.id);
+                            } else {
+                              selected[product.id] = ProjectProductModel(
+                                productId: product.id,
+                                productName: product.nameAr,
+                              );
+                            }
+                          }),
                         );
                       },
                     ),
@@ -190,4 +187,153 @@ Future<void> showGoalProductsPickerSheet(BuildContext context) async {
       );
     },
   );
+}
+
+class _GoalProductPickerCard extends StatelessWidget {
+  const _GoalProductPickerCard({
+    required this.product,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ProductModel product;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = product.allImageUrlsInPriority.isNotEmpty &&
+        product.imageUrl != 'no image';
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10.r),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.operationalPurple
+                  : Colors.grey.shade300,
+              width: isSelected ? 1.6 : 1,
+            ),
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    hasImage
+                        ? ProductPriorityImage(
+                            imageUrls: product.allImageUrlsInPriority,
+                            fit: BoxFit.cover,
+                            placeholder: const _ProductPlaceholder(),
+                            missingPlaceholder: const _ProductPlaceholder(),
+                          )
+                        : const _ProductPlaceholder(),
+                    Positioned(
+                      top: 6.h,
+                      right: 6.w,
+                      child: Container(
+                        height: 24.w,
+                        width: 24.w,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.operationalPurple
+                              : Colors.white.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isSelected ? Icons.check : Icons.add,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.operationalPurple,
+                          size: 16.sp,
+                        ),
+                      ),
+                    ),
+                    if ((product.storeSectionName ?? '').isNotEmpty)
+                      Positioned(
+                        left: 6.w,
+                        right: 6.w,
+                        bottom: 6.h,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 3.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.58),
+                            borderRadius: BorderRadius.circular(6.r),
+                          ),
+                          child: Text(
+                            product.storeSectionName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(7.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.nameAr,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
+                          ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      product.displayProductCode,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: AppColors.customGreyColor5,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductPlaceholder extends StatelessWidget {
+  const _ProductPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.operationalSurface,
+      child: Icon(
+        Icons.inventory_2_outlined,
+        color: AppColors.customGreyColor5,
+        size: 28.sp,
+      ),
+    );
+  }
 }
