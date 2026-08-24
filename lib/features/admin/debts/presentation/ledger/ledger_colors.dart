@@ -15,5 +15,6 @@ class LedgerColors {
     if (value < 0) return givenRed;
     return neutral;
   }
+
   static const Color background = Color(0xFFF8FAFF);
 }

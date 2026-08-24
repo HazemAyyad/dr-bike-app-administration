@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 
 import 'package:doctorbike/features/admin/buying/presentation/controllers/bills_controller.dart';
 
@@ -89,6 +90,7 @@ class BillsImplement implements BillsRepository {
     required String amount,
     required String boxId,
     String? note,
+    List<dynamic> evidenceFiles = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -99,6 +101,7 @@ class BillsImplement implements BillsRepository {
         amount: amount,
         boxId: boxId,
         note: note,
+        evidenceFiles: evidenceFiles.cast<MultipartFile>(),
       );
       return _messageResult(result);
     } on ServerException catch (e) {
@@ -115,6 +118,7 @@ class BillsImplement implements BillsRepository {
     String? note,
     bool allocateOldestFirst = true,
     List<Map<String, dynamic>> allocations = const [],
+    List<dynamic> evidenceFiles = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -128,6 +132,7 @@ class BillsImplement implements BillsRepository {
         note: note,
         allocateOldestFirst: allocateOldestFirst,
         allocations: allocations,
+        evidenceFiles: evidenceFiles.cast<MultipartFile>(),
       );
       return _messageResult(result);
     } on ServerException catch (e) {
@@ -362,6 +367,8 @@ class BillsImplement implements BillsRepository {
     String customerId = '',
     required List<BillModel> products,
     required String total,
+    String initialPayment = '0',
+    String? boxId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -373,6 +380,8 @@ class BillsImplement implements BillsRepository {
         customerId: customerId,
         products: products,
         total: total,
+        initialPayment: initialPayment,
+        boxId: boxId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

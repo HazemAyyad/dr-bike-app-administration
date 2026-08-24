@@ -166,8 +166,7 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
                             const Divider(height: 1),
                             _DeletedRow(
                               transaction: tx,
-                              timeLabel:
-                                  controller.formatTransactionTime(tx),
+                              timeLabel: controller.formatTransactionTime(tx),
                             ),
                           ],
                         );

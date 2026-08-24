@@ -16,7 +16,8 @@ class ArchiveTransactionsSheet extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<ArchiveTransactionsSheet> createState() => _ArchiveTransactionsSheetState();
+  State<ArchiveTransactionsSheet> createState() =>
+      _ArchiveTransactionsSheetState();
 }
 
 class _ArchiveTransactionsSheetState extends State<ArchiveTransactionsSheet> {

@@ -11,7 +11,10 @@ import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../../debts/presentation/binding/debts_binding.dart';
+import '../../../../debts/presentation/controllers/debt_ledger_controller.dart';
 import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
@@ -45,37 +48,50 @@ class BillDetailsScreen extends GetView<BillsController> {
           )
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          GetBuilder<BillsController>(
-            builder: (controller) {
-              if (controller.isAddLoading.value) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (controller.billDetails == null) {
-                return const SliverFillRemaining(
-                  child: Center(child: ShowNoData()),
-                );
-              }
-              return SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 26.h),
-                  child: Column(
-                    children: [
-                      _PurchaseWorkflowPanel(page: page),
-                      if (page == '3' || page == '4') ...[
-                        SizedBox(height: 10.h),
-                        CancelBill(billId: controller.billDetails!.billId),
+      body: AppPullToRefresh(
+        onRefresh: () async {
+          final details = controller.billDetails;
+          if (details == null) {
+            return;
+          }
+          await controller.getBillDetails(
+            context: context,
+            billId: details.billId.toString(),
+          );
+        },
+        child: CustomScrollView(
+          physics: kRefreshableScrollPhysics,
+          slivers: [
+            GetBuilder<BillsController>(
+              builder: (controller) {
+                if (controller.isAddLoading.value) {
+                  return const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (controller.billDetails == null) {
+                  return const SliverFillRemaining(
+                    child: Center(child: ShowNoData()),
+                  );
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(15.w, 10.h, 15.w, 26.h),
+                    child: Column(
+                      children: [
+                        _PurchaseWorkflowPanel(page: page),
+                        if (page == '3' || page == '4') ...[
+                          SizedBox(height: 10.h),
+                          CancelBill(billId: controller.billDetails!.billId),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              );
-            },
-          )
-        ],
+                );
+              },
+            )
+          ],
+        ),
       ),
     );
   }
@@ -136,6 +152,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
               : details.finalTotal),
           paidText: _money(details.paidAmount),
           remainingText: _money(details.remainingAmount),
+          onOpenLedger: () => _openSourceLedger(details),
         ),
         SizedBox(height: 10.h),
         _ContextualActionCards(
@@ -259,6 +276,14 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           ...issueItems.map(
             (item) => _IssueRow(
               product: item,
+              onResolveMissing: (num.tryParse(item.missingAmount) ?? 0) > 0
+                  ? () => _showIssueResolutionSheet(
+                        context,
+                        product: item,
+                        issueType: 'missing',
+                        quantity: num.tryParse(item.missingAmount) ?? 0,
+                      )
+                  : null,
               onResolveDamaged: item.damagedQuantity > 0
                   ? () => _showIssueResolutionSheet(
                         context,
@@ -469,13 +494,22 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                 onPressed: openIssues > 0
                     ? null
                     : () async {
-                        await controller
+                        final ok = await controller
                             .finalizeShownPurchaseWithInitialPayment(
-                          context,
+                          sheetContext,
                         );
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
+                        if (!sheetContext.mounted) return;
+                        if (!ok) return;
+                        Navigator.of(sheetContext).pop();
+                        Get.snackbar(
+                          'success'.tr,
+                          'تم اعتماد الفاتورة بنجاح',
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: Colors.green.withValues(alpha: 0.12),
+                          colorText: Colors.green.shade900,
+                          margin: EdgeInsets.all(12.w),
+                          duration: const Duration(seconds: 2),
+                        );
                       },
               ),
             ],
@@ -662,15 +696,31 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                     SizedBox(height: 12.h),
                     OutlinedButton.icon(
                       onPressed: () =>
-                          controller.pickAndUploadPurchaseAttachments(
-                        context,
-                        category: attachmentCategory,
-                        attachableType: attachableType,
-                        attachableId: attachableId,
-                      ),
+                          controller.pickPurchasePaymentEvidence(context),
                       icon: const Icon(Icons.upload_file_outlined),
-                      label: const Text('رفع إثبات'),
+                      label: const Text('إرفاق إثبات مع الدفعة'),
                     ),
+                    if (controller.purchasePaymentEvidenceFiles.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: Wrap(
+                          spacing: 6.w,
+                          runSpacing: 6.h,
+                          children: controller.purchasePaymentEvidenceFiles
+                              .map(
+                                (file) => InputChip(
+                                  label: Text(
+                                    file.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onDeleted: () => controller
+                                      .removePurchasePaymentEvidence(file),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
                   ],
                   SizedBox(height: 18.h),
                   AppButton(
@@ -680,6 +730,11 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       final result = await onSubmit();
                       if (result != false && sheetContext.mounted) {
                         Navigator.of(sheetContext).pop();
+                        Get.snackbar(
+                          'تمت العملية',
+                          'تم تسجيل الدفعة بنجاح',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
                       }
                     },
                   ),
@@ -689,6 +744,22 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openSourceLedger(BillDetailsModel details) async {
+    final isCustomer = details.customerId.isNotEmpty;
+    final rawId = isCustomer ? details.customerId : details.sellerId;
+    final id = int.tryParse(rawId);
+    if (id == null || id <= 0) return;
+    if (!Get.isRegistered<DebtLedgerController>() &&
+        !Get.isPrepared<DebtLedgerController>()) {
+      DebtsBinding().dependencies();
+    }
+    await Get.find<DebtLedgerController>().openPersonAccount(
+      id: id,
+      name: details.sellerName.isEmpty ? 'مصدر غير معروف' : details.sellerName,
+      personType: isCustomer ? 'customer' : 'seller',
     );
   }
 
@@ -759,6 +830,27 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                                 .submitReviewedReceiving(context);
                             if (result && sheetContext.mounted) {
                               Navigator.of(sheetContext).pop();
+                              Get.snackbar(
+                                'success'.tr,
+                                'تم تسجيل الاستلام بنجاح',
+                                snackPosition: SnackPosition.TOP,
+                                backgroundColor:
+                                    Colors.green.withValues(alpha: 0.12),
+                                colorText: Colors.green.shade900,
+                                margin: EdgeInsets.all(12.w),
+                                duration: const Duration(seconds: 2),
+                              );
+                            } else {
+                              Get.snackbar(
+                                'error'.tr,
+                                'لم يتم تسجيل الاستلام، راجع الكميات أو رسالة الخطأ',
+                                snackPosition: SnackPosition.TOP,
+                                backgroundColor:
+                                    Colors.red.withValues(alpha: 0.12),
+                                colorText: Colors.red.shade900,
+                                margin: EdgeInsets.all(12.w),
+                                duration: const Duration(seconds: 3),
+                              );
                             }
                           },
                         ),
@@ -783,10 +875,12 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
   }
 
   List<BillProductModel> _issueItems(BillDetailsModel details) {
-    return details.products
-        .where(
-            (item) => item.damagedQuantity > 0 || item.mismatchedQuantity > 0)
-        .toList();
+    return details.products.where((item) {
+      final missing = num.tryParse(item.missingAmount) ?? 0;
+      return missing > 0 ||
+          item.damagedQuantity > 0 ||
+          item.mismatchedQuantity > 0;
+    }).toList();
   }
 
   Future<void> _showAmanatSheet(
@@ -879,19 +973,32 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                     isLoading: controller.isWorkflowLoading,
                     text: isPurchase ? 'شراء' : 'إرجاع',
                     onPressed: () async {
+                      bool ok;
                       if (isPurchase) {
-                        await controller.purchaseShownAmanat(
-                          context,
+                        ok = await controller.purchaseShownAmanat(
+                          sheetContext,
                           amanatId: item.amanat.id.toString(),
                         );
                       } else {
-                        await controller.returnShownAmanat(
-                          context,
+                        ok = await controller.returnShownAmanat(
+                          sheetContext,
                           amanatId: item.amanat.id.toString(),
                         );
                       }
-                      if (sheetContext.mounted) {
+                      if (!sheetContext.mounted) return;
+                      if (ok) {
                         Navigator.of(sheetContext).pop();
+                        Get.snackbar(
+                          'success'.tr,
+                          isPurchase
+                              ? 'تم شراء الأمانة بنجاح'
+                              : 'تم إرجاع الأمانة بنجاح',
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: Colors.green.withValues(alpha: 0.12),
+                          colorText: Colors.green.shade900,
+                          margin: EdgeInsets.all(12.w),
+                          duration: const Duration(seconds: 2),
+                        );
                       }
                     },
                   ),
@@ -910,16 +1017,19 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     required String issueType,
     required num quantity,
   }) async {
-    const options = {
-      'return_to_supplier': 'إرجاع للمورد',
+    final options = {
+      'return_to_supplier':
+          issueType == 'missing' ? 'اعتماد النقص' : 'إرجاع للمورد',
       'replacement_expected': 'بانتظار بديل',
-      'accept_negotiated_price': 'قبول بسعر متفاوض',
-      'accept_with_discount': 'قبول مع خصم',
+      if (issueType != 'missing') 'accept_negotiated_price': 'قبول بسعر متفاوض',
+      if (issueType != 'missing') 'accept_with_discount': 'قبول مع خصم',
       'other_settlement': 'تسوية أخرى',
     };
-    String selected = issueType == 'damaged'
-        ? 'accept_with_discount'
-        : 'accept_negotiated_price';
+    String selected = issueType == 'missing'
+        ? 'return_to_supplier'
+        : issueType == 'damaged'
+            ? 'accept_with_discount'
+            : 'accept_negotiated_price';
     controller.prepareIssueResolution(
       quantity: quantity.toString(),
       unitPrice: product.price,
@@ -947,7 +1057,11 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      issueType == 'damaged' ? 'تسوية تالف' : 'تسوية غير مطابق',
+                      issueType == 'missing'
+                          ? 'تسوية نقص'
+                          : issueType == 'damaged'
+                              ? 'تسوية تالف'
+                              : 'تسوية غير مطابق',
                       style: Theme.of(context).textTheme.titleMedium!.copyWith(
                             fontWeight: FontWeight.w800,
                             fontSize: 16.sp,
@@ -997,6 +1111,11 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       isRequired: false,
                       validator: (_) => null,
                     ),
+                    SizedBox(height: 6.h),
+                    const _MutedText(
+                      text:
+                          'الأثر المالي هو فرق يدوي للتوثيق أو الخصم المتفق عليه. سعر التفاوض هو الذي يدخل في تكلفة المخزون عند قبول الصنف.',
+                    ),
                     SizedBox(height: 10.h),
                     CustomTextField(
                       label: 'سبب / وصف',
@@ -1020,7 +1139,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                         context,
                         category: issueType == 'damaged'
                             ? 'damaged_evidence'
-                            : 'mismatch_evidence',
+                            : issueType == 'missing'
+                                ? 'missing_evidence'
+                                : 'mismatch_evidence',
                         attachableType: 'bill_item',
                         attachableId: product.billItemId.toString(),
                       ),
@@ -1032,14 +1153,24 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       isLoading: controller.isWorkflowLoading,
                       text: 'تسجيل التسوية',
                       onPressed: () async {
-                        await controller.resolveShownIssue(
+                        final ok = await controller.resolveShownIssue(
                           context,
                           product: product,
                           issueType: issueType,
                           resolution: selected,
                         );
-                        if (sheetContext.mounted) {
+                        if (ok && sheetContext.mounted) {
                           Navigator.of(sheetContext).pop();
+                          Get.snackbar(
+                            'success'.tr,
+                            'تم تسجيل التسوية بنجاح',
+                            snackPosition: SnackPosition.TOP,
+                            backgroundColor:
+                                Colors.green.withValues(alpha: 0.12),
+                            colorText: Colors.green.shade900,
+                            margin: EdgeInsets.all(12.w),
+                            duration: const Duration(seconds: 2),
+                          );
                         }
                       },
                     ),
@@ -1159,6 +1290,7 @@ class _PurchaseSummaryHeader extends StatelessWidget {
     required this.totalText,
     required this.paidText,
     required this.remainingText,
+    this.onOpenLedger,
   });
 
   final BillDetailsModel details;
@@ -1169,6 +1301,7 @@ class _PurchaseSummaryHeader extends StatelessWidget {
   final String totalText;
   final String paidText;
   final String remainingText;
+  final VoidCallback? onOpenLedger;
 
   @override
   Widget build(BuildContext context) {
@@ -1196,16 +1329,40 @@ class _PurchaseSummaryHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      details.sellerName.isEmpty
-                          ? 'مصدر غير معروف'
-                          : details.sellerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15.sp,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            details.sellerName.isEmpty
+                                ? 'مصدر غير معروف'
+                                : details.sellerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15.sp,
+                                ),
                           ),
+                        ),
+                        if (onOpenLedger != null)
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            constraints: BoxConstraints(
+                              minWidth: 32.w,
+                              minHeight: 32.w,
+                            ),
+                            padding: EdgeInsets.zero,
+                            onPressed: onOpenLedger,
+                            icon: Icon(
+                              Icons.account_balance_wallet_outlined,
+                              color: AppColors.primaryColor,
+                              size: 19.sp,
+                            ),
+                          ),
+                      ],
                     ),
                     SizedBox(height: 3.h),
                     _MutedText(
@@ -1860,6 +2017,7 @@ class _ReceivingRowCard extends GetView<BillsController> {
     final hasDelivered = row.hasDeliveredEntry;
     final accepted = row.autoAccepted;
     final missing = row.autoMissing;
+    final extra = row.effectiveExtra;
     return Container(
       padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
@@ -1950,8 +2108,8 @@ class _ReceivingRowCard extends GetView<BillsController> {
                   label: 'ناقص تلقائي',
                   value: hasDelivered ? missing.toString() : '0',
                 ),
-                if (row.extra > 0)
-                  _StatusChip(label: 'أمانة', value: row.extra.toString()),
+                if (extra > 0)
+                  _StatusChip(label: 'أمانة', value: extra.toString()),
                 if (row.damaged > 0)
                   _StatusChip(label: 'تالف', value: row.damaged.toString()),
                 if (row.mismatched > 0)
@@ -2205,9 +2363,11 @@ class _PurchaseItemOverviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasIssue = item.damagedQuantity > 0 || item.mismatchedQuantity > 0;
-    final hasAmanat = item.amanatStocks.any((a) => a.remainingQuantity > 0);
     final missingQuantity = num.tryParse(item.missingAmount) ?? 0;
+    final hasIssue = missingQuantity > 0 ||
+        item.damagedQuantity > 0 ||
+        item.mismatchedQuantity > 0;
+    final hasAmanat = item.amanatStocks.any((a) => a.remainingQuantity > 0);
     final extraQuantity = num.tryParse(item.extraAmount) ?? 0;
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
@@ -2310,17 +2470,20 @@ class _AmanatListItem {
 
 class _IssueRow extends StatelessWidget {
   final BillProductModel product;
+  final VoidCallback? onResolveMissing;
   final VoidCallback? onResolveDamaged;
   final VoidCallback? onResolveMismatched;
 
   const _IssueRow({
     required this.product,
+    required this.onResolveMissing,
     required this.onResolveDamaged,
     required this.onResolveMismatched,
   });
 
   @override
   Widget build(BuildContext context) {
+    final missingQuantity = num.tryParse(product.missingAmount) ?? 0;
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(10.w),
@@ -2346,6 +2509,11 @@ class _IssueRow extends StatelessWidget {
             spacing: 6.w,
             runSpacing: 6.h,
             children: [
+              if (missingQuantity > 0)
+                _StatusChip(
+                  label: 'ناقص',
+                  value: missingQuantity.toString(),
+                ),
               if (product.damagedQuantity > 0)
                 _StatusChip(
                   label: 'تالف',
@@ -2363,6 +2531,12 @@ class _IssueRow extends StatelessWidget {
             spacing: 8.w,
             runSpacing: 8.h,
             children: [
+              if (onResolveMissing != null)
+                OutlinedButton.icon(
+                  onPressed: onResolveMissing,
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('تسوية النقص'),
+                ),
               if (onResolveDamaged != null)
                 OutlinedButton.icon(
                   onPressed: onResolveDamaged,

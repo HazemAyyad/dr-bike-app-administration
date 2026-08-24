@@ -13,7 +13,8 @@ class LedgerFormat {
     }
   }
 
-  static String money(double amount, {String currency = 'شيكل', int fractionDigits = 2}) {
+  static String money(double amount,
+      {String currency = 'شيكل', int fractionDigits = 2}) {
     return '${amount.toStringAsFixed(fractionDigits)} ${symbolFor(currency)}';
   }
 

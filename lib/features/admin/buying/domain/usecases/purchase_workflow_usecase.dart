@@ -37,12 +37,14 @@ class PurchaseWorkflowUsecase {
     required String amount,
     required String boxId,
     String? note,
+    List<dynamic> evidenceFiles = const [],
   }) {
     return billsRepository.payPurchase(
       billId: billId,
       amount: amount,
       boxId: boxId,
       note: note,
+      evidenceFiles: evidenceFiles,
     );
   }
 
@@ -54,6 +56,7 @@ class PurchaseWorkflowUsecase {
     String? note,
     bool allocateOldestFirst = true,
     List<Map<String, dynamic>> allocations = const [],
+    List<dynamic> evidenceFiles = const [],
   }) {
     return billsRepository.paySupplierAccount(
       sellerId: sellerId,
@@ -63,6 +66,7 @@ class PurchaseWorkflowUsecase {
       note: note,
       allocateOldestFirst: allocateOldestFirst,
       allocations: allocations,
+      evidenceFiles: evidenceFiles,
     );
   }
 

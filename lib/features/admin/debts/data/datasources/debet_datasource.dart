@@ -65,7 +65,8 @@ class DebetDatasource {
       final response = await api.get(
         EndPoints.getDebtsOwedToUs,
       );
-      _debugLogDebtListSample('debtsOwedToUs', EndPoints.getDebtsOwedToUs, response.data);
+      _debugLogDebtListSample(
+          'debtsOwedToUs', EndPoints.getDebtsOwedToUs, response.data);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -82,7 +83,8 @@ class DebetDatasource {
   Future<Map<String, dynamic>> debtsWeOwe() async {
     try {
       final response = await api.get(EndPoints.getDebtsWeOwe);
-      _debugLogDebtListSample('debtsWeOwe', EndPoints.getDebtsWeOwe, response.data);
+      _debugLogDebtListSample(
+          'debtsWeOwe', EndPoints.getDebtsWeOwe, response.data);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

@@ -12,6 +12,8 @@ abstract class BillsRepository {
     String customerId,
     required List<BillModel> products,
     required String total,
+    String initialPayment,
+    String? boxId,
   });
 
   Future<Either<Failure, String>> receivePurchase({
@@ -31,6 +33,7 @@ abstract class BillsRepository {
     required String amount,
     required String boxId,
     String? note,
+    List<dynamic> evidenceFiles,
   });
 
   Future<Either<Failure, String>> paySupplierAccount({
@@ -41,6 +44,7 @@ abstract class BillsRepository {
     String? note,
     bool allocateOldestFirst,
     List<Map<String, dynamic>> allocations,
+    List<dynamic> evidenceFiles,
   });
 
   Future<dynamic> purchaseAccountOpenBills({

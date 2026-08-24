@@ -7,11 +7,13 @@ import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../routes/app_routes.dart';
 import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
 import '../controllers/purchase_orders_controller.dart';
 import '../controllers/return_purchases_controller.dart';
+import '../widgets/buying_skeleton_widgets.dart';
 import '../widgets/bills_widgets/bills_list.dart';
 import '../widgets/return_purchases_widgets/return_purchases_list.dart';
 
@@ -35,22 +37,7 @@ class BuyingScreen extends GetView<BillsController> {
           children: [
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                child: const TabBar(
-                  labelColor: AppColors.primaryColor,
-                  unselectedLabelColor: Colors.black54,
-                  indicatorColor: AppColors.primaryColor,
-                  tabs: [
-                    Tab(text: 'فواتير الشراء'),
-                    Tab(text: 'استلام طلبات الشراء'),
-                    Tab(text: 'مردودات المشتريات'),
-                  ],
-                ),
-              ),
+              child: const _BuyingPrimaryTabs(),
             ),
             Expanded(
               child: TabBarView(
@@ -131,18 +118,68 @@ class BuyingScreen extends GetView<BillsController> {
   }
 }
 
+class _BuyingPrimaryTabs extends StatelessWidget {
+  const _BuyingPrimaryTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52.h,
+      padding: EdgeInsets.all(4.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: TabBar(
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: AppColors.secondaryColor,
+        unselectedLabelColor: Colors.black87,
+        labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800),
+        unselectedLabelStyle:
+            TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+        indicator: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 6.r,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        tabs: const [
+          Tab(text: 'فواتير الشراء'),
+          Tab(text: 'طلبات الشراء'),
+          Tab(text: 'الراجع'),
+        ],
+      ),
+    );
+  }
+}
+
 class _PurchaseInvoicesTab extends GetView<BillsController> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<BillsController>(
       builder: (controller) {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return AppPullToRefresh(
+            onRefresh: controller.getBills,
+            child: ListView(
+              physics: kRefreshableScrollPhysics,
+              children: const [BuyingBillsTableSkeleton()],
+            ),
+          );
         }
         if (controller.allBillsSearch.isEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async => controller.getBills(),
+          return AppPullToRefresh(
+            onRefresh: controller.getBills,
             child: ListView(
+              physics: kRefreshableScrollPhysics,
               padding: EdgeInsets.fromLTRB(16.w, 80.h, 16.w, 24.h),
               children: const [ShowNoData()],
             ),
@@ -150,9 +187,10 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
         }
         final months =
             controller.allBillsSearch.keys.toList().reversed.toList();
-        return RefreshIndicator(
-          onRefresh: () async => controller.getBills(),
+        return AppPullToRefresh(
+          onRefresh: controller.getBills,
           child: ListView.builder(
+            physics: kRefreshableScrollPhysics,
             padding: EdgeInsets.only(bottom: 90.h),
             itemCount: months.length,
             itemBuilder: (context, index) {
@@ -167,75 +205,248 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
   }
 }
 
+class _PurchaseOrderIconTabs extends StatelessWidget {
+  const _PurchaseOrderIconTabs({required this.controller});
+
+  final PurchaseOrdersController controller;
+
+  static const _items = [
+    _PurchaseOrderTabUi(
+      label: 'قيد الاستلام',
+      icon: Icons.inventory_2_outlined,
+      color: Colors.orange,
+    ),
+    _PurchaseOrderTabUi(
+      label: 'فروقات',
+      icon: Icons.report_problem_outlined,
+      color: Colors.red,
+    ),
+    _PurchaseOrderTabUi(
+      label: 'مكتملة',
+      icon: Icons.check_circle_outline,
+      color: Colors.green,
+    ),
+    _PurchaseOrderTabUi(
+      label: 'أمانات',
+      icon: Icons.account_balance_wallet_outlined,
+      color: Colors.indigo,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<PurchaseOrdersController>(
+      builder: (_) {
+        final selected = controller.currentTab.value;
+        return Container(
+          margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : AppColors.whiteColor2,
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < _items.length; i++)
+                Expanded(
+                  child: _PurchaseOrderIconTab(
+                    item: _items[i],
+                    selected: selected == i,
+                    onTap: () => controller.changeTab(i),
+                  ),
+                ),
+              SizedBox(width: 6.w),
+              IconButton(
+                tooltip: 'search'.tr,
+                visualDensity: VisualDensity.compact,
+                onPressed: controller.toggleSearch,
+                icon: Obx(
+                  () => Icon(
+                    controller.isSearchVisible.value
+                        ? Icons.search_off_rounded
+                        : Icons.search_rounded,
+                    color: AppColors.secondaryColor,
+                    size: 22.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PurchaseOrderIconTab extends StatelessWidget {
+  const _PurchaseOrderIconTab({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _PurchaseOrderTabUi item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? Colors.white : item.color;
+    return Tooltip(
+      message: item.label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(9.r),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 42.h,
+          margin: EdgeInsets.symmetric(horizontal: 3.w),
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
+          decoration: BoxDecoration(
+            color: selected ? item.color : item.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(9.r),
+            border: Border.all(color: item.color.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(item.icon, color: fg, size: 18.sp),
+              if (selected) ...[
+                SizedBox(width: 4.w),
+                Flexible(
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PurchaseOrderTabUi {
+  const _PurchaseOrderTabUi({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
 class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
   const _PurchaseOrdersEntryTab();
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: AppTabs(
-            tabs: controller.tabs,
-            currentTab: controller.currentTab,
-            changeTab: controller.changeTab,
+    return AppPullToRefresh(
+      onRefresh: controller.getBills,
+      child: CustomScrollView(
+        physics: kRefreshableScrollPhysics,
+        slivers: [
+          SliverToBoxAdapter(
+            child: _PurchaseOrderIconTabs(controller: controller),
           ),
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-        SliverToBoxAdapter(
-          child: _BuyingSearchBar(
-            onChanged: controller.searchBar,
-          ),
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-        GetBuilder<PurchaseOrdersController>(
-          builder: (controller) {
-            if (controller.isLoading.value) {
-              return const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            final current = controller.currentTab.value;
-            final source = current == 0
-                ? controller.unprocessedSearch
-                : current == 1
-                    ? controller.notMatchedSearch
-                    : current == 2
-                        ? controller.completedSearch
-                        : controller.depositsSearch;
-
-            if (source.isEmpty) {
-              return const SliverFillRemaining(
-                child: Center(child: ShowNoData()),
-              );
-            }
-
-            final months = source.keys.toList().reversed.toList();
-            return SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, section) {
-                  final month = months[section];
-                  final bills = source[month]!.reversed.toList();
-                  return BillsList(
-                    month: month,
-                    bills: bills,
-                    page: current == 0
-                        ? '2'
-                        : current == 2
-                            ? '1'
-                            : current == 1
-                                ? '3'
-                                : '4',
-                  );
-                },
-                childCount: months.length,
+          GetBuilder<PurchaseOrdersController>(
+            id: 'purchaseOrdersSearchBar',
+            builder: (_) => SliverToBoxAdapter(
+              child: Obx(
+                () => controller.isSearchVisible.value
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 6.h,
+                        ),
+                        child: SearchBar(
+                          controller: controller.searchController,
+                          shadowColor:
+                              WidgetStateProperty.all(Colors.transparent),
+                          leading: const Icon(Icons.search),
+                          trailing: [
+                            IconButton(
+                              tooltip: 'cancel'.tr,
+                              onPressed: controller.closeSearch,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                          hintText: 'ابحث برقم الفاتورة أو الطرف',
+                          backgroundColor: WidgetStateProperty.all(
+                            ThemeService.isDark.value
+                                ? AppColors.customGreyColor
+                                : AppColors.customGreyColor7,
+                          ),
+                          onChanged: controller.searchBar,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
-            );
-          },
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: 90.h)),
-      ],
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          GetBuilder<PurchaseOrdersController>(
+            builder: (controller) {
+              if (controller.isLoading.value) {
+                return const SliverToBoxAdapter(
+                  child: BuyingBillsTableSkeleton(),
+                );
+              }
+
+              final current = controller.currentTab.value;
+              final source = current == 0
+                  ? controller.unprocessedSearch
+                  : current == 1
+                      ? controller.notMatchedSearch
+                      : current == 2
+                          ? controller.completedSearch
+                          : controller.depositsSearch;
+
+              if (source.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(child: ShowNoData()),
+                );
+              }
+
+              final months = source.keys.toList().reversed.toList();
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, section) {
+                    final month = months[section];
+                    final bills = source[month]!.reversed.toList();
+                    return BillsList(
+                      month: month,
+                      bills: bills,
+                      page: current == 0
+                          ? '2'
+                          : current == 2
+                              ? '1'
+                              : current == 1
+                                  ? '3'
+                                  : '4',
+                    );
+                  },
+                  childCount: months.length,
+                ),
+              );
+            },
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+        ],
+      ),
     );
   }
 }
@@ -247,55 +458,59 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: AppTabs(
-                tabs: controller.tabs,
-                currentTab: controller.currentTab,
-                changeTab: controller.changeTab,
+        AppPullToRefresh(
+          onRefresh: controller.getReturnBills,
+          child: CustomScrollView(
+            physics: kRefreshableScrollPhysics,
+            slivers: [
+              SliverToBoxAdapter(
+                child: AppTabs(
+                  tabs: controller.tabs,
+                  currentTab: controller.currentTab,
+                  changeTab: controller.changeTab,
+                ),
               ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-            SliverToBoxAdapter(
-              child: _BuyingSearchBar(
-                onChanged: controller.searchBar,
+              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+              SliverToBoxAdapter(
+                child: _BuyingSearchBar(
+                  onChanged: controller.searchBar,
+                ),
               ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-            GetBuilder<ReturnPurchasesController>(
-              builder: (controller) {
-                if (controller.isLoading.value) {
-                  return const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
+              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+              GetBuilder<ReturnPurchasesController>(
+                builder: (controller) {
+                  if (controller.isLoading.value) {
+                    return const SliverToBoxAdapter(
+                      child: BuyingReturnListSkeleton(),
+                    );
+                  }
+
+                  final source = controller.currentTab.value == 0
+                      ? controller.returnPurchasesSearch
+                      : controller.deliveredPurchasesSearch;
+
+                  if (source.isEmpty) {
+                    return const SliverFillRemaining(
+                      child: Center(child: ShowNoData()),
+                    );
+                  }
+
+                  final months = source.keys.toList().reversed.toList();
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, section) {
+                        final month = months[section];
+                        final bills = source[month]!.reversed.toList();
+                        return ReturnPurchasesList(month: month, bills: bills);
+                      },
+                      childCount: months.length,
+                    ),
                   );
-                }
-
-                final source = controller.currentTab.value == 0
-                    ? controller.returnPurchasesSearch
-                    : controller.deliveredPurchasesSearch;
-
-                if (source.isEmpty) {
-                  return const SliverFillRemaining(
-                    child: Center(child: ShowNoData()),
-                  );
-                }
-
-                final months = source.keys.toList().reversed.toList();
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, section) {
-                      final month = months[section];
-                      final bills = source[month]!.reversed.toList();
-                      return ReturnPurchasesList(month: month, bills: bills);
-                    },
-                    childCount: months.length,
-                  ),
-                );
-              },
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: 90.h)),
-          ],
+                },
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+            ],
+          ),
         ),
         PositionedDirectional(
           start: 18.w,

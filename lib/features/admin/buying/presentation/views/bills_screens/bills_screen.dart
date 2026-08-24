@@ -8,6 +8,7 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
@@ -41,106 +42,110 @@ class BillsScreen extends GetView<BillsController> {
           SizedBox(width: 8.w),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(top: 8.h),
-              child: Center(
-                child: GetBuilder<BillsController>(
-                  builder: (controller) => AppTabs(
-                    tabs: controller.tabs,
-                    currentTab: controller.currentTab,
-                    changeTab: controller.changeTab,
+      body: AppPullToRefresh(
+        onRefresh: controller.getBills,
+        child: CustomScrollView(
+          physics: kRefreshableScrollPhysics,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.only(top: 8.h),
+                child: Center(
+                  child: GetBuilder<BillsController>(
+                    builder: (controller) => AppTabs(
+                      tabs: controller.tabs,
+                      currentTab: controller.currentTab,
+                      changeTab: controller.changeTab,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          GetBuilder<BillsController>(
-            id: 'purchaseSearchBar',
-            builder: (_) => SliverToBoxAdapter(
-              child: Obx(
-                () => controller.isPurchaseSearchVisible.value
-                    ? Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 8.h,
-                        ),
-                        child: SearchBar(
-                          controller: controller.searchController,
-                          shadowColor:
-                              WidgetStateProperty.all(Colors.transparent),
-                          leading: const Icon(Icons.search),
-                          trailing: [
-                            IconButton(
-                              tooltip: 'cancel'.tr,
-                              onPressed: controller.closePurchaseSearch,
-                              icon: const Icon(Icons.close_rounded),
-                            ),
-                          ],
-                          hintText: 'ابحث برقم الفاتورة أو المصدر',
-                          backgroundColor: WidgetStateProperty.all(
-                            ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor7,
+            GetBuilder<BillsController>(
+              id: 'purchaseSearchBar',
+              builder: (_) => SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isPurchaseSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 8.h,
                           ),
-                          onChanged: controller.searchBar,
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                          child: SearchBar(
+                            controller: controller.searchController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            leading: const Icon(Icons.search),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closePurchaseSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText: 'ابحث برقم الفاتورة أو المصدر',
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: controller.searchBar,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: _PurchaseBillStateFilters()),
-          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
-          GetBuilder<BillsController>(
-            builder: (controller) {
-              if (controller.isLoading.value) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+            const SliverToBoxAdapter(child: _PurchaseBillStateFilters()),
+            SliverToBoxAdapter(child: SizedBox(height: 8.h)),
+            GetBuilder<BillsController>(
+              builder: (controller) {
+                if (controller.isLoading.value) {
+                  return const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (controller.currentTab.value == 0 &&
+                    controller.allBillsSearch.isEmpty) {
+                  return const SliverFillRemaining(
+                      child: Center(child: ShowNoData()));
+                }
+                if (controller.currentTab.value == 1 &&
+                    controller.allBillsArchiveSearch.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: Center(child: ShowNoData()),
+                  );
+                }
+
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, section) {
+                      final month = controller.currentTab.value == 0
+                          ? controller.allBillsSearch.keys
+                              .toList()
+                              .reversed
+                              .toList()[section]
+                          : controller.allBillsArchiveSearch.keys
+                              .toList()
+                              .reversed
+                              .toList()[section];
+                      final bills = controller.currentTab.value == 0
+                          ? controller.allBillsSearch[month]
+                          : controller.allBillsArchiveSearch[month];
+
+                      return BillsList(month: month, bills: bills!, page: '1');
+                    },
+                    childCount: controller.currentTab.value == 0
+                        ? controller.allBillsSearch.length
+                        : controller.allBillsArchiveSearch.length,
+                  ),
                 );
-              }
-
-              if (controller.currentTab.value == 0 &&
-                  controller.allBillsSearch.isEmpty) {
-                return const SliverFillRemaining(
-                    child: Center(child: ShowNoData()));
-              }
-              if (controller.currentTab.value == 1 &&
-                  controller.allBillsArchiveSearch.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(child: ShowNoData()),
-                );
-              }
-
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, section) {
-                    final month = controller.currentTab.value == 0
-                        ? controller.allBillsSearch.keys
-                            .toList()
-                            .reversed
-                            .toList()[section]
-                        : controller.allBillsArchiveSearch.keys
-                            .toList()
-                            .reversed
-                            .toList()[section];
-                    final bills = controller.currentTab.value == 0
-                        ? controller.allBillsSearch[month]
-                        : controller.allBillsArchiveSearch[month];
-
-                    return BillsList(month: month, bills: bills!, page: '1');
-                  },
-                  childCount: controller.currentTab.value == 0
-                      ? controller.allBillsSearch.length
-                      : controller.allBillsArchiveSearch.length,
-                ),
-              );
-            },
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: 50.h)),
-        ],
+              },
+            ),
+            SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryColor,

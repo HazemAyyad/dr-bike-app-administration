@@ -31,10 +31,24 @@ class PurchaseOrdersController extends GetxController {
   List<String> tabs = ['unprocessed', 'not_matched', 'completed', 'deposits'];
 
   RxInt currentTab = 0.obs;
+  final RxBool isSearchVisible = false.obs;
+  final TextEditingController searchController = TextEditingController();
 
   void changeTab(int index) {
     currentTab.value = index;
     update();
+  }
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    update(['purchaseOrdersSearchBar']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    searchBar('');
+    update(['purchaseOrdersSearchBar']);
   }
 
   RxBool finished = false.obs;
@@ -71,14 +85,21 @@ class PurchaseOrdersController extends GetxController {
 
   RxBool isLoading = false.obs;
 
-  void getBills() async {
+  Future<void> getBills() async {
     BuyingServes().unprocessedTasks.isEmpty ? isLoading(true) : null;
     update();
     // دالة مساعدة للتجميع
     Map<String, List<BillDataModel>> groupByDate(List<BillDataModel> list) {
       final Map<String, List<BillDataModel>> grouped = {};
+      final sortedList = list.toList()
+        ..sort((a, b) {
+          final dateCompare = DateTime.parse(b.createdAt).compareTo(
+            DateTime.parse(a.createdAt),
+          );
+          return dateCompare != 0 ? dateCompare : b.id.compareTo(a.id);
+        });
 
-      for (var task in list) {
+      for (var task in sortedList) {
         final receiptDateObj = DateTime.parse(task.createdAt);
         final dayName =
             DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
@@ -97,7 +118,7 @@ class PurchaseOrdersController extends GetxController {
         ..sort((a, b) {
           final aDate = DateTime.parse(a.value.first.createdAt);
           final bDate = DateTime.parse(b.value.first.createdAt);
-          return aDate.compareTo(bDate); // الأحدث الأول
+          return bDate.compareTo(aDate);
         });
       return Map.fromEntries(sortedEntries);
     }
@@ -383,6 +404,9 @@ class PurchaseOrdersController extends GetxController {
   final depositsSearch = <String, List<BillDataModel>>{}.obs;
 
   void searchBar(String value) {
+    if (searchController.text != value) {
+      searchController.text = value;
+    }
     if (value.isNotEmpty) {
       unprocessedSearch.value = Map.fromEntries(
         BuyingServes().unprocessedTasks.entries.map((entry) {
@@ -440,5 +464,16 @@ class PurchaseOrdersController extends GetxController {
     completedSearch.assignAll(BuyingServes().completedTasks);
     depositsSearch.assignAll(BuyingServes().depositsTasks);
     super.onInit();
+  }
+
+  @override
+  void onClose() {
+    missingController.dispose();
+    returnedExtraController.dispose();
+    notCompatibleController.dispose();
+    notCompatibleDescriptionController.dispose();
+    purchaseNewPriceController.dispose();
+    searchController.dispose();
+    super.onClose();
   }
 }

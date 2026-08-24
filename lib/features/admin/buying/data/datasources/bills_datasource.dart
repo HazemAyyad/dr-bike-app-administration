@@ -71,6 +71,8 @@ class BillsDatasource {
     String customerId = '',
     required List<BillModel> products,
     required String total,
+    String initialPayment = '0',
+    String? boxId,
   }) async {
     final Map<String, dynamic> productsList = {};
 
@@ -90,6 +92,13 @@ class BillsDatasource {
             products[i].priceController.text;
       }
       if (total.isNotEmpty) productsList['total'] = total;
+    }
+    final paid = num.tryParse(initialPayment) ?? 0;
+    if (paid > 0) {
+      productsList['initial_payment'] = initialPayment;
+      if (boxId != null && boxId.isNotEmpty) {
+        productsList['box_id'] = boxId;
+      }
     }
 
     try {
@@ -174,16 +183,20 @@ class BillsDatasource {
     required String amount,
     required String boxId,
     String? note,
+    List<MultipartFile> evidenceFiles = const [],
   }) async {
     try {
+      final data = {
+        'bill_id': billId,
+        'amount': amount,
+        'box_id': boxId,
+        if (note != null && note.isNotEmpty) 'note': note,
+        if (evidenceFiles.isNotEmpty) 'receipt_images[]': evidenceFiles,
+      };
       final response = await api.post(
         EndPoints.purchasePayment,
-        data: {
-          'bill_id': billId,
-          'amount': amount,
-          'box_id': boxId,
-          if (note != null && note.isNotEmpty) 'note': note,
-        },
+        data: data,
+        isFormData: evidenceFiles.isNotEmpty,
       );
       return response.data;
     } on DioException catch (e) {
@@ -206,19 +219,23 @@ class BillsDatasource {
     String? note,
     bool allocateOldestFirst = true,
     List<Map<String, dynamic>> allocations = const [],
+    List<MultipartFile> evidenceFiles = const [],
   }) async {
     try {
+      final data = {
+        if (sellerId.isNotEmpty) 'seller_id': sellerId,
+        if (customerId.isNotEmpty) 'customer_id': customerId,
+        'amount': amount,
+        'box_id': boxId,
+        'allocate_oldest_first': allocateOldestFirst,
+        if (allocations.isNotEmpty) 'allocations': allocations,
+        if (note != null && note.isNotEmpty) 'note': note,
+        if (evidenceFiles.isNotEmpty) 'receipt_images[]': evidenceFiles,
+      };
       final response = await api.post(
         EndPoints.purchaseAccountPayment,
-        data: {
-          if (sellerId.isNotEmpty) 'seller_id': sellerId,
-          if (customerId.isNotEmpty) 'customer_id': customerId,
-          'amount': amount,
-          'box_id': boxId,
-          'allocate_oldest_first': allocateOldestFirst,
-          if (allocations.isNotEmpty) 'allocations': allocations,
-          if (note != null && note.isNotEmpty) 'note': note,
-        },
+        data: data,
+        isFormData: evidenceFiles.isNotEmpty,
       );
       return response.data;
     } on DioException catch (e) {

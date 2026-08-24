@@ -485,6 +485,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       0,
       (sum, item) => sum + item.total.toDouble(),
     );
+    update(['purchaseCheckoutSummary']);
     update();
   }
 
@@ -666,15 +667,22 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   RxBool isLoading = false.obs;
 
-  void getBills() async {
+  Future<void> getBills() async {
     BuyingServes().allBillsTasks.isEmpty ? isLoading(true) : null;
     update();
 
     // دالة مساعدة للتجميع
     Map<String, List<BillDataModel>> groupByDate(List<BillDataModel> list) {
       final Map<String, List<BillDataModel>> grouped = {};
+      final sortedList = list.toList()
+        ..sort((a, b) {
+          final dateCompare = DateTime.parse(b.createdAt).compareTo(
+            DateTime.parse(a.createdAt),
+          );
+          return dateCompare != 0 ? dateCompare : b.id.compareTo(a.id);
+        });
 
-      for (var task in list) {
+      for (var task in sortedList) {
         final receiptDateObj = DateTime.parse(task.createdAt);
         final dayName =
             DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
@@ -695,7 +703,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         ..sort((a, b) {
           final aDate = DateTime.parse(a.value.first.createdAt);
           final bDate = DateTime.parse(b.value.first.createdAt);
-          return aDate.compareTo(bDate); // الأحدث الأول
+          return bDate.compareTo(aDate);
         });
 
       return Map.fromEntries(sortedEntries);
@@ -741,7 +749,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   // get bill details
   BillDetailsModel? billDetails;
-  void getBillDetails({
+  Future<void> getBillDetails({
     required BuildContext context,
     required String billId,
     bool isDownload = false,
@@ -818,6 +826,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       <Map<String, dynamic>>[].obs;
   final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
   final Rxn<ShownBoxesModel> selectedPurchaseBox = Rxn<ShownBoxesModel>();
+  final RxList<PlatformFile> purchasePaymentEvidenceFiles =
+      <PlatformFile>[].obs;
   final TextEditingController purchasePaymentAmountController =
       TextEditingController();
   final TextEditingController purchasePaymentNoteController =
@@ -851,6 +861,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       customerId: customerIdController.text,
       products: billModel,
       total: totalCost.value.toString(),
+      initialPayment: purchasePaymentAmountController.text.trim().isEmpty
+          ? '0'
+          : purchasePaymentAmountController.text.trim(),
+      boxId: selectedPurchaseBox.value?.boxId.toString(),
     );
 
     result.fold((failure) {
@@ -916,6 +930,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         billId: details.billId.toString(),
         items: items,
       ),
+      showSuccess: false,
     );
   }
 
@@ -964,23 +979,25 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         billId: details.billId.toString(),
         items: items,
       ),
+      showSuccess: false,
     );
   }
 
-  Future<void> finalizeShownPurchase(
+  Future<bool> finalizeShownPurchase(
     BuildContext context, {
     String initialPayment = '0',
     String? boxId,
   }) async {
     final details = billDetails;
-    if (details == null) return;
-    await _runWorkflowAction(
+    if (details == null) return false;
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.finalize(
         billId: details.billId.toString(),
         initialPayment: initialPayment,
         boxId: boxId,
       ),
+      showSuccess: false,
     );
   }
 
@@ -1002,7 +1019,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   void preparePaymentAmount({String? amount}) {
     purchasePaymentAmountController.text = amount ?? '';
     purchasePaymentNoteController.clear();
+    purchasePaymentEvidenceFiles.clear();
     clearOpenPurchaseBills();
+    update();
   }
 
   void clearOpenPurchaseBills() {
@@ -1037,6 +1056,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     required String amount,
     required String boxId,
     String? note,
+    List<dio.MultipartFile> evidenceFiles = const [],
+    bool showSuccess = true,
   }) async {
     final details = billDetails;
     if (details == null) return false;
@@ -1047,7 +1068,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         amount: amount,
         boxId: boxId,
         note: note,
+        evidenceFiles: evidenceFiles,
       ),
+      showSuccess: showSuccess,
     );
   }
 
@@ -1081,6 +1104,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       amount: amount,
       boxId: box.boxId.toString(),
       note: purchasePaymentNoteController.text.trim(),
+      evidenceFiles: await _buildPaymentEvidenceMultipart(context),
     );
     var ok = false;
     result.fold(
@@ -1172,6 +1196,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         .map((bill) => bill.toAllocation())
         .whereType<Map<String, dynamic>>()
         .toList();
+    final evidenceFiles = await _buildPaymentEvidenceMultipart(context);
+    if (!context.mounted) return false;
     return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.paySupplierAccount(
@@ -1182,7 +1208,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         note: purchasePaymentNoteController.text.trim(),
         allocateOldestFirst: allocations.isEmpty,
         allocations: allocations,
+        evidenceFiles: evidenceFiles,
       ),
+      showSuccess: false,
     );
   }
 
@@ -1206,7 +1234,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  Future<void> purchaseShownAmanat(
+  Future<bool> purchaseShownAmanat(
     BuildContext context, {
     required String amanatId,
   }) async {
@@ -1218,7 +1246,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال كمية صحيحة',
       );
-      return;
+      return false;
     }
     if (unitPrice.isEmpty || (num.tryParse(unitPrice) ?? 0) < 0) {
       Helpers.showCustomDialogError(
@@ -1226,19 +1254,20 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال سعر صحيح',
       );
-      return;
+      return false;
     }
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.purchaseAmanat(
         amanatId: amanatId,
         quantity: quantity,
         unitPrice: unitPrice,
       ),
+      showSuccess: false,
     );
   }
 
-  Future<void> returnShownAmanat(
+  Future<bool> returnShownAmanat(
     BuildContext context, {
     required String amanatId,
   }) async {
@@ -1249,26 +1278,27 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال كمية صحيحة',
       );
-      return;
+      return false;
     }
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.returnAmanat(
         amanatId: amanatId,
         quantity: quantity,
         note: amanatNoteController.text.trim(),
       ),
+      showSuccess: false,
     );
   }
 
-  Future<void> resolveShownIssue(
+  Future<bool> resolveShownIssue(
     BuildContext context, {
     required BillProductModel product,
     required String issueType,
     required String resolution,
   }) async {
     final details = billDetails;
-    if (details == null) return;
+    if (details == null) return false;
     final quantity = issueQuantityController.text.trim();
     if (quantity.isEmpty || (num.tryParse(quantity) ?? 0) <= 0) {
       Helpers.showCustomDialogError(
@@ -1276,7 +1306,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال كمية صحيحة',
       );
-      return;
+      return false;
     }
     if ((resolution == 'accept_with_discount' ||
             resolution == 'accept_negotiated_price') &&
@@ -1286,9 +1316,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب إدخال سعر تفاوضي صحيح',
       );
-      return;
+      return false;
     }
-    await _runWorkflowAction(
+    return _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.resolveIssue(
         billId: details.billId.toString(),
@@ -1301,6 +1331,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         reason: issueReasonController.text.trim(),
         notes: issueNotesController.text.trim(),
       ),
+      showSuccess: false,
     );
   }
 
@@ -1350,10 +1381,62 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<void> pickPurchasePaymentEvidence(BuildContext context) async {
+    final picked = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+      withData: false,
+    );
+    if (!context.mounted) return;
+    if (picked == null || picked.files.isEmpty) return;
+    final readable = picked.files.where((file) => file.path != null).toList();
+    if (readable.isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'تعذر قراءة الملفات المختارة',
+      );
+      return;
+    }
+    purchasePaymentEvidenceFiles.assignAll(readable);
+    update();
+  }
+
+  void removePurchasePaymentEvidence(PlatformFile file) {
+    purchasePaymentEvidenceFiles.remove(file);
+    update();
+  }
+
+  Future<List<dio.MultipartFile>> _buildPaymentEvidenceMultipart(
+    BuildContext context,
+  ) async {
+    final multipart = <dio.MultipartFile>[];
+    for (final file in purchasePaymentEvidenceFiles) {
+      if (file.path == null) continue;
+      multipart.add(
+        await dio.MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        ),
+      );
+    }
+    if (purchasePaymentEvidenceFiles.isNotEmpty &&
+        multipart.isEmpty &&
+        context.mounted) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'تعذر قراءة ملفات الإثبات المختارة',
+      );
+    }
+    return multipart;
+  }
+
   Future<bool> _runWorkflowAction(
     BuildContext context,
-    Future<dynamic> future,
-  ) async {
+    Future<dynamic> future, {
+    bool showSuccess = true,
+  }) async {
     isWorkflowLoading(true);
     update();
     final result = await future;
@@ -1364,11 +1447,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         message: failure.data['message'],
       );
     }, (success) {
-      Helpers.showCustomDialogSuccess(
-        context: context,
-        title: 'success'.tr,
-        message: success,
-      );
+      if (showSuccess) {
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      }
       if (billDetails != null) {
         getBillDetails(
           context: context,
@@ -1401,15 +1486,19 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       );
       return false;
     }
+    final evidenceFiles = await _buildPaymentEvidenceMultipart(context);
+    if (!context.mounted) return false;
     return payShownPurchase(
       context,
       amount: amount,
       boxId: box.boxId.toString(),
       note: purchasePaymentNoteController.text.trim(),
+      evidenceFiles: evidenceFiles,
+      showSuccess: false,
     );
   }
 
-  Future<void> finalizeShownPurchaseWithInitialPayment(
+  Future<bool> finalizeShownPurchaseWithInitialPayment(
     BuildContext context,
   ) async {
     final box = selectedPurchaseBox.value;
@@ -1421,9 +1510,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         title: 'error'.tr,
         message: 'يجب اختيار صندوق للدفعة الأولية',
       );
-      return;
+      return false;
     }
-    await finalizeShownPurchase(
+    return finalizeShownPurchase(
       context,
       initialPayment: parsed > 0 ? amount : '0',
       boxId: box?.boxId.toString(),
@@ -1497,6 +1586,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   @override
   void onInit() {
+    purchasePaymentAmountController.addListener(_refreshPurchasePaymentSummary);
     getBills();
     getAllProducts();
     getAllPurchaseSources();
@@ -1525,6 +1615,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     super.onInit();
   }
 
+  void _refreshPurchasePaymentSummary() {
+    update(['purchaseCheckoutSummary']);
+  }
+
   @override
   void onClose() {
     animController.dispose();
@@ -1539,6 +1633,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     for (final item in purchaseCart) {
       item.dispose();
     }
+    purchasePaymentAmountController
+        .removeListener(_refreshPurchasePaymentSummary);
     purchasePaymentAmountController.dispose();
     purchasePaymentNoteController.dispose();
     purchaseReturnNoteController.dispose();
@@ -1679,11 +1775,18 @@ class PurchaseReceivingRowModel {
   num get damaged => _num(damagedController);
   num get mismatched => _num(mismatchedController);
   bool get hasDeliveredEntry => deliveredNowController.text.trim().isNotEmpty;
+  num get effectiveExtra {
+    if (!hasDeliveredEntry) return hasExtra ? extra : 0;
+    if (hasExtra) return extra;
+    final surplus =
+        deliveredNow - product.remainingQuantity - damaged - mismatched;
+    return surplus > 0 ? surplus : 0;
+  }
 
   num get autoAccepted {
     if (!hasDeliveredEntry || deliveredNow <= 0) return 0;
-    final issueTotal = extra + damaged + mismatched;
-    final owned = deliveredNow - extra - damaged - mismatched;
+    final issueTotal = effectiveExtra + damaged + mismatched;
+    final owned = deliveredNow - issueTotal;
     if (owned <= 0 || issueTotal >= deliveredNow) return 0;
     return owned > product.remainingQuantity
         ? product.remainingQuantity
@@ -1699,14 +1802,14 @@ class PurchaseReceivingRowModel {
       !hasDeliveredEntry &&
       accepted <= 0 &&
       missing <= 0 &&
-      extra <= 0 &&
+      effectiveExtra <= 0 &&
       damaged <= 0 &&
       mismatched <= 0;
 
   bool get isValid {
     if (accepted < 0 ||
         missing < 0 ||
-        extra < 0 ||
+        effectiveExtra < 0 ||
         damaged < 0 ||
         mismatched < 0) {
       return false;
@@ -1718,7 +1821,8 @@ class PurchaseReceivingRowModel {
       return false;
     }
     if (hasDeliveredEntry &&
-        effectiveAccepted + extra + damaged + mismatched > deliveredNow) {
+        effectiveAccepted + effectiveExtra + damaged + mismatched >
+            deliveredNow) {
       return false;
     }
     return true;
@@ -1731,7 +1835,7 @@ class PurchaseReceivingRowModel {
       'bill_item_id': product.billItemId,
       'accepted_quantity': effectiveAccepted,
       'missing_quantity': effectiveMissing,
-      'extra_quantity': hasExtra ? extra : 0,
+      'extra_quantity': effectiveExtra,
       'damaged_quantity': hasDamaged ? damaged : 0,
       'mismatched_quantity': hasMismatched ? mismatched : 0,
       'unit_price': unitPriceController.text.trim(),

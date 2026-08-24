@@ -34,8 +34,8 @@ class _PersonNoteSheetState extends State<PersonNoteSheet> {
 
   Future<void> _save() async {
     setState(() => _isSaving = true);
-    final ok =
-        await Get.find<DebtLedgerController>().savePersonNotes(_controller.text);
+    final ok = await Get.find<DebtLedgerController>()
+        .savePersonNotes(_controller.text);
     setState(() => _isSaving = false);
     if (ok && mounted) {
       Get.back();
@@ -87,7 +87,9 @@ class _PersonNoteSheetState extends State<PersonNoteSheet> {
               ),
               SizedBox(height: 6.h),
               Text(
-                hasNote ? 'ledgerPersonNoteEditHint'.tr : 'ledgerPersonNoteAddHint'.tr,
+                hasNote
+                    ? 'ledgerPersonNoteEditHint'.tr
+                    : 'ledgerPersonNoteAddHint'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600),
               ),
@@ -137,7 +139,7 @@ class _PersonNoteSheetState extends State<PersonNoteSheet> {
                   onPressed: _isSaving ? null : _clear,
                   child: Text(
                     'ledgerClearNote'.tr,
-                    style: TextStyle(color: LedgerColors.givenRed),
+                    style: const TextStyle(color: LedgerColors.givenRed),
                   ),
                 ),
               ],

@@ -66,7 +66,8 @@ class LedgerShareVoucherWidget extends StatelessWidget {
                         timeLabel,
                         style: TextStyle(
                           fontSize: 14,
-                          color: LedgerColors.primaryBlue.withValues(alpha: 0.65),
+                          color:
+                              LedgerColors.primaryBlue.withValues(alpha: 0.65),
                           height: 1.3,
                         ),
                       ),

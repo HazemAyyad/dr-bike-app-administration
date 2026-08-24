@@ -61,10 +61,8 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
       return const SizedBox.shrink();
     }
 
-    final takenCount =
-        detail.transactions.where((t) => t.isTaken).length;
-    final givenCount =
-        detail.transactions.where((t) => !t.isTaken).length;
+    final takenCount = detail.transactions.where((t) => t.isTaken).length;
+    final givenCount = detail.transactions.where((t) => !t.isTaken).length;
     final timeLabel = controller.formatReminderTime();
     final smsMessage = controller.buildPerformanceReminderSmsMessage(
       _shareUrl ?? '',
@@ -72,8 +70,7 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
     final whatsappMessage = controller.buildPerformanceReminderWhatsappMessage(
       _shareUrl ?? '',
     );
-    final messagePreview =
-        _channel == 'sms' ? smsMessage : whatsappMessage;
+    final messagePreview = _channel == 'sms' ? smsMessage : whatsappMessage;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -226,8 +223,8 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
                         height: 48.h,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: LedgerColors.givenRed
-                                .withValues(alpha: 0.85),
+                            backgroundColor:
+                                LedgerColors.givenRed.withValues(alpha: 0.85),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12.r),

@@ -15,6 +15,8 @@ class AddBillUsecase {
     required List<BillModel> products,
     required String total,
     required String page,
+    String initialPayment = '0',
+    String? boxId,
   }) {
     return billsRepository.addBill(
       page: page,
@@ -22,6 +24,8 @@ class AddBillUsecase {
       customerId: customerId,
       products: products,
       total: total,
+      initialPayment: initialPayment,
+      boxId: boxId,
     );
   }
 }

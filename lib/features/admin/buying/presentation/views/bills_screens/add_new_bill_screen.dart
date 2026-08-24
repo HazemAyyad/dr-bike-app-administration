@@ -1168,41 +1168,51 @@ class _PurchaseCheckoutSummary extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
-    final total = controller.totalCost.value;
-    final paid =
-        num.tryParse(controller.purchasePaymentAmountController.text.trim()) ??
-            0;
-    final remaining = total - paid;
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.16),
-        ),
-      ),
-      child: Column(
-        children: [
-          _PurchaseSummaryLine(
-            label: 'إجمالي الفاتورة',
-            value: _purchaseMoney(total),
-            color: AppColors.primaryColor,
-          ),
-          SizedBox(height: 8.h),
-          _PurchaseSummaryLine(
-            label: 'المبلغ المدفوع',
-            value: '${paid.toStringAsFixed(2)} ₪',
-            color: Colors.green,
-          ),
-          SizedBox(height: 8.h),
-          _PurchaseSummaryLine(
-            label: 'المتبقي',
-            value: '${remaining.toStringAsFixed(2)} ₪',
-            color: remaining > 0 ? Colors.black87 : Colors.green,
-          ),
-        ],
-      ),
+    return GetBuilder<BillsController>(
+      id: 'purchaseCheckoutSummary',
+      builder: (controller) {
+        return Obx(() {
+          final total = controller.totalCost.value;
+          return ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller.purchasePaymentAmountController,
+            builder: (_, value, __) {
+              final paid = num.tryParse(value.text.trim()) ?? 0;
+              final remaining = total - paid;
+              return Container(
+                padding: EdgeInsets.all(14.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _PurchaseSummaryLine(
+                      label: 'إجمالي الفاتورة',
+                      value: _purchaseMoney(total),
+                      color: AppColors.primaryColor,
+                    ),
+                    SizedBox(height: 8.h),
+                    _PurchaseSummaryLine(
+                      label: 'المبلغ المدفوع',
+                      value: '${paid.toStringAsFixed(2)} ₪',
+                      color: Colors.green,
+                    ),
+                    SizedBox(height: 8.h),
+                    _PurchaseSummaryLine(
+                      label: 'المتبقي',
+                      value: '${remaining.toStringAsFixed(2)} ₪',
+                      color: remaining > 0 ? Colors.black87 : Colors.green,
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        });
+      },
     );
   }
 }
@@ -1746,13 +1756,21 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
               ),
               SizedBox(
                 width: 90.w,
-                child: Text(
-                  '${item.total.toStringAsFixed(2)} ₪',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([
+                    item.quantityController,
+                    item.priceController,
+                  ]),
+                  builder: (_, __) {
+                    return Text(
+                      '${item.total.toStringAsFixed(2)} ₪',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    );
+                  },
                 ),
               ),
               SizedBox(

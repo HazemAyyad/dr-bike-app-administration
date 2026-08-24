@@ -31,15 +31,20 @@ class ReturnPurchasesController extends GetxController {
 
   RxBool isLoading = false.obs;
 
-  void getReturnBills() async {
+  Future<void> getReturnBills() async {
     BuyingServes().returnPurchasesListTasks.isEmpty ? isLoading(true) : null;
     update();
 
     // دالة مساعدة للتجميع
     Map<String, List<ReturnProduct>> groupByDate(List<ReturnProduct> list) {
       final Map<String, List<ReturnProduct>> grouped = {};
+      final sortedList = list.toList()
+        ..sort((a, b) {
+          final dateCompare = b.createdAt.compareTo(a.createdAt);
+          return dateCompare != 0 ? dateCompare : b.id.compareTo(a.id);
+        });
 
-      for (var task in list) {
+      for (var task in sortedList) {
         final receiptDateObj = task.createdAt;
         final dayName =
             DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
@@ -60,7 +65,7 @@ class ReturnPurchasesController extends GetxController {
         ..sort((a, b) {
           final aDate = a.value.first.createdAt;
           final bDate = b.value.first.createdAt;
-          return aDate.compareTo(bDate); // الأحدث الأول
+          return bDate.compareTo(aDate);
         });
 
       return Map.fromEntries(sortedEntries);

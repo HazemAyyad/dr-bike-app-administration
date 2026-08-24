@@ -17,6 +17,8 @@ import '../../../maintenance/presentation/binding/maintenance_binding.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
 import '../../../sales/presentation/binding/sales_binding.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
+import '../../../buying/presentation/binding/buying_binding.dart';
+import '../../../buying/presentation/controllers/bills_controller.dart';
 import '../ledger/edit_transaction_sheet.dart';
 import '../ledger/person_detail_screen.dart';
 import '../ledger/transaction_detail_screen.dart';
@@ -768,6 +770,11 @@ class DebtLedgerController extends GetxController {
       case 'maintenance':
         await _openMaintenanceInvoice(sourceId);
         return true;
+      case 'purchase_invoice':
+      case 'purchase_initial_payment':
+      case 'purchase_payment':
+        await _openPurchaseInvoice(sourceId);
+        return true;
       case 'incoming_check':
       case 'incoming_check_disposal':
         await Get.toNamed(
@@ -810,6 +817,21 @@ class DebtLedgerController extends GetxController {
       context: context,
       maintenanceId: sourceId.toString(),
     );
+  }
+
+  Future<void> _openPurchaseInvoice(int sourceId) async {
+    if (!Get.isRegistered<BillsController>() &&
+        !Get.isPrepared<BillsController>()) {
+      BuyingBinding().dependencies();
+    }
+    final context = Get.context;
+    if (context != null) {
+      await Get.find<BillsController>().getBillDetails(
+        context: context,
+        billId: sourceId.toString(),
+      );
+    }
+    await Get.toNamed(AppRoutes.BILLDETAILSSCREEN, arguments: '0');
   }
 
   Future<void> deleteTransaction(int id) async {

@@ -30,6 +30,7 @@ class BillDataModel {
   final int id;
   final String total;
   final String seller;
+  final String sourceType;
   final String createdAt;
   final String status;
   final String workflowStatus;
@@ -49,6 +50,7 @@ class BillDataModel {
     required this.id,
     required this.total,
     required this.seller,
+    required this.sourceType,
     required this.createdAt,
     required this.status,
     required this.workflowStatus,
@@ -77,6 +79,7 @@ class BillDataModel {
       seller: _billSellerString(
         j['seller'] ?? j['seller_name'] ?? j['user'],
       ),
+      sourceType: asString(j['source_type']),
       createdAt: _billCreatedAtString(
         j['created_at'] ?? j['date'] ?? j['createdAt'],
       ),
@@ -113,6 +116,7 @@ class BillDataModel {
       'id': id,
       'total': total,
       'seller': seller,
+      'source_type': sourceType,
       'created_at': createdAt,
       'status': status,
       'workflow_status': workflowStatus,

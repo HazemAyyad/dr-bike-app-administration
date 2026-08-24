@@ -59,9 +59,8 @@ class DebtsWeOwe {
     final j = Map<String, dynamic>.from(json);
     return DebtsWeOwe(
       debtId: asInt(j['debt_id']),
-      customerId: j[ApiKey.customer_id] == null
-          ? null
-          : asInt(j[ApiKey.customer_id]),
+      customerId:
+          j[ApiKey.customer_id] == null ? null : asInt(j[ApiKey.customer_id]),
       customerName: asString(j[ApiKey.customer_name]),
       customerIsCanceled: _nullableBool(j[ApiKey.customer_is_canceled]),
       sellerId: j['seller_id'] == null ? null : asInt(j['seller_id']),
