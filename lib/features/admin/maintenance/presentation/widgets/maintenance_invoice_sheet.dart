@@ -459,6 +459,12 @@ class _InvoiceLine {
 class MaintenanceInvoicePdfBuilder {
   MaintenanceInvoicePdfBuilder._();
 
+  static final PdfColor _brandColor = PdfColor.fromHex('#6B65BD');
+  static final PdfColor _borderColor = PdfColor.fromHex('#D1D5DB');
+  static final PdfColor _textColor = PdfColor.fromHex('#111827');
+  static final PdfColor _mutedColor = PdfColor.fromHex('#6B7280');
+  static final PdfColor _rowColor = PdfColor.fromHex('#F9FAFB');
+
   static Future<pw.Font> _regular() async {
     final data =
         await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf');
@@ -471,6 +477,14 @@ class MaintenanceInvoicePdfBuilder {
   }
 
   static String _money(double value) => NumberFormat('#,##0.00').format(value);
+
+  static String _currency(MaintenanceInvoiceModel invoice) => invoice.currency;
+
+  static String _amount(
+    MaintenanceInvoiceModel invoice,
+    double value,
+  ) =>
+      '${_money(value)} ${_currency(invoice)}';
 
   static Future<pw.MemoryImage?> _logo() async {
     try {
@@ -485,26 +499,20 @@ class MaintenanceInvoicePdfBuilder {
     final regular = await _regular();
     final bold = await _bold();
     final logo = await _logo();
-    var paymentColor = PdfColors.red800;
-    if (invoice.paymentStatus == 'paid') {
-      paymentColor = PdfColors.green800;
-    } else if (invoice.paymentStatus == 'partial') {
-      paymentColor = PdfColors.orange800;
-    }
-    final rows = invoice.items.isEmpty
+    final productRows = invoice.items.isEmpty
         ? [
-            ['-', 'لا توجد منتجات أو قطع غيار', '-', '-', '-']
+            ['-', '-', '-', 'لا توجد منتجات أو قطع غيار', '-']
           ]
         : invoice.items
             .asMap()
             .entries
             .map(
               (entry) => [
-                '${entry.key + 1}',
-                entry.value.productName,
+                _amount(invoice, entry.value.lineTotal),
+                _amount(invoice, entry.value.unitPrice),
                 '${entry.value.quantity}',
-                '${_money(entry.value.unitPrice)} ${invoice.currency}',
-                '${_money(entry.value.lineTotal)} ${invoice.currency}',
+                entry.value.productName,
+                '${entry.key + 1}',
               ],
             )
             .toList();
@@ -513,208 +521,127 @@ class MaintenanceInvoicePdfBuilder {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(28, 26, 28, 26),
         textDirection: pw.TextDirection.rtl,
-        theme: pw.ThemeData.withFont(base: regular, bold: bold),
-        build: (_) => [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'دكتور بايك - فاتورة صيانة',
-                  style: pw.TextStyle(
-                    font: bold,
-                    fontSize: 22,
-                    color: PdfColors.deepPurple600,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.BarcodeWidget(
-                barcode: pw.Barcode.qrCode(),
-                data: invoice.qrPayload,
-                width: 62,
-                height: 62,
-                drawText: false,
-              ),
-              pw.SizedBox(width: 10),
-              if (logo != null) pw.Image(logo, height: 68),
-            ],
+        theme: pw.ThemeData.withFont(base: regular, bold: bold).copyWith(
+          defaultTextStyle: pw.TextStyle(
+            font: regular,
+            fontSize: 12,
+            color: _textColor,
           ),
+        ),
+        build: (_) => [
+          _purchaseHeader(invoice: invoice, logo: logo, bold: bold),
           pw.Container(
-            margin: const pw.EdgeInsets.only(top: 10, bottom: 12),
-            height: 1.4,
-            color: PdfColors.deepPurple600,
+            margin: const pw.EdgeInsets.only(top: 10, bottom: 10),
+            height: 1.3,
+            color: _brandColor,
           ),
           pw.Center(
             child: pw.Text(
-              'maintenanceInvoice'.tr,
+              'فاتورة صيانة',
               style: pw.TextStyle(font: bold, fontSize: 16),
             ),
           ),
-          pw.SizedBox(height: 12),
-          _detailsTable(
+          pw.SizedBox(height: 8),
+          _purchaseMetaBox(
+            invoice: invoice,
             bold: bold,
-            rows: [
-              ['billNumber'.tr, invoice.invoiceNumber, null],
-              ['maintenanceNumber'.tr, '#${invoice.maintenanceId}', null],
-              ['date'.tr, invoice.invoiceDateDisplay, null],
-              ['status'.tr, invoice.maintenanceStatusLabel, null],
-              ['invoiceStatus'.tr, invoice.paymentStatusLabel, paymentColor],
-              ['buyerName'.tr, invoice.customerName, null],
-              ['phoneNumberTitle'.tr, invoice.customerPhone ?? '-', null],
-              ['العنوان', invoice.customerAddress ?? '-', null],
-              ['deliveryDate'.tr, invoice.receiptDateTimeDisplay, null],
-              [
-                'حالة الدين',
-                invoice.hasDebt
-                    ? 'دين متبقٍ ${_money(invoice.debtAmount)} ${invoice.currency}'
-                    : invoice.paymentStatus == 'paid'
-                        ? 'لا يوجد دين - مدفوعة بالكامل'
-                        : 'لم يتم دفع كامل الفاتورة بعد - المتبقي ${_money(invoice.remainingAmount)} ${invoice.currency}',
-                invoice.hasDebt
-                    ? PdfColors.orange800
-                    : invoice.paymentStatus == 'paid'
-                        ? PdfColors.green800
-                        : PdfColors.red800,
-              ],
-            ],
           ),
-          pw.SizedBox(height: 14),
+          pw.SizedBox(height: 12),
+          _purchaseDataTable(
+            headers: const ['الإجمالي', 'السعر', 'الكمية', 'اسم المنتج', '#'],
+            data: productRows,
+            bold: bold,
+            rtlColumns: const {3},
+            columnWidths: const {
+              0: pw.FlexColumnWidth(1.3),
+              1: pw.FlexColumnWidth(1.2),
+              2: pw.FlexColumnWidth(0.8),
+              3: pw.FlexColumnWidth(2.8),
+              4: pw.FlexColumnWidth(0.45),
+            },
+          ),
           if (invoice.services.isNotEmpty) ...[
-            pw.Text('الخدمات المنفذة', style: pw.TextStyle(font: bold)),
-            pw.SizedBox(height: 6),
-            pw.TableHelper.fromTextArray(
-              headers: ['#', 'الخدمة', 'السعر'],
+            pw.SizedBox(height: 10),
+            _sectionTitle('الخدمات المنفذة', bold),
+            pw.SizedBox(height: 4),
+            _purchaseDataTable(
+              headers: const ['السعر', 'الخدمة', '#'],
               data: invoice.services
                   .asMap()
                   .entries
                   .map(
                     (entry) => [
-                      '${entry.key + 1}',
+                      _amount(invoice, entry.value.price),
                       entry.value.name,
-                      '${_money(entry.value.price)} ${invoice.currency}',
+                      '${entry.key + 1}',
                     ],
                   )
                   .toList(),
-              headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.deepPurple600),
-              cellAlignment: pw.Alignment.centerRight,
+              bold: bold,
+              rtlColumns: const {1},
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1.2),
+                1: pw.FlexColumnWidth(4.2),
+                2: pw.FlexColumnWidth(0.45),
+              },
             ),
-            pw.SizedBox(height: 14),
           ],
-          pw.Text('المنتجات وقطع الغيار', style: pw.TextStyle(font: bold)),
-          pw.SizedBox(height: 6),
-          pw.TableHelper.fromTextArray(
-            headers: [
-              '#',
-              'productName'.tr,
-              'quantity'.tr,
-              'price'.tr,
-              'total'.tr
-            ],
-            data: rows,
-            headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.deepPurple600),
-            cellAlignment: pw.Alignment.centerRight,
-          ),
-          pw.SizedBox(height: 14),
-          pw.Align(
-            alignment: pw.Alignment.centerRight,
-            child: pw.SizedBox(
-              width: 210,
-              child: pw.TableHelper.fromTextArray(
-                data: [
-                  [
-                    'maintenancePartsTotal'.tr,
-                    '${_money(invoice.partsTotal)} ${invoice.currency}'
-                  ],
-                  [
-                    'maintenanceLaborCost'.tr,
-                    '${_money(invoice.laborCost)} ${invoice.currency}'
-                  ],
-                  [
-                    'discount'.tr,
-                    '${_money(invoice.discount)} ${invoice.currency}'
-                  ],
-                  [
-                    'totalBill'.tr,
-                    '${_money(invoice.invoiceTotal)} ${invoice.currency}'
-                  ],
-                  [
-                    'paidAmount'.tr,
-                    '${_money(invoice.paidAmount)} ${invoice.currency}'
-                  ],
-                  [
-                    'remainingAmount'.tr,
-                    '${_money(invoice.remainingAmount)} ${invoice.currency}'
-                  ],
-                ],
-                cellAlignment: pw.Alignment.centerRight,
-              ),
-            ),
-          ),
           if (invoice.payments.isNotEmpty) ...[
-            pw.SizedBox(height: 12),
-            pw.Text('تفاصيل الدفع', style: pw.TextStyle(font: bold)),
-            pw.SizedBox(height: 6),
-            pw.TableHelper.fromTextArray(
+            pw.SizedBox(height: 10),
+            _sectionTitle('تفاصيل الدفعات', bold),
+            pw.SizedBox(height: 4),
+            _purchaseDataTable(
+              headers: const ['ملاحظة', 'المبلغ', 'النوع', 'التاريخ', '#'],
               data: invoice.payments
+                  .asMap()
+                  .entries
                   .map(
-                    (payment) => [
-                      _paymentLabel(payment.method),
-                      '${_money(payment.amount)} ${payment.currency}',
-                      payment.note ?? '-',
-                      payment.createdAt ?? '-',
+                    (entry) => [
+                      entry.value.note ?? '-',
+                      '${_money(entry.value.amount)} ${entry.value.currency}',
+                      _paymentLabel(entry.value.method),
+                      _shortDate(entry.value.createdAt),
+                      '${entry.key + 1}',
                     ],
                   )
                   .toList(),
-              headers: const ['طريقة الدفع', 'المبلغ', 'ملاحظة', 'التاريخ'],
-              headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
-              headerDecoration:
-                  const pw.BoxDecoration(color: PdfColors.deepPurple600),
-              cellAlignment: pw.Alignment.centerRight,
+              bold: bold,
+              rtlColumns: const {0, 2},
+              columnWidths: const {
+                0: pw.FlexColumnWidth(2.2),
+                1: pw.FlexColumnWidth(1.2),
+                2: pw.FlexColumnWidth(1),
+                3: pw.FlexColumnWidth(1.3),
+                4: pw.FlexColumnWidth(0.45),
+              },
             ),
           ],
+          pw.SizedBox(height: 12),
+          _purchaseTotals(invoice: invoice, bold: bold),
           if (invoice.notes.trim().isNotEmpty) ...[
-            pw.SizedBox(height: 12),
-            pw.Text('ملاحظات الصيانة', style: pw.TextStyle(font: bold)),
-            pw.SizedBox(height: 5),
+            pw.SizedBox(height: 10),
+            _sectionTitle('ملاحظات', bold),
+            pw.SizedBox(height: 4),
             pw.Container(
               width: double.infinity,
-              padding: const pw.EdgeInsets.all(9),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.grey100,
-                border: pw.Border.all(color: PdfColors.grey300),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 7,
               ),
-              child: pw.Text(invoice.notes),
+              decoration: pw.BoxDecoration(
+                color: _rowColor,
+                border: pw.Border.all(color: _borderColor),
+              ),
+              child: pw.Text(
+                invoice.notes,
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+              ),
             ),
           ],
-          pw.SizedBox(height: 16),
-          pw.Container(height: 1, color: PdfColors.grey300),
-          pw.SizedBox(height: 6),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                'تم إنشاء هذه الفاتورة من نظام دكتور بايك',
-                style: const pw.TextStyle(
-                  fontSize: 9,
-                  color: PdfColors.grey700,
-                ),
-              ),
-              pw.Text(
-                DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-                textDirection: pw.TextDirection.ltr,
-                style: const pw.TextStyle(
-                  fontSize: 9,
-                  color: PdfColors.grey700,
-                ),
-              ),
-            ],
-          ),
+          _purchaseFooter(),
         ],
       ),
     );
@@ -732,56 +659,342 @@ class MaintenanceInvoicePdfBuilder {
     }
   }
 
-  static pw.Widget _detailsTable({
+  static pw.Widget _purchaseHeader({
+    required MaintenanceInvoiceModel invoice,
+    required pw.MemoryImage? logo,
     required pw.Font bold,
-    required List<List<Object?>> rows,
   }) {
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.8),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(1),
-      },
-      children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+    return pw.Directionality(
+      textDirection: pw.TextDirection.ltr,
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.SizedBox(
+            width: 130,
+            height: 88,
+            child: logo == null
+                ? pw.SizedBox()
+                : pw.Align(
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Image(logo, height: 88),
+                  ),
+          ),
+          pw.Expanded(
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.BarcodeWidget(
+                  barcode: pw.Barcode.qrCode(),
+                  data: invoice.qrPayload,
+                  width: 64,
+                  height: 64,
+                  drawText: false,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  invoice.invoiceNumber,
+                  textDirection: pw.TextDirection.ltr,
+                  style: pw.TextStyle(fontSize: 8, color: _mutedColor),
+                ),
+              ],
+            ),
+          ),
+          pw.Expanded(
+            flex: 2,
+            child: pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'دكتور بايك - فاتورة صيانة',
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 21,
+                  color: _brandColor,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _purchaseMetaBox({
+    required MaintenanceInvoiceModel invoice,
+    required pw.Font bold,
+  }) {
+    final debtLabel = invoice.hasDebt
+        ? 'دين متبقٍ: ${_amount(invoice, invoice.debtAmount)}'
+        : invoice.paymentStatus == 'paid'
+            ? 'لا يوجد دين'
+            : 'غير مدفوع بعد: ${_amount(invoice, invoice.remainingAmount)}';
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _borderColor),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.ltr,
+        child: pw.Table(
+          columnWidths: const {
+            0: pw.FlexColumnWidth(),
+            1: pw.FlexColumnWidth(),
+          },
           children: [
-            _cell('القيمة', bold: bold, align: pw.Alignment.centerLeft),
-            _cell('البيان', bold: bold, align: pw.Alignment.centerRight),
+            _metaRow(
+              left: _metaLine('التاريخ', invoice.invoiceDateDisplay, bold),
+              right: _metaLine('رقم الفاتورة', invoice.invoiceNumber, bold,
+                  valueLtr: true),
+            ),
+            _metaRow(
+              left: _metaLine('نوع الطرف', invoice.customerTypeLabel, bold),
+              right: _metaLine('الطرف', invoice.customerName, bold),
+            ),
+            _metaRow(
+              left: _metaLine(
+                'العنوان',
+                _dash(invoice.customerAddress),
+                bold,
+              ),
+              right: _metaLine(
+                'الهاتف',
+                _dash(invoice.customerPhone),
+                bold,
+                valueLtr: true,
+              ),
+            ),
+            _metaRow(
+              left: _metaLine('حالة الدفع', invoice.paymentStatusLabel, bold),
+              right: _metaLine(
+                'حالة الصيانة',
+                invoice.maintenanceStatusLabel,
+                bold,
+              ),
+            ),
+            _metaRow(
+              left: _metaLine(
+                'موعد التسليم',
+                _dash(invoice.receiptDateTimeDisplay),
+                bold,
+              ),
+              right: _metaLine('حالة الدين', debtLabel, bold),
+            ),
           ],
         ),
-        ...rows.map(
-          (row) => pw.TableRow(
-            children: [
-              _cell(
-                (row[1] as String?)?.trim().isEmpty == true
-                    ? '-'
-                    : (row[1] as String? ?? '-'),
-                align: pw.Alignment.centerLeft,
-                color: row[2] as PdfColor?,
-                bold: row[2] == null ? null : bold,
-              ),
-              _cell(row[0] as String, bold: bold),
-            ],
-          ),
+      ),
+    );
+  }
+
+  static pw.TableRow _metaRow({
+    required pw.Widget left,
+    required pw.Widget right,
+  }) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(right: 16, bottom: 5),
+          child: left,
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(left: 16, bottom: 5),
+          child: right,
         ),
       ],
     );
   }
 
-  static pw.Widget _cell(
-    String text, {
-    pw.Font? bold,
-    PdfColor? color,
-    pw.Alignment align = pw.Alignment.centerRight,
+  static pw.Widget _metaLine(
+    String label,
+    String value,
+    pw.Font bold, {
+    bool valueLtr = false,
   }) {
-    return pw.Container(
-      alignment: align,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(font: bold, color: color),
+    return pw.Directionality(
+      textDirection: pw.TextDirection.rtl,
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(': $label', style: pw.TextStyle(font: bold)),
+          pw.SizedBox(width: 7),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              textDirection:
+                  valueLtr ? pw.TextDirection.ltr : pw.TextDirection.rtl,
+              textAlign: pw.TextAlign.right,
+              style: pw.TextStyle(color: PdfColor.fromHex('#374151')),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  static pw.Widget _purchaseDataTable({
+    required List<String> headers,
+    required List<List<String>> data,
+    required pw.Font bold,
+    required Set<int> rtlColumns,
+    required Map<int, pw.TableColumnWidth> columnWidths,
+  }) {
+    final alignments = <int, pw.Alignment>{
+      for (var i = 0; i < headers.length; i++)
+        i: rtlColumns.contains(i)
+            ? pw.Alignment.centerRight
+            : pw.Alignment.center,
+    };
+
+    return pw.TableHelper.fromTextArray(
+      headers: headers,
+      data: data,
+      tableDirection: pw.TextDirection.ltr,
+      headerDirection: pw.TextDirection.rtl,
+      columnWidths: columnWidths,
+      border: pw.TableBorder.all(color: _borderColor, width: 0.8),
+      cellPadding: const pw.EdgeInsets.all(5),
+      headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
+      headerDecoration: pw.BoxDecoration(color: _brandColor),
+      oddRowDecoration: pw.BoxDecoration(color: _rowColor),
+      cellAlignments: alignments,
+      headerAlignments: alignments,
+      cellBuilder: (index, data, rowNum) => pw.Text(
+        data.toString(),
+        textDirection: rtlColumns.contains(index)
+            ? pw.TextDirection.rtl
+            : pw.TextDirection.ltr,
+        textAlign: rtlColumns.contains(index)
+            ? pw.TextAlign.right
+            : pw.TextAlign.center,
+        style: pw.TextStyle(
+          font: rtlColumns.contains(index) ? null : bold,
+          fontSize: rtlColumns.contains(index) ? 11 : 10.5,
+        ),
+      ),
+    );
+  }
+
+  static pw.Widget _purchaseTotals({
+    required MaintenanceInvoiceModel invoice,
+    required pw.Font bold,
+  }) {
+    final rows = <List<Object?>>[
+      ['الإجمالي الفرعي', invoice.partsTotal + invoice.laborCost, null],
+      ['الخصم', invoice.discount, null],
+      ['الضريبة', 0.0, null],
+      ['إجمالي الفاتورة', invoice.invoiceTotal, 'total'],
+      ['المبلغ المدفوع', invoice.paidAmount, 'paid'],
+      ['المتبقي', invoice.remainingAmount, 'remaining'],
+    ];
+
+    return pw.Align(
+      alignment: pw.Alignment.centerRight,
+      child: pw.SizedBox(
+        width: 235,
+        child: pw.Directionality(
+          textDirection: pw.TextDirection.ltr,
+          child: pw.Table(
+            border: pw.TableBorder.all(color: _borderColor, width: 0.8),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(1.05),
+              1: pw.FlexColumnWidth(1.2),
+            },
+            children: rows.map((row) {
+              final kind = row[2] as String?;
+              final valueColor = kind == 'paid'
+                  ? PdfColors.green800
+                  : kind == 'remaining' && (row[1] as double) > 0
+                      ? PdfColors.orange800
+                      : _textColor;
+              return pw.TableRow(
+                decoration: kind == 'total'
+                    ? pw.BoxDecoration(color: PdfColor.fromHex('#E5E7EB'))
+                    : null,
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(5),
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text(
+                      _amount(invoice, row[1] as double),
+                      textDirection: pw.TextDirection.ltr,
+                      style: pw.TextStyle(
+                        font: kind == null ? null : bold,
+                        color: valueColor,
+                      ),
+                    ),
+                  ),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(5),
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      row[0] as String,
+                      textDirection: pw.TextDirection.rtl,
+                      style: pw.TextStyle(font: kind == 'total' ? bold : null),
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static pw.Widget _sectionTitle(String title, pw.Font bold) {
+    return pw.Align(
+      alignment: pw.Alignment.centerRight,
+      child: pw.Text(
+        title,
+        textDirection: pw.TextDirection.rtl,
+        style: pw.TextStyle(font: bold, fontSize: 12),
+      ),
+    );
+  }
+
+  static pw.Widget _purchaseFooter() {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(top: 14),
+      padding: const pw.EdgeInsets.only(top: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: _borderColor)),
+      ),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.ltr,
+        child: pw.Row(
+          children: [
+            pw.Text(
+              DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+              textDirection: pw.TextDirection.ltr,
+              style: pw.TextStyle(fontSize: 9, color: _mutedColor),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: pw.Text(
+                'هذه نسخة مطبوعة من فاتورة صيانة من نظام دكتور بايك تم إنشاؤها بتاريخ',
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(fontSize: 9, color: _mutedColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _dash(String? value) {
+    final clean = value?.trim() ?? '';
+    return clean.isEmpty ? '—' : clean;
+  }
+
+  static String _shortDate(String? value) {
+    final clean = value?.trim() ?? '';
+    if (clean.isEmpty) return '—';
+    final parsed = DateTime.tryParse(clean);
+    return parsed == null ? clean : DateFormat('yyyy-MM-dd').format(parsed);
   }
 }
