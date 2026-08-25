@@ -46,6 +46,7 @@ class SmartHomeController extends GetxController {
   final homes = <SmartHomeModel>[].obs;
   final rooms = <SmartRoomModel>[].obs;
   final devices = <SmartDeviceModel>[].obs;
+  final scenes = <SmartSceneModel>[].obs;
   final tuyaUser = Rxn<SmartHomeTuyaUserModel>();
   final isLinkingTuyaUser = false.obs;
   final isPairingDevice = false.obs;
@@ -57,6 +58,7 @@ class SmartHomeController extends GetxController {
   final deviceControlBusyIds = <int>{}.obs;
   final deviceControlBusyKeys = <String>{}.obs;
   final deviceDetailsBusyIds = <int>{}.obs;
+  final sceneBusyIds = <int>{}.obs;
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
   final Map<int, DateTime> _lastStatusPersistedAt = {};
   String _activeNativeTuyaUid = '';
@@ -87,6 +89,18 @@ class SmartHomeController extends GetxController {
     if (roomId == null) return devices.toList(growable: false);
     return devices
         .where((device) => device.smartRoomId == roomId)
+        .toList(growable: false);
+  }
+
+  List<SmartSceneModel> get visibleScenes {
+    final roomId = selectedRoomId.value;
+    if (roomId == null) {
+      return scenes.where((scene) => scene.showOnHome).toList(growable: false);
+    }
+    return scenes
+        .where(
+          (scene) => scene.showInRoom && scene.smartRoomId == roomId,
+        )
         .toList(growable: false);
   }
 
@@ -216,6 +230,214 @@ class SmartHomeController extends GetxController {
   void selectRoom(int? roomId) {
     selectedRoomId.value = roomId;
     selectedRoomId.refresh();
+  }
+
+  Future<bool> saveScene({
+    SmartSceneModel? existing,
+    required String name,
+    required String triggerType,
+    required String matchType,
+    required List<Map<String, dynamic>> conditions,
+    required List<Map<String, dynamic>> actions,
+    required bool enabled,
+    required bool showOnHome,
+    int? roomId,
+  }) async {
+    final home = selectedHome;
+    if (home == null || home.tuyaHomeId.isEmpty || actions.isEmpty) {
+      errorMessage('اختر منزلًا وأضف أمرًا واحدًا على الأقل');
+      return false;
+    }
+    final enrichedActions = <Map<String, dynamic>>[];
+    for (final action in actions) {
+      final device = devices.firstWhereOrNull(
+        (item) => item.id == action['device_id'],
+      );
+      if (device == null || device.tuyaDeviceId.isEmpty) {
+        errorMessage('أحد أجهزة المشهد غير متاح');
+        return false;
+      }
+      enrichedActions.add({...action, 'tuya_device_id': device.tuyaDeviceId});
+    }
+    final enrichedConditions = <Map<String, dynamic>>[];
+    final actionDeviceIds = actions.map((item) => item['device_id']).toSet();
+    for (final condition in conditions) {
+      final next = Map<String, dynamic>.from(condition);
+      if (condition['type'] == 'device') {
+        if (actionDeviceIds.contains(condition['device_id'])) {
+          errorMessage(
+            'Tuya لا تسمح باستخدام نفس الجهاز كشرط وكأمر في نفس المشهد',
+          );
+          return false;
+        }
+        final device = devices.firstWhereOrNull(
+          (item) => item.id == condition['device_id'],
+        );
+        if (device == null || device.tuyaDeviceId.isEmpty) {
+          errorMessage('جهاز شرط المشهد غير متاح');
+          return false;
+        }
+        next['tuya_device_id'] = device.tuyaDeviceId;
+      } else if (condition['type'] == 'schedule') {
+        next['loops'] = _tuyaSceneLoops(condition['repeat_days']);
+      }
+      enrichedConditions.add(next);
+    }
+
+    final native = await nativeService.saveScene(
+      tuyaHomeId: home.tuyaHomeId,
+      name: name.trim(),
+      previousSceneId: existing?.tuyaSceneId ?? '',
+      matchType: matchType,
+      conditions: enrichedConditions,
+      actions: enrichedActions,
+    );
+    if (!native.success || native.sceneId.isEmpty) {
+      errorMessage(formatVisibleError(
+        'تعذر حفظ المشهد في Tuya',
+        code: native.code,
+        message: native.message,
+      ));
+      return false;
+    }
+
+    try {
+      final saved = await apiService.saveScene(
+        sceneId: existing?.id,
+        userId: selectedOwnerId.value,
+        data: {
+          'smart_home_id': home.id,
+          'smart_room_id': roomId,
+          'tuya_scene_id': native.sceneId,
+          'name': name.trim(),
+          'icon': existing?.icon ?? 'auto_awesome',
+          'color': existing?.color ?? '#2563EB',
+          'trigger_type': triggerType,
+          'match_type': matchType,
+          'conditions': conditions,
+          'actions': actions,
+          'enabled': enabled,
+          'show_on_home': showOnHome,
+          'show_in_room': roomId != null,
+        },
+      );
+      if (!enabled && !saved.isManual) {
+        await nativeService.setSceneEnabled(
+          sceneId: native.sceneId,
+          enabled: false,
+        );
+      }
+      final oldTuyaId = existing?.tuyaSceneId ?? '';
+      if (oldTuyaId.isNotEmpty && oldTuyaId != native.sceneId) {
+        await nativeService.deleteScene(oldTuyaId);
+      }
+      _upsertScene(saved);
+      return true;
+    } catch (error) {
+      await nativeService.deleteScene(native.sceneId);
+      errorMessage(error.toString());
+      return false;
+    }
+  }
+
+  Future<bool> executeScene(SmartSceneModel scene) async {
+    if (scene.tuyaSceneId.isEmpty || sceneBusyIds.contains(scene.id)) {
+      return false;
+    }
+    sceneBusyIds.add(scene.id);
+    try {
+      final result = await nativeService.executeScene(scene.tuyaSceneId);
+      final updated = await apiService.recordSceneExecution(
+        id: scene.id,
+        status: result.success ? 'success' : 'failed',
+        message: result.message,
+        details: {'tuya_code': result.code},
+        userId: selectedOwnerId.value,
+      );
+      _upsertScene(updated);
+      if (!result.success) {
+        errorMessage(formatVisibleError(
+          'تعذر تشغيل المشهد',
+          code: result.code,
+          message: result.message,
+        ));
+      }
+      return result.success;
+    } catch (error) {
+      errorMessage(error.toString());
+      return false;
+    } finally {
+      sceneBusyIds.remove(scene.id);
+    }
+  }
+
+  Future<bool> setSceneEnabled(SmartSceneModel scene, bool enabled) async {
+    if (scene.isManual) return true;
+    sceneBusyIds.add(scene.id);
+    try {
+      final native = await nativeService.setSceneEnabled(
+        sceneId: scene.tuyaSceneId,
+        enabled: enabled,
+      );
+      if (!native.success) {
+        errorMessage(native.message);
+        return false;
+      }
+      final updated = await apiService.saveScene(
+        sceneId: scene.id,
+        userId: selectedOwnerId.value,
+        data: {'enabled': enabled},
+      );
+      _upsertScene(updated);
+      return true;
+    } catch (error) {
+      errorMessage(error.toString());
+      return false;
+    } finally {
+      sceneBusyIds.remove(scene.id);
+    }
+  }
+
+  Future<bool> deleteScene(SmartSceneModel scene) async {
+    sceneBusyIds.add(scene.id);
+    try {
+      if (scene.tuyaSceneId.isNotEmpty) {
+        final native = await nativeService.deleteScene(scene.tuyaSceneId);
+        if (!native.success) {
+          errorMessage(native.message);
+          return false;
+        }
+      }
+      await apiService.deleteScene(
+        id: scene.id,
+        userId: selectedOwnerId.value,
+      );
+      scenes.removeWhere((item) => item.id == scene.id);
+      return true;
+    } catch (error) {
+      errorMessage(error.toString());
+      return false;
+    } finally {
+      sceneBusyIds.remove(scene.id);
+    }
+  }
+
+  String _tuyaSceneLoops(dynamic rawDays) {
+    final days = rawDays is List
+        ? rawDays.map((item) => item.toString()).toSet()
+        : <String>{};
+    const order = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    return order.map((day) => days.contains(day) ? '1' : '0').join();
+  }
+
+  void _upsertScene(SmartSceneModel scene) {
+    final index = scenes.indexWhere((item) => item.id == scene.id);
+    if (index < 0) {
+      scenes.add(scene);
+    } else {
+      scenes[index] = scene;
+    }
+    scenes.refresh();
   }
 
   Future<bool> createLocation({
@@ -1509,6 +1731,7 @@ class SmartHomeController extends GetxController {
   Future<void> _loadSelectedHomeData() async {
     if (isUnassignedSelected) {
       rooms.clear();
+      scenes.clear();
       final loadedDevices = await apiService.getDevices(
         unassigned: true,
         userId: selectedOwnerId.value,
@@ -1521,18 +1744,20 @@ class SmartHomeController extends GetxController {
     if (home == null) {
       rooms.clear();
       devices.clear();
+      scenes.clear();
       return;
     }
-    final loadedRooms = await apiService.getRooms(
-      home.id,
-      userId: selectedOwnerId.value,
-    );
-    final loadedDevices = await apiService.getDevices(
-      homeId: home.id,
-      userId: selectedOwnerId.value,
-    );
+    final loaded = await Future.wait([
+      apiService.getRooms(home.id, userId: selectedOwnerId.value),
+      apiService.getDevices(homeId: home.id, userId: selectedOwnerId.value),
+      apiService.getScenes(homeId: home.id, userId: selectedOwnerId.value),
+    ]);
+    final loadedRooms = loaded[0] as List<SmartRoomModel>;
+    final loadedDevices = loaded[1] as List<SmartDeviceModel>;
+    final loadedScenes = loaded[2] as List<SmartSceneModel>;
     rooms.assignAll(loadedRooms);
     devices.assignAll(loadedDevices);
+    scenes.assignAll(loadedScenes);
   }
 
   void _ensureSelectedLocation() {

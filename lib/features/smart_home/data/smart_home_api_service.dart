@@ -363,6 +363,75 @@ class SmartDeviceScheduleModel {
       );
 }
 
+class SmartSceneModel {
+  const SmartSceneModel({
+    required this.id,
+    required this.smartHomeId,
+    required this.smartRoomId,
+    required this.tuyaSceneId,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.triggerType,
+    required this.matchType,
+    required this.conditions,
+    required this.actions,
+    required this.enabled,
+    required this.showOnHome,
+    required this.showInRoom,
+    required this.lastExecutedAt,
+    required this.lastExecutionStatus,
+  });
+
+  final int id;
+  final int smartHomeId;
+  final int? smartRoomId;
+  final String tuyaSceneId;
+  final String name;
+  final String icon;
+  final String color;
+  final String triggerType;
+  final String matchType;
+  final List<Map<String, dynamic>> conditions;
+  final List<Map<String, dynamic>> actions;
+  final bool enabled;
+  final bool showOnHome;
+  final bool showInRoom;
+  final DateTime? lastExecutedAt;
+  final String lastExecutionStatus;
+
+  bool get isManual => triggerType == 'manual';
+
+  factory SmartSceneModel.fromJson(Map<String, dynamic> json) =>
+      SmartSceneModel(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        smartHomeId: int.tryParse(json['smart_home_id']?.toString() ?? '') ?? 0,
+        smartRoomId: int.tryParse(json['smart_room_id']?.toString() ?? ''),
+        tuyaSceneId: json['tuya_scene_id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        icon: json['icon']?.toString() ?? 'auto_awesome',
+        color: json['color']?.toString() ?? '#2563EB',
+        triggerType: json['trigger_type']?.toString() ?? 'manual',
+        matchType: json['match_type']?.toString() ?? 'all',
+        conditions: _listOfMaps(json['conditions']),
+        actions: _listOfMaps(json['actions']),
+        enabled: json['enabled'] != false,
+        showOnHome: json['show_on_home'] != false,
+        showInRoom: json['show_in_room'] == true,
+        lastExecutedAt:
+            DateTime.tryParse(json['last_executed_at']?.toString() ?? '')
+                ?.toLocal(),
+        lastExecutionStatus: json['last_execution_status']?.toString() ?? '',
+      );
+}
+
+List<Map<String, dynamic>> _listOfMaps(dynamic raw) => raw is List
+    ? raw
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false)
+    : const <Map<String, dynamic>>[];
+
 Map<String, dynamic> _mapFromDynamic(dynamic raw) {
   if (raw is Map) {
     return raw.map((key, value) => MapEntry(key.toString(), value));
@@ -755,6 +824,77 @@ class SmartHomeApiService {
     await _api.delete(
       EndPoints.smartDeviceSchedule(deviceId, scheduleId),
       queryParameters: {if (userId != null) 'user_id': userId},
+    );
+  }
+
+  Future<List<SmartSceneModel>> getScenes({
+    required int homeId,
+    int? userId,
+  }) async {
+    final response = await _api.get(
+      EndPoints.smartScenes,
+      queryParameters: {
+        'home_id': homeId,
+        if (userId != null) 'user_id': userId,
+      },
+    );
+    return _extractList(response.data, const ['scenes'])
+        .whereType<Map>()
+        .map((item) => SmartSceneModel.fromJson(
+              Map<String, dynamic>.from(item),
+            ))
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  Future<SmartSceneModel> saveScene({
+    int? sceneId,
+    required Map<String, dynamic> data,
+    int? userId,
+  }) async {
+    final response = sceneId == null
+        ? await _api.post(
+            EndPoints.smartScenes,
+            queryParameters: {if (userId != null) 'user_id': userId},
+            data: data,
+          )
+        : await _api.put(
+            EndPoints.smartScene(sceneId),
+            queryParameters: {if (userId != null) 'user_id': userId},
+            data: data,
+          );
+    return SmartSceneModel.fromJson(
+      Map<String, dynamic>.from(response.data['scene'] as Map),
+    );
+  }
+
+  Future<void> deleteScene({required int id, int? userId}) async {
+    await _api.delete(
+      EndPoints.smartScene(id),
+      queryParameters: {if (userId != null) 'user_id': userId},
+    );
+  }
+
+  Future<SmartSceneModel> recordSceneExecution({
+    required int id,
+    required String status,
+    String source = 'app',
+    String? message,
+    Map<String, dynamic>? details,
+    int? userId,
+  }) async {
+    final response = await _api.post(
+      EndPoints.smartSceneExecutions(id),
+      queryParameters: {if (userId != null) 'user_id': userId},
+      data: {
+        'status': status,
+        'source': source,
+        if (message != null && message.isNotEmpty) 'message': message,
+        if (details != null) 'details': details,
+      },
+    );
+    return SmartSceneModel.fromJson(
+      Map<String, dynamic>.from(response.data['scene'] as Map),
     );
   }
 

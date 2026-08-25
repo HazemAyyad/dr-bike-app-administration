@@ -32,8 +32,14 @@ import com.thingclips.smart.android.user.api.ILoginCallback
 import com.thingclips.smart.android.user.bean.User
 import com.thingclips.smart.home.sdk.ThingHomeSdk
 import com.thingclips.smart.home.sdk.bean.HomeBean
+import com.thingclips.smart.home.sdk.bean.scene.SceneBean
+import com.thingclips.smart.home.sdk.bean.scene.SceneCondition
+import com.thingclips.smart.home.sdk.bean.scene.SceneTask
+import com.thingclips.smart.home.sdk.bean.scene.condition.rule.BoolRule
+import com.thingclips.smart.home.sdk.bean.scene.condition.rule.TimerRule
 import com.thingclips.smart.home.sdk.builder.ActivatorBuilder
 import com.thingclips.smart.home.sdk.callback.IThingHomeResultCallback
+import com.thingclips.smart.home.sdk.callback.IThingResultCallback
 import com.thingclips.smart.home.sdk.constant.TimerUpdateEnum
 import com.thingclips.smart.sdk.api.IThingActivator
 import com.thingclips.smart.sdk.api.IThingActivatorGetToken
@@ -42,6 +48,11 @@ import com.thingclips.smart.sdk.api.IResultCallback
 import com.thingclips.smart.sdk.bean.DeviceBean
 import com.thingclips.smart.sdk.enums.ActivatorModelEnum
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.HashMap
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -166,6 +177,10 @@ class MainActivity : FlutterFragmentActivity() {
                     "publishDps" -> publishTuyaDps(call, result)
                     "saveDeviceSchedule" -> saveTuyaDeviceSchedule(call, result)
                     "deleteDeviceSchedule" -> deleteTuyaDeviceSchedule(call, result)
+                    "saveScene" -> saveTuyaScene(call, result)
+                    "executeScene" -> executeTuyaScene(call, result)
+                    "deleteScene" -> deleteTuyaScene(call, result)
+                    "setSceneEnabled" -> setTuyaSceneEnabled(call, result)
                     "stopPairing" -> {
                         stopSmartHomeActivator()
                         result.success(true)
@@ -629,6 +644,157 @@ class MainActivity : FlutterFragmentActivity() {
             },
         )
     }
+
+    private fun saveTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(sceneResult(false, "", "tuya_not_initialized", DoctorBikeApplication.tuyaInitializationMessage))
+            return
+        }
+        val homeId = call.argument<String>("tuyaHomeId")?.toLongOrNull() ?: 0L
+        val name = call.argument<String>("name")?.trim().orEmpty()
+        val previousSceneId = call.argument<String>("previousSceneId").orEmpty()
+        val matchType = call.argument<String>("matchType") ?: "all"
+        val rawConditions = call.argument<List<Map<Any?, Any?>>>("conditions") ?: emptyList()
+        val rawActions = call.argument<List<Map<Any?, Any?>>>("actions") ?: emptyList()
+        if (homeId <= 0L || name.isBlank() || rawActions.isEmpty()) {
+            result.success(sceneResult(false, "", "missing_scene_arguments", "Missing Tuya scene name, home, or actions"))
+            return
+        }
+
+        val tasks = rawActions.mapNotNull { raw ->
+            val devId = raw["tuya_device_id"]?.toString().orEmpty()
+            val dpId = raw["dp_id"]?.toString().orEmpty()
+            val value = raw["value"]
+            if (devId.isBlank() || dpId.isBlank() || value == null) null
+            else ThingHomeSdk.getSceneManagerInstance().createDpTask(
+                devId,
+                hashMapOf<String, Any>(dpId to value),
+            )
+        }
+        if (tasks.size != rawActions.size) {
+            result.success(sceneResult(false, "", "invalid_scene_action", "A scene action has no Tuya device, DP, or value"))
+            return
+        }
+
+        val conditions = rawConditions.mapNotNull { raw ->
+            when (raw["type"]?.toString()) {
+                "schedule" -> {
+                    val time = raw["time"]?.toString().orEmpty()
+                    if (time.isBlank()) return@mapNotNull null
+                    val loops = raw["loops"]?.toString() ?: "0000000"
+                    val date = raw["date"]?.toString()?.replace("-", "")
+                        ?.takeIf { it.length == 8 }
+                        ?: SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+                    val timezone = raw["timezone"]?.toString()?.takeIf { it.isNotBlank() }
+                        ?: TimeZone.getDefault().id
+                    SceneCondition().apply {
+                        entityType = 6
+                        entityName = "Schedule"
+                        entitySubIds = "timer"
+                        exprDisplay = time
+                        expr = TimerRule.newInstance(timezone, loops, time, date).expr
+                    }
+                }
+                "device" -> {
+                    val devId = raw["tuya_device_id"]?.toString().orEmpty()
+                    val dpId = raw["dp_id"]?.toString().orEmpty()
+                    val value = raw["value"] as? Boolean ?: return@mapNotNull null
+                    val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                        ?: return@mapNotNull null
+                    SceneCondition.createDevCondition(
+                        bean,
+                        dpId,
+                        BoolRule.newInstance(dpId, value),
+                    )
+                }
+                else -> null
+            }
+        }
+        if (conditions.size != rawConditions.size) {
+            result.success(sceneResult(false, "", "invalid_scene_condition", "A Tuya scene condition is invalid or its device is unavailable"))
+            return
+        }
+
+        fun create(background: String) {
+            ThingHomeSdk.getSceneManagerInstance().createScene(
+                homeId,
+                name,
+                false,
+                background,
+                conditions,
+                tasks,
+                if (matchType == "any") SceneBean.MATCH_TYPE_OR else SceneBean.MATCH_TYPE_AND,
+                object : IThingResultCallback<SceneBean> {
+                    override fun onSuccess(scene: SceneBean?) {
+                        val newId = scene?.id.orEmpty()
+                        result.success(sceneResult(true, newId, "", "Tuya scene saved"))
+                    }
+
+                    override fun onError(code: String?, error: String?) {
+                        result.success(sceneResult(false, "", safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error)))
+                    }
+                },
+            )
+        }
+
+        ThingHomeSdk.getSceneManagerInstance().getSceneBgs(
+            object : IThingResultCallback<ArrayList<String>> {
+                override fun onSuccess(backgrounds: ArrayList<String>?) = create(backgrounds?.firstOrNull().orEmpty())
+                override fun onError(code: String?, error: String?) = create("")
+            },
+        )
+    }
+
+    private fun executeTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val sceneId = call.argument<String>("sceneId").orEmpty()
+        if (sceneId.isBlank()) {
+            result.success(sceneResult(false, "", "missing_scene_id", "Missing Tuya scene id"))
+            return
+        }
+        ThingHomeSdk.newSceneInstance(sceneId).executeScene(sceneCallback(result, sceneId, "Tuya scene executed"))
+    }
+
+    private fun deleteTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val sceneId = call.argument<String>("sceneId").orEmpty()
+        if (sceneId.isBlank()) {
+            result.success(sceneResult(false, "", "missing_scene_id", "Missing Tuya scene id"))
+            return
+        }
+        ThingHomeSdk.newSceneInstance(sceneId).deleteScene(sceneCallback(result, sceneId, "Tuya scene deleted"))
+    }
+
+    private fun setTuyaSceneEnabled(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val sceneId = call.argument<String>("sceneId").orEmpty()
+        val enabled = call.argument<Boolean>("enabled") ?: true
+        if (sceneId.isBlank()) {
+            result.success(sceneResult(false, "", "missing_scene_id", "Missing Tuya scene id"))
+            return
+        }
+        val scene = ThingHomeSdk.newSceneInstance(sceneId)
+        val callback = sceneCallback(result, sceneId, if (enabled) "Tuya scene enabled" else "Tuya scene disabled")
+        if (enabled) scene.enableScene(sceneId, callback) else scene.disableScene(sceneId, callback)
+    }
+
+    private fun sceneCallback(
+        result: MethodChannel.Result,
+        sceneId: String,
+        successMessage: String,
+    ) = object : IResultCallback {
+        override fun onSuccess() {
+            result.success(sceneResult(true, sceneId, "", successMessage))
+        }
+
+        override fun onError(code: String?, error: String?) {
+            result.success(sceneResult(false, sceneId, safeTuyaErrorCode(code), safeTuyaErrorMessage(code, error)))
+        }
+    }
+
+    private fun sceneResult(success: Boolean, sceneId: String, code: String, message: String) = mapOf(
+        "success" to success,
+        "scene_id" to sceneId,
+        "code" to code,
+        "message" to message,
+    )
 
     private fun renameTuyaDevice(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
         if (!DoctorBikeApplication.tuyaInitialized) {

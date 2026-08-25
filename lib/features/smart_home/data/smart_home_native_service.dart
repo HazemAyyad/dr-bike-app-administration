@@ -41,6 +41,28 @@ class SmartHomeNativeLoginResult {
       );
 }
 
+class SmartHomeNativeSceneResult {
+  const SmartHomeNativeSceneResult({
+    required this.success,
+    required this.sceneId,
+    required this.code,
+    required this.message,
+  });
+
+  final bool success;
+  final String sceneId;
+  final String code;
+  final String message;
+
+  factory SmartHomeNativeSceneResult.fromMap(Map<dynamic, dynamic> map) =>
+      SmartHomeNativeSceneResult(
+        success: map['success'] == true,
+        sceneId: map['scene_id']?.toString() ?? '',
+        code: map['code']?.toString() ?? '',
+        message: map['message']?.toString() ?? '',
+      );
+}
+
 class SmartHomeNativeHomeResult {
   final bool success;
   final String tuyaHomeId;
@@ -366,6 +388,62 @@ class SmartHomeNativeService {
         uid: '',
         code: error.code,
         message: error.message ?? 'Tuya schedule deletion failed',
+      );
+    }
+  }
+
+  Future<SmartHomeNativeSceneResult> saveScene({
+    required String tuyaHomeId,
+    required String name,
+    required String previousSceneId,
+    required String matchType,
+    required List<Map<String, dynamic>> conditions,
+    required List<Map<String, dynamic>> actions,
+  }) =>
+      _sceneCall('saveScene', {
+        'tuyaHomeId': tuyaHomeId,
+        'name': name,
+        'previousSceneId': previousSceneId,
+        'matchType': matchType,
+        'conditions': conditions,
+        'actions': actions,
+      });
+
+  Future<SmartHomeNativeSceneResult> executeScene(String sceneId) =>
+      _sceneCall('executeScene', {'sceneId': sceneId});
+
+  Future<SmartHomeNativeSceneResult> deleteScene(String sceneId) =>
+      _sceneCall('deleteScene', {'sceneId': sceneId});
+
+  Future<SmartHomeNativeSceneResult> setSceneEnabled({
+    required String sceneId,
+    required bool enabled,
+  }) =>
+      _sceneCall('setSceneEnabled', {'sceneId': sceneId, 'enabled': enabled});
+
+  Future<SmartHomeNativeSceneResult> _sceneCall(
+    String method,
+    Map<String, dynamic> arguments,
+  ) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        method,
+        arguments,
+      );
+      return SmartHomeNativeSceneResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeSceneResult(
+        success: false,
+        sceneId: '',
+        code: 'missing_plugin',
+        message: 'Tuya scenes are not available on this platform',
+      );
+    } on PlatformException catch (error) {
+      return SmartHomeNativeSceneResult(
+        success: false,
+        sceneId: '',
+        code: error.code,
+        message: error.message ?? 'Tuya scene operation failed',
       );
     }
   }

@@ -11,6 +11,7 @@ import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
 import '../controllers/smart_home_controller.dart';
+import 'smart_scene_screen.dart';
 
 class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
   const SmartHomeDashboardScreen({Key? key}) : super(key: key);
@@ -28,6 +29,44 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
               ),
         ),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: 'إضافة',
+            icon: const Icon(Icons.add_rounded),
+            onSelected: (value) {
+              if (value == 'scene') {
+                Get.to<void>(
+                  () => SmartSceneEditorScreen(controller: controller),
+                );
+              } else if (value == 'device') {
+                _showAddDeviceDialog();
+              } else if (value == 'location') {
+                _showLocationDialog(controller: controller);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'scene',
+                child: ListTile(
+                  leading: Icon(Icons.auto_awesome_rounded),
+                  title: Text('إضافة مشهد'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'device',
+                child: ListTile(
+                  leading: Icon(Icons.add_to_home_screen_rounded),
+                  title: Text('إضافة جهاز'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'location',
+                child: ListTile(
+                  leading: Icon(Icons.home_work_outlined),
+                  title: Text('إضافة مكان'),
+                ),
+              ),
+            ],
+          ),
           IconButton(
             tooltip: 'smartHomeFilters'.tr,
             onPressed: _showFilters,
@@ -57,6 +96,8 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                     if (!controller.isUnassignedSelected) ...[
                       SizedBox(height: 12.h),
                       _RoomsStrip(controller: controller),
+                      SizedBox(height: 14.h),
+                      SmartScenesSection(controller: controller),
                     ],
                     SizedBox(height: 14.h),
                     _SectionHeader(
@@ -83,28 +124,38 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
   void _showFilters() {
     Get.bottomSheet<void>(
       _BottomSheetPanel(
-        child: Obx(() => Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'smartHomeFilters'.tr,
-                  style: Get.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
-                ),
-                SizedBox(height: 16.h),
-                if (controller.canViewSmartHomeOwners) ...[
-                  _OwnerFilter(controller: controller),
-                  SizedBox(height: 12.h),
-                ],
-                _SmartLocationSelector(controller: controller),
-                SizedBox(height: 14.h),
-                ElevatedButton(
-                  onPressed: () => Get.back<void>(),
-                  child: Text('close'.tr),
-                ),
+        child: Obx(() {
+          // Read the filter observables in this builder so GetX can correctly
+          // subscribe the sheet. Reads performed only inside descendant widgets
+          // are outside this Obx tracking scope.
+          controller.owners.length;
+          controller.homes.length;
+          controller.selectedOwnerId.value;
+          controller.selectedLocationKey.value;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'smartHomeFilters'.tr,
+                style: Get.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 16.h),
+              if (controller.canViewSmartHomeOwners) ...[
+                _OwnerFilter(controller: controller),
+                SizedBox(height: 12.h),
               ],
-            )),
+              _SmartLocationSelector(controller: controller),
+              SizedBox(height: 14.h),
+              ElevatedButton(
+                onPressed: () => Get.back<void>(),
+                child: Text('close'.tr),
+              ),
+            ],
+          );
+        }),
       ),
       isScrollControlled: true,
     );

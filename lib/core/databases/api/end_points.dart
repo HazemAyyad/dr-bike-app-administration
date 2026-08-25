@@ -136,6 +136,10 @@ class EndPoints {
   static String smartDeviceControlLog(int id) =>
       'smart-home/devices/$id/control-log';
   static const String smartHomeEventLogs = 'smart-home/event-logs';
+  static const String smartScenes = 'smart-home/scenes';
+  static String smartScene(int id) => 'smart-home/scenes/$id';
+  static String smartSceneExecutions(int id) =>
+      'smart-home/scenes/$id/executions';
 
   // banks (checks)
   static const String banks = 'banks';
