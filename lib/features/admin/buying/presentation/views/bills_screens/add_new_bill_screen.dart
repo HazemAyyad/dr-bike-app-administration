@@ -1713,8 +1713,8 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
                           ? () => openProductImageViewer(
                                 context,
                                 imageUrl,
-                                imageUrls: item.product.allImageUrlsInPriority,
-                                title: item.product.nameAr,
+                                imageUrls: item.allImageUrlsInPriority,
+                                title: item.displayName,
                               )
                           : null,
                       child: ClipRRect(
@@ -1724,8 +1724,7 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
                           height: 38.w,
                           child: hasImage
                               ? ProductPriorityImage(
-                                  imageUrls:
-                                      item.product.allImageUrlsInPriority,
+                                  imageUrls: item.allImageUrlsInPriority,
                                   fit: BoxFit.cover,
                                   placeholder: _PurchaseProductImagePlaceholder(
                                     iconSize: 18.sp,

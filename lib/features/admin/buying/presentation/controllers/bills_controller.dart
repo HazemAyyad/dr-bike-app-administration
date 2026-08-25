@@ -306,14 +306,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     selectedPurchaseSource.value = source;
     sellerIdController.clear();
     customerIdController.clear();
-    if (source == null) {
-      update();
-      return;
+    if (source != null) {
+      if (source.hasSeller) {
+        sellerIdController.text = (source.sellerId ?? source.id).toString();
+      } else if (source.hasCustomer) {
+        customerIdController.text = (source.customerId ?? source.id).toString();
+      }
     }
-    if (source.hasSeller) {
-      sellerIdController.text = (source.sellerId ?? source.id).toString();
-    } else if (source.hasCustomer) {
-      customerIdController.text = (source.customerId ?? source.id).toString();
+    for (final productId
+        in purchaseCart.map((item) => item.product.id).toSet()) {
+      purchasePriceIntelligence.remove(productId);
+      loadPurchasePriceIntelligence(productId);
     }
     update();
   }
@@ -444,14 +447,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
     try {
       final source = selectedPurchaseSource.value;
+      final sellerId = source?.hasSeller == true
+          ? (source?.sellerId ?? source?.id).toString()
+          : null;
+      final customerId =
+          source?.hasSeller != true && source?.hasCustomer == true
+              ? (source?.customerId ?? source?.id).toString()
+              : null;
       final result = await purchaseWorkflowUsecase.priceIntelligence(
         productId: productId,
-        sellerId: source?.hasSeller == true
-            ? (source?.sellerId ?? source?.id).toString()
-            : null,
-        customerId: source?.hasSeller == true
-            ? null
-            : (source?.customerId ?? source?.id).toString(),
+        sellerId: sellerId,
+        customerId: customerId,
       );
       final data = asMap(result);
       final intelligence = asMap(data['price_intelligence']);
@@ -1859,9 +1865,22 @@ class PurchaseCartItemModel {
   String get displayName => variantLabel.isEmpty
       ? product.nameAr
       : '${product.nameAr} — $variantLabel';
-  String get preferredImageUrl => variantImageUrl.trim().isNotEmpty
-      ? variantImageUrl
-      : product.preferredImageUrl;
+  List<String> get allImageUrlsInPriority {
+    final urls = <String>[];
+    final variantImage = variantImageUrl.trim();
+    if (variantImage.isNotEmpty &&
+        variantImage.toLowerCase() != 'no image' &&
+        variantImage.toLowerCase() != 'no img') {
+      urls.add(variantImage);
+    }
+    for (final url in product.allImageUrlsInPriority) {
+      if (!urls.contains(url)) urls.add(url);
+    }
+    return urls;
+  }
+
+  String get preferredImageUrl =>
+      allImageUrlsInPriority.isEmpty ? '' : allImageUrlsInPriority.first;
 
   void dispose() {
     if (onChanged != null) {

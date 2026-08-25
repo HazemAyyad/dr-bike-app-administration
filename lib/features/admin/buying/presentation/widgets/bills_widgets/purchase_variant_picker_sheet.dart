@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../core/helpers/admin_ui_colors.dart';
-import '../../../../../../core/helpers/show_net_image.dart';
+import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/data/models/product_variant_model.dart';
 import '../../controllers/bills_controller.dart';
@@ -194,9 +194,14 @@ class _PurchaseVariantPickerSheetState
   }
 
   Widget _variantRow(_VariantDraft draft) {
-    final imageUrl = draft.variant.imageUrl.trim().isNotEmpty
-        ? draft.variant.imageUrl
-        : widget.product.preferredImageUrl;
+    final variantImage = draft.variant.imageUrl.trim();
+    final hasVariantImage = variantImage.isNotEmpty &&
+        variantImage.toLowerCase() != 'no image' &&
+        variantImage.toLowerCase() != 'no img';
+    final imageUrls = <String>[
+      if (hasVariantImage) variantImage,
+      ...widget.product.allImageUrlsInPriority,
+    ];
     return InkWell(
       onTap: () => setState(() => draft.selected = !draft.selected),
       borderRadius: BorderRadius.circular(12.r),
@@ -220,16 +225,21 @@ class _PurchaseVariantPickerSheetState
               child: SizedBox(
                 width: 58.w,
                 height: 58.w,
-                child: imageUrl.isEmpty
+                child: imageUrls.isEmpty
                     ? const ColoredBox(
                         color: Color(0xFFF3F4F6),
                         child: Icon(Icons.palette_outlined),
                       )
-                    : Image.network(
-                        ShowNetImage.getThumbnailPhoto(imageUrl),
+                    : ProductPriorityImage(
+                        imageUrls: imageUrls,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.palette_outlined),
+                        placeholder: const ColoredBox(
+                          color: Color(0xFFF3F4F6),
+                        ),
+                        missingPlaceholder: const ColoredBox(
+                          color: Color(0xFFF3F4F6),
+                          child: Icon(Icons.palette_outlined),
+                        ),
                       ),
               ),
             ),
