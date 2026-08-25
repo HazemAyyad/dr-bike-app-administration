@@ -799,7 +799,10 @@ class MaintenanceController extends GetxController {
     final line =
         '${service.name} - ${SalesAmountFormat.display(service.price)}';
     final current = descriptionController.text.trimRight();
-    if (!current.contains(service.name)) {
+    final hasServiceLine = current.split('\n').any(
+          (candidate) => candidate.trim() == line.trim(),
+        );
+    if (!hasServiceLine) {
       descriptionController.text = current.isEmpty ? line : '$current\n$line';
     }
 
