@@ -49,11 +49,19 @@ String userName = '';
 /// اسم صلاحية رؤية/تعديل سعر التكلفة (يطابق name_en في الباك إند).
 const String costPricePermissionName = 'Cost Price';
 
+/// اسم صلاحية إدارة خدمات الصيانة (يطابق name_en في الباك إند).
+const String maintenanceServicesSettingsPermissionName =
+    'Maintenance Services Settings';
+
 /// هل يحق للمستخدم الحالي رؤية/تعديل سعر التكلفة؟
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Cost Price".
 bool get canViewCostPrice =>
     userType == 'admin' ||
     employeePermissionNames.contains(costPricePermissionName);
+
+/// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية إعدادات خدمات الصيانة.
+bool get canManageMaintenanceServicesSettings =>
+    hasEmployeePermissionName(maintenanceServicesSettingsPermissionName);
 
 /// رقم صلاحية الوصول لمهام الموظفين (Employee Tasks).
 const int employeeTasksPermissionId = 7;

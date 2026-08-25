@@ -619,6 +619,7 @@ class AddEmployeeController extends GetxController {
       'Checks Outgoing Create': 'checks',
       'Daily Boxes': 'financial',
       'Maintenance': 'maintenance',
+      'Maintenance Services Settings': 'maintenance',
       'Messages Section': 'communication',
       'Technical Support': 'communication',
     };

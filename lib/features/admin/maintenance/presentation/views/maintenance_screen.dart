@@ -21,6 +21,14 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         title: 'maintenance',
         action: false,
         actions: [
+          if (canManageMaintenanceServicesSettings)
+            IconButton(
+              tooltip: 'إعدادات قسم الصيانة',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Get.toNamed(
+                AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
+              ),
+            ),
           IconButton(
             tooltip: 'صناديق الصيانة اليومية',
             icon: const Icon(Icons.account_balance_wallet_outlined),
