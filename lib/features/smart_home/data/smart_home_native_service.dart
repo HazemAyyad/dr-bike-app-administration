@@ -299,6 +299,77 @@ class SmartHomeNativeService {
     }
   }
 
+  Future<SmartHomeNativeLoginResult> saveDeviceSchedule({
+    required String tuyaDeviceId,
+    required String taskName,
+    required String aliasName,
+    required String dpId,
+    required dynamic value,
+    required String time,
+    required String loops,
+    required bool enabled,
+    required bool replace,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'saveDeviceSchedule',
+        {
+          'tuyaDeviceId': tuyaDeviceId,
+          'taskName': taskName,
+          'aliasName': aliasName,
+          'dpId': dpId,
+          'value': value,
+          'time': time,
+          'loops': loops,
+          'enabled': enabled,
+          'replace': replace,
+        },
+      );
+      return SmartHomeNativeLoginResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeLoginResult(
+        success: false,
+        uid: '',
+        code: 'missing_plugin',
+        message: 'Tuya schedules are not available on this platform',
+      );
+    } on PlatformException catch (error) {
+      return SmartHomeNativeLoginResult(
+        success: false,
+        uid: '',
+        code: error.code,
+        message: error.message ?? 'Tuya schedule failed',
+      );
+    }
+  }
+
+  Future<SmartHomeNativeLoginResult> deleteDeviceSchedule({
+    required String tuyaDeviceId,
+    required String taskName,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'deleteDeviceSchedule',
+        {'tuyaDeviceId': tuyaDeviceId, 'taskName': taskName},
+      );
+      return SmartHomeNativeLoginResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeLoginResult(
+        success: false,
+        uid: '',
+        code: 'missing_plugin',
+        message: 'Tuya schedules are not available on this platform',
+      );
+    } on PlatformException catch (error) {
+      return SmartHomeNativeLoginResult(
+        success: false,
+        uid: '',
+        code: error.code,
+        message: error.message ?? 'Tuya schedule deletion failed',
+      );
+    }
+  }
+
   Future<SmartHomeNativeBleScanResult> scanBluetoothDevices({
     int timeoutMs = 10000,
   }) async {

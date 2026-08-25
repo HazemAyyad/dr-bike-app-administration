@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -25,6 +27,13 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 fontWeight: FontWeight.w800,
               ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'smartHomeFilters'.tr,
+            onPressed: _showFilters,
+            icon: const Icon(Icons.tune_rounded),
+          ),
+        ],
       ),
       body: Obx(() {
         final showInitialSkeleton =
@@ -41,13 +50,10 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 : [
                     if (controller.errorMessage.value.isNotEmpty)
                       _ErrorBanner(message: controller.errorMessage.value),
-                    if (controller.canViewSmartHomeOwners) ...[
-                      _OwnerFilter(controller: controller),
-                      SizedBox(height: 14.h),
-                    ],
-                    _SmartLocationSelector(controller: controller),
-                    SizedBox(height: 10.h),
-                    _NativeStatusCard(controller: controller),
+                    _SmartHomeFilterButton(
+                      controller: controller,
+                      onTap: _showFilters,
+                    ),
                     if (!controller.isUnassignedSelected) ...[
                       SizedBox(height: 12.h),
                       _RoomsStrip(controller: controller),
@@ -72,6 +78,63 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
 
   Future<void> _showAddDeviceDialog() async {
     await Get.to<void>(() => _AddDeviceFlowScreen(controller: controller));
+  }
+
+  void _showFilters() {
+    Get.bottomSheet<void>(
+      _BottomSheetPanel(
+        child: Obx(() => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'smartHomeFilters'.tr,
+                  style: Get.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                SizedBox(height: 16.h),
+                if (controller.canViewSmartHomeOwners) ...[
+                  _OwnerFilter(controller: controller),
+                  SizedBox(height: 12.h),
+                ],
+                _SmartLocationSelector(controller: controller),
+                SizedBox(height: 14.h),
+                ElevatedButton(
+                  onPressed: () => Get.back<void>(),
+                  child: Text('close'.tr),
+                ),
+              ],
+            )),
+      ),
+      isScrollControlled: true,
+    );
+  }
+}
+
+class _SmartHomeFilterButton extends StatelessWidget {
+  const _SmartHomeFilterButton({
+    required this.controller,
+    required this.onTap,
+  });
+
+  final SmartHomeController controller;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final location = controller.isUnassignedSelected
+        ? 'smartHomeUnassignedDevices'.tr
+        : _locationLabel(controller.selectedHome);
+    final owner = controller.selectedOwner?.name ?? '';
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.filter_list_rounded),
+      label: Text(
+        owner.isEmpty ? location : '$owner • $location',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 }
 
@@ -220,6 +283,12 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
   bool loadingCurrentWifi = false;
   bool useBluetoothPairing = false;
   SmartHomeBleScanDevice? selectedBleDevice;
+  final selectedBleUuids = <String>{};
+
+  List<SmartHomeBleScanDevice> get selectedBleDevices =>
+      widget.controller.bluetoothDevices
+          .where((device) => selectedBleUuids.contains(device.uuid))
+          .toList(growable: false);
 
   @override
   void initState() {
@@ -260,10 +329,15 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
   }
 
   void _selectBleDevice(SmartHomeBleScanDevice device) {
-    selectedBleDevice = device;
-    widget.controller.selectedBluetoothDevice.value = device;
-    useBluetoothPairing = true;
-    _goWifi();
+    setState(() {
+      if (!selectedBleUuids.add(device.uuid)) {
+        selectedBleUuids.remove(device.uuid);
+      }
+      final selected = selectedBleDevices;
+      selectedBleDevice = selected.isEmpty ? null : selected.first;
+      widget.controller.selectedBluetoothDevice.value = selectedBleDevice;
+      useBluetoothPairing = selectedBleUuids.isNotEmpty;
+    });
   }
 
   void _goManual() {
@@ -296,9 +370,10 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
     final existingDeviceIds =
         widget.controller.devices.map((device) => device.id).toSet();
 
-    final success = useBluetoothPairing && selectedBleDevice != null
-        ? await widget.controller.startBluetoothDevicePairing(
-            scanDevice: selectedBleDevice!,
+    final bleDevices = selectedBleDevices;
+    final success = useBluetoothPairing && bleDevices.isNotEmpty
+        ? await widget.controller.startBluetoothDevicesPairing(
+            scanDevices: bleDevices,
             ssid: ssidController.text,
             password: passwordController.text,
           )
@@ -448,14 +523,25 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
             );
           }
           return Column(
-            children: widget.controller.bluetoothDevices
-                .map(
-                  (device) => _BleDeviceTile(
-                    device: device,
-                    onTap: () => _selectBleDevice(device),
-                  ),
-                )
-                .toList(growable: false),
+            children: [
+              ...widget.controller.bluetoothDevices.map(
+                (device) => _BleDeviceTile(
+                  device: device,
+                  selected: selectedBleUuids.contains(device.uuid),
+                  onTap: () => _selectBleDevice(device),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: selectedBleUuids.isEmpty ? null : _goWifi,
+                  icon: const Icon(Icons.add_link_rounded),
+                  label: Text('smartHomeAddSelected'.trParams(
+                    {'count': '${selectedBleUuids.length}'},
+                  )),
+                ),
+              ),
+            ],
           );
         }),
         const Spacer(),
@@ -664,10 +750,28 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
           color: AppColors.primaryColor.withOpacity(.35),
         ),
         SizedBox(height: 54.h),
-        LinearProgressIndicator(
-          minHeight: 6.h,
-          borderRadius: BorderRadius.circular(999),
-        ),
+        Obx(() {
+          final progress =
+              widget.controller.pairingProgress.value.clamp(0, 1).toDouble();
+          return Column(
+            children: [
+              LinearProgressIndicator(
+                value: progress,
+                minHeight: 8.h,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                '${(progress * 100).round()}%',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              if (widget.controller.pairingStatus.value.isNotEmpty)
+                Text(widget.controller.pairingStatus.value),
+            ],
+          );
+        }),
         const Spacer(flex: 2),
       ],
     );
@@ -748,10 +852,33 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
   }
 }
 
-class _RadarGraphic extends StatelessWidget {
+class _RadarGraphic extends StatefulWidget {
   const _RadarGraphic({required this.scanning});
 
   final bool scanning;
+
+  @override
+  State<_RadarGraphic> createState() => _RadarGraphicState();
+}
+
+class _RadarGraphicState extends State<_RadarGraphic>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController animation;
+
+  @override
+  void initState() {
+    super.initState();
+    animation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    animation.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -763,17 +890,27 @@ class _RadarGraphic extends StatelessWidget {
         color: AppColors.primaryColor.withOpacity(.06),
       ),
       child: Center(
-        child: Container(
-          width: 118.w,
-          height: 118.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primaryColor.withOpacity(.08),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: .88, end: 1.08).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
           ),
-          child: Icon(
-            scanning ? Icons.radar_rounded : Icons.devices_other_rounded,
-            color: AppColors.primaryColor,
-            size: 52.r,
+          child: RotationTransition(
+            turns: animation,
+            child: Container(
+              width: 118.w,
+              height: 118.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryColor.withOpacity(.08),
+              ),
+              child: Icon(
+                widget.scanning
+                    ? Icons.radar_rounded
+                    : Icons.devices_other_rounded,
+                color: AppColors.primaryColor,
+                size: 52.r,
+              ),
+            ),
           ),
         ),
       ),
@@ -845,9 +982,14 @@ class _PermissionNotice extends StatelessWidget {
 }
 
 class _BleDeviceTile extends StatelessWidget {
-  const _BleDeviceTile({required this.device, required this.onTap});
+  const _BleDeviceTile({
+    required this.device,
+    required this.selected,
+    required this.onTap,
+  });
 
   final SmartHomeBleScanDevice device;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -865,7 +1007,7 @@ class _BleDeviceTile extends StatelessWidget {
         subtitle: Text(
           '${device.isWifiCombo ? 'WiFi + BLE' : 'BLE'}  RSSI ${device.rssi}',
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: Checkbox(value: selected, onChanged: (_) => onTap()),
       ),
     );
   }
@@ -1230,64 +1372,6 @@ class _BottomSheetPanel extends StatelessWidget {
   }
 }
 
-class _NativeStatusCard extends StatelessWidget {
-  const _NativeStatusCard({required this.controller});
-
-  final SmartHomeController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final status = controller.nativeStatus.value;
-    final ok = status.initialized;
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : AppColors.whiteColor2,
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            ok ? Icons.check_circle_rounded : Icons.info_rounded,
-            color: ok ? Colors.green : AppColors.customOrange3,
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ok ? 'tuyaSdkReady'.tr : 'tuyaSdkNeedsSetup'.tr,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  controller.isLinkingTuyaUser.value
-                      ? 'tuyaUserLinking'.tr
-                      : controller.isTuyaUserLinked
-                          ? 'tuyaUserLinked'.tr
-                          : 'tuyaUserNeedsLink'.tr,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: controller.isTuyaUserLinked
-                            ? Colors.green
-                            : AppColors.customGreyColor5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
@@ -1647,6 +1731,40 @@ Future<bool> _showRenameFunctionDialog({
     ),
   );
   return result == true;
+}
+
+Future<bool> _showFunctionOptions({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+  required TuyaDeviceFunction function,
+}) async {
+  final action = await Get.bottomSheet<String>(
+    _BottomSheetPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _functionLabelForDevice(device, function),
+            style:
+                Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          SizedBox(height: 12.h),
+          ListTile(
+            leading: const Icon(Icons.drive_file_rename_outline_rounded),
+            title: Text('smartHomeEditSwitchName'.tr),
+            onTap: () => Get.back(result: 'rename'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (action != 'rename') return false;
+  return _showRenameFunctionDialog(
+    controller: controller,
+    device: device,
+    function: function,
+  );
 }
 
 class _RenameFunctionDialog extends StatefulWidget {
@@ -3055,15 +3173,20 @@ class _DeviceDetailsScreen extends StatefulWidget {
 
 class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
   late SmartDeviceModel device;
-  late final TextEditingController nameController;
-  bool localControlBusy = false;
+  bool localPowerBusy = false;
+  bool localAllBusy = false;
+  final localBusyCommands = <String>{};
+  Timer? deviceSyncTimer;
 
   @override
   void initState() {
     super.initState();
     device = widget.initialDevice;
-    nameController = TextEditingController(text: device.name);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    deviceSyncTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _syncDeviceFromController(),
+    );
   }
 
   Future<void> _load() async {
@@ -3071,14 +3194,13 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
     if (!mounted) return;
     setState(() {
       device = loaded;
-      nameController.text = loaded.name;
     });
   }
 
   Future<void> _rename() async {
-    final ok = await widget.controller.renameSmartDevice(
+    final ok = await _showRenameDeviceDialog(
+      controller: widget.controller,
       device: device,
-      name: nameController.text,
     );
     if (!mounted || !ok) return;
     final updated = widget.controller.devices.firstWhereOrNull(
@@ -3088,8 +3210,8 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
   }
 
   Future<void> _togglePower(bool value) async {
-    if (localControlBusy) return;
-    setState(() => localControlBusy = true);
+    if (localPowerBusy) return;
+    setState(() => localPowerBusy = true);
     try {
       final ok = await widget.controller.setDevicePower(
         device: device,
@@ -3098,13 +3220,13 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
       if (!mounted || !ok) return;
       _syncDeviceFromController();
     } finally {
-      if (mounted) setState(() => localControlBusy = false);
+      if (mounted) setState(() => localPowerBusy = false);
     }
   }
 
   Future<void> _sendDps(String code, dynamic value) async {
-    if (localControlBusy) return;
-    setState(() => localControlBusy = true);
+    if (localBusyCommands.contains(code)) return;
+    setState(() => localBusyCommands.add(code));
     try {
       final ok = await widget.controller.setDeviceDps(
         device: device,
@@ -3114,7 +3236,21 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
       if (!mounted || !ok) return;
       _syncDeviceFromController();
     } finally {
-      if (mounted) setState(() => localControlBusy = false);
+      if (mounted) setState(() => localBusyCommands.remove(code));
+    }
+  }
+
+  Future<void> _setAllSwitches(bool value) async {
+    if (localAllBusy) return;
+    setState(() => localAllBusy = true);
+    try {
+      for (final function in _visiblePrimarySwitches(device)) {
+        final current =
+            DeviceCapabilityResolver.statusValue(device, function) == true;
+        if (current != value) await _sendDps(function.code, value);
+      }
+    } finally {
+      if (mounted) setState(() => localAllBusy = false);
     }
   }
 
@@ -3140,12 +3276,12 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
     final updated = widget.controller.devices.firstWhereOrNull(
       (item) => item.id == device.id,
     );
-    if (updated != null) setState(() => device = updated);
+    if (updated != null && mounted) setState(() => device = updated);
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    deviceSyncTimer?.cancel();
     super.dispose();
   }
 
@@ -3154,28 +3290,41 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        title: Text('smartHomeDeviceDetails'.tr),
+        title: Text(device.name),
         actions: [
           IconButton(
-            tooltip: 'smartHomeMoveDevice'.tr,
-            onPressed: _move,
-            icon: const Icon(Icons.swap_horiz_rounded),
+            tooltip: 'smartHomeRenameDevice'.tr,
+            onPressed: _rename,
+            icon: const Icon(Icons.edit_outlined),
           ),
           IconButton(
-            tooltip: 'smartHomeDeleteDevice'.tr,
-            onPressed: _delete,
-            icon: const Icon(Icons.delete_outline_rounded),
+            tooltip: 'smartHomeSchedules'.tr,
+            onPressed: () => Get.to<void>(() => _DeviceSchedulesScreen(
+                  controller: widget.controller,
+                  device: device,
+                )),
+            icon: const Icon(Icons.schedule_rounded),
           ),
-          IconButton(
-            tooltip: 'refresh'.tr,
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'move') _move();
+              if (value == 'refresh') _load();
+              if (value == 'delete') _delete();
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                  value: 'move', child: Text('smartHomeMoveDevice'.tr)),
+              PopupMenuItem(value: 'refresh', child: Text('refresh'.tr)),
+              PopupMenuItem(
+                  value: 'delete', child: Text('smartHomeDeleteDevice'.tr)),
+            ],
           ),
         ],
       ),
       body: Obx(() {
         final busy = widget.controller.deviceDetailsBusyIds.contains(device.id);
-        final controlling = localControlBusy ||
+        final controlling = localPowerBusy ||
+            localAllBusy ||
             widget.controller.deviceControlBusyIds.contains(device.id);
         const readOnly = false;
         return ListView(
@@ -3188,28 +3337,376 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
             _DeviceCommandSurface(
               device: device,
               busy: controlling,
+              busyCommandCodes: localBusyCommands,
               readOnly: readOnly,
               onPowerChanged: _togglePower,
               onDps: _sendDps,
-              onRenameFunction: (function) => _showRenameFunctionDialog(
+              onAllSwitches: _setAllSwitches,
+              onRenameFunction: (function) => _showFunctionOptions(
                 controller: widget.controller,
                 device: device,
                 function: function,
               ).then((_) => _syncDeviceFromController()),
             ),
-            SizedBox(height: 14.h),
-            _DeviceRenameCard(
-              controller: nameController,
-              enabled: !controlling && !readOnly,
-              onSave: _rename,
-            ),
-            SizedBox(height: 14.h),
-            _DeviceSpecsCard(device: device),
-            SizedBox(height: 14.h),
-            _DpsCard(device: device),
           ],
         );
       }),
+    );
+  }
+}
+
+class _DeviceSchedulesScreen extends StatefulWidget {
+  const _DeviceSchedulesScreen({
+    required this.controller,
+    required this.device,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+
+  @override
+  State<_DeviceSchedulesScreen> createState() => _DeviceSchedulesScreenState();
+}
+
+class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
+  var schedules = <SmartDeviceScheduleModel>[];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (mounted) setState(() => loading = true);
+    try {
+      final loaded = await widget.controller.apiService.getDeviceSchedules(
+        deviceId: widget.device.id,
+        userId: widget.controller.selectedOwnerId.value,
+      );
+      if (mounted) setState(() => schedules = loaded);
+    } catch (error) {
+      widget.controller.errorMessage(error.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _openForm([SmartDeviceScheduleModel? schedule]) async {
+    final saved = await Get.dialog<bool>(_DeviceScheduleDialog(
+      controller: widget.controller,
+      device: widget.device,
+      schedule: schedule,
+    ));
+    if (saved == true) await _load();
+  }
+
+  Future<void> _delete(SmartDeviceScheduleModel schedule) async {
+    final native = await widget.controller.nativeService.deleteDeviceSchedule(
+      tuyaDeviceId: widget.device.tuyaDeviceId,
+      taskName: 'doctorbike_schedule_${schedule.id}',
+    );
+    if (!native.success) {
+      widget.controller.errorMessage(
+        widget.controller.formatVisibleError(
+          'smartHomeScheduleDeleteFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ),
+      );
+      return;
+    }
+    await widget.controller.apiService.deleteDeviceSchedule(
+      deviceId: widget.device.id,
+      scheduleId: schedule.id,
+      userId: widget.controller.selectedOwnerId.value,
+    );
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('smartHomeSchedules'.tr)),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openForm,
+        icon: const Icon(Icons.add_alarm_rounded),
+        label: Text('smartHomeAddSchedule'.tr),
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : schedules.isEmpty
+              ? _EmptyState(text: 'smartHomeNoSchedules'.tr)
+              : ListView.separated(
+                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
+                  itemCount: schedules.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  itemBuilder: (context, index) {
+                    final schedule = schedules[index];
+                    final value = schedule.commandValue['value'] == true;
+                    return Card(
+                      child: ListTile(
+                        onTap: () => _openForm(schedule),
+                        leading: CircleAvatar(
+                          child: Icon(value
+                              ? Icons.power_settings_new_rounded
+                              : Icons.power_off_rounded),
+                        ),
+                        title: Text(schedule.name),
+                        subtitle: Text(
+                          '${TimeOfDay.fromDateTime(schedule.scheduledAt).format(context)} • ${('repeat_${schedule.repeatType}').tr}',
+                        ),
+                        trailing: IconButton(
+                          tooltip: 'delete'.tr,
+                          onPressed: () => _delete(schedule),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+}
+
+class _DeviceScheduleDialog extends StatefulWidget {
+  const _DeviceScheduleDialog({
+    required this.controller,
+    required this.device,
+    this.schedule,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+  final SmartDeviceScheduleModel? schedule;
+
+  @override
+  State<_DeviceScheduleDialog> createState() => _DeviceScheduleDialogState();
+}
+
+class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
+  static const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  late final TextEditingController nameController;
+  late String commandCode;
+  late bool commandValue;
+  late DateTime scheduledAt;
+  late String repeatType;
+  late Set<String> repeatDays;
+  late bool enabled;
+  bool saving = false;
+
+  List<TuyaDeviceFunction> get switches =>
+      DeviceCapabilityResolver.boolSwitches(widget.device);
+
+  @override
+  void initState() {
+    super.initState();
+    final schedule = widget.schedule;
+    final fallbackCode = switches.isEmpty ? '' : switches.first.code;
+    nameController = TextEditingController(
+      text: schedule?.name ?? 'smartHomeSchedule'.tr,
+    );
+    commandCode = schedule?.commandCode ?? fallbackCode;
+    commandValue = schedule?.commandValue['value'] == true;
+    scheduledAt =
+        schedule?.scheduledAt ?? DateTime.now().add(const Duration(hours: 1));
+    repeatType = schedule?.repeatType ?? 'once';
+    repeatDays = {...?schedule?.repeatDays};
+    enabled = schedule?.enabled ?? true;
+  }
+
+  Future<void> _pickTime() async {
+    final value = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(scheduledAt),
+    );
+    if (value == null) return;
+    setState(() => scheduledAt = DateTime(
+          scheduledAt.year,
+          scheduledAt.month,
+          scheduledAt.day,
+          value.hour,
+          value.minute,
+        ));
+  }
+
+  Future<void> _save() async {
+    if (saving || commandCode.isEmpty) return;
+    if (repeatType == 'weekly' && repeatDays.isEmpty) {
+      Get.snackbar('smartHomeSchedules'.tr, 'selectWeekdays'.tr);
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      final saved = await widget.controller.apiService.saveDeviceSchedule(
+        deviceId: widget.device.id,
+        scheduleId: widget.schedule?.id,
+        name: nameController.text.trim(),
+        commandCode: commandCode,
+        commandValue: commandValue,
+        scheduledAt: scheduledAt,
+        repeatType: repeatType,
+        repeatDays: repeatDays.toList(growable: false),
+        enabled: enabled,
+        userId: widget.controller.selectedOwnerId.value,
+      );
+      final function = switches.firstWhereOrNull(
+        (item) => item.code == commandCode,
+      );
+      if (function == null) {
+        throw StateError('smartHomeSwitchMetadataMissing'.tr);
+      }
+      final loops = repeatType == 'daily'
+          ? '1111111'
+          : repeatType == 'weekly'
+              ? [
+                  'sun',
+                  'mon',
+                  'tue',
+                  'wed',
+                  'thu',
+                  'fri',
+                  'sat',
+                ].map((day) => repeatDays.contains(day) ? '1' : '0').join()
+              : '0000000';
+      final native = await widget.controller.nativeService.saveDeviceSchedule(
+        tuyaDeviceId: widget.device.tuyaDeviceId,
+        taskName: 'doctorbike_schedule_${saved.id}',
+        aliasName: saved.name,
+        dpId: function.dpId,
+        value: commandValue,
+        time:
+            '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}',
+        loops: loops,
+        enabled: enabled,
+        replace: widget.schedule != null,
+      );
+      if (!native.success) {
+        if (widget.schedule == null) {
+          await widget.controller.apiService.deleteDeviceSchedule(
+            deviceId: widget.device.id,
+            scheduleId: saved.id,
+            userId: widget.controller.selectedOwnerId.value,
+          );
+        }
+        throw StateError(widget.controller.formatVisibleError(
+          'smartHomeScheduleSaveFailed'.tr,
+          code: native.code,
+          message: native.message,
+        ));
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      widget.controller.errorMessage(error.toString());
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.schedule == null
+          ? 'smartHomeAddSchedule'.tr
+          : 'smartHomeEditSchedule'.tr),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration:
+                  InputDecoration(labelText: 'smartHomeScheduleName'.tr),
+            ),
+            SizedBox(height: 12.h),
+            DropdownButtonFormField<String>(
+              initialValue: commandCode.isEmpty ? null : commandCode,
+              decoration:
+                  InputDecoration(labelText: 'smartHomeScheduleSwitch'.tr),
+              items: switches
+                  .map((item) => DropdownMenuItem(
+                        value: item.code,
+                        child:
+                            Text(_functionLabelForDevice(widget.device, item)),
+                      ))
+                  .toList(growable: false),
+              onChanged: (value) => setState(() => commandCode = value ?? ''),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                  commandValue ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr),
+              value: commandValue,
+              onChanged: (value) => setState(() => commandValue = value),
+            ),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.schedule_rounded),
+                  label:
+                      Text(TimeOfDay.fromDateTime(scheduledAt).format(context)),
+                ),
+              ),
+            ]),
+            SizedBox(height: 12.h),
+            DropdownButtonFormField<String>(
+              initialValue: repeatType,
+              decoration: InputDecoration(labelText: 'smartHomeRepeat'.tr),
+              items: const ['once', 'daily', 'weekly']
+                  .map((item) => DropdownMenuItem(
+                        value: item,
+                        child: Text(('repeat_$item').tr),
+                      ))
+                  .toList(growable: false),
+              onChanged: (value) =>
+                  setState(() => repeatType = value ?? 'once'),
+            ),
+            if (repeatType == 'weekly') ...[
+              SizedBox(height: 10.h),
+              Wrap(
+                spacing: 6.w,
+                children: weekdays
+                    .map((day) => FilterChip(
+                          label: Text(('weekday_$day').tr),
+                          selected: repeatDays.contains(day),
+                          onSelected: (selected) => setState(() => selected
+                              ? repeatDays.add(day)
+                              : repeatDays.remove(day)),
+                        ))
+                    .toList(growable: false),
+              ),
+            ],
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('smartHomeScheduleEnabled'.tr),
+              value: enabled,
+              onChanged: (value) => setState(() => enabled = value),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: saving ? null : () => Get.back<void>(),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: saving ? null : _save,
+          child: saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text('save'.tr),
+        ),
+      ],
     );
   }
 }
@@ -3314,17 +3811,21 @@ class _DeviceCommandSurface extends StatelessWidget {
   const _DeviceCommandSurface({
     required this.device,
     required this.busy,
+    required this.busyCommandCodes,
     required this.readOnly,
     required this.onPowerChanged,
     required this.onDps,
+    required this.onAllSwitches,
     required this.onRenameFunction,
   });
 
   final SmartDeviceModel device;
   final bool busy;
+  final Set<String> busyCommandCodes;
   final bool readOnly;
   final ValueChanged<bool> onPowerChanged;
   final void Function(String code, dynamic value) onDps;
+  final ValueChanged<bool> onAllSwitches;
   final ValueChanged<TuyaDeviceFunction> onRenameFunction;
 
   @override
@@ -3362,8 +3863,10 @@ class _DeviceCommandSurface extends StatelessWidget {
             device: device,
             entries: boolFunctions,
             busy: busy,
+            busyCommandCodes: busyCommandCodes,
             readOnly: readOnly,
             onDps: onDps,
+            onAllSwitches: onAllSwitches,
             onRenameFunction: onRenameFunction,
           ),
           _AuxiliaryControlsSurface(
@@ -3442,21 +3945,25 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
     required this.device,
     required this.entries,
     required this.busy,
+    required this.busyCommandCodes,
     required this.readOnly,
     required this.onDps,
+    required this.onAllSwitches,
     required this.onRenameFunction,
   });
 
   final SmartDeviceModel device;
   final List<TuyaDeviceFunction> entries;
   final bool busy;
+  final Set<String> busyCommandCodes;
   final bool readOnly;
   final void Function(String code, dynamic value) onDps;
+  final ValueChanged<bool> onAllSwitches;
   final ValueChanged<TuyaDeviceFunction> onRenameFunction;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = !busy && !readOnly;
+    final enabled = !readOnly && !busy;
     bool isOn(TuyaDeviceFunction function) =>
         DeviceCapabilityResolver.statusValue(device, function) == true;
     final allOn = entries.isNotEmpty && entries.every(isOn);
@@ -3481,10 +3988,9 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
             return _SwitchChannelButton(
               label: _functionLabelForDevice(device, function),
               active: value == true,
-              busy: busy,
-              enabled: enabled,
+              busy: busyCommandCodes.contains(function.code),
+              enabled: enabled && !busyCommandCodes.contains(function.code),
               onLongPress: () => onRenameFunction(function),
-              onEdit: () => onRenameFunction(function),
               onTap: () => onDps(function.code, value != true),
             );
           },
@@ -3498,15 +4004,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
                 enabled: enabled,
                 active: allOff,
                 activeColor: const Color(0xFFE05252),
-                onTap: () {
-                  for (final function in entries) {
-                    final value = DeviceCapabilityResolver.statusValue(
-                      device,
-                      function,
-                    );
-                    if (value == true) onDps(function.code, false);
-                  }
-                },
+                onTap: () => onAllSwitches(false),
               ),
             ),
             SizedBox(width: 12.w),
@@ -3516,15 +4014,7 @@ class _MultiSwitchCommandSurface extends StatelessWidget {
                 enabled: enabled,
                 active: allOn,
                 activeColor: const Color(0xFF28C79A),
-                onTap: () {
-                  for (final function in entries) {
-                    final value = DeviceCapabilityResolver.statusValue(
-                      device,
-                      function,
-                    );
-                    if (value != true) onDps(function.code, true);
-                  }
-                },
+                onTap: () => onAllSwitches(true),
               ),
             ),
           ],
@@ -3899,7 +4389,6 @@ class _SwitchChannelButton extends StatelessWidget {
     required this.busy,
     required this.enabled,
     required this.onLongPress,
-    required this.onEdit,
     required this.onTap,
   });
 
@@ -3908,7 +4397,6 @@ class _SwitchChannelButton extends StatelessWidget {
   final bool busy;
   final bool enabled;
   final VoidCallback onLongPress;
-  final VoidCallback onEdit;
   final VoidCallback onTap;
 
   @override
@@ -3939,70 +4427,49 @@ class _SwitchChannelButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 50.r,
-                      height: 50.r,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: active ? activeColor : Colors.grey.shade300,
-                      ),
-                      child: Center(
-                        child: busy
-                            ? SizedBox(
-                                width: 18.r,
-                                height: 18.r,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Icon(
-                                Icons.power_settings_new_rounded,
-                                color: Colors.white,
-                                size: 26.r,
-                              ),
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: active
-                                ? activeColor
-                                : AppColors.customGreyColor5,
-                            fontWeight: FontWeight.w900,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 50.r,
+                  height: 50.r,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active ? activeColor : Colors.grey.shade300,
+                  ),
+                  child: Center(
+                    child: busy
+                        ? SizedBox(
+                            width: 18.r,
+                            height: 18.r,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            Icons.power_settings_new_rounded,
+                            color: Colors.white,
+                            size: 26.r,
                           ),
-                    ),
-                  ],
-                ),
-              ),
-              PositionedDirectional(
-                top: 0,
-                end: 0,
-                child: IconButton(
-                  tooltip: 'smartHomeEditSwitchName'.tr,
-                  onPressed: onEdit,
-                  visualDensity: VisualDensity.compact,
-                  constraints: BoxConstraints.tight(Size(32.r, 32.r)),
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.edit_rounded,
-                    size: 15.r,
-                    color: AppColors.customGreyColor5,
                   ),
                 ),
-              ),
-            ],
+                SizedBox(height: 8.h),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color:
+                            active ? activeColor : AppColors.customGreyColor5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -4463,205 +4930,6 @@ class _CurtainPercentSliderState extends State<_CurtainPercentSlider> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DeviceRenameCard extends StatelessWidget {
-  const _DeviceRenameCard({
-    required this.controller,
-    required this.enabled,
-    required this.onSave,
-  });
-
-  final TextEditingController controller;
-  final bool enabled;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Panel(
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              enabled: enabled,
-              decoration: InputDecoration(labelText: 'smartHomeDeviceName'.tr),
-            ),
-          ),
-          SizedBox(width: 10.w),
-          IconButton.filled(
-            tooltip: 'save'.tr,
-            onPressed: enabled ? onSave : null,
-            icon: const Icon(Icons.save_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DeviceSpecsCard extends StatelessWidget {
-  const _DeviceSpecsCard({required this.device});
-
-  final SmartDeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = <MapEntry<String, String>>[
-      MapEntry('smartHomeCategory'.tr, device.category),
-      MapEntry('smartHomeProductName'.tr, device.productName),
-      MapEntry('smartHomeProtocol'.tr, device.protocol.toUpperCase()),
-      MapEntry('smartHomeModel'.tr, device.model),
-      MapEntry('smartHomeManufacturer'.tr, device.manufacturer),
-      MapEntry('smartHomeProductId'.tr, device.tuyaProductId),
-      MapEntry('smartHomeUuid'.tr, device.tuyaUuid),
-    ].where((row) => row.value.trim().isNotEmpty).toList(growable: false);
-
-    return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'smartHomeDeviceSpecs'.tr,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-          SizedBox(height: 10.h),
-          if (rows.isEmpty)
-            Text('smartHomeNoSpecs'.tr)
-          else
-            ...rows.map((row) => _SpecRow(label: row.key, value: row.value)),
-        ],
-      ),
-    );
-  }
-}
-
-class _DpsCard extends StatelessWidget {
-  const _DpsCard({required this.device});
-
-  final SmartDeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = _dpsStatusRows(device);
-    return _Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'smartHomeDpsStatus'.tr,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-          SizedBox(height: 10.h),
-          if (rows.isEmpty)
-            Text('smartHomeNoDps'.tr)
-          else
-            ...rows.map((row) => _SpecRow(label: row.key, value: row.value)),
-        ],
-      ),
-    );
-  }
-}
-
-List<MapEntry<String, String>> _dpsStatusRows(SmartDeviceModel device) {
-  final status = DeviceCapabilityResolver.statusMap(device);
-  final functions = DeviceCapabilityResolver.functions(device);
-  final byDpId = {
-    for (final function in functions) function.dpId: function,
-  };
-  final entries = status.entries.toList(growable: false)
-    ..sort((a, b) {
-      final aKey = a.key.toString();
-      final bKey = b.key.toString();
-      final aNumber = int.tryParse(aKey);
-      final bNumber = int.tryParse(bKey);
-      if (aNumber != null && bNumber != null) {
-        return aNumber.compareTo(bNumber);
-      }
-      return aKey.compareTo(bKey);
-    });
-
-  return entries.map((entry) {
-    final dpId = entry.key.toString();
-    final function = byDpId[dpId];
-    final label = function == null
-        ? dpId
-        : '$dpId - ${_functionLabelForDevice(device, function)}';
-    final value = function == null
-        ? _rawStatusLabel(entry.value)
-        : _functionStatusLabel(function, entry.value);
-    return MapEntry(label, value);
-  }).toList(growable: false);
-}
-
-String _rawStatusLabel(dynamic value) {
-  final ar = Get.locale?.languageCode == 'ar';
-  if (value == null) return ar ? 'غير معروف' : 'Unknown';
-  if (value is bool) return _onOffLabel(value);
-  if (value is String) return _friendlyEnumValue(value);
-  return value.toString();
-}
-
-class _SpecRow extends StatelessWidget {
-  const _SpecRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120.w,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.customGreyColor5,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : AppColors.whiteColor2,
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: child,
     );
   }
 }

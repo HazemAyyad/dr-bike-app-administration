@@ -319,6 +319,50 @@ class SmartDeviceModel {
   }
 }
 
+class SmartDeviceScheduleModel {
+  const SmartDeviceScheduleModel({
+    required this.id,
+    required this.smartDeviceId,
+    required this.name,
+    required this.commandCode,
+    required this.commandValue,
+    required this.scheduledAt,
+    required this.repeatType,
+    required this.repeatDays,
+    required this.enabled,
+  });
+
+  final int id;
+  final int smartDeviceId;
+  final String name;
+  final String commandCode;
+  final Map<String, dynamic> commandValue;
+  final DateTime scheduledAt;
+  final String repeatType;
+  final List<String> repeatDays;
+  final bool enabled;
+
+  factory SmartDeviceScheduleModel.fromJson(Map<String, dynamic> json) =>
+      SmartDeviceScheduleModel(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        smartDeviceId:
+            int.tryParse(json['smart_device_id']?.toString() ?? '') ?? 0,
+        name: json['name']?.toString() ?? '',
+        commandCode: json['command_code']?.toString() ?? '',
+        commandValue: _mapFromDynamic(json['command_value']),
+        scheduledAt: DateTime.tryParse(json['scheduled_at']?.toString() ?? '')
+                ?.toLocal() ??
+            DateTime.now(),
+        repeatType: json['repeat_type']?.toString() ?? 'once',
+        repeatDays: json['repeat_days'] is List
+            ? (json['repeat_days'] as List)
+                .map((item) => item.toString())
+                .toList(growable: false)
+            : const <String>[],
+        enabled: json['enabled'] != false,
+      );
+}
+
 Map<String, dynamic> _mapFromDynamic(dynamic raw) {
   if (raw is Map) {
     return raw.map((key, value) => MapEntry(key.toString(), value));
@@ -648,6 +692,70 @@ class SmartHomeApiService {
             SmartDeviceFunctionModel.fromJson(Map<String, dynamic>.from(item)))
         .where((item) => item.id > 0 && item.code.isNotEmpty)
         .toList(growable: false);
+  }
+
+  Future<List<SmartDeviceScheduleModel>> getDeviceSchedules({
+    required int deviceId,
+    int? userId,
+  }) async {
+    final response = await _api.get(
+      EndPoints.smartDeviceSchedules(deviceId),
+      queryParameters: {if (userId != null) 'user_id': userId},
+    );
+    return _extractList(response.data, const ['schedules'])
+        .whereType<Map>()
+        .map((item) =>
+            SmartDeviceScheduleModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.id > 0)
+        .toList(growable: false);
+  }
+
+  Future<SmartDeviceScheduleModel> saveDeviceSchedule({
+    required int deviceId,
+    int? scheduleId,
+    required String name,
+    required String commandCode,
+    required dynamic commandValue,
+    required DateTime scheduledAt,
+    required String repeatType,
+    required List<String> repeatDays,
+    required bool enabled,
+    int? userId,
+  }) async {
+    final data = {
+      'name': name,
+      'command_code': commandCode,
+      'command_value': {'value': commandValue},
+      'scheduled_at': scheduledAt.toUtc().toIso8601String(),
+      'repeat_type': repeatType,
+      'repeat_days': repeatDays,
+      'enabled': enabled,
+    };
+    final response = scheduleId == null
+        ? await _api.post(
+            EndPoints.smartDeviceSchedules(deviceId),
+            queryParameters: {if (userId != null) 'user_id': userId},
+            data: data,
+          )
+        : await _api.put(
+            EndPoints.smartDeviceSchedule(deviceId, scheduleId),
+            queryParameters: {if (userId != null) 'user_id': userId},
+            data: data,
+          );
+    return SmartDeviceScheduleModel.fromJson(
+      Map<String, dynamic>.from(response.data['schedule'] as Map),
+    );
+  }
+
+  Future<void> deleteDeviceSchedule({
+    required int deviceId,
+    required int scheduleId,
+    int? userId,
+  }) async {
+    await _api.delete(
+      EndPoints.smartDeviceSchedule(deviceId, scheduleId),
+      queryParameters: {if (userId != null) 'user_id': userId},
+    );
   }
 
   Future<SmartDeviceModel> moveDevice({

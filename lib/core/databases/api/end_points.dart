@@ -128,6 +128,10 @@ class EndPoints {
       'smart-home/devices/$id/functions';
   static String smartDeviceFunction(int deviceId, int functionId) =>
       'smart-home/devices/$deviceId/functions/$functionId';
+  static String smartDeviceSchedules(int deviceId) =>
+      'smart-home/devices/$deviceId/schedules';
+  static String smartDeviceSchedule(int deviceId, int scheduleId) =>
+      'smart-home/devices/$deviceId/schedules/$scheduleId';
   static String smartDeviceStatus(int id) => 'smart-home/devices/$id/status';
   static String smartDeviceControlLog(int id) =>
       'smart-home/devices/$id/control-log';
@@ -730,6 +734,8 @@ class EndPoints {
 
   // bills
   static const String addBill = 'add/bill';
+  static const String purchaseUpdateDraft = 'purchase/update-draft';
+  static const String purchaseDeleteDraft = 'purchase/delete-draft';
   static const String purchaseReceive = 'purchase/receive';
   static const String purchaseFinalize = 'purchase/finalize';
   static const String purchasePayment = 'purchase/payment';

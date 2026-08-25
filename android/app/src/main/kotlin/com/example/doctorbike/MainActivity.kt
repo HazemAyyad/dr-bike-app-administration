@@ -11,6 +11,8 @@ import com.thingclips.smart.android.ble.api.BleScanResponse
 import com.thingclips.smart.android.ble.api.LeScanSetting
 import com.thingclips.smart.android.ble.api.ScanDeviceBean
 import com.thingclips.smart.android.ble.api.ScanType
+import com.thingclips.smart.android.device.builder.ThingTimerBuilder
+import com.thingclips.smart.android.device.enums.TimerDeviceTypeEnum
 import com.thingclips.smart.sdk.api.IBleActivatorListener
 import com.thingclips.smart.sdk.api.IMultiModeActivatorListener
 import com.thingclips.smart.sdk.bean.BleActivatorBean
@@ -32,6 +34,7 @@ import com.thingclips.smart.home.sdk.ThingHomeSdk
 import com.thingclips.smart.home.sdk.bean.HomeBean
 import com.thingclips.smart.home.sdk.builder.ActivatorBuilder
 import com.thingclips.smart.home.sdk.callback.IThingHomeResultCallback
+import com.thingclips.smart.home.sdk.constant.TimerUpdateEnum
 import com.thingclips.smart.sdk.api.IThingActivator
 import com.thingclips.smart.sdk.api.IThingActivatorGetToken
 import com.thingclips.smart.sdk.api.IThingSmartActivatorListener
@@ -161,6 +164,8 @@ class MainActivity : FlutterFragmentActivity() {
                     "renameDevice" -> renameTuyaDevice(call, result)
                     "removeDevice" -> removeTuyaDevice(call, result)
                     "publishDps" -> publishTuyaDps(call, result)
+                    "saveDeviceSchedule" -> saveTuyaDeviceSchedule(call, result)
+                    "deleteDeviceSchedule" -> deleteTuyaDeviceSchedule(call, result)
                     "stopPairing" -> {
                         stopSmartHomeActivator()
                         result.success(true)
@@ -542,6 +547,87 @@ class MainActivity : FlutterFragmentActivity() {
         withTuyaDeviceBean(devId, homeId, result) { deviceBean ->
             result.success(deviceResult(true, "", "Device status loaded", deviceBean))
         }
+    }
+
+    private fun saveTuyaDeviceSchedule(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val taskName = call.argument<String>("taskName") ?: ""
+        val aliasName = call.argument<String>("aliasName") ?: taskName
+        val dpId = call.argument<String>("dpId") ?: ""
+        val value = call.argument<Any>("value")
+        val time = call.argument<String>("time") ?: ""
+        val loops = call.argument<String>("loops") ?: "0000000"
+        val enabled = call.argument<Boolean>("enabled") ?: true
+        val replace = call.argument<Boolean>("replace") ?: false
+        if (devId.isBlank() || taskName.isBlank() || dpId.isBlank() || time.isBlank() || value == null) {
+            result.success(mapOf("success" to false, "code" to "missing_schedule_arguments", "message" to "Missing Tuya schedule arguments"))
+            return
+        }
+
+        fun addTimer() {
+            val actions = JSONObject()
+                .put("dps", JSONObject().put(dpId, value))
+                .put("time", time)
+                .toString()
+            val builder = ThingTimerBuilder.Builder()
+                .taskName(taskName)
+                .devId(devId)
+                .deviceType(TimerDeviceTypeEnum.DEVICE)
+                .actions(actions)
+                .loops(loops)
+                .aliasName(aliasName)
+                .status(if (enabled) 1 else 0)
+                .appPush(false)
+                .build()
+            ThingHomeSdk.getTimerInstance().addTimer(builder, object : IResultCallback {
+                override fun onSuccess() {
+                    result.success(mapOf("success" to true, "code" to "", "message" to "Tuya schedule saved"))
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    result.success(mapOf("success" to false, "code" to safeTuyaErrorCode(code), "message" to safeTuyaErrorMessage(code, error)))
+                }
+            })
+        }
+
+        if (!replace) {
+            addTimer()
+            return
+        }
+        ThingHomeSdk.getTimerInstance().updateCategoryTimerStatus(
+            taskName,
+            devId,
+            TimerDeviceTypeEnum.DEVICE,
+            TimerUpdateEnum.DELETE,
+            object : IResultCallback {
+                override fun onSuccess() = addTimer()
+                override fun onError(code: String?, error: String?) = addTimer()
+            },
+        )
+    }
+
+    private fun deleteTuyaDeviceSchedule(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val devId = call.argument<String>("tuyaDeviceId") ?: ""
+        val taskName = call.argument<String>("taskName") ?: ""
+        if (devId.isBlank() || taskName.isBlank()) {
+            result.success(mapOf("success" to false, "code" to "missing_schedule_arguments", "message" to "Missing Tuya schedule arguments"))
+            return
+        }
+        ThingHomeSdk.getTimerInstance().updateCategoryTimerStatus(
+            taskName,
+            devId,
+            TimerDeviceTypeEnum.DEVICE,
+            TimerUpdateEnum.DELETE,
+            object : IResultCallback {
+                override fun onSuccess() {
+                    result.success(mapOf("success" to true, "code" to "", "message" to "Tuya schedule deleted"))
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    result.success(mapOf("success" to false, "code" to safeTuyaErrorCode(code), "message" to safeTuyaErrorMessage(code, error)))
+                }
+            },
+        )
     }
 
     private fun renameTuyaDevice(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {

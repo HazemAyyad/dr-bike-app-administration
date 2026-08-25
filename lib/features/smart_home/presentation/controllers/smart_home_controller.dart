@@ -49,13 +49,19 @@ class SmartHomeController extends GetxController {
   final tuyaUser = Rxn<SmartHomeTuyaUserModel>();
   final isLinkingTuyaUser = false.obs;
   final isPairingDevice = false.obs;
+  final pairingProgress = 0.0.obs;
+  final pairingStatus = ''.obs;
   final isScanningBluetooth = false.obs;
   final bluetoothDevices = <SmartHomeBleScanDevice>[].obs;
   final selectedBluetoothDevice = Rxn<SmartHomeBleScanDevice>();
   final deviceControlBusyIds = <int>{}.obs;
+  final deviceControlBusyKeys = <String>{}.obs;
   final deviceDetailsBusyIds = <int>{}.obs;
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
+  final Map<int, DateTime> _lastStatusPersistedAt = {};
   String _activeNativeTuyaUid = '';
+  Timer? _statusRefreshTimer;
+  bool _statusRefreshRunning = false;
 
   SmartHomeModel? get selectedHome {
     final key = selectedLocationKey.value;
@@ -108,7 +114,25 @@ class SmartHomeController extends GetxController {
   void onInit() {
     super.onInit();
     load();
+    _statusRefreshTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _refreshLoadedDeviceStatusesInBackground(),
+    );
   }
+
+  @override
+  void onClose() {
+    _statusRefreshTimer?.cancel();
+    super.onClose();
+  }
+
+  String deviceCommandBusyKey(int deviceId, String commandCode) =>
+      '$deviceId:${commandCode.trim().toLowerCase()}';
+
+  bool isDeviceCommandBusy(int deviceId, String commandCode) =>
+      deviceControlBusyKeys.contains(
+        deviceCommandBusyKey(deviceId, commandCode),
+      );
 
   Future<void> load() async {
     isLoading(true);
@@ -489,6 +513,9 @@ class SmartHomeController extends GetxController {
     required SmartHomeBleScanDevice scanDevice,
     required String ssid,
     required String password,
+    double progressBase = 0,
+    double progressSpan = 1,
+    bool showSuccess = true,
   }) async {
     final home = selectedHome;
     if (home == null) {
@@ -506,10 +533,14 @@ class SmartHomeController extends GetxController {
 
     await saveWifiCredentials(ssid: ssid, password: password);
     isPairingDevice(true);
+    pairingProgress(progressBase + (.05 * progressSpan));
+    pairingStatus('smartHomePairingPreparing'.tr);
     errorMessage('');
     try {
       final activeHome = await _ensureActiveTuyaHome(home);
       if (activeHome == null) return false;
+      pairingProgress(progressBase + (.15 * progressSpan));
+      pairingStatus('smartHomePairingTuya'.tr);
 
       final pairing = await nativeService
           .startBluetoothPairing(
@@ -548,6 +579,8 @@ class SmartHomeController extends GetxController {
         );
         return false;
       }
+      pairingProgress(progressBase + (.78 * progressSpan));
+      pairingStatus('smartHomePairingSaving'.tr);
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
         device: pairing.device,
@@ -559,7 +592,9 @@ class SmartHomeController extends GetxController {
       } else {
         devices.add(registered);
       }
-      await refreshData();
+      pairingProgress(progressBase + progressSpan);
+      pairingStatus('smartHomePairingComplete'.tr);
+      _refreshLoadedDeviceStatusesInBackground();
       await _logEvent(
         smartHomeId: activeHome.id,
         event: 'ble_pairing',
@@ -567,7 +602,9 @@ class SmartHomeController extends GetxController {
         message: pairing.message,
         context: pairing.device,
       );
-      Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+      if (showSuccess) {
+        Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+      }
       return true;
     } catch (e) {
       final visible = e.toString();
@@ -622,6 +659,8 @@ class SmartHomeController extends GetxController {
     await saveWifiCredentials(ssid: ssid, password: password);
 
     isPairingDevice(true);
+    pairingProgress(.05);
+    pairingStatus('smartHomePairingPreparing'.tr);
     errorMessage('');
     try {
       var activeHome = home;
@@ -664,6 +703,9 @@ class SmartHomeController extends GetxController {
         );
       }
 
+      pairingProgress(.15);
+      pairingStatus('smartHomePairingTuya'.tr);
+
       final pairing = await nativeService
           .startWifiPairing(
         tuyaHomeId: tuyaHomeId,
@@ -697,6 +739,8 @@ class SmartHomeController extends GetxController {
         );
         return false;
       }
+      pairingProgress(.78);
+      pairingStatus('smartHomePairingSaving'.tr);
       final registered = await apiService.registerDevice(
         smartHomeId: activeHome.id,
         device: pairing.device,
@@ -708,7 +752,9 @@ class SmartHomeController extends GetxController {
       } else {
         devices.add(registered);
       }
-      await refreshData();
+      pairingProgress(1);
+      pairingStatus('smartHomePairingComplete'.tr);
+      _refreshLoadedDeviceStatusesInBackground();
       await _logEvent(
         smartHomeId: activeHome.id,
         event: 'wifi_pairing',
@@ -1020,7 +1066,9 @@ class SmartHomeController extends GetxController {
       return false;
     }
 
-    deviceControlBusyIds.add(device.id);
+    final busyKey = deviceCommandBusyKey(device.id, commandCode);
+    if (deviceControlBusyKeys.contains(busyKey)) return false;
+    deviceControlBusyKeys.add(busyKey);
     errorMessage('');
     try {
       final controlDevice = await _deviceWithFunctionMetadata(device);
@@ -1153,7 +1201,7 @@ class SmartHomeController extends GetxController {
       errorMessage(e.toString());
       return false;
     } finally {
-      deviceControlBusyIds.remove(device.id);
+      deviceControlBusyKeys.remove(busyKey);
     }
   }
 
@@ -1201,51 +1249,106 @@ class SmartHomeController extends GetxController {
   }
 
   Future<void> refreshLoadedDeviceStatuses() async {
-    if (!nativeStatus.value.initialized || !isTuyaUserLinked) return;
-    final snapshot = devices.toList(growable: false);
-    for (final device in snapshot) {
-      if (device.tuyaDeviceId.trim().isEmpty) continue;
-      final tuyaHomeId = _tuyaHomeIdForDevice(device);
-      if (tuyaHomeId.trim().isEmpty) continue;
-      try {
-        final native = await nativeService.getDeviceStatus(
-          tuyaDeviceId: device.tuyaDeviceId,
-          tuyaHomeId: tuyaHomeId,
-        );
-        if (!native.success) {
-          _deviceRefreshFailures[device.id] = {
-            'code': native.code,
-            'message': native.message,
-            'tuya_home_id': tuyaHomeId,
-          };
+    if (_statusRefreshRunning ||
+        !nativeStatus.value.initialized ||
+        !isTuyaUserLinked) {
+      return;
+    }
+    _statusRefreshRunning = true;
+    try {
+      final snapshot = devices.toList(growable: false);
+      for (final device in snapshot) {
+        if (device.tuyaDeviceId.trim().isEmpty) {
           continue;
         }
+        final tuyaHomeId = _tuyaHomeIdForDevice(device);
+        if (tuyaHomeId.trim().isEmpty) continue;
+        try {
+          final native = await nativeService.getDeviceStatus(
+            tuyaDeviceId: device.tuyaDeviceId,
+            tuyaHomeId: tuyaHomeId,
+          );
+          if (!native.success) {
+            _deviceRefreshFailures[device.id] = {
+              'code': native.code,
+              'message': native.message,
+              'tuya_home_id': tuyaHomeId,
+            };
+            continue;
+          }
 
-        final nextStatus =
-            native.dps.isNotEmpty ? native.dps : device.lastStatus;
-        final nextMetadata =
-            native.device.isNotEmpty ? native.device : device.rawMetadata;
-        final saved = await apiService.updateDeviceStatus(
-          id: device.id,
-          online: native.online,
-          lastStatus: nextStatus,
-          rawMetadata: nextMetadata,
-          userId: selectedOwnerId.value,
-        );
-        _upsertDevice(saved.copyWith(
-          online: native.online,
-          lastStatus:
-              saved.lastStatus.isNotEmpty ? saved.lastStatus : nextStatus,
-          rawMetadata:
-              saved.rawMetadata.isNotEmpty ? saved.rawMetadata : nextMetadata,
-          primaryPowerDp: _powerDpFromStatus(nextStatus),
-          powerOn: _powerStateFromStatus(nextStatus),
-        ));
-        _deviceRefreshFailures.remove(device.id);
-      } catch (_) {
-        // Dashboard loading should stay responsive if one device cannot refresh.
+          final nextStatus =
+              native.dps.isNotEmpty ? native.dps : device.lastStatus;
+          final nextMetadata =
+              native.device.isNotEmpty ? native.device : device.rawMetadata;
+          final now = DateTime.now();
+          final lastPersisted = _lastStatusPersistedAt[device.id];
+          final shouldPersist = lastPersisted == null ||
+              now.difference(lastPersisted) >= const Duration(seconds: 10);
+          final saved = shouldPersist
+              ? await apiService.updateDeviceStatus(
+                  id: device.id,
+                  online: native.online,
+                  lastStatus: nextStatus,
+                  rawMetadata: nextMetadata,
+                  userId: selectedOwnerId.value,
+                )
+              : device.copyWith(
+                  online: native.online,
+                  lastStatus: nextStatus,
+                  rawMetadata: nextMetadata,
+                );
+          if (shouldPersist) _lastStatusPersistedAt[device.id] = now;
+          _upsertDevice(saved.copyWith(
+            online: native.online,
+            lastStatus:
+                saved.lastStatus.isNotEmpty ? saved.lastStatus : nextStatus,
+            rawMetadata:
+                saved.rawMetadata.isNotEmpty ? saved.rawMetadata : nextMetadata,
+            primaryPowerDp: _powerDpFromStatus(nextStatus),
+            powerOn: _powerStateFromStatus(nextStatus),
+          ));
+          _deviceRefreshFailures.remove(device.id);
+        } catch (_) {
+          // Dashboard loading should stay responsive if one device cannot refresh.
+        }
       }
+    } finally {
+      _statusRefreshRunning = false;
     }
+  }
+
+  Future<bool> startBluetoothDevicesPairing({
+    required List<SmartHomeBleScanDevice> scanDevices,
+    required String ssid,
+    required String password,
+  }) async {
+    if (scanDevices.isEmpty) return false;
+    var added = 0;
+    final span = 1 / scanDevices.length;
+    for (var index = 0; index < scanDevices.length; index++) {
+      final ok = await startBluetoothDevicePairing(
+        scanDevice: scanDevices[index],
+        ssid: ssid,
+        password: password,
+        progressBase: index * span,
+        progressSpan: span,
+        showSuccess: false,
+      );
+      if (ok) added++;
+    }
+    if (added > 0) {
+      pairingProgress(1);
+      pairingStatus('smartHomePairingComplete'.tr);
+      Get.snackbar(
+        'addDevice'.tr,
+        'smartHomeDevicesPaired'.trParams({
+          'added': '$added',
+          'total': '${scanDevices.length}',
+        }),
+      );
+    }
+    return added == scanDevices.length;
   }
 
   void _refreshLoadedDeviceStatusesInBackground() {
