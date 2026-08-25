@@ -456,6 +456,13 @@ class _InvoiceLine {
   final double total;
 }
 
+class _PdfAmount {
+  const _PdfAmount(this.value, this.currency);
+
+  final double value;
+  final String currency;
+}
+
 class MaintenanceInvoicePdfBuilder {
   MaintenanceInvoicePdfBuilder._();
 
@@ -480,15 +487,16 @@ class MaintenanceInvoicePdfBuilder {
 
   static String _currency(MaintenanceInvoiceModel invoice) => invoice.currency;
 
-  static String _amount(
+  static _PdfAmount _amount(
     MaintenanceInvoiceModel invoice,
     double value,
   ) =>
-      '${_money(value)} ${_currency(invoice)}';
+      _PdfAmount(value, _currency(invoice));
 
   static Future<pw.MemoryImage?> _logo() async {
     try {
-      final data = await rootBundle.load('assets/images/dark_Logo.png');
+      final data =
+          await rootBundle.load('assets/images/purchase_invoice_logo.jpg');
       return pw.MemoryImage(data.buffer.asUint8List());
     } catch (_) {
       return null;
@@ -499,23 +507,19 @@ class MaintenanceInvoicePdfBuilder {
     final regular = await _regular();
     final bold = await _bold();
     final logo = await _logo();
-    final productRows = invoice.items.isEmpty
-        ? [
-            ['-', '-', '-', 'لا توجد منتجات أو قطع غيار', '-']
-          ]
-        : invoice.items
-            .asMap()
-            .entries
-            .map(
-              (entry) => [
-                _amount(invoice, entry.value.lineTotal),
-                _amount(invoice, entry.value.unitPrice),
-                '${entry.value.quantity}',
-                entry.value.productName,
-                '${entry.key + 1}',
-              ],
-            )
-            .toList();
+    final productRows = invoice.items
+        .asMap()
+        .entries
+        .map(
+          (entry) => [
+            _amount(invoice, entry.value.lineTotal),
+            _amount(invoice, entry.value.unitPrice),
+            '${entry.value.quantity}',
+            entry.value.productName,
+            '${entry.key + 1}',
+          ],
+        )
+        .toList();
 
     final doc = pw.Document();
     doc.addPage(
@@ -548,20 +552,43 @@ class MaintenanceInvoicePdfBuilder {
             invoice: invoice,
             bold: bold,
           ),
-          pw.SizedBox(height: 12),
-          _purchaseDataTable(
-            headers: const ['الإجمالي', 'السعر', 'الكمية', 'اسم المنتج', '#'],
-            data: productRows,
-            bold: bold,
-            rtlColumns: const {3},
-            columnWidths: const {
-              0: pw.FlexColumnWidth(1.3),
-              1: pw.FlexColumnWidth(1.2),
-              2: pw.FlexColumnWidth(0.8),
-              3: pw.FlexColumnWidth(2.8),
-              4: pw.FlexColumnWidth(0.45),
-            },
-          ),
+          if (invoice.notes.trim().isNotEmpty) ...[
+            pw.SizedBox(height: 10),
+            _sectionTitle('ملاحظات', bold),
+            pw.SizedBox(height: 4),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 7,
+              ),
+              decoration: pw.BoxDecoration(
+                color: _rowColor,
+                border: pw.Border.all(color: _borderColor),
+              ),
+              child: pw.Text(
+                invoice.notes,
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+              ),
+            ),
+          ],
+          if (invoice.items.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            _purchaseDataTable(
+              headers: const ['الإجمالي', 'السعر', 'الكمية', 'اسم المنتج', '#'],
+              data: productRows,
+              bold: bold,
+              rtlColumns: const {3},
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1.3),
+                1: pw.FlexColumnWidth(1.2),
+                2: pw.FlexColumnWidth(0.8),
+                3: pw.FlexColumnWidth(2.8),
+                4: pw.FlexColumnWidth(0.45),
+              },
+            ),
+          ],
           if (invoice.services.isNotEmpty) ...[
             pw.SizedBox(height: 10),
             _sectionTitle('الخدمات المنفذة', bold),
@@ -600,7 +627,10 @@ class MaintenanceInvoicePdfBuilder {
                   .map(
                     (entry) => [
                       entry.value.note ?? '-',
-                      '${_money(entry.value.amount)} ${entry.value.currency}',
+                      _PdfAmount(
+                        entry.value.amount,
+                        entry.value.currency,
+                      ),
                       _paymentLabel(entry.value.method),
                       _shortDate(entry.value.createdAt),
                       '${entry.key + 1}',
@@ -620,27 +650,6 @@ class MaintenanceInvoicePdfBuilder {
           ],
           pw.SizedBox(height: 12),
           _purchaseTotals(invoice: invoice, bold: bold),
-          if (invoice.notes.trim().isNotEmpty) ...[
-            pw.SizedBox(height: 10),
-            _sectionTitle('ملاحظات', bold),
-            pw.SizedBox(height: 4),
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 7,
-              ),
-              decoration: pw.BoxDecoration(
-                color: _rowColor,
-                border: pw.Border.all(color: _borderColor),
-              ),
-              child: pw.Text(
-                invoice.notes,
-                textDirection: pw.TextDirection.rtl,
-                textAlign: pw.TextAlign.right,
-              ),
-            ),
-          ],
           _purchaseFooter(),
         ],
       ),
@@ -725,10 +734,16 @@ class MaintenanceInvoicePdfBuilder {
     required pw.Font bold,
   }) {
     final debtLabel = invoice.hasDebt
-        ? 'دين متبقٍ: ${_amount(invoice, invoice.debtAmount)}'
+        ? _debtValue(
+            label: 'دين متبقٍ',
+            amount: _amount(invoice, invoice.debtAmount),
+          )
         : invoice.paymentStatus == 'paid'
-            ? 'لا يوجد دين'
-            : 'غير مدفوع بعد: ${_amount(invoice, invoice.remainingAmount)}';
+            ? pw.Text('لا يوجد دين', textDirection: pw.TextDirection.rtl)
+            : _debtValue(
+                label: 'غير مدفوع بعد',
+                amount: _amount(invoice, invoice.remainingAmount),
+              );
 
     return pw.Container(
       width: double.infinity,
@@ -809,7 +824,7 @@ class MaintenanceInvoicePdfBuilder {
 
   static pw.Widget _metaLine(
     String label,
-    String value,
+    Object value,
     pw.Font bold, {
     bool valueLtr = false,
   }) {
@@ -818,17 +833,36 @@ class MaintenanceInvoicePdfBuilder {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(': $label', style: pw.TextStyle(font: bold)),
+          pw.Text('$label:', style: pw.TextStyle(font: bold)),
           pw.SizedBox(width: 7),
           pw.Expanded(
-            child: pw.Text(
-              value,
-              textDirection:
-                  valueLtr ? pw.TextDirection.ltr : pw.TextDirection.rtl,
-              textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(color: PdfColor.fromHex('#374151')),
-            ),
+            child: value is pw.Widget
+                ? value
+                : pw.Text(
+                    value.toString(),
+                    textDirection:
+                        valueLtr ? pw.TextDirection.ltr : pw.TextDirection.rtl,
+                    textAlign: pw.TextAlign.right,
+                    style: pw.TextStyle(color: PdfColor.fromHex('#374151')),
+                  ),
           ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _debtValue({
+    required String label,
+    required _PdfAmount amount,
+  }) {
+    return pw.Directionality(
+      textDirection: pw.TextDirection.rtl,
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text('$label:', textDirection: pw.TextDirection.rtl),
+          pw.SizedBox(width: 4),
+          _amountWidget(amount),
         ],
       ),
     );
@@ -836,7 +870,7 @@ class MaintenanceInvoicePdfBuilder {
 
   static pw.Widget _purchaseDataTable({
     required List<String> headers,
-    required List<List<String>> data,
+    required List<List<dynamic>> data,
     required pw.Font bold,
     required Set<int> rtlColumns,
     required Map<int, pw.TableColumnWidth> columnWidths,
@@ -861,19 +895,24 @@ class MaintenanceInvoicePdfBuilder {
       oddRowDecoration: pw.BoxDecoration(color: _rowColor),
       cellAlignments: alignments,
       headerAlignments: alignments,
-      cellBuilder: (index, data, rowNum) => pw.Text(
-        data.toString(),
-        textDirection: rtlColumns.contains(index)
-            ? pw.TextDirection.rtl
-            : pw.TextDirection.ltr,
-        textAlign: rtlColumns.contains(index)
-            ? pw.TextAlign.right
-            : pw.TextAlign.center,
-        style: pw.TextStyle(
-          font: rtlColumns.contains(index) ? null : bold,
-          fontSize: rtlColumns.contains(index) ? 11 : 10.5,
-        ),
-      ),
+      cellBuilder: (index, data, rowNum) {
+        if (data is _PdfAmount) {
+          return _amountWidget(data, bold: bold);
+        }
+        return pw.Text(
+          data.toString(),
+          textDirection: rtlColumns.contains(index)
+              ? pw.TextDirection.rtl
+              : pw.TextDirection.ltr,
+          textAlign: rtlColumns.contains(index)
+              ? pw.TextAlign.right
+              : pw.TextAlign.center,
+          style: pw.TextStyle(
+            font: rtlColumns.contains(index) ? null : bold,
+            fontSize: rtlColumns.contains(index) ? 11 : 10.5,
+          ),
+        );
+      },
     );
   }
 
@@ -917,13 +956,10 @@ class MaintenanceInvoicePdfBuilder {
                   pw.Container(
                     padding: const pw.EdgeInsets.all(5),
                     alignment: pw.Alignment.centerLeft,
-                    child: pw.Text(
+                    child: _amountWidget(
                       _amount(invoice, row[1] as double),
-                      textDirection: pw.TextDirection.ltr,
-                      style: pw.TextStyle(
-                        font: kind == null ? null : bold,
-                        color: valueColor,
-                      ),
+                      bold: kind == null ? null : bold,
+                      color: valueColor,
                     ),
                   ),
                   pw.Container(
@@ -951,6 +987,34 @@ class MaintenanceInvoicePdfBuilder {
         title,
         textDirection: pw.TextDirection.rtl,
         style: pw.TextStyle(font: bold, fontSize: 12),
+      ),
+    );
+  }
+
+  static pw.Widget _amountWidget(
+    _PdfAmount amount, {
+    pw.Font? bold,
+    PdfColor? color,
+  }) {
+    final style = pw.TextStyle(font: bold, fontSize: 10.5, color: color);
+    return pw.Directionality(
+      textDirection: pw.TextDirection.rtl,
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        mainAxisAlignment: pw.MainAxisAlignment.center,
+        children: [
+          pw.Text(
+            _money(amount.value),
+            textDirection: pw.TextDirection.ltr,
+            style: style,
+          ),
+          pw.SizedBox(width: 3),
+          pw.Text(
+            amount.currency,
+            textDirection: pw.TextDirection.rtl,
+            style: style,
+          ),
+        ],
       ),
     );
   }
