@@ -19,6 +19,7 @@ import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../sales/data/models/product_model.dart';
+import '../../../sales/data/models/product_variant_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../data/models/bills_models/bills_details_model.dart';
 import '../../data/models/bills_models/bills_model.dart';
@@ -241,7 +242,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (query.isEmpty) return products;
     return products.where((product) {
       return product.nameAr.toLowerCase().contains(query) ||
-          product.displayProductCode.toLowerCase().contains(query);
+          product.displayProductCode.toLowerCase().contains(query) ||
+          product.sizes.any(
+            (size) =>
+                size.size.toLowerCase().contains(query) ||
+                size.colorSizes.any(
+                  (color) =>
+                      color.colorAr.toLowerCase().contains(query) ||
+                      (color.colorEn?.toLowerCase().contains(query) ?? false) ||
+                      (color.colorAbbr?.toLowerCase().contains(query) ?? false),
+                ),
+          );
     }).toList();
   }
 
@@ -329,12 +340,62 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   int purchaseCartQtyForProduct(String productId) {
-    for (final item in purchaseCart) {
-      if (item.product.id == productId) {
-        return item.quantity.toInt();
+    return purchaseCart
+        .where((item) => item.product.id == productId)
+        .fold<int>(0, (sum, item) => sum + item.quantity.toInt());
+  }
+
+  List<PurchaseCartItemModel> purchaseCartItemsForProduct(String productId) =>
+      purchaseCart.where((item) => item.product.id == productId).toList();
+
+  void syncPurchaseProductVariants(
+    ProductModel product,
+    List<PurchaseVariantSelection> selections,
+  ) {
+    final selectedIds = selections.map((entry) => entry.variant.id).toSet();
+    final removed = purchaseCart
+        .where(
+          (item) =>
+              item.product.id == product.id &&
+              item.sizeColorId != null &&
+              !selectedIds.contains(item.sizeColorId),
+        )
+        .toList();
+    for (final item in removed) {
+      item.dispose();
+      purchaseCart.remove(item);
+    }
+
+    for (final selection in selections) {
+      final index = purchaseCart.indexWhere(
+        (item) =>
+            item.product.id == product.id &&
+            item.sizeColorId == selection.variant.id,
+      );
+      if (index >= 0) {
+        purchaseCart[index]
+          ..quantityController.text = selection.quantity.toString()
+          ..priceController.text = selection.unitPriceText;
+      } else {
+        purchaseCart.add(
+          PurchaseCartItemModel(
+            product: product,
+            sizeId: selection.size.id,
+            sizeColorId: selection.variant.id,
+            sizeLabel: selection.size.size,
+            colorLabel: selection.variant.colorAr,
+            variantImageUrl: selection.variant.imageUrl,
+            initialQuantity: selection.quantity.toString(),
+            initialPrice: selection.unitPriceText,
+            onChanged: calculatePurchaseCartTotal,
+          ),
+        );
       }
     }
-    return 0;
+    if (selections.isNotEmpty) loadPurchasePriceIntelligence(product.id);
+    purchaseCart.refresh();
+    calculatePurchaseCartTotal();
+    update();
   }
 
   int get purchaseCartDistinctCount => purchaseCart.length;
@@ -396,17 +457,14 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       final intelligence = asMap(data['price_intelligence']);
       purchasePriceIntelligence[productId] = intelligence;
       final suggested = asString(intelligence['suggested_price']);
-      PurchaseCartItemModel? item;
-      for (final row in purchaseCart) {
-        if (row.product.id == productId) {
-          item = row;
-          break;
+      if (suggested.isNotEmpty) {
+        for (final item in purchaseCart.where(
+          (row) => row.product.id == productId,
+        )) {
+          if (item.priceController.text.trim().isEmpty) {
+            item.priceController.text = suggested;
+          }
         }
-      }
-      if (item != null &&
-          item.priceController.text.trim().isEmpty &&
-          suggested.isNotEmpty) {
-        item.priceController.text = suggested;
       }
     } catch (_) {
       purchasePriceIntelligence.remove(productId);
@@ -560,6 +618,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       row.productIdController.text = item.product.id;
       row.quantityController.text = item.quantityController.text.trim();
       row.priceController.text = item.priceController.text.trim();
+      row.sizeId = item.sizeId;
+      row.sizeColorId = item.sizeColorId;
       return row;
     }).toList());
     totalCost.value = purchaseCart.fold<double>(
@@ -657,6 +717,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       row.productIdController.text = item.product.id;
       row.quantityController.text = item.quantityController.text.trim();
       row.priceController.text = item.priceController.text.trim();
+      row.sizeId = item.sizeId;
+      row.sizeColorId = item.sizeColorId;
       return row;
     }).toList());
     totalCost.value = purchaseCart.fold<double>(
@@ -1002,7 +1064,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         Helpers.showCustomDialogError(
           context: context,
           title: 'error'.tr,
-          message: 'راجع كميات ${row.product.productName}',
+          message: 'راجع كميات ${row.product.displayName}',
         );
         return false;
       }
@@ -1705,6 +1767,8 @@ class BillModel {
   final RxDouble totalPrice = 0.0.obs;
 
   final RxInt totalQuantity = 0.obs;
+  String? sizeId;
+  String? sizeColorId;
 
   void _updateTotal() {
     final price = double.tryParse(priceController.text.trim()) ?? 0;
@@ -1753,16 +1817,31 @@ class PurchaseSourceModel {
 
 class PurchaseCartItemModel {
   final ProductModel product;
+  final String? sizeId;
+  final String? sizeColorId;
+  final String? sizeLabel;
+  final String? colorLabel;
+  final String variantImageUrl;
   final TextEditingController quantityController;
   final TextEditingController priceController;
   final VoidCallback? onChanged;
 
-  PurchaseCartItemModel({required this.product, this.onChanged})
-      : quantityController = TextEditingController(text: '1'),
+  PurchaseCartItemModel({
+    required this.product,
+    this.sizeId,
+    this.sizeColorId,
+    this.sizeLabel,
+    this.colorLabel,
+    this.variantImageUrl = '',
+    String initialQuantity = '1',
+    String? initialPrice,
+    this.onChanged,
+  })  : quantityController = TextEditingController(text: initialQuantity),
         priceController = TextEditingController(
-          text: product.purchaseCost > 0
-              ? product.purchaseCost.toStringAsFixed(2)
-              : '',
+          text: initialPrice ??
+              (product.purchaseCost > 0
+                  ? product.purchaseCost.toStringAsFixed(2)
+                  : ''),
         ) {
     if (onChanged != null) {
       quantityController.addListener(onChanged!);
@@ -1773,6 +1852,16 @@ class PurchaseCartItemModel {
   num get quantity => num.tryParse(quantityController.text.trim()) ?? 0;
   num get unitPrice => num.tryParse(priceController.text.trim()) ?? 0;
   num get total => quantity * unitPrice;
+  String get variantLabel => [
+        if (sizeLabel?.trim().isNotEmpty == true) sizeLabel!.trim(),
+        if (colorLabel?.trim().isNotEmpty == true) colorLabel!.trim(),
+      ].join(' / ');
+  String get displayName => variantLabel.isEmpty
+      ? product.nameAr
+      : '${product.nameAr} — $variantLabel';
+  String get preferredImageUrl => variantImageUrl.trim().isNotEmpty
+      ? variantImageUrl
+      : product.preferredImageUrl;
 
   void dispose() {
     if (onChanged != null) {
@@ -1782,6 +1871,20 @@ class PurchaseCartItemModel {
     quantityController.dispose();
     priceController.dispose();
   }
+}
+
+class PurchaseVariantSelection {
+  final ProductSizeVariant size;
+  final ProductColorVariant variant;
+  final num quantity;
+  final String unitPriceText;
+
+  const PurchaseVariantSelection({
+    required this.size,
+    required this.variant,
+    required this.quantity,
+    required this.unitPriceText,
+  });
 }
 
 class PurchaseReceivingRowModel {

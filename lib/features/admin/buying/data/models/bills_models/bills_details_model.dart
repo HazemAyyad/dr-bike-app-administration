@@ -101,6 +101,10 @@ class BillProductModel {
   final int billId;
   final String productId;
   final String productName;
+  final String sizeId;
+  final String sizeColorId;
+  final String sizeLabel;
+  final String colorLabel;
   final String productImage;
   final String quantity;
   final String price;
@@ -122,6 +126,10 @@ class BillProductModel {
     required this.billId,
     required this.productId,
     required this.productName,
+    required this.sizeId,
+    required this.sizeColorId,
+    required this.sizeLabel,
+    required this.colorLabel,
     required this.productImage,
     required this.quantity,
     required this.price,
@@ -146,6 +154,10 @@ class BillProductModel {
       billId: asInt(j['bill_id']),
       productId: asString(j['product_id']),
       productName: asString(j['product_name']),
+      sizeId: asString(j['size_id']),
+      sizeColorId: asString(j['size_color_id']),
+      sizeLabel: asString(j['size_label']),
+      colorLabel: asString(j['color_label']),
       productImage: ShowNetImage.getPhoto(asNullableString(j['product_image'])),
       quantity: asString(j['quantity'], '0'),
       price: asString(j['price'], '0'),
@@ -173,6 +185,10 @@ class BillProductModel {
       'bill_id': billId,
       'product_id': productId,
       'product_name': productName,
+      'size_id': sizeId,
+      'size_color_id': sizeColorId,
+      'size_label': sizeLabel,
+      'color_label': colorLabel,
       'product_image': productImage,
       'quantity': quantity,
       'price': price,
@@ -191,6 +207,14 @@ class BillProductModel {
       'amanat_stocks': amanatStocks.map((e) => e.toJson()).toList(),
     };
   }
+
+  String get variantLabel => [
+        if (sizeLabel.trim().isNotEmpty) sizeLabel.trim(),
+        if (colorLabel.trim().isNotEmpty) colorLabel.trim(),
+      ].join(' / ');
+
+  String get displayName =>
+      variantLabel.isEmpty ? productName : '$productName — $variantLabel';
 }
 
 class PurchaseAmanatUiModel {
@@ -316,12 +340,16 @@ class PurchaseReturnUiModel {
 class PurchaseReturnItemUiModel {
   final int id;
   final String productName;
+  final String sizeLabel;
+  final String colorLabel;
   final num quantity;
   final String unitPrice;
 
   PurchaseReturnItemUiModel({
     required this.id,
     required this.productName,
+    required this.sizeLabel,
+    required this.colorLabel,
     required this.quantity,
     required this.unitPrice,
   });
@@ -331,6 +359,8 @@ class PurchaseReturnItemUiModel {
     return PurchaseReturnItemUiModel(
       id: asInt(j['id']),
       productName: asString(j['product_name']),
+      sizeLabel: asString(j['size_label']),
+      colorLabel: asString(j['color_label']),
       quantity: asDouble(j['quantity']),
       unitPrice: asString(j['unit_price'], '0'),
     );
@@ -339,9 +369,19 @@ class PurchaseReturnItemUiModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'product_name': productName,
+        'size_label': sizeLabel,
+        'color_label': colorLabel,
         'quantity': quantity,
         'unit_price': unitPrice,
       };
+
+  String get variantLabel => [
+        if (sizeLabel.trim().isNotEmpty) sizeLabel.trim(),
+        if (colorLabel.trim().isNotEmpty) colorLabel.trim(),
+      ].join(' / ');
+
+  String get displayName =>
+      variantLabel.isEmpty ? productName : '$productName — $variantLabel';
 }
 
 class PurchaseAttachmentUiModel {

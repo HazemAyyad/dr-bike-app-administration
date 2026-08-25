@@ -123,7 +123,7 @@ class _ReturnPurchaseCard extends StatelessWidget {
                               if (firstItem != null)
                                 _MiniChip(
                                   icon: Icons.inventory_2_outlined,
-                                  text: firstItem.productName,
+                                  text: firstItem.displayName,
                                 ),
                               if (firstItem != null)
                                 _MiniChip(

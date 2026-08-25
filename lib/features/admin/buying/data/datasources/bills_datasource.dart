@@ -91,6 +91,12 @@ class BillsDatasource {
         productsList['products[$i][purchase_price]'] =
             products[i].priceController.text;
       }
+      if (products[i].sizeId?.isNotEmpty == true) {
+        productsList['products[$i][size_id]'] = products[i].sizeId;
+      }
+      if (products[i].sizeColorId?.isNotEmpty == true) {
+        productsList['products[$i][size_color_id]'] = products[i].sizeColorId;
+      }
       if (total.isNotEmpty) productsList['total'] = total;
     }
     final paid = num.tryParse(initialPayment) ?? 0;
@@ -301,6 +307,12 @@ class BillsDatasource {
       data['products[$i][product_id]'] = products[i].productIdController.text;
       data['products[$i][quantity]'] = products[i].quantityController.text;
       data['products[$i][purchase_price]'] = products[i].priceController.text;
+      if (products[i].sizeId?.isNotEmpty == true) {
+        data['products[$i][size_id]'] = products[i].sizeId;
+      }
+      if (products[i].sizeColorId?.isNotEmpty == true) {
+        data['products[$i][size_color_id]'] = products[i].sizeColorId;
+      }
     }
 
     try {

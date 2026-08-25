@@ -15,6 +15,7 @@ import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
+import '../../widgets/bills_widgets/purchase_variant_picker_sheet.dart';
 
 void _logModernPurchaseBuildError(
   String scope,
@@ -898,7 +899,21 @@ class _PurchaseProductsContent extends GetView<BillsController> {
         final product = products[index];
         return _PurchaseProductCard(
           product: product,
-          onTap: () => controller.togglePurchaseProductSelection(product),
+          onTap: () async {
+            if (product.hasVariants && product.sizes.isNotEmpty) {
+              final selections = await showPurchaseVariantPickerSheet(
+                context: context,
+                product: product,
+                initialItems:
+                    controller.purchaseCartItemsForProduct(product.id),
+              );
+              if (selections != null) {
+                controller.syncPurchaseProductVariants(product, selections);
+              }
+              return;
+            }
+            controller.togglePurchaseProductSelection(product);
+          },
         );
       },
     );
@@ -1477,8 +1492,7 @@ class _PurchaseProductCard extends GetView<BillsController> {
                             children: [
                               _PurchaseSelectButton(
                                 selected: inCart,
-                                onTap: () => controller
-                                    .togglePurchaseProductSelection(product),
+                                onTap: onTap,
                               ),
                             ],
                           ),
@@ -1674,7 +1688,7 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = item.product.preferredImageUrl;
+    final imageUrl = item.preferredImageUrl;
     final hasImage = imageUrl.trim().isNotEmpty && imageUrl != 'no image';
     final intelligence = controller.purchasePriceIntelligence[item.product.id];
     final loading = controller.purchasePriceLoading.contains(item.product.id);
@@ -1730,13 +1744,13 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
                     SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
-                        item.product.nameAr,
-                        maxLines: 2,
+                        item.displayName,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.w800,
-                          height: 1.1,
+                          height: 1.15,
                         ),
                       ),
                     ),
@@ -2012,7 +2026,7 @@ Future<void> showPurchasePriceHistorySheet(
             itemBuilder: (_, index) {
               if (index == 0) {
                 return Text(
-                  'سجل أسعار ${item.product.nameAr}',
+                  'سجل أسعار ${item.displayName}',
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 16.sp,

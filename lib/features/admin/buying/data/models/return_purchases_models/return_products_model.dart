@@ -83,6 +83,10 @@ class ReturnItem {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String productName;
+  final String sizeId;
+  final String sizeColorId;
+  final String sizeLabel;
+  final String colorLabel;
 
   ReturnItem({
     required this.id,
@@ -93,6 +97,10 @@ class ReturnItem {
     required this.createdAt,
     required this.updatedAt,
     required this.productName,
+    required this.sizeId,
+    required this.sizeColorId,
+    required this.sizeLabel,
+    required this.colorLabel,
   });
 
   factory ReturnItem.fromJson(Map<String, dynamic> json) {
@@ -106,6 +114,10 @@ class ReturnItem {
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
       productName: asString(j['product_name']),
+      sizeId: asString(j['size_id']),
+      sizeColorId: asString(j['size_color_id']),
+      sizeLabel: asString(j['size_label']),
+      colorLabel: asString(j['color_label']),
     );
   }
 
@@ -119,6 +131,18 @@ class ReturnItem {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'product_name': productName,
+      'size_id': sizeId,
+      'size_color_id': sizeColorId,
+      'size_label': sizeLabel,
+      'color_label': colorLabel,
     };
   }
+
+  String get variantLabel => [
+        if (sizeLabel.trim().isNotEmpty) sizeLabel.trim(),
+        if (colorLabel.trim().isNotEmpty) colorLabel.trim(),
+      ].join(' / ');
+
+  String get displayName =>
+      variantLabel.isEmpty ? productName : '$productName — $variantLabel';
 }

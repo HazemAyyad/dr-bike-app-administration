@@ -35,7 +35,7 @@ class BillDetails extends GetView<BillsController> {
                 SizedBox(
                   width: 80.w,
                   child: Text(
-                    e.productName,
+                    e.displayName,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(

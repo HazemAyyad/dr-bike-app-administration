@@ -964,7 +964,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                   SizedBox(height: 6.h),
                   _MutedText(
                     text:
-                        '${item.product.productName} • المتبقي ${item.amanat.remainingQuantity}',
+                        '${item.product.displayName} • المتبقي ${item.amanat.remainingQuantity}',
                   ),
                   SizedBox(height: 14.h),
                   CustomTextField(
@@ -1107,7 +1107,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                           ),
                     ),
                     SizedBox(height: 6.h),
-                    _MutedText(text: product.productName),
+                    _MutedText(text: product.displayName),
                     SizedBox(height: 12.h),
                     Wrap(
                       spacing: 8.w,
@@ -1853,7 +1853,7 @@ class _ReturnCard extends StatelessWidget {
             SizedBox(height: 6.h),
             _MutedText(
               text: ret.items
-                  .map((item) => '${item.productName} × ${item.quantity}')
+                  .map((item) => '${item.displayName} × ${item.quantity}')
                   .join(' • '),
             ),
           ],
@@ -2071,7 +2071,7 @@ class _ReceivingRowCard extends GetView<BillsController> {
             children: [
               Expanded(
                 child: Text(
-                  product.productName,
+                  product.displayName,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -2423,7 +2423,7 @@ class _PurchaseItemOverviewRow extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  item.productName,
+                  item.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -2535,7 +2535,7 @@ class _IssueRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            product.productName,
+            product.displayName,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -2685,7 +2685,7 @@ class _AmanatRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            item.product.productName,
+            item.product.displayName,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontWeight: FontWeight.w700,
