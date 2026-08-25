@@ -9,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../controllers/maintenance_controller.dart';
+import 'maintenance_service_media.dart';
 
 class MaintenanceProductsSection extends StatelessWidget {
   const MaintenanceProductsSection({Key? key, required this.controller})
@@ -265,14 +266,51 @@ class _MaintenanceServicesPickerState
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          subtitle: Text(
-                            '${service.price.toStringAsFixed(2)} شيكل',
+                          subtitle: Row(
+                            children: [
+                              Text(
+                                '${service.price.toStringAsFixed(2)} شيكل',
+                              ),
+                              if (service.description.trim().isNotEmpty ||
+                                  service.media.isNotEmpty) ...[
+                                SizedBox(width: 6.w),
+                                Icon(
+                                  service.media.any((item) => item.isVideo)
+                                      ? Icons.play_circle_outline
+                                      : Icons.info_outline,
+                                  size: 15.sp,
+                                  color: AppColors.primaryColor,
+                                ),
+                                SizedBox(width: 2.w),
+                                Flexible(
+                                  child: Text(
+                                    'اضغط لعرض الشرح والوسائط',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          trailing: const Icon(Icons.add_circle_outline),
-                          onTap: () {
-                            controller.addMaintenanceServiceToDetails(service);
-                            Navigator.pop(context);
-                          },
+                          trailing: IconButton(
+                            tooltip: 'إضافة الخدمة',
+                            onPressed: () {
+                              controller
+                                  .addMaintenanceServiceToDetails(service);
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                          onTap: () => showMaintenanceServiceDetails(
+                            context,
+                            service,
+                            onAdd: () => controller
+                                .addMaintenanceServiceToDetails(service),
+                          ),
                         );
                       },
                     );
@@ -482,67 +520,81 @@ class _ServicesTable extends StatelessWidget {
             final item = controller.selectedMaintenanceServices[index];
             final isLast =
                 index == controller.selectedMaintenanceServices.length - 1;
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: isLast
-                    ? null
-                    : Border(
-                        bottom: BorderSide(color: Colors.grey.shade200),
-                      ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.home_repair_service_outlined,
-                          size: 18.sp,
-                          color: AppColors.primaryColor,
+            return InkWell(
+              onTap: () => showMaintenanceServiceDetails(context, item),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: isLast
+                      ? null
+                      : Border(
+                          bottom: BorderSide(color: Colors.grey.shade200),
                         ),
-                        SizedBox(width: 6.w),
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w800,
-                              height: 1.2,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.home_repair_service_outlined,
+                            size: 18.sp,
+                            color: AppColors.primaryColor,
+                          ),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w800,
+                                height: 1.2,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _dataCell(
-                    SalesAmountFormat.display(item.price),
-                    72,
-                    center: true,
-                    bold: true,
-                  ),
-                  if (!isLocked)
-                    SizedBox(
-                      width: 26.w,
-                      child: IconButton(
-                        tooltip: 'delete'.tr,
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints.tight(
-                          Size(24.w, 24.w),
-                        ),
-                        icon: Icon(
-                          Icons.close,
-                          size: 16.sp,
-                          color: Colors.red.shade500,
-                        ),
-                        onPressed: () =>
-                            controller.removeMaintenanceService(index),
+                          if (item.description.trim().isNotEmpty ||
+                              item.media.isNotEmpty) ...[
+                            SizedBox(width: 4.w),
+                            Icon(
+                              item.media.any((media) => media.isVideo)
+                                  ? Icons.play_circle_outline
+                                  : Icons.info_outline,
+                              size: 17.sp,
+                              color: AppColors.primaryColor,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                ],
+                    _dataCell(
+                      SalesAmountFormat.display(item.price),
+                      72,
+                      center: true,
+                      bold: true,
+                    ),
+                    if (!isLocked)
+                      SizedBox(
+                        width: 26.w,
+                        child: IconButton(
+                          tooltip: 'delete'.tr,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tight(
+                            Size(24.w, 24.w),
+                          ),
+                          icon: Icon(
+                            Icons.close,
+                            size: 16.sp,
+                            color: Colors.red.shade500,
+                          ),
+                          onPressed: () =>
+                              controller.removeMaintenanceService(index),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             );
           }),

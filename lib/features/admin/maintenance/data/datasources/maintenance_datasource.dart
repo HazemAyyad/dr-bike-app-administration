@@ -283,41 +283,51 @@ class MaintenanceDatasource {
   Future<Map<String, dynamic>> saveMaintenanceService({
     int? serviceId,
     required String name,
+    required String description,
     required double price,
     required bool isActive,
     required List<File> media,
     List<int> keepMediaIds = const [],
   }) async {
     try {
+      final formData = FormData();
+      formData.fields.addAll([
+        MapEntry('name', name),
+        MapEntry('description', description),
+        MapEntry('price', price.toString()),
+        MapEntry('is_active', isActive ? '1' : '0'),
+        ...keepMediaIds.map(
+          (id) => MapEntry('keep_media_ids[]', id.toString()),
+        ),
+      ]);
+      for (final file in media) {
+        formData.files.add(
+          MapEntry(
+            'media[]',
+            await MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split(Platform.pathSeparator).last,
+            ),
+          ),
+        );
+      }
+
       final response = await api.post(
         serviceId == null
             ? EndPoints.maintenanceServices
             : EndPoints.maintenanceService(serviceId),
-        data: {
-          'name': name,
-          'price': price,
-          'is_active': isActive ? 1 : 0,
-          if (keepMediaIds.isNotEmpty) 'keep_media_ids': keepMediaIds,
-          if (media.isNotEmpty)
-            'media[]': await Future.wait(
-              media.map(
-                (file) => MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split(Platform.pathSeparator).last,
-                ),
-              ),
-            ),
-        },
-        isFormData: true,
+        data: formData,
       );
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data ?? {},
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'تعذر رفع الوسائط')
+              : 'تعذر رفع الوسائط. تحقق من حجم الملف والاتصال ثم حاول مرة أخرى.',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : const {},
         ),
       );
     }

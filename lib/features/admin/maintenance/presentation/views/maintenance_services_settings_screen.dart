@@ -1,19 +1,16 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../core/helpers/show_net_image.dart';
-import '../../../../../core/helpers/video_view.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../data/models/maintenance_service_model.dart';
 import '../../data/repositories/maintenance_implement.dart';
+import '../widgets/maintenance_service_media.dart';
 
 class MaintenanceServicesSettingsScreen extends StatefulWidget {
   const MaintenanceServicesSettingsScreen({Key? key}) : super(key: key);
@@ -230,54 +227,10 @@ class _ServiceCard extends StatelessWidget {
                 separatorBuilder: (_, __) => SizedBox(width: 8.w),
                 itemBuilder: (_, index) {
                   final media = service.media[index];
-                  final url = ShowNetImage.getPhoto(media.url);
-                  return GestureDetector(
-                    onTap: () => showGeneralDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      barrierLabel: 'Dismiss',
-                      barrierColor: Colors.black.withAlpha(128),
-                      transitionDuration: Duration.zero,
-                      pageBuilder: (_, __, ___) => media.isVideo
-                          ? VideoView(videoPath: url)
-                          : FullScreenZoomImage(imageUrl: url),
-                    ),
-                    child: SizedBox(
-                      width: 76.w,
-                      height: 76.h,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8.r),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            media.isVideo
-                                ? ColoredBox(
-                                    color: AppColors.primaryColor
-                                        .withValues(alpha: 0.12),
-                                    child: Icon(
-                                      Icons.videocam_outlined,
-                                      color: AppColors.primaryColor,
-                                      size: 28.sp,
-                                    ),
-                                  )
-                                : CachedNetworkImage(
-                                    imageUrl: url,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (_, __, ___) =>
-                                        const Icon(Icons.broken_image_outlined),
-                                  ),
-                            if (media.isVideo)
-                              const Align(
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  Icons.play_circle_fill,
-                                  color: Colors.white,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  return MaintenanceServiceMediaPreview(
+                    networkMedia: media,
+                    width: 76.w,
+                    height: 76.h,
                   );
                 },
               ),
@@ -318,6 +271,7 @@ class _MaintenanceServiceEditor extends StatefulWidget {
 class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
   final List<File> _newMedia = [];
   final ImagePicker _picker = ImagePicker();
@@ -330,6 +284,8 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
     super.initState();
     final service = widget.service;
     _nameController = TextEditingController(text: service?.name ?? '');
+    _descriptionController =
+        TextEditingController(text: service?.description ?? '');
     _priceController = TextEditingController(
       text: service == null ? '' : service.price.toStringAsFixed(2),
     );
@@ -340,6 +296,7 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     _priceController.dispose();
     super.dispose();
   }
@@ -434,6 +391,7 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
       final response = await datasource.saveMaintenanceService(
         serviceId: widget.service?.id,
         name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
         price: double.tryParse(_priceController.text.trim()) ?? 0,
         isActive: _isActive,
         media: _newMedia,
@@ -499,6 +457,18 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
                 ),
                 SizedBox(height: 10.h),
                 TextFormField(
+                  controller: _descriptionController,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    labelText: 'شرح الخدمة للموظف',
+                    hintText: 'اكتب خطوات العمل أو الملاحظات المهمة للخدمة',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                TextFormField(
                   controller: _priceController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -525,18 +495,18 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
                   SizedBox(height: 10.h),
                   Wrap(
                     spacing: 8.w,
-                    runSpacing: 8.h,
+                    runSpacing: 12.h,
                     children: [
                       ...existing.map(
-                        (media) => _MediaChip(
-                          label: media.isVideo ? 'فيديو محفوظ' : 'صورة محفوظة',
+                        (media) => MaintenanceServiceMediaPreview(
+                          networkMedia: media,
                           onRemove: () =>
                               setState(() => _keepMediaIds.remove(media.id)),
                         ),
                       ),
                       ..._newMedia.map(
-                        (file) => _MediaChip(
-                          label: file.path.split(Platform.pathSeparator).last,
+                        (file) => MaintenanceServiceMediaPreview(
+                          localFile: file,
                           onRemove: () =>
                               setState(() => _newMedia.remove(file)),
                         ),
@@ -574,31 +544,5 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
       if (messages.isNotEmpty) return messages.join('\n');
     }
     return response['message']?.toString() ?? 'tryAgain'.tr;
-  }
-}
-
-class _MediaChip extends StatelessWidget {
-  const _MediaChip({
-    required this.label,
-    required this.onRemove,
-  });
-
-  final String label;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: SizedBox(
-        width: 140.w,
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      deleteIcon: const Icon(Icons.close, size: 18),
-      onDeleted: onRemove,
-    );
   }
 }

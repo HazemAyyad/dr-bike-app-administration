@@ -15,6 +15,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../controllers/maintenance_controller.dart';
+import '../widgets/maintenance_service_media.dart';
 import '../widgets/maintenance_products_section.dart';
 import '../widgets/next_back_button.dart';
 
@@ -214,12 +215,45 @@ class _MaintenanceServiceSuggestions extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    subtitle: Text(
-                      '${service.price.toStringAsFixed(2)} شيكل',
-                      style: TextStyle(fontSize: 11.sp),
+                    subtitle: Row(
+                      children: [
+                        Text(
+                          '${service.price.toStringAsFixed(2)} شيكل',
+                          style: TextStyle(fontSize: 11.sp),
+                        ),
+                        if (service.description.trim().isNotEmpty ||
+                            service.media.isNotEmpty) ...[
+                          SizedBox(width: 6.w),
+                          Icon(
+                            service.media.any((item) => item.isVideo)
+                                ? Icons.play_circle_outline
+                                : Icons.info_outline,
+                            size: 15.sp,
+                            color: AppColors.primaryColor,
+                          ),
+                          SizedBox(width: 2.w),
+                          Text(
+                            'عرض الشرح والوسائط',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    onTap: () =>
-                        controller.addMaintenanceServiceToDetails(service),
+                    trailing: IconButton(
+                      tooltip: 'إضافة الخدمة',
+                      onPressed: () =>
+                          controller.addMaintenanceServiceToDetails(service),
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                    onTap: () => showMaintenanceServiceDetails(
+                      context,
+                      service,
+                      onAdd: () =>
+                          controller.addMaintenanceServiceToDetails(service),
+                    ),
                   ),
                 )
                 .toList(),

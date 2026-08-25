@@ -2,6 +2,7 @@ class MaintenanceServiceModel {
   const MaintenanceServiceModel({
     required this.id,
     required this.name,
+    required this.description,
     required this.price,
     required this.isActive,
     required this.media,
@@ -9,6 +10,7 @@ class MaintenanceServiceModel {
 
   final int id;
   final String name;
+  final String description;
   final double price;
   final bool isActive;
   final List<MaintenanceServiceMediaModel> media;
@@ -17,6 +19,7 @@ class MaintenanceServiceModel {
     return MaintenanceServiceModel(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
       price: double.tryParse(json['price']?.toString() ?? '') ?? 0,
       isActive: json['is_active'] == true || json['is_active'] == 1,
       media: ((json['media'] as List?) ?? const [])
