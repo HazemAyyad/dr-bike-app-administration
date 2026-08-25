@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -51,6 +52,12 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
+    final isPaid = invoice.paymentStatus == 'paid';
+    final paymentStateColor = isPaid
+        ? Colors.green
+        : invoice.hasDebt
+            ? Colors.orange
+            : Colors.red;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -90,6 +97,13 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
                       ],
                     ),
                   ),
+                  QrImageView(
+                    data: invoice.qrPayload,
+                    size: 52.w,
+                    padding: EdgeInsets.all(3.w),
+                    backgroundColor: Colors.white,
+                  ),
+                  SizedBox(width: 4.w),
                   IconButton(
                     tooltip: 'pdf'.tr,
                     onPressed: () async {
@@ -145,17 +159,37 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
                   _meta('buyerName'.tr, invoice.customerName),
                   if (invoice.customerPhone?.trim().isNotEmpty == true)
                     _meta('phoneNumberTitle'.tr, invoice.customerPhone!),
+                  if (invoice.customerAddress?.trim().isNotEmpty == true)
+                    _meta('العنوان', invoice.customerAddress!),
+                  if (invoice.receiptDateTimeDisplay.trim().isNotEmpty)
+                    _meta('موعد الاستلام', invoice.receiptDateTimeDisplay),
                   SizedBox(height: 12.h),
-                  Text(
-                    'maintenanceParts'.tr,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryColor,
+                  if (invoice.services.isNotEmpty) ...[
+                    _sectionTitle('الخدمات المنفذة'),
+                    SizedBox(height: 8.h),
+                    _servicesTable(),
+                    SizedBox(height: 14.h),
+                  ],
+                  if (invoice.items.isNotEmpty) ...[
+                    _sectionTitle('المنتجات وقطع الغيار'),
+                    SizedBox(height: 8.h),
+                    _itemsTable(),
+                  ],
+                  if (invoice.notes.trim().isNotEmpty) ...[
+                    SizedBox(height: 14.h),
+                    _sectionTitle('ملاحظات الصيانة'),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(invoice.notes),
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  _itemsTable(),
+                  ],
                   Divider(height: 24.h),
                   _total('maintenancePartsTotal'.tr, invoice.partsTotal),
                   _total('maintenanceLaborCost'.tr, invoice.laborCost),
@@ -163,6 +197,41 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
                   _total('totalBill'.tr, invoice.invoiceTotal, bold: true),
                   _total('paidAmount'.tr, invoice.paidAmount),
                   _total('remainingAmount'.tr, invoice.remainingAmount),
+                  Container(
+                    margin: EdgeInsets.only(top: 8.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: paymentStateColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isPaid
+                              ? Icons.check_circle_outline
+                              : Icons.account_balance_wallet_outlined,
+                          color: paymentStateColor,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            isPaid
+                                ? 'الفاتورة مدفوعة بالكامل'
+                                : invoice.hasDebt
+                                    ? 'يوجد دين متبقٍ: ${_money(invoice.debtAmount)} ${invoice.currency}'
+                                    : 'لم يتم دفع كامل الفاتورة بعد، المتبقي: ${_money(invoice.remainingAmount)} ${invoice.currency}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: paymentStateColor.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (invoice.payments.isNotEmpty) ...[
                     Divider(height: 20.h),
                     Text(
@@ -179,6 +248,8 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
                         _paymentLabel(payment.method),
                         [
                           _money(payment.amount),
+                          if (payment.createdAt?.trim().isNotEmpty == true)
+                            payment.createdAt!.trim(),
                           if (payment.note?.trim().isNotEmpty == true)
                             payment.note!.trim(),
                         ].join(' - '),
@@ -203,6 +274,50 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
       default:
         return 'كاش';
     }
+  }
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w800,
+        color: AppColors.primaryColor,
+      ),
+    );
+  }
+
+  Widget _servicesTable() {
+    return Table(
+      columnWidths: const {
+        0: FlexColumnWidth(0.35),
+        1: FlexColumnWidth(2.4),
+        2: FlexColumnWidth(0.9),
+      },
+      border: TableBorder.all(color: Colors.grey.shade300),
+      children: [
+        TableRow(
+          decoration: BoxDecoration(color: Colors.grey.shade100),
+          children: [
+            _tableCell('#', bold: true, center: true),
+            _tableCell('الخدمة', bold: true),
+            _tableCell('السعر', bold: true, center: true),
+          ],
+        ),
+        ...invoice.services.asMap().entries.map(
+              (entry) => TableRow(
+                children: [
+                  _tableCell('${entry.key + 1}', center: true),
+                  _tableCell(entry.value.name),
+                  _tableCell(
+                    '${_money(entry.value.price)} ${invoice.currency}',
+                    center: true,
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
   }
 
   Widget _meta(String label, String value) {
@@ -230,25 +345,16 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
   }
 
   Widget _itemsTable() {
-    final rows = invoice.items.isEmpty
-        ? [
-            _InvoiceLine(
-              name: 'maintenanceLaborCost'.tr,
-              quantity: 1,
-              unitPrice: invoice.laborCost,
-              total: invoice.laborCost,
-            ),
-          ]
-        : invoice.items
-            .map(
-              (item) => _InvoiceLine(
-                name: item.productName.isEmpty ? '-' : item.productName,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                total: item.lineTotal,
-              ),
-            )
-            .toList();
+    final rows = invoice.items
+        .map(
+          (item) => _InvoiceLine(
+            name: item.productName.isEmpty ? '-' : item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.lineTotal,
+          ),
+        )
+        .toList();
 
     return Table(
       columnWidths: const {
@@ -273,8 +379,15 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
             children: [
               _tableCell(item.name),
               _tableCell(item.quantity.toString(), center: true),
-              _tableCell(_money(item.unitPrice), center: true),
-              _tableCell(_money(item.total), bold: true, center: true),
+              _tableCell(
+                '${_money(item.unitPrice)} ${invoice.currency}',
+                center: true,
+              ),
+              _tableCell(
+                '${_money(item.total)} ${invoice.currency}',
+                bold: true,
+                center: true,
+              ),
             ],
           ),
         ),
@@ -316,7 +429,7 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
             ),
           ),
           Text(
-            _money(value),
+            '${_money(value)} ${invoice.currency}',
             style: TextStyle(
               fontSize: bold ? 14.sp : 12.sp,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
@@ -380,13 +493,7 @@ class MaintenanceInvoicePdfBuilder {
     }
     final rows = invoice.items.isEmpty
         ? [
-            [
-              '1',
-              'maintenanceLaborCost'.tr,
-              '1',
-              _money(invoice.laborCost),
-              _money(invoice.laborCost)
-            ]
+            ['-', 'لا توجد منتجات أو قطع غيار', '-', '-', '-']
           ]
         : invoice.items
             .asMap()
@@ -396,8 +503,8 @@ class MaintenanceInvoicePdfBuilder {
                 '${entry.key + 1}',
                 entry.value.productName,
                 '${entry.value.quantity}',
-                _money(entry.value.unitPrice),
-                _money(entry.value.lineTotal),
+                '${_money(entry.value.unitPrice)} ${invoice.currency}',
+                '${_money(entry.value.lineTotal)} ${invoice.currency}',
               ],
             )
             .toList();
@@ -414,7 +521,7 @@ class MaintenanceInvoicePdfBuilder {
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  'دكتور بايك - قسم الصيانة',
+                  'دكتور بايك - فاتورة صيانة',
                   style: pw.TextStyle(
                     font: bold,
                     fontSize: 22,
@@ -422,6 +529,15 @@ class MaintenanceInvoicePdfBuilder {
                   ),
                 ),
               ),
+              pw.SizedBox(width: 10),
+              pw.BarcodeWidget(
+                barcode: pw.Barcode.qrCode(),
+                data: invoice.qrPayload,
+                width: 62,
+                height: 62,
+                drawText: false,
+              ),
+              pw.SizedBox(width: 10),
               if (logo != null) pw.Image(logo, height: 68),
             ],
           ),
@@ -447,10 +563,49 @@ class MaintenanceInvoicePdfBuilder {
               ['invoiceStatus'.tr, invoice.paymentStatusLabel, paymentColor],
               ['buyerName'.tr, invoice.customerName, null],
               ['phoneNumberTitle'.tr, invoice.customerPhone ?? '-', null],
+              ['العنوان', invoice.customerAddress ?? '-', null],
               ['deliveryDate'.tr, invoice.receiptDateTimeDisplay, null],
+              [
+                'حالة الدين',
+                invoice.hasDebt
+                    ? 'دين متبقٍ ${_money(invoice.debtAmount)} ${invoice.currency}'
+                    : invoice.paymentStatus == 'paid'
+                        ? 'لا يوجد دين - مدفوعة بالكامل'
+                        : 'لم يتم دفع كامل الفاتورة بعد - المتبقي ${_money(invoice.remainingAmount)} ${invoice.currency}',
+                invoice.hasDebt
+                    ? PdfColors.orange800
+                    : invoice.paymentStatus == 'paid'
+                        ? PdfColors.green800
+                        : PdfColors.red800,
+              ],
             ],
           ),
           pw.SizedBox(height: 14),
+          if (invoice.services.isNotEmpty) ...[
+            pw.Text('الخدمات المنفذة', style: pw.TextStyle(font: bold)),
+            pw.SizedBox(height: 6),
+            pw.TableHelper.fromTextArray(
+              headers: ['#', 'الخدمة', 'السعر'],
+              data: invoice.services
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => [
+                      '${entry.key + 1}',
+                      entry.value.name,
+                      '${_money(entry.value.price)} ${invoice.currency}',
+                    ],
+                  )
+                  .toList(),
+              headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.deepPurple600),
+              cellAlignment: pw.Alignment.centerRight,
+            ),
+            pw.SizedBox(height: 14),
+          ],
+          pw.Text('المنتجات وقطع الغيار', style: pw.TextStyle(font: bold)),
+          pw.SizedBox(height: 6),
           pw.TableHelper.fromTextArray(
             headers: [
               '#',
@@ -472,12 +627,30 @@ class MaintenanceInvoicePdfBuilder {
               width: 210,
               child: pw.TableHelper.fromTextArray(
                 data: [
-                  ['maintenancePartsTotal'.tr, _money(invoice.partsTotal)],
-                  ['maintenanceLaborCost'.tr, _money(invoice.laborCost)],
-                  ['discount'.tr, _money(invoice.discount)],
-                  ['totalBill'.tr, _money(invoice.invoiceTotal)],
-                  ['paidAmount'.tr, _money(invoice.paidAmount)],
-                  ['remainingAmount'.tr, _money(invoice.remainingAmount)],
+                  [
+                    'maintenancePartsTotal'.tr,
+                    '${_money(invoice.partsTotal)} ${invoice.currency}'
+                  ],
+                  [
+                    'maintenanceLaborCost'.tr,
+                    '${_money(invoice.laborCost)} ${invoice.currency}'
+                  ],
+                  [
+                    'discount'.tr,
+                    '${_money(invoice.discount)} ${invoice.currency}'
+                  ],
+                  [
+                    'totalBill'.tr,
+                    '${_money(invoice.invoiceTotal)} ${invoice.currency}'
+                  ],
+                  [
+                    'paidAmount'.tr,
+                    '${_money(invoice.paidAmount)} ${invoice.currency}'
+                  ],
+                  [
+                    'remainingAmount'.tr,
+                    '${_money(invoice.remainingAmount)} ${invoice.currency}'
+                  ],
                 ],
                 cellAlignment: pw.Alignment.centerRight,
               ),
@@ -488,22 +661,60 @@ class MaintenanceInvoicePdfBuilder {
             pw.Text('تفاصيل الدفع', style: pw.TextStyle(font: bold)),
             pw.SizedBox(height: 6),
             pw.TableHelper.fromTextArray(
-              headers: ['طريقة الدفع', 'المبلغ', 'ملاحظة'],
               data: invoice.payments
                   .map(
                     (payment) => [
                       _paymentLabel(payment.method),
-                      _money(payment.amount),
+                      '${_money(payment.amount)} ${payment.currency}',
                       payment.note ?? '-',
+                      payment.createdAt ?? '-',
                     ],
                   )
                   .toList(),
+              headers: const ['طريقة الدفع', 'المبلغ', 'ملاحظة', 'التاريخ'],
               headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
               headerDecoration:
                   const pw.BoxDecoration(color: PdfColors.deepPurple600),
               cellAlignment: pw.Alignment.centerRight,
             ),
           ],
+          if (invoice.notes.trim().isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            pw.Text('ملاحظات الصيانة', style: pw.TextStyle(font: bold)),
+            pw.SizedBox(height: 5),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(9),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Text(invoice.notes),
+            ),
+          ],
+          pw.SizedBox(height: 16),
+          pw.Container(height: 1, color: PdfColors.grey300),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'تم إنشاء هذه الفاتورة من نظام دكتور بايك',
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.Text(
+                DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+                textDirection: pw.TextDirection.ltr,
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

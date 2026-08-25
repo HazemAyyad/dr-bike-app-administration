@@ -10,6 +10,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
 import '../widgets/maintenance_data_widget.dart';
+import 'maintenance_qr_scanner_screen.dart';
 
 class MaintenanceScreen extends GetView<MaintenanceController> {
   const MaintenanceScreen({Key? key}) : super(key: key);
@@ -21,6 +22,31 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         title: 'maintenance',
         action: false,
         actions: [
+          IconButton(
+            tooltip: 'مسح فاتورة صيانة',
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            onPressed: () async {
+              final qrData = await Get.to<String>(
+                () => const MaintenanceQrScannerScreen(),
+              );
+              if (qrData == null || !context.mounted) return;
+
+              final maintenanceId = MaintenanceQrPayload.maintenanceId(qrData);
+              if (maintenanceId == null) {
+                Get.snackbar(
+                  'رمز غير صالح',
+                  'هذا الرمز لا يخص فاتورة أو طلب صيانة',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
+
+              await controller.openMaintenanceInvoice(
+                context: context,
+                maintenanceId: maintenanceId.toString(),
+              );
+            },
+          ),
           if (canManageMaintenanceServicesSettings)
             IconButton(
               tooltip: 'إعدادات قسم الصيانة',
