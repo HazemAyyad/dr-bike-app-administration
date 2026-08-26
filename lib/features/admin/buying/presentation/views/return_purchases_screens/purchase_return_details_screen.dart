@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../../data/models/return_purchases_models/return_products_model.dart';
@@ -96,11 +96,7 @@ class _PurchaseReturnDetailsScreenState
               if (attachments.isEmpty)
                 const _Empty(text: 'لا توجد مرفقات')
               else
-                _DetailsCard(
-                    child: Column(
-                        children: attachments
-                            .map((raw) => _AttachmentTile(data: asMap(raw)))
-                            .toList())),
+                _AttachmentsGrid(attachments: attachments),
               SizedBox(height: 12.h),
               const _Title(text: 'سجل حركات المرتجع'),
               if (timeline.isEmpty)
@@ -141,8 +137,9 @@ class _PurchaseReturnDetailsScreenState
               MediaQuery.of(sheetContext).viewInsets.bottom + 18.h),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             MediaUploadButton(
-              title: 'إضافة صور المرتجع',
-              allowedType: MediaType.image,
+              title: 'إضافة صور أو فيديو للمرتجع',
+              allowedType: MediaType.both,
+              customCameraCapture: controller.captureReturnMedia,
               isShowPreview: true,
               initialFiles: files,
               onFilesChanged: (value) => setState(() => files = value),
@@ -210,12 +207,22 @@ class _ProductsTable extends StatelessWidget {
                             color:
                                 AppColors.primaryColor.withValues(alpha: .08),
                             borderRadius: BorderRadius.circular(7.r)),
-                        child: Image.network(
-                          ShowNetImage.getPhoto(
-                              asNullableString(item['product_image'])),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.inventory_2_outlined, size: 20),
+                        child: GestureDetector(
+                          onTap: () => FullScreenZoomImage.open(
+                            context,
+                            ShowNetImage.getPhoto(
+                                asNullableString(item['product_image'])),
+                            title: asString(asMap(item['product'])['nameAr'],
+                                asString(item['product_name'])),
+                          ),
+                          child: Image.network(
+                            ShowNetImage.getPhoto(
+                                asNullableString(item['product_image'])),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 20),
+                          ),
                         ),
                       ),
                       SizedBox(width: 6.w),
@@ -288,22 +295,76 @@ class _TableValue extends StatelessWidget {
               fontWeight: bold ? FontWeight.w900 : FontWeight.w600)));
 }
 
-class _AttachmentTile extends StatelessWidget {
-  const _AttachmentTile({required this.data});
-  final Map<String, dynamic> data;
+class _AttachmentsGrid extends StatelessWidget {
+  const _AttachmentsGrid({required this.attachments});
+  final List<Map<String, dynamic>> attachments;
+
   @override
-  Widget build(BuildContext context) => ListTile(
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.attach_file, color: AppColors.primaryColor),
-        title: Text(asString(data['file_name'], 'مرفق')),
-        subtitle: Text(asString(data['created_at'])),
-        trailing: const Icon(Icons.open_in_new_rounded),
-        onTap: () {
-          final uri = Uri.tryParse(asString(data['url']));
-          if (uri != null) launchUrl(uri, mode: LaunchMode.externalApplication);
-        },
-      );
+  Widget build(BuildContext context) {
+    final urls = attachments
+        .map((item) => asString(item['url']))
+        .where((url) => url.isNotEmpty)
+        .toList();
+    return _DetailsCard(
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: attachments.map((data) {
+          final url = asString(data['url']);
+          final mime = asString(data['mime_type']).toLowerCase();
+          final name = asString(data['file_name'], 'مرفق');
+          final isVideo = mime.startsWith('video/') ||
+              RegExp(r'\.(mp4|mov|webm|m4v|3gp)(\?|$)', caseSensitive: false)
+                  .hasMatch(url);
+          return InkWell(
+            borderRadius: BorderRadius.circular(9.r),
+            onTap: url.isEmpty
+                ? null
+                : () => FullScreenZoomImage.open(context, url,
+                    imageUrls: urls,
+                    initialIndex: urls.indexOf(url),
+                    title: name),
+            child: Container(
+              width: 92.w,
+              height: 92.w,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(9.r),
+                  border: Border.all(color: Colors.grey.shade300)),
+              child: Stack(fit: StackFit.expand, children: [
+                if (!isVideo && url.isNotEmpty)
+                  Image.network(url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.broken_image_outlined))
+                else
+                  Container(
+                      color: Colors.black87,
+                      child: const Icon(Icons.play_circle_fill_rounded,
+                          color: Colors.white, size: 38)),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: Colors.black54,
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.h),
+                    child: Text(name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 8.sp)),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }
 
 class _TimelineTile extends StatelessWidget {

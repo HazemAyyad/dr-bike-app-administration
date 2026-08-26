@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:doctorbike/core/helpers/media_permissions.dart';
+import 'package:doctorbike/core/helpers/full_screen_image_viewer.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 
 import '../services/theme_service.dart';
@@ -274,6 +275,7 @@ class MediaUploadButton extends StatefulWidget {
   final MediaType allowedType;
   final bool isShowPreview;
   final List<File> initialFiles;
+  final Future<File?> Function()? customCameraCapture;
 
   const MediaUploadButton({
     Key? key,
@@ -285,6 +287,7 @@ class MediaUploadButton extends StatefulWidget {
     this.allowedType = MediaType.both,
     this.isShowPreview = true,
     this.initialFiles = const [],
+    this.customCameraCapture,
   }) : super(key: key);
 
   @override
@@ -422,7 +425,11 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           }
         }
 
-        if (choice == 'camera_image') {
+        if ((choice == 'camera_image' || choice == 'camera_video') &&
+            widget.customCameraCapture != null) {
+          final file = await widget.customCameraCapture!();
+          if (file != null) picked.add(XFile(file.path));
+        } else if (choice == 'camera_image') {
           final image = await picker.pickImage(source: ImageSource.camera);
           if (image != null) picked.add(image);
         } else if (choice == 'gallery_image') {
@@ -671,7 +678,15 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8.r),
-                child: _buildPreview(file),
+                child: GestureDetector(
+                  onTap: () => FullScreenZoomImage.open(
+                    context,
+                    path,
+                    imageUrls: _files.map((item) => item.path).toList(),
+                    initialIndex: i,
+                  ),
+                  child: _buildPreview(file),
+                ),
               ),
               Positioned(
                 right: 4.w,

@@ -7,6 +7,7 @@ import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 
@@ -192,8 +193,9 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
               ),
               SizedBox(height: 12.h),
               MediaUploadButton(
-                title: 'إضافة صور المرتجع',
-                allowedType: MediaType.image,
+                title: 'إضافة صور أو فيديو للمرتجع',
+                allowedType: MediaType.both,
+                customCameraCapture: controller.captureReturnMedia,
                 isShowPreview: true,
                 initialFiles: controller.pendingAttachments
                     .where((file) => file.path != null)
@@ -298,11 +300,14 @@ class _ReturnLineTile extends StatelessWidget {
               child: line.productImage.trim().isEmpty
                   ? const Icon(Icons.inventory_2_outlined,
                       color: AppColors.primaryColor)
-                  : Image.network(line.productImage,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.inventory_2_outlined,
-                          color: AppColors.primaryColor))),
+                  : GestureDetector(
+                      onTap: () => FullScreenZoomImage.open(
+                          context, line.productImage, title: line.productName),
+                      child: Image.network(line.productImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.inventory_2_outlined,
+                              color: AppColors.primaryColor)))),
           SizedBox(width: 10.w),
           Expanded(
               child: Column(

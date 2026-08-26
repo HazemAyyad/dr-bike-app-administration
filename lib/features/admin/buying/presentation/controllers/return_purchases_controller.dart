@@ -15,6 +15,7 @@ import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
 import 'bills_controller.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 
 class ReturnPurchasesController extends GetxController {
   ReturnPurchasesController({
@@ -182,6 +183,13 @@ class ReturnPurchasesController extends GetxController {
           size: file.lengthSync(),
         )));
     update();
+  }
+
+  Future<File?> captureReturnMedia() async {
+    final result = await Get.to<WhatsAppCapture>(
+        () => const WhatsAppCameraScreen(),
+        fullscreenDialog: true);
+    return result == null ? null : File(result.path);
   }
 
   void removePendingAttachment(PlatformFile file) {
