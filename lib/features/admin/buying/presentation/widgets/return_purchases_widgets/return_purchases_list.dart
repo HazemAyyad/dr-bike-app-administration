@@ -7,6 +7,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../controllers/bills_controller.dart';
+import '../../../../../../routes/app_routes.dart';
 
 class ReturnPurchasesList extends StatelessWidget {
   const ReturnPurchasesList({
@@ -120,7 +121,11 @@ class _ReturnPurchaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = double.tryParse(bill.total.toString()) ?? 0;
     return InkWell(
-      onTap: () => _showReturnActions(context, bill),
+      onTap: () => Get.toNamed(
+        AppRoutes.PURCHASERETURNDETAILSSCREEN,
+        arguments: bill,
+      ),
+      onLongPress: () => _showReturnActions(context, bill),
       child: Container(
         constraints: BoxConstraints(minHeight: 78.h),
         padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 7.h),

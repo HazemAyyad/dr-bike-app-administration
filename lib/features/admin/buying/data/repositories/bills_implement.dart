@@ -243,6 +243,24 @@ class BillsImplement implements BillsRepository {
       billsDataSource.getPurchaseReturnAvailableItems(billId);
 
   @override
+  Future<dynamic> getPurchaseReturnDetails({required String returnId}) =>
+      billsDataSource.getPurchaseReturnDetails(returnId);
+
+  @override
+  Future<dynamic> uploadPurchaseReturnAttachments({
+    required String returnId,
+    required List<MultipartFile> files,
+  }) =>
+      billsDataSource.uploadPurchaseReturnAttachments(
+        returnId: returnId,
+        files: files,
+      );
+
+  @override
+  Future<List<int>> downloadPurchaseReturnPdf({required String returnId}) =>
+      billsDataSource.downloadPurchaseReturnPdf(returnId);
+
+  @override
   Future<dynamic> createPurchaseReturnDraft({
     required String billId,
     required List<Map<String, dynamic>> items,

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../presentation/controllers/bills_controller.dart';
@@ -80,6 +81,12 @@ abstract class BillsRepository {
   Future<dynamic> getPurchaseReturns({String? status, String? search});
   Future<dynamic> getReturnablePurchaseBills();
   Future<dynamic> getPurchaseReturnAvailableItems({required String billId});
+  Future<dynamic> getPurchaseReturnDetails({required String returnId});
+  Future<dynamic> uploadPurchaseReturnAttachments({
+    required String returnId,
+    required List<MultipartFile> files,
+  });
+  Future<List<int>> downloadPurchaseReturnPdf({required String returnId});
   Future<dynamic> createPurchaseReturnDraft({
     required String billId,
     required List<Map<String, dynamic>> items,

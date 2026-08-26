@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
@@ -46,6 +51,9 @@ class ReturnPurchasesController extends GetxController {
   final selectedBill = Rxn<Map<String, dynamic>>();
   final reasonController = TextEditingController();
   final notesController = TextEditingController();
+  final pendingAttachments = <PlatformFile>[].obs;
+  final returnDetails = <String, dynamic>{}.obs;
+  final detailsLoading = false.obs;
 
   // Kept for the existing list widget while the new five-state tabs use one source.
   final returnPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
@@ -129,9 +137,13 @@ class ReturnPurchasesController extends GetxController {
         notes: notesController.text.trim(),
       ));
       final row = asMap(result['purchase_return']);
+      final returnId = asString(row['id']);
+      if (pendingAttachments.isNotEmpty) {
+        await _uploadFiles(returnId, pendingAttachments);
+      }
       if (confirm) {
         await purchaseWorkflowUsecase.runPurchaseReturnAction(
-            returnId: asString(row['id']), action: 'confirm');
+            returnId: returnId, action: 'confirm');
       }
       await getReturnBills();
       if (!context.mounted) return true;
@@ -150,6 +162,86 @@ class ReturnPurchasesController extends GetxController {
       isLoading.value = false;
       update();
     }
+  }
+
+  Future<void> pickAttachments() async {
+    final result = await FilePicker.platform
+        .pickFiles(allowMultiple: true, type: FileType.any, withData: false);
+    if (result == null) return;
+    pendingAttachments
+        .assignAll(result.files.where((file) => file.path != null).take(10));
+    update();
+  }
+
+  void removePendingAttachment(PlatformFile file) {
+    pendingAttachments.remove(file);
+    update();
+  }
+
+  Future<void> _uploadFiles(String returnId, List<PlatformFile> files) async {
+    final multipart = <dio.MultipartFile>[];
+    for (final file in files) {
+      if (file.path == null) continue;
+      multipart.add(
+          await dio.MultipartFile.fromFile(file.path!, filename: file.name));
+    }
+    if (multipart.isNotEmpty) {
+      await purchaseWorkflowUsecase.uploadReturnAttachments(
+          returnId, multipart);
+    }
+    pendingAttachments.clear();
+  }
+
+  Future<void> loadReturnDetails(String returnId) async {
+    returnDetails.clear();
+    detailsLoading.value = true;
+    update();
+    try {
+      returnDetails.assignAll(
+          asMap(await purchaseWorkflowUsecase.purchaseReturnDetails(returnId)));
+    } finally {
+      detailsLoading.value = false;
+      update();
+    }
+  }
+
+  Future<void> addDetailsAttachments(
+      BuildContext context, String returnId) async {
+    final result = await FilePicker.platform
+        .pickFiles(allowMultiple: true, type: FileType.any, withData: false);
+    if (result == null || result.files.isEmpty) return;
+    isLoading.value = true;
+    update();
+    try {
+      await _uploadFiles(returnId,
+          result.files.where((file) => file.path != null).take(10).toList());
+      await loadReturnDetails(returnId);
+      if (context.mounted) {
+        Helpers.showCustomDialogSuccess(
+            context: context, title: 'success'.tr, message: 'تم رفع المرفقات');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        Helpers.showCustomDialogError(
+            context: context, title: 'تعذر الرفع', message: error.toString());
+      }
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  Future<void> downloadPdf(String returnId, String number) async {
+    final bytes = await purchaseWorkflowUsecase.downloadReturnPdf(returnId);
+    final base = Platform.isAndroid
+        ? Directory('/storage/emulated/0/Download/Doctor Bike/PDF')
+        : Directory(
+            '${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF');
+    if (!await base.exists()) await base.create(recursive: true);
+    final file = File('${base.path}/مرتجع_$number.pdf');
+    await file.writeAsBytes(bytes);
+    Get.snackbar('success'.tr, 'تم تنزيل ملف المرتجع');
+    await OpenFilex.open(file.path);
   }
 
   void _showSaveSuccess(bool confirm) {
@@ -250,6 +342,7 @@ class ReturnPurchasesController extends GetxController {
     for (final line in availableItems) {
       line.dispose();
     }
+    pendingAttachments.clear();
     super.onClose();
   }
 }
@@ -260,12 +353,14 @@ class PurchaseReturnDraftLine {
       required this.productName,
       required this.variant,
       required this.available,
-      required this.unitPrice});
+      required this.unitPrice,
+      required this.productImage});
   final int billItemId;
   final String productName;
   final String variant;
   final double available;
   final double unitPrice;
+  final String productImage;
   final quantityController = TextEditingController(text: '0');
   double get quantity => double.tryParse(quantityController.text) ?? 0;
   double get total => quantity * unitPrice;
@@ -278,6 +373,7 @@ class PurchaseReturnDraftLine {
             .join(' / '),
         available: asDouble(json['available_quantity']),
         unitPrice: asDouble(json['unit_price']),
+        productImage: asString(json['product_image']),
       );
   Map<String, dynamic> toRequest() =>
       {'bill_item_id': billItemId, 'quantity': quantity};

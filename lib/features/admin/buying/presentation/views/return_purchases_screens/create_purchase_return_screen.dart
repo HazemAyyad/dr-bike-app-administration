@@ -171,6 +171,9 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                 controller: controller.reasonController,
                 isRequired: false,
                 validator: (_) => null,
+                minLines: 3,
+                maxLines: 5,
+                keyboardType: TextInputType.multiline,
               ),
               SizedBox(height: 10.h),
               CustomTextField(
@@ -179,7 +182,37 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                 controller: controller.notesController,
                 isRequired: false,
                 validator: (_) => null,
+                minLines: 4,
+                maxLines: 7,
+                keyboardType: TextInputType.multiline,
               ),
+              SizedBox(height: 12.h),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                    minimumSize: Size.fromHeight(48.h),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r))),
+                onPressed: controller.pickAttachments,
+                icon: const Icon(Icons.attach_file_rounded),
+                label: Text(controller.pendingAttachments.isEmpty
+                    ? 'إضافة مرفقات'
+                    : 'المرفقات (${controller.pendingAttachments.length})'),
+              ),
+              if (controller.pendingAttachments.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                ...controller.pendingAttachments.map((file) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.insert_drive_file_outlined),
+                      title: Text(file.name,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      trailing: IconButton(
+                          onPressed: () =>
+                              controller.removePendingAttachment(file),
+                          icon: const Icon(Icons.close_rounded,
+                              color: Colors.red)),
+                    )),
+              ],
               SizedBox(height: 14.h),
               Container(
                 padding: EdgeInsets.all(14.w),
@@ -273,8 +306,15 @@ class _ReturnLineTile extends StatelessWidget {
               decoration: BoxDecoration(
                   color: AppColors.primaryColor.withValues(alpha: .08),
                   borderRadius: BorderRadius.circular(8.r)),
-              child: const Icon(Icons.inventory_2_outlined,
-                  color: AppColors.primaryColor)),
+              clipBehavior: Clip.antiAlias,
+              child: line.productImage.trim().isEmpty
+                  ? const Icon(Icons.inventory_2_outlined,
+                      color: AppColors.primaryColor)
+                  : Image.network(line.productImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.inventory_2_outlined,
+                          color: AppColors.primaryColor))),
           SizedBox(width: 10.w),
           Expanded(
               child: Column(

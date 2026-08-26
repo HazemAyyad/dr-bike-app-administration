@@ -25,6 +25,7 @@ import '../features/admin/buying/presentation/views/bills_screens/bill_details_s
 import '../features/admin/buying/presentation/views/purchase_orders_screen/purchase_orders_screen.dart';
 import '../features/admin/buying/presentation/views/return_purchases_screens/create_purchase_return_screen.dart';
 import '../features/admin/buying/presentation/views/return_purchases_screens/return_purchases_screen.dart';
+import '../features/admin/buying/presentation/views/return_purchases_screens/purchase_return_details_screen.dart';
 import '../features/admin/follow_up/presentation/binding/follow_up_binding.dart';
 import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
 import '../features/admin/follow_up/presentation/views/add_new_follow_up.dart';
@@ -1074,6 +1075,12 @@ class AppPages {
       page: () => const CreatePurchaseReturnScreen(),
       binding: BuyingBinding(),
       transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.PURCHASERETURNDETAILSSCREEN,
+      page: () => const PurchaseReturnDetailsScreen(),
+      binding: BuyingBinding(),
+      transition: _transitionFadeIn,
     ),
 
     // Financial Affairs

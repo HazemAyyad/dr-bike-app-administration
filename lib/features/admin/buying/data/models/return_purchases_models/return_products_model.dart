@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class ReturnProduct {
   final int id;
@@ -111,6 +112,7 @@ class ReturnItem {
   final String sizeColorId;
   final String sizeLabel;
   final String colorLabel;
+  final String productImage;
 
   ReturnItem({
     required this.id,
@@ -125,6 +127,7 @@ class ReturnItem {
     required this.sizeColorId,
     required this.sizeLabel,
     required this.colorLabel,
+    required this.productImage,
   });
 
   factory ReturnItem.fromJson(Map<String, dynamic> json) {
@@ -144,6 +147,7 @@ class ReturnItem {
       sizeLabel: asString(j['size_label'], asString(asMap(j['size'])['size'])),
       colorLabel: asString(
           j['color_label'], asString(asMap(j['size_color'])['colorAr'])),
+      productImage: ShowNetImage.getPhoto(asNullableString(j['product_image'])),
     );
   }
 
@@ -161,6 +165,7 @@ class ReturnItem {
       'size_color_id': sizeColorId,
       'size_label': sizeLabel,
       'color_label': colorLabel,
+      'product_image': productImage,
     };
   }
 

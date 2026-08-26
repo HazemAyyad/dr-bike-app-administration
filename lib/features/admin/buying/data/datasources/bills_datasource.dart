@@ -423,6 +423,36 @@ class BillsDatasource {
     return response.data;
   }
 
+  Future<dynamic> getPurchaseReturnDetails(String returnId) async {
+    final response = await api.get('purchase/returns/$returnId');
+    return response.data;
+  }
+
+  Future<dynamic> uploadPurchaseReturnAttachments({
+    required String returnId,
+    required List<MultipartFile> files,
+  }) async {
+    final formData = FormData();
+    formData.fields.add(const MapEntry('category', 'return_evidence'));
+    for (final file in files) {
+      formData.files.add(MapEntry('files[]', file));
+    }
+    final response = await api.post(
+      'purchase/returns/$returnId/attachments',
+      data: formData,
+      isFormData: false,
+    );
+    return response.data;
+  }
+
+  Future<List<int>> downloadPurchaseReturnPdf(String returnId) async {
+    final response = await api.get(
+      'purchase/returns/$returnId/print',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return List<int>.from(response.data);
+  }
+
   Future<dynamic> createPurchaseReturnDraft({
     required String billId,
     required List<Map<String, dynamic>> items,

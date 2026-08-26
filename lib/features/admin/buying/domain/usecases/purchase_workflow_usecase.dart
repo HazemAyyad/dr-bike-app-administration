@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../repositories/bills_repository.dart';
@@ -134,6 +135,17 @@ class PurchaseWorkflowUsecase {
 
   Future<dynamic> purchaseReturnAvailableItems(String billId) =>
       billsRepository.getPurchaseReturnAvailableItems(billId: billId);
+
+  Future<dynamic> purchaseReturnDetails(String returnId) =>
+      billsRepository.getPurchaseReturnDetails(returnId: returnId);
+
+  Future<dynamic> uploadReturnAttachments(
+          String returnId, List<MultipartFile> files) =>
+      billsRepository.uploadPurchaseReturnAttachments(
+          returnId: returnId, files: files);
+
+  Future<List<int>> downloadReturnPdf(String returnId) =>
+      billsRepository.downloadPurchaseReturnPdf(returnId: returnId);
 
   Future<dynamic> createReturnDraft({
     required String billId,
