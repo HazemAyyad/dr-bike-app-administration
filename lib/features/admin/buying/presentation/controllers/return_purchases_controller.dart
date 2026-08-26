@@ -9,10 +9,12 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
+import 'bills_controller.dart';
 
 class ReturnPurchasesController extends GetxController {
   ReturnPurchasesController({
@@ -173,6 +175,15 @@ class ReturnPurchasesController extends GetxController {
     update();
   }
 
+  void setPendingAttachmentFiles(List<File> files) {
+    pendingAttachments.assignAll(files.take(10).map((file) => PlatformFile(
+          name: file.path.split(Platform.pathSeparator).last,
+          path: file.path,
+          size: file.lengthSync(),
+        )));
+    update();
+  }
+
   void removePendingAttachment(PlatformFile file) {
     pendingAttachments.remove(file);
     update();
@@ -224,6 +235,32 @@ class ReturnPurchasesController extends GetxController {
       if (context.mounted) {
         Helpers.showCustomDialogError(
             context: context, title: 'تعذر الرفع', message: error.toString());
+      }
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  Future<void> uploadDetailsFiles(
+      BuildContext context, String returnId, List<File> files) async {
+    if (files.isEmpty) return;
+    isLoading.value = true;
+    update();
+    try {
+      final selected = files
+          .take(10)
+          .map((file) => PlatformFile(
+                name: file.path.split(Platform.pathSeparator).last,
+                path: file.path,
+                size: file.lengthSync(),
+              ))
+          .toList();
+      await _uploadFiles(returnId, selected);
+      await loadReturnDetails(returnId);
+      if (context.mounted) {
+        Helpers.showCustomDialogSuccess(
+            context: context, title: 'success'.tr, message: 'تم رفع المرفقات');
       }
     } finally {
       isLoading.value = false;
@@ -286,6 +323,98 @@ class ReturnPurchasesController extends GetxController {
     final row = allReturns
         .firstWhereOrNull((item) => item.id.toString() == returnPurchaseId);
     if (row != null) runAction(context, row, 'deliver');
+  }
+
+  void showSettlementDialog(BuildContext context, ReturnProduct row) {
+    final billsController = Get.find<BillsController>();
+    billsController.loadPurchaseBoxes();
+    final amount = TextEditingController(
+        text: ((double.tryParse(row.total) ?? 0) -
+                (double.tryParse(row.settledAmount) ?? 0))
+            .toStringAsFixed(2));
+    final billId = TextEditingController();
+    var type = 'cash_refund';
+    dynamic box;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (_, setState) => AlertDialog(
+          title: Text('تسوية ${row.number}'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                initialValue: type,
+                decoration: const InputDecoration(
+                    labelText: 'طريقة التسوية', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'cash_refund', child: Text('استرداد نقدي')),
+                  DropdownMenuItem(
+                      value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                ],
+                onChanged: (value) => setState(() => type = value!),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: amount,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                    labelText: 'المبلغ (${row.currency})',
+                    border: const OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              if (type == 'cash_refund')
+                Obx(() => DropdownButtonFormField<dynamic>(
+                      initialValue: box,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                          labelText: 'الصندوق', border: OutlineInputBorder()),
+                      items: billsController.purchaseBoxes
+                          .map((item) => DropdownMenuItem(
+                              value: item,
+                              child:
+                                  Text('${item.boxName} (${item.currency})')))
+                          .toList(),
+                      onChanged: (value) => setState(() => box = value),
+                    )),
+              if (type == 'bill_allocation')
+                TextField(
+                  controller: billId,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'رقم فاتورة الشراء المفتوحة',
+                      border: OutlineInputBorder()),
+                ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () {
+                final data = <String, dynamic>{
+                  'type': type,
+                  'amount': amount.text.trim(),
+                };
+                if (type == 'cash_refund') {
+                  data['box_id'] = box?.id;
+                } else {
+                  data['bill_id'] = billId.text.trim();
+                }
+                Navigator.pop(dialogContext);
+                runAction(context, row, 'settle', data: data);
+              },
+              child: const Text('تسجيل التسوية'),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(() {
+      amount.dispose();
+      billId.dispose();
+    });
   }
 
   void searchBar(String value) {
@@ -373,7 +502,8 @@ class PurchaseReturnDraftLine {
             .join(' / '),
         available: asDouble(json['available_quantity']),
         unitPrice: asDouble(json['unit_price']),
-        productImage: asString(json['product_image']),
+        productImage:
+            ShowNetImage.getPhoto(asNullableString(json['product_image'])),
       );
   Map<String, dynamic> toRequest() =>
       {'bill_item_id': billItemId, 'quantity': quantity};

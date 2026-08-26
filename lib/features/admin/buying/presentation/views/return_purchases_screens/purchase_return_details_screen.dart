@@ -3,8 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 
 import '../../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../../core/helpers/show_net_image.dart';
+import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../../data/models/return_purchases_models/return_products_model.dart';
@@ -63,29 +66,21 @@ class _PurchaseReturnDetailsScreenState
           child: ListView(
             padding: EdgeInsets.all(16.w),
             children: [
-              _DetailsCard(
-                  child: Column(children: [
-                _InfoLine(label: 'رقم المرتجع', value: row.number),
-                _InfoLine(label: 'فاتورة الشراء', value: '#${row.billId}'),
-                _InfoLine(label: 'الطرف', value: row.seller.name),
-                _InfoLine(label: 'الحالة', value: _statusLabel(row.status)),
-                _InfoLine(
-                    label: 'الإجمالي',
-                    value:
-                        '${NumberFormat('#,##0.00').format(double.tryParse(row.total) ?? 0)} ${row.currency}'),
-                if (asString(details['reason']).isNotEmpty)
-                  _InfoLine(
-                      label: 'سبب المرتجع', value: asString(details['reason'])),
-                if (asString(details['notes'], asString(details['note']))
-                    .isNotEmpty)
-                  _InfoLine(
-                      label: 'الملاحظات',
-                      value: asString(
-                          details['notes'], asString(details['note']))),
-              ])),
-              SizedBox(height: 12.h),
+              _CompactHeader(
+                number: row.number,
+                bill: '#${row.billId}',
+                party: row.seller.name,
+                status: _statusLabel(row.status),
+                total:
+                    '${NumberFormat('#,##0.00').format(double.tryParse(row.total) ?? 0)} ${row.currency}',
+                reason: asString(details['reason']),
+                notes: asString(details['notes'], asString(details['note'])),
+              ),
+              SizedBox(height: 8.h),
+              _ReturnActions(row: row, controller: controller),
+              SizedBox(height: 10.h),
               _Title(text: 'الأصناف (${items.length})'),
-              ...items.map((raw) => _ItemCard(item: asMap(raw))),
+              _ProductsTable(items: items),
               SizedBox(height: 12.h),
               Row(children: [
                 const Expanded(child: _Title(text: 'المرفقات')),
@@ -93,8 +88,7 @@ class _PurchaseReturnDetailsScreenState
                   tooltip: 'رفع مرفق',
                   onPressed: controller.isLoading.value
                       ? null
-                      : () => controller.addDetailsAttachments(
-                          context, row.id.toString()),
+                      : () => _showAttachmentSheet(context),
                   icon: const Icon(Icons.upload_file_outlined,
                       color: AppColors.primaryColor),
                 ),
@@ -132,51 +126,166 @@ class _PurchaseReturnDetailsScreenState
     };
     return labels[status] ?? status;
   }
+
+  Future<void> _showAttachmentSheet(BuildContext context) async {
+    var files = <File>[];
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r))),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (_, setState) => Padding(
+          padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w,
+              MediaQuery.of(sheetContext).viewInsets.bottom + 18.h),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            MediaUploadButton(
+              title: 'إضافة صور المرتجع',
+              allowedType: MediaType.image,
+              isShowPreview: true,
+              initialFiles: files,
+              onFilesChanged: (value) => setState(() => files = value),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: files.isEmpty
+                    ? null
+                    : () async {
+                        Navigator.pop(sheetContext);
+                        await controller.uploadDetailsFiles(
+                            context, row.id.toString(), files);
+                      },
+                icon: const Icon(Icons.cloud_upload_outlined),
+                label: const Text('رفع المرفقات'),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
-class _ItemCard extends StatelessWidget {
-  const _ItemCard({required this.item});
-  final Map<String, dynamic> item;
+class _ProductsTable extends StatelessWidget {
+  const _ProductsTable({required this.items});
+  final List<Map<String, dynamic>> items;
+
   @override
-  Widget build(BuildContext context) => _DetailsCard(
-        margin: EdgeInsets.only(bottom: 8.h),
-        child: Row(children: [
+  Widget build(BuildContext context) => Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.grey.shade300)),
+        child: Column(children: [
           Container(
-            width: 58.w,
-            height: 58.w,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(10.r)),
-            child: asString(item['product_image']).isEmpty
-                ? const Icon(Icons.inventory_2_outlined)
-                : Image.network(asString(item['product_image']),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.inventory_2_outlined)),
+            height: 36.h,
+            color: AppColors.primaryColor.withValues(alpha: .09),
+            padding: EdgeInsets.symmetric(horizontal: 6.w),
+            child: const Row(children: [
+              _TableHead('الصنف', flex: 48),
+              _TableHead('الكمية', flex: 15),
+              _TableHead('السعر', flex: 18),
+              _TableHead('الإجمالي', flex: 19),
+            ]),
           ),
-          SizedBox(width: 10.w),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(
-                    asString(asMap(item['product'])['nameAr'],
-                        asString(item['product_name'])),
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
-                Text([
-                  asString(asMap(item['size'])['size'],
-                      asString(item['size_label'])),
-                  asString(asMap(item['size_color'])['colorAr'],
-                      asString(item['color_label']))
-                ].where((v) => v.isNotEmpty).join(' / ')),
-                Text(
-                    '${asString(item['quantity'])} × ${asString(item['price'])}'),
-              ])),
-          Text(asString(item['line_total']),
-              style: const TextStyle(fontWeight: FontWeight.w900)),
+          ...items.map((item) => Container(
+                constraints: BoxConstraints(minHeight: 62.h),
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
+                decoration: BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade200))),
+                child: Row(children: [
+                  Expanded(
+                    flex: 48,
+                    child: Row(children: [
+                      Container(
+                        width: 44.w,
+                        height: 44.w,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                            color:
+                                AppColors.primaryColor.withValues(alpha: .08),
+                            borderRadius: BorderRadius.circular(7.r)),
+                        child: Image.network(
+                          ShowNetImage.getPhoto(
+                              asNullableString(item['product_image'])),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.inventory_2_outlined, size: 20),
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(
+                              asString(asMap(item['product'])['nameAr'],
+                                  asString(item['product_name'])),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 10.sp, fontWeight: FontWeight.w800),
+                            ),
+                            Text(
+                              [
+                                asString(asMap(item['size'])['size'],
+                                    asString(item['size_label'])),
+                                asString(asMap(item['size_color'])['colorAr'],
+                                    asString(item['color_label']))
+                              ].where((v) => v.isNotEmpty).join(' / '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 8.sp, color: Colors.grey.shade700),
+                            ),
+                          ])),
+                    ]),
+                  ),
+                  _TableValue(asString(item['quantity']), flex: 15),
+                  _TableValue(asString(item['price']), flex: 18),
+                  _TableValue(asString(item['line_total']),
+                      flex: 19, bold: true),
+                ]),
+              )),
         ]),
       );
+}
+
+class _TableHead extends StatelessWidget {
+  const _TableHead(this.text, {required this.flex});
+  final String text;
+  final int flex;
+  @override
+  Widget build(BuildContext context) => Expanded(
+      flex: flex,
+      child: Text(text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryColor)));
+}
+
+class _TableValue extends StatelessWidget {
+  const _TableValue(this.text, {required this.flex, this.bold = false});
+  final String text;
+  final int flex;
+  final bool bold;
+  @override
+  Widget build(BuildContext context) => Expanded(
+      flex: flex,
+      child: Text(text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 9.sp,
+              fontWeight: bold ? FontWeight.w900 : FontWeight.w600)));
 }
 
 class _AttachmentTile extends StatelessWidget {
@@ -228,12 +337,10 @@ class _TimelineTile extends StatelessWidget {
 }
 
 class _DetailsCard extends StatelessWidget {
-  const _DetailsCard({required this.child, this.margin});
+  const _DetailsCard({required this.child});
   final Widget child;
-  final EdgeInsetsGeometry? margin;
   @override
   Widget build(BuildContext context) => Container(
-        margin: margin,
         padding: EdgeInsets.all(14.w),
         decoration: BoxDecoration(
             color: Colors.white,
@@ -243,23 +350,125 @@ class _DetailsCard extends StatelessWidget {
       );
 }
 
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
+class _CompactHeader extends StatelessWidget {
+  const _CompactHeader({
+    required this.number,
+    required this.bill,
+    required this.party,
+    required this.status,
+    required this.total,
+    required this.reason,
+    required this.notes,
+  });
+  final String number;
+  final String bill;
+  final String party;
+  final String status;
+  final String total;
+  final String reason;
+  final String notes;
+
+  @override
+  Widget build(BuildContext context) => _DetailsCard(
+        child: Column(children: [
+          Row(children: [
+            Expanded(child: _CompactInfo(label: 'المرتجع', value: number)),
+            Expanded(child: _CompactInfo(label: 'فاتورة الشراء', value: bill)),
+          ]),
+          Divider(height: 12.h),
+          Row(children: [
+            Expanded(child: _CompactInfo(label: 'الطرف', value: party)),
+            Expanded(child: _CompactInfo(label: 'الحالة', value: status)),
+          ]),
+          Divider(height: 12.h),
+          Row(children: [
+            Expanded(child: _CompactInfo(label: 'الإجمالي', value: total)),
+            if (reason.isNotEmpty)
+              Expanded(child: _CompactInfo(label: 'السبب', value: reason)),
+          ]),
+          if (notes.isNotEmpty) ...[
+            Divider(height: 12.h),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: _CompactInfo(label: 'الملاحظات', value: notes),
+            ),
+          ],
+        ]),
+      );
+}
+
+class _CompactInfo extends StatelessWidget {
+  const _CompactInfo({required this.label, required this.value});
   final String label;
   final String value;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.symmetric(vertical: 5.h),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-              width: 110.w,
-              child:
-                  Text(label, style: TextStyle(color: Colors.grey.shade700))),
-          Expanded(
-              child: Text(value,
-                  style: const TextStyle(fontWeight: FontWeight.w700))),
+        padding: EdgeInsets.symmetric(horizontal: 4.w),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600)),
+          SizedBox(height: 2.h),
+          Text(value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800)),
         ]),
       );
+}
+
+class _ReturnActions extends StatelessWidget {
+  const _ReturnActions({required this.row, required this.controller});
+  final ReturnProduct row;
+  final ReturnPurchasesController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = <Widget>[];
+    if (row.status == 'draft') {
+      actions.add(_action(context, 'اعتماد المرتجع', Icons.verified_outlined,
+          Colors.green, 'confirm'));
+    }
+    if (row.status == 'confirmed' || row.status == 'pending') {
+      actions.add(_action(context, 'تسجيل التسليم',
+          Icons.local_shipping_outlined, Colors.indigo, 'deliver'));
+    }
+    if (row.status == 'draft' || row.status == 'confirmed') {
+      actions.add(_action(
+          context, 'إلغاء المرتجع', Icons.cancel_outlined, Colors.red, 'cancel',
+          data: const {'reason': 'إلغاء من تطبيق الإدارة'}));
+    }
+    if (row.status == 'delivered') {
+      actions.add(OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.orange.shade800,
+            visualDensity: VisualDensity.compact),
+        onPressed: () => controller.showSettlementDialog(context, row),
+        icon: Icon(Icons.account_balance_wallet_outlined, size: 17.sp),
+        label: Text('تسوية المرتجع', style: TextStyle(fontSize: 11.sp)),
+      ));
+    }
+    if (actions.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 8.w, runSpacing: 8.h, children: actions);
+  }
+
+  Widget _action(BuildContext context, String label, IconData icon, Color color,
+      String action,
+      {Map<String, dynamic> data = const {}}) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color.withValues(alpha: .45)),
+          visualDensity: VisualDensity.compact),
+      onPressed: controller.isLoading.value
+          ? null
+          : () async {
+              await controller.runAction(context, row, action, data: data);
+              await controller.loadReturnDetails(row.id.toString());
+            },
+      icon: Icon(icon, size: 17.sp),
+      label: Text(label, style: TextStyle(fontSize: 11.sp)),
+    );
+  }
 }
 
 class _Title extends StatelessWidget {

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'dart:io';
 
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 
@@ -174,6 +176,7 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                 minLines: 3,
                 maxLines: 5,
                 keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
               ),
               SizedBox(height: 10.h),
               CustomTextField(
@@ -185,34 +188,19 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                 minLines: 4,
                 maxLines: 7,
                 keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
               ),
               SizedBox(height: 12.h),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                    minimumSize: Size.fromHeight(48.h),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r))),
-                onPressed: controller.pickAttachments,
-                icon: const Icon(Icons.attach_file_rounded),
-                label: Text(controller.pendingAttachments.isEmpty
-                    ? 'إضافة مرفقات'
-                    : 'المرفقات (${controller.pendingAttachments.length})'),
+              MediaUploadButton(
+                title: 'إضافة صور المرتجع',
+                allowedType: MediaType.image,
+                isShowPreview: true,
+                initialFiles: controller.pendingAttachments
+                    .where((file) => file.path != null)
+                    .map((file) => File(file.path!))
+                    .toList(),
+                onFilesChanged: controller.setPendingAttachmentFiles,
               ),
-              if (controller.pendingAttachments.isNotEmpty) ...[
-                SizedBox(height: 8.h),
-                ...controller.pendingAttachments.map((file) => ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.insert_drive_file_outlined),
-                      title: Text(file.name,
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: IconButton(
-                          onPressed: () =>
-                              controller.removePendingAttachment(file),
-                          icon: const Icon(Icons.close_rounded,
-                              color: Colors.red)),
-                    )),
-              ],
               SizedBox(height: 14.h),
               Container(
                 padding: EdgeInsets.all(14.w),
