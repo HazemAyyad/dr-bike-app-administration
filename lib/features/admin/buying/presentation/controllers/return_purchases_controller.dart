@@ -38,6 +38,8 @@ class ReturnPurchasesController extends GetxController {
   final isLoading = false.obs;
   final movedToDelivered = false.obs;
   final search = ''.obs;
+  final isSearchVisible = false.obs;
+  final searchController = TextEditingController();
   final allReturns = <ReturnProduct>[].obs;
   final returnableBills = <Map<String, dynamic>>[].obs;
   final availableItems = <PurchaseReturnDraftLine>[].obs;
@@ -133,12 +135,11 @@ class ReturnPurchasesController extends GetxController {
       }
       await getReturnBills();
       if (!context.mounted) return true;
-      Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: confirm
-              ? 'تم اعتماد المرتجع وإخراجه من المخزون'
-              : 'تم حفظ المسودة');
+      Navigator.of(context).pop();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      Get.back();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      _showSaveSuccess(confirm);
       return true;
     } catch (error) {
       if (!context.mounted) return false;
@@ -149,6 +150,17 @@ class ReturnPurchasesController extends GetxController {
       isLoading.value = false;
       update();
     }
+  }
+
+  void _showSaveSuccess(bool confirm) {
+    final currentContext = Get.context;
+    if (currentContext == null) return;
+    Helpers.showCustomDialogSuccess(
+        context: currentContext,
+        title: 'success'.tr,
+        message: confirm
+            ? 'تم اعتماد المرتجع وإخراجه من المخزون'
+            : 'تم حفظ المسودة');
   }
 
   Future<void> runAction(BuildContext context, ReturnProduct row, String action,
@@ -190,6 +202,19 @@ class ReturnPurchasesController extends GetxController {
     update();
   }
 
+  void toggleSearch() {
+    isSearchVisible.toggle();
+    if (!isSearchVisible.value) closeSearch();
+    update();
+  }
+
+  void closeSearch() {
+    searchController.clear();
+    searchBar('');
+    isSearchVisible.value = false;
+    update();
+  }
+
   void _rebuildGroups() {
     final status = statuses[currentTab.value];
     final rows = allReturns.where((row) {
@@ -221,6 +246,7 @@ class ReturnPurchasesController extends GetxController {
   void onClose() {
     reasonController.dispose();
     notesController.dispose();
+    searchController.dispose();
     for (final line in availableItems) {
       line.dispose();
     }

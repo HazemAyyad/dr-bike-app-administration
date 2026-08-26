@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -489,19 +488,45 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
         physics: kRefreshableScrollPhysics,
         slivers: [
           SliverToBoxAdapter(
-            child: AppTabs(
-              tabs: controller.tabs,
-              currentTab: controller.currentTab,
-              changeTab: controller.changeTab,
+            child: _PurchaseReturnIconTabs(controller: controller),
+          ),
+          GetBuilder<ReturnPurchasesController>(
+            id: 'purchaseReturnsSearchBar',
+            builder: (_) => SliverToBoxAdapter(
+              child: Obx(
+                () => controller.isSearchVisible.value
+                    ? Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 6.h,
+                        ),
+                        child: SearchBar(
+                          controller: controller.searchController,
+                          shadowColor:
+                              WidgetStateProperty.all(Colors.transparent),
+                          leading: const Icon(Icons.search),
+                          trailing: [
+                            IconButton(
+                              tooltip: 'cancel'.tr,
+                              onPressed: controller.closeSearch,
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                          hintText: 'ابحث برقم المرتجع أو الفاتورة أو الطرف',
+                          backgroundColor: WidgetStateProperty.all(
+                            ThemeService.isDark.value
+                                ? AppColors.customGreyColor
+                                : AppColors.customGreyColor7,
+                          ),
+                          onChanged: controller.searchBar,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-          SliverToBoxAdapter(
-            child: _BuyingSearchBar(
-              onChanged: controller.searchBar,
-            ),
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          const SliverToBoxAdapter(child: PurchaseReturnsTableHeader()),
           GetBuilder<ReturnPurchasesController>(
             builder: (controller) {
               if (controller.isLoading.value) {
@@ -540,26 +565,68 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
   }
 }
 
-class _BuyingSearchBar extends StatelessWidget {
-  const _BuyingSearchBar({required this.onChanged});
+class _PurchaseReturnIconTabs extends StatelessWidget {
+  const _PurchaseReturnIconTabs({required this.controller});
 
-  final ValueChanged<String> onChanged;
+  final ReturnPurchasesController controller;
+
+  static const _items = [
+    _PurchaseOrderTabUi(
+        label: 'مسودات',
+        icon: Icons.edit_note_outlined,
+        color: Colors.blueGrey),
+    _PurchaseOrderTabUi(
+        label: 'قيد التسليم',
+        icon: Icons.local_shipping_outlined,
+        color: Colors.orange),
+    _PurchaseOrderTabUi(
+        label: 'قيد التسوية',
+        icon: Icons.account_balance_wallet_outlined,
+        color: Colors.indigo),
+    _PurchaseOrderTabUi(
+        label: 'مكتملة', icon: Icons.check_circle_outline, color: Colors.green),
+    _PurchaseOrderTabUi(
+        label: 'ملغاة', icon: Icons.cancel_outlined, color: Colors.red),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 50.w),
-      child: SearchBar(
-        shadowColor: WidgetStateProperty.all(Colors.transparent),
-        leading: const Icon(Icons.search),
-        hintText: 'search'.tr,
-        backgroundColor: WidgetStateProperty.all(
-          ThemeService.isDark.value
+    return GetBuilder<ReturnPurchasesController>(builder: (_) {
+      final selected = controller.currentTab.value;
+      return Container(
+        margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
               ? AppColors.customGreyColor
-              : AppColors.customGreyColor7,
+              : AppColors.whiteColor2,
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(color: Colors.grey.shade200),
         ),
-        onChanged: onChanged,
-      ),
-    );
+        child: Row(children: [
+          for (var i = 0; i < _items.length; i++)
+            Expanded(
+              child: _PurchaseOrderIconTab(
+                item: _items[i],
+                selected: selected == i,
+                onTap: () => controller.changeTab(i),
+              ),
+            ),
+          SizedBox(width: 6.w),
+          IconButton(
+            tooltip: 'search'.tr,
+            visualDensity: VisualDensity.compact,
+            onPressed: controller.toggleSearch,
+            icon: Obx(() => Icon(
+                  controller.isSearchVisible.value
+                      ? Icons.search_off_rounded
+                      : Icons.search_rounded,
+                  color: AppColors.secondaryColor,
+                  size: 22.sp,
+                )),
+          ),
+        ]),
+      );
+    });
   }
 }
