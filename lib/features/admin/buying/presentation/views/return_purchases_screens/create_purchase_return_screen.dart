@@ -4,328 +4,219 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../../../boxes/data/models/get_shown_boxes_model.dart';
-import '../../controllers/bills_controller.dart';
+import '../../controllers/return_purchases_controller.dart';
 
-class CreatePurchaseReturnScreen extends GetView<BillsController> {
+class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
   const CreatePurchaseReturnScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    controller.preparePurchaseReturnForm();
-    controller.loadPurchaseBoxes();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controller.returnableBills.isEmpty) controller.loadReturnableBills();
+    });
     return Scaffold(
-      appBar: const CustomAppBar(title: 'returnPurchase', action: false),
-      body: GetBuilder<BillsController>(
-        builder: (controller) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
-            children: [
-              Text(
-                'مرتجع مشتريات جديد',
-                style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18.sp,
-                    ),
-              ),
-              SizedBox(height: 12.h),
-              _SourceSelector(controller: controller),
-              SizedBox(height: 12.h),
-              _SettlementSelector(controller: controller),
-              if (controller.purchaseReturnResolution.value ==
-                  'cash_refund') ...[
-                SizedBox(height: 12.h),
-                CustomDropdownFieldWithSearch(
-                  tital: 'boxName',
-                  hint: 'boxNameExample',
-                  items: controller.purchaseBoxes,
-                  value: controller.selectedPurchaseBox.value,
-                  onChanged: (value) => controller.selectPurchaseBox(
-                    value is ShownBoxesModel ? value : null,
-                  ),
-                  itemAsString: (item) => '${item.boxName} (${item.currency})',
-                  compareFn: (a, b) => a.boxId == b.boxId,
+      appBar: const CustomAppBar(title: 'إنشاء مرتجع شراء', action: false),
+      backgroundColor: Colors.grey.shade50,
+      body: GetBuilder<ReturnPurchasesController>(builder: (_) {
+        return ListView(
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 110.h),
+          children: [
+            _SectionCard(
+              title: 'فاتورة الشراء',
+              icon: Icons.receipt_long_outlined,
+              child: DropdownButtonFormField<Map<String, dynamic>>(
+                initialValue: controller.selectedBill.value,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'اختر الفاتورة القابلة للإرجاع',
+                  border: OutlineInputBorder(),
                 ),
-              ],
-              SizedBox(height: 12.h),
-              CustomTextField(
-                label: 'notes',
-                hintText: 'سبب المرتجع / ملاحظات التسوية',
-                controller: controller.purchaseReturnNoteController,
-                isRequired: false,
-                validator: (_) => null,
-              ),
-              SizedBox(height: 16.h),
-              SearchBar(
-                shadowColor: WidgetStateProperty.all(Colors.transparent),
-                leading: const Icon(Icons.search),
-                hintText: 'بحث عن منتج للمرتجع',
-                onChanged: controller.onPurchaseProductSearchChanged,
-              ),
-              SizedBox(height: 12.h),
-              _ProductGrid(controller: controller),
-              if (controller.purchaseCart.isNotEmpty) ...[
-                SizedBox(height: 16.h),
-                _ReturnCart(controller: controller),
-              ],
-            ],
-          );
-        },
-      ),
-      bottomNavigationBar: GetBuilder<BillsController>(
-        builder: (controller) {
-          return SafeArea(
-            child: Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
+                items: controller.returnableBills.map((bill) {
+                  return DropdownMenuItem(
+                    value: bill,
                     child: Text(
-                      'الإجمالي: ${controller.totalCost.value}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15.sp,
+                      '#${asString(bill['id'])} — ${asString(bill['party_name'])} — ${asString(bill['currency'])}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: controller.selectBill,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            if (controller.selectedBill.value != null)
+              _SectionCard(
+                title: 'أصناف الفاتورة',
+                icon: Icons.inventory_2_outlined,
+                child: controller.availableItems.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child:
+                            Center(child: Text('لا توجد كميات متاحة للإرجاع')),
+                      )
+                    : Column(
+                        children: controller.availableItems
+                            .map((line) => _ReturnLineTile(line: line))
+                            .toList(),
                       ),
-                    ),
+              ),
+            SizedBox(height: 12.h),
+            _SectionCard(
+              title: 'سبب المرتجع والملاحظات',
+              icon: Icons.notes_outlined,
+              child: Column(
+                children: [
+                  CustomTextField(
+                    label: 'سبب المرتجع',
+                    hintText: 'تالف، غير مطابق، مقاس خاطئ…',
+                    controller: controller.reasonController,
+                    isRequired: false,
+                    validator: (_) => null,
                   ),
-                  SizedBox(
-                    width: 160.w,
-                    child: AppButton(
-                      isLoading: controller.isWorkflowLoading,
-                      text: 'تأكيد المرتجع',
-                      onPressed: () =>
-                          controller.createPurchaseReturnFromCart(context),
-                    ),
+                  SizedBox(height: 10.h),
+                  CustomTextField(
+                    label: 'notes',
+                    hintText: 'ملاحظات إضافية',
+                    controller: controller.notesController,
+                    isRequired: false,
+                    validator: (_) => null,
                   ),
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _SourceSelector extends StatelessWidget {
-  final BillsController controller;
-
-  const _SourceSelector({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomDropdownFieldWithSearch(
-      tital: 'sellerName1',
-      hint: 'اختر المورد / الشخص',
-      items: controller.purchaseSources,
-      value: controller.selectedPurchaseSource.value,
-      onChanged: (value) => controller
-          .selectPurchaseSource(value is PurchaseSourceModel ? value : null),
-      itemAsString: (item) => '${item.name} - ${item.typeLabel}',
-      compareFn: (a, b) => a.id == b.id && a.typeLabel == b.typeLabel,
-    );
-  }
-}
-
-class _SettlementSelector extends StatelessWidget {
-  final BillsController controller;
-
-  const _SettlementSelector({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final options = const {
-      'supplier_credit': 'رصيد / تخفيض مديونية',
-      'cash_refund': 'استرداد نقدي',
-    };
-    return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
-      children: options.entries.map((entry) {
-        final selected = controller.purchaseReturnResolution.value == entry.key;
-        return ChoiceChip(
-          label: Text(entry.value),
-          selected: selected,
-          selectedColor: AppColors.primaryColor.withValues(alpha: 0.14),
-          onSelected: (_) =>
-              controller.changePurchaseReturnResolution(entry.key),
+          ],
         );
-      }).toList(),
-    );
-  }
-}
-
-class _ProductGrid extends StatelessWidget {
-  final BillsController controller;
-
-  const _ProductGrid({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final products = controller.filteredPurchaseProducts.take(12).toList();
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: products.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: Get.width > 700 ? 4 : 2,
-        mainAxisSpacing: 10.h,
-        crossAxisSpacing: 10.w,
-        childAspectRatio: 0.9,
-      ),
-      itemBuilder: (_, index) {
-        final product = products[index];
-        return InkWell(
-          onTap: () => controller.addProductToPurchaseCart(product),
-          borderRadius: BorderRadius.circular(8.r),
+      }),
+      bottomNavigationBar: GetBuilder<ReturnPurchasesController>(builder: (_) {
+        final total = controller.availableItems
+            .fold<double>(0, (sum, line) => sum + line.total);
+        final currency =
+            asString(controller.selectedBill.value?['currency'], 'شيكل');
+        return SafeArea(
           child: Container(
+            padding: EdgeInsets.all(12.w),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(8.r)),
-                    child: product.preferredImageUrl.isEmpty
-                        ? Container(
-                            color: Colors.grey.shade100,
-                            child: const Center(
-                              child: Icon(Icons.inventory_2_outlined),
-                            ),
-                          )
-                        : Image.network(
-                            product.preferredImageUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: Colors.grey.shade100,
-                              child: const Center(
-                                child: Icon(Icons.inventory_2_outlined),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(8.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.nameAr,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+            child: Row(children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('إجمالي المرتجع'),
+                    Text('${total.toStringAsFixed(2)} $currency',
                         style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'مخزون: ${product.stock}',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 11.sp,
-                        ),
-                      ),
-                    ],
-                  ),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17.sp,
+                            color: AppColors.primaryColor)),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              OutlinedButton(
+                onPressed: controller.isLoading.value
+                    ? null
+                    : () async {
+                        if (await controller.saveDraft(context)) {
+                          Get.back();
+                        }
+                      },
+                child: const Text('حفظ مسودة'),
+              ),
+              SizedBox(width: 8.w),
+              SizedBox(
+                width: 145.w,
+                child: AppButton(
+                  isLoading: controller.isLoading,
+                  text: 'اعتماد المرتجع',
+                  onPressed: () async {
+                    if (await controller.saveDraft(context, confirm: true)) {
+                      Get.back();
+                    }
+                  },
+                ),
+              ),
+            ]),
           ),
         );
-      },
+      }),
     );
   }
 }
 
-class _ReturnCart extends StatelessWidget {
-  final BillsController controller;
-
-  const _ReturnCart({required this.controller});
-
+class _SectionCard extends StatelessWidget {
+  const _SectionCard(
+      {required this.title, required this.icon, required this.child});
+  final String title;
+  final IconData icon;
+  final Widget child;
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'منتجات المرتجع',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp),
-        ),
-        SizedBox(height: 8.h),
-        ...controller.purchaseCart.map(
-          (item) => Container(
-            margin: EdgeInsets.only(bottom: 8.h),
-            padding: EdgeInsets.all(10.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: Colors.grey.shade200)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(icon, color: AppColors.primaryColor),
+            SizedBox(width: 8.w),
+            Text(title,
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15.sp))
+          ]),
+          SizedBox(height: 12.h),
+          child,
+        ]),
+      );
+}
+
+class _ReturnLineTile extends StatelessWidget {
+  const _ReturnLineTile({required this.line});
+  final PurchaseReturnDraftLine line;
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: EdgeInsets.only(bottom: 8.h),
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(9.r),
+            border: Border.all(color: Colors.grey.shade200)),
+        child: Row(children: [
+          Container(
+              width: 42.w,
+              height: 42.w,
+              decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(8.r)),
+              child: const Icon(Icons.inventory_2_outlined,
+                  color: AppColors.primaryColor)),
+          SizedBox(width: 10.w),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        item.product.nameAr,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13.sp,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => controller.removePurchaseCartItem(item),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: item.quantityController,
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) =>
-                            controller.calculatePurchaseCartTotal(),
-                        decoration: const InputDecoration(labelText: 'الكمية'),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: TextField(
-                        controller: item.priceController,
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) =>
-                            controller.calculatePurchaseCartTotal(),
-                        decoration: const InputDecoration(labelText: 'السعر'),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Text('المجموع: ${item.total.toStringAsFixed(2)}'),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+                Text(line.productName,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                if (line.variant.isNotEmpty) Text(line.variant),
+                Text('المتاح: ${line.available} • السعر: ${line.unitPrice}',
+                    style: TextStyle(
+                        fontSize: 11.sp, color: Colors.grey.shade700)),
+              ])),
+          SizedBox(
+              width: 70.w,
+              child: TextField(
+                controller: line.quantityController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration:
+                    const InputDecoration(labelText: 'الكمية', isDense: true),
+                onChanged: (_) =>
+                    Get.find<ReturnPurchasesController>().update(),
+              )),
+        ]),
+      );
 }

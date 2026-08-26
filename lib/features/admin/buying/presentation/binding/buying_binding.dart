@@ -76,6 +76,9 @@ class BuyingBinding extends Bindings {
           changeReturnToDeliveredUsecase: ChangeReturnToDeliveredUsecase(
             billsRepository: Get.find<BillsImplement>(),
           ),
+          purchaseWorkflowUsecase: PurchaseWorkflowUsecase(
+            billsRepository: Get.find<BillsImplement>(),
+          ),
         ),
       );
     }

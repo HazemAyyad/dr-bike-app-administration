@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import 'delivered_purchases_dialog.dart';
+import '../../controllers/return_purchases_controller.dart';
+import '../../controllers/bills_controller.dart';
 
 class ReturnPurchasesList extends StatelessWidget {
   const ReturnPurchasesList({
@@ -53,11 +54,7 @@ class _ReturnPurchaseCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(10.r),
       onTap: () {
-        Get.dialog(
-          DeliveredPurchasesDialog(
-            billId: bill.id.toString(),
-          ),
-        );
+        _showReturnActions(context, bill);
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 10.h),
@@ -100,7 +97,7 @@ class _ReturnPurchaseCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _InfoRow(
-                            label: 'مرتجع #${bill.id}',
+                            label: bill.number,
                             value: bill.createdAt?.toString() ?? '',
                           ),
                           SizedBox(height: 2.h),
@@ -115,6 +112,10 @@ class _ReturnPurchaseCard extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                     ),
                           ),
+                          Text('فاتورة الشراء #${bill.billId}',
+                              style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: Colors.grey.shade700)),
                           SizedBox(height: 5.h),
                           Wrap(
                             spacing: 5.w,
@@ -133,7 +134,8 @@ class _ReturnPurchaseCard extends StatelessWidget {
                                 ),
                               _MiniChip(
                                 icon: Icons.list_alt_outlined,
-                                text: '${bill.items.length} أصناف',
+                                text:
+                                    '${bill.itemsCount > 0 ? bill.itemsCount : bill.items.length} أصناف',
                               ),
                             ],
                           ),
@@ -174,7 +176,7 @@ class _ReturnPurchaseCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      '${NumberFormat('#,##0.00').format(total)} ₪',
+                      '${NumberFormat('#,##0.00').format(total)} ${bill.currency}',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w700,
@@ -189,6 +191,190 @@ class _ReturnPurchaseCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showReturnActions(BuildContext context, dynamic row) {
+    final controller = Get.find<ReturnPurchasesController>();
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(row.number,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 18.sp)),
+                Text('${row.seller.name} • فاتورة #${row.billId}'),
+                SizedBox(height: 8.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .06),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'الإجمالي: ${row.total} ${row.currency}',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      Text('المسوّى: ${row.settledAmount} ${row.currency}'),
+                      if (row.items.isNotEmpty) ...[
+                        SizedBox(height: 8.h),
+                        ...row.items.map<Widget>((item) => Padding(
+                              padding: EdgeInsets.only(bottom: 4.h),
+                              child: Row(children: [
+                                const Icon(Icons.inventory_2_outlined,
+                                    size: 16),
+                                SizedBox(width: 6.w),
+                                Expanded(child: Text(item.displayName)),
+                                Text('${item.quantity} × ${item.price}'),
+                              ]),
+                            )),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                if (row.status == 'draft')
+                  ListTile(
+                      leading: const Icon(Icons.verified_outlined,
+                          color: Colors.green),
+                      title: const Text('اعتماد وإخراج من المخزون'),
+                      onTap: () {
+                        Get.back();
+                        controller.runAction(context, row, 'confirm');
+                      }),
+                if (row.status == 'confirmed' || row.status == 'pending')
+                  ListTile(
+                      leading: const Icon(Icons.local_shipping_outlined,
+                          color: Colors.indigo),
+                      title: const Text('تسجيل التسليم للمورد'),
+                      onTap: () {
+                        Get.back();
+                        controller.runAction(context, row, 'deliver');
+                      }),
+                if (row.status == 'delivered')
+                  ListTile(
+                      leading: const Icon(Icons.account_balance_wallet_outlined,
+                          color: Colors.orange),
+                      title: const Text('تسوية المرتجع'),
+                      onTap: () {
+                        Get.back();
+                        _showSettlementDialog(context, row, controller);
+                      }),
+                if (row.status == 'draft' || row.status == 'confirmed')
+                  ListTile(
+                      leading:
+                          const Icon(Icons.cancel_outlined, color: Colors.red),
+                      title: const Text('إلغاء المرتجع'),
+                      onTap: () {
+                        Get.back();
+                        controller.runAction(context, row, 'cancel',
+                            data: const {'reason': 'إلغاء من تطبيق الإدارة'});
+                      }),
+              ]),
+        ),
+      ),
+    );
+  }
+
+  void _showSettlementDialog(BuildContext context, dynamic row,
+      ReturnPurchasesController returnsController) {
+    final billsController = Get.find<BillsController>();
+    billsController.loadPurchaseBoxes();
+    final amount = TextEditingController(
+      text: ((double.tryParse(row.total) ?? 0) -
+              (double.tryParse(row.settledAmount) ?? 0))
+          .toStringAsFixed(2),
+    );
+    final billId = TextEditingController();
+    var type = 'cash_refund';
+    dynamic box;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (_, setState) => AlertDialog(
+          title: Text('تسوية ${row.number}'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                initialValue: type,
+                decoration: const InputDecoration(
+                    labelText: 'طريقة التسوية', border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(
+                      value: 'cash_refund', child: Text('استرداد نقدي')),
+                  DropdownMenuItem(
+                      value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                ],
+                onChanged: (value) => setState(() => type = value!),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                  controller: amount,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                      labelText: 'المبلغ (${row.currency})',
+                      border: const OutlineInputBorder())),
+              SizedBox(height: 10.h),
+              if (type == 'cash_refund')
+                Obx(() => DropdownButtonFormField<dynamic>(
+                      initialValue: box,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                          labelText: 'الصندوق', border: OutlineInputBorder()),
+                      items: billsController.purchaseBoxes
+                          .map((item) => DropdownMenuItem(
+                              value: item,
+                              child:
+                                  Text('${item.boxName} (${item.currency})')))
+                          .toList(),
+                      onChanged: (value) => setState(() => box = value),
+                    )),
+              if (type == 'bill_allocation')
+                TextField(
+                    controller: billId,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                        labelText: 'رقم فاتورة الشراء المفتوحة',
+                        border: OutlineInputBorder())),
+            ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () {
+                final data = <String, dynamic>{
+                  'type': type,
+                  'amount': amount.text.trim()
+                };
+                if (type == 'cash_refund') data['box_id'] = box?.boxId;
+                if (type == 'bill_allocation') {
+                  data['bill_id'] = billId.text.trim();
+                }
+                Navigator.pop(dialogContext);
+                returnsController.runAction(context, row, 'settle', data: data);
+              },
+              child: const Text('تسجيل التسوية'),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(() {
+      amount.dispose();
+      billId.dispose();
+    });
   }
 }
 

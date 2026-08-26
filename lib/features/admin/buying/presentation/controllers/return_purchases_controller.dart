@@ -6,189 +6,254 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
+import '../../domain/usecases/purchase_workflow_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
-import 'buying_serves.dart';
 
 class ReturnPurchasesController extends GetxController {
-  final GetBillsUsecase getBillsUsecase;
-  final ChangeReturnToDeliveredUsecase changeReturnToDeliveredUsecase;
-
   ReturnPurchasesController({
     required this.getBillsUsecase,
     required this.changeReturnToDeliveredUsecase,
+    required this.purchaseWorkflowUsecase,
   });
 
-  List<String> tabs = ['return', 'delivered'];
+  final GetBillsUsecase getBillsUsecase;
+  final ChangeReturnToDeliveredUsecase changeReturnToDeliveredUsecase;
+  final PurchaseWorkflowUsecase purchaseWorkflowUsecase;
 
-  RxInt currentTab = 0.obs;
+  final tabs = const [
+    'مسودات',
+    'بانتظار التسليم',
+    'بانتظار التسوية',
+    'مكتملة',
+    'ملغاة'
+  ];
+  final statuses = const [
+    'draft',
+    'confirmed',
+    'delivered',
+    'settled',
+    'cancelled'
+  ];
+  final currentTab = 0.obs;
+  final isLoading = false.obs;
+  final movedToDelivered = false.obs;
+  final search = ''.obs;
+  final allReturns = <ReturnProduct>[].obs;
+  final returnableBills = <Map<String, dynamic>>[].obs;
+  final availableItems = <PurchaseReturnDraftLine>[].obs;
+  final selectedBill = Rxn<Map<String, dynamic>>();
+  final reasonController = TextEditingController();
+  final notesController = TextEditingController();
 
-  void changeTab(int index) {
-    currentTab.value = index;
-    update();
-  }
-
-  final RxBool movedToDelivered = false.obs;
-
-  RxBool isLoading = false.obs;
-
-  Future<void> getReturnBills() async {
-    BuyingServes().returnPurchasesListTasks.isEmpty ? isLoading(true) : null;
-    update();
-
-    // دالة مساعدة للتجميع
-    Map<String, List<ReturnProduct>> groupByDate(List<ReturnProduct> list) {
-      final Map<String, List<ReturnProduct>> grouped = {};
-      final sortedList = list.toList()
-        ..sort((a, b) {
-          final dateCompare = b.createdAt.compareTo(a.createdAt);
-          return dateCompare != 0 ? dateCompare : b.id.compareTo(a.id);
-        });
-
-      for (var task in sortedList) {
-        final receiptDateObj = task.createdAt;
-        final dayName =
-            DateFormat.EEEE(Get.locale!.languageCode).format(receiptDateObj);
-        final dateKey =
-            "$dayName ${receiptDateObj.year}-${receiptDateObj.month}-${receiptDateObj.day}";
-
-        if (grouped.containsKey(dateKey)) {
-          if (!grouped[dateKey]!.any((a) => a.id == task.id)) {
-            grouped[dateKey]!.add(task);
-          }
-        } else {
-          grouped[dateKey] = [task];
-        }
-      }
-
-      // ✅ الترتيب من الأقرب للأبعد
-      final sortedEntries = grouped.entries.toList()
-        ..sort((a, b) {
-          final aDate = a.value.first.createdAt;
-          final bDate = b.value.first.createdAt;
-          return bDate.compareTo(aDate);
-        });
-
-      return Map.fromEntries(sortedEntries);
-    }
-
-    final returnPurchases = await getBillsUsecase.call(page: '6');
-    final returnPurchasesList = mapListFromResponseKey(
-      returnPurchases,
-      'return_products',
-      (Map<String, dynamic> m) => ReturnProduct.fromJson(m),
-      debugScope: 'ReturnPurchasesController.pendingReturns',
-    );
-    BuyingServes().returnPurchasesListTasks.value =
-        groupByDate(returnPurchasesList);
-    returnPurchasesSearch.assignAll(BuyingServes().returnPurchasesListTasks);
-
-    final deliveredPurchases = await getBillsUsecase.call(page: '7');
-    final deliveredPurchasesList = mapListFromResponseKey(
-      deliveredPurchases,
-      'return_products',
-      (Map<String, dynamic> m) => ReturnProduct.fromJson(m),
-      debugScope: 'ReturnPurchasesController.deliveredReturns',
-    );
-    BuyingServes().deliveredPurchasesTasks.value =
-        groupByDate(deliveredPurchasesList);
-    deliveredPurchasesSearch.assignAll(BuyingServes().deliveredPurchasesTasks);
-    isLoading(false);
-    update();
-
-    isLoading(false);
-    update();
-  }
-
+  // Kept for the existing list widget while the new five-state tabs use one source.
   final returnPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
   final deliveredPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
 
-  void searchBar(String value) {
-    if (value.isNotEmpty) {
-      returnPurchasesSearch.value = Map.fromEntries(
-        BuyingServes().returnPurchasesListTasks.entries.map((entry) {
-          final filteredBills = entry.value
-              .where((bill) =>
-                  bill.seller.name.toLowerCase().contains(value.toLowerCase()))
-              .toList();
-          return MapEntry(entry.key, filteredBills);
-        }).where((entry) => entry.value.isNotEmpty),
-      );
-
-      deliveredPurchasesSearch.value = Map.fromEntries(
-        BuyingServes().deliveredPurchasesTasks.entries.map((entry) {
-          final filteredBills = entry.value
-              .where((bill) =>
-                  bill.seller.name.toLowerCase().contains(value.toLowerCase()))
-              .toList();
-          return MapEntry(entry.key, filteredBills);
-        }).where((entry) => entry.value.isNotEmpty),
-      );
-    } else {
-      returnPurchasesSearch.assignAll(BuyingServes().returnPurchasesListTasks);
-      deliveredPurchasesSearch
-          .assignAll(BuyingServes().deliveredPurchasesTasks);
-    }
+  void changeTab(int index) {
+    currentTab.value = index;
+    _rebuildGroups();
     update();
   }
 
-  // changeReturnToDelivered
-  void changeReturnToDelivered({
-    required BuildContext context,
-    required String returnPurchaseId,
-  }) async {
-    isLoading(true);
-    final result = await changeReturnToDeliveredUsecase.call(
-        returnPurchaseId: returnPurchaseId);
+  Future<void> getReturnBills() async {
+    isLoading.value = true;
+    update();
+    try {
+      final response = asMap(await purchaseWorkflowUsecase.purchaseReturns());
+      final envelope = asMap(response['purchase_returns']);
+      allReturns.assignAll(mapList(
+        envelope['data'],
+        (Map<String, dynamic> row) => ReturnProduct.fromJson(row),
+      ));
+      _rebuildGroups();
+    } catch (_) {
+      allReturns.clear();
+      _rebuildGroups();
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
 
-    result.fold(
-      (failure) {
-        final errors = failure.data != null ? failure.data['errors'] : null;
+  Future<void> loadReturnableBills() async {
+    isLoading.value = true;
+    update();
+    try {
+      final response =
+          asMap(await purchaseWorkflowUsecase.returnablePurchaseBills());
+      returnableBills.assignAll(mapList(response['bills'], (m) => m));
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
 
-        if (errors is Map<String, dynamic>) {
-          final messages = errors.values
-              .expand((list) => list)
-              .cast<String>()
-              .join('')
-              .replaceAll('.', '- \n');
+  Future<void> selectBill(Map<String, dynamic>? bill) async {
+    selectedBill.value = bill;
+    availableItems.clear();
+    if (bill == null) return;
+    isLoading.value = true;
+    update();
+    try {
+      final response = asMap(await purchaseWorkflowUsecase
+          .purchaseReturnAvailableItems(asString(bill['id'])));
+      availableItems.assignAll(mapList(
+        response['items'],
+        (m) => PurchaseReturnDraftLine.fromJson(m),
+      ));
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
 
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: messages,
-          );
-        } else {
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: "Unexpected error occurred",
-          );
-        }
-      },
-      (success) {
-        getReturnBills();
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            Get.back();
-            Get.back();
-          },
-        );
-        Helpers.showCustomDialogSuccess(
+  Future<bool> saveDraft(BuildContext context, {bool confirm = false}) async {
+    final bill = selectedBill.value;
+    final lines = availableItems.where((line) => line.quantity > 0).toList();
+    if (bill == null || lines.isEmpty) {
+      Helpers.showCustomDialogError(
+          context: context,
+          title: 'تنبيه',
+          message: 'اختر فاتورة وكمية لصنف واحد على الأقل');
+      return false;
+    }
+    isLoading.value = true;
+    update();
+    try {
+      final result = asMap(await purchaseWorkflowUsecase.createReturnDraft(
+        billId: asString(bill['id']),
+        items: lines.map((line) => line.toRequest()).toList(),
+        reason: reasonController.text.trim(),
+        notes: notesController.text.trim(),
+      ));
+      final row = asMap(result['purchase_return']);
+      if (confirm) {
+        await purchaseWorkflowUsecase.runPurchaseReturnAction(
+            returnId: asString(row['id']), action: 'confirm');
+      }
+      await getReturnBills();
+      if (!context.mounted) return true;
+      Helpers.showCustomDialogSuccess(
           context: context,
           title: 'success'.tr,
-          message: success,
-        );
-      },
-    );
-    isLoading(false);
+          message: confirm
+              ? 'تم اعتماد المرتجع وإخراجه من المخزون'
+              : 'تم حفظ المسودة');
+      return true;
+    } catch (error) {
+      if (!context.mounted) return false;
+      Helpers.showCustomDialogError(
+          context: context, title: 'تعذر الحفظ', message: error.toString());
+      return false;
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  Future<void> runAction(BuildContext context, ReturnProduct row, String action,
+      {Map<String, dynamic> data = const {}}) async {
+    isLoading.value = true;
     update();
+    try {
+      await purchaseWorkflowUsecase.runPurchaseReturnAction(
+          returnId: row.id.toString(), action: action, data: data);
+      await getReturnBills();
+      if (Get.isDialogOpen == true) Get.back();
+      if (!context.mounted) return;
+      Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: 'تم تنفيذ العملية بنجاح');
+    } catch (error) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+          context: context,
+          title: 'تعذر تنفيذ العملية',
+          message: error.toString());
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
+  void changeReturnToDelivered(
+      {required BuildContext context, required String returnPurchaseId}) {
+    final row = allReturns
+        .firstWhereOrNull((item) => item.id.toString() == returnPurchaseId);
+    if (row != null) runAction(context, row, 'deliver');
+  }
+
+  void searchBar(String value) {
+    search.value = value.trim().toLowerCase();
+    _rebuildGroups();
+    update();
+  }
+
+  void _rebuildGroups() {
+    final status = statuses[currentTab.value];
+    final rows = allReturns.where((row) {
+      final matchesStatus = row.status == status ||
+          (status == 'confirmed' && row.status == 'pending');
+      final query = search.value;
+      return matchesStatus &&
+          (query.isEmpty ||
+              row.number.toLowerCase().contains(query) ||
+              row.billId.contains(query) ||
+              row.seller.name.toLowerCase().contains(query));
+    }).toList();
+    final grouped = <String, List<ReturnProduct>>{};
+    for (final row in rows) {
+      final key = DateFormat('yyyy-MM-dd').format(row.createdAt);
+      grouped.putIfAbsent(key, () => []).add(row);
+    }
+    returnPurchasesSearch.assignAll(grouped);
+    deliveredPurchasesSearch.assignAll(grouped);
   }
 
   @override
-  void onInit() async {
-    getReturnBills();
-    returnPurchasesSearch.assignAll(BuyingServes().returnPurchasesListTasks);
-    deliveredPurchasesSearch.assignAll(BuyingServes().deliveredPurchasesTasks);
+  void onInit() {
     super.onInit();
+    getReturnBills();
   }
+
+  @override
+  void onClose() {
+    reasonController.dispose();
+    notesController.dispose();
+    for (final line in availableItems) {
+      line.dispose();
+    }
+    super.onClose();
+  }
+}
+
+class PurchaseReturnDraftLine {
+  PurchaseReturnDraftLine(
+      {required this.billItemId,
+      required this.productName,
+      required this.variant,
+      required this.available,
+      required this.unitPrice});
+  final int billItemId;
+  final String productName;
+  final String variant;
+  final double available;
+  final double unitPrice;
+  final quantityController = TextEditingController(text: '0');
+  double get quantity => double.tryParse(quantityController.text) ?? 0;
+  double get total => quantity * unitPrice;
+  factory PurchaseReturnDraftLine.fromJson(Map<String, dynamic> json) =>
+      PurchaseReturnDraftLine(
+        billItemId: asInt(json['bill_item_id']),
+        productName: asString(json['product_name']),
+        variant: [asString(json['size_label']), asString(json['color_label'])]
+            .where((v) => v.isNotEmpty)
+            .join(' / '),
+        available: asDouble(json['available_quantity']),
+        unitPrice: asDouble(json['unit_price']),
+      );
+  Map<String, dynamic> toRequest() =>
+      {'bill_item_id': billItemId, 'quantity': quantity};
+  void dispose() => quantityController.dispose();
 }

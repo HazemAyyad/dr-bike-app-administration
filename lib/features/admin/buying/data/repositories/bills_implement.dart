@@ -231,6 +231,44 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<dynamic> getPurchaseReturns({String? status, String? search}) =>
+      billsDataSource.getPurchaseReturns(status: status, search: search);
+
+  @override
+  Future<dynamic> getReturnablePurchaseBills() =>
+      billsDataSource.getReturnablePurchaseBills();
+
+  @override
+  Future<dynamic> getPurchaseReturnAvailableItems({required String billId}) =>
+      billsDataSource.getPurchaseReturnAvailableItems(billId);
+
+  @override
+  Future<dynamic> createPurchaseReturnDraft({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? reason,
+    String? notes,
+  }) =>
+      billsDataSource.createPurchaseReturnDraft(
+        billId: billId,
+        items: items,
+        reason: reason,
+        notes: notes,
+      );
+
+  @override
+  Future<dynamic> purchaseReturnAction({
+    required String returnId,
+    required String action,
+    Map<String, dynamic> data = const {},
+  }) =>
+      billsDataSource.purchaseReturnAction(
+        returnId: returnId,
+        action: action,
+        data: data,
+      );
+
+  @override
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

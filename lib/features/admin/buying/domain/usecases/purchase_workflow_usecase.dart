@@ -126,6 +126,39 @@ class PurchaseWorkflowUsecase {
     );
   }
 
+  Future<dynamic> purchaseReturns({String? status, String? search}) =>
+      billsRepository.getPurchaseReturns(status: status, search: search);
+
+  Future<dynamic> returnablePurchaseBills() =>
+      billsRepository.getReturnablePurchaseBills();
+
+  Future<dynamic> purchaseReturnAvailableItems(String billId) =>
+      billsRepository.getPurchaseReturnAvailableItems(billId: billId);
+
+  Future<dynamic> createReturnDraft({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? reason,
+    String? notes,
+  }) =>
+      billsRepository.createPurchaseReturnDraft(
+        billId: billId,
+        items: items,
+        reason: reason,
+        notes: notes,
+      );
+
+  Future<dynamic> runPurchaseReturnAction({
+    required String returnId,
+    required String action,
+    Map<String, dynamic> data = const {},
+  }) =>
+      billsRepository.purchaseReturnAction(
+        returnId: returnId,
+        action: action,
+        data: data,
+      );
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

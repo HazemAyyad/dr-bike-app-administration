@@ -77,6 +77,21 @@ abstract class BillsRepository {
     String? note,
   });
 
+  Future<dynamic> getPurchaseReturns({String? status, String? search});
+  Future<dynamic> getReturnablePurchaseBills();
+  Future<dynamic> getPurchaseReturnAvailableItems({required String billId});
+  Future<dynamic> createPurchaseReturnDraft({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? reason,
+    String? notes,
+  });
+  Future<dynamic> purchaseReturnAction({
+    required String returnId,
+    required String action,
+    Map<String, dynamic> data,
+  });
+
   Future<Either<Failure, String>> purchaseAmanat({
     required String amanatId,
     required String quantity,

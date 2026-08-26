@@ -399,6 +399,57 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> getPurchaseReturns({String? status, String? search}) async {
+    final response = await api.get(
+      'purchase/returns',
+      queryParameters: {
+        if (status?.isNotEmpty == true) 'status': status,
+        if (search?.isNotEmpty == true) 'search': search,
+        'per_page': 100,
+      },
+    );
+    return response.data;
+  }
+
+  Future<dynamic> getReturnablePurchaseBills() async {
+    final response = await api.get('purchase/returns/returnable-bills');
+    return response.data;
+  }
+
+  Future<dynamic> getPurchaseReturnAvailableItems(String billId) async {
+    final response = await api.get(
+      'purchase/returns/bills/$billId/available-items',
+    );
+    return response.data;
+  }
+
+  Future<dynamic> createPurchaseReturnDraft({
+    required String billId,
+    required List<Map<String, dynamic>> items,
+    String? reason,
+    String? notes,
+  }) async {
+    final response = await api.post('purchase/returns', data: {
+      'bill_id': billId,
+      'items': items,
+      if (reason?.isNotEmpty == true) 'reason': reason,
+      if (notes?.isNotEmpty == true) 'notes': notes,
+    });
+    return response.data;
+  }
+
+  Future<dynamic> purchaseReturnAction({
+    required String returnId,
+    required String action,
+    Map<String, dynamic> data = const {},
+  }) async {
+    final response = await api.post(
+      'purchase/returns/$returnId/$action',
+      data: data,
+    );
+    return response.data;
+  }
+
   Future<dynamic> purchaseAmanat({
     required String amanatId,
     required String quantity,

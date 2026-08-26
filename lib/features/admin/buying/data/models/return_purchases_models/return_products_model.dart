@@ -4,6 +4,11 @@ class ReturnProduct {
   final int id;
   final String sellerId;
   final String total;
+  final String number;
+  final String billId;
+  final String currency;
+  final String settledAmount;
+  final int itemsCount;
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -14,6 +19,11 @@ class ReturnProduct {
     required this.id,
     required this.sellerId,
     required this.total,
+    required this.number,
+    required this.billId,
+    required this.currency,
+    required this.settledAmount,
+    required this.itemsCount,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -27,10 +37,19 @@ class ReturnProduct {
       id: asInt(j['id']),
       sellerId: asString(j['seller_id']),
       total: asString(j['total'], '0.0'),
+      number: asString(j['number'], 'PRT-${asInt(j['id'])}'),
+      billId: asString(j['bill_id']),
+      currency: asString(j['currency'], 'شيكل'),
+      settledAmount: asString(j['settled_amount'], '0'),
+      itemsCount: asInt(j['items_count']),
       status: asString(j['status']),
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
-      seller: Seller.fromJson(asMap(j['seller'])),
+      seller: Seller.fromJson(
+        asMap(j['seller']).isNotEmpty
+            ? asMap(j['seller'])
+            : asMap(j['customer']),
+      ),
       items: mapList(
         j['items'],
         (Map<String, dynamic> m) => ReturnItem.fromJson(m),
@@ -43,6 +62,11 @@ class ReturnProduct {
       'id': id,
       'seller_id': sellerId,
       'total': total,
+      'number': number,
+      'bill_id': billId,
+      'currency': currency,
+      'settled_amount': settledAmount,
+      'items_count': itemsCount,
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -113,11 +137,13 @@ class ReturnItem {
       quantity: asString(j['quantity']),
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
-      productName: asString(j['product_name']),
+      productName:
+          asString(j['product_name'], asString(asMap(j['product'])['nameAr'])),
       sizeId: asString(j['size_id']),
       sizeColorId: asString(j['size_color_id']),
-      sizeLabel: asString(j['size_label']),
-      colorLabel: asString(j['color_label']),
+      sizeLabel: asString(j['size_label'], asString(asMap(j['size'])['size'])),
+      colorLabel: asString(
+          j['color_label'], asString(asMap(j['size_color'])['colorAr'])),
     );
   }
 
