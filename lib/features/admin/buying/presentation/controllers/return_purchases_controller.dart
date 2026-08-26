@@ -4,8 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
@@ -287,6 +289,29 @@ class ReturnPurchasesController extends GetxController {
     await file.writeAsBytes(bytes);
     Get.snackbar('success'.tr, 'تم تنزيل ملف المرتجع');
     await OpenFilex.open(file.path);
+  }
+
+  Future<void> sharePdf(String returnId, String number) async {
+    try {
+      final bytes = await purchaseWorkflowUsecase.downloadReturnPdf(returnId);
+      await Printing.sharePdf(
+          bytes: Uint8List.fromList(bytes),
+          filename: 'purchase_return_$number.pdf');
+    } catch (error) {
+      Get.snackbar('error'.tr, error.toString());
+    }
+  }
+
+  Future<void> printPdf(String returnId, String number) async {
+    try {
+      final bytes = await purchaseWorkflowUsecase.downloadReturnPdf(returnId);
+      await Printing.layoutPdf(
+        name: 'purchase_return_$number.pdf',
+        onLayout: (_) async => Uint8List.fromList(bytes),
+      );
+    } catch (error) {
+      Get.snackbar('error'.tr, error.toString());
+    }
   }
 
   void _showSaveSuccess(bool confirm) {

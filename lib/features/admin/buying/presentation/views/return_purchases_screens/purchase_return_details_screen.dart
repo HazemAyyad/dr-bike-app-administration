@@ -44,10 +44,20 @@ class _PurchaseReturnDetailsScreenState
         surfaceTintColor: Colors.white,
         actions: [
           IconButton(
-            tooltip: 'PDF',
+            tooltip: 'حفظ PDF',
             onPressed: () =>
                 controller.downloadPdf(row.id.toString(), row.number),
+            icon: const Icon(Icons.file_download_outlined),
+          ),
+          IconButton(
+            tooltip: 'مشاركة PDF',
+            onPressed: () => controller.sharePdf(row.id.toString(), row.number),
             icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
+          IconButton(
+            tooltip: 'طباعة',
+            onPressed: () => controller.printPdf(row.id.toString(), row.number),
+            icon: const Icon(Icons.print_outlined),
           ),
         ],
       ),
