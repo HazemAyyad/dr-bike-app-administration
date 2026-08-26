@@ -28,9 +28,6 @@ class OptionsWidget extends StatelessWidget {
                       title: 'seller'.tr,
                       value: RxBool(!controller.isSeller.value == true),
                       onChanged: (val) {
-                        if (controller.isEdit.value) {
-                          return;
-                        }
                         controller.getAllCustomersAndSellers();
                         controller.customerAndSellerIdController.clear();
                         controller.isSeller.value = false;
@@ -43,9 +40,6 @@ class OptionsWidget extends StatelessWidget {
                       title: 'customer'.tr,
                       value: RxBool(!controller.isSeller.value == false),
                       onChanged: (val) {
-                        if (controller.isEdit.value) {
-                          return;
-                        }
                         controller.getAllCustomersAndSellers();
                         controller.isSeller.value = true;
                         controller.update();
@@ -96,7 +90,7 @@ class OptionsWidget extends StatelessWidget {
                       },
                       itemAsString: (f) => f.name,
                       compareFn: (a, b) => a.id == b.id,
-                      isEnabled: !controller.isEdit.value,
+                      isEnabled: true,
                     ),
                   ),
                   IconButton(
@@ -120,26 +114,35 @@ class OptionsWidget extends StatelessWidget {
           );
         }
         if (controller.formController.text == 'products') {
-          return SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                side: const BorderSide(color: AppColors.operationalPurple),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.r),
+          return Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    side: const BorderSide(color: AppColors.operationalPurple),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                  onPressed: () => showGoalProductsPickerSheet(context),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: Text(
+                    controller.productsIds.isEmpty
+                        ? 'chooseProducts'.tr
+                        : '${'selectedProducts'.tr}: ${controller.productsIds.length}',
+                  ),
                 ),
               ),
-              onPressed: controller.isEdit.value
-                  ? null
-                  : () => showGoalProductsPickerSheet(context),
-              icon: const Icon(Icons.inventory_2_outlined),
-              label: Text(
-                controller.productsIds.isEmpty
-                    ? 'chooseProducts'.tr
-                    : '${'selectedProducts'.tr}: ${controller.productsIds.length}',
+              GoalSelectedProductsTable(
+                key: ValueKey(
+                  controller.productsIds
+                      .map((product) => product.productId)
+                      .join(','),
+                ),
               ),
-            ),
+            ],
           );
         }
 
@@ -170,7 +173,7 @@ class OptionsWidget extends StatelessWidget {
             itemAsString: (f) => f.name,
             compareFn: (a, b) => a.id == b.id,
             validator: (value) => null,
-            isEnabled: !controller.isEdit.value,
+            isEnabled: true,
           );
         }
         return const SizedBox.shrink();

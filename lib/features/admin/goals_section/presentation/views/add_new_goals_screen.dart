@@ -1,8 +1,5 @@
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
-import 'package:doctorbike/core/helpers/full_screen_image_viewer.dart';
-import 'package:doctorbike/core/helpers/product_priority_image.dart';
-import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,7 +9,6 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../create_tasks/presentation/widgets/task_form_section_card.dart';
-import '../../../projects/data/models/project_details_model.dart';
 import '../controllers/target_section_controller.dart';
 import '../widgets/goal_products_picker_sheet.dart';
 import '../widgets/options_widget.dart';
@@ -109,9 +105,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
 
                                   controller.targetTypeController.text = value!;
                                   controller.calculationModeController.text =
-                                      controller.supportsTotalMode
-                                          ? 'total'
-                                          : 'detailed';
+                                      'detailed';
                                   controller.update();
                                   WidgetsBinding.instance
                                       .addPostFrameCallback((_) {
@@ -120,7 +114,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                                     }
                                   });
                                 },
-                                isEnabled: !controller.isEdit.value,
+                                isEnabled: true,
                               ),
                             ],
                           ),
@@ -180,57 +174,84 @@ class _GoalFollowUpSummary extends GetView<TargetSectionController> {
 
   @override
   Widget build(BuildContext context) {
-    final items = _summaryItems();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              side: const BorderSide(color: AppColors.operationalPurple),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
+    return GetBuilder<TargetSectionController>(
+      builder: (controller) {
+        final items = _summaryItems(controller);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  side: const BorderSide(color: AppColors.operationalPurple),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+                onPressed: () => _showGoalFollowUpSheet(context),
+                icon: Icon(
+                  items.isEmpty ? Icons.tune_rounded : Icons.edit_note_rounded,
+                ),
+                label: Text(
+                  items.isEmpty ? 'options'.tr : '${'edit'.tr} ${'options'.tr}',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: AppColors.operationalPurple,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
               ),
             ),
-            onPressed: controller.isEdit.value
-                ? null
-                : () => _showGoalFollowUpSheet(context),
-            icon: Icon(
-              items.isEmpty ? Icons.tune_rounded : Icons.edit_note_rounded,
+            if (items.isEmpty) ...[
+              SizedBox(height: 10.h),
+              const _EmptySummaryHint(
+                text: 'اختر التفاصيل المرتبطة بصيغة الهدف',
+              ),
+            ] else ...[
+              SizedBox(height: 10.h),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: items
+                    .map((item) => _SummaryChip(
+                          title: item.title,
+                          value: item.value,
+                        ))
+                    .toList(),
+              ),
+            ],
+            if (controller.supportsTotalMode && !controller.isDetailedMode) ...[
+              SizedBox(height: 10.h),
+              const _EmptySummaryHint(
+                text:
+                    'تم اختيار الإجمالي، لذلك لا توجد منتجات أو خيارات تفصيلية',
+              ),
+            ],
+            if (controller.isDetailedMode &&
+                controller.formController.text.isEmpty) ...[
+              SizedBox(height: 10.h),
+              const _EmptySummaryHint(text: 'اختر نوع الخيارات التفصيلية'),
+            ],
+            if (controller.formController.text == 'products' &&
+                controller.productsIds.isEmpty) ...[
+              SizedBox(height: 10.h),
+              const _EmptySummaryHint(text: 'لم يتم اختيار منتجات بعد'),
+            ],
+            GoalSelectedProductsTable(
+              key: ValueKey(
+                controller.productsIds
+                    .map((product) => product.productId)
+                    .join(','),
+              ),
             ),
-            label: Text(
-              items.isEmpty ? 'options'.tr : '${'edit'.tr} ${'options'.tr}',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: AppColors.operationalPurple,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-          ),
-        ),
-        if (items.isEmpty) ...[
-          SizedBox(height: 10.h),
-          const _EmptySummaryHint(text: 'اختر التفاصيل المرتبطة بصيغة الهدف'),
-        ] else ...[
-          SizedBox(height: 10.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: items
-                .map((item) => _SummaryChip(
-                      title: item.title,
-                      value: item.value,
-                    ))
-                .toList(),
-          ),
-        ],
-        const _SelectedGoalProducts(),
-      ],
+          ],
+        );
+      },
     );
   }
 
-  List<_SummaryItem> _summaryItems() {
+  List<_SummaryItem> _summaryItems(TargetSectionController controller) {
     final items = <_SummaryItem>[];
     if (controller.calculationModeController.text.isNotEmpty) {
       items.add(_SummaryItem(
@@ -281,9 +302,19 @@ class _GoalFollowUpSummary extends GetView<TargetSectionController> {
       ));
     }
     if (controller.productsIds.isNotEmpty) {
+      final productNames = controller.productsIds
+          .map((product) => product.productName)
+          .where((name) => name.trim().isNotEmpty)
+          .toList();
+      final visibleNames = productNames.take(2).join('، ');
+      final extraCount = productNames.length - 2;
       items.add(_SummaryItem(
         'selectedProducts',
-        '${controller.productsIds.length}',
+        visibleNames.isEmpty
+            ? '${controller.productsIds.length}'
+            : extraCount > 0
+                ? '$visibleNames +$extraCount'
+                : visibleNames,
       ));
     }
     return items;
@@ -379,7 +410,11 @@ class _GoalFollowUpSheet extends GetView<TargetSectionController> {
                       const TargetTypeFormatWidget(),
                       if (controller.isDetailedMode) ...[
                         const OptionsWidget(),
-                        const _SelectedGoalProducts(),
+                      ] else ...[
+                        const _EmptySummaryHint(
+                          text:
+                              'الإجمالي يحسب كل البيانات بدون تحديد منتجات أو تصنيفات',
+                        ),
                       ],
                     ],
                   ),
@@ -483,233 +518,6 @@ class _EmptySummaryHint extends StatelessWidget {
               color: AppColors.customGreyColor5,
               fontWeight: FontWeight.w700,
             ),
-      ),
-    );
-  }
-}
-
-class _SelectedGoalProducts extends GetView<TargetSectionController> {
-  const _SelectedGoalProducts();
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller.productsIds.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 10.h),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor6
-              : AppColors.customGreyColor3,
-        ),
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-            decoration: BoxDecoration(
-              color: AppColors.operationalPurple.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.shopping_cart_checkout_rounded,
-                  color: AppColors.operationalPurple,
-                  size: 18.sp,
-                ),
-                SizedBox(width: 7.w),
-                Expanded(
-                  child: Text(
-                    '${'selectedProducts'.tr} (${controller.productsIds.length})',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => showGoalProductsPickerSheet(context),
-                  icon: Icon(Icons.edit_outlined, size: 16.sp),
-                  label: Text('edit'.tr),
-                ),
-              ],
-            ),
-          ),
-          ...List.generate(
-            controller.productsIds.length,
-            (index) {
-              final ProjectProductModel product = controller.productsIds[index];
-              final fullProduct = controller.products.firstWhereOrNull(
-                (item) => item.id == product.productId,
-              );
-              return _SelectedGoalProductRow(
-                index: index,
-                product: product,
-                imageUrls: fullProduct?.allImageUrlsInPriority ?? const [],
-                code: fullProduct?.displayProductCode ?? '',
-                section: fullProduct?.storeSectionName ?? '',
-                onDelete: () {
-                  controller.productsIds.removeAt(index);
-                  controller.update();
-                },
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SelectedGoalProductRow extends StatelessWidget {
-  const _SelectedGoalProductRow({
-    required this.index,
-    required this.product,
-    required this.imageUrls,
-    required this.code,
-    required this.section,
-    required this.onDelete,
-  });
-
-  final int index;
-  final ProjectProductModel product;
-  final List<String> imageUrls;
-  final String code;
-  final String section;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor6
-                : AppColors.customGreyColor3,
-          ),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6.r),
-            child: InkWell(
-              onTap: imageUrls.isEmpty
-                  ? null
-                  : () {
-                      final resolved =
-                          imageUrls.map(ShowNetImage.getPhoto).toList();
-                      FullScreenZoomImage.open(
-                        context,
-                        resolved.first,
-                        imageUrls: resolved,
-                        title: product.productName,
-                      );
-                    },
-              child: SizedBox(
-                width: 38.w,
-                height: 38.w,
-                child: imageUrls.isEmpty
-                    ? const _SelectedProductPlaceholder()
-                    : ProductPriorityImage(
-                        imageUrls: imageUrls,
-                        fit: BoxFit.cover,
-                        placeholder: const _SelectedProductPlaceholder(),
-                        missingPlaceholder: const _SelectedProductPlaceholder(),
-                      ),
-              ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.productName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        fontWeight: FontWeight.w900,
-                        height: 1.25,
-                      ),
-                ),
-                SizedBox(height: 3.h),
-                Wrap(
-                  spacing: 6.w,
-                  runSpacing: 4.h,
-                  children: [
-                    _TinyProductMeta(text: '#${index + 1}'),
-                    if (code.isNotEmpty) _TinyProductMeta(text: code),
-                    if (section.isNotEmpty) _TinyProductMeta(text: section),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
-            onPressed: onDelete,
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.red.shade600,
-              size: 18.sp,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TinyProductMeta extends StatelessWidget {
-  const _TinyProductMeta({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: AppColors.operationalNavy.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontSize: 9.sp,
-              color: AppColors.customGreyColor5,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-  }
-}
-
-class _SelectedProductPlaceholder extends StatelessWidget {
-  const _SelectedProductPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.operationalSurface,
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: 18.sp,
-        color: AppColors.customGreyColor5,
       ),
     );
   }

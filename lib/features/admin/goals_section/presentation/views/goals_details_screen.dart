@@ -74,6 +74,10 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                 ),
                 SizedBox(height: 10.h),
                 _GoalInfoGrid(goal: goal),
+                if (goal.sharedEmployees.isNotEmpty) ...[
+                  SizedBox(height: 10.h),
+                  _SharedEmployeesCard(employees: goal.sharedEmployees),
+                ],
                 if (logs.isNotEmpty) ...[
                   SizedBox(height: 10.h),
                   _GoalLogsCard(logs: logs),
@@ -333,6 +337,7 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
             GoalProgressPoint(
               date: DateTime.now().toIso8601String(),
               currentValue: '',
+              dailyValue: '',
               achievementPercentage: widget.achievement.toStringAsFixed(2),
               hasData: true,
             ),
@@ -342,6 +347,14 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
     final selectedAchievement =
         double.tryParse(selected.achievementPercentage) ?? 0;
     final selectedCurrent = double.tryParse(selected.currentValue);
+    final selectedDailyValue = selected.hasData
+        ? _dailyValueAt(history, _selectedIndex.clamp(0, history.length - 1))
+        : null;
+    final dailyValues = _dailyValues(history);
+    final maxDailyValue =
+        dailyValues.isEmpty ? 0.0 : dailyValues.reduce(math.max);
+    final maxDailyIndex =
+        maxDailyValue <= 0 ? -1 : dailyValues.indexOf(maxDailyValue);
 
     return _Panel(
       child: Column(
@@ -374,6 +387,44 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
             ],
           ),
           SizedBox(height: 12.h),
+          if (maxDailyIndex >= 0) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.trending_up_rounded,
+                    color: const Color(0xFFD4AF37),
+                    size: 18.sp,
+                  ),
+                  SizedBox(width: 7.w),
+                  Expanded(
+                    child: Text(
+                      'أعلى يوم: ${showData(history[maxDailyIndex].date)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                  ),
+                  Text(
+                    _compactNumber(maxDailyValue),
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: const Color(0xFFD4AF37),
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10.h),
+          ],
           LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
@@ -395,6 +446,8 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
                   child: CustomPaint(
                     painter: _ProgressChartPainter(
                       points: history,
+                      dailyValues: dailyValues,
+                      maxDailyIndex: maxDailyIndex,
                       selectedIndex: _selectedIndex,
                       color: widget.progressColor,
                       gridColor: ThemeService.isDark.value
@@ -408,6 +461,26 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
               );
             },
           ),
+          if (history.length > 1) ...[
+            SizedBox(height: 6.h),
+            Row(
+              children: [
+                _ChartDateLabel(
+                  text: showData(history.first.date),
+                  alignment: TextAlign.start,
+                ),
+                _ChartDateLabel(
+                  text: showData(selected.date),
+                  alignment: TextAlign.center,
+                  color: widget.progressColor,
+                ),
+                _ChartDateLabel(
+                  text: showData(history.last.date),
+                  alignment: TextAlign.end,
+                ),
+              ],
+            ),
+          ],
           SizedBox(height: 10.h),
           Container(
             width: double.infinity,
@@ -450,6 +523,19 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
                               fontWeight: FontWeight.w700,
                             ),
                       ),
+                      if (selectedDailyValue != null) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          'تحقيق هذا اليوم: ${_compactNumber(selectedDailyValue)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodySmall!.copyWith(
+                                    color: AppColors.customGreyColor5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -476,6 +562,57 @@ class _GoalProgressChartState extends State<_GoalProgressChart> {
     if (index != _selectedIndex) {
       setState(() => _selectedIndex = index);
     }
+  }
+
+  double _dailyValueAt(List<GoalProgressPoint> history, int index) {
+    final explicitDailyValue = double.tryParse(history[index].dailyValue);
+    if (explicitDailyValue != null) {
+      return explicitDailyValue;
+    }
+
+    final current = double.tryParse(history[index].currentValue) ?? 0;
+    for (var i = index - 1; i >= 0; i--) {
+      if (!history[i].hasData) continue;
+      final previous = double.tryParse(history[i].currentValue) ?? 0;
+      return math.max(0, current - previous);
+    }
+    return current;
+  }
+
+  List<double> _dailyValues(List<GoalProgressPoint> history) {
+    return List<double>.generate(
+      history.length,
+      (index) => history[index].hasData ? _dailyValueAt(history, index) : 0,
+    );
+  }
+}
+
+class _ChartDateLabel extends StatelessWidget {
+  const _ChartDateLabel({
+    required this.text,
+    required this.alignment,
+    this.color,
+  });
+
+  final String text;
+  final TextAlign alignment;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: alignment,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontSize: 9.sp,
+              color: color ?? AppColors.customGreyColor5,
+              fontWeight: color == null ? FontWeight.w700 : FontWeight.w900,
+            ),
+      ),
+    );
   }
 }
 
@@ -522,12 +659,6 @@ class _GoalInfoGrid extends StatelessWidget {
           goal.products!.map((e) => e.name).join('، '),
           Icons.inventory_2_outlined,
         ),
-      if (goal.sharedEmployees.isNotEmpty)
-        _InfoItem(
-          'sharedEmployees',
-          goal.sharedEmployees.map((e) => e.name).join('، '),
-          Icons.group_outlined,
-        ),
       if ((goal.notes ?? '').isNotEmpty)
         _InfoItem('notes', goal.notes!, Icons.notes_rounded),
     ];
@@ -556,6 +687,103 @@ class _GoalInfoGrid extends StatelessWidget {
                   (item) => _InfoChip(item: item),
                 )
                 .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SharedEmployeesCard extends StatelessWidget {
+  const _SharedEmployeesCard({required this.employees});
+
+  final List<SharedEmployee> employees;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.group_outlined,
+                color: AppColors.operationalPurple,
+                size: 20.sp,
+              ),
+              SizedBox(width: 7.w),
+              Expanded(
+                child: Text(
+                  'sharedEmployees'.tr,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              _SoftChip(label: employees.length.toString()),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: employees
+                .map((employee) => _SharedEmployeeChip(employee: employee))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SharedEmployeeChip extends StatelessWidget {
+  const _SharedEmployeeChip({required this.employee});
+
+  final SharedEmployee employee;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 180.w),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: AppColors.operationalPurple.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: AppColors.operationalPurple.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 10.r,
+            backgroundColor: AppColors.operationalPurple,
+            child: Text(
+              employee.name.trim().isEmpty
+                  ? '-'
+                  : employee.name.trim().characters.first,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              employee.name.trim().isEmpty ? employee.id : employee.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    color: AppColors.operationalNavy,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
           ),
         ],
       ),
@@ -813,6 +1041,8 @@ class _SoftChip extends StatelessWidget {
 class _ProgressChartPainter extends CustomPainter {
   _ProgressChartPainter({
     required this.points,
+    required this.dailyValues,
+    required this.maxDailyIndex,
     required this.selectedIndex,
     required this.color,
     required this.gridColor,
@@ -820,6 +1050,8 @@ class _ProgressChartPainter extends CustomPainter {
   });
 
   final List<GoalProgressPoint> points;
+  final List<double> dailyValues;
+  final int maxDailyIndex;
   final int selectedIndex;
   final Color color;
   final Color gridColor;
@@ -834,6 +1066,8 @@ class _ProgressChartPainter extends CustomPainter {
       final y = size.height * i / 3;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
+
+    _drawDailyBars(canvas, size);
 
     final values = points
         .where((point) => point.hasData)
@@ -914,6 +1148,62 @@ class _ProgressChartPainter extends CustomPainter {
     _drawSelectedGuide(canvas, size);
   }
 
+  void _drawDailyBars(Canvas canvas, Size size) {
+    if (points.isEmpty || dailyValues.isEmpty) return;
+
+    final maxDaily = dailyValues.reduce(math.max);
+    if (maxDaily <= 0) return;
+
+    final barSlot =
+        points.length <= 1 ? size.width : size.width / points.length;
+    final barWidth = math.max(3.0, math.min(18.0, barSlot * 0.42));
+    final selected = selectedIndex.clamp(0, points.length - 1).toInt();
+
+    for (var i = 0; i < points.length; i++) {
+      final value = i < dailyValues.length ? dailyValues[i] : 0.0;
+      if (value <= 0) continue;
+
+      final x = points.length == 1
+          ? size.width / 2
+          : size.width * i / (points.length - 1);
+      final height = math.max(4.0, (value / maxDaily) * size.height * 0.72);
+      final rect = Rect.fromLTWH(
+        x - (barWidth / 2),
+        size.height - height,
+        barWidth,
+        height,
+      );
+      final isMax = i == maxDailyIndex;
+      final isSelected = i == selected;
+      final barColor = isMax
+          ? const Color(0xFFD4AF37)
+          : isSelected
+              ? color
+              : color.withValues(alpha: 0.28);
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, Radius.circular(barWidth / 2)),
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              barColor.withValues(alpha: isMax || isSelected ? 0.85 : 0.42),
+              barColor.withValues(alpha: 0.08),
+            ],
+          ).createShader(rect),
+      );
+
+      if (isMax) {
+        canvas.drawCircle(
+          Offset(x, rect.top - 4),
+          4,
+          Paint()..color = const Color(0xFFD4AF37),
+        );
+      }
+    }
+  }
+
   void _drawSelectedGuide(Canvas canvas, Size size) {
     final clampedIndex =
         selectedIndex.clamp(0, math.max(0, points.length - 1)).toInt();
@@ -956,6 +1246,8 @@ class _ProgressChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ProgressChartPainter oldDelegate) {
     return oldDelegate.points != points ||
+        oldDelegate.dailyValues != dailyValues ||
+        oldDelegate.maxDailyIndex != maxDailyIndex ||
         oldDelegate.selectedIndex != selectedIndex ||
         oldDelegate.color != color ||
         oldDelegate.gridColor != gridColor ||

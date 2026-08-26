@@ -332,12 +332,14 @@ class Goal {
 class GoalProgressPoint {
   final String date;
   final String currentValue;
+  final String dailyValue;
   final String achievementPercentage;
   final bool hasData;
 
   GoalProgressPoint({
     required this.date,
     required this.currentValue,
+    this.dailyValue = '',
     required this.achievementPercentage,
     required this.hasData,
   });
@@ -347,6 +349,7 @@ class GoalProgressPoint {
     return GoalProgressPoint(
       date: asString(j['date']),
       currentValue: asString(j['current_value']),
+      dailyValue: asString(j['daily_value']),
       achievementPercentage: asString(j['achievement_percentage']),
       hasData: asBool(j['has_data']),
     );
@@ -355,6 +358,7 @@ class GoalProgressPoint {
   Map<String, dynamic> toJson() => {
         'date': date,
         'current_value': currentValue,
+        'daily_value': dailyValue,
         'achievement_percentage': achievementPercentage,
         'has_data': hasData,
       };

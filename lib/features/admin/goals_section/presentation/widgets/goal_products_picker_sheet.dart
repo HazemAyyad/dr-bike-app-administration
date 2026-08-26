@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/product_priority_image.dart';
+import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../projects/data/models/project_details_model.dart';
 import '../../../sales/data/models/product_model.dart';
@@ -166,6 +169,9 @@ Future<void> showGoalProductsPickerSheet(BuildContext context) async {
                             ..addAll(selected.values);
                           controller.update();
                           Navigator.pop(context);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            controller.update();
+                          });
                         },
                         child: Text(
                           '${'done'.tr} (${selected.length})',
@@ -317,6 +323,240 @@ class _GoalProductPickerCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class GoalSelectedProductsTable extends GetView<TargetSectionController> {
+  const GoalSelectedProductsTable({Key? key, this.allowEdit = true})
+      : super(key: key);
+
+  final bool allowEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.productsIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 10.h),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor6
+              : AppColors.customGreyColor3,
+        ),
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+            decoration: BoxDecoration(
+              color: AppColors.operationalPurple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(9.r)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.shopping_cart_checkout_rounded,
+                  color: AppColors.operationalPurple,
+                  size: 18.sp,
+                ),
+                SizedBox(width: 7.w),
+                Expanded(
+                  child: Text(
+                    '${'selectedProducts'.tr} (${controller.productsIds.length})',
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                if (allowEdit)
+                  TextButton.icon(
+                    onPressed: () => showGoalProductsPickerSheet(context),
+                    icon: Icon(Icons.edit_outlined, size: 16.sp),
+                    label: Text('edit'.tr),
+                  ),
+              ],
+            ),
+          ),
+          ...List.generate(
+            controller.productsIds.length,
+            (index) {
+              final ProjectProductModel product = controller.productsIds[index];
+              final fullProduct = controller.products.firstWhereOrNull(
+                (item) => item.id == product.productId,
+              );
+              return _SelectedGoalProductRow(
+                index: index,
+                product: product,
+                imageUrls: fullProduct?.allImageUrlsInPriority ?? const [],
+                code: fullProduct?.displayProductCode ?? '',
+                section: fullProduct?.storeSectionName ?? '',
+                onDelete: allowEdit
+                    ? () {
+                        controller.productsIds.removeAt(index);
+                        controller.update();
+                      }
+                    : null,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectedGoalProductRow extends StatelessWidget {
+  const _SelectedGoalProductRow({
+    required this.index,
+    required this.product,
+    required this.imageUrls,
+    required this.code,
+    required this.section,
+    required this.onDelete,
+  });
+
+  final int index;
+  final ProjectProductModel product;
+  final List<String> imageUrls;
+  final String code;
+  final String section;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor6
+                : AppColors.customGreyColor3,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6.r),
+            child: InkWell(
+              onTap: imageUrls.isEmpty
+                  ? null
+                  : () {
+                      final resolved =
+                          imageUrls.map(ShowNetImage.getPhoto).toList();
+                      FullScreenZoomImage.open(
+                        context,
+                        resolved.first,
+                        imageUrls: resolved,
+                        title: product.productName,
+                      );
+                    },
+              child: SizedBox(
+                width: 38.w,
+                height: 38.w,
+                child: imageUrls.isEmpty
+                    ? const _SelectedProductPlaceholder()
+                    : ProductPriorityImage(
+                        imageUrls: imageUrls,
+                        fit: BoxFit.cover,
+                        placeholder: const _SelectedProductPlaceholder(),
+                        missingPlaceholder: const _SelectedProductPlaceholder(),
+                      ),
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.productName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        fontWeight: FontWeight.w900,
+                        height: 1.25,
+                      ),
+                ),
+                SizedBox(height: 3.h),
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 4.h,
+                  children: [
+                    _TinyProductMeta(text: '#${index + 1}'),
+                    if (code.isNotEmpty) _TinyProductMeta(text: code),
+                    if (section.isNotEmpty) _TinyProductMeta(text: section),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (onDelete != null)
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
+              onPressed: onDelete,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red.shade600,
+                size: 18.sp,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TinyProductMeta extends StatelessWidget {
+  const _TinyProductMeta({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: AppColors.operationalNavy.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+              fontSize: 9.sp,
+              color: AppColors.customGreyColor5,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}
+
+class _SelectedProductPlaceholder extends StatelessWidget {
+  const _SelectedProductPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.operationalSurface,
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: 18.sp,
+        color: AppColors.customGreyColor5,
       ),
     );
   }

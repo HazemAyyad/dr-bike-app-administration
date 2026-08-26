@@ -16,12 +16,9 @@ class GoalsSectionScreen extends GetView<TargetSectionController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'targetSection',
-        toDateController: controller.toDateController,
-        fromDateController: controller.fromDateController,
         action: false,
-        onPressedFilter: () => controller.filterGoals(),
       ),
       body: CustomScrollView(
         slivers: [
