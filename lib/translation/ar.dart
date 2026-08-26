@@ -1377,10 +1377,10 @@ const Map<String, String> ar = {
   'subtaskProofRequiredImage': 'يتطلب إثبات (صورة)',
   'subtaskProofRequiredVideo': 'يتطلب إثبات (فيديو)',
   'subtaskProofUploaded': 'تم رفع الإثبات',
-  'undoSubtaskCompletion': 'تراجع عن الإنجاز',
+  'undoSubtaskCompletion': 'إرجاع للتنفيذ',
   'undoSubtaskCompletionConfirm':
-      'سيتم إرجاع المهمة الفرعية لغير منجزة ويمكن إنجازها من جديد.',
-  'subtaskUndoSuccess': 'تم التراجع عن إنجاز المهمة الفرعية',
+      'سيتم إرجاع المهمة الفرعية للتنفيذ، وإذا كانت المهمة الرئيسية مسلّمة فسيتم إرجاعها كلها للتنفيذ.',
+  'subtaskUndoSuccess': 'تم إرجاع المهمة الفرعية للتنفيذ',
   'replaceSubtaskProof': 'استبدال الإثبات',
   'subtaskProofReplaced': 'تم استبدال إثبات المهمة الفرعية',
   'subtaskAdminMaterialsForEmployee': 'مرفقات للموظف (صور / فيديو / صوت)',

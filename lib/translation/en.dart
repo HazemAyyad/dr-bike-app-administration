@@ -1309,10 +1309,10 @@ const Map<String, String> en = {
   'subtaskProofRequiredImage': 'Proof required (photo)',
   'subtaskProofRequiredVideo': 'Proof required (video)',
   'subtaskProofUploaded': 'Proof uploaded',
-  'undoSubtaskCompletion': 'Undo completion',
+  'undoSubtaskCompletion': 'Return to execution',
   'undoSubtaskCompletionConfirm':
-      'This will move the subtask back to pending so it can be completed again.',
-  'subtaskUndoSuccess': 'Subtask completion has been undone',
+      'This returns the subtask to execution. If the main task was submitted, the whole task will be reopened.',
+  'subtaskUndoSuccess': 'Subtask has been returned to execution',
   'replaceSubtaskProof': 'Replace proof',
   'subtaskProofReplaced': 'Subtask proof has been replaced',
   'subtaskAdminMaterialsForEmployee':

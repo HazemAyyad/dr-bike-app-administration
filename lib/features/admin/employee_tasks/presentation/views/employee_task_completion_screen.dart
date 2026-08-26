@@ -376,7 +376,7 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
   }
 
   Future<void> _onSubtaskUndo(BuildContext context, SubTaskEntity sub) async {
-    if (sub.status != 'completed') return;
+    if (sub.status != 'completed' && sub.status != 'rejected') return;
 
     final details = controller.employeeTaskService.taskDetails.value;
     if (details == null) return;

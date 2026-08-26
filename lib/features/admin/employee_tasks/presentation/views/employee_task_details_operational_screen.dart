@@ -138,6 +138,13 @@ class EmployeeTaskDetailsOperationalScreen
                               ? (sub) =>
                                   _showSubtaskRejectDialog(context, data, sub)
                               : null,
+                          onSubtaskUndo: showReview
+                              ? (sub) => _returnSubtaskToExecution(
+                                    context,
+                                    data,
+                                    sub,
+                                  )
+                              : null,
                         ),
                       ),
                     ],
@@ -205,6 +212,38 @@ class EmployeeTaskDetailsOperationalScreen
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _returnSubtaskToExecution(
+    BuildContext context,
+    TaskDetailsModel task,
+    SubTaskEntity subtask,
+  ) async {
+    if (subtask.status != 'completed' && subtask.status != 'rejected') return;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('undoSubtaskCompletion'.tr),
+        content: Text('undoSubtaskCompletionConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await controller.undoSubtaskCompletion(
+      subTaskId: subtask.id,
+      mainTaskId: task.taskId.toString(),
+      occurrenceId: controller.lastLoadedOccurrenceId,
     );
   }
 
@@ -1218,7 +1257,7 @@ class OperationalChecklist extends StatelessWidget {
             sub.rejectionReason!.trim().isNotEmpty;
         final canReject =
             !rejected && onSubtaskReject != null && (!done || !interactive);
-        final canUndo = interactive && done && onSubtaskUndo != null;
+        final canUndo = (done || rejected) && onSubtaskUndo != null;
         final canReplaceProof =
             interactive && done && needsProof && onSubtaskReplaceProof != null;
         final hasAdminMedia = (sub.adminImg?.isNotEmpty ?? false) ||
