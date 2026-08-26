@@ -280,7 +280,11 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('اختيار المنتجات'),
+        title: Text(
+          controller.isEditingPurchase
+              ? 'تعديل فاتورة شراء #${controller.editingPurchaseBillId.value}'
+              : 'اختيار المنتجات',
+        ),
         centerTitle: false,
         backgroundColor: Colors.white,
         foregroundColor: AppColors.secondaryColor,
@@ -786,7 +790,9 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'إنشاء فاتورة شراء',
+                            controller.isEditingPurchase
+                                ? 'تعديل فاتورة شراء #${controller.editingPurchaseBillId.value}'
+                                : 'إنشاء فاتورة شراء',
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium!
@@ -821,7 +827,27 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                     else
                       const _PurchaseCheckoutTable(),
                     SizedBox(height: 8.h),
-                    const _PurchasePaymentSection(),
+                    if (!controller.isEditingPurchase)
+                      const _PurchasePaymentSection()
+                    else
+                      Container(
+                        padding: EdgeInsets.all(10.r),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'التعديل يغيّر بيانات الفاتورة والأصناف فقط، ولا يغيّر الدفعات.',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     SizedBox(height: 10.h),
                     const _PurchaseCheckoutSummary(),
                     SizedBox(height: 14.h),
@@ -829,7 +855,9 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                       isLoading: controller.isAddLoading,
                       isSafeArea: false,
                       height: 50.h,
-                      text: 'createBill',
+                      text: controller.isEditingPurchase
+                          ? 'حفظ التعديلات'
+                          : 'createBill',
                       onPressed: () async {
                         await controller.createPurchaseFromCart(context);
                       },
@@ -1800,16 +1828,6 @@ class _PurchaseCheckoutTableRow extends GetView<BillsController> {
               ),
             ],
           ),
-          if (loading) ...[
-            SizedBox(height: 6.h),
-            LinearProgressIndicator(
-              minHeight: 2.h,
-              color: AppColors.primaryColor,
-            ),
-          ] else if (intelligence != null && intelligence.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            _PurchasePriceIntelBox(item: item, intelligence: intelligence),
-          ],
         ],
       ),
     );
@@ -1937,63 +1955,6 @@ class _PurchasePriceInputWithHistory extends StatelessWidget {
   }
 }
 
-class _PurchasePriceIntelBox extends GetView<BillsController> {
-  const _PurchasePriceIntelBox({
-    required this.item,
-    required this.intelligence,
-  });
-
-  final PurchaseCartItemModel item;
-  final Map<String, dynamic> intelligence;
-
-  @override
-  Widget build(BuildContext context) {
-    final supplierLast = asString(intelligence['supplier_last_price']);
-    final latest = asString(intelligence['latest_price']);
-    final lowest = asString(intelligence['lowest_price']);
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(8.w),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 4.h,
-            children: [
-              if (lowest.isNotEmpty)
-                _IntelChip(label: 'أقل سعر', value: lowest),
-              if (supplierLast.isNotEmpty)
-                _IntelChip(label: 'آخر سعر للمصدر', value: supplierLast),
-              if (latest.isNotEmpty)
-                _IntelChip(label: 'آخر سعر عام', value: latest),
-            ],
-          ),
-          SizedBox(height: 4.h),
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            onPressed: () => showPurchasePriceHistorySheet(
-              context,
-              item: item,
-              intelligence: intelligence,
-            ),
-            icon: Icon(Icons.history, size: 16.sp),
-            label: const Text('عرض سجل الأسعار'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 Future<void> showPurchasePriceHistorySheet(
   BuildContext context, {
   required PurchaseCartItemModel item,
@@ -2003,6 +1964,9 @@ Future<void> showPurchasePriceHistorySheet(
     intelligence['history'],
     (Map<String, dynamic> m) => m,
   );
+  final supplierLast = asString(intelligence['supplier_last_price']);
+  final latest = asString(intelligence['latest_price']);
+  final lowest = asString(intelligence['lowest_price']);
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -2024,12 +1988,59 @@ Future<void> showPurchasePriceHistorySheet(
             separatorBuilder: (_, __) => SizedBox(height: 8.h),
             itemBuilder: (_, index) {
               if (index == 0) {
-                return Text(
-                  'سجل أسعار ${item.displayName}',
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16.sp,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'سجل أسعار ${item.displayName}',
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16.sp,
+                          ),
+                    ),
+                    if (supplierLast.isNotEmpty ||
+                        latest.isNotEmpty ||
+                        lowest.isNotEmpty) ...[
+                      SizedBox(height: 12.h),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(10.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryColor.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10.r),
+                          border: Border.all(
+                            color:
+                                AppColors.primaryColor.withValues(alpha: 0.14),
+                          ),
+                        ),
+                        child: Wrap(
+                          spacing: 8.w,
+                          runSpacing: 8.h,
+                          children: [
+                            if (supplierLast.isNotEmpty)
+                              _PurchasePriceSummaryChip(
+                                label: 'آخر سعر للمصدر',
+                                value: supplierLast,
+                                icon: Icons.person_outline,
+                              ),
+                            if (latest.isNotEmpty)
+                              _PurchasePriceSummaryChip(
+                                label: 'آخر سعر عام',
+                                value: latest,
+                                icon: Icons.schedule,
+                              ),
+                            if (lowest.isNotEmpty)
+                              _PurchasePriceSummaryChip(
+                                label: 'أقل سعر',
+                                value: lowest,
+                                icon: Icons.trending_down,
+                                highlight: true,
+                              ),
+                          ],
+                        ),
                       ),
+                    ],
+                  ],
                 );
               }
               final row = history[index - 1];
@@ -2120,30 +2131,43 @@ Future<void> showPurchasePriceHistorySheet(
   );
 }
 
-class _IntelChip extends StatelessWidget {
-  const _IntelChip({
+class _PurchasePriceSummaryChip extends StatelessWidget {
+  const _PurchasePriceSummaryChip({
     required this.label,
     required this.value,
+    required this.icon,
+    this.highlight = false,
   });
 
   final String label;
   final String value;
+  final IconData icon;
+  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
+    final color = highlight ? Colors.green.shade700 : AppColors.primaryColor;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(9.r),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
-      child: Text(
-        '$label: $value ₪',
-        style: TextStyle(
-          color: AppColors.primaryColor,
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15.sp, color: color),
+          SizedBox(width: 5.w),
+          Text(
+            '$label: $value ₪',
+            style: TextStyle(
+              color: color,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }

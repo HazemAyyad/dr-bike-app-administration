@@ -201,6 +201,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   final RxMap<String, Map<String, dynamic>> purchasePriceIntelligence =
       <String, Map<String, dynamic>>{}.obs;
   final RxSet<String> purchasePriceLoading = <String>{}.obs;
+  final Map<String, int> _purchasePriceRequestVersions = <String, int>{};
   final RxBool isAmanatDashboardLoading = false.obs;
   final RxBool isDiscrepanciesDashboardLoading = false.obs;
   final RxList<Map<String, dynamic>> amanatDashboard =
@@ -316,7 +317,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     for (final productId
         in purchaseCart.map((item) => item.product.id).toSet()) {
       purchasePriceIntelligence.remove(productId);
-      loadPurchasePriceIntelligence(productId);
+      loadPurchasePriceIntelligence(productId, force: true);
     }
     update();
   }
@@ -441,8 +442,13 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  Future<void> loadPurchasePriceIntelligence(String productId) async {
-    if (purchasePriceLoading.contains(productId)) return;
+  Future<void> loadPurchasePriceIntelligence(
+    String productId, {
+    bool force = false,
+  }) async {
+    if (purchasePriceLoading.contains(productId) && !force) return;
+    final requestVersion = (_purchasePriceRequestVersions[productId] ?? 0) + 1;
+    _purchasePriceRequestVersions[productId] = requestVersion;
     purchasePriceLoading.add(productId);
     update();
     try {
@@ -459,6 +465,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         sellerId: sellerId,
         customerId: customerId,
       );
+      if (_purchasePriceRequestVersions[productId] != requestVersion) return;
       final data = asMap(result);
       final intelligence = asMap(data['price_intelligence']);
       purchasePriceIntelligence[productId] = intelligence;
@@ -473,11 +480,16 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         }
       }
     } catch (_) {
-      purchasePriceIntelligence.remove(productId);
+      if (_purchasePriceRequestVersions[productId] == requestVersion) {
+        purchasePriceIntelligence.remove(productId);
+      }
+    } finally {
+      if (_purchasePriceRequestVersions[productId] == requestVersion) {
+        purchasePriceLoading.remove(productId);
+        calculatePurchaseCartTotal();
+        update();
+      }
     }
-    purchasePriceLoading.remove(productId);
-    calculatePurchaseCartTotal();
-    update();
   }
 
   Future<void> loadAmanatDashboard({String? status, String? search}) async {
@@ -701,7 +713,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       }
     }
     final paid = num.tryParse(purchasePaymentAmountController.text.trim()) ?? 0;
-    if (paid < 0 || paid > totalCost.value) {
+    if (!isEditingPurchase && (paid < 0 || paid > totalCost.value)) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
@@ -709,7 +721,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       );
       return;
     }
-    if (paid > 0 && selectedPurchaseBox.value == null) {
+    if (!isEditingPurchase && paid > 0 && selectedPurchaseBox.value == null) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
@@ -731,7 +743,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       0,
       (sum, item) => sum + item.total.toDouble(),
     );
-    addBill(context);
+    if (isEditingPurchase) {
+      await updatePurchaseDraft(context);
+    } else {
+      addBill(context);
+    }
   }
 
   RxBool isLoading = false.obs;
@@ -931,6 +947,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   final RxBool isAddLoading = false.obs;
   final RxBool isWorkflowLoading = false.obs;
+  final RxnInt editingPurchaseBillId = RxnInt();
+  bool get isEditingPurchase => editingPurchaseBillId.value != null;
   final RxBool isTimelineLoading = false.obs;
   final RxBool isOpenPurchaseBillsLoading = false.obs;
   final RxList<Map<String, dynamic>> purchaseTimeline =
@@ -963,6 +981,166 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       <PurchaseOpenBillAllocationModel>[].obs;
   final RxString purchaseReturnResolution = 'supplier_credit'.obs;
   String isaddNewBill = '1';
+
+  void prepareNewPurchaseForm() {
+    editingPurchaseBillId.value = null;
+    _clearPurchaseEditor();
+    purchaseProductSearch.value = '';
+    purchaseProductSearchController.clear();
+    isaddNewBill = '1';
+    update();
+  }
+
+  Future<void> prepareShownPurchaseForEdit(BuildContext context) async {
+    final details = billDetails;
+    if (details == null || !details.canEdit) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'لا يمكن تعديل الفاتورة بعد بدء الاستلام أو اعتمادها',
+      );
+      return;
+    }
+
+    if (products.isEmpty) await getAllProducts();
+    if (purchaseSources.isEmpty) await getAllPurchaseSources();
+
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
+    purchaseCart.clear();
+    for (final line in details.products) {
+      ProductModel? product;
+      for (final candidate in products) {
+        if (candidate.id == line.productId) {
+          product = candidate;
+          break;
+        }
+      }
+      product ??= ProductModel(
+        id: line.productId,
+        nameAr: line.productName,
+        stock: '0',
+        projects: const [],
+        imageUrl: line.productImage,
+      );
+      purchaseCart.add(
+        PurchaseCartItemModel(
+          product: product,
+          sizeId: line.sizeId.isEmpty ? null : line.sizeId,
+          sizeColorId: line.sizeColorId.isEmpty ? null : line.sizeColorId,
+          sizeLabel: line.sizeLabel,
+          colorLabel: line.colorLabel,
+          variantImageUrl: line.productImage,
+          initialQuantity: line.orderedQuantity.toString(),
+          initialPrice: line.price,
+          onChanged: calculatePurchaseCartTotal,
+        ),
+      );
+    }
+
+    final sellerId = int.tryParse(details.sellerId);
+    final customerId = int.tryParse(details.customerId);
+    selectedPurchaseSource.value = PurchaseSourceModel(
+      id: sellerId ?? customerId ?? 0,
+      name: details.sellerName,
+      phone: '',
+      hasSeller: sellerId != null,
+      hasCustomer: customerId != null,
+      sellerId: sellerId,
+      customerId: customerId,
+    );
+    sellerIdController.text = sellerId?.toString() ?? '';
+    customerIdController.text = customerId?.toString() ?? '';
+    purchasePaymentAmountController.clear();
+    selectedPurchaseBox.value = null;
+    editingPurchaseBillId.value = details.billId;
+    isaddNewBill = '1';
+    calculatePurchaseCartTotal();
+    update();
+    Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
+  }
+
+  Future<void> updatePurchaseDraft(BuildContext context) async {
+    final billId = editingPurchaseBillId.value;
+    final source = selectedPurchaseSource.value;
+    if (billId == null || source == null) return;
+    isAddLoading(true);
+    update();
+    final result = await purchaseWorkflowUsecase.updateDraft(
+      billId: billId.toString(),
+      sellerId:
+          source.hasSeller ? (source.sellerId ?? source.id).toString() : '',
+      customerId:
+          source.hasSeller ? '' : (source.customerId ?? source.id).toString(),
+      products: billModel,
+      total: totalCost.value.toString(),
+      notes: purchaseNotesController.text.trim(),
+    );
+    result.fold(
+      (failure) => Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message']?.toString() ?? failure.errMessage,
+      ),
+      (success) {
+        editingPurchaseBillId.value = null;
+        _clearPurchaseEditor();
+        getBills();
+        Get.offNamed(AppRoutes.BILLSSCREEN);
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isAddLoading(false);
+    update();
+  }
+
+  Future<void> deleteShownPurchaseDraft(BuildContext context) async {
+    final details = billDetails;
+    if (details == null || !details.canDelete) return;
+    isWorkflowLoading(true);
+    update();
+    final result = await purchaseWorkflowUsecase.deleteDraft(
+      billId: details.billId.toString(),
+    );
+    result.fold(
+      (failure) => Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message']?.toString() ?? failure.errMessage,
+      ),
+      (success) {
+        getBills();
+        Get.offNamed(AppRoutes.BILLSSCREEN);
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isWorkflowLoading(false);
+    update();
+  }
+
+  void _clearPurchaseEditor() {
+    sellerIdController.clear();
+    customerIdController.clear();
+    purchaseNotesController.clear();
+    purchasePaymentAmountController.clear();
+    selectedPurchaseSource.value = null;
+    selectedPurchaseBox.value = null;
+    for (final item in purchaseCart) {
+      item.dispose();
+    }
+    purchaseCart.clear();
+    totalCost.value = 0;
+  }
+
   // add bill
   void addBill(BuildContext context) async {
     isAddLoading(true);

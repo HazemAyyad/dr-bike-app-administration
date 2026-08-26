@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
 import '../controllers/smart_home_controller.dart';
+import '../smart_home_theme.dart';
 
 class SmartScenesSection extends StatelessWidget {
   const SmartScenesSection({Key? key, required this.controller})
@@ -16,38 +17,269 @@ class SmartScenesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final scenes = controller.visibleScenes;
-      if (scenes.isEmpty) return const SizedBox.shrink();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'المشاهد',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+      final totalScenes = controller.scenes.length;
+      if (totalScenes == 0) return const SizedBox.shrink();
+      final featured = scenes.take(2).toList(growable: false);
+      return Container(
+        padding: EdgeInsets.all(11.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: smartHomeBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34.r,
+                  height: 34.r,
+                  decoration: BoxDecoration(
+                    color: smartHomeAccentSoft,
+                    borderRadius: BorderRadius.circular(9.r),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: smartHomeAccent,
+                    size: 19,
+                  ),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: () => Get.to<void>(
-                  () => SmartSceneEditorScreen(controller: controller),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    'المشاهد الرئيسية',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: smartHomeInk,
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
                 ),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('إضافة مشهد'),
+                if (totalScenes > featured.length)
+                  TextButton(
+                    onPressed: () => Get.to<void>(
+                      () => _AllScenesScreen(controller: controller),
+                    ),
+                    child: Text('عرض الكل ($totalScenes)'),
+                  ),
+                IconButton(
+                  tooltip: 'إضافة مشهد',
+                  onPressed: () => Get.to<void>(
+                    () => SmartSceneEditorScreen(controller: controller),
+                  ),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  color: smartHomeAccent,
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: featured.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8.w,
+                childAspectRatio: .98,
               ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          ...scenes.map(
-            (scene) => _SceneCard(controller: controller, scene: scene),
-          ),
-          SizedBox(height: 8.h),
-        ],
+              itemBuilder: (context, index) => _FeaturedSceneCard(
+                controller: controller,
+                scene: featured[index],
+              ),
+            ),
+          ],
+        ),
       );
     });
   }
+}
+
+class _AllScenesScreen extends StatelessWidget {
+  const _AllScenesScreen({required this.controller});
+
+  final SmartHomeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: smartHomeTheme(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('كل المشاهد'),
+          actions: [
+            IconButton(
+              tooltip: 'إضافة مشهد',
+              onPressed: () => Get.to<void>(
+                () => SmartSceneEditorScreen(controller: controller),
+              ),
+              icon: const Icon(Icons.add_rounded),
+            ),
+          ],
+        ),
+        body: Obx(
+          () => ListView.builder(
+            padding: EdgeInsets.all(14.w),
+            itemCount: controller.scenes.length,
+            itemBuilder: (context, index) => _SceneCard(
+              controller: controller,
+              scene: controller.scenes[index],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeaturedSceneCard extends StatelessWidget {
+  const _FeaturedSceneCard({required this.controller, required this.scene});
+
+  final SmartHomeController controller;
+  final SmartSceneModel scene;
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = controller.sceneBusyIds.contains(scene.id);
+    final accent = scene.triggerType == 'schedule'
+        ? const Color(0xFF176B87)
+        : smartHomeAccent;
+    final subtitle = scene.isManual
+        ? '${scene.actions.length} أوامر'
+        : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
+    return Material(
+      color: smartHomeSurface,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        onTap: scene.isManual && !busy
+            ? () => controller.executeScene(scene)
+            : null,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Padding(
+          padding: EdgeInsets.all(9.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 34.r,
+                    height: 34.r,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(9.r),
+                    ),
+                    child: Icon(
+                      scene.isManual
+                          ? Icons.play_arrow_rounded
+                          : scene.triggerType == 'schedule'
+                              ? Icons.schedule_rounded
+                              : Icons.bolt_rounded,
+                      color: accent,
+                      size: 19.r,
+                    ),
+                  ),
+                  const Spacer(),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      fixedSize: Size(28.r, 28.r),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onSelected: (value) =>
+                        _handleSceneMenu(controller, scene, value),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('تعديل')),
+                      PopupMenuItem(value: 'delete', child: Text('حذف')),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                scene.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: smartHomeInk,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              SizedBox(height: 3.h),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: smartHomeMuted,
+                      fontSize: 9.5.sp,
+                    ),
+              ),
+              SizedBox(height: 4.h),
+              _SceneExecutionLine(
+                controller: controller,
+                scene: scene,
+                compact: true,
+              ),
+              const Spacer(),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: busy
+                    ? SizedBox.square(
+                        dimension: 24.r,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : scene.isManual
+                        ? Icon(
+                            Icons.play_circle_fill_rounded,
+                            color: accent,
+                            size: 29.r,
+                          )
+                        : Transform.scale(
+                            scale: .82,
+                            child: Switch.adaptive(
+                              value: scene.enabled,
+                              onChanged: (value) =>
+                                  controller.setSceneEnabled(scene, value),
+                            ),
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _handleSceneMenu(
+  SmartHomeController controller,
+  SmartSceneModel scene,
+  String value,
+) async {
+  if (value == 'edit') {
+    await Get.to<void>(() => SmartSceneEditorScreen(
+          controller: controller,
+          existing: scene,
+        ));
+    return;
+  }
+  if (value != 'delete') return;
+  final confirmed = await Get.dialog<bool>(AlertDialog(
+    title: const Text('حذف المشهد؟'),
+    content: Text('سيتم حذف ${scene.name} من التطبيق وTuya.'),
+    actions: [
+      TextButton(
+        onPressed: () => Get.back(result: false),
+        child: const Text('إلغاء'),
+      ),
+      FilledButton(
+        onPressed: () => Get.back(result: true),
+        child: const Text('حذف'),
+      ),
+    ],
+  ));
+  if (confirmed == true) await controller.deleteScene(scene);
 }
 
 class _SceneCard extends StatelessWidget {
@@ -58,7 +290,9 @@ class _SceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _hexColor(scene.color);
+    final color = scene.triggerType == 'schedule'
+        ? const Color(0xFF176B87)
+        : smartHomeAccent;
     final subtitle = scene.isManual
         ? '${scene.actions.length} أوامر • تشغيل يدوي'
         : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
@@ -70,7 +304,12 @@ class _SceneCard extends StatelessWidget {
         onTap: scene.isManual && !busy
             ? () async {
                 final ok = await controller.executeScene(scene);
-                if (ok) Get.snackbar('تم', 'تم تشغيل المشهد بنجاح');
+                if (ok) {
+                  Get.snackbar(
+                    'تم إرسال الأمر',
+                    'سيظهر تأكيد التنفيذ من سجل Tuya على بطاقة المشهد',
+                  );
+                }
               }
             : null,
         child: Padding(
@@ -109,6 +348,11 @@ class _SceneCard extends StatelessWidget {
                     SizedBox(height: 4.h),
                     Text(subtitle,
                         style: Theme.of(context).textTheme.bodySmall),
+                    SizedBox(height: 5.h),
+                    _SceneExecutionLine(
+                      controller: controller,
+                      scene: scene,
+                    ),
                   ],
                 ),
               ),
@@ -132,30 +376,8 @@ class _SceneCard extends StatelessWidget {
                       controller.setSceneEnabled(scene, value),
                 ),
               PopupMenuButton<String>(
-                onSelected: (value) async {
-                  if (value == 'edit') {
-                    await Get.to<void>(() => SmartSceneEditorScreen(
-                          controller: controller,
-                          existing: scene,
-                        ));
-                  } else if (value == 'delete') {
-                    final confirmed = await Get.dialog<bool>(AlertDialog(
-                      title: const Text('حذف المشهد؟'),
-                      content: Text('سيتم حذف ${scene.name} من التطبيق وTuya.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Get.back(result: false),
-                          child: const Text('إلغاء'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Get.back(result: true),
-                          child: const Text('حذف'),
-                        ),
-                      ],
-                    ));
-                    if (confirmed == true) await controller.deleteScene(scene);
-                  }
-                },
+                onSelected: (value) =>
+                    _handleSceneMenu(controller, scene, value),
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'edit', child: Text('تعديل')),
                   PopupMenuItem(value: 'delete', child: Text('حذف')),
@@ -167,6 +389,121 @@ class _SceneCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SceneExecutionLine extends StatelessWidget {
+  const _SceneExecutionLine({
+    required this.controller,
+    required this.scene,
+    this.compact = false,
+  });
+
+  final SmartHomeController controller;
+  final SmartSceneModel scene;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final nativeLog = controller.executionLogForScene(scene);
+      final storedAt = scene.lastExecutedAt;
+      final nativeAt = nativeLog?.executedAt;
+      final storedIsNewer =
+          storedAt != null && (nativeAt == null || storedAt.isAfter(nativeAt));
+      final status = storedIsNewer
+          ? scene.lastExecutionStatus
+          : (nativeLog?.status ?? scene.lastExecutionStatus);
+      final executedAt = storedIsNewer ? storedAt : (nativeAt ?? storedAt);
+      final visual = _sceneExecutionVisual(status, executedAt);
+      return Tooltip(
+        message: nativeLog?.failureCause.isNotEmpty == true
+            ? nativeLog!.failureCause
+            : visual.label,
+        child: Row(
+          mainAxisSize: compact ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            Icon(visual.icon, size: compact ? 12.r : 15.r, color: visual.color),
+            SizedBox(width: 4.w),
+            Flexible(
+              child: Text(
+                visual.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: visual.color,
+                      fontSize: compact ? 8.5.sp : 10.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+_SceneExecutionVisual _sceneExecutionVisual(
+  String rawStatus,
+  DateTime? executedAt,
+) {
+  final status = rawStatus.trim().toLowerCase();
+  final time =
+      executedAt == null ? '' : ' • ${_sceneExecutionTime(executedAt)}';
+  switch (status) {
+    case 'success':
+      return _SceneExecutionVisual(
+        label: 'نُفّذ بنجاح$time',
+        icon: Icons.check_circle_rounded,
+        color: smartHomeAccent,
+      );
+    case 'failed':
+      return _SceneExecutionVisual(
+        label: 'فشل التنفيذ$time',
+        icon: Icons.error_rounded,
+        color: const Color(0xFFB42318),
+      );
+    case 'partial':
+      return _SceneExecutionVisual(
+        label: 'أُرسل، بانتظار التأكيد$time',
+        icon: Icons.hourglass_top_rounded,
+        color: const Color(0xFF9A6700),
+      );
+    case 'running':
+      return _SceneExecutionVisual(
+        label: 'جاري التنفيذ$time',
+        icon: Icons.sync_rounded,
+        color: const Color(0xFF176B87),
+      );
+    default:
+      return const _SceneExecutionVisual(
+        label: 'لم يُنفذ حتى الآن',
+        icon: Icons.history_rounded,
+        color: smartHomeMuted,
+      );
+  }
+}
+
+String _sceneExecutionTime(DateTime value) {
+  final now = DateTime.now();
+  String two(int number) => number.toString().padLeft(2, '0');
+  final clock = '${two(value.hour)}:${two(value.minute)}';
+  final today = value.year == now.year &&
+      value.month == now.month &&
+      value.day == now.day;
+  return today ? clock : '${value.day}/${value.month} $clock';
+}
+
+class _SceneExecutionVisual {
+  const _SceneExecutionVisual({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
 }
 
 class SmartSceneEditorScreen extends StatefulWidget {
@@ -222,153 +559,159 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.existing == null ? 'إضافة مشهد' : 'تعديل المشهد'),
-      ),
-      bottomNavigationBar: SafeArea(
-        minimum: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 14.h),
-        child: FilledButton(
-          onPressed: saving ? null : _save,
-          child: saving
-              ? const SizedBox.square(
-                  dimension: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('حفظ المشهد'),
+    return Theme(
+      data: smartHomeTheme(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.existing == null ? 'إضافة مشهد' : 'تعديل المشهد'),
         ),
-      ),
-      body: ListView(
-        padding: EdgeInsets.all(18.w),
-        children: [
-          TextField(
-            controller: nameController,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'اسم المشهد',
-              hintText: 'مثال: إطفاء كل إضاءة المكتب',
-              prefixIcon: Icon(Icons.auto_awesome_rounded),
-              border: OutlineInputBorder(),
+        bottomNavigationBar: SafeArea(
+          minimum: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 14.h),
+          child: FilledButton(
+            onPressed: saving ? null : _save,
+            child: saving
+                ? const SizedBox.square(
+                    dimension: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('حفظ المشهد'),
+          ),
+        ),
+        body: ListView(
+          padding: EdgeInsets.all(18.w),
+          children: [
+            TextField(
+              controller: nameController,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'اسم المشهد',
+                hintText: 'مثال: إطفاء كل إضاءة المكتب',
+                prefixIcon: Icon(Icons.auto_awesome_rounded),
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
-          SizedBox(height: 18.h),
-          Text('كيف يتم تشغيل المشهد؟',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  )),
-          SizedBox(height: 9.h),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                value: 'manual',
-                icon: Icon(Icons.touch_app_rounded),
-                label: Text('يدوي'),
-              ),
-              ButtonSegment(
-                value: 'schedule',
-                icon: Icon(Icons.schedule_rounded),
-                label: Text('مؤقت'),
-              ),
-              ButtonSegment(
-                value: 'device',
-                icon: Icon(Icons.sensors_rounded),
-                label: Text('جهاز'),
-              ),
-            ],
-            selected: {triggerType},
-            onSelectionChanged: (selection) {
-              setState(() {
-                triggerType = selection.first;
-                conditions.clear();
-              });
-            },
-          ),
-          if (triggerType != 'manual') ...[
             SizedBox(height: 18.h),
-            _EditorSection(
-              title: 'إذا',
-              subtitle: conditions.isEmpty
-                  ? 'أضف شرط تشغيل المشهد'
-                  : matchType == 'all'
-                      ? 'عند تحقق كل الشروط'
-                      : 'عند تحقق أي شرط',
-              onAdd: _addCondition,
-              children: [
-                if (conditions.length > 1)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'all', label: Text('كل الشروط')),
-                        ButtonSegment(value: 'any', label: Text('أي شرط')),
-                      ],
-                      selected: {matchType},
-                      onSelectionChanged: (value) =>
-                          setState(() => matchType = value.first),
-                    ),
-                  ),
-                ...conditions.asMap().entries.map(
-                      (entry) => _ConditionTile(
-                        condition: entry.value,
-                        onDelete: () =>
-                            setState(() => conditions.removeAt(entry.key)),
+            Text('كيف يتم تشغيل المشهد؟',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    )),
+            SizedBox(height: 9.h),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'manual',
+                  icon: Icon(Icons.touch_app_rounded),
+                  label: Text('يدوي'),
+                ),
+                ButtonSegment(
+                  value: 'schedule',
+                  icon: Icon(Icons.schedule_rounded),
+                  label: Text('مؤقت'),
+                ),
+                ButtonSegment(
+                  value: 'device',
+                  icon: Icon(Icons.sensors_rounded),
+                  label: Text('جهاز'),
+                ),
+              ],
+              selected: {triggerType},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  triggerType = selection.first;
+                  conditions.clear();
+                });
+              },
+            ),
+            if (triggerType != 'manual') ...[
+              SizedBox(height: 18.h),
+              _EditorSection(
+                title: 'إذا',
+                subtitle: conditions.isEmpty
+                    ? 'أضف شرط تشغيل المشهد'
+                    : matchType == 'all'
+                        ? 'عند تحقق كل الشروط'
+                        : 'عند تحقق أي شرط',
+                onAdd: _addCondition,
+                children: [
+                  if (conditions.length > 1)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 8.h),
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'all', label: Text('كل الشروط')),
+                          ButtonSegment(value: 'any', label: Text('أي شرط')),
+                        ],
+                        selected: {matchType},
+                        onSelectionChanged: (value) =>
+                            setState(() => matchType = value.first),
                       ),
                     ),
-              ],
-            ),
-          ],
-          SizedBox(height: 18.h),
-          _EditorSection(
-            title: 'إذن',
-            subtitle: 'الأجهزة والمفاتيح التي سيتم التحكم بها',
-            onAdd: _addAction,
-            children: actions
-                .asMap()
-                .entries
-                .map(
-                  (entry) => _ActionTile(
-                    action: entry.value,
-                    onDelete: () => setState(() => actions.removeAt(entry.key)),
-                  ),
-                )
-                .toList(),
-          ),
-          SizedBox(height: 18.h),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('إظهار على الصفحة الرئيسية'),
-            value: showOnHome,
-            onChanged: (value) => setState(() => showOnHome = value),
-          ),
-          if (triggerType != 'manual')
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('تفعيل الأتمتة'),
-              subtitle: const Text('يمكن إيقافها لاحقًا من الرئيسية'),
-              value: enabled,
-              onChanged: (value) => setState(() => enabled = value),
-            ),
-          DropdownButtonFormField<int?>(
-            initialValue: roomId,
-            decoration: const InputDecoration(
-              labelText: 'عرض في الغرفة (اختياري)',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<int?>(
-                value: null,
-                child: Text('بدون غرفة محددة'),
-              ),
-              ...widget.controller.rooms.map(
-                (room) => DropdownMenuItem<int?>(
-                  value: room.id,
-                  child: Text(room.name),
-                ),
+                  ...conditions.asMap().entries.map(
+                        (entry) => _ConditionTile(
+                          controller: widget.controller,
+                          condition: entry.value,
+                          onDelete: () =>
+                              setState(() => conditions.removeAt(entry.key)),
+                        ),
+                      ),
+                ],
               ),
             ],
-            onChanged: (value) => setState(() => roomId = value),
-          ),
-        ],
+            SizedBox(height: 18.h),
+            _EditorSection(
+              title: 'إذن',
+              subtitle: 'الأجهزة والمفاتيح التي سيتم التحكم بها',
+              onAdd: _addAction,
+              children: actions
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => _ActionTile(
+                      controller: widget.controller,
+                      action: entry.value,
+                      onDelete: () =>
+                          setState(() => actions.removeAt(entry.key)),
+                    ),
+                  )
+                  .toList(),
+            ),
+            SizedBox(height: 18.h),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('إظهار على الصفحة الرئيسية'),
+              value: showOnHome,
+              onChanged: (value) => setState(() => showOnHome = value),
+            ),
+            if (triggerType != 'manual')
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('تفعيل الأتمتة'),
+                subtitle: const Text('يمكن إيقافها لاحقًا من الرئيسية'),
+                value: enabled,
+                onChanged: (value) => setState(() => enabled = value),
+              ),
+            DropdownButtonFormField<int?>(
+              initialValue: roomId,
+              decoration: const InputDecoration(
+                labelText: 'عرض في الغرفة (اختياري)',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('بدون غرفة محددة'),
+                ),
+                ...widget.controller.rooms.map(
+                  (room) => DropdownMenuItem<int?>(
+                    value: room.id,
+                    child: Text(room.name),
+                  ),
+                ),
+              ],
+              onChanged: (value) => setState(() => roomId = value),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -379,23 +722,37 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
       if (condition != null) setState(() => conditions.add(condition));
       return;
     }
-    final condition = await _pickBoolTarget(
+    final selected = await _pickBoolTargets(
       context,
       controller: widget.controller,
       title: 'اختر حالة المفتاح',
       condition: true,
     );
-    if (condition != null) setState(() => conditions.add(condition));
+    if (selected.isNotEmpty) setState(() => conditions.add(selected.first));
   }
 
   Future<void> _addAction() async {
-    final action = await _pickBoolTarget(
+    final selected = await _pickBoolTargets(
       context,
       controller: widget.controller,
-      title: 'أضف أمرًا للمشهد',
+      title: 'أضف أوامر للمشهد',
       condition: false,
     );
-    if (action != null) setState(() => actions.add(action));
+    if (selected.isEmpty) return;
+    setState(() {
+      for (final action in selected) {
+        final index = actions.indexWhere(
+          (item) =>
+              item['device_id'] == action['device_id'] &&
+              item['dp_id']?.toString() == action['dp_id']?.toString(),
+        );
+        if (index == -1) {
+          actions.add(action);
+        } else {
+          actions[index] = action;
+        }
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -486,7 +843,12 @@ class _EditorSection extends StatelessWidget {
 }
 
 class _ConditionTile extends StatelessWidget {
-  const _ConditionTile({required this.condition, required this.onDelete});
+  const _ConditionTile({
+    required this.controller,
+    required this.condition,
+    required this.onDelete,
+  });
+  final SmartHomeController controller;
   final Map<String, dynamic> condition;
   final VoidCallback onDelete;
 
@@ -499,7 +861,7 @@ class _ConditionTile extends StatelessWidget {
       leading: Icon(scheduled ? Icons.schedule_rounded : Icons.sensors_rounded),
       title: Text(scheduled
           ? 'الساعة ${condition['time']}'
-          : '${condition['device_name']} • ${condition['function_name']}'),
+          : '${_sceneTargetDeviceName(controller, condition)} • ${_sceneTargetFunctionName(controller, condition)}'),
       subtitle: Text(scheduled
           ? (days == 0 ? 'مرة واحدة' : 'يتكرر في $days أيام')
           : (condition['value'] == true ? 'عند التشغيل' : 'عند الإطفاء')),
@@ -512,7 +874,12 @@ class _ConditionTile extends StatelessWidget {
 }
 
 class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.action, required this.onDelete});
+  const _ActionTile({
+    required this.controller,
+    required this.action,
+    required this.onDelete,
+  });
+  final SmartHomeController controller;
   final Map<String, dynamic> action;
   final VoidCallback onDelete;
 
@@ -525,7 +892,9 @@ class _ActionTile extends StatelessWidget {
             ? Icons.lightbulb_rounded
             : Icons.lightbulb_outline_rounded,
       ),
-      title: Text('${action['device_name']} • ${action['function_name']}'),
+      title: Text(
+        '${_sceneTargetDeviceName(controller, action)} • ${_sceneTargetFunctionName(controller, action)}',
+      ),
       subtitle: Text(action['value'] == true ? 'تشغيل' : 'إطفاء'),
       trailing: IconButton(
         onPressed: onDelete,
@@ -599,70 +968,59 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
   };
 }
 
-Future<Map<String, dynamic>?> _pickBoolTarget(
+Future<List<Map<String, dynamic>>> _pickBoolTargets(
   BuildContext context, {
   required SmartHomeController controller,
   required String title,
   required bool condition,
 }) async {
-  SmartDeviceModel? selectedDevice =
-      controller.devices.isEmpty ? null : controller.devices.first;
-  TuyaDeviceFunction? selectedFunction;
+  final selectedKeys = <String>{};
+  final searchController = TextEditingController();
+  String query = '';
   bool value = true;
 
-  List<TuyaDeviceFunction> functions(SmartDeviceModel? device) => device == null
-      ? const []
-      : DeviceCapabilityResolver.writableFunctions(device)
-          .where((item) => item.isBool)
-          .toList(growable: false);
+  final targets = <_SceneBoolTarget>[];
+  final seen = <String>{};
+  for (final device in controller.devices) {
+    final functions = DeviceCapabilityResolver.writableFunctions(device)
+        .where((item) => item.isBool);
+    for (final function in functions) {
+      final key = '${device.id}:${function.dpId}';
+      if (seen.add(key)) {
+        targets.add(_SceneBoolTarget(device: device, function: function));
+      }
+    }
+  }
 
-  final initialFunctions = functions(selectedDevice);
-  selectedFunction = initialFunctions.isEmpty ? null : initialFunctions.first;
-  return showDialog<Map<String, dynamic>>(
+  final result = await showDialog<List<Map<String, dynamic>>>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) {
-        final availableFunctions = functions(selectedDevice);
+        final mediaQuery = MediaQuery.of(context);
+        final dialogContentHeight =
+            (mediaQuery.size.height - mediaQuery.viewInsets.bottom - 250.h)
+                .clamp(190.h, 470.h)
+                .toDouble();
+        final normalizedQuery = query.trim().toLowerCase();
+        final filteredTargets = targets.where((target) {
+          if (normalizedQuery.isEmpty) return true;
+          final searchable = [
+            target.device.name,
+            _sceneFunctionLabel(target.device, target.function),
+            target.device.roomName,
+          ].join(' ').toLowerCase();
+          return searchable.contains(normalizedQuery);
+        }).toList(growable: false);
+        final allFilteredSelected = filteredTargets.isNotEmpty &&
+            filteredTargets.every((target) => selectedKeys
+                .contains('${target.device.id}:${target.function.dpId}'));
         return AlertDialog(
           title: Text(title),
-          content: SingleChildScrollView(
+          content: SizedBox(
+            width: double.maxFinite,
+            height: dialogContentHeight,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<SmartDeviceModel>(
-                  initialValue: selectedDevice,
-                  decoration: const InputDecoration(labelText: 'الجهاز'),
-                  items: controller.devices
-                      .map((device) => DropdownMenuItem(
-                            value: device,
-                            child: Text(device.name),
-                          ))
-                      .toList(),
-                  onChanged: (device) => setState(() {
-                    selectedDevice = device;
-                    final nextFunctions = functions(device);
-                    selectedFunction =
-                        nextFunctions.isEmpty ? null : nextFunctions.first;
-                  }),
-                ),
-                SizedBox(height: 12.h),
-                DropdownButtonFormField<TuyaDeviceFunction>(
-                  initialValue: availableFunctions.contains(selectedFunction)
-                      ? selectedFunction
-                      : null,
-                  decoration: const InputDecoration(labelText: 'المفتاح'),
-                  items: availableFunctions
-                      .map((function) => DropdownMenuItem(
-                            value: function,
-                            child: Text(function.name.isNotEmpty
-                                ? function.name
-                                : function.code),
-                          ))
-                      .toList(),
-                  onChanged: (function) =>
-                      setState(() => selectedFunction = function),
-                ),
-                SizedBox(height: 12.h),
                 SegmentedButton<bool>(
                   segments: [
                     ButtonSegment(
@@ -678,6 +1036,97 @@ Future<Map<String, dynamic>?> _pickBoolTarget(
                   onSelectionChanged: (selection) =>
                       setState(() => value = selection.first),
                 ),
+                SizedBox(height: 12.h),
+                TextField(
+                  controller: searchController,
+                  onChanged: (value) => setState(() => query = value),
+                  decoration: const InputDecoration(
+                    hintText: 'ابحث باسم المفتاح أو الجهاز أو الغرفة',
+                    prefixIcon: Icon(Icons.search_rounded),
+                    isDense: true,
+                  ),
+                ),
+                if (!condition && targets.isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: filteredTargets.isEmpty
+                            ? null
+                            : () => setState(() {
+                                  for (final target in filteredTargets) {
+                                    final key =
+                                        '${target.device.id}:${target.function.dpId}';
+                                    allFilteredSelected
+                                        ? selectedKeys.remove(key)
+                                        : selectedKeys.add(key);
+                                  }
+                                }),
+                        icon: Icon(allFilteredSelected
+                            ? Icons.deselect_rounded
+                            : Icons.select_all_rounded),
+                        label: Text(allFilteredSelected
+                            ? 'إلغاء تحديد الظاهر'
+                            : 'تحديد الكل'),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${selectedKeys.length} محدد',
+                        style: const TextStyle(
+                          color: smartHomeMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                SizedBox(height: 6.h),
+                Expanded(
+                  child: targets.isEmpty
+                      ? const Center(
+                          child: Text('لا توجد مفاتيح قابلة للتحكم'),
+                        )
+                      : filteredTargets.isEmpty
+                          ? const Center(
+                              child: Text('لا توجد نتائج مطابقة'),
+                            )
+                          : ListView.separated(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              itemCount: filteredTargets.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final target = filteredTargets[index];
+                                final key =
+                                    '${target.device.id}:${target.function.dpId}';
+                                final selected = selectedKeys.contains(key);
+                                void change(bool next) => setState(() {
+                                      if (condition) selectedKeys.clear();
+                                      next
+                                          ? selectedKeys.add(key)
+                                          : selectedKeys.remove(key);
+                                    });
+                                return CheckboxListTile(
+                                  value: selected,
+                                  onChanged: (next) => change(next == true),
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(_sceneFunctionLabel(
+                                    target.device,
+                                    target.function,
+                                  )),
+                                  subtitle: Text(target.device.name),
+                                  secondary: Icon(
+                                    value
+                                        ? Icons.lightbulb_rounded
+                                        : Icons.lightbulb_outline_rounded,
+                                  ),
+                                );
+                              },
+                            ),
+                ),
               ],
             ),
           ),
@@ -687,29 +1136,104 @@ Future<Map<String, dynamic>?> _pickBoolTarget(
               child: const Text('إلغاء'),
             ),
             FilledButton(
-              onPressed: selectedDevice == null || selectedFunction == null
+              onPressed: selectedKeys.isEmpty
                   ? null
-                  : () => Navigator.pop(context, {
-                        if (condition) 'type': 'device',
-                        'device_id': selectedDevice!.id,
-                        'dp_id': selectedFunction!.dpId,
-                        'value': value,
-                        'device_name': selectedDevice!.name,
-                        'function_name': selectedFunction!.name.isNotEmpty
-                            ? selectedFunction!.name
-                            : selectedFunction!.code,
-                      }),
-              child: const Text('إضافة'),
+                  : () => Navigator.pop(
+                        context,
+                        targets
+                            .where((target) {
+                              final key =
+                                  '${target.device.id}:${target.function.dpId}';
+                              return selectedKeys.contains(key);
+                            })
+                            .map((target) => <String, dynamic>{
+                                  if (condition) 'type': 'device',
+                                  'device_id': target.device.id,
+                                  'dp_id': target.function.dpId,
+                                  'value': value,
+                                  'device_name': target.device.name,
+                                  'function_name': _sceneFunctionLabel(
+                                    target.device,
+                                    target.function,
+                                  ),
+                                })
+                            .toList(growable: false),
+                      ),
+              child: Text(condition ? 'اختيار' : 'إضافة المحدد'),
             ),
           ],
         );
       },
     ),
   );
+  searchController.dispose();
+  return result ?? const <Map<String, dynamic>>[];
 }
 
-Color _hexColor(String raw) {
-  final clean = raw.replaceAll('#', '');
-  final value = int.tryParse(clean, radix: 16);
-  return value == null ? const Color(0xFF2563EB) : Color(0xFF000000 | value);
+class _SceneBoolTarget {
+  const _SceneBoolTarget({required this.device, required this.function});
+
+  final SmartDeviceModel device;
+  final TuyaDeviceFunction function;
 }
+
+String _sceneTargetDeviceName(
+  SmartHomeController controller,
+  Map<String, dynamic> target,
+) {
+  final id = int.tryParse(target['device_id']?.toString() ?? '');
+  final device = controller.devices.firstWhereOrNull((item) => item.id == id);
+  return device?.name.trim().isNotEmpty == true
+      ? device!.name.trim()
+      : target['device_name']?.toString() ?? 'جهاز';
+}
+
+String _sceneTargetFunctionName(
+  SmartHomeController controller,
+  Map<String, dynamic> target,
+) {
+  final id = int.tryParse(target['device_id']?.toString() ?? '');
+  final dpId = target['dp_id']?.toString() ?? '';
+  final device = controller.devices.firstWhereOrNull((item) => item.id == id);
+  if (device != null) {
+    final function =
+        DeviceCapabilityResolver.functions(device).firstWhereOrNull(
+      (item) => item.dpId == dpId,
+    );
+    if (function != null) return _sceneFunctionLabel(device, function);
+
+    final metadata = device.functions.firstWhereOrNull(
+      (item) => item.dpId == dpId,
+    );
+    final renamed = metadata?.displayName.trim() ?? '';
+    if (renamed.isNotEmpty) return renamed;
+  }
+  final stored = target['function_name']?.toString().trim() ?? '';
+  return stored.isNotEmpty && !_containsCjkText(stored) ? stored : 'مفتاح';
+}
+
+String _sceneFunctionLabel(
+  SmartDeviceModel device,
+  TuyaDeviceFunction function,
+) {
+  final metadata = device.functions.firstWhereOrNull(
+    (item) =>
+        item.code == function.code ||
+        (item.dpId.isNotEmpty && item.dpId == function.dpId),
+  );
+  final renamed = metadata?.displayName.trim() ?? '';
+  if (renamed.isNotEmpty) return renamed;
+
+  final original = function.name.trim();
+  if (original.isNotEmpty && !_containsCjkText(original)) return original;
+  final code = function.code.toLowerCase();
+  final switchNumber = RegExp(r'^switch_(\d+)$').firstMatch(code)?.group(1);
+  if (switchNumber != null) return 'مفتاح $switchNumber';
+  if (code == 'switch' || code == 'switch_led') return 'مفتاح التشغيل';
+  final friendly = function.code.replaceAll('_', ' ').trim();
+  return friendly.isEmpty ? 'مفتاح' : friendly;
+}
+
+bool _containsCjkText(String value) => RegExp(
+      r'[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]',
+    ).hasMatch(value);

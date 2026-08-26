@@ -47,6 +47,8 @@ import com.thingclips.smart.sdk.api.IThingSmartActivatorListener
 import com.thingclips.smart.sdk.api.IResultCallback
 import com.thingclips.smart.sdk.bean.DeviceBean
 import com.thingclips.smart.sdk.enums.ActivatorModelEnum
+import com.thingclips.smart.scene.api.IResultCallback as ISceneResultCallback
+import com.thingclips.smart.scene.model.log.ExecuteLogList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.HashMap
 import java.text.SimpleDateFormat
@@ -179,6 +181,7 @@ class MainActivity : FlutterFragmentActivity() {
                     "deleteDeviceSchedule" -> deleteTuyaDeviceSchedule(call, result)
                     "saveScene" -> saveTuyaScene(call, result)
                     "executeScene" -> executeTuyaScene(call, result)
+                    "getSceneLogs" -> getTuyaSceneLogs(call, result)
                     "deleteScene" -> deleteTuyaScene(call, result)
                     "setSceneEnabled" -> setTuyaSceneEnabled(call, result)
                     "stopPairing" -> {
@@ -687,13 +690,12 @@ class MainActivity : FlutterFragmentActivity() {
                         ?: SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
                     val timezone = raw["timezone"]?.toString()?.takeIf { it.isNotBlank() }
                         ?: TimeZone.getDefault().id
-                    SceneCondition().apply {
-                        entityType = 6
-                        entityName = "Schedule"
-                        entitySubIds = "timer"
-                        exprDisplay = time
-                        expr = TimerRule.newInstance(timezone, loops, time, date).expr
-                    }
+                    SceneCondition.createTimerCondition(
+                        time,
+                        "Schedule",
+                        "timer",
+                        TimerRule.newInstance(timezone, loops, time, date),
+                    )
                 }
                 "device" -> {
                     val devId = raw["tuya_device_id"]?.toString().orEmpty()
@@ -752,6 +754,84 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
         ThingHomeSdk.newSceneInstance(sceneId).executeScene(sceneCallback(result, sceneId, "Tuya scene executed"))
+    }
+
+    private fun getTuyaSceneLogs(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        if (!DoctorBikeApplication.tuyaInitialized) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "tuya_not_initialized",
+                    "message" to DoctorBikeApplication.tuyaInitializationMessage,
+                    "logs" to emptyList<Map<String, Any?>>(),
+                )
+            )
+            return
+        }
+        val homeId = call.argument<String>("tuyaHomeId")?.toLongOrNull() ?: 0L
+        val days = (call.argument<Int>("days") ?: 30).coerceIn(1, 90)
+        if (homeId <= 0L) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "code" to "missing_home_id",
+                    "message" to "Missing Tuya home id",
+                    "logs" to emptyList<Map<String, Any?>>(),
+                )
+            )
+            return
+        }
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - days * 24L * 60L * 60L * 1000L
+        ThingHomeSdk.getSceneServiceInstance().logService().getSceneLogInfoAll(
+            homeId,
+            startTime,
+            endTime,
+            100,
+            null,
+            null,
+            object : ISceneResultCallback<ExecuteLogList?> {
+                override fun onSuccess(logList: ExecuteLogList?) {
+                    val logs = logList?.datas.orEmpty().map { item ->
+                        mapOf<String, Any?>(
+                            "event_id" to item.eventId.orEmpty(),
+                            "scene_id" to item.ruleId.orEmpty(),
+                            "scene_name" to item.ruleName.orEmpty(),
+                            "status" to when (item.execResult) {
+                                1 -> "success"
+                                2 -> "partial"
+                                3 -> "running"
+                                else -> "failed"
+                            },
+                            "message" to item.execResultMsg.orEmpty(),
+                            "failure_code" to item.failureCode,
+                            "failure_cause" to item.failureCause.orEmpty(),
+                            "executed_at" to item.execTime,
+                            "run_mode" to item.runMode.orEmpty(),
+                        )
+                    }
+                    result.success(
+                        mapOf(
+                            "success" to true,
+                            "code" to "",
+                            "message" to "Tuya scene logs loaded",
+                            "logs" to logs,
+                        )
+                    )
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    result.success(
+                        mapOf(
+                            "success" to false,
+                            "code" to safeTuyaErrorCode(code),
+                            "message" to safeTuyaErrorMessage(code, error),
+                            "logs" to emptyList<Map<String, Any?>>(),
+                        )
+                    )
+                }
+            },
+        )
     }
 
     private fun deleteTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {

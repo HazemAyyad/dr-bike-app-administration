@@ -149,7 +149,7 @@ class BillsScreen extends GetView<BillsController> {
         icon: const Icon(Icons.add_shopping_cart_outlined),
         label: Text('addNewBill'.tr),
         onPressed: () {
-          controller.isaddNewBill = '1';
+          controller.prepareNewPurchaseForm();
           Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
         },
       ),

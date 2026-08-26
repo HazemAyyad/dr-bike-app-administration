@@ -157,6 +157,71 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> updatePurchaseDraft({
+    required String billId,
+    required String sellerId,
+    String customerId = '',
+    required List<BillModel> products,
+    required String total,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'bill_id': billId,
+      if (sellerId.isNotEmpty) 'seller_id': sellerId,
+      if (customerId.isNotEmpty) 'customer_id': customerId,
+      'total': total,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    };
+    for (var i = 0; i < products.length; i++) {
+      final product = products[i];
+      data['products[$i][product_id]'] = product.productIdController.text;
+      data['products[$i][quantity]'] = product.quantityController.text;
+      data['products[$i][purchase_price]'] = product.priceController.text;
+      if (product.sizeId?.isNotEmpty == true) {
+        data['products[$i][size_id]'] = product.sizeId;
+      }
+      if (product.sizeColorId?.isNotEmpty == true) {
+        data['products[$i][size_color_id]'] = product.sizeColorId;
+      }
+    }
+    try {
+      final response = await api.post(
+        EndPoints.purchaseUpdateDraft,
+        data: data,
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final error = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: error['message'] ?? 'Unknown error',
+          status: error['status'] ?? 500,
+          data: error['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> deletePurchaseDraft({required String billId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchaseDeleteDraft,
+        data: {'bill_id': billId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> finalizePurchase({
     required String billId,
     String initialPayment = '0',

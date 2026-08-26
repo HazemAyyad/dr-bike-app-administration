@@ -22,6 +22,19 @@ abstract class BillsRepository {
     String? notes,
   });
 
+  Future<Either<Failure, String>> updatePurchaseDraft({
+    required String billId,
+    required String sellerId,
+    String customerId,
+    required List<BillModel> products,
+    required String total,
+    String? notes,
+  });
+
+  Future<Either<Failure, String>> deletePurchaseDraft({
+    required String billId,
+  });
+
   Future<Either<Failure, String>> finalizePurchase({
     required String billId,
     String initialPayment,

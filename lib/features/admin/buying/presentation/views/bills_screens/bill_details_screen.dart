@@ -16,6 +16,7 @@ import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../../debts/presentation/binding/debts_binding.dart';
 import '../../../../debts/presentation/controllers/debt_ledger_controller.dart';
 import '../../../data/models/bills_models/bills_details_model.dart';
+import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
 
@@ -193,6 +194,42 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           remainingText: _money(details.remainingAmount),
           onOpenLedger: () => _openSourceLedger(details),
         ),
+        if (details.canEdit || details.canDelete) ...[
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              if (details.canEdit)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: controller.isWorkflowLoading.value
+                        ? null
+                        : () => controller.prepareShownPurchaseForEdit(context),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('تعديل الفاتورة'),
+                  ),
+                ),
+              if (details.canEdit && details.canDelete) SizedBox(width: 8.w),
+              if (details.canDelete)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red.shade700,
+                    ),
+                    onPressed: controller.isWorkflowLoading.value
+                        ? null
+                        : () => _confirmDeleteDraft(context),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('حذف الفاتورة'),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          const _InlineNotice(
+            icon: Icons.lock_open_outlined,
+            title: 'متاح التعديل والحذف لأن الاستلام لم يبدأ بعد.',
+          ),
+        ],
         SizedBox(height: 10.h),
         _ContextualActionCards(
           remainingItems: details.products
@@ -410,6 +447,32 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           const _EmptyTabState(text: 'لا توجد حركات ظاهرة بعد'),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteDraft(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف فاتورة المشتريات؟'),
+        content: const Text(
+          'سيتم إلغاء الفاتورة غير المستلمة دون التأثير على المخزون. هل تريد المتابعة؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('تراجع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await controller.deleteShownPurchaseDraft(context);
+    }
   }
 
   String _money(String value) {
@@ -846,16 +909,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       ),
                     ),
                     Expanded(
-                      child: ListView.separated(
-                        controller: scrollController,
-                        padding: EdgeInsets.fromLTRB(18.w, 0, 18.w, 16.h),
-                        itemCount: controller.receivingRows.length,
-                        separatorBuilder: (_, __) => SizedBox(height: 10.h),
-                        itemBuilder: (_, index) {
-                          return _ReceivingRowCard(
-                            row: controller.receivingRows[index],
-                          );
-                        },
+                      child: _ReceivingReviewTable(
+                        rows: controller.receivingRows,
+                        scrollController: scrollController,
                       ),
                     ),
                     SafeArea(
@@ -1461,6 +1517,7 @@ class _MoneyBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 64),
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: highlighted
@@ -2043,6 +2100,294 @@ class _StatusChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ReceivingReviewTable extends StatelessWidget {
+  const _ReceivingReviewTable({
+    required this.rows,
+    required this.scrollController,
+  });
+
+  final List<PurchaseReceivingRowModel> rows;
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: scrollController,
+      padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 16.h),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          // Column widths total 664.w. Keep extra room for the table's
+          // horizontal padding and ScreenUtil rounding on desktop widths.
+          width: 690.w,
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.08),
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(9.r)),
+                ),
+                child: Row(
+                  children: [
+                    _ReceivingTableHeader('المنتج', width: 230.w),
+                    _ReceivingTableHeader('المطلوب', width: 75.w),
+                    _ReceivingTableHeader('المتبقي', width: 75.w),
+                    _ReceivingTableHeader('نتيجة المراجعة', width: 230.w),
+                    _ReceivingTableHeader('إجراء', width: 54.w),
+                  ],
+                ),
+              ),
+              ...rows.map((row) => _ReceivingReviewTableRow(row: row)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceivingTableHeader extends StatelessWidget {
+  const _ReceivingTableHeader(this.text, {required this.width});
+
+  final String text;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: AppColors.primaryColor,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceivingReviewTableRow extends GetView<BillsController> {
+  const _ReceivingReviewTableRow({required this.row});
+
+  final PurchaseReceivingRowModel row;
+
+  @override
+  Widget build(BuildContext context) {
+    final product = row.product;
+    final hasImage = product.productImage.startsWith('http://') ||
+        product.productImage.startsWith('https://');
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: row.isEmpty
+            ? Colors.white
+            : AppColors.primaryColor.withValues(alpha: 0.025),
+        border: Border(
+          left: BorderSide(color: Colors.grey.shade200),
+          right: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: Colors.grey.shade200),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 230.w,
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: hasImage
+                      ? () => openProductImageViewer(
+                            context,
+                            product.productImage,
+                            title: product.displayName,
+                          )
+                      : null,
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: SizedBox.square(
+                      dimension: 46,
+                      child: hasImage
+                          ? Image.network(
+                              product.productImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.inventory_2_outlined),
+                            )
+                          : const ColoredBox(
+                              color: Color(0xFFF3F4F6),
+                              child: Icon(Icons.inventory_2_outlined),
+                            ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    product.displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _ReceivingTableValue(
+            product.orderedQuantity.toString(),
+            width: 75.w,
+          ),
+          _ReceivingTableValue(
+            product.remainingQuantity.toString(),
+            width: 75.w,
+          ),
+          SizedBox(
+            width: 230.w,
+            child: Text(
+              _summary,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w700,
+                color: row.isEmpty ? Colors.grey.shade600 : Colors.black87,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 54.w,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(
+                width: 42,
+                height: 42,
+              ),
+              tooltip: row.isEmpty ? 'مراجعة الاستلام' : 'تعديل المراجعة',
+              onPressed: () => _showReceivingItemEditor(context, row),
+              icon: Icon(
+                row.isEmpty ? Icons.tune : Icons.edit_note,
+                color: AppColors.primaryColor,
+                size: 22,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _summary {
+    if (row.isEmpty) return 'لم تتم المراجعة';
+    final parts = <String>[
+      'مخزون ${row.autoAccepted}',
+      if (row.autoMissing > 0) 'ناقص ${row.autoMissing}',
+      if (row.effectiveExtra > 0) 'أمانة ${row.effectiveExtra}',
+      if (row.damaged > 0) 'تالف ${row.damaged}',
+      if (row.mismatched > 0) 'غير مطابق ${row.mismatched}',
+    ];
+    return parts.join(' • ');
+  }
+}
+
+class _ReceivingTableValue extends StatelessWidget {
+  const _ReceivingTableValue(this.value, {required this.width});
+
+  final String value;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+}
+
+Future<void> _showReceivingItemEditor(
+  BuildContext context,
+  PurchaseReceivingRowModel row,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+    ),
+    builder: (sheetContext) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+      ),
+      child: SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: 0.9.sh),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 10.h, 6.w, 6.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'استلام ${row.product.displayName}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  child: _ReceivingRowCard(row: row),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(14.w),
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Get.find<BillsController>().update();
+                    Navigator.pop(sheetContext);
+                  },
+                  icon: const Icon(Icons.check),
+                  label: const Text('حفظ المراجعة'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size(double.infinity, 46.h),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _ReceivingRowCard extends GetView<BillsController> {

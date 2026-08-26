@@ -8,6 +8,28 @@ class PurchaseWorkflowUsecase {
 
   PurchaseWorkflowUsecase({required this.billsRepository});
 
+  Future<Either<Failure, String>> updateDraft({
+    required String billId,
+    required String sellerId,
+    String customerId = '',
+    required List<dynamic> products,
+    required String total,
+    String? notes,
+  }) {
+    return billsRepository.updatePurchaseDraft(
+      billId: billId,
+      sellerId: sellerId,
+      customerId: customerId,
+      products: products.cast(),
+      total: total,
+      notes: notes,
+    );
+  }
+
+  Future<Either<Failure, String>> deleteDraft({required String billId}) {
+    return billsRepository.deletePurchaseDraft(billId: billId);
+  }
+
   Future<Either<Failure, String>> receive({
     required String billId,
     required List<Map<String, dynamic>> items,

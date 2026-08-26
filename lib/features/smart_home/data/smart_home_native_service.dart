@@ -63,6 +63,76 @@ class SmartHomeNativeSceneResult {
       );
 }
 
+class SmartHomeNativeSceneLog {
+  const SmartHomeNativeSceneLog({
+    required this.eventId,
+    required this.sceneId,
+    required this.sceneName,
+    required this.status,
+    required this.message,
+    required this.failureCode,
+    required this.failureCause,
+    required this.executedAt,
+    required this.runMode,
+  });
+
+  final String eventId;
+  final String sceneId;
+  final String sceneName;
+  final String status;
+  final String message;
+  final String failureCode;
+  final String failureCause;
+  final DateTime? executedAt;
+  final String runMode;
+
+  factory SmartHomeNativeSceneLog.fromMap(Map<dynamic, dynamic> map) {
+    final rawTime = int.tryParse(map['executed_at']?.toString() ?? '');
+    return SmartHomeNativeSceneLog(
+      eventId: map['event_id']?.toString() ?? '',
+      sceneId: map['scene_id']?.toString() ?? '',
+      sceneName: map['scene_name']?.toString() ?? '',
+      status: map['status']?.toString() ?? '',
+      message: map['message']?.toString() ?? '',
+      failureCode: map['failure_code']?.toString() ?? '',
+      failureCause: map['failure_cause']?.toString() ?? '',
+      executedAt: rawTime == null || rawTime <= 0
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(rawTime).toLocal(),
+      runMode: map['run_mode']?.toString() ?? '',
+    );
+  }
+}
+
+class SmartHomeNativeSceneLogsResult {
+  const SmartHomeNativeSceneLogsResult({
+    required this.success,
+    required this.code,
+    required this.message,
+    required this.logs,
+  });
+
+  final bool success;
+  final String code;
+  final String message;
+  final List<SmartHomeNativeSceneLog> logs;
+
+  factory SmartHomeNativeSceneLogsResult.fromMap(Map<dynamic, dynamic> map) {
+    final rawLogs = map['logs'];
+    return SmartHomeNativeSceneLogsResult(
+      success: map['success'] == true,
+      code: map['code']?.toString() ?? '',
+      message: map['message']?.toString() ?? '',
+      logs: rawLogs is List
+          ? rawLogs
+              .whereType<Map>()
+              .map((item) => SmartHomeNativeSceneLog.fromMap(item))
+              .toList(growable: false)
+          : const <SmartHomeNativeSceneLog>[],
+    );
+  }
+}
+
 class SmartHomeNativeHomeResult {
   final bool success;
   final String tuyaHomeId;
@@ -411,6 +481,33 @@ class SmartHomeNativeService {
 
   Future<SmartHomeNativeSceneResult> executeScene(String sceneId) =>
       _sceneCall('executeScene', {'sceneId': sceneId});
+
+  Future<SmartHomeNativeSceneLogsResult> getSceneLogs({
+    required String tuyaHomeId,
+    int days = 30,
+  }) async {
+    try {
+      final result = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'getSceneLogs',
+        {'tuyaHomeId': tuyaHomeId, 'days': days},
+      );
+      return SmartHomeNativeSceneLogsResult.fromMap(result ?? const {});
+    } on MissingPluginException {
+      return const SmartHomeNativeSceneLogsResult(
+        success: false,
+        code: 'missing_plugin',
+        message: 'Tuya scene logs are not available on this platform',
+        logs: [],
+      );
+    } on PlatformException catch (error) {
+      return SmartHomeNativeSceneLogsResult(
+        success: false,
+        code: error.code,
+        message: error.message ?? 'Tuya scene logs failed',
+        logs: const [],
+      );
+    }
+  }
 
   Future<SmartHomeNativeSceneResult> deleteScene(String sceneId) =>
       _sceneCall('deleteScene', {'sceneId': sceneId});

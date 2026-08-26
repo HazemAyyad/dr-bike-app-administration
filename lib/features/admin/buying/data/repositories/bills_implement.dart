@@ -43,6 +43,45 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> updatePurchaseDraft({
+    required String billId,
+    required String sellerId,
+    String customerId = '',
+    required List<BillModel> products,
+    required String total,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      final result = await billsDataSource.updatePurchaseDraft(
+        billId: billId,
+        sellerId: sellerId,
+        customerId: customerId,
+        products: products,
+        total: total,
+        notes: notes,
+      );
+      return _messageResult(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deletePurchaseDraft({
+    required String billId,
+  }) async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      return _messageResult(
+        await billsDataSource.deletePurchaseDraft(billId: billId),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> receivePurchase({
     required String billId,
     required List<Map<String, dynamic>> items,

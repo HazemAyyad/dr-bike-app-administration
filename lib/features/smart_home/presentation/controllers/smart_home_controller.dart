@@ -59,11 +59,17 @@ class SmartHomeController extends GetxController {
   final deviceControlBusyKeys = <String>{}.obs;
   final deviceDetailsBusyIds = <int>{}.obs;
   final sceneBusyIds = <int>{}.obs;
+  final unavailableDeviceIds = <int>{}.obs;
+  final sceneExecutionLogs = <String, SmartHomeNativeSceneLog>{}.obs;
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
   final Map<int, DateTime> _lastStatusPersistedAt = {};
+  final Map<int, DateTime> _deviceStatusRetryAfter = {};
   String _activeNativeTuyaUid = '';
+  DateTime? _lastTuyaLoginAttemptAt;
   Timer? _statusRefreshTimer;
   bool _statusRefreshRunning = false;
+  bool _sceneLogRefreshRunning = false;
+  DateTime? _lastSceneLogRefreshAt;
 
   SmartHomeModel? get selectedHome {
     final key = selectedLocationKey.value;
@@ -148,6 +154,9 @@ class SmartHomeController extends GetxController {
         deviceCommandBusyKey(deviceId, commandCode),
       );
 
+  SmartHomeNativeSceneLog? executionLogForScene(SmartSceneModel scene) =>
+      sceneExecutionLogs[scene.tuyaSceneId];
+
   Future<void> load() async {
     isLoading(true);
     errorMessage('');
@@ -197,9 +206,23 @@ class SmartHomeController extends GetxController {
   }
 
   Future<void> refreshData() async {
+    if (isRefreshing.value) return;
     isRefreshing(true);
+    errorMessage('');
     try {
-      await load();
+      if (!nativeStatus.value.initialized || tuyaUser.value == null) {
+        await load();
+        return;
+      }
+
+      final loadedHomes =
+          await apiService.getHomes(userId: selectedOwnerId.value);
+      homes.assignAll(loadedHomes);
+      _ensureSelectedLocation();
+      await _loadSelectedHomeData();
+      await refreshLoadedDeviceStatuses(force: true);
+    } catch (e) {
+      errorMessage(e.toString());
     } finally {
       isRefreshing(false);
     }
@@ -210,7 +233,9 @@ class SmartHomeController extends GetxController {
     selectedOwnerId.value = ownerId;
     selectedLocationKey.value = '';
     selectedRoomId.value = null;
-    await refreshData();
+    _activeNativeTuyaUid = '';
+    _lastTuyaLoginAttemptAt = null;
+    await load();
   }
 
   Future<void> selectLocationKey(String key) async {
@@ -301,6 +326,24 @@ class SmartHomeController extends GetxController {
       return false;
     }
 
+    if (triggerType != 'manual') {
+      final activation = await nativeService.setSceneEnabled(
+        sceneId: native.sceneId,
+        enabled: enabled,
+      );
+      if (!activation.success) {
+        await nativeService.deleteScene(native.sceneId);
+        errorMessage(formatVisibleError(
+          enabled
+              ? 'تم إنشاء المشهد لكن تعذر تفعيل الأتمتة في Tuya'
+              : 'تم إنشاء المشهد لكن تعذر إيقاف الأتمتة في Tuya',
+          code: activation.code,
+          message: activation.message,
+        ));
+        return false;
+      }
+    }
+
     try {
       final saved = await apiService.saveScene(
         sceneId: existing?.id,
@@ -321,12 +364,6 @@ class SmartHomeController extends GetxController {
           'show_in_room': roomId != null,
         },
       );
-      if (!enabled && !saved.isManual) {
-        await nativeService.setSceneEnabled(
-          sceneId: native.sceneId,
-          enabled: false,
-        );
-      }
       final oldTuyaId = existing?.tuyaSceneId ?? '';
       if (oldTuyaId.isNotEmpty && oldTuyaId != native.sceneId) {
         await nativeService.deleteScene(oldTuyaId);
@@ -349,8 +386,10 @@ class SmartHomeController extends GetxController {
       final result = await nativeService.executeScene(scene.tuyaSceneId);
       final updated = await apiService.recordSceneExecution(
         id: scene.id,
-        status: result.success ? 'success' : 'failed',
-        message: result.message,
+        status: result.success ? 'partial' : 'failed',
+        message: result.success
+            ? 'تم إرسال أمر تشغيل المشهد إلى Tuya وبانتظار سجل التنفيذ'
+            : result.message,
         details: {'tuya_code': result.code},
         userId: selectedOwnerId.value,
       );
@@ -361,6 +400,9 @@ class SmartHomeController extends GetxController {
           code: result.code,
           message: result.message,
         ));
+      } else {
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
+        await refreshSceneExecutionLogs();
       }
       return result.success;
     } catch (error) {
@@ -593,6 +635,13 @@ class SmartHomeController extends GetxController {
       return;
     }
     if (_activeNativeTuyaUid == credentials.uid) return;
+    final now = DateTime.now();
+    if (_lastTuyaLoginAttemptAt != null &&
+        now.difference(_lastTuyaLoginAttemptAt!) <
+            const Duration(seconds: 30)) {
+      return;
+    }
+    _lastTuyaLoginAttemptAt = now;
 
     isLinkingTuyaUser(true);
     try {
@@ -1257,6 +1306,10 @@ class SmartHomeController extends GetxController {
         userId: selectedOwnerId.value,
       );
       devices.removeWhere((item) => item.id == device.id);
+      unavailableDeviceIds.remove(device.id);
+      _deviceStatusRetryAfter.remove(device.id);
+      _lastStatusPersistedAt.remove(device.id);
+      _deviceRefreshFailures.remove(device.id);
       Get.snackbar('smartHomeDeleteDevice'.tr, 'smartHomeDeviceDeleted'.tr);
       return true;
     } catch (e) {
@@ -1470,7 +1523,7 @@ class SmartHomeController extends GetxController {
     return loadDeviceDetails(device);
   }
 
-  Future<void> refreshLoadedDeviceStatuses() async {
+  Future<void> refreshLoadedDeviceStatuses({bool force = false}) async {
     if (_statusRefreshRunning ||
         !nativeStatus.value.initialized ||
         !isTuyaUserLinked) {
@@ -1485,6 +1538,12 @@ class SmartHomeController extends GetxController {
         }
         final tuyaHomeId = _tuyaHomeIdForDevice(device);
         if (tuyaHomeId.trim().isEmpty) continue;
+        final retryAfter = _deviceStatusRetryAfter[device.id];
+        if (!force &&
+            retryAfter != null &&
+            DateTime.now().isBefore(retryAfter)) {
+          continue;
+        }
         try {
           final native = await nativeService.getDeviceStatus(
             tuyaDeviceId: device.tuyaDeviceId,
@@ -1496,6 +1555,31 @@ class SmartHomeController extends GetxController {
               'message': native.message,
               'tuya_home_id': tuyaHomeId,
             };
+            if (native.code == 'device_not_found' || native.code == '11002') {
+              final newlyUnavailable = unavailableDeviceIds.add(device.id);
+              _deviceStatusRetryAfter[device.id] =
+                  DateTime.now().add(const Duration(minutes: 1));
+              _upsertDevice(device.copyWith(online: false));
+              final now = DateTime.now();
+              final lastPersisted = _lastStatusPersistedAt[device.id];
+              if (newlyUnavailable ||
+                  lastPersisted == null ||
+                  now.difference(lastPersisted) >= const Duration(minutes: 5)) {
+                _lastStatusPersistedAt[device.id] = now;
+                try {
+                  final saved = await apiService.updateDeviceStatus(
+                    id: device.id,
+                    online: false,
+                    lastStatus: device.lastStatus,
+                    rawMetadata: device.rawMetadata,
+                    userId: selectedOwnerId.value,
+                  );
+                  _upsertDevice(saved.copyWith(online: false));
+                } catch (_) {
+                  // The local offline state is still more accurate than stale data.
+                }
+              }
+            }
             continue;
           }
 
@@ -1505,8 +1589,11 @@ class SmartHomeController extends GetxController {
               native.device.isNotEmpty ? native.device : device.rawMetadata;
           final now = DateTime.now();
           final lastPersisted = _lastStatusPersistedAt[device.id];
-          final shouldPersist = lastPersisted == null ||
-              now.difference(lastPersisted) >= const Duration(seconds: 10);
+          final statusChanged = native.online != device.online ||
+              !_sameStatus(nextStatus, device.lastStatus);
+          final shouldPersist = statusChanged ||
+              (lastPersisted != null &&
+                  now.difference(lastPersisted) >= const Duration(minutes: 1));
           final saved = shouldPersist
               ? await apiService.updateDeviceStatus(
                   id: device.id,
@@ -1531,6 +1618,8 @@ class SmartHomeController extends GetxController {
             powerOn: _powerStateFromStatus(nextStatus),
           ));
           _deviceRefreshFailures.remove(device.id);
+          unavailableDeviceIds.remove(device.id);
+          _deviceStatusRetryAfter.remove(device.id);
         } catch (_) {
           // Dashboard loading should stay responsive if one device cannot refresh.
         }
@@ -1538,6 +1627,19 @@ class SmartHomeController extends GetxController {
     } finally {
       _statusRefreshRunning = false;
     }
+  }
+
+  bool _sameStatus(
+    Map<String, dynamic> first,
+    Map<String, dynamic> second,
+  ) {
+    if (first.length != second.length) return false;
+    for (final entry in first.entries) {
+      if (!second.containsKey(entry.key) || second[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<bool> startBluetoothDevicesPairing({
@@ -1577,6 +1679,47 @@ class SmartHomeController extends GetxController {
     refreshLoadedDeviceStatuses().catchError((_) {
       // Native status refresh is best-effort and must not block UI updates.
     });
+    final now = DateTime.now();
+    if (_lastSceneLogRefreshAt == null ||
+        now.difference(_lastSceneLogRefreshAt!) >=
+            const Duration(seconds: 15)) {
+      _lastSceneLogRefreshAt = now;
+      refreshSceneExecutionLogs().catchError((_) {
+        // Scene log refresh is best-effort and must not block the dashboard.
+      });
+    }
+  }
+
+  Future<void> refreshSceneExecutionLogs() async {
+    final home = selectedHome;
+    if (_sceneLogRefreshRunning ||
+        home == null ||
+        home.tuyaHomeId.isEmpty ||
+        !nativeStatus.value.initialized ||
+        !isTuyaUserLinked) {
+      return;
+    }
+    _sceneLogRefreshRunning = true;
+    try {
+      final result = await nativeService.getSceneLogs(
+        tuyaHomeId: home.tuyaHomeId,
+      );
+      if (!result.success) return;
+      final latest = <String, SmartHomeNativeSceneLog>{};
+      for (final log in result.logs) {
+        if (log.sceneId.isEmpty) continue;
+        final previous = latest[log.sceneId];
+        if (previous == null ||
+            (log.executedAt != null &&
+                (previous.executedAt == null ||
+                    log.executedAt!.isAfter(previous.executedAt!)))) {
+          latest[log.sceneId] = log;
+        }
+      }
+      sceneExecutionLogs.assignAll(latest);
+    } finally {
+      _sceneLogRefreshRunning = false;
+    }
   }
 
   String _tuyaHomeIdForDevice(SmartDeviceModel device) {
@@ -1758,6 +1901,7 @@ class SmartHomeController extends GetxController {
     rooms.assignAll(loadedRooms);
     devices.assignAll(loadedDevices);
     scenes.assignAll(loadedScenes);
+    await refreshSceneExecutionLogs();
   }
 
   void _ensureSelectedLocation() {

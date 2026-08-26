@@ -11,6 +11,7 @@ import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
 import '../controllers/smart_home_controller.dart';
+import '../smart_home_theme.dart';
 import 'smart_scene_screen.dart';
 
 class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
@@ -18,102 +19,101 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        title: Text(
-          'smartHome'.tr,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w800,
-              ),
+    return Theme(
+      data: smartHomeTheme(context),
+      child: Scaffold(
+        appBar: AppBar(
+          scrolledUnderElevation: 0,
+          title: Text(
+            'smartHome'.tr,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w800,
+                  color: smartHomeInk,
+                ),
+          ),
+          actions: [
+            PopupMenuButton<String>(
+              tooltip: 'إضافة',
+              icon: const Icon(Icons.add_rounded),
+              onSelected: (value) {
+                if (value == 'scene') {
+                  Get.to<void>(
+                    () => SmartSceneEditorScreen(controller: controller),
+                  );
+                } else if (value == 'device') {
+                  _showAddDeviceDialog();
+                } else if (value == 'location') {
+                  _showLocationDialog(controller: controller);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'scene',
+                  child: ListTile(
+                    leading: Icon(Icons.auto_awesome_rounded),
+                    title: Text('إضافة مشهد'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'device',
+                  child: ListTile(
+                    leading: Icon(Icons.add_to_home_screen_rounded),
+                    title: Text('إضافة جهاز'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'location',
+                  child: ListTile(
+                    leading: Icon(Icons.home_work_outlined),
+                    title: Text('إضافة مكان'),
+                  ),
+                ),
+              ],
+            ),
+            IconButton(
+              tooltip: 'smartHomeFilters'.tr,
+              onPressed: _showFilters,
+              icon: const Icon(Icons.tune_rounded),
+            ),
+          ],
         ),
-        actions: [
-          PopupMenuButton<String>(
-            tooltip: 'إضافة',
-            icon: const Icon(Icons.add_rounded),
-            onSelected: (value) {
-              if (value == 'scene') {
-                Get.to<void>(
-                  () => SmartSceneEditorScreen(controller: controller),
-                );
-              } else if (value == 'device') {
-                _showAddDeviceDialog();
-              } else if (value == 'location') {
-                _showLocationDialog(controller: controller);
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'scene',
-                child: ListTile(
-                  leading: Icon(Icons.auto_awesome_rounded),
-                  title: Text('إضافة مشهد'),
-                ),
-              ),
-              PopupMenuItem(
-                value: 'device',
-                child: ListTile(
-                  leading: Icon(Icons.add_to_home_screen_rounded),
-                  title: Text('إضافة جهاز'),
-                ),
-              ),
-              PopupMenuItem(
-                value: 'location',
-                child: ListTile(
-                  leading: Icon(Icons.home_work_outlined),
-                  title: Text('إضافة مكان'),
-                ),
-              ),
-            ],
-          ),
-          IconButton(
-            tooltip: 'smartHomeFilters'.tr,
-            onPressed: _showFilters,
-            icon: const Icon(Icons.tune_rounded),
-          ),
-        ],
-      ),
-      body: Obx(() {
-        final showInitialSkeleton =
-            controller.isLoading.value && controller.homes.isEmpty;
-        final showDeviceSkeleton =
-            controller.isRefreshing.value && !showInitialSkeleton;
+        body: Obx(() {
+          final showInitialSkeleton =
+              controller.isLoading.value && controller.homes.isEmpty;
+          final showDeviceSkeleton =
+              controller.isRefreshing.value && !showInitialSkeleton;
 
-        return RefreshIndicator(
-          onRefresh: controller.refreshData,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
-            children: showInitialSkeleton
-                ? const [_SmartHomeDashboardSkeleton()]
-                : [
-                    if (controller.errorMessage.value.isNotEmpty)
-                      _ErrorBanner(message: controller.errorMessage.value),
-                    _SmartHomeFilterButton(
-                      controller: controller,
-                      onTap: _showFilters,
-                    ),
-                    if (!controller.isUnassignedSelected) ...[
-                      SizedBox(height: 12.h),
-                      _RoomsStrip(controller: controller),
+          return RefreshIndicator(
+            onRefresh: controller.refreshData,
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
+              children: showInitialSkeleton
+                  ? const [_SmartHomeDashboardSkeleton()]
+                  : [
+                      if (controller.errorMessage.value.isNotEmpty)
+                        _ErrorBanner(message: controller.errorMessage.value),
+                      if (!controller.isUnassignedSelected) ...[
+                        _RoomsStrip(controller: controller),
+                        SizedBox(height: 14.h),
+                        SmartScenesSection(controller: controller),
+                      ],
                       SizedBox(height: 14.h),
-                      SmartScenesSection(controller: controller),
+                      _SectionHeader(
+                        title: 'devices'.tr,
+                        actionLabel: 'addDevice'.tr,
+                        onAction: _showAddDeviceDialog,
+                      ),
+                      SizedBox(height: 8.h),
+                      if (showDeviceSkeleton)
+                        const _SmartHomeDeviceListSkeleton()
+                      else
+                        _DevicesList(controller: controller),
                     ],
-                    SizedBox(height: 14.h),
-                    _SectionHeader(
-                      title: 'devices'.tr,
-                      actionLabel: 'addDevice'.tr,
-                      onAction: _showAddDeviceDialog,
-                    ),
-                    SizedBox(height: 8.h),
-                    if (showDeviceSkeleton)
-                      const _SmartHomeDeviceListSkeleton()
-                    else
-                      _DevicesList(controller: controller),
-                  ],
-          ),
-        );
-      }),
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -158,33 +158,6 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
         }),
       ),
       isScrollControlled: true,
-    );
-  }
-}
-
-class _SmartHomeFilterButton extends StatelessWidget {
-  const _SmartHomeFilterButton({
-    required this.controller,
-    required this.onTap,
-  });
-
-  final SmartHomeController controller;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final location = controller.isUnassignedSelected
-        ? 'smartHomeUnassignedDevices'.tr
-        : _locationLabel(controller.selectedHome);
-    final owner = controller.selectedOwner?.name ?? '';
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: const Icon(Icons.filter_list_rounded),
-      label: Text(
-        owner.isEmpty ? location : '$owner • $location',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
     );
   }
 }
@@ -798,7 +771,7 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
               ? Icons.bluetooth_connected_rounded
               : Icons.devices_other_rounded,
           size: 88.r,
-          color: AppColors.primaryColor.withOpacity(.35),
+          color: smartHomeAccent.withOpacity(.35),
         ),
         SizedBox(height: 54.h),
         Obx(() {
@@ -938,7 +911,7 @@ class _RadarGraphicState extends State<_RadarGraphic>
       height: 190.w,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primaryColor.withOpacity(.06),
+        color: smartHomeAccent.withOpacity(.06),
       ),
       child: Center(
         child: ScaleTransition(
@@ -952,13 +925,13 @@ class _RadarGraphicState extends State<_RadarGraphic>
               height: 118.w,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primaryColor.withOpacity(.08),
+                color: smartHomeAccent.withOpacity(.08),
               ),
               child: Icon(
                 widget.scanning
                     ? Icons.radar_rounded
                     : Icons.devices_other_rounded,
-                color: AppColors.primaryColor,
+                color: smartHomeAccent,
                 size: 52.r,
               ),
             ),
@@ -999,8 +972,8 @@ class _PermissionNotice extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 22.r,
-            backgroundColor: AppColors.primaryColor.withOpacity(.12),
-            child: Icon(icon, color: AppColors.primaryColor),
+            backgroundColor: smartHomeAccent.withOpacity(.12),
+            child: Icon(icon, color: smartHomeAccent),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -1082,13 +1055,13 @@ class _StepDots extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: active ? AppColors.customGreyColor5 : Colors.transparent,
+            color: active ? smartHomeAccentSoft : Colors.transparent,
             border: Border.all(color: AppColors.customGreyColor5),
           ),
           child: Text(
             '${index + 1}',
             style: TextStyle(
-              color: active ? Colors.white : AppColors.customGreyColor5,
+              color: smartHomeInk,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1119,7 +1092,7 @@ class _OwnerFilter extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.manage_accounts_rounded, color: AppColors.primaryColor),
+          Icon(Icons.manage_accounts_rounded, color: smartHomeAccent),
           SizedBox(width: 10.w),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -1216,7 +1189,7 @@ class _SmartLocationSelector extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(selectedIcon, size: 20.r, color: AppColors.primaryColor),
+                  Icon(selectedIcon, size: 20.r, color: smartHomeAccent),
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
@@ -1256,7 +1229,7 @@ class _LocationMenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20.r, color: AppColors.primaryColor),
+        Icon(icon, size: 20.r, color: smartHomeAccent),
         SizedBox(width: 10.w),
         Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
       ],
@@ -1405,19 +1378,24 @@ class _BottomSheetPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        padding: EdgeInsets.fromLTRB(
-          18.w,
-          14.h,
-          18.w,
-          18.h + MediaQuery.of(context).viewInsets.bottom,
+    return Theme(
+      data: smartHomeTheme(context),
+      child: Builder(
+        builder: (context) => SafeArea(
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              18.w,
+              14.h,
+              18.w,
+              18.h + MediaQuery.of(context).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(14.r)),
+            ),
+            child: child,
+          ),
         ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(14.r)),
-        ),
-        child: child,
       ),
     );
   }
@@ -1522,7 +1500,7 @@ class _RoomChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected
-          ? AppColors.primaryColor
+          ? smartHomeAccent
           : (ThemeService.isDark.value
               ? AppColors.customGreyColor
               : AppColors.whiteColor2),
@@ -1726,21 +1704,31 @@ class _DevicesList extends StatelessWidget {
         if (visibleDevices.isEmpty) {
           return _EmptyState(text: 'noDevicesYet'.tr);
         }
-        return Column(
-          children: visibleDevices
-              .map(
-                (device) => _SmartDeviceCard(
-                  controller: controller,
-                  device: device,
-                  onOpen: () => Get.to<void>(
-                    () => _DeviceDetailsScreen(
-                      controller: controller,
-                      initialDevice: device,
-                    ),
+        return LayoutBuilder(
+          builder: (context, constraints) => GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: visibleDevices.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10.w,
+              mainAxisSpacing: 10.h,
+              childAspectRatio: constraints.maxWidth < 350 ? .82 : .90,
+            ),
+            itemBuilder: (context, index) {
+              final device = visibleDevices[index];
+              return _SmartDeviceCard(
+                controller: controller,
+                device: device,
+                onOpen: () => Get.to<void>(
+                  () => _DeviceDetailsScreen(
+                    controller: controller,
+                    initialDevice: device,
                   ),
                 ),
-              )
-              .toList(growable: false),
+              );
+            },
+          ),
         );
       },
     );
@@ -2019,8 +2007,8 @@ Future<bool> _showDeleteDeviceDialog({
                       if (Get.isDialogOpen == true) Get.back(result: ok);
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFFADDDD),
+                foregroundColor: const Color(0xFF8A1C1C),
               ),
               icon: deleting
                   ? SizedBox(
@@ -2028,7 +2016,7 @@ Future<bool> _showDeleteDeviceDialog({
                       height: 16.r,
                       child: const CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Color(0xFF8A1C1C),
                       ),
                     )
                   : const Icon(Icons.delete_rounded),
@@ -2190,7 +2178,7 @@ class _MoveTargetTile extends StatelessWidget {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsetsDirectional.only(start: indent ? 28.w : 0),
-      leading: Icon(icon, color: selected ? AppColors.primaryColor : null),
+      leading: Icon(icon, color: selected ? smartHomeAccent : null),
       title: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: busy
           ? SizedBox(
@@ -2343,7 +2331,10 @@ class _SmartDeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final busy = controller.deviceControlBusyIds.contains(device.id);
+    final unavailable = controller.unavailableDeviceIds.contains(device.id);
     final functions = _visiblePrimarySwitches(device);
+    final visibleFunctions = functions.take(4).toList(growable: false);
+    final hiddenFunctions = functions.length - visibleFunctions.length;
     final curtainCommand = _dashboardCurtainCommand(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
@@ -2354,17 +2345,16 @@ class _SmartDeviceCard extends StatelessWidget {
         ? device.powerOn == true
         : DeviceCapabilityResolver.statusValue(device, powerFunction) == true;
     return Container(
-      margin: EdgeInsets.only(bottom: 9.h),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor
             : Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(14.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.035),
-            blurRadius: 14,
-            offset: const Offset(0, 7),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -2372,27 +2362,20 @@ class _SmartDeviceCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onOpen,
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(14.r),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 11.h),
+            padding: EdgeInsets.all(9.w),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 38.w,
-                      height: 42.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(.08),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Icon(
-                        _iconForCategory(device.category),
-                        color: AppColors.primaryColor,
-                        size: 21.r,
-                      ),
+                    _DashboardDeviceImage(
+                      device: device,
+                      fallbackIcon: _iconForCategory(device.category),
                     ),
-                    SizedBox(width: 9.w),
+                    SizedBox(width: 7.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2406,10 +2389,10 @@ class _SmartDeviceCard extends StatelessWidget {
                                 .titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 14.sp,
+                                  fontSize: 12.5.sp,
                                 ),
                           ),
-                          SizedBox(height: 2.h),
+                          SizedBox(height: 3.h),
                           Text(
                             _deviceSubtitle(device),
                             maxLines: 1,
@@ -2417,17 +2400,52 @@ class _SmartDeviceCard extends StatelessWidget {
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: AppColors.customGreyColor5,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 9.5.sp,
                                     ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            children: [
+                              _OnlineDot(online: device.online),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: Text(
+                                  unavailable
+                                      ? 'غير موجود في Tuya'
+                                      : device.online
+                                          ? 'online'.tr
+                                          : 'offline'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: unavailable
+                                            ? const Color(0xFFB42318)
+                                            : device.online
+                                                ? const Color(0xFF28A47C)
+                                                : AppColors.customGreyColor5,
+                                        fontSize: 9.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    _OnlineDot(online: device.online),
                     PopupMenuButton<String>(
                       enabled: !busy,
                       tooltip: 'settings'.tr,
                       padding: EdgeInsets.zero,
+                      style: IconButton.styleFrom(
+                        fixedSize: Size(30.r, 30.r),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onSelected: (value) {
                         if (value == 'rename') {
                           _showRenameDeviceDialog(
@@ -2469,22 +2487,12 @@ class _SmartDeviceCard extends StatelessWidget {
                           child: Text('smartHomeDeleteDevice'.tr),
                         ),
                       ],
-                      icon: Icon(Icons.more_vert_rounded, size: 20.r),
+                      icon: Icon(Icons.more_vert_rounded, size: 18.r),
                     ),
-                    if (showHeaderPowerButton)
-                      _RoundPowerButton(
-                        enabled: !busy,
-                        busy: busy,
-                        active: powerActive,
-                        onPressed: () => controller.setDevicePower(
-                          device: device,
-                          powerOn: !powerActive,
-                        ),
-                      ),
                   ],
                 ),
+                const Spacer(),
                 if (curtainCommand != null) ...[
-                  SizedBox(height: 9.h),
                   _CurtainMiniControls(
                     enabled: !busy,
                     currentCommand: DeviceCapabilityResolver.statusValue(
@@ -2497,46 +2505,66 @@ class _SmartDeviceCard extends StatelessWidget {
                       value: value,
                     ),
                   ),
-                ] else if (functions.isNotEmpty) ...[
-                  SizedBox(height: 9.h),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: functions.map((function) {
-                        final value = DeviceCapabilityResolver.statusValue(
-                          device,
-                          function,
-                        );
-                        return SizedBox(
-                          width: 76.w,
-                          child: _DpsShortcut(
-                            label: _functionLabelForDevice(device, function),
-                            value: value,
-                            statusLabel: _functionStatusLabel(
-                              function,
-                              value,
+                ] else if (visibleFunctions.isNotEmpty) ...[
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: visibleFunctions.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 5.w,
+                      mainAxisSpacing: 5.h,
+                      childAspectRatio: 2.35,
+                    ),
+                    itemBuilder: (context, index) {
+                      final function = visibleFunctions[index];
+                      final value = DeviceCapabilityResolver.statusValue(
+                        device,
+                        function,
+                      );
+                      return _CompactSwitchButton(
+                        label: _functionLabelForDevice(device, function),
+                        active: value == true,
+                        busy: busy,
+                        onLongPress: () => _showRenameFunctionDialog(
+                          controller: controller,
+                          device: device,
+                          function: function,
+                        ),
+                        onTap: function.isBool
+                            ? () => controller.setDeviceDps(
+                                  device: device,
+                                  commandCode: function.code,
+                                  value: value != true,
+                                )
+                            : null,
+                      );
+                    },
+                  ),
+                  if (hiddenFunctions > 0)
+                    Padding(
+                      padding: EdgeInsets.only(top: 4.h),
+                      child: Text(
+                        '+$hiddenFunctions مفاتيح أخرى',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: smartHomeAccent,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w800,
                             ),
-                            busy: busy,
-                            onLongPress: () => _showRenameFunctionDialog(
-                              controller: controller,
-                              device: device,
-                              function: function,
-                            ),
-                            onEdit: () => _showRenameFunctionDialog(
-                              controller: controller,
-                              device: device,
-                              function: function,
-                            ),
-                            onTap: function.isBool
-                                ? () => controller.setDeviceDps(
-                                      device: device,
-                                      commandCode: function.code,
-                                      value: value != true,
-                                    )
-                                : null,
-                          ),
-                        );
-                      }).toList(growable: false),
+                      ),
+                    ),
+                ] else if (showHeaderPowerButton) ...[
+                  _CompactSwitchButton(
+                    label: powerActive
+                        ? 'smartHomeAllOff'.tr
+                        : 'smartHomeAllOn'.tr,
+                    active: powerActive,
+                    busy: busy,
+                    onLongPress: onOpen,
+                    onTap: () => controller.setDevicePower(
+                      device: device,
+                      powerOn: !powerActive,
                     ),
                   ),
                 ],
@@ -2966,142 +2994,108 @@ int? _sliderDivisions({
   return divisions > 0 ? divisions : null;
 }
 
-class _RoundPowerButton extends StatelessWidget {
-  const _RoundPowerButton({
-    required this.enabled,
-    required this.busy,
-    required this.active,
-    required this.onPressed,
+class _DashboardDeviceImage extends StatelessWidget {
+  const _DashboardDeviceImage({
+    required this.device,
+    required this.fallbackIcon,
   });
 
-  final bool enabled;
-  final bool busy;
-  final bool active;
-  final VoidCallback onPressed;
+  final SmartDeviceModel device;
+  final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: enabled ? onPressed : null,
-      radius: 28.r,
-      child: Container(
-        width: 54.w,
-        height: 54.w,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: active ? const Color(0xFF28C79A) : Colors.grey.shade300,
-          boxShadow: [
-            BoxShadow(
-              color: (active ? const Color(0xFF28C79A) : Colors.black)
-                  .withOpacity(active ? .18 : .06),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: busy
-              ? SizedBox(
-                  width: 18.w,
-                  height: 18.w,
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Icon(
-                  Icons.power_settings_new_rounded,
-                  color: Colors.white,
-                  size: 28.r,
-                ),
-        ),
+    final iconUrl = device.icon.trim();
+    Widget fallback() => Icon(
+          fallbackIcon,
+          color: smartHomeAccent,
+          size: 25.r,
+        );
+    return Container(
+      width: 48.r,
+      height: 48.r,
+      decoration: BoxDecoration(
+        color: smartHomeAccent.withOpacity(.08),
+        borderRadius: BorderRadius.circular(11.r),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: iconUrl.isEmpty
+          ? fallback()
+          : Padding(
+              padding: EdgeInsets.all(4.r),
+              child: Image.network(
+                iconUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => fallback(),
+              ),
+            ),
     );
   }
 }
 
-class _DpsShortcut extends StatelessWidget {
-  const _DpsShortcut({
+class _CompactSwitchButton extends StatelessWidget {
+  const _CompactSwitchButton({
     required this.label,
-    required this.value,
-    required this.statusLabel,
+    required this.active,
     required this.busy,
     required this.onTap,
     required this.onLongPress,
-    required this.onEdit,
   });
 
   final String label;
-  final dynamic value;
-  final String statusLabel;
+  final bool active;
   final bool busy;
   final VoidCallback? onTap;
   final VoidCallback onLongPress;
-  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    final active = value == true || (value is num && value != 0);
+    const activeColor = Color(0xFF28C79A);
     final enabled = onTap != null && !busy;
-    final activeColor = const Color(0xFF28C79A);
     return Semantics(
       button: true,
       enabled: enabled,
-      toggled: value is bool ? active : null,
-      label: '$label, $statusLabel',
-      child: Opacity(
-        opacity: active || enabled ? 1 : .42,
-        child: Material(
-          color: active ? activeColor.withOpacity(.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(9.r),
-          child: InkWell(
-            onTap: enabled ? onTap : null,
-            onLongPress: onLongPress,
-            borderRadius: BorderRadius.circular(9.r),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 6.h),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (busy && onTap != null)
-                    SizedBox(
-                      width: 16.r,
-                      height: 16.r,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Icon(
-                      value is bool
-                          ? Icons.power_settings_new_rounded
-                          : Icons.tune_rounded,
-                      color: active ? activeColor : AppColors.customGreyColor5,
-                      size: 19.r,
-                    ),
-                  SizedBox(height: 4.h),
-                  Text(
+      toggled: active,
+      label: label,
+      child: Material(
+        color: active
+            ? activeColor.withOpacity(.12)
+            : AppColors.customGreyColor5.withOpacity(.07),
+        borderRadius: BorderRadius.circular(8.r),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(8.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+            child: Row(
+              children: [
+                if (busy)
+                  SizedBox.square(
+                    dimension: 14.r,
+                    child: const CircularProgressIndicator(strokeWidth: 1.8),
+                  )
+                else
+                  Icon(
+                    Icons.power_settings_new_rounded,
+                    size: 15.r,
+                    color: active ? activeColor : AppColors.customGreyColor5,
+                  ),
+                SizedBox(width: 4.w),
+                Expanded(
+                  child: Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color:
                               active ? activeColor : AppColors.customGreyColor5,
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w800,
-                          fontSize: 10.sp,
                         ),
                   ),
-                  SizedBox(height: 1.h),
-                  InkResponse(
-                    onTap: onEdit,
-                    radius: 11.r,
-                    child: Icon(
-                      Icons.edit_rounded,
-                      size: 11.r,
-                      color: AppColors.customGreyColor5,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -3383,6 +3377,11 @@ class _DeviceDetailsScreenState extends State<_DeviceDetailsScreen> {
           children: [
             if (widget.controller.errorMessage.value.isNotEmpty)
               _ErrorBanner(message: widget.controller.errorMessage.value),
+            if (widget.controller.unavailableDeviceIds.contains(device.id))
+              const _ErrorBanner(
+                message:
+                    'هذا الجهاز غير موجود في منزل Tuya الحالي. غالبًا هو سجل قديم؛ احذفه من قائمة الخيارات ثم أضف الجهاز الحالي من جديد.',
+              ),
             _DeviceHero(device: device, busy: busy),
             SizedBox(height: 18.h),
             _DeviceCommandSurface(
@@ -3775,7 +3774,7 @@ class _DeviceHero extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor,
+        color: smartHomeAccentSoft,
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -3791,7 +3790,7 @@ class _DeviceHero extends StatelessWidget {
             child: iconUrl.isEmpty
                 ? Icon(
                     Icons.devices_other_rounded,
-                    color: Colors.white,
+                    color: smartHomeAccent,
                     size: 32.r,
                   )
                 : Image.network(
@@ -3799,7 +3798,7 @@ class _DeviceHero extends StatelessWidget {
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => Icon(
                       Icons.devices_other_rounded,
-                      color: Colors.white,
+                      color: smartHomeAccent,
                       size: 32.r,
                     ),
                   ),
@@ -3814,7 +3813,7 @@ class _DeviceHero extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: smartHomeInk,
                         fontWeight: FontWeight.w900,
                       ),
                 ),
@@ -3824,7 +3823,7 @@ class _DeviceHero extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withOpacity(.8),
+                        color: smartHomeMuted,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -3835,7 +3834,7 @@ class _DeviceHero extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
+                          color: smartHomeInk,
                           fontWeight: FontWeight.w900,
                         ),
                   ),
@@ -3848,7 +3847,7 @@ class _DeviceHero extends StatelessWidget {
               width: 20.w,
               height: 20.w,
               child: const CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
+                  strokeWidth: 2, color: smartHomeAccent),
             )
           else
             _OnlinePill(online: device.online),
@@ -4277,7 +4276,7 @@ class _AuxiliaryControlAction extends StatelessWidget {
             .toList(growable: false),
         child: Icon(
           Icons.more_horiz_rounded,
-          color: enabled ? AppColors.primaryColor : AppColors.customGreyColor5,
+          color: enabled ? smartHomeAccent : AppColors.customGreyColor5,
         ),
       );
     }
@@ -4548,8 +4547,9 @@ class _AllSwitchesButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: enabled ? onTap : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: active ? activeColor : Colors.white,
-        foregroundColor: active ? Colors.white : AppColors.customGreyColor5,
+        backgroundColor:
+            active ? activeColor.withValues(alpha: .16) : Colors.white,
+        foregroundColor: active ? smartHomeInk : AppColors.customGreyColor5,
         minimumSize: Size.fromHeight(54.h),
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),

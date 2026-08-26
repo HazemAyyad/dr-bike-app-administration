@@ -105,7 +105,7 @@ class BuyingScreen extends GetView<BillsController> {
                   ),
                   onTap: () {
                     Navigator.of(context).pop();
-                    controller.isaddNewBill = '1';
+                    controller.prepareNewPurchaseForm();
                     Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
                   },
                 ),

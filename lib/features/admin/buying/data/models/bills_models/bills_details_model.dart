@@ -18,6 +18,8 @@ class BillDetailsModel {
   final List<PurchaseReturnUiModel> returns;
   final List<PurchaseAttachmentUiModel> attachments;
   final List<PurchaseTimelineUiModel> timeline;
+  final bool canEdit;
+  final bool canDelete;
 
   BillDetailsModel({
     required this.billId,
@@ -36,6 +38,8 @@ class BillDetailsModel {
     required this.returns,
     required this.attachments,
     required this.timeline,
+    required this.canEdit,
+    required this.canDelete,
   });
 
   factory BillDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -72,6 +76,8 @@ class BillDetailsModel {
         j['timeline'],
         (Map<String, dynamic> m) => PurchaseTimelineUiModel.fromJson(m),
       ),
+      canEdit: j['can_edit'] == true || asInt(j['can_edit']) == 1,
+      canDelete: j['can_delete'] == true || asInt(j['can_delete']) == 1,
     );
   }
 
@@ -93,6 +99,8 @@ class BillDetailsModel {
       'returns': returns.map((e) => e.toJson()).toList(),
       'attachments': attachments.map((e) => e.toJson()).toList(),
       'timeline': timeline.map((e) => e.toJson()).toList(),
+      'can_edit': canEdit,
+      'can_delete': canDelete,
     };
   }
 }
