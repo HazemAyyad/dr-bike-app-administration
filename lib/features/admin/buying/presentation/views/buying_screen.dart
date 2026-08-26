@@ -109,6 +109,31 @@ class BuyingScreen extends GetView<BillsController> {
                     Get.toNamed(AppRoutes.ADDNEWBILLSCREEN);
                   },
                 ),
+                SizedBox(height: 10.h),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        AppColors.secondaryColor.withValues(alpha: 0.1),
+                    child: const Icon(
+                      Icons.assignment_return_outlined,
+                      color: AppColors.secondaryColor,
+                    ),
+                  ),
+                  title: const Text('إنشاء مرتجع شراء'),
+                  subtitle: const Text('اختيار فاتورة شراء وإرجاع منتجات منها'),
+                  trailing: const Icon(
+                    Icons.chevron_left,
+                    color: AppColors.secondaryColor,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN);
+                  },
+                ),
               ],
             ),
           ),
@@ -458,85 +483,59 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        AppPullToRefresh(
-          onRefresh: controller.getReturnBills,
-          child: CustomScrollView(
-            physics: kRefreshableScrollPhysics,
-            slivers: [
-              SliverToBoxAdapter(
-                child: AppTabs(
-                  tabs: controller.tabs,
-                  currentTab: controller.currentTab,
-                  changeTab: controller.changeTab,
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-              SliverToBoxAdapter(
-                child: _BuyingSearchBar(
-                  onChanged: controller.searchBar,
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-              GetBuilder<ReturnPurchasesController>(
-                builder: (controller) {
-                  if (controller.isLoading.value) {
-                    return const SliverToBoxAdapter(
-                      child: BuyingReturnListSkeleton(),
-                    );
-                  }
-
-                  final source = controller.currentTab.value == 0
-                      ? controller.returnPurchasesSearch
-                      : controller.deliveredPurchasesSearch;
-
-                  if (source.isEmpty) {
-                    return const SliverFillRemaining(
-                      child: Center(child: ShowNoData()),
-                    );
-                  }
-
-                  final months = source.keys.toList();
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, section) {
-                        final month = months[section];
-                        final bills = source[month]!;
-                        return ReturnPurchasesList(month: month, bills: bills);
-                      },
-                      childCount: months.length,
-                    ),
-                  );
-                },
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 90.h)),
-            ],
-          ),
-        ),
-        PositionedDirectional(
-          start: 18.w,
-          bottom: 18.h,
-          child: SizedBox(
-            height: 55.h,
-            width: 55.w,
-            child: FloatingActionButton(
-              heroTag: 'buying_returns_fab',
-              onPressed: () {
-                Get.toNamed(AppRoutes.CREATEPURCHASERETURNSCREEN);
-              },
-              backgroundColor: AppColors.secondaryColor,
-              elevation: 2.0,
-              shape: const CircleBorder(),
-              child: Icon(
-                Icons.add,
-                color: AppColors.whiteColor,
-                size: 42.sp,
-              ),
+    return AppPullToRefresh(
+      onRefresh: controller.getReturnBills,
+      child: CustomScrollView(
+        physics: kRefreshableScrollPhysics,
+        slivers: [
+          SliverToBoxAdapter(
+            child: AppTabs(
+              tabs: controller.tabs,
+              currentTab: controller.currentTab,
+              changeTab: controller.changeTab,
             ),
           ),
-        ),
-      ],
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(
+            child: _BuyingSearchBar(
+              onChanged: controller.searchBar,
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          GetBuilder<ReturnPurchasesController>(
+            builder: (controller) {
+              if (controller.isLoading.value) {
+                return const SliverToBoxAdapter(
+                  child: BuyingReturnListSkeleton(),
+                );
+              }
+
+              final source = controller.currentTab.value == 0
+                  ? controller.returnPurchasesSearch
+                  : controller.deliveredPurchasesSearch;
+
+              if (source.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(child: ShowNoData()),
+                );
+              }
+
+              final months = source.keys.toList();
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, section) {
+                    final month = months[section];
+                    final bills = source[month]!;
+                    return ReturnPurchasesList(month: month, bills: bills);
+                  },
+                  childCount: months.length,
+                ),
+              );
+            },
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+        ],
+      ),
     );
   }
 }

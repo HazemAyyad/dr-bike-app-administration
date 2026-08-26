@@ -132,6 +132,8 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                 width: 145.w,
                 child: AppButton(
                   isLoading: controller.isLoading,
+                  isSafeArea: false,
+                  height: 44.h,
                   text: 'اعتماد المرتجع',
                   onPressed: () async {
                     if (await controller.saveDraft(context, confirm: true)) {
