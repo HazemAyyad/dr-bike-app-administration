@@ -102,20 +102,14 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final tab = controller.currentTab.value;
-      final summary = controller.summary.value;
       final currency = controller.selectedCurrency.value;
-      final totals = summary?.totalsFor(currency, customers: tab == 0);
-      final taken = tab == 2
-          ? controller.people
-              .where((person) => person.balance > 0)
-              .fold<double>(0, (sum, person) => sum + person.balance)
-          : totals?.receivable ?? 0;
-      final given = tab == 2
-          ? controller.people
-              .where((person) => person.balance < 0)
-              .fold<double>(0, (sum, person) => sum + person.balance.abs())
-          : totals?.payable ?? 0;
+      final visiblePeople = controller.filteredPeople;
+      final taken = visiblePeople
+          .where((person) => person.balance > 0)
+          .fold<double>(0, (sum, person) => sum + person.balance);
+      final given = visiblePeople
+          .where((person) => person.balance < 0)
+          .fold<double>(0, (sum, person) => sum + person.balance.abs());
 
       return Container(
         width: double.infinity,

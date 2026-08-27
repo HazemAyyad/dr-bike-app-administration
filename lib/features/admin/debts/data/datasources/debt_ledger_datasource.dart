@@ -114,6 +114,10 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? period,
+    String? startDate,
+    String? endDate,
+    String? currency,
     String? reportDetailLevel,
   }) async {
     try {
@@ -122,6 +126,10 @@ class DebtLedgerDatasource {
         data: {
           if (customerId != null) 'customer_id': customerId,
           if (sellerId != null) 'seller_id': sellerId,
+          if (period != null) 'period': period,
+          if (startDate != null) 'start_date': startDate,
+          if (endDate != null) 'end_date': endDate,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
           if (reportDetailLevel != null && reportDetailLevel.isNotEmpty)
             'report_detail_level': reportDetailLevel,
         },

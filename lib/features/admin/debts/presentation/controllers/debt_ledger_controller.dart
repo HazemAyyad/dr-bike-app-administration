@@ -1283,6 +1283,10 @@ class DebtLedgerController extends GetxController {
     final linkResult = await repository.createPersonShareLink(
       customerId: person.isCustomer ? person.id : null,
       sellerId: person.isCustomer ? null : person.id,
+      period: selectedPeriod.value,
+      startDate: _formatDate(customStartDate.value),
+      endDate: _formatDate(customEndDate.value),
+      currency: selectedCurrency.value,
       reportDetailLevel: detailLevel.apiValue,
     );
     linkResult.fold((_) => null, (url) => shareUrl = url);

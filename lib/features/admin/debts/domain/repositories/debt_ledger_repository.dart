@@ -32,6 +32,10 @@ abstract class DebtLedgerRepository {
   Future<Either<Failure, String>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? period,
+    String? startDate,
+    String? endDate,
+    String? currency,
     String? reportDetailLevel,
   });
   Future<Either<Failure, LedgerPersonInfo>> updatePersonMeta({

@@ -166,6 +166,10 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   Future<Either<Failure, String>> createPersonShareLink({
     int? customerId,
     int? sellerId,
+    String? period,
+    String? startDate,
+    String? endDate,
+    String? currency,
     String? reportDetailLevel,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -175,6 +179,10 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       final data = await datasource.createPersonShareLink(
         customerId: customerId,
         sellerId: sellerId,
+        period: period,
+        startDate: startDate,
+        endDate: endDate,
+        currency: currency,
         reportDetailLevel: reportDetailLevel,
       );
       if (data['status'] != 'success') {
