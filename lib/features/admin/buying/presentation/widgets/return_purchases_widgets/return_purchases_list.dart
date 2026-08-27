@@ -386,6 +386,9 @@ class _ReturnPurchaseCard extends StatelessWidget {
                       value: 'cash_refund', child: Text('استرداد نقدي')),
                   DropdownMenuItem(
                       value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                  DropdownMenuItem(
+                      value: 'debt_credit',
+                      child: Text('تركه دينًا على المورد')),
                 ],
                 onChanged: (value) => setState(() => type = value!),
               ),
@@ -398,6 +401,12 @@ class _ReturnPurchaseCard extends StatelessWidget {
                       labelText: 'المبلغ (${row.currency})',
                       border: const OutlineInputBorder())),
               SizedBox(height: 10.h),
+              if (type == 'debt_credit')
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Text(
+                      'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.'),
+                ),
               if (type == 'cash_refund')
                 Obx(() => DropdownButtonFormField<dynamic>(
                       initialValue: box,

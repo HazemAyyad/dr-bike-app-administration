@@ -10,6 +10,7 @@ import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
+import '../../controllers/bills_controller.dart';
 
 class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
   const CreatePurchaseReturnScreen({Key? key}) : super(key: key);
@@ -33,55 +34,102 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
         return ListView(
           padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 110.h),
           children: [
-            _SectionCard(
-              title: 'فاتورة الشراء',
-              icon: Icons.receipt_long_outlined,
-              child: DropdownButtonFormField<Map<String, dynamic>>(
-                initialValue: controller.selectedBill.value,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'اختر الفاتورة القابلة للإرجاع',
-                  border: OutlineInputBorder(),
-                ),
-                items: controller.returnableBills.map((bill) {
-                  return DropdownMenuItem(
-                    value: bill,
-                    child: Text(
-                      '#${asString(bill['id'])} — ${asString(bill['party_name'])} — ${asString(bill['currency'])}',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-                onChanged: controller.selectBill,
-              ),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.receipt_long),
+                    label: Text('من فاتورة')),
+                ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.add_box_outlined),
+                    label: Text('مرتجع مباشر')),
+              ],
+              selected: {controller.isDirectReturn.value},
+              onSelectionChanged: (value) =>
+                  controller.setDirectMode(value.first),
             ),
-            SizedBox(height: 12.h),
-            if (controller.selectedBill.value != null)
+            SizedBox(height: 14.h),
+            if (controller.isDirectReturn.value) ...[
+              _DirectSourceCard(controller: controller),
+              SizedBox(height: 12.h),
               _SectionCard(
-                title: 'أصناف الفاتورة',
+                title: 'المنتجات',
                 icon: Icons.inventory_2_outlined,
-                child: controller.availableItems.isEmpty
-                    ? const Padding(
+                child: Column(children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'ابحث باسم المنتج أو رقمه',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (value) =>
+                        controller.loadDirectOptions(search: value),
+                  ),
+                  SizedBox(height: 10.h),
+                  if (controller.directItems.isEmpty)
+                    const Padding(
                         padding: EdgeInsets.all(20),
-                        child:
-                            Center(child: Text('لا توجد كميات متاحة للإرجاع')),
-                      )
-                    : Column(
-                        children: controller.availableItems
-                            .map((line) => _ReturnLineTile(line: line))
-                            .toList(),
-                      ),
+                        child: Text('لا توجد منتجات'))
+                  else
+                    ...controller.directItems
+                        .map((line) => _ReturnLineTile(line: line)),
+                ]),
               ),
+            ] else ...[
+              _SectionCard(
+                title: 'فاتورة الشراء',
+                icon: Icons.receipt_long_outlined,
+                child: DropdownButtonFormField<Map<String, dynamic>>(
+                  initialValue: controller.selectedBill.value,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'اختر الفاتورة القابلة للإرجاع',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: controller.returnableBills.map((bill) {
+                    return DropdownMenuItem(
+                      value: bill,
+                      child: Text(
+                        '#${asString(bill['id'])} — ${asString(bill['party_name'])} — ${asString(bill['currency'])}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: controller.selectBill,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              if (controller.selectedBill.value != null)
+                _SectionCard(
+                  title: 'أصناف الفاتورة',
+                  icon: Icons.inventory_2_outlined,
+                  child: controller.availableItems.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Center(
+                              child: Text('لا توجد كميات متاحة للإرجاع')),
+                        )
+                      : Column(
+                          children: controller.availableItems
+                              .map((line) => _ReturnLineTile(line: line))
+                              .toList(),
+                        ),
+                ),
+            ],
           ],
         );
       }),
       bottomNavigationBar: GetBuilder<ReturnPurchasesController>(builder: (_) {
-        final total = controller.availableItems
-            .fold<double>(0, (sum, line) => sum + line.total);
-        final currency =
-            asString(controller.selectedBill.value?['currency'], 'شيكل');
-        final count =
-            controller.availableItems.where((line) => line.quantity > 0).length;
+        final lines = controller.isDirectReturn.value
+            ? controller.directItems
+            : controller.availableItems;
+        final total = lines.fold<double>(0, (sum, line) => sum + line.total);
+        final currency = controller.isDirectReturn.value
+            ? controller.directCurrency.value
+            : asString(controller.selectedBill.value?['currency'], 'شيكل');
+        final count = lines.where((line) => line.quantity > 0).length;
         return SafeArea(
           child: Container(
             padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 12.h),
@@ -149,10 +197,13 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(16.r))),
       builder: (sheetContext) => GetBuilder<ReturnPurchasesController>(
         builder: (_) {
-          final total = controller.availableItems
-              .fold<double>(0, (sum, line) => sum + line.total);
-          final currency =
-              asString(controller.selectedBill.value?['currency'], 'شيكل');
+          final lines = controller.isDirectReturn.value
+              ? controller.directItems
+              : controller.availableItems;
+          final total = lines.fold<double>(0, (sum, line) => sum + line.total);
+          final currency = controller.isDirectReturn.value
+              ? controller.directCurrency.value
+              : asString(controller.selectedBill.value?['currency'], 'شيكل');
           return ListView(
             shrinkWrap: true,
             padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w,
@@ -278,6 +329,48 @@ class _SectionCard extends StatelessWidget {
       );
 }
 
+class _DirectSourceCard extends StatelessWidget {
+  const _DirectSourceCard({required this.controller});
+  final ReturnPurchasesController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final bills = Get.find<BillsController>();
+    return _SectionCard(
+      title: 'المورد والعملة',
+      icon: Icons.storefront_outlined,
+      child: Column(children: [
+        DropdownButtonFormField<dynamic>(
+          initialValue: controller.selectedDirectSupplier.value,
+          isExpanded: true,
+          decoration: const InputDecoration(
+              labelText: 'اختر المورد', border: OutlineInputBorder()),
+          items: bills.allSellersList
+              .map((seller) =>
+                  DropdownMenuItem(value: seller, child: Text(seller.name)))
+              .toList(),
+          onChanged: (value) {
+            controller.selectedDirectSupplier.value = value;
+            controller.update();
+          },
+        ),
+        SizedBox(height: 10.h),
+        DropdownButtonFormField<String>(
+          initialValue: controller.directCurrency.value,
+          decoration: const InputDecoration(
+              labelText: 'العملة', border: OutlineInputBorder()),
+          items: const ['شيكل', 'دينار', 'دولار']
+              .map((currency) =>
+                  DropdownMenuItem(value: currency, child: Text(currency)))
+              .toList(),
+          onChanged: (value) =>
+              controller.directCurrency.value = value ?? 'شيكل',
+        ),
+      ]),
+    );
+  }
+}
+
 class _ReturnLineTile extends StatelessWidget {
   const _ReturnLineTile({required this.line});
   final PurchaseReturnDraftLine line;
@@ -321,16 +414,30 @@ class _ReturnLineTile extends StatelessWidget {
                         fontSize: 11.sp, color: Colors.grey.shade700)),
               ])),
           SizedBox(
-              width: 70.w,
-              child: TextField(
-                controller: line.quantityController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration:
-                    const InputDecoration(labelText: 'الكمية', isDense: true),
-                onChanged: (_) =>
-                    Get.find<ReturnPurchasesController>().update(),
-              )),
+              width: line.isDirect ? 118.w : 70.w,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                  controller: line.quantityController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration:
+                      const InputDecoration(labelText: 'الكمية', isDense: true),
+                  onChanged: (_) =>
+                      Get.find<ReturnPurchasesController>().update(),
+                ),
+                if (line.isDirect) ...[
+                  SizedBox(height: 6.h),
+                  TextField(
+                    controller: line.priceController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                        labelText: 'سعر الإرجاع', isDense: true),
+                    onChanged: (_) =>
+                        Get.find<ReturnPurchasesController>().update(),
+                  ),
+                ]
+              ])),
         ]),
       );
 }

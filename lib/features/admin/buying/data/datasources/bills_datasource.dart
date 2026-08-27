@@ -454,17 +454,31 @@ class BillsDatasource {
   }
 
   Future<dynamic> createPurchaseReturnDraft({
-    required String billId,
+    String? billId,
+    String? sellerId,
+    String? customerId,
+    String? currency,
     required List<Map<String, dynamic>> items,
     String? reason,
     String? notes,
   }) async {
     final response = await api.post('purchase/returns', data: {
-      'bill_id': billId,
+      if (billId?.isNotEmpty == true) 'bill_id': billId,
+      if (sellerId?.isNotEmpty == true) 'seller_id': sellerId,
+      if (customerId?.isNotEmpty == true) 'customer_id': customerId,
+      if (currency?.isNotEmpty == true) 'currency': currency,
       'items': items,
       if (reason?.isNotEmpty == true) 'reason': reason,
       if (notes?.isNotEmpty == true) 'notes': notes,
     });
+    return response.data;
+  }
+
+  Future<dynamic> getDirectPurchaseReturnOptions({String? search}) async {
+    final response = await api.get('purchase/returns/direct-options',
+        queryParameters: {
+          if (search?.trim().isNotEmpty == true) 'search': search!.trim()
+        });
     return response.data;
   }
 

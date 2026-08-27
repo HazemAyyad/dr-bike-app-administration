@@ -262,17 +262,27 @@ class BillsImplement implements BillsRepository {
 
   @override
   Future<dynamic> createPurchaseReturnDraft({
-    required String billId,
+    String? billId,
+    String? sellerId,
+    String? customerId,
+    String? currency,
     required List<Map<String, dynamic>> items,
     String? reason,
     String? notes,
   }) =>
       billsDataSource.createPurchaseReturnDraft(
         billId: billId,
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: currency,
         items: items,
         reason: reason,
         notes: notes,
       );
+
+  @override
+  Future<dynamic> getDirectPurchaseReturnOptions({String? search}) =>
+      billsDataSource.getDirectPurchaseReturnOptions(search: search);
 
   @override
   Future<dynamic> purchaseReturnAction({

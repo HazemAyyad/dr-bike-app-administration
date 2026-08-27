@@ -133,6 +133,9 @@ class PurchaseWorkflowUsecase {
   Future<dynamic> returnablePurchaseBills() =>
       billsRepository.getReturnablePurchaseBills();
 
+  Future<dynamic> directPurchaseReturnOptions({String? search}) =>
+      billsRepository.getDirectPurchaseReturnOptions(search: search);
+
   Future<dynamic> purchaseReturnAvailableItems(String billId) =>
       billsRepository.getPurchaseReturnAvailableItems(billId: billId);
 
@@ -148,13 +151,19 @@ class PurchaseWorkflowUsecase {
       billsRepository.downloadPurchaseReturnPdf(returnId: returnId);
 
   Future<dynamic> createReturnDraft({
-    required String billId,
+    String? billId,
+    String? sellerId,
+    String? customerId,
+    String? currency,
     required List<Map<String, dynamic>> items,
     String? reason,
     String? notes,
   }) =>
       billsRepository.createPurchaseReturnDraft(
         billId: billId,
+        sellerId: sellerId,
+        customerId: customerId,
+        currency: currency,
         items: items,
         reason: reason,
         notes: notes,

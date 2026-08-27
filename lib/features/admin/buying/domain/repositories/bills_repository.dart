@@ -80,6 +80,7 @@ abstract class BillsRepository {
 
   Future<dynamic> getPurchaseReturns({String? status, String? search});
   Future<dynamic> getReturnablePurchaseBills();
+  Future<dynamic> getDirectPurchaseReturnOptions({String? search});
   Future<dynamic> getPurchaseReturnAvailableItems({required String billId});
   Future<dynamic> getPurchaseReturnDetails({required String returnId});
   Future<dynamic> uploadPurchaseReturnAttachments({
@@ -88,7 +89,10 @@ abstract class BillsRepository {
   });
   Future<List<int>> downloadPurchaseReturnPdf({required String returnId});
   Future<dynamic> createPurchaseReturnDraft({
-    required String billId,
+    String? billId,
+    String? sellerId,
+    String? customerId,
+    String? currency,
     required List<Map<String, dynamic>> items,
     String? reason,
     String? notes,

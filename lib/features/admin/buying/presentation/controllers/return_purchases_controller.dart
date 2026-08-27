@@ -54,6 +54,10 @@ class ReturnPurchasesController extends GetxController {
   final returnableBills = <Map<String, dynamic>>[].obs;
   final availableItems = <PurchaseReturnDraftLine>[].obs;
   final selectedBill = Rxn<Map<String, dynamic>>();
+  final isDirectReturn = false.obs;
+  final directItems = <PurchaseReturnDraftLine>[].obs;
+  final selectedDirectSupplier = Rxn<dynamic>();
+  final directCurrency = 'شيكل'.obs;
   final reasonController = TextEditingController();
   final notesController = TextEditingController();
   final pendingAttachments = <PlatformFile>[].obs;
@@ -122,21 +126,66 @@ class ReturnPurchasesController extends GetxController {
     }
   }
 
+  Future<void> setDirectMode(bool direct) async {
+    isDirectReturn.value = direct;
+    if (direct && directItems.isEmpty) {
+      final bills = Get.find<BillsController>();
+      await bills.getAllPurchaseSources();
+      await loadDirectOptions();
+    }
+    update();
+  }
+
+  Future<void> loadDirectOptions({String? search}) async {
+    isLoading.value = true;
+    update();
+    try {
+      final response = asMap(await purchaseWorkflowUsecase
+          .directPurchaseReturnOptions(search: search));
+      for (final line in directItems) {
+        line.dispose();
+      }
+      final loaded = <PurchaseReturnDraftLine>[];
+      for (final product in asMapList(response['products'])) {
+        final variants = asMapList(product['variants']);
+        if (variants.isEmpty) {
+          loaded.add(PurchaseReturnDraftLine.fromDirect(product));
+        } else {
+          loaded.addAll(variants.map((variant) =>
+              PurchaseReturnDraftLine.fromDirect({...product, ...variant})));
+        }
+      }
+      directItems.assignAll(loaded);
+    } finally {
+      isLoading.value = false;
+      update();
+    }
+  }
+
   Future<bool> saveDraft(BuildContext context, {bool confirm = false}) async {
+    final direct = isDirectReturn.value;
     final bill = selectedBill.value;
-    final lines = availableItems.where((line) => line.quantity > 0).toList();
-    if (bill == null || lines.isEmpty) {
+    final lines = (direct ? directItems : availableItems)
+        .where((line) => line.quantity > 0)
+        .toList();
+    if ((!direct && bill == null) ||
+        (direct && selectedDirectSupplier.value == null) ||
+        lines.isEmpty) {
       Helpers.showCustomDialogError(
           context: context,
           title: 'تنبيه',
-          message: 'اختر فاتورة وكمية لصنف واحد على الأقل');
+          message: direct
+              ? 'اختر المورد وكمية لصنف واحد على الأقل'
+              : 'اختر فاتورة وكمية لصنف واحد على الأقل');
       return false;
     }
     isLoading.value = true;
     update();
     try {
       final result = asMap(await purchaseWorkflowUsecase.createReturnDraft(
-        billId: asString(bill['id']),
+        billId: direct ? null : asString(bill!['id']),
+        sellerId: direct ? asString(selectedDirectSupplier.value?.id) : null,
+        currency: direct ? directCurrency.value : null,
         items: lines.map((line) => line.toRequest()).toList(),
         reason: reasonController.text.trim(),
         notes: notesController.text.trim(),
@@ -384,6 +433,9 @@ class ReturnPurchasesController extends GetxController {
                       value: 'cash_refund', child: Text('استرداد نقدي')),
                   DropdownMenuItem(
                       value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                  DropdownMenuItem(
+                      value: 'debt_credit',
+                      child: Text('تركه دينًا على المورد')),
                 ],
                 onChanged: (value) => setState(() => type = value!),
               ),
@@ -397,6 +449,12 @@ class ReturnPurchasesController extends GetxController {
                     border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 10),
+              if (type == 'debt_credit')
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Text(
+                      'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.'),
+                ),
               if (type == 'cash_refund')
                 Obx(() => DropdownButtonFormField<dynamic>(
                       initialValue: box,
@@ -504,6 +562,9 @@ class ReturnPurchasesController extends GetxController {
     for (final line in availableItems) {
       line.dispose();
     }
+    for (final line in directItems) {
+      line.dispose();
+    }
     pendingAttachments.clear();
     super.onClose();
   }
@@ -512,20 +573,31 @@ class ReturnPurchasesController extends GetxController {
 class PurchaseReturnDraftLine {
   PurchaseReturnDraftLine(
       {required this.billItemId,
+      this.productId = 0,
+      this.sizeId,
+      this.sizeColorId,
       required this.productName,
       required this.variant,
       required this.available,
       required this.unitPrice,
-      required this.productImage});
+      required this.productImage,
+      bool editablePrice = false})
+      : priceController = TextEditingController(text: unitPrice.toString());
   final int billItemId;
+  final int productId;
+  final int? sizeId;
+  final int? sizeColorId;
   final String productName;
   final String variant;
   final double available;
   final double unitPrice;
   final String productImage;
+  final TextEditingController priceController;
   final quantityController = TextEditingController(text: '0');
   double get quantity => double.tryParse(quantityController.text) ?? 0;
-  double get total => quantity * unitPrice;
+  double get effectiveUnitPrice =>
+      double.tryParse(priceController.text) ?? unitPrice;
+  double get total => quantity * effectiveUnitPrice;
   factory PurchaseReturnDraftLine.fromJson(Map<String, dynamic> json) =>
       PurchaseReturnDraftLine(
         billItemId: asInt(json['bill_item_id']),
@@ -538,7 +610,35 @@ class PurchaseReturnDraftLine {
         productImage:
             ShowNetImage.getPhoto(asNullableString(json['product_image'])),
       );
-  Map<String, dynamic> toRequest() =>
-      {'bill_item_id': billItemId, 'quantity': quantity};
-  void dispose() => quantityController.dispose();
+  factory PurchaseReturnDraftLine.fromDirect(Map<String, dynamic> json) =>
+      PurchaseReturnDraftLine(
+        billItemId: 0,
+        productId: asInt(json['product_id']),
+        sizeId: json['size_id'] == null ? null : asInt(json['size_id']),
+        sizeColorId:
+            json['size_color_id'] == null ? null : asInt(json['size_color_id']),
+        productName: asString(json['product_name']),
+        variant: [asString(json['size_label']), asString(json['color_label'])]
+            .where((v) => v.isNotEmpty)
+            .join(' / '),
+        available: asDouble(json['stock']),
+        unitPrice: asDouble(json['unit_price']),
+        productImage:
+            ShowNetImage.getPhoto(asNullableString(json['product_image'])),
+        editablePrice: true,
+      );
+  bool get isDirect => billItemId == 0;
+  Map<String, dynamic> toRequest() => isDirect
+      ? {
+          'product_id': productId,
+          if (sizeId != null) 'size_id': sizeId,
+          if (sizeColorId != null) 'size_color_id': sizeColorId,
+          'quantity': quantity,
+          'unit_price': effectiveUnitPrice,
+        }
+      : {'bill_item_id': billItemId, 'quantity': quantity};
+  void dispose() {
+    quantityController.dispose();
+    priceController.dispose();
+  }
 }
