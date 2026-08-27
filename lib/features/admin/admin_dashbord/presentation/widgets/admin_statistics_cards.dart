@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/admin_dashboard_controller.dart';
 import '../../data/models/main_dashboard_mata_model.dart';
 import 'stat_card.dart';
@@ -28,38 +27,13 @@ class BuildStatisticsCards extends StatelessWidget {
         builder: (controller) {
           return Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _UpcomingChecksCard(
-                      title: 'أقرب 5 شيكات واردة',
-                      icon: Icons.call_received_rounded,
-                      color: Colors.green,
-                      checks: controller
-                              .mainDashboardDataModel?.upcomingIncomingChecks ??
-                          const [],
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: _UpcomingChecksCard(
-                      title: 'أقرب 5 شيكات صادرة',
-                      icon: Icons.call_made_rounded,
-                      color: Colors.orange,
-                      checks: controller
-                              .mainDashboardDataModel?.upcomingOutgoingChecks ??
-                          const [],
-                    ),
-                  ),
-                ],
-              ),
               // الصف الأول: ديون لنا وديون علينا
               Row(
                 children: [
                   Expanded(
                     child: StatCard(
                       title: 'debtsForUs',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.trending_up_rounded,
                       value: controller
                               .mainDashboardDataModel?.totalDebtsOwedToUs ??
                           '0',
@@ -70,11 +44,36 @@ class BuildStatisticsCards extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'debtsOnUs',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.trending_down_rounded,
                       value:
                           controller.mainDashboardDataModel?.totalDebtsWeOwe ??
                               '0',
                       subtitle: 'currency',
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _UpcomingChecksCard(
+                      title: 'وارد',
+                      icon: Icons.south_west_rounded,
+                      color: AppColors.primaryColor,
+                      checks: controller
+                              .mainDashboardDataModel?.upcomingIncomingChecks ??
+                          const [],
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: _UpcomingChecksCard(
+                      title: 'صادر',
+                      icon: Icons.north_east_rounded,
+                      color: AppColors.primaryColor,
+                      checks: controller
+                              .mainDashboardDataModel?.upcomingOutgoingChecks ??
+                          const [],
                     ),
                   ),
                 ],
@@ -85,7 +84,7 @@ class BuildStatisticsCards extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'products',
-                      imageicon: AssetsManager.productIcon,
+                      icon: Icons.inventory_2_outlined,
                       value: controller.mainDashboardDataModel?.totalProducts ??
                           '0',
                       subtitle: 'product',
@@ -97,7 +96,7 @@ class BuildStatisticsCards extends StatelessWidget {
                       builder: (_) {
                         return StatCard(
                           title: 'employees',
-                          imageicon: AssetsManager.usersIcon,
+                          icon: Icons.groups_2_outlined,
                           value: controller
                                   .mainDashboardDataModel?.numberOfEmployees ??
                               '0',
@@ -115,7 +114,7 @@ class BuildStatisticsCards extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'completedTasks',
-                      imageicon: AssetsManager.doneIcon,
+                      icon: Icons.task_alt_rounded,
                       value: controller
                               .mainDashboardDataModel?.totalCompletedTasks ??
                           '0',
@@ -126,7 +125,7 @@ class BuildStatisticsCards extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'uncompletedTasks',
-                      imageicon: AssetsManager.cancelIcon,
+                      icon: Icons.pending_actions_rounded,
                       value: controller
                               .mainDashboardDataModel?.totalIncompletedTasks ??
                           '0',
@@ -139,7 +138,7 @@ class BuildStatisticsCards extends StatelessWidget {
               // الصف الرابع: مصاريف (عرض كامل)
               StatCard(
                 title: 'expenses',
-                imageicon: AssetsManager.moneyIcon,
+                icon: Icons.payments_outlined,
                 value: controller.mainDashboardDataModel?.totalExpenses ?? '0',
                 subtitle: 'currency',
               ),
@@ -175,39 +174,70 @@ class _UpcomingChecksCard extends StatelessWidget {
         ? 'لا يوجد شيكات قادمة'
         : totals.entries
             .map((e) => '${NumberFormat('#,##0.##').format(e.value)} ${e.key}')
-            .join('\n');
+            .join(' | ');
 
-    return Material(
-      color:
-          ThemeService.isDark.value ? AppColors.customGreyColor4 : Colors.white,
-      borderRadius: BorderRadius.circular(5.r),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(5.r),
-        onTap: checks.isEmpty ? null : () => _showDetails(context),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 24.sp),
-              SizedBox(height: 5.h),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700)),
-              SizedBox(height: 6.h),
-              Text(summary,
-                  textAlign: TextAlign.center,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700)),
-              if (checks.isNotEmpty)
-                Text('اضغط لعرض التفاصيل',
-                    style: TextStyle(fontSize: 9.sp, color: Colors.grey)),
-            ],
-          ),
+    return GestureDetector(
+      onTap: checks.isEmpty ? null : () => _showDetails(context),
+      child: Container(
+        margin: EdgeInsets.all(5.r),
+        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : Colors.white,
+          borderRadius: BorderRadius.circular(5.r),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 29.r,
+              height: 29.r,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(icon, size: 16.sp, color: color),
+            ),
+            SizedBox(width: 7.w),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(title,
+                          style: TextStyle(
+                              fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                      SizedBox(width: 4.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 5.w, vertical: 1.h),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text('${checks.length}',
+                            style: TextStyle(
+                                color: color,
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    summary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

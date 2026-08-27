@@ -65,10 +65,10 @@ class AdminDashboardImplement implements AdminDashboardRepository {
   }
 
   @override
-  Future<List<String>> getHiddenDashboardButtonKeys() async {
+  Future<DashboardUiPreferences> getDashboardUiPreferences() async {
     if (await networkInfo.isConnected) {
       try {
-        return await adminDashboardDataSource.getHiddenDashboardButtonKeys();
+        return await adminDashboardDataSource.getDashboardUiPreferences();
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
@@ -78,13 +78,15 @@ class AdminDashboardImplement implements AdminDashboardRepository {
   }
 
   @override
-  Future<List<String>> saveHiddenDashboardButtonKeys(
-    List<String> hiddenButtonKeys,
-  ) async {
+  Future<DashboardUiPreferences> saveDashboardUiPreferences({
+    required List<String> hiddenButtonKeys,
+    required List<String> buttonOrderKeys,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        return await adminDashboardDataSource.saveHiddenDashboardButtonKeys(
-          hiddenButtonKeys,
+        return await adminDashboardDataSource.saveDashboardUiPreferences(
+          hiddenButtonKeys: hiddenButtonKeys,
+          buttonOrderKeys: buttonOrderKeys,
         );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

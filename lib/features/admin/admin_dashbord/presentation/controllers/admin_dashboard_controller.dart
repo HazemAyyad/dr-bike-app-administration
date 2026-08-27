@@ -189,12 +189,19 @@ class AdminDashboardController extends GetxController
   ];
 
   final RxList<String> hiddenDashboardButtonKeys = <String>[].obs;
+  final RxList<String> dashboardButtonOrderKeys = <String>[].obs;
   final RxBool isUiPreferencesSaving = false.obs;
 
   List<Map<String, dynamic>> get visibleDashboardButtons {
-    return buttons
+    final visible = buttons
         .where((button) => !isDashboardButtonHidden(button))
         .toList(growable: false);
+    visible.sort((a, b) {
+      final aIndex = dashboardButtonOrderKeys.indexOf(dashboardButtonKey(a));
+      final bIndex = dashboardButtonOrderKeys.indexOf(dashboardButtonKey(b));
+      return (aIndex < 0 ? 9999 : aIndex).compareTo(bIndex < 0 ? 9999 : bIndex);
+    });
+    return visible;
   }
 
   String dashboardButtonKey(Map<String, dynamic> button) {
@@ -210,8 +217,9 @@ class AdminDashboardController extends GetxController
   Future<void> loadUiPreferences() async {
     if (userType != 'admin') return;
     try {
-      final hiddenKeys = await getAdminUiPreferencesUsecase.call();
-      hiddenDashboardButtonKeys.assignAll(hiddenKeys);
+      final preferences = await getAdminUiPreferencesUsecase.call();
+      hiddenDashboardButtonKeys.assignAll(preferences.hiddenButtonKeys);
+      dashboardButtonOrderKeys.assignAll(preferences.buttonOrderKeys);
       update();
     } catch (_) {
       hiddenDashboardButtonKeys.clear();
@@ -238,8 +246,10 @@ class AdminDashboardController extends GetxController
     try {
       final saved = await saveAdminUiPreferencesUsecase.call(
         hiddenDashboardButtonKeys.toList(growable: false),
+        buttonOrderKeys: dashboardButtonOrderKeys.toList(growable: false),
       );
-      hiddenDashboardButtonKeys.assignAll(saved);
+      hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
+      dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
       Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
@@ -257,10 +267,45 @@ class AdminDashboardController extends GetxController
 
     isUiPreferencesSaving(true);
     try {
-      final saved = await saveAdminUiPreferencesUsecase.call(const []);
-      hiddenDashboardButtonKeys.assignAll(saved);
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        const [],
+        buttonOrderKeys: const [],
+      );
+      hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
+      dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
+      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      isUiPreferencesSaving(false);
+      update();
+    }
+  }
+
+  Future<void> reorderDashboardButton(
+      String draggedKey, String targetKey) async {
+    if (draggedKey == targetKey || isUiPreferencesSaving.value) return;
+    final previous = List<String>.from(dashboardButtonOrderKeys);
+    final completeOrder = buttons.map(dashboardButtonKey).toList();
+    completeOrder.removeWhere((key) => dashboardButtonOrderKeys.contains(key));
+    final order = [...dashboardButtonOrderKeys, ...completeOrder];
+    final from = order.indexOf(draggedKey);
+    final to = order.indexOf(targetKey);
+    if (from < 0 || to < 0) return;
+    final moved = order.removeAt(from);
+    order.insert(to, moved);
+    dashboardButtonOrderKeys.assignAll(order);
+    update();
+
+    isUiPreferencesSaving(true);
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        hiddenDashboardButtonKeys.toList(growable: false),
+        buttonOrderKeys: order,
+      );
+      dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
+    } catch (_) {
+      dashboardButtonOrderKeys.assignAll(previous);
       Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
     } finally {
       isUiPreferencesSaving(false);

@@ -5,7 +5,7 @@ class GetAdminUiPreferencesUsecase {
 
   GetAdminUiPreferencesUsecase({required this.adminDashboardRepository});
 
-  Future<List<String>> call() {
-    return adminDashboardRepository.getHiddenDashboardButtonKeys();
+  Future<DashboardUiPreferences> call() {
+    return adminDashboardRepository.getDashboardUiPreferences();
   }
 }

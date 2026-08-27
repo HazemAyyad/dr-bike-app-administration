@@ -160,6 +160,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                   buttons: controller.visibleDashboardButtons,
                   badges:
                       controller.mainDashboardDataModel?.dashboardBadges ?? {},
+                  onReorder: controller.reorderDashboardButton,
                 ),
               ),
               SizedBox(height: 70.h),

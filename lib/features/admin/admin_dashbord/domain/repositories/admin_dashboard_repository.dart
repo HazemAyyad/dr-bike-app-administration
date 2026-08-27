@@ -12,9 +12,20 @@ abstract class AdminDashboardRepository {
 
   Future<MainDashboardDataModel> getAdminDashboardData();
 
-  Future<List<String>> getHiddenDashboardButtonKeys();
+  Future<DashboardUiPreferences> getDashboardUiPreferences();
 
-  Future<List<String>> saveHiddenDashboardButtonKeys(
-    List<String> hiddenButtonKeys,
-  );
+  Future<DashboardUiPreferences> saveDashboardUiPreferences({
+    required List<String> hiddenButtonKeys,
+    required List<String> buttonOrderKeys,
+  });
+}
+
+class DashboardUiPreferences {
+  final List<String> hiddenButtonKeys;
+  final List<String> buttonOrderKeys;
+
+  const DashboardUiPreferences({
+    this.hiddenButtonKeys = const [],
+    this.buttonOrderKeys = const [],
+  });
 }

@@ -260,6 +260,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                               .employeeData.value?.permissions
                               .map((e) => e.id)
                               .toList(),
+                          onReorder: controller.reorderDashboardButton,
                         ),
                       ],
                     );

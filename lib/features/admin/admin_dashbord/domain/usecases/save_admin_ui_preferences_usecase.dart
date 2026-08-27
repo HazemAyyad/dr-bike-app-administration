@@ -5,9 +5,13 @@ class SaveAdminUiPreferencesUsecase {
 
   SaveAdminUiPreferencesUsecase({required this.adminDashboardRepository});
 
-  Future<List<String>> call(List<String> hiddenButtonKeys) {
-    return adminDashboardRepository.saveHiddenDashboardButtonKeys(
-      hiddenButtonKeys,
+  Future<DashboardUiPreferences> call(
+    List<String> hiddenButtonKeys, {
+    required List<String> buttonOrderKeys,
+  }) {
+    return adminDashboardRepository.saveDashboardUiPreferences(
+      hiddenButtonKeys: hiddenButtonKeys,
+      buttonOrderKeys: buttonOrderKeys,
     );
   }
 }

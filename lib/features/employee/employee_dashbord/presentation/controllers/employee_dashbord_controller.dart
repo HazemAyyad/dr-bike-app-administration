@@ -22,6 +22,7 @@ import '../../../../../core/services/user_data.dart';
 import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
+import '../../../../admin/admin_dashbord/domain/repositories/admin_dashboard_repository.dart';
 import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_usecase.dart';
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
@@ -474,6 +475,59 @@ class EmployeeDashbordController extends GetxController
         'route': AppRoutes.GENERALDATALISTSCREEN
       }
   ];
+  List<String> _hiddenDashboardButtonKeys = const [];
+  bool _dashboardOrderSaving = false;
+
+  String _dashboardButtonKey(Map<String, dynamic> button) {
+    final route = button['route']?.toString() ?? '';
+    return route.isNotEmpty ? route : button['id']?.toString() ?? '';
+  }
+
+  Future<void> loadDashboardOrder() async {
+    try {
+      final repository = Get.find<AdminDashboardRepository>();
+      final preferences = await repository.getDashboardUiPreferences();
+      _hiddenDashboardButtonKeys = preferences.hiddenButtonKeys;
+      final order = preferences.buttonOrderKeys;
+      buttons.sort((a, b) {
+        final ai = order.indexOf(_dashboardButtonKey(a));
+        final bi = order.indexOf(_dashboardButtonKey(b));
+        return (ai < 0 ? 9999 : ai).compareTo(bi < 0 ? 9999 : bi);
+      });
+      update();
+    } catch (_) {}
+  }
+
+  Future<void> reorderDashboardButton(
+      String draggedKey, String targetKey) async {
+    if (draggedKey == targetKey || _dashboardOrderSaving) return;
+    final previous = List<Map<String, dynamic>>.from(buttons);
+    final from =
+        buttons.indexWhere((item) => _dashboardButtonKey(item) == draggedKey);
+    final to =
+        buttons.indexWhere((item) => _dashboardButtonKey(item) == targetKey);
+    if (from < 0 || to < 0) return;
+    final moved = buttons.removeAt(from);
+    buttons.insert(to, moved);
+    update();
+    _dashboardOrderSaving = true;
+    try {
+      final repository = Get.find<AdminDashboardRepository>();
+      await repository.saveDashboardUiPreferences(
+        hiddenButtonKeys: _hiddenDashboardButtonKeys,
+        buttonOrderKeys: buttons.map(_dashboardButtonKey).toList(),
+      );
+    } catch (_) {
+      buttons
+        ..clear()
+        ..addAll(previous);
+      update();
+      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      _dashboardOrderSaving = false;
+    }
+  }
+
   void toggleAddMenu() {
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
@@ -1092,6 +1146,7 @@ class EmployeeDashbordController extends GetxController
       unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
     }
     syncPeriodBounds();
+    unawaited(loadDashboardOrder());
     refreshWifiPresencePermissions(request: true);
     unawaited(_bootstrapAttendance());
     _startAttendanceLiveRefresh();

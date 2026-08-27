@@ -9,6 +9,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../models/activity_summary_model.dart';
 import '../models/main_dashboard_mata_model.dart';
+import '../../domain/repositories/admin_dashboard_repository.dart';
 
 class AdminDashboardDatasource {
   final ApiConsumer api;
@@ -77,13 +78,19 @@ class AdminDashboardDatasource {
     }
   }
 
-  Future<List<String>> getHiddenDashboardButtonKeys() async {
+  Future<DashboardUiPreferences> getDashboardUiPreferences() async {
     try {
       final response = await api.get(EndPoints.adminUiPreferences);
       final data = response.data['data'] as Map? ?? {};
       final adminDashboard = data['admin_dashboard'] as Map? ?? {};
       final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
-      return keys.map((item) => item.toString()).toList(growable: false);
+      final order = adminDashboard['button_order_keys'] as List? ?? const [];
+      return DashboardUiPreferences(
+        hiddenButtonKeys:
+            keys.map((item) => item.toString()).toList(growable: false),
+        buttonOrderKeys:
+            order.map((item) => item.toString()).toList(growable: false),
+      );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};
       throw ServerException(
@@ -96,22 +103,30 @@ class AdminDashboardDatasource {
     }
   }
 
-  Future<List<String>> saveHiddenDashboardButtonKeys(
-    List<String> hiddenButtonKeys,
-  ) async {
+  Future<DashboardUiPreferences> saveDashboardUiPreferences({
+    required List<String> hiddenButtonKeys,
+    required List<String> buttonOrderKeys,
+  }) async {
     try {
       final response = await api.put(
         EndPoints.adminUiPreferences,
         data: {
           'admin_dashboard': {
             'hidden_button_keys': hiddenButtonKeys,
+            'button_order_keys': buttonOrderKeys,
           },
         },
       );
       final data = response.data['data'] as Map? ?? {};
       final adminDashboard = data['admin_dashboard'] as Map? ?? {};
       final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
-      return keys.map((item) => item.toString()).toList(growable: false);
+      final order = adminDashboard['button_order_keys'] as List? ?? const [];
+      return DashboardUiPreferences(
+        hiddenButtonKeys:
+            keys.map((item) => item.toString()).toList(growable: false),
+        buttonOrderKeys:
+            order.map((item) => item.toString()).toList(growable: false),
+      );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};
       throw ServerException(

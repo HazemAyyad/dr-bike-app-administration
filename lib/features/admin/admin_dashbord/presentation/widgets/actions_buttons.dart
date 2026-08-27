@@ -15,11 +15,19 @@ class BuildActionButtons extends StatelessWidget {
     required this.buttons,
     this.employeePermissions,
     this.badges = const {},
+    this.onReorder,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
   final List<int>? employeePermissions;
   final Map<String, int> badges;
+  final Future<void> Function(String draggedKey, String targetKey)? onReorder;
+
+  String _buttonKey(Map<String, dynamic> button) {
+    final route = button['route']?.toString() ?? '';
+    return route.isNotEmpty ? route : button['id']?.toString() ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredButtons = userType == 'admin'
@@ -68,6 +76,7 @@ class BuildActionButtons extends StatelessWidget {
               itemCount: filteredButtons.length,
               itemBuilder: (context, index) {
                 final button = filteredButtons[index];
+                final buttonKey = _buttonKey(button);
                 final badgeDescriptors = (button['badgeDescriptors'] as List?)
                         ?.whereType<Map>()
                         .map((item) => _ActionBadge.fromMap(item, badges))
@@ -75,11 +84,39 @@ class BuildActionButtons extends StatelessWidget {
                         .toList(growable: false) ??
                     const <_ActionBadge>[];
 
-                return _buildActionButton(
+                final tile = _buildActionButton(
                   button['title'],
                   button['route'],
                   badges[button['badgeKey']?.toString() ?? ''] ?? 0,
                   badgeDescriptors,
+                );
+                if (onReorder == null || buttonKey.isEmpty) return tile;
+                final tileWidth =
+                    (constraints.maxWidth - ((columns - 1) * 8.w)) / columns;
+                return DragTarget<String>(
+                  onWillAcceptWithDetails: (details) =>
+                      details.data != buttonKey,
+                  onAcceptWithDetails: (details) =>
+                      onReorder!(details.data, buttonKey),
+                  builder: (context, candidates, rejected) =>
+                      LongPressDraggable<String>(
+                    data: buttonKey,
+                    delay: const Duration(milliseconds: 350),
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: tileWidth,
+                        height: DesktopLayout.isDesktop(context) ? 65 : 52.h,
+                        child: Opacity(opacity: .92, child: tile),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(opacity: .25, child: tile),
+                    child: AnimatedScale(
+                      scale: candidates.isEmpty ? 1 : .94,
+                      duration: const Duration(milliseconds: 120),
+                      child: tile,
+                    ),
+                  ),
                 );
               },
             );

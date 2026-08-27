@@ -9,7 +9,8 @@ import '../../../../../core/utils/app_colors.dart';
 
 class StatCard extends StatelessWidget {
   final String title;
-  final String imageicon;
+  final String? imageicon;
+  final IconData? icon;
   final String value;
   final String subtitle;
   final bool show;
@@ -18,7 +19,8 @@ class StatCard extends StatelessWidget {
   const StatCard({
     Key? key,
     required this.title,
-    required this.imageicon,
+    this.imageicon,
+    this.icon,
     required this.value,
     required this.subtitle,
     this.onTap,
@@ -28,6 +30,9 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final formattedValue = show
+        ? value
+        : NumberFormat('#,###').format(double.tryParse(value) ?? 0);
 
     return GestureDetector(
       onTap: onTap,
@@ -39,68 +44,55 @@ class StatCard extends StatelessWidget {
               : Colors.white,
           borderRadius: BorderRadius.circular(5.r),
         ),
-        padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 2.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  imageicon,
-                  height: 20.h,
-                  width: 20.w,
-                  scale: 0.5,
-                ),
-                SizedBox(width: 5.w),
-                Flexible(
-                  child: Text(
+            Container(
+              width: 29.r,
+              height: 29.r,
+              padding: EdgeInsets.all(6.r),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: icon != null
+                  ? Icon(icon, color: AppColors.primaryColor, size: 17.sp)
+                  : Image.asset(
+                      imageicon!,
+                      color: AppColors.primaryColor,
+                      fit: BoxFit.contain,
+                    ),
+            ),
+            SizedBox(width: 7.w),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     title.tr,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium!.copyWith(
                       color: ThemeService.isDark.value
                           ? Colors.white
                           : AppColors.secondaryColor,
-                      fontSize: 13.sp,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 5.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    show
-                        ? value.toString()
-                        : NumberFormat('#,###')
-                            .format(double.parse(value.toString())),
-                    textAlign: TextAlign.center,
+                  Text(
+                    formattedValue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium!.copyWith(
                       color: AppColors.primaryColor,
                       fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-                // SizedBox(width: 4.w),
-                // Flexible(
-                //   child: Text(
-                //     subtitle.tr,
-                //     textAlign: TextAlign.center,
-                //     style: theme.textTheme.bodyMedium!.copyWith(
-                //       color: AppColors.primaryColor,
-                //       fontSize: 15.sp,
-                //       fontWeight: FontWeight.w700,
-                //     ),
-                //   ),
-                // ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
