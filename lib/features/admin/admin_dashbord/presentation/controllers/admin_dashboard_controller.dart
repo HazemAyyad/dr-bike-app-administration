@@ -540,12 +540,22 @@ class AdminDashboardController extends GetxController
 
   // get Main Dashboard Data
   MainDashboardDataModel? mainDashboardDataModel;
-  void getMainDashboardData() async {
+  Future<void> getMainDashboardData() async {
     isLoading(true);
     final result = await getMainDashboardDataUsecase.call();
     mainDashboardDataModel = result;
     isLoading(false);
     update();
+  }
+
+  Future<void> refreshDashboard() async {
+    await Future.wait([
+      getMainDashboardData(),
+      loadUiPreferences(),
+      if (userType == 'admin' &&
+          Get.isRegistered<AdminNotificationBadgeController>())
+        Get.find<AdminNotificationBadgeController>().refresh(),
+    ]);
   }
 
   @override

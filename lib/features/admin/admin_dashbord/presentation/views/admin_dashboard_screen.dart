@@ -140,26 +140,31 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
           SizedBox(width: 10.w),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // const CustomSearchBar(),
-            SizedBox(height: 20.h),
-            // بطاقات الإحصائيات
-            const BuildStatisticsCards(),
-            SizedBox(height: 20.h),
-            // أزرار الوظائف
-            GetBuilder<AdminDashboardController>(
-              builder: (controller) => BuildActionButtons(
-                buttons: controller.visibleDashboardButtons,
-                badges:
-                    controller.mainDashboardDataModel?.dashboardBadges ?? {},
+      body: RefreshIndicator(
+        onRefresh: controller.refreshDashboard,
+        color: AppColors.primaryColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // const CustomSearchBar(),
+              SizedBox(height: 20.h),
+              // بطاقات الإحصائيات
+              const BuildStatisticsCards(),
+              SizedBox(height: 20.h),
+              // أزرار الوظائف
+              GetBuilder<AdminDashboardController>(
+                builder: (controller) => BuildActionButtons(
+                  buttons: controller.visibleDashboardButtons,
+                  badges:
+                      controller.mainDashboardDataModel?.dashboardBadges ?? {},
+                ),
               ),
-            ),
-            SizedBox(height: 70.h),
-          ],
+              SizedBox(height: 70.h),
+            ],
+          ),
         ),
       ),
       floatingActionButton: Obx(
