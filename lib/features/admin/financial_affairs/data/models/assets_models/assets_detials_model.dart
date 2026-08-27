@@ -35,7 +35,9 @@ class AssetDetailsModel {
 
     List<String> mapMedia(dynamic raw) {
       if (raw is! List) return [];
-      return raw.map((x) => ShowNetImage.getPhoto(asNullableString(x))).toList();
+      return raw
+          .map((x) => ShowNetImage.getPhoto(asNullableString(x)))
+          .toList();
     }
 
     return AssetDetailsModel(

@@ -10,6 +10,7 @@ import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/show_image_or_video.dart';
 import '../../controllers/assets_controller.dart';
 import '../../widgets/assets_widget/asset_logs.dart';
+import '../../../../../../core/widgets/skeleton_loading.dart';
 
 class AddNewAssetsScreen extends GetView<AssetsController> {
   const AddNewAssetsScreen({Key? key}) : super(key: key);
@@ -28,13 +29,21 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
             child: GetBuilder<AssetsController>(
               builder: (controller) {
                 if (controller.isLoadingDepreciate.value) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 50.h),
-                      const CircularProgressIndicator(),
-                    ],
+                  return Padding(
+                    padding: EdgeInsets.only(top: 20.h),
+                    child: Column(
+                      children: List.generate(
+                        5,
+                        (index) => Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: SkeletonBlock(
+                            width: double.infinity,
+                            height: 54.h,
+                            radius: 10,
+                          ),
+                        ),
+                      ),
+                    ),
                   );
                 }
                 return Column(
@@ -114,6 +123,27 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                     SizedBox(height: 10.h),
                     if (controller.isEditing.value) const AssetLogs(),
                     SizedBox(height: 20.h),
+                    Obx(
+                      () => controller.isLoading.value &&
+                              controller.assetUploadProgress.value > 0
+                          ? Padding(
+                              padding: EdgeInsets.only(bottom: 12.h),
+                              child: Column(
+                                children: [
+                                  LinearProgressIndicator(
+                                    value: controller.assetUploadProgress.value,
+                                    minHeight: 7.h,
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  SizedBox(height: 6.h),
+                                  Text(
+                                    'جاري رفع مرفقات الأصل ${(controller.assetUploadProgress.value * 100).round()}%',
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                     AppButton(
                       isLoading: controller.isLoading,
                       onPressed: () {

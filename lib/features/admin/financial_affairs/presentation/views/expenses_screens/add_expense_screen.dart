@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
@@ -11,6 +13,7 @@ import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
 
@@ -64,6 +67,69 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                     ],
                   ),
                   SizedBox(height: 20.h),
+                  if (!controller.isEditing.value)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Obx(
+                            () => DropdownButtonFormField<String>(
+                              initialValue: controller.expenseType.value,
+                              decoration: const InputDecoration(
+                                labelText: 'نوع المصروف',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'general',
+                                  child: Text('مصروف عمومي'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'salary',
+                                  child: Text('مصروف راتب'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'destruction',
+                                  child: Text('مصروف إتلاف بضاعة'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  controller.expenseType.value = value;
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: TextFormField(
+                            controller: controller.expenseDateController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'تاريخ المصروف',
+                              border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_month_rounded),
+                            ),
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'حدد تاريخ المصروف'
+                                : null,
+                            onTap: () async {
+                              final selected = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                              );
+                              if (selected != null) {
+                                controller.expenseDateController.text =
+                                    '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (!controller.isEditing.value) SizedBox(height: 20.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -175,9 +241,15 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                   MediaUploadButton(
                     allowedType: MediaType.image,
                     onFilesChanged: (files) {
-                      controller.invoiceFile = files;
+                      controller.setInvoiceFiles(files);
                     },
                     title: 'invoiceImage',
+                  ),
+                  GetBuilder<ExpensesController>(
+                    builder: (controller) => _ExpenseAttachmentPreview(
+                      files: controller.invoiceFile,
+                      onRemove: controller.removeInvoiceFileAt,
+                    ),
                   ),
                   SizedBox(height: 20.h),
                   CustomTextField(
@@ -190,11 +262,40 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                   const EditImagesWidget(),
                   MediaUploadButton(
                     onFilesChanged: (files) {
-                      controller.expensesFile = files;
+                      controller.setExpenseMediaFiles(files);
                     },
                     title: 'uploadMedia',
                   ),
+                  GetBuilder<ExpensesController>(
+                    builder: (controller) => _ExpenseAttachmentPreview(
+                      files: controller.expensesFile,
+                      onRemove: controller.removeExpenseMediaAt,
+                    ),
+                  ),
                   SizedBox(height: 50.h),
+                  Obx(
+                    () => controller.isAddLoading.value &&
+                            controller.uploadProgress.value > 0
+                        ? Padding(
+                            padding: EdgeInsets.only(bottom: 14.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                LinearProgressIndicator(
+                                  value: controller.uploadProgress.value,
+                                  minHeight: 7.h,
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                SizedBox(height: 6.h),
+                                Text(
+                                  'جاري رفع المرفقات ${(controller.uploadProgress.value * 100).round()}%',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                   AppButton(
                     isLoading: controller.isAddLoading,
                     text: controller.isEditing.value
@@ -206,6 +307,96 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                   ),
                 ],
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpenseAttachmentPreview extends StatelessWidget {
+  const _ExpenseAttachmentPreview({
+    required this.files,
+    required this.onRemove,
+  });
+
+  final List<File> files;
+  final ValueChanged<int> onRemove;
+
+  bool _isVideo(String path) {
+    final value = path.toLowerCase();
+    return value.endsWith('.mp4') ||
+        value.endsWith('.mov') ||
+        value.endsWith('.avi') ||
+        value.endsWith('.webm') ||
+        value.endsWith('.mkv');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (files.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: 10.h),
+      child: SizedBox(
+        height: 92.h,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: files.length,
+          separatorBuilder: (_, __) => SizedBox(width: 8.w),
+          itemBuilder: (context, index) {
+            final path = files[index].path;
+            final remote = path.startsWith('http');
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10.r),
+                  child: Container(
+                    width: 86.w,
+                    height: 86.h,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.06),
+                    child: _isVideo(path)
+                        ? const Icon(Icons.play_circle_outline_rounded)
+                        : remote
+                            ? CachedNetworkImage(
+                                imageUrl: path,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => SkeletonBlock(
+                                  width: 86.w,
+                                  height: 86.h,
+                                  radius: 10,
+                                ),
+                                errorWidget: (_, __, ___) =>
+                                    const Icon(Icons.broken_image_outlined),
+                              )
+                            : Image.file(
+                                files[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.insert_drive_file_outlined),
+                              ),
+                  ),
+                ),
+                PositionedDirectional(
+                  top: 3,
+                  end: 3,
+                  child: InkWell(
+                    onTap: () => onRemove(index),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 16),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

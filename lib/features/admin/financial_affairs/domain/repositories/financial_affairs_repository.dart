@@ -12,9 +12,12 @@ import '../../data/models/official_papers_models/file_data_model.dart';
 
 abstract class FinancialAffairsRepository {
   // assets
-  Future<dynamic> getAllFinancial({required String page});
+  Future<dynamic> getAllFinancial({
+    required String page,
+    Map<String, dynamic>? filters,
+  });
 
-  Future<List<AssetLogModel>> getAssetsLogs();
+  Future<List<AssetLogModel>> getAssetsLogs({Map<String, dynamic>? filters});
 
   Future<Either<Failure, String>> depreciateAssets();
 
@@ -28,6 +31,7 @@ abstract class FinancialAffairsRepository {
     required double depreciationRate,
     required int numberOfMonths,
     required List<File?> selectedFile,
+    void Function(double progress)? onUploadProgress,
   });
 
   // expenses
@@ -43,12 +47,20 @@ abstract class FinancialAffairsRepository {
     required String price,
     required String notes,
     required String boxId,
+    required String expenseType,
+    required String expenseDate,
     required List<File?> invoiceImage,
     required List<File?> media,
+    void Function(double progress)? onUploadProgress,
     String? expenseId,
   });
 
   Future<ExpenseDetailModel> getExpensesData({required String expenseId});
+
+  Future<Uint8List> getExpenseReport({
+    required String format,
+    Map<String, dynamic>? filters,
+  });
 
   // official papers
   Future<Either<Failure, String>> cancelPaper({
@@ -61,6 +73,7 @@ abstract class FinancialAffairsRepository {
     required String description,
     required List<XFile?> media,
     required String pictureId,
+    void Function(double progress)? onUploadProgress,
   });
 
   Future<Either<Failure, String>> addPaper({
@@ -69,6 +82,7 @@ abstract class FinancialAffairsRepository {
     required List<File?> media,
     required String notes,
     required String paperId,
+    void Function(double progress)? onUploadProgress,
   });
 
   Future<Either<Failure, String>> addSafe({
@@ -86,7 +100,7 @@ abstract class FinancialAffairsRepository {
 
   Future<List<FilePapersModel>> getFilePapers({required String fileId});
 
-  Future<Uint8List> getAssetReport();
+  Future<Uint8List> getAssetReport({Map<String, dynamic>? filters});
 
   Future<Either<Failure, String>> depreciateOneAssets({
     required String assetId,

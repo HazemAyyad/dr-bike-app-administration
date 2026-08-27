@@ -60,11 +60,13 @@ class BoxesDatasource {
   Future<List<ShownBoxesModel>> getShownBoxes({required int screen}) async {
     try {
       final response = await api.get(
-        screen == 0
-            ? EndPoints.getShownBoxes
-            : screen == 2
-                ? EndPoints.getHiddenBoxes
-                : EndPoints.getHiddenBoxes,
+        screen == 3
+            ? EndPoints.getExpenseAvailableBoxes
+            : screen == 0
+                ? EndPoints.getShownBoxes
+                : screen == 2
+                    ? EndPoints.getHiddenBoxes
+                    : EndPoints.getHiddenBoxes,
       );
       final raw = response.data;
       if (kDebugMode) {

@@ -16,6 +16,7 @@ class AddPaperUsecase {
     required List<File?> media,
     required String notes,
     required String paperId,
+    void Function(double progress)? onUploadProgress,
   }) {
     return financialAffairsRepository.addPaper(
       paperId: paperId,
@@ -23,6 +24,7 @@ class AddPaperUsecase {
       fileId: fileId,
       media: media,
       notes: notes,
+      onUploadProgress: onUploadProgress,
     );
   }
 }

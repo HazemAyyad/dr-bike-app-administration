@@ -57,10 +57,16 @@ class OfficialPapersController extends GetxController
 
   final RxInt currentTab = 0.obs;
   final tabs = ['company_documents', 'important_images'].obs;
+  final RxString archiveStatusFilter = 'active'.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
     update();
+  }
+
+  void setArchiveStatusFilter(String status) {
+    archiveStatusFilter.value = status;
+    getAllExpenses();
   }
 
   List<PaperModel> papersSearch = [];
@@ -145,11 +151,14 @@ class OfficialPapersController extends GetxController
   late Animation<double> sizeAnimation;
 
   RxBool isLoading = false.obs;
+  final RxDouble officialUploadProgress = 0.0.obs;
   void getAllExpenses() async {
     FinacialService().papers.isEmpty ? isLoading(true) : isLoading(false);
     update();
     // papers
-    final papers = await getAllFinancialUsecase.call(page: '4');
+    final filters = {'status': archiveStatusFilter.value};
+    final papers =
+        await getAllFinancialUsecase.call(page: '4', filters: filters);
     debugParseLog(
       'OfficialPapersController.getAllExpenses',
       'page=4 papers responseType=${papers.runtimeType}',
@@ -164,7 +173,8 @@ class OfficialPapersController extends GetxController
     papersSearch = FinacialService().papers;
 
     // pictures
-    final pictures = await getAllFinancialUsecase.call(page: '5');
+    final pictures =
+        await getAllFinancialUsecase.call(page: '5', filters: filters);
     debugParseLog(
       'OfficialPapersController.getAllExpenses',
       'page=5 pictures responseType=${pictures.runtimeType}',
@@ -179,7 +189,8 @@ class OfficialPapersController extends GetxController
     picturesSearch = FinacialService().pictures;
 
     // files
-    final files = await getAllFinancialUsecase.call(page: '6');
+    final files =
+        await getAllFinancialUsecase.call(page: '6', filters: filters);
     debugParseLog(
       'OfficialPapersController.getAllExpenses',
       'page=6 files responseType=${files.runtimeType}',
@@ -200,7 +211,10 @@ class OfficialPapersController extends GetxController
   // get safes
   void getTreasury() async {
     isFilesLoading(true);
-    final safes = await getAllFinancialUsecase.call(page: '7');
+    final safes = await getAllFinancialUsecase.call(
+      page: '7',
+      filters: {'status': archiveStatusFilter.value},
+    );
     debugParseLog(
       'OfficialPapersController.getTreasury',
       'page=7 treasuries responseType=${safes.runtimeType}',
@@ -229,12 +243,14 @@ class OfficialPapersController extends GetxController
   // add picture
   void addPicture() async {
     isLoading(true);
+    officialUploadProgress.value = 0;
     if (formKey.currentState!.validate()) {
       final result = await addPictureUsecase.call(
         pictureId: pictureId,
         name: pictureNameController.text,
         description: pictureDescriptionController.text,
         media: [selectedFile.value],
+        onUploadProgress: (progress) => officialUploadProgress.value = progress,
       );
 
       result.fold(
@@ -266,18 +282,21 @@ class OfficialPapersController extends GetxController
       );
     }
     isLoading(false);
+    officialUploadProgress.value = 0;
     update();
   }
 
   // add Paper
   void addPaper() async {
     isLoading(true);
+    officialUploadProgress.value = 0;
     if (formKey.currentState!.validate()) {
       final result = await addPaperUsecase.call(
         paperId: paperId,
         name: paperNameController.text,
         fileId: fileController.text,
         media: paperFiles,
+        onUploadProgress: (progress) => officialUploadProgress.value = progress,
         notes: notesController.text,
       );
 
@@ -311,6 +330,7 @@ class OfficialPapersController extends GetxController
       );
     }
     isLoading(false);
+    officialUploadProgress.value = 0;
     update();
   }
 

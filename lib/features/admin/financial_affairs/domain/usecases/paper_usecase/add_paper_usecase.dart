@@ -14,12 +14,14 @@ class AddPictureUsecase {
     required String description,
     required List<XFile?> media,
     required String pictureId,
+    void Function(double progress)? onUploadProgress,
   }) {
     return financialAffairsRepository.addPicture(
       pictureId: pictureId,
       name: name,
       description: description,
       media: media,
+      onUploadProgress: onUploadProgress,
     );
   }
 }

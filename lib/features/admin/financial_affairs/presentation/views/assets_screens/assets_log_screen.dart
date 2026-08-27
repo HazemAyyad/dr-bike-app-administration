@@ -9,6 +9,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/assets_controller.dart';
 import '../../controllers/finacial_service.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class AssetsLogScreen extends GetView<AssetsController> {
   const AssetsLogScreen({Key? key}) : super(key: key);
@@ -35,13 +36,36 @@ class AssetsLogScreen extends GetView<AssetsController> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(
+            child: Obx(
+              () => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('كل الفترات'),
+                      selected: controller.assetLogPeriodFilter.value.isEmpty,
+                      onSelected: (_) => controller.setAssetLogPeriodFilter(''),
+                    ),
+                    SizedBox(width: 8.w),
+                    ChoiceChip(
+                      label: const Text('الشهر الحالي'),
+                      selected: controller.assetLogPeriodFilter.value ==
+                          DateFormat('yyyy-MM').format(DateTime.now()),
+                      onSelected: (_) => controller.setAssetLogPeriodFilter(
+                        DateFormat('yyyy-MM').format(DateTime.now()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           GetBuilder<AssetsController>(
             builder: (controller) {
               if (controller.isLoadingDepreciate.value) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return const FinancialListSkeletonSliver();
               }
 
               if (FinacialService().assetsLogs.isEmpty) {

@@ -168,6 +168,17 @@ class AddPicture extends GetView<OfficialPapersController> {
                   title: 'uploadMedia'.tr,
                 ),
                 SizedBox(height: 20.h),
+                Obx(
+                  () => controller.isLoading.value &&
+                          controller.officialUploadProgress.value > 0
+                      ? LinearProgressIndicator(
+                          value: controller.officialUploadProgress.value,
+                          minHeight: 7.h,
+                          borderRadius: BorderRadius.circular(8.r),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                SizedBox(height: 10.h),
                 AppButton(
                   isSafeArea: false,
                   isLoading: controller.isLoading,

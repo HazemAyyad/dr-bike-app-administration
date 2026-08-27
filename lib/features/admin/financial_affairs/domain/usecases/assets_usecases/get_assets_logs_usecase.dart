@@ -6,7 +6,7 @@ class GetAssetsLogsUsecase {
 
   GetAssetsLogsUsecase({required this.financialAffairsRepository});
 
-  Future<List<AssetLogModel>> call() {
-    return financialAffairsRepository.getAssetsLogs();
+  Future<List<AssetLogModel>> call({Map<String, dynamic>? filters}) {
+    return financialAffairsRepository.getAssetsLogs(filters: filters);
   }
 }

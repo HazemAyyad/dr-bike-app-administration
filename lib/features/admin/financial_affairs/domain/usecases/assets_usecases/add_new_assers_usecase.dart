@@ -18,6 +18,7 @@ class AddNewAssetsUsecase {
     required double depreciationRate,
     required int numberOfMonths,
     required List<File?> selectedFile,
+    void Function(double progress)? onUploadProgress,
   }) {
     return financialAffairsRepository.addNewAssets(
       assetId: assetId,
@@ -27,6 +28,7 @@ class AddNewAssetsUsecase {
       depreciationRate: depreciationRate,
       numberOfMonths: numberOfMonths,
       selectedFile: selectedFile,
+      onUploadProgress: onUploadProgress,
     );
   }
 }

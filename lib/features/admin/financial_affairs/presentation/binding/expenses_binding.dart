@@ -21,6 +21,7 @@ import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';
+import '../../domain/usecases/expenses_usecases/get_expense_report_usecase.dart';
 import '../controllers/expenses_controller.dart';
 
 class ExpensesBinding extends Bindings {
@@ -42,6 +43,9 @@ class ExpensesBinding extends Bindings {
         ),
         getShownBoxUsecase: GetShownBoxUsecase(
           boxesRepository: Get.find<BoxesImplement>(),
+        ),
+        getExpenseReportUsecase: GetExpenseReportUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
       ),
     );

@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../data/models/expenses_models/destruction_model.dart';
 import '../../../data/models/expenses_models/expense_data_model.dart';
 import '../../controllers/expenses_controller.dart';
@@ -26,6 +27,18 @@ class ExpensesScreen extends GetView<ExpensesController> {
         fromDateController: controller.fromController,
         toDateController: controller.toController,
         action: false,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.download_rounded),
+            onSelected: controller.downloadExpenseReport,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'pdf', child: Text('تنزيل PDF')),
+              PopupMenuItem(value: 'xlsx', child: Text('تنزيل Excel')),
+              PopupMenuItem(value: 'csv', child: Text('تنزيل CSV')),
+            ],
+          ),
+          SizedBox(width: 8.w),
+        ],
         onPressedFilter: () {
           controller.filterExpensesByDate();
         },
@@ -37,6 +50,43 @@ class ExpensesScreen extends GetView<ExpensesController> {
               tabs: controller.tabs,
               currentTab: controller.currentTab,
               changeTab: controller.changeTab,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Obx(
+              () => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
+                child: Row(
+                  children: [
+                    _ExpenseTypeChip(
+                      label: 'الكل',
+                      value: '',
+                      selected: controller.expenseTypeFilter.value.isEmpty,
+                      onSelected: controller.setExpenseTypeFilter,
+                    ),
+                    _ExpenseTypeChip(
+                      label: 'عمومية',
+                      value: 'general',
+                      selected: controller.expenseTypeFilter.value == 'general',
+                      onSelected: controller.setExpenseTypeFilter,
+                    ),
+                    _ExpenseTypeChip(
+                      label: 'رواتب',
+                      value: 'salary',
+                      selected: controller.expenseTypeFilter.value == 'salary',
+                      onSelected: controller.setExpenseTypeFilter,
+                    ),
+                    _ExpenseTypeChip(
+                      label: 'إتلاف',
+                      value: 'destruction',
+                      selected:
+                          controller.expenseTypeFilter.value == 'destruction',
+                      onSelected: controller.setExpenseTypeFilter,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -58,10 +108,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
           GetBuilder<ExpensesController>(
             builder: (controller) {
               if (controller.isLoading.value) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return const _ExpensesSkeletonSliver();
               }
 
               if (controller.currentTab.value == 0
@@ -149,12 +196,82 @@ class ExpensesScreen extends GetView<ExpensesController> {
           controller.expensePriceController.clear();
           controller.expenseNoteController.clear();
           controller.boxIdController.clear();
+          controller.expenseDateController.text =
+              DateTime.now().toIso8601String().split('T').first;
+          controller.expenseType.value = 'general';
           controller.invoiceFile.clear();
           controller.expensesFile.clear();
         },
         opacityAnimation: controller.sizeAnimation,
         sizeAnimation: controller.opacityAnimation,
         addList: controller.addList,
+      ),
+    );
+  }
+}
+
+class _ExpenseTypeChip extends StatelessWidget {
+  const _ExpenseTypeChip({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String value;
+  final bool selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: 8.w),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onSelected(value),
+      ),
+    );
+  }
+}
+
+class _ExpensesSkeletonSliver extends StatelessWidget {
+  const _ExpensesSkeletonSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
+      sliver: SliverList.builder(
+        itemCount: 7,
+        itemBuilder: (context, index) => Container(
+          margin: EdgeInsets.only(bottom: 12.h),
+          padding: EdgeInsets.all(12.r),
+          decoration: BoxDecoration(
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : AppColors.whiteColor2,
+            borderRadius: BorderRadius.circular(14.r),
+          ),
+          child: Row(
+            children: [
+              SkeletonBlock(width: 58.w, height: 58.h, radius: 12),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(width: 150.w, height: 14.h, radius: 6),
+                    SizedBox(height: 10.h),
+                    SkeletonBlock(width: 95.w, height: 11.h, radius: 5),
+                  ],
+                ),
+              ),
+              SkeletonBlock(width: 62.w, height: 30.h, radius: 8),
+            ],
+          ),
+        ),
       ),
     );
   }

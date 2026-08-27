@@ -12,6 +12,7 @@ import '../../controllers/official_papers_controller.dart';
 import '../../widgets/official_papers_widgets/add_files_dialog.dart';
 import '../../widgets/official_papers_widgets/cancel_file_dialog.dart';
 import '../../widgets/official_papers_widgets/custom_data_widget.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class TreasuryScreen extends GetView<OfficialPapersController> {
   const TreasuryScreen({Key? key}) : super(key: key);
@@ -25,11 +26,7 @@ class TreasuryScreen extends GetView<OfficialPapersController> {
           Obx(
             () {
               if (controller.isFilesLoading.value) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+                return const FinancialGridSkeletonSliver();
               }
               if (FinacialService().safes.isEmpty) {
                 return const SliverFillRemaining(

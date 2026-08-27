@@ -14,6 +14,7 @@ import '../../controllers/official_papers_controller.dart';
 import '../../widgets/official_papers_widgets/add_picture.dart';
 import '../../widgets/official_papers_widgets/official_papers_card.dart';
 import '../../widgets/official_papers_widgets/picture_card.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class OfficialPapersScreen extends GetView<OfficialPapersController> {
   const OfficialPapersScreen({Key? key}) : super(key: key);
@@ -51,6 +52,38 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
             ),
           ),
           SliverToBoxAdapter(
+            child: Obx(
+              () => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
+                child: Row(
+                  children: [
+                    _ArchiveChip(
+                      label: 'النشطة',
+                      value: 'active',
+                      selected:
+                          controller.archiveStatusFilter.value == 'active',
+                      onSelected: controller.setArchiveStatusFilter,
+                    ),
+                    _ArchiveChip(
+                      label: 'المؤرشفة',
+                      value: 'archived',
+                      selected:
+                          controller.archiveStatusFilter.value == 'archived',
+                      onSelected: controller.setArchiveStatusFilter,
+                    ),
+                    _ArchiveChip(
+                      label: 'الكل',
+                      value: 'all',
+                      selected: controller.archiveStatusFilter.value == 'all',
+                      onSelected: controller.setArchiveStatusFilter,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
               child: SearchBar(
@@ -68,10 +101,9 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
           GetBuilder<OfficialPapersController>(
             builder: (controller) {
               if (controller.isLoading.value) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return controller.currentTab.value == 0
+                    ? const FinancialListSkeletonSliver()
+                    : const FinancialGridSkeletonSliver();
               }
 
               if (controller.currentTab.value == 0
@@ -150,6 +182,32 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ArchiveChip extends StatelessWidget {
+  const _ArchiveChip({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String value;
+  final bool selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: 8.w),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onSelected(value),
       ),
     );
   }

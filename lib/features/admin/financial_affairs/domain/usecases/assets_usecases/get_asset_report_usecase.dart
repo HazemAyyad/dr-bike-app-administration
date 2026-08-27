@@ -7,7 +7,7 @@ class GetAssetReportUsecase {
 
   GetAssetReportUsecase({required this.financialAffairsRepository});
 
-  Future<Uint8List> call() {
-    return financialAffairsRepository.getAssetReport();
+  Future<Uint8List> call({Map<String, dynamic>? filters}) {
+    return financialAffairsRepository.getAssetReport(filters: filters);
   }
 }

@@ -10,6 +10,7 @@ import '../../../../../../routes/app_routes.dart';
 import '../../controllers/assets_controller.dart';
 import '../../widgets/assets_widget/assets_card.dart';
 import '../../widgets/assets_widget/assets_data.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class AssetsScreen extends GetView<AssetsController> {
   const AssetsScreen({Key? key}) : super(key: key);
@@ -29,13 +30,55 @@ class AssetsScreen extends GetView<AssetsController> {
       body: CustomScrollView(
         slivers: [
           const AssetsData(),
+          SliverToBoxAdapter(
+            child: Obx(
+              () => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+                child: Row(
+                  children: [
+                    _AssetStatusChip(
+                      label: 'الكل',
+                      value: '',
+                      selected: controller.assetStatusFilter.value.isEmpty,
+                      onSelected: controller.setAssetStatusFilter,
+                    ),
+                    _AssetStatusChip(
+                      label: 'فعّال',
+                      value: 'active',
+                      selected: controller.assetStatusFilter.value == 'active',
+                      onSelected: controller.setAssetStatusFilter,
+                    ),
+                    _AssetStatusChip(
+                      label: 'مكتمل الإهلاك',
+                      value: 'fully_depreciated',
+                      selected: controller.assetStatusFilter.value ==
+                          'fully_depreciated',
+                      onSelected: controller.setAssetStatusFilter,
+                    ),
+                    _AssetStatusChip(
+                      label: 'تم إهلاك الشهر',
+                      value: 'depreciated_this_month',
+                      selected: controller.assetStatusFilter.value ==
+                          'depreciated_this_month',
+                      onSelected: controller.setAssetStatusFilter,
+                    ),
+                    _AssetStatusChip(
+                      label: 'بانتظار إهلاك الشهر',
+                      value: 'pending_this_month',
+                      selected: controller.assetStatusFilter.value ==
+                          'pending_this_month',
+                      onSelected: controller.setAssetStatusFilter,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           GetBuilder<AssetsController>(
             builder: (controller) {
               if (controller.isLoading.value) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return const FinancialListSkeletonSliver();
               }
               if (controller.assetsFilter.isEmpty) {
                 return const SliverFillRemaining(
@@ -115,6 +158,32 @@ class AssetsScreen extends GetView<AssetsController> {
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _AssetStatusChip extends StatelessWidget {
+  const _AssetStatusChip({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String value;
+  final bool selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: 8.w),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onSelected(value),
+      ),
     );
   }
 }

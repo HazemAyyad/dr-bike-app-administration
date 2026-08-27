@@ -25,13 +25,18 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
 
   // get all assets
   @override
-  Future<dynamic> getAllFinancial({required String page}) async {
+  Future<dynamic> getAllFinancial({
+    required String page,
+    Map<String, dynamic>? filters,
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result =
-          await financialAffairsDatasource.getAllFinancial(page: page);
+      final result = await financialAffairsDatasource.getAllFinancial(
+        page: page,
+        filters: filters,
+      );
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -40,12 +45,15 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
 
   // get assets logs
   @override
-  Future<List<AssetLogModel>> getAssetsLogs() async {
+  Future<List<AssetLogModel>> getAssetsLogs({
+    Map<String, dynamic>? filters,
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await financialAffairsDatasource.getAssetsLogs();
+      final result =
+          await financialAffairsDatasource.getAssetsLogs(filters: filters);
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -62,6 +70,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required double depreciationRate,
     required int numberOfMonths,
     required List<File?> selectedFile,
+    void Function(double progress)? onUploadProgress,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -75,6 +84,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         depreciationRate: depreciationRate,
         numberOfMonths: numberOfMonths,
         selectedFile: selectedFile,
+        onUploadProgress: onUploadProgress,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -166,8 +176,11 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String price,
     required String notes,
     required String boxId,
+    required String expenseType,
+    required String expenseDate,
     required List<File?> invoiceImage,
     required List<File?> media,
+    void Function(double progress)? onUploadProgress,
     String? expenseId,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -179,8 +192,11 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         price: price,
         notes: notes,
         boxId: boxId,
+        expenseType: expenseType,
+        expenseDate: expenseDate,
         invoiceImage: invoiceImage,
         media: media,
+        onUploadProgress: onUploadProgress,
         expenseId: expenseId,
       );
       if (result['status'] == 'success') {
@@ -208,6 +224,24 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
       final result = await financialAffairsDatasource.getExpensesData(
           expenseId: expenseId);
       return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Uint8List> getExpenseReport({
+    required String format,
+    Map<String, dynamic>? filters,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await financialAffairsDatasource.getExpenseReport(
+        format: format,
+        filters: filters,
+      );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
@@ -248,6 +282,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String name,
     required String description,
     required List<XFile?> media,
+    void Function(double progress)? onUploadProgress,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -258,6 +293,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         name: name,
         description: description,
         media: media,
+        onUploadProgress: onUploadProgress,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -280,6 +316,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String fileId,
     required List<File?> media,
     required String notes,
+    void Function(double progress)? onUploadProgress,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -291,6 +328,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         fileId: fileId,
         media: media,
         notes: notes,
+        onUploadProgress: onUploadProgress,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -383,12 +421,13 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
   }
 
   @override
-  Future<Uint8List> getAssetReport() async {
+  Future<Uint8List> getAssetReport({Map<String, dynamic>? filters}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await financialAffairsDatasource.getAssetReport();
+      final result =
+          await financialAffairsDatasource.getAssetReport(filters: filters);
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

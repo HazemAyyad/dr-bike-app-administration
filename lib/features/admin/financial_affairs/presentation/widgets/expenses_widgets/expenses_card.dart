@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../data/models/expenses_models/expense_data_model.dart';
 import '../../controllers/expenses_controller.dart';
 
@@ -69,7 +70,7 @@ class ExpensesCard extends GetView<ExpensesController> {
                   imageUrl: expense.image!,
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   placeholder: (context, url) =>
-                      const Center(child: CircularProgressIndicator()),
+                      SkeletonBlock(width: 60.w, height: 50.h, radius: 9),
                 ),
               ),
             ),

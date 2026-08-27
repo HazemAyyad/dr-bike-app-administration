@@ -15,8 +15,11 @@ class AddExpenseUsecase {
     required String price,
     required String notes,
     required String boxId,
+    required String expenseType,
+    required String expenseDate,
     required List<File?> invoiceImage,
     required List<File?> media,
+    void Function(double progress)? onUploadProgress,
     String? expenseId,
   }) {
     return financialAffairsRepository.addExpense(
@@ -24,8 +27,11 @@ class AddExpenseUsecase {
       price: price,
       notes: notes,
       boxId: boxId,
+      expenseType: expenseType,
+      expenseDate: expenseDate,
       invoiceImage: invoiceImage,
       media: media,
+      onUploadProgress: onUploadProgress,
       expenseId: expenseId,
     );
   }

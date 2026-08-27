@@ -381,6 +381,9 @@ class EndPoints {
   // Boxes
   static const String addBox = 'add/box';
   static const String getShownBoxes = 'get/shown/boxes';
+  static const String getExpenseAvailableBoxes = 'expenses/available-boxes';
+  static String expenseReportExport(String format) =>
+      'expenses/report/export/$format';
   static const String getHiddenBoxes = 'get/hidden/boxes';
   static const String getBoxLogs = 'all/box/logs';
   static const String transferBoxBalance = 'transfer/box/balance';

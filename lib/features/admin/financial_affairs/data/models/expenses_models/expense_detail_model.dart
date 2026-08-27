@@ -29,7 +29,9 @@ class ExpenseDetailModel {
     final box = asMap(j['box']);
     List<String> mapPhotoList(dynamic raw) {
       if (raw is! List) return [];
-      return raw.map((x) => ShowNetImage.getPhoto(asNullableString(x))).toList();
+      return raw
+          .map((x) => ShowNetImage.getPhoto(asNullableString(x)))
+          .toList();
     }
 
     return ExpenseDetailModel(

@@ -12,6 +12,7 @@ import '../../widgets/official_papers_widgets/add_files_dialog.dart';
 import '../../widgets/official_papers_widgets/cancel_file_dialog.dart';
 import '../../widgets/official_papers_widgets/custom_data_widget.dart';
 import '../../widgets/official_papers_widgets/show_files_data.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class FilesScreen extends GetView<OfficialPapersController> {
   const FilesScreen({Key? key}) : super(key: key);
@@ -45,11 +46,7 @@ class FilesScreen extends GetView<OfficialPapersController> {
                   .where((element) => element.id.toString() == fileBoxId)
                   .first;
               if (controller.isFilesLoading.value) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+                return const FinancialGridSkeletonSliver();
               }
               if (files.files.isEmpty) {
                 return const SliverFillRemaining(

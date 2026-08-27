@@ -71,10 +71,23 @@ class AssetsController extends GetxController {
 
   List<File?> selectedFile = [];
   final RxBool isLoading = false.obs;
+  final RxDouble assetUploadProgress = 0.0.obs;
+  final RxString assetStatusFilter = ''.obs;
+  final RxString assetLogPeriodFilter = ''.obs;
 
   // filter assets by date
   final assetsFilter = <String, List<Asset>>{}.obs;
-  void filterAssetsByDate() {
+  Future<void> filterAssetsByDate() async {
+    await getAllAssets(applyFilters: true);
+    Get.back();
+  }
+
+  void setAssetStatusFilter(String status) {
+    assetStatusFilter.value = status;
+    getAllAssets(applyFilters: true);
+  }
+
+  void filterAssetsLocallyByDate() {
     final from = DateTime.tryParse(fromController.text);
     final to = DateTime.tryParse(toController.text);
 
@@ -110,11 +123,21 @@ class AssetsController extends GetxController {
   }
 
   // get all assets
-  void getAllAssets() async {
+  Future<void> getAllAssets({bool applyFilters = false}) async {
     FinacialService().assetsTasks.isEmpty ? isLoading(true) : isLoading(false);
     update();
 
-    final assets = await getAllFinancialUsecase.call(page: '1');
+    final assets = await getAllFinancialUsecase.call(
+      page: '1',
+      filters: applyFilters
+          ? {
+              if (fromController.text.isNotEmpty) 'from': fromController.text,
+              if (toController.text.isNotEmpty) 'to': toController.text,
+              if (assetStatusFilter.value.isNotEmpty)
+                'status': assetStatusFilter.value,
+            }
+          : null,
+    );
 
     // 🧹 امسح الداتا القديمة قبل ما تضيف الجديدة
     FinacialService().assetsTasks.clear();
@@ -144,12 +167,21 @@ class AssetsController extends GetxController {
   }
 
   // get assets logs
+  void setAssetLogPeriodFilter(String period) {
+    assetLogPeriodFilter.value = period;
+    getAssetsLogs();
+  }
+
   void getAssetsLogs() async {
     FinacialService().assetsLogs.isEmpty
         ? isLoadingDepreciate(true)
         : isLoadingDepreciate(false);
     update();
-    final assetsLogs = await getAssetsLogsUsecase.call();
+    final assetsLogs = await getAssetsLogsUsecase.call(
+      filters: assetLogPeriodFilter.value.isEmpty
+          ? null
+          : {'period': assetLogPeriodFilter.value},
+    );
     FinacialService().assetsLogs.assignAll(assetsLogs);
     isLoadingDepreciate(false);
     update();
@@ -199,6 +231,7 @@ class AssetsController extends GetxController {
   void addNewAssets(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       isLoading(true);
+      assetUploadProgress.value = 0;
       final result = await addNewAssetsUsecase.call(
         assetId: isEditing.value ? assetDetails.value?.id.toString() : null,
         assetName: assetNameController.text,
@@ -207,6 +240,7 @@ class AssetsController extends GetxController {
         depreciationRate: double.parse(depreciationRateController.text),
         numberOfMonths: int.parse(monthsNumberController.text),
         selectedFile: selectedFile,
+        onUploadProgress: (progress) => assetUploadProgress.value = progress,
       );
       result.fold(
         (failure) {
@@ -239,6 +273,7 @@ class AssetsController extends GetxController {
         },
       );
       isLoading(false);
+      assetUploadProgress.value = 0;
     }
   }
 
@@ -312,7 +347,11 @@ class AssetsController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(milliseconds: 2500),
       );
-      final response = await getAssetReportUsecase.call();
+      final response = await getAssetReportUsecase.call(
+        filters: assetLogPeriodFilter.value.isEmpty
+            ? null
+            : {'period': assetLogPeriodFilter.value},
+      );
       late Directory directory;
       if (Platform.isAndroid) {
         directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");

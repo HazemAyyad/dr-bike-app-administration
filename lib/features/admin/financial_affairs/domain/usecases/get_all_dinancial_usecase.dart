@@ -5,7 +5,10 @@ class GetAllFinancialUsecase {
 
   GetAllFinancialUsecase({required this.financialAffairsRepository});
 
-  Future<dynamic> call({required String page}) {
-    return financialAffairsRepository.getAllFinancial(page: page);
+  Future<dynamic> call({required String page, Map<String, dynamic>? filters}) {
+    return financialAffairsRepository.getAllFinancial(
+      page: page,
+      filters: filters,
+    );
   }
 }

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -15,6 +17,7 @@ import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';
+import '../../domain/usecases/expenses_usecases/get_expense_report_usecase.dart';
 import 'finacial_service.dart';
 
 class ExpensesController extends GetxController
@@ -24,6 +27,7 @@ class ExpensesController extends GetxController
   final AddExpenseUsecase addExpenseUsecase;
   final GetExpensesDataUsecase getExpensesDataUsecase;
   final GetShownBoxUsecase getShownBoxUsecase;
+  final GetExpenseReportUsecase getExpenseReportUsecase;
 
   ExpensesController({
     required this.getAllFinancialUsecase,
@@ -31,6 +35,7 @@ class ExpensesController extends GetxController
     required this.addExpenseUsecase,
     required this.getExpensesDataUsecase,
     required this.getShownBoxUsecase,
+    required this.getExpenseReportUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -50,13 +55,38 @@ class ExpensesController extends GetxController
   final TextEditingController expensePriceController = TextEditingController();
   final TextEditingController expenseNoteController = TextEditingController();
   final TextEditingController boxIdController = TextEditingController();
+  final TextEditingController expenseDateController = TextEditingController();
+  final RxString expenseType = 'general'.obs;
   List<File> invoiceFile = [];
   List<File> expensesFile = [];
+
+  void setInvoiceFiles(List<File> files) {
+    invoiceFile = files;
+    update();
+  }
+
+  void setExpenseMediaFiles(List<File> files) {
+    expensesFile = files;
+    update();
+  }
+
+  void removeInvoiceFileAt(int index) {
+    if (index < 0 || index >= invoiceFile.length) return;
+    invoiceFile.removeAt(index);
+    update();
+  }
+
+  void removeExpenseMediaAt(int index) {
+    if (index < 0 || index >= expensesFile.length) return;
+    expensesFile.removeAt(index);
+    update();
+  }
 
   final RxInt currentTab = 0.obs;
   final tabs = ['generalAdministrativeExpenses', 'DestructionProducts'].obs;
 
   final RxBool isLoading = false.obs;
+  final RxString expenseTypeFilter = ''.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -90,7 +120,44 @@ class ExpensesController extends GetxController
   // filter assets by date
   final expensesFilter = <String, List<ExpenseModel>>{}.obs;
   final destructionsFilter = <String, List<DestructionModel>>{}.obs;
-  void filterExpensesByDate() {
+  Future<void> filterExpensesByDate() async {
+    await getAllExpenses(applyFilters: true);
+    Get.back();
+  }
+
+  void setExpenseTypeFilter(String type) {
+    expenseTypeFilter.value = type;
+    getAllExpenses(applyFilters: true);
+  }
+
+  Future<void> downloadExpenseReport(String format) async {
+    try {
+      final bytes = await getExpenseReportUsecase.call(
+        format: format,
+        filters: {
+          if (fromController.text.isNotEmpty) 'from': fromController.text,
+          if (toController.text.isNotEmpty) 'to': toController.text,
+          if (expenseTypeFilter.value.isNotEmpty)
+            'expense_type': expenseTypeFilter.value,
+        },
+      );
+      final root = Platform.isAndroid
+          ? Directory('/storage/emulated/0/Download/Doctor Bike/Reports')
+          : Directory(
+              '${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/Reports',
+            );
+      if (!await root.exists()) await root.create(recursive: true);
+      final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
+      final file = File('${root.path}/expenses-$stamp.$format');
+      await file.writeAsBytes(bytes, flush: true);
+      Get.snackbar('success'.tr, 'تم تنزيل التقرير: ${file.path}');
+      await OpenFilex.open(file.path);
+    } catch (error) {
+      Get.snackbar('error'.tr, error.toString());
+    }
+  }
+
+  void filterExpensesLocallyByDate() {
     final from = DateTime.tryParse(fromController.text);
     final to = DateTime.tryParse(toController.text);
 
@@ -152,17 +219,29 @@ class ExpensesController extends GetxController
   }
 
   // get all assets
-  void getAllExpenses() async {
+  Future<void> getAllExpenses({bool applyFilters = false}) async {
     FinacialService().expensesTasks.isEmpty
         ? isLoading(true)
         : isLoading(false);
     update();
     // expenses
-    final expenses = await getAllFinancialUsecase.call(page: '2');
+    final expenses = await getAllFinancialUsecase.call(
+      page: '2',
+      filters: applyFilters
+          ? {
+              if (fromController.text.isNotEmpty) 'from': fromController.text,
+              if (toController.text.isNotEmpty) 'to': toController.text,
+              if (expenseTypeFilter.value.isNotEmpty)
+                'expense_type': expenseTypeFilter.value,
+              'per_page': 100,
+            }
+          : const {'per_page': 100},
+    );
     final expensesJson = expenses['expenses'] as List;
     final expensesList = expensesJson
         .map((e) => ExpenseModel.fromJson(e as Map<String, dynamic>))
         .toList();
+    FinacialService().expensesTasks.clear();
     FinacialService().expenses.assignAll(expensesList);
     expensesFilter.value = FinacialService().expensesTasks;
     for (var task in FinacialService().expenses) {
@@ -277,18 +356,25 @@ class ExpensesController extends GetxController
   }
 
   RxBool isAddLoading = false.obs;
+  final RxDouble uploadProgress = 0.0.obs;
   // add expense
   void addExpense(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       isAddLoading(true);
+      uploadProgress.value = 0;
       final result = await addExpenseUsecase.call(
         expenseId: isEditing.value ? expenseId : null,
         name: expenseNameController.text,
         price: expensePriceController.text,
         notes: expenseNoteController.text,
         boxId: boxIdController.text,
+        expenseType: expenseType.value,
+        expenseDate: expenseDateController.text.isEmpty
+            ? DateFormat('yyyy-MM-dd').format(DateTime.now())
+            : expenseDateController.text,
         invoiceImage: invoiceFile,
         media: expensesFile,
+        onUploadProgress: (progress) => uploadProgress.value = progress,
       );
       result.fold(
         (failure) {
@@ -305,6 +391,8 @@ class ExpensesController extends GetxController
           expensePriceController.clear();
           expenseNoteController.clear();
           boxIdController.clear();
+          expenseDateController.clear();
+          expenseType.value = 'general';
           invoiceFile.clear();
           expensesFile.clear();
           Future.delayed(
@@ -322,13 +410,14 @@ class ExpensesController extends GetxController
         },
       );
       isAddLoading(false);
+      uploadProgress.value = 0;
     }
   }
 
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
 
   void getShowBoxes() async {
-    final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
+    final boxes = await getShownBoxUsecase.call(screen: 3);
     shownBoxesList.value = boxes;
   }
 
@@ -376,6 +465,8 @@ class ExpensesController extends GetxController
 
   @override
   void onInit() {
+    expenseDateController.text =
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
     getAllExpenses();
     getShowBoxes();
     expensesFilter.assignAll(FinacialService().expensesTasks);
@@ -415,6 +506,7 @@ class ExpensesController extends GetxController
     expensePriceController.dispose();
     expenseNoteController.dispose();
     boxIdController.dispose();
+    expenseDateController.dispose();
     isEditing.value = false;
     expenseId = '';
     invoiceFile.clear();

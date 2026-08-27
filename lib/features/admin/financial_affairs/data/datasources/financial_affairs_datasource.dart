@@ -24,7 +24,10 @@ class FinancialAffairsDatasource {
   FinancialAffairsDatasource({required this.api});
 
   // get all financial
-  Future<dynamic> getAllFinancial({required String page}) async {
+  Future<dynamic> getAllFinancial({
+    required String page,
+    Map<String, dynamic>? filters,
+  }) async {
     try {
       final endpoint = page == '1'
           ? EndPoints.getAllAssets
@@ -41,7 +44,7 @@ class FinancialAffairsDatasource {
                               : page == '7'
                                   ? EndPoints.getAllTreasuries
                                   : EndPoints.getAllAssets;
-      final response = await api.get(endpoint);
+      final response = await api.get(endpoint, queryParameters: filters);
       final raw = response.data;
       debugParseLog(
         'FinancialAffairsDatasource.getAllFinancial',
@@ -61,9 +64,12 @@ class FinancialAffairsDatasource {
   }
 
   // get assets logs
-  Future<List<AssetLogModel>> getAssetsLogs() async {
+  Future<List<AssetLogModel>> getAssetsLogs({
+    Map<String, dynamic>? filters,
+  }) async {
     try {
-      final response = await api.get(EndPoints.getAssetsLogs);
+      final response =
+          await api.get(EndPoints.getAssetsLogs, queryParameters: filters);
       final data = response.data['asset_logs'] as List;
       return data.map((e) => AssetLogModel.fromJson(e)).toList();
     } on DioException catch (e) {
@@ -87,6 +93,7 @@ class FinancialAffairsDatasource {
     required double depreciationRate,
     required int numberOfMonths,
     required List<File?> selectedFile,
+    void Function(double progress)? onUploadProgress,
   }) async {
     try {
       final Map<String, dynamic> formData = {};
@@ -122,6 +129,9 @@ class FinancialAffairsDatasource {
           ...formData,
         },
         isFormData: true,
+        onSendProgress: (sent, total) {
+          if (total > 0) onUploadProgress?.call(sent / total);
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -220,8 +230,11 @@ class FinancialAffairsDatasource {
     required String price,
     required String notes,
     required String boxId,
+    required String expenseType,
+    required String expenseDate,
     required List<File?> invoiceImage,
     required List<File?> media,
+    void Function(double progress)? onUploadProgress,
     String? expenseId,
   }) async {
     try {
@@ -233,6 +246,8 @@ class FinancialAffairsDatasource {
           if (expenseId == null) 'price': price,
           'notes': notes,
           if (expenseId == null) 'box_id': boxId,
+          if (expenseId == null) 'expense_type': expenseType,
+          if (expenseId == null) 'expense_date': expenseDate,
           if (invoiceImage.isNotEmpty)
             'invoice_img[]': await Future.wait(
               invoiceImage.map((file) async {
@@ -261,6 +276,9 @@ class FinancialAffairsDatasource {
             ),
         },
         isFormData: true,
+        onSendProgress: (sent, total) {
+          if (total > 0) onUploadProgress?.call(sent / total);
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -289,6 +307,31 @@ class FinancialAffairsDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Uint8List> getExpenseReport({
+    required String format,
+    Map<String, dynamic>? filters,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.expenseReportExport(format),
+        queryParameters: filters,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return Uint8List.fromList(List<int>.from(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'تعذر تحميل التقرير',
+          status: e.response?.statusCode ?? 500,
+          data: data is Map ? Map<String, dynamic>.from(data) : {},
         ),
       );
     }
@@ -326,6 +369,7 @@ class FinancialAffairsDatasource {
     required String description,
     required List<XFile?> media,
     required String pictureId,
+    void Function(double progress)? onUploadProgress,
   }) async {
     try {
       final response = await api.post(
@@ -349,6 +393,9 @@ class FinancialAffairsDatasource {
             ),
         },
         isFormData: true,
+        onSendProgress: (sent, total) {
+          if (total > 0) onUploadProgress?.call(sent / total);
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -370,6 +417,7 @@ class FinancialAffairsDatasource {
     required String fileId,
     required List<File?> media,
     required String notes,
+    void Function(double progress)? onUploadProgress,
   }) async {
     try {
       // تجهيز قائمة الملفات اللي هترفعها
@@ -402,6 +450,9 @@ class FinancialAffairsDatasource {
           'notes': notes,
         },
         isFormData: true,
+        onSendProgress: (sent, total) {
+          if (total > 0) onUploadProgress?.call(sent / total);
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -506,10 +557,11 @@ class FinancialAffairsDatasource {
   }
 
   // get assets logs
-  Future<Uint8List> getAssetReport() async {
+  Future<Uint8List> getAssetReport({Map<String, dynamic>? filters}) async {
     try {
       final response = await api.get(
         EndPoints.getAssetsLogsReport,
+        queryParameters: filters,
         options: Options(responseType: ResponseType.bytes),
       );
       return response.data;
