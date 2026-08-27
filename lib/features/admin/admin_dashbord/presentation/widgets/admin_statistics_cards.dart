@@ -38,6 +38,11 @@ class BuildStatisticsCards extends StatelessWidget {
                               .mainDashboardDataModel?.totalDebtsOwedToUs ??
                           '0',
                       subtitle: 'currency',
+                      onTap: () => _showDebtSummary(
+                        context,
+                        controller.mainDashboardDataModel?.debtSummary ??
+                            const DashboardDebtSummary(),
+                      ),
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -49,6 +54,11 @@ class BuildStatisticsCards extends StatelessWidget {
                           controller.mainDashboardDataModel?.totalDebtsWeOwe ??
                               '0',
                       subtitle: 'currency',
+                      onTap: () => _showDebtSummary(
+                        context,
+                        controller.mainDashboardDataModel?.debtSummary ??
+                            const DashboardDebtSummary(),
+                      ),
                     ),
                   ),
                 ],
@@ -145,6 +155,169 @@ class BuildStatisticsCards extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+void _showDebtSummary(BuildContext context, DashboardDebtSummary summary) {
+  Get.bottomSheet(
+    SafeArea(
+      child: Container(
+        constraints: BoxConstraints(maxHeight: Get.height * .82),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 14.h, 8.w, 10.h),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(7.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(9.r),
+                    ),
+                    child: Icon(Icons.account_balance_wallet_outlined,
+                        color: AppColors.primaryColor, size: 20.sp),
+                  ),
+                  SizedBox(width: 9.w),
+                  Expanded(
+                    child: Text(
+                      'ملخص الديون',
+                      style: TextStyle(
+                          fontSize: 17.sp, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  IconButton(
+                      onPressed: Get.back, icon: const Icon(Icons.close)),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.all(12.r),
+                children: [
+                  _DebtGroupCard(
+                    title: 'العملاء',
+                    icon: Icons.groups_2_outlined,
+                    totals: summary.customers,
+                  ),
+                  _DebtGroupCard(
+                    title: 'الموردون',
+                    icon: Icons.local_shipping_outlined,
+                    totals: summary.sellers,
+                  ),
+                  _DebtGroupCard(
+                    title: 'الخاص',
+                    icon: Icons.lock_person_outlined,
+                    totals: summary.privatePeople,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    isScrollControlled: true,
+  );
+}
+
+class _DebtGroupCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Map<String, DashboardDebtCurrencyTotal> totals;
+
+  const _DebtGroupCard({
+    required this.title,
+    required this.icon,
+    required this.totals,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const currencies = ['شيكل', 'دولار', 'دينار'];
+    return Card(
+      margin: EdgeInsets.only(bottom: 10.h),
+      elevation: 0,
+      color:
+          ThemeService.isDark.value ? AppColors.customGreyColor4 : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+      child: Padding(
+        padding: EdgeInsets.all(12.r),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: AppColors.primaryColor, size: 19.sp),
+                SizedBox(width: 7.w),
+                Expanded(
+                  child: Text(title,
+                      style: TextStyle(
+                          fontSize: 14.sp, fontWeight: FontWeight.w800)),
+                ),
+                SizedBox(
+                  width: 76.w,
+                  child: Text('لنا',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w700)),
+                ),
+                SizedBox(
+                  width: 76.w,
+                  child: Text('علينا',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            Divider(height: 16.h),
+            ...currencies.map((currency) {
+              final total =
+                  totals[currency] ?? const DashboardDebtCurrencyTotal();
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: 5.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(currency,
+                          style: TextStyle(
+                              fontSize: 12.sp, fontWeight: FontWeight.w700)),
+                    ),
+                    SizedBox(
+                      width: 76.w,
+                      child: Text(
+                        NumberFormat('#,##0.##').format(total.receivable),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 11.sp, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 76.w,
+                      child: Text(
+                        NumberFormat('#,##0.##').format(total.payable),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 11.sp, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

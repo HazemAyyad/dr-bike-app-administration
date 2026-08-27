@@ -9,6 +9,7 @@ class MainDashboardDataModel {
   final Map<String, int> dashboardBadges;
   final List<DashboardCheckModel> upcomingIncomingChecks;
   final List<DashboardCheckModel> upcomingOutgoingChecks;
+  final DashboardDebtSummary debtSummary;
 
   MainDashboardDataModel({
     required this.totalDebtsWeOwe,
@@ -21,6 +22,7 @@ class MainDashboardDataModel {
     this.dashboardBadges = const {},
     this.upcomingIncomingChecks = const [],
     this.upcomingOutgoingChecks = const [],
+    this.debtSummary = const DashboardDebtSummary(),
   });
 
   factory MainDashboardDataModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class MainDashboardDataModel {
       dashboardBadges: _parseBadges(json['dashboard_badges']),
       upcomingIncomingChecks: _parseChecks(json['upcoming_incoming_checks']),
       upcomingOutgoingChecks: _parseChecks(json['upcoming_outgoing_checks']),
+      debtSummary: DashboardDebtSummary.fromJson(json['debt_summary']),
     );
   }
 
@@ -52,8 +55,71 @@ class MainDashboardDataModel {
           upcomingIncomingChecks.map((e) => e.toJson()).toList(),
       'upcoming_outgoing_checks':
           upcomingOutgoingChecks.map((e) => e.toJson()).toList(),
+      'debt_summary': debtSummary.toJson(),
     };
   }
+}
+
+class DashboardDebtSummary {
+  final Map<String, DashboardDebtCurrencyTotal> customers;
+  final Map<String, DashboardDebtCurrencyTotal> sellers;
+  final Map<String, DashboardDebtCurrencyTotal> privatePeople;
+
+  const DashboardDebtSummary({
+    this.customers = const {},
+    this.sellers = const {},
+    this.privatePeople = const {},
+  });
+
+  factory DashboardDebtSummary.fromJson(dynamic raw) {
+    final json = raw is Map ? raw : const {};
+    return DashboardDebtSummary(
+      customers: _parseDebtGroup(json['customers']),
+      sellers: _parseDebtGroup(json['sellers']),
+      privatePeople: _parseDebtGroup(json['private']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'customers': _debtGroupToJson(customers),
+        'sellers': _debtGroupToJson(sellers),
+        'private': _debtGroupToJson(privatePeople),
+      };
+}
+
+class DashboardDebtCurrencyTotal {
+  final double receivable;
+  final double payable;
+
+  const DashboardDebtCurrencyTotal({
+    this.receivable = 0,
+    this.payable = 0,
+  });
+
+  factory DashboardDebtCurrencyTotal.fromJson(dynamic raw) {
+    final json = raw is Map ? raw : const {};
+    return DashboardDebtCurrencyTotal(
+      receivable: double.tryParse(json['receivable']?.toString() ?? '') ?? 0,
+      payable: double.tryParse(json['payable']?.toString() ?? '') ?? 0,
+    );
+  }
+}
+
+Map<String, DashboardDebtCurrencyTotal> _parseDebtGroup(dynamic raw) {
+  if (raw is! Map) return const {};
+  return raw.map((key, value) => MapEntry(
+        key.toString(),
+        DashboardDebtCurrencyTotal.fromJson(value),
+      ));
+}
+
+Map<String, dynamic> _debtGroupToJson(
+  Map<String, DashboardDebtCurrencyTotal> group,
+) {
+  return group.map((key, value) => MapEntry(key, {
+        'receivable': value.receivable,
+        'payable': value.payable,
+      }));
 }
 
 class DashboardCheckModel {
