@@ -330,6 +330,8 @@ class SmartDeviceScheduleModel {
     required this.repeatType,
     required this.repeatDays,
     required this.enabled,
+    required this.lastExecutedAt,
+    required this.nextRunAt,
   });
 
   final int id;
@@ -341,6 +343,8 @@ class SmartDeviceScheduleModel {
   final String repeatType;
   final List<String> repeatDays;
   final bool enabled;
+  final DateTime? lastExecutedAt;
+  final DateTime? nextRunAt;
 
   factory SmartDeviceScheduleModel.fromJson(Map<String, dynamic> json) =>
       SmartDeviceScheduleModel(
@@ -360,6 +364,11 @@ class SmartDeviceScheduleModel {
                 .toList(growable: false)
             : const <String>[],
         enabled: json['enabled'] != false,
+        lastExecutedAt:
+            DateTime.tryParse(json['last_executed_at']?.toString() ?? '')
+                ?.toLocal(),
+        nextRunAt:
+            DateTime.tryParse(json['next_run_at']?.toString() ?? '')?.toLocal(),
       );
 }
 

@@ -3421,6 +3421,7 @@ class _DeviceSchedulesScreen extends StatefulWidget {
 class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
   var schedules = <SmartDeviceScheduleModel>[];
   bool loading = true;
+  String loadError = '';
 
   @override
   void initState() {
@@ -3429,7 +3430,12 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
   }
 
   Future<void> _load() async {
-    if (mounted) setState(() => loading = true);
+    if (mounted) {
+      setState(() {
+        loading = true;
+        loadError = '';
+      });
+    }
     try {
       final loaded = await widget.controller.apiService.getDeviceSchedules(
         deviceId: widget.device.id,
@@ -3438,6 +3444,7 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
       if (mounted) setState(() => schedules = loaded);
     } catch (error) {
       widget.controller.errorMessage(error.toString());
+      if (mounted) setState(() => loadError = error.toString());
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -3453,6 +3460,23 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
   }
 
   Future<void> _delete(SmartDeviceScheduleModel schedule) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('smartHomeSchedules'.tr),
+        content: Text('smartHomeScheduleDeleteConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<bool>(result: false),
+            child: Text('cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back<bool>(result: true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     final native = await widget.controller.nativeService.deleteDeviceSchedule(
       tuyaDeviceId: widget.device.tuyaDeviceId,
       taskName: 'doctorbike_schedule_${schedule.id}',
@@ -3486,38 +3510,229 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : schedules.isEmpty
-              ? _EmptyState(text: 'smartHomeNoSchedules'.tr)
-              : ListView.separated(
-                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
-                  itemCount: schedules.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
-                  itemBuilder: (context, index) {
-                    final schedule = schedules[index];
-                    final value = schedule.commandValue['value'] == true;
-                    return Card(
-                      child: ListTile(
-                        onTap: () => _openForm(schedule),
-                        leading: CircleAvatar(
-                          child: Icon(value
-                              ? Icons.power_settings_new_rounded
-                              : Icons.power_off_rounded),
+          : loadError.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ErrorBanner(message: loadError),
+                        SizedBox(height: 12.h),
+                        OutlinedButton.icon(
+                          onPressed: _load,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: Text('refresh'.tr),
                         ),
-                        title: Text(schedule.name),
-                        subtitle: Text(
-                          '${TimeOfDay.fromDateTime(schedule.scheduledAt).format(context)} • ${('repeat_${schedule.repeatType}').tr}',
-                        ),
-                        trailing: IconButton(
-                          tooltip: 'delete'.tr,
-                          onPressed: () => _delete(schedule),
-                          icon: const Icon(Icons.delete_outline_rounded),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      ],
+                    ),
+                  ),
+                )
+              : schedules.isEmpty
+                  ? _EmptyState(text: 'smartHomeNoSchedules'.tr)
+                  : ListView.separated(
+                      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
+                      itemCount: schedules.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                      itemBuilder: (context, index) {
+                        final schedule = schedules[index];
+                        final value = schedule.commandValue['value'] == true;
+                        final completed = schedule.repeatType == 'once' &&
+                            !schedule.scheduledAt.isAfter(DateTime.now());
+                        final nextRun = schedule.repeatType == 'once'
+                            ? schedule.scheduledAt
+                            : _nextScheduleOccurrence(
+                                schedule.scheduledAt,
+                                schedule.repeatType,
+                                schedule.repeatDays.toSet(),
+                              );
+                        return Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => _openForm(schedule),
+                            child: Padding(
+                              padding: EdgeInsets.all(14.w),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: (value
+                                            ? const Color(0xFF28C79A)
+                                            : const Color(0xFFE05252))
+                                        .withValues(alpha: .12),
+                                    child: Icon(
+                                      value
+                                          ? Icons.power_settings_new_rounded
+                                          : Icons.power_off_rounded,
+                                      color: value
+                                          ? const Color(0xFF28C79A)
+                                          : const Color(0xFFE05252),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                schedule.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                            ),
+                                            _ScheduleStatusPill(
+                                              enabled: schedule.enabled,
+                                              completed: completed,
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 6.h),
+                                        Text(
+                                          '${_scheduleCommandLabel(widget.device, schedule.commandCode)} • ${value ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr}',
+                                        ),
+                                        SizedBox(height: 4.h),
+                                        Text(
+                                          _scheduleTimingLabel(
+                                            context,
+                                            schedule,
+                                            nextRun,
+                                          ),
+                                          style: const TextStyle(
+                                            color: smartHomeMuted,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'delete'.tr,
+                                    onPressed: () => _delete(schedule),
+                                    icon: const Icon(
+                                        Icons.delete_outline_rounded),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
     );
   }
+}
+
+class _ScheduleStatusPill extends StatelessWidget {
+  const _ScheduleStatusPill({
+    required this.enabled,
+    required this.completed,
+  });
+
+  final bool enabled;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = completed
+        ? smartHomeMuted
+        : enabled
+            ? const Color(0xFF168F72)
+            : smartHomeMuted;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        completed
+            ? 'smartHomeScheduleCompleted'.tr
+            : enabled
+                ? 'smartHomeScheduleActive'.tr
+                : 'smartHomeScheduleInactive'.tr,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+String _scheduleCommandLabel(SmartDeviceModel device, String code) {
+  final function = DeviceCapabilityResolver.boolSwitches(device)
+      .firstWhereOrNull((item) => item.code == code);
+  return function == null ? code : _functionLabelForDevice(device, function);
+}
+
+String _scheduleTimingLabel(
+  BuildContext context,
+  SmartDeviceScheduleModel schedule,
+  DateTime nextRun,
+) {
+  final time = TimeOfDay.fromDateTime(nextRun).format(context);
+  var repeat = ('repeat_${schedule.repeatType}').tr;
+  if (schedule.repeatType == 'weekly' && schedule.repeatDays.isNotEmpty) {
+    repeat =
+        '$repeat (${schedule.repeatDays.map((day) => ('weekday_$day').tr).join('، ')})';
+  }
+  final completed = schedule.repeatType == 'once' &&
+      !schedule.scheduledAt.isAfter(DateTime.now());
+  if (!schedule.enabled || completed) return '$time • $repeat';
+  final date = MaterialLocalizations.of(context).formatCompactDate(nextRun);
+  return '$time • $repeat\n${'smartHomeScheduleNextRun'.tr}: $date';
+}
+
+String _scheduleLoops(String repeatType, Set<String> repeatDays) {
+  if (repeatType == 'daily') return '1111111';
+  if (repeatType != 'weekly') return '0000000';
+  return const ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+      .map((day) => repeatDays.contains(day) ? '1' : '0')
+      .join();
+}
+
+DateTime _nextScheduleOccurrence(
+  DateTime selected,
+  String repeatType,
+  Set<String> repeatDays,
+) {
+  final now = DateTime.now();
+  final todayAtTime = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    selected.hour,
+    selected.minute,
+  );
+  if (repeatType != 'weekly' || repeatDays.isEmpty) {
+    return todayAtTime.isAfter(now)
+        ? todayAtTime
+        : todayAtTime.add(const Duration(days: 1));
+  }
+
+  const dayKeys = <int, String>{
+    DateTime.monday: 'mon',
+    DateTime.tuesday: 'tue',
+    DateTime.wednesday: 'wed',
+    DateTime.thursday: 'thu',
+    DateTime.friday: 'fri',
+    DateTime.saturday: 'sat',
+    DateTime.sunday: 'sun',
+  };
+  for (var offset = 0; offset <= 7; offset++) {
+    final candidate = todayAtTime.add(Duration(days: offset));
+    if (candidate.isAfter(now) &&
+        repeatDays.contains(dayKeys[candidate.weekday])) {
+      return candidate;
+    }
+  }
+  return todayAtTime.add(const Duration(days: 7));
 }
 
 class _DeviceScheduleDialog extends StatefulWidget {
@@ -3545,6 +3760,7 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
   late Set<String> repeatDays;
   late bool enabled;
   bool saving = false;
+  String saveError = '';
 
   List<TuyaDeviceFunction> get switches =>
       DeviceCapabilityResolver.boolSwitches(widget.device);
@@ -3572,13 +3788,20 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
       initialTime: TimeOfDay.fromDateTime(scheduledAt),
     );
     if (value == null) return;
-    setState(() => scheduledAt = DateTime(
-          scheduledAt.year,
-          scheduledAt.month,
-          scheduledAt.day,
-          value.hour,
-          value.minute,
-        ));
+    setState(() {
+      scheduledAt = DateTime(
+        scheduledAt.year,
+        scheduledAt.month,
+        scheduledAt.day,
+        value.hour,
+        value.minute,
+      );
+      scheduledAt = _nextScheduleOccurrence(
+        scheduledAt,
+        repeatType,
+        repeatDays,
+      );
+    });
   }
 
   Future<void> _save() async {
@@ -3587,15 +3810,26 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
       Get.snackbar('smartHomeSchedules'.tr, 'selectWeekdays'.tr);
       return;
     }
-    setState(() => saving = true);
+    setState(() {
+      saving = true;
+      saveError = '';
+    });
     try {
+      final nextOccurrence = _nextScheduleOccurrence(
+        scheduledAt,
+        repeatType,
+        repeatDays,
+      );
+      final scheduleName = nameController.text.trim().isEmpty
+          ? 'smartHomeSchedule'.tr
+          : nameController.text.trim();
       final saved = await widget.controller.apiService.saveDeviceSchedule(
         deviceId: widget.device.id,
         scheduleId: widget.schedule?.id,
-        name: nameController.text.trim(),
+        name: scheduleName,
         commandCode: commandCode,
         commandValue: commandValue,
-        scheduledAt: scheduledAt,
+        scheduledAt: nextOccurrence,
         repeatType: repeatType,
         repeatDays: repeatDays.toList(growable: false),
         enabled: enabled,
@@ -3607,19 +3841,7 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
       if (function == null) {
         throw StateError('smartHomeSwitchMetadataMissing'.tr);
       }
-      final loops = repeatType == 'daily'
-          ? '1111111'
-          : repeatType == 'weekly'
-              ? [
-                  'sun',
-                  'mon',
-                  'tue',
-                  'wed',
-                  'thu',
-                  'fri',
-                  'sat',
-                ].map((day) => repeatDays.contains(day) ? '1' : '0').join()
-              : '0000000';
+      final loops = _scheduleLoops(repeatType, repeatDays);
       final native = await widget.controller.nativeService.saveDeviceSchedule(
         tuyaDeviceId: widget.device.tuyaDeviceId,
         taskName: 'doctorbike_schedule_${saved.id}',
@@ -3639,6 +3861,8 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
             scheduleId: saved.id,
             userId: widget.controller.selectedOwnerId.value,
           );
+        } else {
+          await _restorePreviousSchedule();
         }
         throw StateError(widget.controller.formatVisibleError(
           'smartHomeScheduleSaveFailed'.tr,
@@ -3646,10 +3870,61 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
           message: native.message,
         ));
       }
+      scheduledAt = nextOccurrence;
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      widget.controller.errorMessage(error.toString());
-      if (mounted) setState(() => saving = false);
+      final message = error
+          .toString()
+          .replaceFirst('Bad state: ', '')
+          .replaceFirst('Exception: ', '');
+      widget.controller.errorMessage(message);
+      if (mounted) {
+        setState(() {
+          saving = false;
+          saveError = message;
+        });
+      }
+    }
+  }
+
+  Future<void> _restorePreviousSchedule() async {
+    final previous = widget.schedule;
+    if (previous == null) return;
+    try {
+      await widget.controller.apiService.saveDeviceSchedule(
+        deviceId: widget.device.id,
+        scheduleId: previous.id,
+        name: previous.name,
+        commandCode: previous.commandCode,
+        commandValue: previous.commandValue['value'] == true,
+        scheduledAt: previous.scheduledAt,
+        repeatType: previous.repeatType,
+        repeatDays: previous.repeatDays,
+        enabled: previous.enabled,
+        userId: widget.controller.selectedOwnerId.value,
+      );
+      final previousFunction = switches.firstWhereOrNull(
+        (item) => item.code == previous.commandCode,
+      );
+      if (previousFunction != null) {
+        await widget.controller.nativeService.saveDeviceSchedule(
+          tuyaDeviceId: widget.device.tuyaDeviceId,
+          taskName: 'doctorbike_schedule_${previous.id}',
+          aliasName: previous.name,
+          dpId: previousFunction.dpId,
+          value: previous.commandValue['value'] == true,
+          time:
+              '${previous.scheduledAt.hour.toString().padLeft(2, '0')}:${previous.scheduledAt.minute.toString().padLeft(2, '0')}',
+          loops: _scheduleLoops(
+            previous.repeatType,
+            previous.repeatDays.toSet(),
+          ),
+          enabled: previous.enabled,
+          replace: true,
+        );
+      }
+    } catch (_) {
+      // Preserve the original save error shown to the user.
     }
   }
 
@@ -3669,6 +3944,14 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (saveError.isNotEmpty) ...[
+              _ErrorBanner(message: saveError),
+              SizedBox(height: 12.h),
+            ],
+            if (switches.isEmpty) ...[
+              _ErrorBanner(message: 'smartHomeScheduleNoSwitches'.tr),
+              SizedBox(height: 12.h),
+            ],
             TextField(
               controller: nameController,
               decoration:
@@ -3705,6 +3988,13 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
                 ),
               ),
             ]),
+            if (repeatType == 'once') ...[
+              SizedBox(height: 6.h),
+              Text(
+                'smartHomeScheduleNearestTime'.tr,
+                style: const TextStyle(color: smartHomeMuted),
+              ),
+            ],
             SizedBox(height: 12.h),
             DropdownButtonFormField<String>(
               initialValue: repeatType,
@@ -3715,8 +4005,14 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
                         child: Text(('repeat_$item').tr),
                       ))
                   .toList(growable: false),
-              onChanged: (value) =>
-                  setState(() => repeatType = value ?? 'once'),
+              onChanged: (value) => setState(() {
+                repeatType = value ?? 'once';
+                scheduledAt = _nextScheduleOccurrence(
+                  scheduledAt,
+                  repeatType,
+                  repeatDays,
+                );
+              }),
             ),
             if (repeatType == 'weekly') ...[
               SizedBox(height: 10.h),
@@ -3748,7 +4044,7 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
           child: Text('cancel'.tr),
         ),
         ElevatedButton(
-          onPressed: saving ? null : _save,
+          onPressed: saving || switches.isEmpty ? null : _save,
           child: saving
               ? const SizedBox.square(
                   dimension: 18,
@@ -3985,9 +4281,15 @@ class _DeviceCommandSurface extends StatelessWidget {
             .map((item) => item.dpId),
     };
     return DeviceCapabilityResolver.writableFunctions(device)
-        .where((item) => !primaryDpIds.contains(item.dpId))
+        .where((item) =>
+            !primaryDpIds.contains(item.dpId) && !_isCountdownFunction(item))
         .toList(growable: false);
   }
+}
+
+bool _isCountdownFunction(TuyaDeviceFunction function) {
+  final code = function.code.toLowerCase();
+  return code.contains('countdown') || code.contains('timer');
 }
 
 class _MultiSwitchCommandSurface extends StatelessWidget {
