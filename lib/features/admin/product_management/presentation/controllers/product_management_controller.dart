@@ -110,6 +110,24 @@ class ProductManagementController extends GetxController {
     }
   }
 
+  Future<void> goToStep(int targetStep) async {
+    if (!isEdit.value ||
+        isLoading.value ||
+        targetStep < 1 ||
+        targetStep > totalSteps ||
+        targetStep == currentGlobalStep) {
+      return;
+    }
+    final previousStep = currentGlobalStep;
+    _setGlobalStep(targetStep);
+    update();
+    await _saveAndUpdateStep(targetStep, refreshList: true);
+    if (currentStep != targetStep) {
+      _setGlobalStep(previousStep);
+      update();
+    }
+  }
+
   final RxBool isLoading = false.obs;
   final RxBool isProductsLoading = false.obs;
 

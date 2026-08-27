@@ -1044,6 +1044,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     final items = userType == 'admin'
         ? <_SettingsItem>[
             _SettingsItem(
+              icon: Icons.category_outlined,
+              iconColor: const Color(0xFF6B65BD),
+              titleKey: 'categoryManagement',
+              descriptionKey: 'main_categories',
+              onTap: () => Get.toNamed(AppRoutes.CATEGORYMANAGEMENTSCREEN),
+            ),
+            _SettingsItem(
               icon: Icons.how_to_reg_outlined,
               iconColor: const Color(0xFFDC2626),
               titleKey: 'attendanceSettings',

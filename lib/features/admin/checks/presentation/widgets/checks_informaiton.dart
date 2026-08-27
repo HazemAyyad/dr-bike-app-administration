@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
 import '../controllers/checks_serves.dart';
@@ -44,7 +43,7 @@ class ChecksInformaiton extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'didNotActOnIt',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.pending_actions_rounded,
                       value: ChecksServes()
                               .generalChecksData
                               .value
@@ -58,7 +57,7 @@ class ChecksInformaiton extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'actedOnIt',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.task_alt_rounded,
                       value: ChecksServes()
                               .generalChecksData
                               .value
@@ -76,7 +75,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.payments_outlined,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -94,7 +93,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency1',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.attach_money_rounded,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -112,7 +111,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency2',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.account_balance_outlined,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -146,7 +145,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'didNotActOnIt',
-                      imageicon: AssetsManager.moneyIcon,
+                      icon: Icons.pending_actions_rounded,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -165,7 +164,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'actedOnIt',
-                      imageicon: AssetsManager.moneyIcon,
+                      icon: Icons.task_alt_rounded,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -187,7 +186,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.payments_outlined,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -205,7 +204,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency1',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.attach_money_rounded,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
@@ -223,7 +222,7 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'currency2',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.account_balance_outlined,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()

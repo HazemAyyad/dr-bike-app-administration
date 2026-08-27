@@ -205,19 +205,23 @@ class ProductDevelopmentStepper extends StatelessWidget {
     required this.firstSteps,
     required this.secondSteps,
     required this.activeStep,
+    this.onStepTap,
   }) : super(key: key);
 
   final List<Map<int, String>> firstSteps;
   final List<Map<int, String>> secondSteps;
   final int activeStep;
+  final ValueChanged<int>? onStepTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _StepRow(steps: firstSteps, activeStep: activeStep),
+        _StepRow(
+            steps: firstSteps, activeStep: activeStep, onStepTap: onStepTap),
         SizedBox(height: 24.h),
-        _StepRow(steps: secondSteps, activeStep: activeStep),
+        _StepRow(
+            steps: secondSteps, activeStep: activeStep, onStepTap: onStepTap),
       ],
     );
   }
@@ -227,10 +231,12 @@ class _StepRow extends StatelessWidget {
   const _StepRow({
     required this.steps,
     required this.activeStep,
+    this.onStepTap,
   });
 
   final List<Map<int, String>> steps;
   final int activeStep;
+  final ValueChanged<int>? onStepTap;
 
   @override
   Widget build(BuildContext context) {
@@ -245,6 +251,7 @@ class _StepRow extends StatelessWidget {
               _StepCircle(
                 number: steps[index].keys.first,
                 activeStep: activeStep,
+                onTap: onStepTap,
               ),
               if (index != steps.length - 1)
                 Expanded(
@@ -268,17 +275,26 @@ class _StepRow extends StatelessWidget {
           children: steps
               .map(
                 (step) => Expanded(
-                  child: Text(
-                    step.values.first.tr,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: _textColor(step.keys.first),
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w400,
-                          height: 1.2,
-                        ),
+                  child: InkWell(
+                    onTap: onStepTap == null
+                        ? null
+                        : () => onStepTap!(step.keys.first),
+                    borderRadius: BorderRadius.circular(6.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 3.h),
+                      child: Text(
+                        step.values.first.tr,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: _textColor(step.keys.first),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w400,
+                              height: 1.2,
+                            ),
+                      ),
+                    ),
                   ),
                 ),
               )
@@ -307,10 +323,12 @@ class _StepCircle extends StatelessWidget {
   const _StepCircle({
     required this.number,
     required this.activeStep,
+    this.onTap,
   });
 
   final int number;
   final int activeStep;
+  final ValueChanged<int>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -324,22 +342,26 @@ class _StepCircle extends StatelessWidget {
             ? AppColors.primaryColor
             : AppColors.customGreyColor5;
 
-    return Container(
-      width: 46.w,
-      height: 46.w,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: fill,
-        shape: BoxShape.circle,
-        border: Border.all(color: border, width: 1.w),
-      ),
-      child: Text(
-        number.toString(),
-        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: textColor,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w700,
-            ),
+    return InkWell(
+      onTap: onTap == null ? null : () => onTap!(number),
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: 46.w,
+        height: 46.w,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: fill,
+          shape: BoxShape.circle,
+          border: Border.all(color: border, width: 1.w),
+        ),
+        child: Text(
+          number.toString(),
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color: textColor,
+                fontSize: 20.sp,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
       ),
     );
   }

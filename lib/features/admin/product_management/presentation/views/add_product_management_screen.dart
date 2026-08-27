@@ -29,6 +29,8 @@ class AddProductManagementScreen extends StatelessWidget {
                   firstSteps: controller.timeLineSteps,
                   secondSteps: controller.timeLineSteps2,
                   activeStep: controller.currentGlobalStep,
+                  onStepTap:
+                      controller.isEdit.value ? controller.goToStep : null,
                 ),
                 SizedBox(height: 30.h),
                 if (controller.isEdit.value)

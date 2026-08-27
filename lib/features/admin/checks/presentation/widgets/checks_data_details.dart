@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
 
@@ -42,7 +41,7 @@ class ChecksDataDetails extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'numberOfChecks',
-                      imageicon: AssetsManager.cashIcon,
+                      icon: Icons.receipt_long_outlined,
                       value: controller.activeFilteredCount,
                       subtitle: '',
                     ),
@@ -69,7 +68,7 @@ class ChecksDataDetails extends StatelessWidget {
                       child: StatCard(
                         show: true,
                         title: 'currency',
-                        imageicon: AssetsManager.cashIcon,
+                        icon: Icons.payments_outlined,
                         value: NumberFormat('#,###').format(
                           double.parse(
                             controller.activeFilteredTotalShekel,
@@ -82,7 +81,7 @@ class ChecksDataDetails extends StatelessWidget {
                       child: StatCard(
                         show: true,
                         title: 'currency1',
-                        imageicon: AssetsManager.cashIcon,
+                        icon: Icons.attach_money_rounded,
                         value: NumberFormat('#,###').format(
                           double.parse(
                             controller.activeFilteredTotalDollar,
@@ -95,7 +94,7 @@ class ChecksDataDetails extends StatelessWidget {
                       child: StatCard(
                         show: true,
                         title: 'currency2',
-                        imageicon: AssetsManager.cashIcon,
+                        icon: Icons.account_balance_outlined,
                         value: NumberFormat('#,###').format(
                           double.parse(
                             controller.activeFilteredTotalDinar,
@@ -130,7 +129,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency1',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.attach_money_rounded,
                             value: NumberFormat('#,###').format(
                               double.parse(
                                 controller.activeFilteredTotalDollar,
@@ -141,7 +140,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency2',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.account_balance_outlined,
                             value: NumberFormat('#,###').format(
                               double.parse(
                                 controller.activeFilteredTotalDinar,
@@ -152,7 +151,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.payments_outlined,
                             value: NumberFormat('#,###').format(
                               double.parse(
                                 controller.activeFilteredTotalShekel,
@@ -269,7 +268,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency1',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.attach_money_rounded,
                             value: NumberFormat('#,###').format(
                               double.tryParse(
                                     controller.currentTab.value == 0
@@ -291,7 +290,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency2',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.account_balance_outlined,
                             value: NumberFormat('#,###').format(
                               double.tryParse(
                                     controller.currentTab.value == 0
@@ -313,7 +312,7 @@ class ChecksDataDetails extends StatelessWidget {
                           StatCard(
                             show: true,
                             title: 'currency',
-                            imageicon: AssetsManager.cashIcon,
+                            icon: Icons.payments_outlined,
                             value: NumberFormat('#,###').format(
                               double.tryParse(
                                     controller.currentTab.value == 0

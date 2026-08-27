@@ -368,6 +368,7 @@ class CreateTaskController extends GetxController {
   }
 
   Future<void> pickStartDate(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await ScrollDatePickerSheet.show(
       context,
       initial: startDate.value,
@@ -390,6 +391,7 @@ class CreateTaskController extends GetxController {
   }
 
   Future<void> pickEndDate(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await ScrollDatePickerSheet.show(
       context,
       initial: endDate.value,
@@ -409,6 +411,7 @@ class CreateTaskController extends GetxController {
   }
 
   Future<void> pickStartTime(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await HorizontalTimePickerSheet.show(
       context,
       initial: startTime.value,
@@ -425,6 +428,7 @@ class CreateTaskController extends GetxController {
   }
 
   Future<void> pickEndTime(BuildContext context) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await HorizontalTimePickerSheet.show(
       context,
       initial: endTime.value,
