@@ -5,7 +5,6 @@ import 'package:dio/dio.dart' as dio;
 import 'package:doctorbike/core/errors/failure.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -20,7 +19,6 @@ import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
-import '../widgets/sales_order_media_source_sheet.dart';
 import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
 import '../widgets/sales_order_notice.dart';
@@ -1724,57 +1722,15 @@ class SalesOrdersController extends GetxController {
     final category = presetCategory ?? await showSalesOrderMediaCategorySheet();
     if (category == null) return;
 
-    final source = await showSalesOrderMediaSourceSheet();
-    if (source == null) return;
-    final picked = <XFile>[];
-
-    switch (source) {
-      case 'camera':
-        if (!await ensureCameraPermission()) {
-          SalesOrderNotice.error('cameraPermissionDenied'.tr);
-          return;
-        }
-        final capture = await Get.to<WhatsAppCapture>(
-          () => const WhatsAppCameraScreen(),
-        );
-        if (capture != null && capture.path.isNotEmpty) {
-          picked.add(XFile(capture.path));
-        }
-        break;
-      case 'gallery':
-        if (!await ensurePhotosPermission()) {
-          SalesOrderNotice.error('cameraPermissionDenied'.tr);
-          return;
-        }
-        final result = await FilePicker.platform.pickFiles(
-          allowMultiple: true,
-          type: FileType.custom,
-          allowedExtensions: const [
-            'jpg',
-            'jpeg',
-            'png',
-            'webp',
-            'gif',
-            'heic',
-            'mp4',
-            'mov',
-            'avi',
-            'mkv',
-            'webm',
-          ],
-        );
-        if (result != null) {
-          for (final f in result.files) {
-            final path = f.path;
-            if (path != null && path.isNotEmpty) {
-              picked.add(XFile(path));
-            }
-          }
-        }
-        break;
+    if (!await ensureCameraPermission()) {
+      SalesOrderNotice.error('cameraPermissionDenied'.tr);
+      return;
     }
-
-    if (picked.isEmpty) return;
+    final capture = await Get.to<WhatsAppCapture>(
+      () => const WhatsAppCameraScreen(),
+    );
+    if (capture == null || capture.path.isEmpty) return;
+    final picked = [XFile(capture.path)];
 
     await withBlockingProgress(() async {
       final multipart = <dio.MultipartFile>[];
