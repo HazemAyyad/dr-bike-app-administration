@@ -18,6 +18,7 @@ import '../widgets/sales_location_filter_fab.dart';
 import '../widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
+import '../widgets/sales_daily_status_bar.dart';
 
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
@@ -34,11 +35,16 @@ class _InstantSaleProductPickerScreenState
   final _searchController = TextEditingController();
   bool _maintenanceFlow = false;
   bool _adjustmentFlow = false;
+  bool _salesOrderFlow = false;
+
+  SalesOrdersController get orders => Get.find<SalesOrdersController>();
 
   @override
   void initState() {
     super.initState();
     final args = Get.arguments;
+    _salesOrderFlow = Get.currentRoute == AppRoutes.NEWSALESORDERSCREEN ||
+        (args is Map && args['salesOrderFlow'] == true);
     final maintenanceFlow = args is Map && args['maintenanceFlow'] == true;
     final adjustmentFlow =
         Get.currentRoute == AppRoutes.ADJUSTMENTSALEPRODUCTPICKER ||
@@ -47,13 +53,25 @@ class _InstantSaleProductPickerScreenState
     _adjustmentFlow = adjustmentFlow;
     controller.setInstantSaleAdjustmentMode(adjustmentFlow);
 
-    if (maintenanceFlow) {
+    if (_salesOrderFlow) {
+      controller.enablePickerReservedStock(salesOrderFlow: true);
+      if (!(args is Map && args['editSalesOrder'] == true) &&
+          !orders.hasSuspendedDraft.value) {
+        controller.resetInstantSaleForm();
+        controller.isPackageSale.value = false;
+        controller.selectedPackageId.value = null;
+        orders.resetCreateForm();
+      }
+    } else if (maintenanceFlow) {
       controller.setMaintenancePickerFlow(true);
     } else {
       controller.enablePickerReservedStock();
     }
 
-    if (!maintenanceFlow && args is Map && args['freshInstantSale'] == true) {
+    if (!_salesOrderFlow &&
+        !maintenanceFlow &&
+        args is Map &&
+        args['freshInstantSale'] == true) {
       controller.resetInstantSaleForm();
       controller.isPackageSale.value = false;
       controller.setInstantSaleAdjustmentMode(adjustmentFlow);
@@ -62,8 +80,11 @@ class _InstantSaleProductPickerScreenState
     if (controller.products.isEmpty) {
       controller.getAllProducts();
     }
-    if (!adjustmentFlow) {
+    if (!adjustmentFlow && !_salesOrderFlow) {
       controller.loadOfferPackagesForSale();
+    }
+    if (_salesOrderFlow) {
+      controller.loadDailySession();
     }
     controller.ensurePickerStoreSectionsLoaded();
     controller.ensurePickerPartnersLoaded();
@@ -76,6 +97,7 @@ class _InstantSaleProductPickerScreenState
       }
       if (mounted &&
           !_maintenanceFlow &&
+          !_salesOrderFlow &&
           controller.activeSuspendedSaleId.value == null &&
           controller.activeEditInstantSaleId.value == null) {
         await controller.promptRestoreLocalInstantSaleDraft(context);
@@ -100,16 +122,22 @@ class _InstantSaleProductPickerScreenState
       },
       child: Scaffold(
         appBar: CustomAppBar(
-          title: _adjustmentFlow
-              ? 'adjustmentSalePickProducts'
-              : 'instantSalePickProducts',
+          title: _salesOrderFlow
+              ? (orders.isEditingOrder
+                  ? 'salesOrderEdit'
+                  : 'instantSalePickProducts')
+              : _adjustmentFlow
+                  ? 'adjustmentSalePickProducts'
+                  : 'instantSalePickProducts',
           action: false,
           onPressedBack: _handleBackPressed,
           actions: [
             OpenDesktopWindowButton(
-              route: Get.currentRoute == AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
-                  ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
-                  : AppRoutes.INSTANTSALEPRODUCTPICKER,
+              route: _salesOrderFlow
+                  ? AppRoutes.NEWSALESORDERSCREEN
+                  : Get.currentRoute == AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+                      ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+                      : AppRoutes.INSTANTSALEPRODUCTPICKER,
               title: _adjustmentFlow
                   ? 'adjustmentSalePickProducts'
                   : 'instantSalePickProducts',
@@ -129,6 +157,7 @@ class _InstantSaleProductPickerScreenState
           children: [
             Column(
               children: [
+                if (_salesOrderFlow) const SalesDailyStatusBar(),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: Row(
@@ -342,7 +371,8 @@ class _InstantSaleProductPickerScreenState
 
                     final hasLocationFilter =
                         locationFilter != null && locationFilter.isNotEmpty;
-                    final packages = hasLocationFilter ||
+                    final packages = _salesOrderFlow ||
+                            hasLocationFilter ||
                             controller.maintenancePickerFlow.value ||
                             _adjustmentFlow
                         ? <OfferPackageModel>[]
@@ -428,7 +458,8 @@ class _InstantSaleProductPickerScreenState
                                   return InstantSaleProductCard(
                                     key: ValueKey('picker_${product.id}'),
                                     product: product,
-                                    showOrderStock: !_adjustmentFlow,
+                                    showOrderStock:
+                                        _salesOrderFlow || !_adjustmentFlow,
                                   );
                                 },
                               );
@@ -467,7 +498,8 @@ class _InstantSaleProductPickerScreenState
                                 return InstantSaleProductCard(
                                   key: ValueKey('picker_${product.id}'),
                                   product: product,
-                                  showOrderStock: !_adjustmentFlow,
+                                  showOrderStock:
+                                      _salesOrderFlow || !_adjustmentFlow,
                                 );
                               },
                             );
@@ -599,7 +631,24 @@ class _InstantSaleProductPickerScreenState
                     ),
                   ),
                   SizedBox(width: 8.w),
-                  if (!controller.isEditingInstantSale &&
+                  if (_salesOrderFlow) ...[
+                    SizedBox(
+                      height: 46.h,
+                      child: OutlinedButton(
+                        onPressed: canContinue
+                            ? orders.suspendOrderDraftFromPicker
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: Icon(Icons.pause_circle_outline, size: 22.sp),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                  ] else if (!controller.isEditingInstantSale &&
                       !controller.maintenancePickerFlow.value) ...[
                     SizedBox(
                       height: 46.h,
@@ -634,7 +683,10 @@ class _InstantSaleProductPickerScreenState
                       ),
                       onPressed: canContinue
                           ? () {
-                              if (controller.maintenancePickerFlow.value) {
+                              if (_salesOrderFlow) {
+                                controller.openSalesOrderCheckout();
+                              } else if (controller
+                                  .maintenancePickerFlow.value) {
                                 controller.confirmMaintenancePickerAndPop();
                               } else {
                                 controller.openInstantSaleCheckout();
@@ -642,9 +694,11 @@ class _InstantSaleProductPickerScreenState
                             }
                           : null,
                       child: Text(
-                        controller.maintenancePickerFlow.value
-                            ? 'confirm'.tr
-                            : 'instantSaleContinue'.tr,
+                        _salesOrderFlow
+                            ? 'instantSaleContinue'.tr
+                            : controller.maintenancePickerFlow.value
+                                ? 'confirm'.tr
+                                : 'instantSaleContinue'.tr,
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w700,
@@ -662,6 +716,14 @@ class _InstantSaleProductPickerScreenState
   }
 
   Future<void> _handleBackPressed() async {
+    if (_salesOrderFlow) {
+      if (orders.isEditingOrder) {
+        orders.clearActiveEditSalesOrder();
+        controller.resetInstantSaleForm();
+      }
+      Get.back();
+      return;
+    }
     if (_maintenanceFlow) {
       Get.back();
       return;

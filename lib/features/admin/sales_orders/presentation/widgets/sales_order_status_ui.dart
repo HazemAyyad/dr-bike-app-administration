@@ -256,8 +256,13 @@ class SalesOrderActions {
   static List<SalesOrderActionDef> forStatus(
     String status, {
     bool isShiplyDelivery = false,
+    bool needsSettlement = true,
   }) {
-    final actions = _baseActionsFor(status, isShiplyDelivery: isShiplyDelivery);
+    final actions = _baseActionsFor(
+      status,
+      isShiplyDelivery: isShiplyDelivery,
+      needsSettlement: needsSettlement,
+    );
     if (canRevert(status)) {
       return [
         ...actions,
@@ -273,6 +278,7 @@ class SalesOrderActions {
   static List<SalesOrderActionDef> _baseActionsFor(
     String status, {
     bool isShiplyDelivery = false,
+    bool needsSettlement = true,
   }) {
     switch (status) {
       case 'unconfirmed':
@@ -453,17 +459,19 @@ class SalesOrderActions {
           ),
         ];
       case 'delivered':
-        return const [
-          SalesOrderActionDef(
-            id: SalesOrderActionId.settle,
-            labelKey: 'salesOrderSettle',
-            isPrimary: true,
-          ),
+        return [
+          if (needsSettlement)
+            const SalesOrderActionDef(
+              id: SalesOrderActionId.settle,
+              labelKey: 'salesOrderSettle',
+              isPrimary: true,
+            ),
           SalesOrderActionDef(
             id: SalesOrderActionId.archive,
             labelKey: 'salesOrderArchive',
+            isPrimary: !needsSettlement,
           ),
-          SalesOrderActionDef(
+          const SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),

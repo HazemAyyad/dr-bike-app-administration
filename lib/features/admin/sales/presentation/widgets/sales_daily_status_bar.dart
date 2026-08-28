@@ -174,10 +174,25 @@ class SalesDailyStatusBar extends GetView<SalesController> {
 
   Widget _shekelSummary(DailySessionPayload payload) {
     final row = payload.rowForCurrency('شيكل');
-    if (row == null) return const SizedBox.shrink();
-    return Text(
-      '${'salesDailySystemBalance'.tr}: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
-      style: TextStyle(fontSize: 11.sp),
+    final ordersIndex = payload.salesOrdersCurrencies
+        .indexWhere((item) => item.currency == 'شيكل');
+    final ordersRow =
+        ordersIndex >= 0 ? payload.salesOrdersCurrencies[ordersIndex] : null;
+    if (row == null && ordersRow == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (row != null)
+          Text(
+            'المبيعات الفورية: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
+            style: TextStyle(fontSize: 11.sp),
+          ),
+        if (ordersRow != null)
+          Text(
+            'الطلبيات: ${ordersRow.systemBalance.toStringAsFixed(0)} ${ordersRow.currency}',
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+          ),
+      ],
     );
   }
 
@@ -234,9 +249,21 @@ class SalesDailyStatusBar extends GetView<SalesController> {
               : row.expectedAmount.toStringAsFixed(0),
         ),
     };
+    final ordersExpectedRows =
+        payload?.expectedSalesOrdersOpeningCounts.isNotEmpty == true
+            ? payload!.expectedSalesOrdersOpeningCounts
+            : const [DailyExpectedOpeningCount(currency: 'شيكل')];
+    final ordersControllers = {
+      for (final row in ordersExpectedRows)
+        row.currency: TextEditingController(
+          text: row.expectedAmount == 0
+              ? ''
+              : row.expectedAmount.toStringAsFixed(0),
+        ),
+    };
 
     try {
-      final counts = await showDialog<List<Map<String, dynamic>>>(
+      final result = await showDialog<Map<String, List<Map<String, dynamic>>>>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: dialogBg,
@@ -258,7 +285,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
               children: [
                 Text(
                   'salesDailyOpeningCountHint'.tr,
-                  style: TextStyle(color: dialogTextColor),
+                  style: const TextStyle(color: dialogTextColor),
                 ),
                 SizedBox(height: 12.h),
                 ...expectedRows.map((row) {
@@ -270,7 +297,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                       children: [
                         Text(
                           row.currency,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: dialogTitleColor,
                             fontWeight: FontWeight.w700,
                           ),
@@ -292,13 +319,14 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                         SizedBox(height: 6.h),
                         TextField(
                           controller: controllers[row.currency],
-                          style: TextStyle(color: dialogTitleColor),
+                          style: const TextStyle(color: dialogTitleColor),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           decoration: InputDecoration(
                             labelText: 'salesDailyCountedOpening'.tr,
-                            labelStyle: TextStyle(color: dialogMutedColor),
+                            labelStyle:
+                                const TextStyle(color: dialogMutedColor),
                             border: const OutlineInputBorder(),
                           ),
                         ),
@@ -306,6 +334,35 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                     ),
                   );
                 }),
+                const Divider(height: 28),
+                const Text(
+                  'صندوق الطلبيات اليومي المستقل',
+                  style: TextStyle(
+                    color: dialogTitleColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  'أدخل رصيد افتتاح صندوق الطلبيات بشكل منفصل عن صندوق المبيعات الفورية.',
+                  style: TextStyle(fontSize: 12.sp, color: dialogMutedColor),
+                ),
+                SizedBox(height: 10.h),
+                ...ordersExpectedRows.map((row) => Padding(
+                      padding: EdgeInsets.only(bottom: 12.h),
+                      child: TextField(
+                        controller: ordersControllers[row.currency],
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'رصيد افتتاح الطلبيات — ${row.currency}',
+                          helperText:
+                              'المتوقع: ${row.expectedAmount.toStringAsFixed(0)} ${row.currency}',
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    )),
               ],
             ),
           ),
@@ -328,14 +385,29 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                       },
                     )
                     .toList();
-                Navigator.pop(ctx, counts);
+                final ordersCounts = ordersExpectedRows
+                    .map<Map<String, dynamic>>(
+                      (row) => {
+                        'currency': row.currency,
+                        'physical_count': _parseOpeningAmount(
+                          ordersControllers[row.currency]?.text,
+                        ),
+                      },
+                    )
+                    .toList();
+                Navigator.pop(ctx, {
+                  'instant_sales': counts,
+                  'sales_orders': ordersCounts,
+                });
               },
               child: Text('salesDailyOpenDrawer'.tr),
             ),
           ],
         ),
       );
-      if (counts == null) return;
+      if (result == null) return;
+      final counts = result['instant_sales'] ?? const [];
+      final ordersCounts = result['sales_orders'] ?? const [];
       debugPrint(
         '[SalesDailyOpenDebug][Dialog] counts=$counts expected=${expectedRows.map((row) => {
               'currency': row.currency,
@@ -353,12 +425,23 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         final counted = (input['physical_count'] as num).toDouble();
         return (counted - row.expectedAmount).abs() > 0.0001;
       }).toList();
+      final ordersVarianceRows = ordersExpectedRows.where((row) {
+        final input = ordersCounts.firstWhere(
+          (item) => item['currency'] == row.currency,
+          orElse: () => <String, dynamic>{'physical_count': 0},
+        );
+        final counted = (input['physical_count'] as num).toDouble();
+        return (counted - row.expectedAmount).abs() > 0.0001;
+      }).toList();
 
       var confirmVariance = false;
-      if (varianceRows.isNotEmpty) {
+      if (varianceRows.isNotEmpty || ordersVarianceRows.isNotEmpty) {
         if (!context.mounted) return;
-        final row = varianceRows.first;
-        final input = counts.firstWhere(
+        final isOrdersVariance = varianceRows.isEmpty;
+        final row =
+            isOrdersVariance ? ordersVarianceRows.first : varianceRows.first;
+        final sourceCounts = isOrdersVariance ? ordersCounts : counts;
+        final input = sourceCounts.firstWhere(
           (item) => item['currency'] == row.currency,
           orElse: () => <String, dynamic>{'physical_count': 0},
         );
@@ -382,13 +465,14 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                 ),
                 title: Text('salesDailyOpeningVarianceTitle'.tr),
                 content: Text(
-                  'salesDailyOpeningVarianceBody'.trParams({
-                    'expected': row.expectedAmount.toStringAsFixed(0),
-                    'counted': counted.toStringAsFixed(0),
-                    'currency': row.currency,
-                    'employee': row.previousEmployeeName ?? '—',
-                    'date': row.previousBusinessDate ?? '—',
-                  }),
+                  (isOrdersVariance ? 'صندوق الطلبيات: ' : '') +
+                      'salesDailyOpeningVarianceBody'.trParams({
+                        'expected': row.expectedAmount.toStringAsFixed(0),
+                        'counted': counted.toStringAsFixed(0),
+                        'currency': row.currency,
+                        'employee': row.previousEmployeeName ?? '—',
+                        'date': row.previousBusinessDate ?? '—',
+                      }),
                 ),
                 actions: [
                   TextButton(
@@ -416,6 +500,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       );
       await controller.requestDailyOpen(
         openingCounts: counts,
+        salesOrdersOpeningCounts: ordersCounts,
         confirmOpeningVariance: confirmVariance,
       );
     } catch (e) {
@@ -424,6 +509,9 @@ class SalesDailyStatusBar extends GetView<SalesController> {
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 300));
       for (final ctrl in controllers.values) {
+        ctrl.dispose();
+      }
+      for (final ctrl in ordersControllers.values) {
         ctrl.dispose();
       }
     }

@@ -16,6 +16,7 @@ class DailySessionPayload {
   final int? manageableSessionId;
   final bool canFinalizeClosing;
   final List<DailyExpectedOpeningCount> expectedOpeningCounts;
+  final List<DailyExpectedOpeningCount> expectedSalesOrdersOpeningCounts;
 
   const DailySessionPayload({
     this.session,
@@ -33,6 +34,7 @@ class DailySessionPayload {
     this.manageableSessionId,
     this.canFinalizeClosing = false,
     this.expectedOpeningCounts = const [],
+    this.expectedSalesOrdersOpeningCounts = const [],
   });
 
   bool get allowsSales => session?.allowsSales ?? false;
@@ -114,6 +116,10 @@ class DailySessionPayload {
           json['can_finalize_closing'] == 1,
       expectedOpeningCounts: mapList(
         json['expected_opening_counts'],
+        (Map<String, dynamic> m) => DailyExpectedOpeningCount.fromJson(m),
+      ),
+      expectedSalesOrdersOpeningCounts: mapList(
+        json['expected_sales_orders_opening_counts'],
         (Map<String, dynamic> m) => DailyExpectedOpeningCount.fromJson(m),
       ),
     );
@@ -306,6 +312,7 @@ class DailyClosingRequestModel {
   final int instantSalesCount;
   final int profitSalesCount;
   final List<DailyCashCountRow> cashCounts;
+  final List<DailyCashCountRow> salesOrdersCashCounts;
   final List<DailySessionSaleLogRow> instantSales;
   final List<DailySessionSaleLogRow> profitSales;
   final bool isLateClose;
@@ -325,6 +332,7 @@ class DailyClosingRequestModel {
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.cashCounts = const [],
+    this.salesOrdersCashCounts = const [],
     this.instantSales = const [],
     this.profitSales = const [],
     this.isLateClose = false,
@@ -353,6 +361,10 @@ class DailyClosingRequestModel {
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
       cashCounts: counts,
+      salesOrdersCashCounts: mapList(
+        json['sales_orders_cash_counts'],
+        (Map<String, dynamic> m) => DailyCashCountRow.fromJson(m),
+      ),
       instantSales: mapList(
         json['instant_sales'],
         (Map<String, dynamic> m) => DailySessionSaleLogRow.fromJson(m),

@@ -787,7 +787,7 @@ class SalesOrdersController extends GetxController {
       return null;
     }
 
-    if (isSelectedCompanyOffice) {
+    if (!isSelectedCompanyShiply && !isSelectedCompanyTaxi) {
       if (carrierOfficeNameController.text.trim().isEmpty) {
         return 'salesOrderOfficeNameRequired'.tr;
       }
@@ -1418,7 +1418,7 @@ class SalesOrdersController extends GetxController {
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
       body['carrier_vehicle_number'] =
           carrierVehicleNumberController.text.trim();
-    } else if (isSelectedCompanyOffice) {
+    } else if (!isSelectedCompanyShiply) {
       body['carrier_office_name'] = carrierOfficeNameController.text.trim();
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();

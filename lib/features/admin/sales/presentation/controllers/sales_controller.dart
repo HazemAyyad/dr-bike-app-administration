@@ -855,6 +855,7 @@ class SalesController extends GetxController
 
   Future<void> requestDailyOpen({
     List<Map<String, dynamic>> openingCounts = const [],
+    List<Map<String, dynamic>> salesOrdersOpeningCounts = const [],
     bool confirmOpeningVariance = false,
   }) async {
     final ds = Get.find<SalesDatasource>();
@@ -864,6 +865,7 @@ class SalesController extends GetxController
     try {
       final message = await ds.openDailySession(
         openingCounts: openingCounts,
+        salesOrdersOpeningCounts: salesOrdersOpeningCounts,
         confirmOpeningVariance: confirmOpeningVariance,
       );
       debugPrint('[SalesDailyOpenDebug][Controller] apiMessage=$message');
@@ -906,6 +908,7 @@ class SalesController extends GetxController
 
   Future<String> submitDailyClosing({
     required List<Map<String, dynamic>> cashCounts,
+    List<Map<String, dynamic>> salesOrdersCashCounts = const [],
     String? lateCloseReason,
     int? sessionId,
     List<Map<String, dynamic>>? transfers,
@@ -914,6 +917,7 @@ class SalesController extends GetxController
     final ds = Get.find<SalesDatasource>();
     final message = await ds.requestDailyClosing(
       cashCounts: cashCounts,
+      salesOrdersCashCounts: salesOrdersCashCounts,
       lateCloseReason: lateCloseReason,
       sessionId: sessionId,
       transfers: transfers,
@@ -925,6 +929,7 @@ class SalesController extends GetxController
 
   Future<String> directCloseDailySession({
     required List<Map<String, dynamic>> cashCounts,
+    List<Map<String, dynamic>> salesOrdersCashCounts = const [],
     required int sessionId,
     required List<Map<String, dynamic>> transfers,
     String? reviewNotes,
@@ -932,6 +937,7 @@ class SalesController extends GetxController
     final ds = Get.find<SalesDatasource>();
     final message = await ds.directCloseDailySession(
       cashCounts: cashCounts,
+      salesOrdersCashCounts: salesOrdersCashCounts,
       sessionId: sessionId,
       transfers: transfers,
       reviewNotes: reviewNotes,
@@ -2160,16 +2166,6 @@ class SalesController extends GetxController
       Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
           backgroundColor: Colors.red);
       return;
-    }
-
-    for (final line in cartLines) {
-      if (line.isDisposed) continue;
-      final qty = int.tryParse(line.quantityText) ?? 0;
-      if (qty > line.stock) {
-        Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-            backgroundColor: Colors.red);
-        return;
-      }
     }
 
     syncCartToItems();

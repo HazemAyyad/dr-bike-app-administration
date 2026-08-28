@@ -861,6 +861,7 @@ class SalesDatasource {
 
   Future<String> openDailySession({
     List<Map<String, dynamic>> openingCounts = const [],
+    List<Map<String, dynamic>> salesOrdersOpeningCounts = const [],
     bool confirmOpeningVariance = false,
   }) async {
     final normalizedOpeningCounts = openingCounts
@@ -872,6 +873,7 @@ class SalesDatasource {
         .toList();
     final data = {
       'opening_counts': normalizedOpeningCounts,
+      'sales_orders_opening_counts': salesOrdersOpeningCounts,
       'confirm_opening_variance': confirmOpeningVariance,
     };
     debugPrint(
@@ -970,6 +972,7 @@ class SalesDatasource {
 
   Future<String> requestDailyClosing({
     required List<Map<String, dynamic>> cashCounts,
+    List<Map<String, dynamic>> salesOrdersCashCounts = const [],
     String? lateCloseReason,
     int? sessionId,
     List<Map<String, dynamic>>? transfers,
@@ -979,6 +982,7 @@ class SalesDatasource {
       EndPoints.salesDailyClosingRequest,
       data: {
         'cash_counts': cashCounts,
+        'sales_orders_cash_counts': salesOrdersCashCounts,
         if (lateCloseReason != null && lateCloseReason.trim().isNotEmpty)
           'late_close_reason': lateCloseReason.trim(),
         if (sessionId != null) 'session_id': sessionId,
@@ -992,6 +996,7 @@ class SalesDatasource {
 
   Future<String> directCloseDailySession({
     required List<Map<String, dynamic>> cashCounts,
+    List<Map<String, dynamic>> salesOrdersCashCounts = const [],
     required int sessionId,
     List<Map<String, dynamic>> transfers = const [],
     String? reviewNotes,
@@ -1000,6 +1005,7 @@ class SalesDatasource {
       EndPoints.salesDailyClosingDirect,
       data: {
         'cash_counts': cashCounts,
+        'sales_orders_cash_counts': salesOrdersCashCounts,
         'session_id': sessionId,
         'transfers': transfers,
         if (reviewNotes != null && reviewNotes.trim().isNotEmpty)

@@ -160,7 +160,6 @@ import '../features/admin/sales/presentation/views/sales_screen.dart';
 import '../features/admin/sales_orders/presentation/binding/sales_orders_binding.dart';
 import '../features/admin/sales_orders/presentation/views/sales_order_detail_screen.dart';
 import '../features/admin/sales_orders/presentation/views/sales_order_checkout_screen.dart';
-import '../features/admin/sales_orders/presentation/views/sales_order_product_picker_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
@@ -778,7 +777,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.NEWSALESORDERSCREEN,
-      page: () => const SalesOrderProductPickerScreen(),
+      page: () => const InstantSaleProductPickerScreen(),
       binding: SalesBinding(),
       transition: _transitionFadeIn,
     ),

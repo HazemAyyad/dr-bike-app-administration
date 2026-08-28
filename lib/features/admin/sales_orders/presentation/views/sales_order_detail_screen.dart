@@ -1143,6 +1143,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     final actions = SalesOrderActions.forStatus(
       order.status,
       isShiplyDelivery: order.isShiplyDelivery,
+      needsSettlement: order.customerDebtBalance > 0.009 ||
+          order.carrierReceivableBalance > 0.009,
     );
     if (actions.isEmpty) return const SizedBox.shrink();
 
@@ -1309,10 +1311,28 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         controller.confirmOrder(orderId);
         break;
       case SalesOrderActionId.markReady:
-        controller.markReady(orderId);
+        final missingItems = order.mediaRequirements['items_group'];
+        if (missingItems != null && !missingItems.satisfied) {
+          controller.pickAndUploadMedia(
+            orderId,
+            presetCategory: 'items_group',
+          );
+        } else {
+          controller.markReady(orderId);
+        }
         break;
       case SalesOrderActionId.handover:
-        _startHandover(order);
+        final missingMedia = ['items_group', 'packaged'].firstWhereOrNull(
+          (category) => order.mediaRequirements[category]?.satisfied == false,
+        );
+        if (missingMedia != null) {
+          controller.pickAndUploadMedia(
+            orderId,
+            presetCategory: missingMedia,
+          );
+        } else {
+          _startHandover(order);
+        }
         break;
       case SalesOrderActionId.deliver:
         controller.deliver(orderId);
@@ -1738,6 +1758,17 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             ),
                           ),
                         ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 4.h),
+                          child: Text(
+                            'المطلوب: اسم ورقم الزبون والمدينة والقرية. الشارع وملاحظات العنوان اختيارية.',
+                            style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                     );
                   }
@@ -1748,13 +1779,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       children: [
                         SizedBox(height: 10.h),
                         TextField(
-                          controller: controller.trackingController,
+                          controller: controller.carrierVehicleNumberController,
                           style: TextStyle(
                             color: SalesOrdersController.textPrimary,
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderTaxiNumber'.tr,
+                            labelText: '${'salesOrderTaxiNumber'.tr} *',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1773,7 +1804,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderTaxiDriver'.tr,
+                            labelText: '${'salesOrderTaxiDriver'.tr} *',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1793,7 +1824,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderTaxiPhone'.tr,
+                            labelText:
+                                '${'salesOrderTaxiPhone'.tr} (${'optional'.tr})',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1818,7 +1850,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     );
                   }
 
-                  if (controller.isSelectedCompanyOffice) {
+                  if (!controller.isSelectedCompanyShiply) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -1830,7 +1862,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderOfficeName'.tr,
+                            labelText: '${'salesOrderOfficeName'.tr} *',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1849,7 +1881,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderOfficeDriver'.tr,
+                            labelText:
+                                '${'salesOrderOfficeDriver'.tr} (${'optional'.tr})',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1869,7 +1902,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderOfficePhone'.tr,
+                            labelText:
+                                '${'salesOrderOfficePhone'.tr} (${'optional'.tr})',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),
@@ -1888,7 +1922,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesOrderOfficeVehicle'.tr,
+                            labelText: '${'salesOrderOfficeVehicle'.tr} *',
                             labelStyle: const TextStyle(
                               color: SalesOrdersController.textSecondary,
                             ),

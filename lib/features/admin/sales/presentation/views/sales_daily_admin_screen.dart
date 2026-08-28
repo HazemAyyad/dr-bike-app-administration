@@ -244,7 +244,10 @@ class _ClosingList extends StatelessWidget {
                     SizedBox(height: 12.h),
                     _ClosingRequestTotals(item: item),
                     SizedBox(height: 12.h),
-                    ...item.cashCounts.map((row) {
+                    ...[
+                      ...item.cashCounts,
+                      ...item.salesOrdersCashCounts,
+                    ].map((row) {
                       final boxes = controller.shownBoxes
                           .where((b) => b.currency == row.currency)
                           .toList();
@@ -327,7 +330,11 @@ class _ClosingList extends StatelessWidget {
                             onPressed: controller.isProcessing.value
                                 ? null
                                 : () async {
-                                    final missingTransfer = item.cashCounts.any(
+                                    final allCounts = [
+                                      ...item.cashCounts,
+                                      ...item.salesOrdersCashCounts,
+                                    ];
+                                    final missingTransfer = allCounts.any(
                                       (row) =>
                                           row.amountToTransfer > 0 &&
                                           transfers[row.currency] == null,
@@ -340,10 +347,14 @@ class _ClosingList extends StatelessWidget {
                                       return;
                                     }
                                     final list = <Map<String, dynamic>>[];
-                                    for (final row in item.cashCounts) {
+                                    for (final row in allCounts) {
                                       if (row.amountToTransfer <= 0) continue;
                                       final toBoxId = transfers[row.currency];
                                       if (toBoxId == null) continue;
+                                      if (list.any((item) =>
+                                          item['currency'] == row.currency)) {
+                                        continue;
+                                      }
                                       list.add({
                                         'currency': row.currency,
                                         'to_box_id': toBoxId,
@@ -396,7 +407,8 @@ class _ClosingRequestTotals extends StatelessWidget {
   }
 
   double _sum(double Function(DailyCashCountRow row) selector) {
-    return item.cashCounts.fold<double>(0, (sum, row) => sum + selector(row));
+    return [...item.cashCounts, ...item.salesOrdersCashCounts]
+        .fold<double>(0, (sum, row) => sum + selector(row));
   }
 }
 

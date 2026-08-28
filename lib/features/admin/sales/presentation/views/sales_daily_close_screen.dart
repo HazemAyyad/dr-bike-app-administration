@@ -32,6 +32,9 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   final Map<String, TextEditingController> _physical = {};
   final Map<String, TextEditingController> _float = {};
   final Map<String, TextEditingController> _notes = {};
+  final Map<String, TextEditingController> _ordersPhysical = {};
+  final Map<String, TextEditingController> _ordersFloat = {};
+  final Map<String, TextEditingController> _ordersNotes = {};
   final _lateReasonCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _submitting = false;
@@ -129,6 +132,18 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     _physical.clear();
     _float.clear();
     _notes.clear();
+    for (final c in _ordersPhysical.values) {
+      c.dispose();
+    }
+    for (final c in _ordersFloat.values) {
+      c.dispose();
+    }
+    for (final c in _ordersNotes.values) {
+      c.dispose();
+    }
+    _ordersPhysical.clear();
+    _ordersFloat.clear();
+    _ordersNotes.clear();
 
     for (final row in payload.currencies) {
       _physical[row.currency] = TextEditingController(
@@ -136,6 +151,13 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       );
       _float[row.currency] = TextEditingController(text: '0');
       _notes[row.currency] = TextEditingController();
+    }
+    for (final row in payload.salesOrdersCurrencies) {
+      _ordersPhysical[row.currency] = TextEditingController(
+        text: SalesAmountFormat.display(row.systemBalance),
+      );
+      _ordersFloat[row.currency] = TextEditingController(text: '0');
+      _ordersNotes[row.currency] = TextEditingController();
     }
     _controllersReady = _physical.isNotEmpty;
     if (_canFinalizeClosing) {
@@ -170,6 +192,15 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       c.dispose();
     }
     for (final c in _notes.values) {
+      c.dispose();
+    }
+    for (final c in _ordersPhysical.values) {
+      c.dispose();
+    }
+    for (final c in _ordersFloat.values) {
+      c.dispose();
+    }
+    for (final c in _ordersNotes.values) {
       c.dispose();
     }
     _lateReasonCtrl.dispose();
@@ -304,7 +335,15 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
               SizedBox(height: 14.h),
               _sectionLabel('صندوق الطلبيات اليومي (منفصل)'),
               SizedBox(height: 6.h),
-              ...payload.salesOrdersCurrencies.map(_ordersBoxSummary),
+              ...payload.salesOrdersCurrencies.map(
+                (row) => _currencySection(
+                  row,
+                  physicalMap: _ordersPhysical,
+                  floatMap: _ordersFloat,
+                  notesMap: _ordersNotes,
+                  expansionPrefix: 'orders_',
+                ),
+              ),
             ],
             SizedBox(height: 24.h),
             AppButton(
@@ -327,27 +366,6 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         fontSize: 13.sp,
         fontWeight: FontWeight.w800,
         color: _titleColor,
-      ),
-    );
-  }
-
-  Widget _ordersBoxSummary(DailyCurrencyRow row) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: _surfaceCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(row.dailyBoxName,
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800)),
-            SizedBox(height: 8.h),
-            Text(
-                'المقبوض من تسويات الطلبيات: ${row.salesCollected.toStringAsFixed(2)} ${row.currency}'),
-            SizedBox(height: 4.h),
-            Text(
-                'رصيد الصندوق المستقل: ${row.systemBalance.toStringAsFixed(2)} ${row.currency}'),
-          ],
-        ),
       ),
     );
   }
@@ -553,10 +571,16 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     });
   }
 
-  Widget _currencySection(DailyCurrencyRow row) {
-    final physicalCtrl = _physical[row.currency]!;
-    final floatCtrl = _float[row.currency]!;
-    final noteCtrl = _notes[row.currency]!;
+  Widget _currencySection(
+    DailyCurrencyRow row, {
+    Map<String, TextEditingController>? physicalMap,
+    Map<String, TextEditingController>? floatMap,
+    Map<String, TextEditingController>? notesMap,
+    String expansionPrefix = '',
+  }) {
+    final physicalCtrl = (physicalMap ?? _physical)[row.currency]!;
+    final floatCtrl = (floatMap ?? _float)[row.currency]!;
+    final noteCtrl = (notesMap ?? _notes)[row.currency]!;
     final physical = _parse(physicalCtrl.text);
     final floatKeep = _parse(floatCtrl.text);
     final variance = physical - row.systemBalance;
@@ -565,7 +589,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     final payload = _payload!;
     final alert = variance.abs() >= payload.config.varianceAlertThreshold;
     final isPrimary = _isPrimaryCurrency(row.currency);
-    final isExpanded = isPrimary || _expandedCurrencies.contains(row.currency);
+    final expansionKey = '$expansionPrefix${row.currency}';
+    final isExpanded = isPrimary || _expandedCurrencies.contains(expansionKey);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
@@ -579,7 +604,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
               child: InkWell(
                 onTap: isPrimary
                     ? null
-                    : () => _toggleCurrencyExpanded(row.currency),
+                    : () => _toggleCurrencyExpanded(expansionKey),
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(14.r),
                   bottom: isExpanded ? Radius.zero : Radius.circular(14.r),
@@ -899,10 +924,43 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       );
     }
 
+    final ordersCounts = <Map<String, dynamic>>[];
+    for (final row in payload.salesOrdersCurrencies) {
+      final physical = _parse(_ordersPhysical[row.currency]?.text);
+      final floatKeep = _parse(_ordersFloat[row.currency]?.text);
+      final variance = physical - row.systemBalance;
+      final note = _ordersNotes[row.currency]?.text.trim() ?? '';
+      if (floatKeep > physical) {
+        Get.snackbar('error'.tr, 'salesDailyFloatExceedsCounted'.tr);
+        return;
+      }
+      if (variance.abs() > 0.01 && note.isEmpty) {
+        Get.snackbar('error'.tr, 'salesDailyVarianceNoteRequired'.tr);
+        return;
+      }
+      ordersCounts.add(
+        DailyCashCountRow(currency: row.currency).toRequestJson(
+          physical: _ordersPhysical[row.currency]!.text,
+          floatKeep: _ordersFloat[row.currency]!.text,
+          note: note,
+        ),
+      );
+    }
+
     if (_canFinalizeClosing) {
       for (final row in payload.currencies) {
         final physical = _parse(_physical[row.currency]?.text);
         final floatKeep = _parse(_float[row.currency]?.text);
+        final transfer =
+            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
+        if (transfer > 0 && _transferTargets[row.currency] == null) {
+          Get.snackbar('error'.tr, 'salesDailyTransferTargetRequired'.tr);
+          return;
+        }
+      }
+      for (final row in payload.salesOrdersCurrencies) {
+        final physical = _parse(_ordersPhysical[row.currency]?.text);
+        final floatKeep = _parse(_ordersFloat[row.currency]?.text);
         final transfer =
             (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
         if (transfer > 0 && _transferTargets[row.currency] == null) {
@@ -927,6 +985,18 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
           'to_box_id': toBoxId,
         });
       }
+      for (final row in payload.salesOrdersCurrencies) {
+        if (transfers.any((item) => item['currency'] == row.currency)) {
+          continue;
+        }
+        final physical = _parse(_ordersPhysical[row.currency]?.text);
+        final floatKeep = _parse(_ordersFloat[row.currency]?.text);
+        if (physical - floatKeep <= 0) continue;
+        final toBoxId = _transferTargets[row.currency];
+        if (toBoxId != null) {
+          transfers.add({'currency': row.currency, 'to_box_id': toBoxId});
+        }
+      }
     }
 
     setState(() => _submitting = true);
@@ -942,11 +1012,13 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       final message = _canFinalizeClosing
           ? await controller.directCloseDailySession(
               cashCounts: counts,
+              salesOrdersCashCounts: ordersCounts,
               sessionId: sessionId,
               transfers: transfers,
             )
           : await controller.submitDailyClosing(
               cashCounts: counts,
+              salesOrdersCashCounts: ordersCounts,
               lateCloseReason: lateReason,
               sessionId: sessionId,
             );
