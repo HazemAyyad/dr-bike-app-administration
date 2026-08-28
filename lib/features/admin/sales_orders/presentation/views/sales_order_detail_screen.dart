@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/helpers/video_view.dart';
 import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
@@ -272,7 +273,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(9.r),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12.r),
@@ -285,15 +286,15 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 38.w,
-                height: 38.w,
+                width: 30.w,
+                height: 30.w,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(step.icon, color: color, size: 21.sp),
+                child: Icon(step.icon, color: color, size: 17.sp),
               ),
-              SizedBox(width: 10.w),
+              SizedBox(width: 7.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,16 +303,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       'salesOrderRequiredNow'.tr,
                       style: TextStyle(
                         color: color,
-                        fontSize: 11.sp,
+                        fontSize: 9.sp,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 3.h),
+                    SizedBox(height: 1.h),
                     Text(
                       step.title,
                       style: TextStyle(
                         color: SalesOrdersController.textPrimary,
-                        fontSize: 15.sp,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -320,17 +321,17 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               ),
             ],
           ),
-          SizedBox(height: 9.h),
+          SizedBox(height: 5.h),
           Text(
             step.description,
             style: TextStyle(
               color: SalesOrdersController.textSecondary,
-              fontSize: 12.sp,
-              height: 1.5,
+              fontSize: 10.sp,
+              height: 1.25,
             ),
           ),
           if (step.actionId != null || step.mediaCategory != null) ...[
-            SizedBox(height: 12.h),
+            SizedBox(height: 7.h),
             Obx(() {
               final busy = controller.isSubmitting.value;
               return SizedBox(
@@ -362,7 +363,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     backgroundColor: color,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: color.withValues(alpha: 0.4),
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    padding: EdgeInsets.symmetric(vertical: 8.h),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(9.r),
                     ),
@@ -1478,13 +1479,41 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             runSpacing: 8.h,
             children: order.media.map((m) {
               if (m.url == null) return const SizedBox.shrink();
-              return ClipRRect(
+              final url = m.url!;
+              if (m.type == 'video') {
+                return Material(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: InkWell(
+                    onTap: () => Get.to(() => VideoView(videoPath: url)),
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: SizedBox(
+                      width: 88.w,
+                      height: 88.w,
+                      child: const Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 38,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return Material(
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(8.r),
-                child: CachedNetworkImage(
-                  imageUrl: m.url!,
-                  width: 88.w,
-                  height: 88.w,
-                  fit: BoxFit.cover,
+                child: InkWell(
+                  onTap: () => _showImageZoom(url),
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: CachedNetworkImage(
+                      imageUrl: url,
+                      width: 88.w,
+                      height: 88.w,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               );
             }).toList(),
@@ -1854,12 +1883,23 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     final raw = item.productImage ?? '';
     final url = ShowNetImage.getThumbnailPhoto(raw);
     final has = url.isNotEmpty && raw != 'no image';
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6.r),
-      child: has
-          ? CachedNetworkImage(
-              imageUrl: url, width: 36.w, height: 36.w, fit: BoxFit.cover)
-          : _itemPlaceholder(size: 36),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: has ? () => _showImageZoom(ShowNetImage.getPhoto(raw)) : null,
+        borderRadius: BorderRadius.circular(6.r),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6.r),
+          child: has
+              ? CachedNetworkImage(
+                  imageUrl: url,
+                  width: 36.w,
+                  height: 36.w,
+                  fit: BoxFit.cover,
+                )
+              : _itemPlaceholder(size: 36),
+        ),
+      ),
     );
   }
 

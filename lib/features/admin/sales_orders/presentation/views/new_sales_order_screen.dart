@@ -169,8 +169,9 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                 child: Obx(
                   () => DropdownButtonFormField<int>(
                     initialValue: controller.selectedCityId.value,
-                    hint: Text('city'.tr),
-                    decoration: _inputDecoration(),
+                    decoration: _inputDecoration().copyWith(
+                      labelText: 'المدينة العامة (اختياري)',
+                    ),
                     items: controller.cities
                         .map((c) => DropdownMenuItem(
                             value: c.id, child: Text(c.nameAr)))

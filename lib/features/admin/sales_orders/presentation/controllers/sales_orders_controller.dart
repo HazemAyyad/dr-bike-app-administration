@@ -6,7 +6,6 @@ import 'package:doctorbike/core/errors/failure.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,6 +18,7 @@ import '../../../payment_method/presentation/controllers/payment_controller.dart
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../checks/data/models/check_model.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../widgets/sales_order_media_source_sheet.dart';
 import '../widgets/sales_order_media_category_sheet.dart';
@@ -1724,45 +1724,24 @@ class SalesOrdersController extends GetxController {
     final category = presetCategory ?? await showSalesOrderMediaCategorySheet();
     if (category == null) return;
 
-    final isDocumentCategory = category == 'document';
-    String? choice;
-
-    if (!isDocumentCategory) {
-      // Photography / general uploads: camera only (image or video), no gallery.
-      choice = await showSalesOrderCameraTypeSheet();
-    } else {
-      final source = await showSalesOrderMediaSourceSheet();
-      if (source == null) return;
-
-      if (source == 'camera') {
-        choice = await showSalesOrderCameraTypeSheet();
-      } else if (source == 'gallery') {
-        choice = 'gallery_mixed';
-      }
-    }
-    if (choice == null) return;
-
-    final picker = ImagePicker();
+    final source = await showSalesOrderMediaSourceSheet();
+    if (source == null) return;
     final picked = <XFile>[];
 
-    switch (choice) {
-      case 'camera_image':
+    switch (source) {
+      case 'camera':
         if (!await ensureCameraPermission()) {
           SalesOrderNotice.error('cameraPermissionDenied'.tr);
           return;
         }
-        final image = await picker.pickImage(source: ImageSource.camera);
-        if (image != null) picked.add(image);
-        break;
-      case 'camera_video':
-        if (!await ensureCameraPermission()) {
-          SalesOrderNotice.error('cameraPermissionDenied'.tr);
-          return;
+        final capture = await Get.to<WhatsAppCapture>(
+          () => const WhatsAppCameraScreen(),
+        );
+        if (capture != null && capture.path.isNotEmpty) {
+          picked.add(XFile(capture.path));
         }
-        final video = await picker.pickVideo(source: ImageSource.camera);
-        if (video != null) picked.add(video);
         break;
-      case 'gallery_mixed':
+      case 'gallery':
         if (!await ensurePhotosPermission()) {
           SalesOrderNotice.error('cameraPermissionDenied'.tr);
           return;
