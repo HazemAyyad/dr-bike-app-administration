@@ -402,6 +402,35 @@ class SalesOrdersController extends GetxController {
     selectedShiplyVillageId.value = address.shiplyVillageId;
   }
 
+  Future<bool> applyPartnerAddressToOrder(
+    SalesOrderDetailModel order,
+    PartnerAddressModel address,
+  ) async {
+    final partnerType =
+        order.partnerType ?? (order.customerId != null ? 'customer' : null);
+    final partnerId = order.partnerId ?? order.customerId;
+    if (partnerType == null || partnerId == null) return false;
+
+    isSubmitting.value = true;
+    final result = await repository.updateOrder(order.id, {
+      'partner_type': partnerType,
+      'partner_id': partnerId,
+      'partner_address_id': address.id,
+    });
+    isSubmitting.value = false;
+    return result.fold(
+      (failure) {
+        SalesOrderNotice.error(_humanizeFailure(failure));
+        return false;
+      },
+      (updatedOrder) {
+        detail.value = updatedOrder;
+        selectPartnerAddress(address);
+        return true;
+      },
+    );
+  }
+
   void clearActiveEditSalesOrder() {
     activeEditSalesOrderId.value = null;
   }

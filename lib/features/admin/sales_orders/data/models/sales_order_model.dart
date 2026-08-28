@@ -274,6 +274,8 @@ class SalesOrderDetailModel {
   final String? serialNumber;
   final String status;
   final int? customerId;
+  final String? partnerType;
+  final int? partnerId;
   final String? customerName;
   final String? customerPhone;
   final String? cityName;
@@ -325,6 +327,8 @@ class SalesOrderDetailModel {
     this.serialNumber,
     required this.status,
     this.customerId,
+    this.partnerType,
+    this.partnerId,
     this.customerName,
     this.customerPhone,
     this.cityName,
@@ -398,6 +402,8 @@ class SalesOrderDetailModel {
       serialNumber: json['serial_number'] as String?,
       status: json['status'] as String? ?? 'unconfirmed',
       customerId: json['customer_id'] as int?,
+      partnerType: json['partner_type'] as String?,
+      partnerId: json['partner_id'] as int?,
       customerName: json['customer_name'] as String?,
       customerPhone: json['customer_phone'] as String?,
       cityName: (json['city'] as Map<String, dynamic>?)?['name_ar'] as String?,
@@ -525,8 +531,11 @@ class PartnerAddressModel {
   final int? cityId;
   final int? shiplyCityId;
   final int? shiplyVillageId;
+  final String? shiplyCityName;
+  final String? shiplyVillageName;
   final String streetAddress;
   final String? phone;
+  final String? deliveryNotes;
   final bool isDefault;
 
   const PartnerAddressModel({
@@ -535,8 +544,11 @@ class PartnerAddressModel {
     this.cityId,
     this.shiplyCityId,
     this.shiplyVillageId,
+    this.shiplyCityName,
+    this.shiplyVillageName,
     required this.streetAddress,
     this.phone,
+    this.deliveryNotes,
     this.isDefault = false,
   });
 
@@ -547,8 +559,11 @@ class PartnerAddressModel {
         cityId: int.tryParse('${json['city_id'] ?? ''}'),
         shiplyCityId: int.tryParse('${json['shiply_city_id'] ?? ''}'),
         shiplyVillageId: int.tryParse('${json['shiply_village_id'] ?? ''}'),
+        shiplyCityName: json['shiply_city_name']?.toString(),
+        shiplyVillageName: json['shiply_village_name']?.toString(),
         streetAddress: '${json['street_address'] ?? '----'}',
         phone: json['phone']?.toString(),
+        deliveryNotes: json['delivery_notes']?.toString(),
         isDefault: json['is_default'] == true || json['is_default'] == 1,
       );
 }

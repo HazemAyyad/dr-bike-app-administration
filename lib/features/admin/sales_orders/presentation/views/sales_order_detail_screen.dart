@@ -12,6 +12,7 @@ import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../../employee_section/domain/entities/employee_entity.dart';
+import '../../../general_data_list/presentation/views/partner_addresses_sheet.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
@@ -1869,16 +1870,36 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     _showHandoverSheet(order.id, order);
   }
 
+  Future<bool> _selectPartnerAddressForHandover(
+    SalesOrderDetailModel order,
+  ) async {
+    final partnerType =
+        order.partnerType ?? (order.customerId != null ? 'customer' : null);
+    final partnerId = order.partnerId ?? order.customerId;
+    if (partnerType == null || partnerId == null) {
+      return true;
+    }
+
+    final selected = await showPartnerAddressesSheet(
+      context: context,
+      partnerType: partnerType,
+      partnerId: partnerId,
+      selectionMode: true,
+    );
+    if (selected == null) return false;
+
+    return controller.applyPartnerAddressToOrder(
+      order,
+      PartnerAddressModel.fromJson(selected),
+    );
+  }
+
   Future<bool> _prepareManualDeliveryHandover(
       SalesOrderDetailModel order) async {
     var current = controller.detail.value ?? order;
     final requiresFullAddress = controller.isSelectedCompanyTaxi ||
         controller.isSelectedCompanyOffice ||
         controller.isSelectedCompanyDoctorBike;
-
-    if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
-      return true;
-    }
 
     await controller.loadShiplyPartners();
 
@@ -1929,6 +1950,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       current = controller.detail.value ?? current;
     }
 
+    if (!await _selectPartnerAddressForHandover(current)) return false;
+    current = controller.detail.value ?? current;
+
+    if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
+      return true;
+    }
+
     if (controller.needsShiplyAddress(current)) {
       if (controller.shiplyCities.isEmpty) {
         await controller.loadLookups();
@@ -1957,10 +1985,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     }
 
     var current = controller.detail.value ?? order;
-
-    if (controller.isShiplyHandoverReady(current)) {
-      return true;
-    }
 
     await controller.loadShiplyPartners();
 
@@ -2009,6 +2033,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       if (phoneSaved != true) return false;
       await controller.loadDetail(order.id);
       current = controller.detail.value ?? current;
+    }
+
+    if (!await _selectPartnerAddressForHandover(current)) return false;
+    current = controller.detail.value ?? current;
+
+    if (controller.isShiplyHandoverReady(current)) {
+      return true;
     }
 
     if (controller.needsShiplyAddress(current)) {
