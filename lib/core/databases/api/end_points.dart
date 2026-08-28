@@ -550,6 +550,12 @@ class EndPoints {
       'suspended/instant/sale/cancel';
 
   static const String salesOrders = 'sales/orders';
+  static const String salesSettings = 'sales/settings';
+  static const String deliveryCompanyAccounts =
+      'sales/delivery-company-accounts';
+  static const String deliveryCompanyAccount = 'sales/delivery-company-account';
+  static const String settleDeliveryCompanyAccount =
+      'sales/delivery-company-account/settle';
   static const String salesOrder = 'sales/order';
   static const String salesOrderCheckStock = 'sales/order/check-stock';
   static const String salesOrderStockAvailability =

@@ -159,6 +159,8 @@ import '../features/admin/sales/presentation/views/sales_daily_session_detail_sc
 import '../features/admin/sales/presentation/controllers/sales_daily_admin_controller.dart';
 import '../features/admin/sales/presentation/controllers/sales_daily_history_controller.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
+import '../features/admin/sales/presentation/views/sales_settings_screen.dart';
+import '../features/admin/sales/presentation/views/delivery_company_accounts_screen.dart';
 import '../features/admin/sales_orders/presentation/binding/sales_orders_binding.dart';
 import '../features/admin/sales_orders/presentation/views/sales_order_detail_screen.dart';
 import '../features/admin/sales_orders/presentation/views/sales_order_checkout_screen.dart';
@@ -769,6 +771,16 @@ class AppPages {
       name: AppRoutes.SALESSCREEN,
       page: () => const SalesScreen(),
       binding: SalesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESSETTINGSSCREEN,
+      page: () => const SalesSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.DELIVERYCOMPANYACCOUNTSSCREEN,
+      page: () => const DeliveryCompanyAccountsScreen(),
       transition: _transitionFadeIn,
     ),
     GetPage(

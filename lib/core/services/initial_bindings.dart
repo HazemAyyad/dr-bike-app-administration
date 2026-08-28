@@ -52,6 +52,9 @@ const String costPricePermissionName = 'Cost Price';
 /// اسم صلاحية إدارة خدمات الصيانة (يطابق name_en في الباك إند).
 const String maintenanceServicesSettingsPermissionName =
     'Maintenance Services Settings';
+const String salesSettingsPermissionName = 'Sales Settings';
+const String deliveryCompanyAccountsPermissionName =
+    'Delivery Company Accounts';
 
 /// هل يحق للمستخدم الحالي رؤية/تعديل سعر التكلفة؟
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Cost Price".
@@ -62,6 +65,12 @@ bool get canViewCostPrice =>
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية إعدادات خدمات الصيانة.
 bool get canManageMaintenanceServicesSettings =>
     hasEmployeePermissionName(maintenanceServicesSettingsPermissionName);
+
+bool get canManageSalesSettings =>
+    hasEmployeePermissionName(salesSettingsPermissionName);
+
+bool get canManageDeliveryCompanyAccounts =>
+    hasEmployeePermissionName(deliveryCompanyAccountsPermissionName);
 
 /// رقم صلاحية الوصول لمهام الموظفين (Employee Tasks).
 const int employeeTasksPermissionId = 7;

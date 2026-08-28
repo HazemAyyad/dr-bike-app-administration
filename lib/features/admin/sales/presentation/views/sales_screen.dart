@@ -37,6 +37,12 @@ class SalesScreen extends GetView<SalesController> {
             route: AppRoutes.SALESSCREEN,
             title: 'sales',
           ),
+          if (canManageSalesSettings || canManageDeliveryCompanyAccounts)
+            IconButton(
+              tooltip: 'إعدادات المبيعات',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Get.toNamed(AppRoutes.SALESSETTINGSSCREEN),
+            ),
           Obx(
             () {
               final count = controller.suspendedInvoicesCount.value;
