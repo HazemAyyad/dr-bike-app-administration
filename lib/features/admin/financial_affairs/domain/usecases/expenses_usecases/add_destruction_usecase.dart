@@ -15,12 +15,27 @@ class AddDestructionUsecase {
     required String piecesNumber,
     required String destructionReason,
     required List<File?> media,
+    String? costLayerId,
+    List<Map<String, dynamic>>? items,
   }) {
     return financialAffairsRepository.addDestruction(
       productId: productId,
       piecesNumber: piecesNumber,
       destructionReason: destructionReason,
       media: media,
+      costLayerId: costLayerId,
+      items: items,
     );
   }
+
+  Future<Either<Failure, String>> edit({
+    required String destructionId,
+    required String destructionReason,
+    required List<File?> media,
+  }) =>
+      financialAffairsRepository.editDestruction(
+        destructionId: destructionId,
+        destructionReason: destructionReason,
+        media: media,
+      );
 }

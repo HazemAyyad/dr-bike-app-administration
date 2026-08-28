@@ -1,10 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../../core/helpers/app_button.dart';
 
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
@@ -13,7 +15,10 @@ import '../../../data/models/expenses_models/destruction_model.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
 import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
-import '../../controllers/official_papers_controller.dart';
+import '../../controllers/expenses_controller.dart';
+import '../financial_operational_ui.dart';
+import '../financial_image_cache.dart';
+import '../../../../../../core/widgets/skeleton_loading.dart';
 
 class DestructionCard extends StatelessWidget {
   const DestructionCard({Key? key, required this.data}) : super(key: key);
@@ -22,160 +27,63 @@ class DestructionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Get.dialog(DestructionDetails(data: data));
-        // controller.isEditing.value = true;
-        // controller.getAssetsDetials(assetId: asset.id.toString());
-        // Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
-      },
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 5.h),
-        decoration: BoxDecoration(
+    return FinancialOperationalCard(
+      onTap: () => Get.dialog(DestructionDetails(data: data)),
+      child: Row(children: [
+        ClipRRect(
           borderRadius: BorderRadius.circular(9.r),
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 1,
-              offset: const Offset(0, 2),
+          child: CachedNetworkImage(
+            cacheManager: FinancialImageCache.instance,
+            imageUrl: data.image.isEmpty
+                ? AssetsManager.noImageNet
+                : data.image.first,
+            width: 36.w,
+            height: 36.w,
+            fit: BoxFit.cover,
+            placeholder: (_, __) =>
+                SkeletonBlock(width: 36.w, height: 36.w, radius: 9),
+            errorWidget: (_, __, ___) => Container(
+              width: 36.w,
+              height: 36.w,
+              color: AppColors.operationalSurface,
+              child: Icon(Icons.delete_sweep_outlined,
+                  size: 18.sp, color: AppColors.operationalPurple),
             ),
-          ],
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(5.r),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(9.r),
-                    child: CachedNetworkImage(
-                      cacheManager: CacheManager(
-                        Config(
-                          'imagesCache',
-                          stalePeriod: const Duration(days: 7),
-                          maxNrOfCacheObjects: 100,
-                        ),
-                      ),
-                      imageBuilder: (context, imageProvider) => Container(
-                        height: 55.h,
-                        width: 70.w,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.medium,
-                          ),
-                        ),
-                      ),
-                      imageUrl: data.image.isEmpty
-                          ? AssetsManager.noImageNet
-                          : data.image.first,
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
-                      placeholder: (context, url) =>
-                          const Center(child: CircularProgressIndicator()),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                Column(
-                  children: [
-                    Text(
-                      data.productName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: AppColors.graywhiteColor,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Text(
-                      '${'piecesCount'.tr}:${data.piecesNumber}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: AppColors.graywhiteColor,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            // const Spacer(),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    borderRadius: Get.locale!.languageCode != 'ar'
-                        ? BorderRadius.only(
-                            bottomRight: Radius.circular(4.r),
-                            topRight: Radius.circular(4.r),
-                          )
-                        : BorderRadius.only(
-                            bottomLeft: Radius.circular(4.r),
-                            topLeft: Radius.circular(4.r),
-                          ),
-                    color: AppColors.graywhiteColor,
-                  ),
-                  height: 65.h,
-                  width: 60.w,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'destructionValue'.tr,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge!.copyWith(
-                                    color: AppColors.blackColor,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Flexible(
-                        child: Text(
-                          NumberFormat('#,###').format(
-                              double.parse(data.destructionValue.toString())),
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge!.copyWith(
-                                    color: AppColors.blackColor,
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+        SizedBox(width: 8.w),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(data.productName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.operationalNavy)),
+            SizedBox(height: 3.h),
+            Text(showData(data.createdAt),
+                style: TextStyle(
+                    fontSize: 9.5.sp, color: AppColors.customGreyColor5)),
+          ]),
         ),
-      ),
+        FinancialMiniChip(
+            label: '${data.piecesNumber} قطعة',
+            color: AppColors.customOrange3,
+            icon: Icons.numbers),
+        SizedBox(width: 5.w),
+        FinancialMiniChip(
+            label:
+                '${NumberFormat('#,###.##').format(data.destructionValue)} ₪',
+            color: AppColors.operationalPurple,
+            icon: Icons.payments_outlined),
+      ]),
     );
   }
 }
 
-class DestructionDetails extends GetView<OfficialPapersController> {
+class DestructionDetails extends GetView<ExpensesController> {
   const DestructionDetails({Key? key, required this.data}) : super(key: key);
 
   final DestructionModel data;
@@ -202,7 +110,11 @@ class DestructionDetails extends GetView<OfficialPapersController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox.shrink(),
+                  IconButton(
+                    tooltip: 'تعديل التفاصيل',
+                    onPressed: () => _showEditDialog(context),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
                   Text(
                     'details'.tr,
                     textAlign: TextAlign.center,
@@ -340,14 +252,8 @@ class DestructionDetails extends GetView<OfficialPapersController> {
                                           },
                                           child: CachedNetworkImage(
                                             imageUrl: entry.value,
-                                            cacheManager: CacheManager(
-                                              Config(
-                                                'imagesCache',
-                                                stalePeriod:
-                                                    const Duration(days: 7),
-                                                maxNrOfCacheObjects: 100,
-                                              ),
-                                            ),
+                                            cacheManager:
+                                                FinancialImageCache.instance,
                                             imageBuilder:
                                                 (context, imageProvider) =>
                                                     Container(
@@ -391,6 +297,60 @@ class DestructionDetails extends GetView<OfficialPapersController> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final reasonController =
+        TextEditingController(text: data.destructionReason);
+    controller.assetsFile.clear();
+    Get.dialog(
+      Dialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('تعديل تفاصيل الإتلاف',
+                style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.operationalNavy)),
+            SizedBox(height: 12.h),
+            CustomTextField(
+              controller: reasonController,
+              label: 'damageReason',
+              hintText: 'damageReason',
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              minLines: 4,
+              maxLines: 8,
+            ),
+            SizedBox(height: 10.h),
+            MediaUploadButton(
+              onFilesChanged: (files) => controller.assetsFile = files,
+              title: 'إضافة مرفقات جديدة',
+            ),
+            SizedBox(height: 14.h),
+            AppButton(
+              isLoading: controller.isLoading,
+              text: 'save',
+              onPressed: () => controller.editDestructionDetails(
+                context,
+                destructionId: data.destructionId.toString(),
+                reason: reasonController.text,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'المنتج والكمية وسعر التكلفة مقفلة محاسبيًا.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 9.5.sp, color: AppColors.customGreyColor5),
+            ),
+          ]),
         ),
       ),
     );

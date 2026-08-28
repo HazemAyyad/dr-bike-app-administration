@@ -169,7 +169,9 @@ class OfficialPapersController extends GetxController
       (m) => PaperModel.fromJson(m),
       debugScope: 'OfficialPapers papers',
     );
-    FinacialService().papers.assignAll(dartList(papersList));
+    final sortedPapers = dartList(papersList)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    FinacialService().papers.assignAll(sortedPapers);
     papersSearch = FinacialService().papers;
 
     // pictures
@@ -185,7 +187,9 @@ class OfficialPapersController extends GetxController
       (m) => PictureModel.fromJson(m),
       debugScope: 'OfficialPapers pictures',
     );
-    FinacialService().pictures.assignAll(dartList(picturesList));
+    final sortedPictures = dartList(picturesList)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    FinacialService().pictures.assignAll(sortedPictures);
     picturesSearch = FinacialService().pictures;
 
     // files

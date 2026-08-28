@@ -5,7 +5,7 @@ class DestructionModel {
   final int destructionId;
   final String productId;
   final String productName;
-  final int destructionValue;
+  final double destructionValue;
   final String piecesNumber;
   final String destructionReason;
   final DateTime createdAt;
@@ -35,7 +35,7 @@ class DestructionModel {
       destructionId: asInt(j['destruction_id']),
       productId: asString(j['product_id']),
       productName: asString(j['product_name']),
-      destructionValue: asInt(j['destruction_value']),
+      destructionValue: asDouble(j['destruction_value']),
       piecesNumber: asString(j['pieces_number']),
       destructionReason: asString(j['destruction_reason']),
       createdAt: parseApiDateTime(j['created_at']),

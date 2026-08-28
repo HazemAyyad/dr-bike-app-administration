@@ -64,3 +64,25 @@ class FinancialGridSkeletonSliver extends StatelessWidget {
     );
   }
 }
+
+class FinancialFormSkeleton extends StatelessWidget {
+  const FinancialFormSkeleton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      child: Column(
+        children: [
+          for (var i = 0; i < 5; i++) ...[
+            SkeletonBlock(
+                width: double.infinity,
+                height: i == 3 ? 110.h : 54.h,
+                radius: 12),
+            SizedBox(height: 10.h),
+          ],
+        ],
+      ),
+    );
+  }
+}

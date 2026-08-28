@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -43,7 +44,9 @@ class FinancialAffairsDatasource {
                               ? EndPoints.getAllFiles
                               : page == '7'
                                   ? EndPoints.getAllTreasuries
-                                  : EndPoints.getAllAssets;
+                                  : page == '8'
+                                      ? EndPoints.destructionCostLayers
+                                      : EndPoints.getAllAssets;
       final response = await api.get(endpoint, queryParameters: filters);
       final raw = response.data;
       debugParseLog(
@@ -187,14 +190,20 @@ class FinancialAffairsDatasource {
     required String piecesNumber,
     required String destructionReason,
     required List<File?> media,
+    String? costLayerId,
+    List<Map<String, dynamic>>? items,
   }) async {
     try {
       final response = await api.post(
-        EndPoints.addDestruction,
+        items == null
+            ? EndPoints.addDestruction
+            : EndPoints.addDestructionsBatch,
         data: {
-          'product_id': productId,
-          'pieces_number': piecesNumber,
+          if (items == null) 'product_id': productId,
+          if (items == null) 'pieces_number': piecesNumber,
+          if (items != null) 'items': jsonEncode(items),
           'destruction_reason': destructionReason,
+          if (costLayerId != null) 'cost_layer_id': costLayerId,
           if (media.isNotEmpty)
             'media[]': await Future.wait(
               media.map((file) async {
@@ -222,6 +231,26 @@ class FinancialAffairsDatasource {
         ),
       );
     }
+  }
+
+  Future<Map<String, dynamic>> editDestruction({
+    required String destructionId,
+    required String destructionReason,
+    required List<File?> media,
+  }) async {
+    final Map<String, dynamic> payload = {
+      'destruction_id': destructionId,
+      'destruction_reason': destructionReason,
+    };
+    for (var i = 0; i < media.length; i++) {
+      final file = media[i];
+      if (file == null || file.path.startsWith('http')) continue;
+      payload['media[$i]'] = await MultipartFile.fromFile(file.path,
+          filename: p.basename(file.path));
+    }
+    final response = await api.post(EndPoints.editDestruction,
+        data: payload, isFormData: true);
+    return Map<String, dynamic>.from(response.data);
   }
 
   // add expense

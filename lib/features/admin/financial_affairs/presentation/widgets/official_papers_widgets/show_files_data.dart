@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -12,6 +11,7 @@ import 'package:doctorbike/features/admin/financial_affairs/data/models/official
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 import 'add_paper.dart';
+import '../financial_image_cache.dart';
 
 class ShowFilesData extends GetView<OfficialPapersController> {
   const ShowFilesData({Key? key, required this.data}) : super(key: key);
@@ -129,13 +129,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                               },
                               child: CachedNetworkImage(
                                 imageUrl: data.paperImage,
-                                cacheManager: CacheManager(
-                                  Config(
-                                    'imagesCache',
-                                    stalePeriod: const Duration(days: 7),
-                                    maxNrOfCacheObjects: 100,
-                                  ),
-                                ),
+                                cacheManager: FinancialImageCache.instance,
                                 imageBuilder: (context, imageProvider) =>
                                     Container(
                                   height: 40.h,

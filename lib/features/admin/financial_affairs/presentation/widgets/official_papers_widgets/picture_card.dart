@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -12,6 +11,7 @@ import '../../../../../../core/utils/assets_manger.dart';
 import '../../../data/models/official_papers_models/pictures_model.dart';
 import '../../controllers/official_papers_controller.dart';
 import 'picture_details.dart';
+import '../financial_image_cache.dart';
 
 class PictureCard extends GetView<OfficialPapersController> {
   const PictureCard({Key? key, required this.data}) : super(key: key);
@@ -107,13 +107,7 @@ class PictureCard extends GetView<OfficialPapersController> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(9.r),
                 child: CachedNetworkImage(
-                  cacheManager: CacheManager(
-                    Config(
-                      'imagesCache',
-                      stalePeriod: const Duration(days: 7),
-                      maxNrOfCacheObjects: 100,
-                    ),
-                  ),
+                  cacheManager: FinancialImageCache.instance,
                   imageBuilder: (context, imageProvider) => Container(
                     height: 70,
                     width: 100,

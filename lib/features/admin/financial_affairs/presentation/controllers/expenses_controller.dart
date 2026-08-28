@@ -49,6 +49,39 @@ class ExpensesController extends GetxController
   final TextEditingController piecesCountController = TextEditingController();
   final TextEditingController damageReasonController = TextEditingController();
   List<File> assetsFile = [];
+  final RxList<DestructionDraftLine> destructionDraftLines =
+      <DestructionDraftLine>[].obs;
+
+  Future<void> addSelectedDestructionProduct(BuildContext context) async {
+    final id = int.tryParse(productIdController.text);
+    if (id == null || productNameController.text.trim().isEmpty) return;
+    if (destructionDraftLines.any((line) => line.productId == id)) return;
+    final response = await getAllFinancialUsecase.call(
+      page: '8',
+      filters: {'product_id': id},
+    );
+    final raw = response is Map ? response['layers'] : null;
+    final layers = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((e) =>
+                DestructionCostLayer.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <DestructionCostLayer>[];
+    destructionDraftLines.add(DestructionDraftLine(
+      productId: id,
+      productName: productNameController.text.trim(),
+      layers: layers,
+    ));
+    productIdController.clear();
+    productNameController.clear();
+    update();
+  }
+
+  void removeDestructionLine(int index) {
+    destructionDraftLines.removeAt(index);
+    update();
+  }
 
   // expenses
   final TextEditingController expenseNameController = TextEditingController();
@@ -289,6 +322,9 @@ class ExpensesController extends GetxController
   }
 
   RxBool isEditing = false.obs;
+
+  /// Details open read-only first; the user explicitly enters edit mode.
+  RxBool isExpenseReadOnly = false.obs;
   RxBool isLoadingGet = false.obs;
   String expenseId = '';
   // get expenses data
@@ -311,13 +347,27 @@ class ExpensesController extends GetxController
   // add destruction
   void addDestruction(BuildContext context) async {
     if (formKey.currentState!.validate()) {
+      if (destructionDraftLines.isEmpty) {
+        await addSelectedDestructionProduct(context);
+      }
+      if (destructionDraftLines.isEmpty) return;
       isLoading(true);
+      final items = destructionDraftLines
+          .map((line) => <String, dynamic>{
+                'product_id': line.productId,
+                'pieces_number': line.quantity.value,
+                if (line.selectedLayer.value != null)
+                  'cost_layer_id': line.selectedLayer.value!.id,
+              })
+          .toList();
       final result = await addDestructionUsecase.call(
-        productId: productIdController.text,
-        piecesNumber: piecesCountController.text,
+        productId: '',
+        piecesNumber: '',
         destructionReason: damageReasonController.text,
         media: assetsFile,
+        items: items,
       );
+      if (!context.mounted) return;
       result.fold(
         (failure) {
           Helpers.showCustomDialogError(
@@ -327,6 +377,7 @@ class ExpensesController extends GetxController
           );
         },
         (success) {
+          destructionDraftLines.clear();
           productIdController.clear();
           productNameController.clear();
           piecesCountController.clear();
@@ -336,13 +387,7 @@ class ExpensesController extends GetxController
           isEditing.value = false;
           expenseId = '';
           update();
-          Future.delayed(
-            const Duration(milliseconds: 1500),
-            () {
-              Get.back();
-              Get.back();
-            },
-          );
+          Future.delayed(const Duration(milliseconds: 700), () => Get.back());
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -353,6 +398,40 @@ class ExpensesController extends GetxController
       isLoading(false);
       update();
     }
+  }
+
+  Future<void> editDestructionDetails(
+    BuildContext context, {
+    required String destructionId,
+    required String reason,
+  }) async {
+    isLoading(true);
+    final result = await addDestructionUsecase.edit(
+      destructionId: destructionId,
+      destructionReason: reason,
+      media: assetsFile,
+    );
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message'],
+      ),
+      (success) {
+        assetsFile.clear();
+        getAllExpenses();
+        Get.back();
+        Get.back();
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+    update();
   }
 
   RxBool isAddLoading = false.obs;
@@ -514,4 +593,38 @@ class ExpensesController extends GetxController
     assetsFile.clear();
     super.onClose();
   }
+}
+
+class DestructionCostLayer {
+  const DestructionCostLayer(
+      {required this.id,
+      required this.unitCost,
+      required this.remainingQuantity,
+      required this.currency});
+  final int id;
+  final double unitCost;
+  final double remainingQuantity;
+  final String currency;
+  factory DestructionCostLayer.fromJson(Map<String, dynamic> json) =>
+      DestructionCostLayer(
+        id: int.tryParse('${json['id']}') ?? 0,
+        unitCost: double.tryParse('${json['unit_cost']}') ?? 0,
+        remainingQuantity:
+            double.tryParse('${json['remaining_quantity']}') ?? 0,
+        currency: '${json['currency'] ?? 'شيكل'}',
+      );
+}
+
+class DestructionDraftLine {
+  DestructionDraftLine(
+      {required this.productId,
+      required this.productName,
+      required this.layers}) {
+    if (layers.isNotEmpty) selectedLayer.value = layers.first;
+  }
+  final int productId;
+  final String productName;
+  final List<DestructionCostLayer> layers;
+  final RxInt quantity = 1.obs;
+  final Rxn<DestructionCostLayer> selectedLayer = Rxn<DestructionCostLayer>();
 }

@@ -40,6 +40,14 @@ abstract class FinancialAffairsRepository {
     required String piecesNumber,
     required String destructionReason,
     required List<File?> media,
+    String? costLayerId,
+    List<Map<String, dynamic>>? items,
+  });
+
+  Future<Either<Failure, String>> editDestruction({
+    required String destructionId,
+    required String destructionReason,
+    required List<File?> media,
   });
 
   Future<Either<Failure, String>> addExpense({

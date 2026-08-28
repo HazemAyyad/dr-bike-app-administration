@@ -11,6 +11,7 @@ import '../../controllers/assets_controller.dart';
 import '../../widgets/assets_widget/assets_card.dart';
 import '../../widgets/assets_widget/assets_data.dart';
 import '../../widgets/financial_skeletons.dart';
+import '../../widgets/financial_operational_ui.dart';
 
 class AssetsScreen extends GetView<AssetsController> {
   const AssetsScreen({Key? key}) : super(key: key);
@@ -89,40 +90,17 @@ class AssetsScreen extends GetView<AssetsController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final month = controller.assetsFilter.keys
-                        .toList()
-                        .reversed
-                        .toList()[index];
-                    final assets =
-                        controller.assetsFilter[month]!.reversed.toList();
+                    final month = controller.assetsFilter.keys.toList()[index];
+                    final assets = controller.assetsFilter[month]!.toList()
+                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
                     return Padding(
                       padding:
-                          EdgeInsets.symmetric(vertical: 5.h, horizontal: 24.w),
+                          EdgeInsets.symmetric(vertical: 2.h, horizontal: 14.w),
                       child: Column(
                         children: [
                           SizedBox(height: index == 0 ? 5 : 0.h),
-                          Row(
-                            children: [
-                              Text(
-                                month.toString(),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium!
-                                    .copyWith(
-                                      color: AppColors.primaryColor,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15.sp,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 5.h),
-                          Container(
-                            height: 1.h,
-                            width: double.infinity,
-                            color: AppColors.primaryColor,
-                          ),
-                          SizedBox(height: 10.h),
+                          FinancialGroupTitle(
+                              title: month.toString(), count: assets.length),
                           ...assets.map((asset) => AssetsCard(asset: asset)),
                         ],
                       ),
@@ -177,13 +155,7 @@ class _AssetStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.only(end: 8.w),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onSelected(value),
-      ),
-    );
+    return FinancialFilterChip(
+        label: label, selected: selected, onTap: () => onSelected(value));
   }
 }

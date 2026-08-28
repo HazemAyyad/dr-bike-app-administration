@@ -122,8 +122,8 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                       final data = controller.papersSearch[index];
                       return Padding(
                         padding: EdgeInsets.symmetric(
-                          vertical: 5.h,
-                          horizontal: 24.w,
+                          vertical: 2.h,
+                          horizontal: 12.w,
                         ),
                         child: OfficialPapersCard(data: data),
                       );

@@ -144,6 +144,8 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String piecesNumber,
     required String destructionReason,
     required List<File?> media,
+    String? costLayerId,
+    List<Map<String, dynamic>>? items,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -154,6 +156,8 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         piecesNumber: piecesNumber,
         destructionReason: destructionReason,
         media: media,
+        costLayerId: costLayerId,
+        items: items,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -164,6 +168,27 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
           result,
         ),
       );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> editDestruction({
+    required String destructionId,
+    required String destructionReason,
+    required List<File?> media,
+  }) async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      final result = await financialAffairsDatasource.editDestruction(
+        destructionId: destructionId,
+        destructionReason: destructionReason,
+        media: media,
+      );
+      return result['status'] == 'success'
+          ? Right('${result['message']}')
+          : Left(ServerFailure('${result['message']}', result));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }

@@ -16,6 +16,8 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
+import '../../widgets/financial_operational_ui.dart';
+import '../../widgets/financial_skeletons.dart';
 
 class AddExpenseScreen extends GetView<ExpensesController> {
   const AddExpenseScreen({Key? key}) : super(key: key);
@@ -24,117 +26,118 @@ class AddExpenseScreen extends GetView<ExpensesController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: controller.isEditing.value ? 'editExpense' : 'addExpense',
+        title: controller.isEditing.value ? 'تفاصيل المصروف' : 'addExpense',
         action: false,
+        actions: [
+          if (controller.isEditing.value)
+            Obx(() => IconButton(
+                  tooltip: controller.isExpenseReadOnly.value
+                      ? 'تعديل المصروف'
+                      : 'إلغاء التعديل',
+                  onPressed: () {
+                    controller.isExpenseReadOnly.toggle();
+                    controller.update();
+                  },
+                  icon: Icon(controller.isExpenseReadOnly.value
+                      ? Icons.edit_outlined
+                      : Icons.close_rounded),
+                )),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: GetBuilder<ExpensesController>(
           builder: (controller) {
             if (controller.isLoadingGet.value) {
-              return Column(
-                children: [
-                  SizedBox(height: 300.h),
-                  const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ],
-              );
+              return const FinancialFormSkeleton();
             }
             return Form(
               key: controller.formKey,
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: CustomTextField(
-                          label: 'expenseName',
-                          hintText: 'expenseName',
-                          controller: controller.expenseNameController,
-                        ),
+                  FinancialOperationalCard(
+                    child: Column(children: [
+                      CustomTextField(
+                        label: 'expenseName',
+                        hintText: 'expenseName',
+                        controller: controller.expenseNameController,
+                        enabled: !controller.isExpenseReadOnly.value,
                       ),
-                      SizedBox(width: 10.w),
-                      Flexible(
-                        child: CustomTextField(
-                          label: 'price',
-                          hintText: 'price',
-                          keyboardType: TextInputType.number,
-                          controller: controller.expensePriceController,
-                          enabled: !controller.isEditing.value,
-                        ),
+                      SizedBox(height: 12.h),
+                      CustomTextField(
+                        label: 'price',
+                        hintText: 'price',
+                        keyboardType: TextInputType.number,
+                        controller: controller.expensePriceController,
+                        enabled: !controller.isEditing.value &&
+                            !controller.isExpenseReadOnly.value,
                       ),
-                    ],
+                    ]),
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 10.h),
                   if (!controller.isEditing.value)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Obx(
-                            () => DropdownButtonFormField<String>(
-                              initialValue: controller.expenseType.value,
-                              decoration: const InputDecoration(
-                                labelText: 'نوع المصروف',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'general',
-                                  child: Text('مصروف عمومي'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'salary',
-                                  child: Text('مصروف راتب'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'destruction',
-                                  child: Text('مصروف إتلاف بضاعة'),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  controller.expenseType.value = value;
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: TextFormField(
-                            controller: controller.expenseDateController,
-                            readOnly: true,
+                    FinancialOperationalCard(
+                      child: Column(children: [
+                        Obx(
+                          () => DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: controller.expenseType.value,
                             decoration: const InputDecoration(
-                              labelText: 'تاريخ المصروف',
+                              labelText: 'نوع المصروف',
                               border: OutlineInputBorder(),
-                              suffixIcon: Icon(Icons.calendar_month_rounded),
                             ),
-                            validator: (value) => value == null || value.isEmpty
-                                ? 'حدد تاريخ المصروف'
-                                : null,
-                            onTap: () async {
-                              final selected = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now(),
-                              );
-                              if (selected != null) {
-                                controller.expenseDateController.text =
-                                    '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'general',
+                                child: Text('مصروف عمومي'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'salary',
+                                child: Text('مصروف راتب'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'destruction',
+                                child: Text('مصروف إتلاف بضاعة'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                controller.expenseType.value = value;
                               }
                             },
                           ),
                         ),
-                      ],
+                        SizedBox(height: 12.h),
+                        TextFormField(
+                          controller: controller.expenseDateController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'تاريخ المصروف',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_month_rounded),
+                          ),
+                          validator: (value) => value == null || value.isEmpty
+                              ? 'حدد تاريخ المصروف'
+                              : null,
+                          onTap: () async {
+                            final selected = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                            );
+                            if (selected != null) {
+                              controller.expenseDateController.text =
+                                  '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
+                      ]),
                     ),
-                  if (!controller.isEditing.value) SizedBox(height: 20.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Flexible(
+                  if (!controller.isEditing.value) SizedBox(height: 10.h),
+                  FinancialOperationalCard(
+                    child: Row(children: [
+                      Expanded(
                         child: CustomDropdownFieldWithSearch(
                           tital: 'box',
                           hint: 'box',
@@ -159,22 +162,24 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                           itemAsString: (item) =>
                               '${item.boxName} - (${item.totalBalance} ${item.currency})',
                           compareFn: (a, b) => a.boxId == b.boxId,
-                          isEnabled: !controller.isEditing.value,
+                          isEnabled: !controller.isEditing.value &&
+                              !controller.isExpenseReadOnly.value,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () =>
-                            Get.toNamed(AppRoutes.CREATEBOXESSCREEN)
-                                ?.then((value) {
-                          controller.getShowBoxes();
-                        }),
-                        icon: Icon(
-                          Icons.add_circle_sharp,
-                          color: AppColors.primaryColor,
-                          size: 35.sp,
-                        ),
-                      )
-                    ],
+                      if (!controller.isEditing.value)
+                        IconButton(
+                          onPressed: () =>
+                              Get.toNamed(AppRoutes.CREATEBOXESSCREEN)
+                                  ?.then((value) {
+                            controller.getShowBoxes();
+                          }),
+                          icon: Icon(
+                            Icons.add_circle_sharp,
+                            color: AppColors.primaryColor,
+                            size: 35.sp,
+                          ),
+                        )
+                    ]),
                   ),
                   SizedBox(height: 20.h),
                   if (controller.isEditing.value &&
@@ -238,40 +243,49 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                       ),
                     ),
                   SizedBox(height: 20.h),
-                  MediaUploadButton(
-                    allowedType: MediaType.image,
-                    onFilesChanged: (files) {
-                      controller.setInvoiceFiles(files);
-                    },
-                    title: 'invoiceImage',
-                  ),
-                  GetBuilder<ExpensesController>(
-                    builder: (controller) => _ExpenseAttachmentPreview(
-                      files: controller.invoiceFile,
-                      onRemove: controller.removeInvoiceFileAt,
+                  if (!controller.isExpenseReadOnly.value)
+                    MediaUploadButton(
+                      allowedType: MediaType.image,
+                      onFilesChanged: (files) {
+                        controller.setInvoiceFiles(files);
+                      },
+                      title: 'invoiceImage',
                     ),
-                  ),
+                  if (!controller.isExpenseReadOnly.value)
+                    GetBuilder<ExpensesController>(
+                      builder: (controller) => _ExpenseAttachmentPreview(
+                        files: controller.invoiceFile,
+                        onRemove: controller.removeInvoiceFileAt,
+                      ),
+                    ),
                   SizedBox(height: 20.h),
                   CustomTextField(
                     controller: controller.expenseNoteController,
                     label: 'notes',
                     hintText: 'notes',
+                    enabled: !controller.isExpenseReadOnly.value,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    minLines: 4,
+                    maxLines: 8,
                     validator: (p0) => null,
                   ),
                   SizedBox(height: 20.h),
                   const EditImagesWidget(),
-                  MediaUploadButton(
-                    onFilesChanged: (files) {
-                      controller.setExpenseMediaFiles(files);
-                    },
-                    title: 'uploadMedia',
-                  ),
-                  GetBuilder<ExpensesController>(
-                    builder: (controller) => _ExpenseAttachmentPreview(
-                      files: controller.expensesFile,
-                      onRemove: controller.removeExpenseMediaAt,
+                  if (!controller.isExpenseReadOnly.value)
+                    MediaUploadButton(
+                      onFilesChanged: (files) {
+                        controller.setExpenseMediaFiles(files);
+                      },
+                      title: 'uploadMedia',
                     ),
-                  ),
+                  if (!controller.isExpenseReadOnly.value)
+                    GetBuilder<ExpensesController>(
+                      builder: (controller) => _ExpenseAttachmentPreview(
+                        files: controller.expensesFile,
+                        onRemove: controller.removeExpenseMediaAt,
+                      ),
+                    ),
                   SizedBox(height: 50.h),
                   Obx(
                     () => controller.isAddLoading.value &&
@@ -296,15 +310,16 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                           )
                         : const SizedBox.shrink(),
                   ),
-                  AppButton(
-                    isLoading: controller.isAddLoading,
-                    text: controller.isEditing.value
-                        ? 'editExpense'
-                        : 'submitExpense',
-                    onPressed: () {
-                      controller.addExpense(context);
-                    },
-                  ),
+                  if (!controller.isExpenseReadOnly.value)
+                    AppButton(
+                      isLoading: controller.isAddLoading,
+                      text: controller.isEditing.value
+                          ? 'editExpense'
+                          : 'submitExpense',
+                      onPressed: () {
+                        controller.addExpense(context);
+                      },
+                    ),
                 ],
               ),
             );

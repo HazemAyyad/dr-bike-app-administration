@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../financial_operational_ui.dart';
 
 class CustomDataWidget extends StatelessWidget {
   const CustomDataWidget({
@@ -21,24 +21,11 @@ class CustomDataWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return FinancialOperationalCard(
       onTap: onTap,
       onLongPress: onLongPress,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(9.r),
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 1,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4.h),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -47,9 +34,7 @@ class CustomDataWidget extends StatelessWidget {
               Text(
                 title.tr,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: ThemeService.isDark.value
-                          ? AppColors.whiteColor
-                          : AppColors.secondaryColor,
+                      color: AppColors.operationalNavy,
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                     ),
@@ -62,7 +47,7 @@ class CustomDataWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: AppColors.primaryColor,
+                      color: AppColors.operationalPurple,
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                     ),

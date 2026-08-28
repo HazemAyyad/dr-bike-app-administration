@@ -15,6 +15,7 @@ import '../../../data/models/expenses_models/expense_data_model.dart';
 import '../../controllers/expenses_controller.dart';
 import '../../widgets/expenses_widgets/destruction_card.dart';
 import '../../widgets/expenses_widgets/expenses_card.dart';
+import '../../widgets/financial_operational_ui.dart';
 
 class ExpensesScreen extends GetView<ExpensesController> {
   const ExpensesScreen({Key? key}) : super(key: key);
@@ -124,48 +125,22 @@ class ExpensesScreen extends GetView<ExpensesController> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final month = controller.currentTab.value == 0
-                        ? controller.expensesFilter.keys
-                            .toList()
-                            .reversed
-                            .toList()[index]
-                        : controller.destructionsFilter.keys
-                            .toList()
-                            .reversed
-                            .toList()[index];
+                        ? controller.expensesFilter.keys.toList()[index]
+                        : controller.destructionsFilter.keys.toList()[index];
 
                     final data = controller.currentTab.value == 0
-                        ? controller.expensesFilter[month]!.reversed.toList()
-                        : controller.destructionsFilter[month]!.reversed
-                            .toList();
+                        ? (controller.expensesFilter[month]!.toList()
+                          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+                        : (controller.destructionsFilter[month]!.toList()
+                          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
 
                     return Padding(
                       padding:
-                          EdgeInsets.symmetric(vertical: 5.h, horizontal: 24.w),
+                          EdgeInsets.symmetric(vertical: 2.h, horizontal: 14.w),
                       child: Column(
                         children: [
                           SizedBox(height: index == 0 ? 10 : 0.h),
-                          Row(
-                            children: [
-                              Text(
-                                month,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium!
-                                    .copyWith(
-                                      color: AppColors.primaryColor,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15.sp,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 5.h),
-                          Container(
-                            height: 1.h,
-                            width: double.infinity,
-                            color: AppColors.primaryColor,
-                          ),
-                          SizedBox(height: 10.h),
+                          FinancialGroupTitle(title: month, count: data.length),
                           ...data.map(
                             (expense) => controller.currentTab.value == 0
                                 ? ExpensesCard(expense: expense as ExpenseModel)
@@ -192,6 +167,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
         onTap: () {
           controller.toggleAddMenu();
           controller.isEditing.value = false;
+          controller.isExpenseReadOnly.value = false;
           controller.expenseNameController.clear();
           controller.expensePriceController.clear();
           controller.expenseNoteController.clear();
@@ -225,14 +201,8 @@ class _ExpenseTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.only(end: 8.w),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onSelected(value),
-      ),
-    );
+    return FinancialFilterChip(
+        label: label, selected: selected, onTap: () => onSelected(value));
   }
 }
 

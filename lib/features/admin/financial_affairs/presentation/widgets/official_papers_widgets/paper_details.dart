@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../financial_image_cache.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
@@ -190,14 +190,8 @@ class PaperDetails extends GetView<OfficialPapersController> {
                                           },
                                           child: CachedNetworkImage(
                                             imageUrl: entry.value,
-                                            cacheManager: CacheManager(
-                                              Config(
-                                                'imagesCache',
-                                                stalePeriod:
-                                                    const Duration(days: 7),
-                                                maxNrOfCacheObjects: 100,
-                                              ),
-                                            ),
+                                            cacheManager:
+                                                FinancialImageCache.instance,
                                             imageBuilder:
                                                 (context, imageProvider) =>
                                                     Container(

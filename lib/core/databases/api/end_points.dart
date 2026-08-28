@@ -571,8 +571,13 @@ class EndPoints {
   static const String salesOrderAlternativeReturn =
       'sales/order/alternative-return';
   static const String salesOrderMarkStuck = 'sales/order/mark-stuck';
+  static const String salesOrderResolveStuck = 'sales/order/resolve-stuck';
   static const String salesOrdersBulkStatus = 'sales/orders/bulk-status';
   static const String salesOrderStatement = 'sales/order/statement';
+  static const String partnerAddresses = 'partner/addresses';
+  static const String partnerAddress = 'partner/address';
+  static const String partnerAddressUpdate = 'partner/address/update';
+  static const String partnerAddressDelete = 'partner/address/delete';
   static const String cities = 'cities';
   static const String deliveryCompanies = 'delivery/companies';
   static const String shiplyAddressOptions = 'shiply/address-options';
@@ -633,6 +638,9 @@ class EndPoints {
   static const String getAllExpenses = 'get/all/expenses';
   static const String getAllDestructions = 'get/all/destructions';
   static const String addDestruction = 'store/destruction';
+  static const String addDestructionsBatch = 'store/destructions/batch';
+  static const String editDestruction = 'edit/destruction';
+  static const String destructionCostLayers = 'destructions/cost-layers';
   static const String addExpense = 'store/expense';
   static const String editExpense = 'edit/expense';
   static const String showExpense = 'show/expense';
