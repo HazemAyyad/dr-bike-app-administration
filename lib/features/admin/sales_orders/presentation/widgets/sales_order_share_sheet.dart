@@ -5,7 +5,8 @@ import 'package:get/get.dart';
 import '../controllers/sales_orders_controller.dart';
 
 class SalesOrderShareSheet extends StatelessWidget {
-  const SalesOrderShareSheet({Key? key, required this.orderId}) : super(key: key);
+  const SalesOrderShareSheet({Key? key, required this.orderId})
+      : super(key: key);
 
   final int orderId;
 
@@ -96,7 +97,8 @@ class _ShareButton extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 28.sp),
             SizedBox(height: 6.h),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600)),
           ],
         ),
       ),

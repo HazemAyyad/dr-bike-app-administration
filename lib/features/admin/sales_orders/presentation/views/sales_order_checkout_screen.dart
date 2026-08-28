@@ -195,8 +195,44 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showHints: false,
                 ),
                 _SalesOrderPartnerCard(
-                  onEdit: () => showInstantSalePickerPartnerSheet(context),
+                  onEdit: () async {
+                    await showInstantSalePickerPartnerSheet(context);
+                    final partner = sales.pickerSelectedPartner.value;
+                    if (partner != null && partner.id > 0) {
+                      orders.customerNameController.text = partner.name;
+                      orders.customerPhoneController.text = partner.phone;
+                      await orders.loadPartnerAddresses(
+                        partnerId: partner.id,
+                        isCustomer: sales.pickerPartnerIsCustomer.value,
+                      );
+                    }
+                  },
                 ),
+                Obx(() {
+                  if (orders.partnerAddresses.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: EdgeInsets.only(top: 10.h),
+                    child: Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: orders.partnerAddresses.map((address) {
+                        final selected =
+                            orders.selectedPartnerAddressId.value == address.id;
+                        return ChoiceChip(
+                          selected: selected,
+                          label: Text(
+                            '${address.label}: ${address.streetAddress}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onSelected: (_) =>
+                              orders.selectPartnerAddress(address),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                }),
                 SizedBox(height: 16.h),
                 // Notes are not needed for sales orders at the moment.
                 Divider(color: Colors.grey.shade300, height: 1),

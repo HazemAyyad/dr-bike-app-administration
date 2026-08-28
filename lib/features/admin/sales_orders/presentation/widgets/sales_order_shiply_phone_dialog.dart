@@ -137,8 +137,8 @@ class _SalesOrderShiplyPhoneDialogState
                       onPressed: busy
                           ? null
                           : () async {
-                              final ok =
-                                  await widget.controller.updatePartnerPhoneAndOrder(
+                              final ok = await widget.controller
+                                  .updatePartnerPhoneAndOrder(
                                 orderId: widget.orderId,
                                 selection: widget.selection,
                                 phone: _phoneController.text,

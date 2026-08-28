@@ -73,7 +73,8 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
           ),
           SizedBox(height: 8.h),
           DropdownButtonFormField<int>(
-            initialValue: companies.any((c) => c.id == selectedId) ? selectedId : null,
+            initialValue:
+                companies.any((c) => c.id == selectedId) ? selectedId : null,
             dropdownColor: SalesOrdersController.cardGray,
             style: TextStyle(
               color: SalesOrdersController.textPrimary,

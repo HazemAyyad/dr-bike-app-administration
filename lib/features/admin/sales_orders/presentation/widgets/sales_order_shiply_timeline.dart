@@ -95,9 +95,8 @@ class _TimelineStep extends StatelessWidget {
         : isDone
             ? const Color(0xFF16A34A)
             : SalesOrdersController.borderGray;
-    final lineColor = isDone
-        ? const Color(0xFF16A34A)
-        : SalesOrdersController.borderGray;
+    final lineColor =
+        isDone ? const Color(0xFF16A34A) : SalesOrdersController.borderGray;
     final titleColor = isUpcoming
         ? SalesOrdersController.textSecondary
         : SalesOrdersController.textPrimary;

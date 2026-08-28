@@ -1559,6 +1559,7 @@ const Map<String, String> en = {
   'salesOrderHandover': 'Handover',
   'salesOrderDeliver': 'Delivered',
   'salesOrderSettle': 'Settle delivery',
+  'salesOrderResolveStuck': 'Resolve issue',
   'salesOrderArchive': 'Archive',
   'salesOrderUploadMedia': 'Upload media',
   'salesOrderTracking': 'Tracking number',

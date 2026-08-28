@@ -300,6 +300,12 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             _sectionLabel('salesDailyBox'.tr),
             SizedBox(height: 6.h),
             ...payload.currencies.map(_currencySection),
+            if (payload.salesOrdersCurrencies.isNotEmpty) ...[
+              SizedBox(height: 14.h),
+              _sectionLabel('صندوق الطلبيات اليومي (منفصل)'),
+              SizedBox(height: 6.h),
+              ...payload.salesOrdersCurrencies.map(_ordersBoxSummary),
+            ],
             SizedBox(height: 24.h),
             AppButton(
               text: _canFinalizeClosing
@@ -321,6 +327,27 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         fontSize: 13.sp,
         fontWeight: FontWeight.w800,
         color: _titleColor,
+      ),
+    );
+  }
+
+  Widget _ordersBoxSummary(DailyCurrencyRow row) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: _surfaceCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(row.dailyBoxName,
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 8.h),
+            Text(
+                'المقبوض من تسويات الطلبيات: ${row.salesCollected.toStringAsFixed(2)} ${row.currency}'),
+            SizedBox(height: 4.h),
+            Text(
+                'رصيد الصندوق المستقل: ${row.systemBalance.toStringAsFixed(2)} ${row.currency}'),
+          ],
+        ),
       ),
     );
   }

@@ -67,16 +67,17 @@ String formatReservedStockConflictLines(
   return conflicts.map(formatReservedStockConflictDetail).join('\n\n');
 }
 
-String formatReservedStockConflictDetail(SalesOrderStockConflictModel conflict) {
+String formatReservedStockConflictDetail(
+    SalesOrderStockConflictModel conflict) {
   final buffer = StringBuffer();
   buffer.writeln(
     '• ${conflict.productName}: '
     '${'salesOrderReservedQtyLine'.trParams({
-      'reserved': '${conflict.reservedByOthers}',
-      'available': '${conflict.available}',
-      'requested': '${conflict.requestedQty}',
-      'deficit': '${conflict.deficit}',
-    })}',
+          'reserved': '${conflict.reservedByOthers}',
+          'available': '${conflict.available}',
+          'requested': '${conflict.requestedQty}',
+          'deficit': '${conflict.deficit}',
+        })}',
   );
 
   if (conflict.reservingOrders.isNotEmpty) {
@@ -97,17 +98,16 @@ String formatReservingOrderLine(SalesOrderReservingOrderModel order) {
   final party = order.customerName?.trim();
   final String partyLabel;
   if (party != null && party.isNotEmpty) {
-    final typeLabel = order.partyType == 'trader'
-        ? 'buyerTrader'.tr
-        : 'buyerCustomer'.tr;
+    final typeLabel =
+        order.partyType == 'trader' ? 'buyerTrader'.tr : 'buyerCustomer'.tr;
     partyLabel = '$typeLabel: $party';
   } else {
     partyLabel = 'salesOrderReservedPartyUnknown'.tr;
   }
 
   return '  - ${'salesOrderReservedByOrderLine'.trParams({
-    'serial': serialLabel,
-    'party': partyLabel,
-    'qty': '${order.reservedQty}',
-  })}';
+        'serial': serialLabel,
+        'party': partyLabel,
+        'qty': '${order.reservedQty}',
+      })}';
 }

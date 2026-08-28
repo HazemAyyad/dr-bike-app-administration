@@ -78,6 +78,12 @@ abstract class SalesOrdersRepository {
     String? reason,
   });
 
+  Future<Either<Failure, SalesOrderDetailModel>> resolveStuck(
+    int orderId, {
+    String? targetStatus,
+    String? note,
+  });
+
   Future<Either<Failure, Map<String, dynamic>>> bulkStatus({
     required List<int> orderIds,
     required String action,
@@ -123,6 +129,11 @@ abstract class SalesOrdersRepository {
     required String phone,
   });
 
+  Future<Either<Failure, List<PartnerAddressModel>>> getPartnerAddresses({
+    required String partnerType,
+    required int partnerId,
+  });
+
   Future<Either<Failure, void>> updatePersonPhone({
     required bool isCustomer,
     required int personId,
@@ -152,6 +163,16 @@ class SalesOrdersImplement implements SalesOrdersRepository {
       return Left(UnexpectedFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, List<PartnerAddressModel>>> getPartnerAddresses({
+    required String partnerType,
+    required int partnerId,
+  }) =>
+      _guard(() => datasource.fetchPartnerAddresses(
+            partnerType: partnerType,
+            partnerId: partnerId,
+          ));
 
   @override
   Future<Either<Failure, List<SalesOrderListItemModel>>> getOrders({
@@ -185,10 +206,10 @@ class SalesOrdersImplement implements SalesOrdersRepository {
     required List<int> productIds,
     int? salesOrderId,
   }) =>
-      _guard(() => datasource.fetchStockAvailability(
-            productIds: productIds,
-            salesOrderId: salesOrderId,
-          ));
+          _guard(() => datasource.fetchStockAvailability(
+                productIds: productIds,
+                salesOrderId: salesOrderId,
+              ));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> updateOrder(
@@ -287,6 +308,21 @@ class SalesOrdersImplement implements SalesOrdersRepository {
           ));
 
   @override
+  Future<Either<Failure, SalesOrderDetailModel>> resolveStuck(
+    int orderId, {
+    String? targetStatus,
+    String? note,
+  }) =>
+      _guard(() => datasource.postAction(
+            EndPoints.salesOrderResolveStuck,
+            orderId,
+            extra: {
+              if (targetStatus != null) 'target_status': targetStatus,
+              if (note != null && note.isNotEmpty) 'note': note,
+            },
+          ));
+
+  @override
   Future<Either<Failure, Map<String, dynamic>>> bulkStatus({
     required List<int> orderIds,
     required String action,
@@ -306,7 +342,8 @@ class SalesOrdersImplement implements SalesOrdersRepository {
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> followUp(int orderId) =>
-      _guard(() => datasource.postAction(EndPoints.salesOrderFollowUp, orderId));
+      _guard(
+          () => datasource.postAction(EndPoints.salesOrderFollowUp, orderId));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> partialReturn(
@@ -343,8 +380,9 @@ class SalesOrdersImplement implements SalesOrdersRepository {
       _guard(() => datasource.fetchDeliveryCompanies());
 
   @override
-  Future<Either<Failure, ShiplyAddressOptionsResult>> getShiplyAddressOptions() =>
-      _guard(() => datasource.fetchShiplyAddressOptions());
+  Future<Either<Failure, ShiplyAddressOptionsResult>>
+      getShiplyAddressOptions() =>
+          _guard(() => datasource.fetchShiplyAddressOptions());
 
   @override
   Future<Either<Failure, double?>> calculateShiplyDeliveryFee({

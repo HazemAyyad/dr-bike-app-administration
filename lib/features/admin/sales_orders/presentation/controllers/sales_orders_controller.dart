@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:doctorbike/core/errors/failure.dart';
@@ -86,6 +85,8 @@ class SalesOrdersController extends GetxController {
   final shiplyCities = <ShiplyCityModel>[].obs;
   final shiplyIsSandboxMode = false.obs;
   final deliveryCompanies = <DeliveryCompanyModel>[].obs;
+  final partnerAddresses = <PartnerAddressModel>[].obs;
+  final selectedPartnerAddressId = RxnInt();
   final shiplyCustomers = <SellerModel>[].obs;
   final shiplySellers = <SellerModel>[].obs;
   final shiplyPartnerIsCustomer = true.obs;
@@ -350,6 +351,8 @@ class SalesOrdersController extends GetxController {
     customerNameController.clear();
     customerPhoneController.clear();
     customerAddressController.clear();
+    partnerAddresses.clear();
+    selectedPartnerAddressId.value = null;
     deliveryFeeController.text = '0';
     totalController.clear();
     notesController.clear();
@@ -363,6 +366,40 @@ class SalesOrdersController extends GetxController {
     selectedPaymentType.value = 'cash';
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
+  }
+
+  Future<void> loadPartnerAddresses({
+    required int partnerId,
+    required bool isCustomer,
+  }) async {
+    selectedPartnerAddressId.value = null;
+    partnerAddresses.clear();
+    final result = await repository.getPartnerAddresses(
+      partnerType: isCustomer ? 'customer' : 'seller',
+      partnerId: partnerId,
+    );
+    result.fold(
+      (failure) => SalesOrderNotice.error(_humanizeFailure(failure)),
+      (addresses) {
+        partnerAddresses.assignAll(addresses);
+        if (addresses.isNotEmpty) {
+          selectPartnerAddress(
+            addresses.firstWhereOrNull((a) => a.isDefault) ?? addresses.first,
+          );
+        }
+      },
+    );
+  }
+
+  void selectPartnerAddress(PartnerAddressModel address) {
+    selectedPartnerAddressId.value = address.id;
+    customerAddressController.text = address.streetAddress;
+    if ((address.phone ?? '').trim().isNotEmpty) {
+      customerPhoneController.text = address.phone!.trim();
+    }
+    selectedCityId.value = address.cityId;
+    selectedShiplyCityId.value = address.shiplyCityId;
+    selectedShiplyVillageId.value = address.shiplyVillageId;
   }
 
   void clearActiveEditSalesOrder() {
@@ -741,14 +778,11 @@ class SalesOrdersController extends GetxController {
 
   String? validateManualHandoverFields() {
     if (isSelectedCompanyTaxi) {
-      if (trackingController.text.trim().isEmpty) {
-        return 'salesOrderTaxiNumberRequired'.tr;
-      }
       if (carrierContactNameController.text.trim().isEmpty) {
         return 'salesOrderTaxiDriverRequired'.tr;
       }
-      if (carrierContactPhoneController.text.trim().isEmpty) {
-        return 'salesOrderTaxiPhoneRequired'.tr;
+      if (carrierVehicleNumberController.text.trim().isEmpty) {
+        return 'salesOrderOfficeVehicleRequired'.tr;
       }
       return null;
     }
@@ -756,12 +790,6 @@ class SalesOrdersController extends GetxController {
     if (isSelectedCompanyOffice) {
       if (carrierOfficeNameController.text.trim().isEmpty) {
         return 'salesOrderOfficeNameRequired'.tr;
-      }
-      if (carrierContactNameController.text.trim().isEmpty) {
-        return 'salesOrderOfficeDriverRequired'.tr;
-      }
-      if (carrierContactPhoneController.text.trim().isEmpty) {
-        return 'salesOrderOfficePhoneRequired'.tr;
       }
       if (carrierVehicleNumberController.text.trim().isEmpty) {
         return 'salesOrderOfficeVehicleRequired'.tr;
@@ -773,13 +801,10 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<bool> saveDeliveryAddressForOrder(int orderId) async {
-    if (customerAddressController.text.trim().isEmpty) {
-      SalesOrderNotice.error('salesOrderAddressRequired'.tr);
-      return false;
-    }
+    final street = customerAddressController.text.trim();
     isSubmitting.value = true;
     final result = await repository.updateOrder(orderId, {
-      'customer_address': customerAddressController.text.trim(),
+      'customer_address': street.isEmpty ? '----' : street,
     });
     isSubmitting.value = false;
     return result.fold(
@@ -996,9 +1021,6 @@ class SalesOrdersController extends GetxController {
     if (selectedShiplyVillageId.value == null) {
       return 'salesOrderShiplyVillageRequired'.tr;
     }
-    if (customerAddressController.text.trim().isEmpty) {
-      return 'salesOrderStreetRequired'.tr;
-    }
     return null;
   }
 
@@ -1009,16 +1031,14 @@ class SalesOrdersController extends GetxController {
     if (selectedShiplyVillageId.value == null) {
       return 'salesOrderDeliveryVillageRequired'.tr;
     }
-    if (customerAddressController.text.trim().isEmpty) {
-      return 'salesOrderStreetRequired'.tr;
-    }
     return null;
   }
 
   Map<String, dynamic> buildShiplyAddressPayload() {
     onDeliveryFeeChanged();
+    final street = customerAddressController.text.trim();
     return {
-      'customer_address': customerAddressController.text.trim(),
+      'customer_address': street.isEmpty ? '----' : street,
       'shiply_city_id': selectedShiplyCityId.value,
       'shiply_village_id': selectedShiplyVillageId.value,
       'customer_delivery_fee': manualDeliveryFee.value,
@@ -1254,6 +1274,16 @@ class SalesOrdersController extends GetxController {
       // Explicit null is important when an edited order changes from a saved
       // customer to a seller or an unnamed/manual recipient.
       'customer_id': customerId,
+      if (partner != null) ...{
+        'partner_type':
+            sales.pickerPartnerIsCustomer.value ? 'customer' : 'seller',
+        'partner_id': partner.id,
+      },
+      if (selectedPartnerAddressId.value != null)
+        'partner_address_id': selectedPartnerAddressId.value,
+      'customer_address': customerAddressController.text.trim().isEmpty
+          ? '----'
+          : customerAddressController.text.trim(),
       if (selectedCityId.value != null) 'city_id': selectedCityId.value,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
@@ -1384,9 +1414,10 @@ class SalesOrdersController extends GetxController {
         'delivery_company_id': selectedDeliveryCompanyId.value,
     };
     if (isSelectedCompanyTaxi) {
-      body['tracking_number'] = trackingController.text.trim();
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
+      body['carrier_vehicle_number'] =
+          carrierVehicleNumberController.text.trim();
     } else if (isSelectedCompanyOffice) {
       body['carrier_office_name'] = carrierOfficeNameController.text.trim();
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
@@ -1430,8 +1461,15 @@ class SalesOrdersController extends GetxController {
   Future<void> settle(int orderId) async {
     final amount = double.tryParse(settleAmountController.text.trim()) ?? 0;
     final boxId = int.tryParse(settleBoxIdController.text.trim());
+    final order = detail.value;
+    final source = (order?.carrierReceivableBalance ?? 0) > 0
+        ? 'carrier'
+        : 'customer_debt';
     await runAction(() => repository.settle(orderId, {
           'delivery_settled_amount': amount,
+          'source': source,
+          'idempotency_key':
+              'settlement-$orderId-${DateTime.now().microsecondsSinceEpoch}',
           if (amount > 0 && boxId != null) 'payment_box_id': boxId,
         }));
   }
@@ -1452,6 +1490,10 @@ class SalesOrdersController extends GetxController {
 
   Future<void> markStuckOrder(int orderId, {String? reason}) async {
     await runAction(() => repository.markStuck(orderId, reason: reason));
+  }
+
+  Future<void> resolveStuckOrder(int orderId) async {
+    await runAction(() => repository.resolveStuck(orderId));
   }
 
   void toggleBulkMode([bool? value]) {
@@ -1786,11 +1828,13 @@ class SalesOrdersController extends GetxController {
     if (status == 'archived') return 'salesOrderStatusArchived'.tr;
     if (status == 'returned') return 'salesOrderStatusReturned'.tr;
     if (status == 'review') return 'salesOrderStatusReview'.tr;
-    if (status == 'partial_delivered')
+    if (status == 'partial_delivered') {
       return 'salesOrderStatusPartialDelivered'.tr;
+    }
     if (status == 'partial_return') return 'salesOrderStatusPartialReturn'.tr;
-    if (status == 'alternative_return')
+    if (status == 'alternative_return') {
       return 'salesOrderStatusAlternativeReturn'.tr;
+    }
     if (status == 'stuck') return 'salesOrderStatusStuck'.tr;
     if (status == 'canceled') return 'salesOrderStatusCanceled'.tr;
     return status;

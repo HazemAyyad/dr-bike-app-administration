@@ -172,7 +172,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                     hint: Text('city'.tr),
                     decoration: _inputDecoration(),
                     items: controller.cities
-                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nameAr)))
+                        .map((c) => DropdownMenuItem(
+                            value: c.id, child: Text(c.nameAr)))
                         .toList(),
                     onChanged: (v) => controller.selectedCityId.value = v,
                   ),
@@ -186,9 +187,11 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                     decoration: _inputDecoration(),
                     items: [
                       DropdownMenuItem(value: 'cash', child: Text('cash'.tr)),
-                      DropdownMenuItem(value: 'credit', child: Text('credit'.tr)),
+                      DropdownMenuItem(
+                          value: 'credit', child: Text('credit'.tr)),
                       DropdownMenuItem(value: 'visa', child: Text('visa'.tr)),
-                      DropdownMenuItem(value: 'mixed', child: Text('salesOrderMixed'.tr)),
+                      DropdownMenuItem(
+                          value: 'mixed', child: Text('salesOrderMixed'.tr)),
                     ],
                     onChanged: (v) {
                       if (v != null) controller.selectedPaymentType.value = v;
@@ -214,7 +217,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
   Widget _productsList() {
     return Obx(() {
       final _ = sales.productsListVersion.value;
-      final loading = sales.productsLoading.value || sales.instantSalePickerSearchLoading.value;
+      final loading = sales.productsLoading.value ||
+          sales.instantSalePickerSearchLoading.value;
       if (loading) {
         return const Center(child: CircularProgressIndicator());
       }
@@ -224,7 +228,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
         return Center(
           child: Text(
             'noData'.tr,
-            style: TextStyle(color: SalesOrdersController.textSecondary, fontSize: 13.sp),
+            style: TextStyle(
+                color: SalesOrdersController.textSecondary, fontSize: 13.sp),
           ),
         );
       }
@@ -252,7 +257,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
             ),
             subtitle: Text(
               '${'price'.tr}: ${p.unitPrice}',
-              style: TextStyle(color: SalesOrdersController.textSecondary, fontSize: 12.sp),
+              style: TextStyle(
+                  color: SalesOrdersController.textSecondary, fontSize: 12.sp),
             ),
             trailing: const Icon(Icons.add),
             onTap: () async => _addProductToCart(p),
@@ -268,7 +274,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
     if (!mounted) return;
 
     final qtyController = TextEditingController(text: '1');
-    final priceController = TextEditingController(text: resolved.unitPrice.toString());
+    final priceController =
+        TextEditingController(text: resolved.unitPrice.toString());
 
     final ok = await showDialog<bool>(
           context: context,
@@ -283,8 +290,12 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('cancel'.tr)),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('add'.tr)),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text('cancel'.tr)),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text('add'.tr)),
             ],
           ),
         ) ??
@@ -298,7 +309,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
     controller.addCartItem(
       SalesOrderCartItem(
         productId: int.tryParse(resolved.id.toString()) ?? 0,
-        productName: (resolved.nameAr).isNotEmpty ? resolved.nameAr : '#${resolved.id}',
+        productName:
+            (resolved.nameAr).isNotEmpty ? resolved.nameAr : '#${resolved.id}',
         quantity: qty,
         unitPrice: price,
       ),
@@ -323,7 +335,9 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                 child: Center(
                   child: Text(
                     'instantSaleCartEmpty'.tr,
-                    style: TextStyle(color: SalesOrdersController.textSecondary, fontSize: 13.sp),
+                    style: TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                        fontSize: 13.sp),
                   ),
                 ),
               );
@@ -340,19 +354,24 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                     decoration: BoxDecoration(
                       color: SalesOrdersController.cardGray,
                       borderRadius: BorderRadius.circular(10.r),
-                      border: Border.all(color: SalesOrdersController.borderGray),
+                      border:
+                          Border.all(color: SalesOrdersController.borderGray),
                     ),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             it.productName,
-                            style: TextStyle(color: SalesOrdersController.textPrimary, fontSize: 13.sp),
+                            style: TextStyle(
+                                color: SalesOrdersController.textPrimary,
+                                fontSize: 13.sp),
                           ),
                         ),
                         Text(
                           '${it.quantity}×${it.unitPrice.toStringAsFixed(2)}',
-                          style: TextStyle(color: SalesOrdersController.textSecondary, fontSize: 12.sp),
+                          style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 12.sp),
                         ),
                         IconButton(
                           onPressed: () => controller.removeCartItem(i),
@@ -377,15 +396,18 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
       child: TextField(
         controller: c,
         keyboardType: number ? TextInputType.number : TextInputType.text,
-        style: TextStyle(color: SalesOrdersController.textPrimary, fontSize: 14.sp),
+        style: TextStyle(
+            color: SalesOrdersController.textPrimary, fontSize: 14.sp),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: SalesOrdersController.textSecondary),
+          labelStyle:
+              const TextStyle(color: SalesOrdersController.textSecondary),
           filled: true,
           fillColor: SalesOrdersController.cardGray,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.r),
-            borderSide: const BorderSide(color: SalesOrdersController.borderGray),
+            borderSide:
+                const BorderSide(color: SalesOrdersController.borderGray),
           ),
         ),
       ),

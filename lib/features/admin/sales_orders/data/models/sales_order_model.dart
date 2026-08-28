@@ -288,6 +288,8 @@ class SalesOrderDetailModel {
   final double? shiplyDeliveryFeeAdjustment;
   final String paymentType;
   final double paymentAmount;
+  final double customerDebtBalance;
+  final double carrierReceivableBalance;
   final int? paymentBoxId;
   final String? notes;
   final int? instantSaleId;
@@ -330,6 +332,8 @@ class SalesOrderDetailModel {
     this.shiplyDeliveryFeeAdjustment,
     required this.paymentType,
     this.paymentAmount = 0,
+    this.customerDebtBalance = 0,
+    this.carrierReceivableBalance = 0,
     this.paymentBoxId,
     this.notes,
     this.instantSaleId,
@@ -400,6 +404,10 @@ class SalesOrderDetailModel {
           (json['shiply_delivery_fee_adjustment'] as num?)?.toDouble(),
       paymentType: json['payment_type'] as String? ?? 'cash',
       paymentAmount: (json['payment_amount'] as num?)?.toDouble() ?? 0,
+      customerDebtBalance:
+          (json['customer_debt_balance'] as num?)?.toDouble() ?? 0,
+      carrierReceivableBalance:
+          (json['carrier_receivable_balance'] as num?)?.toDouble() ?? 0,
       paymentBoxId: json['payment_box_id'] as int?,
       notes: json['notes'] as String?,
       instantSaleId: json['instant_sale_id'] as int?,
@@ -488,6 +496,40 @@ class SalesOrderMediaRequirementModel {
       optional: json['optional'] == true,
     );
   }
+}
+
+class PartnerAddressModel {
+  final int id;
+  final String label;
+  final int? cityId;
+  final int? shiplyCityId;
+  final int? shiplyVillageId;
+  final String streetAddress;
+  final String? phone;
+  final bool isDefault;
+
+  const PartnerAddressModel({
+    required this.id,
+    required this.label,
+    this.cityId,
+    this.shiplyCityId,
+    this.shiplyVillageId,
+    required this.streetAddress,
+    this.phone,
+    this.isDefault = false,
+  });
+
+  factory PartnerAddressModel.fromJson(Map<String, dynamic> json) =>
+      PartnerAddressModel(
+        id: int.tryParse('${json['id']}') ?? 0,
+        label: '${json['label'] ?? 'العنوان الرئيسي'}',
+        cityId: int.tryParse('${json['city_id'] ?? ''}'),
+        shiplyCityId: int.tryParse('${json['shiply_city_id'] ?? ''}'),
+        shiplyVillageId: int.tryParse('${json['shiply_village_id'] ?? ''}'),
+        streetAddress: '${json['street_address'] ?? '----'}',
+        phone: json['phone']?.toString(),
+        isDefault: json['is_default'] == true || json['is_default'] == 1,
+      );
 }
 
 class DeliveryCompanyModel {

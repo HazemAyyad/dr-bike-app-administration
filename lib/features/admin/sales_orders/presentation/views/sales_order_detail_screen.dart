@@ -1292,6 +1292,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         return Icons.schedule_outlined;
       case SalesOrderActionId.markStuck:
         return Icons.report_problem_outlined;
+      case SalesOrderActionId.resolveStuck:
+        return Icons.task_alt_outlined;
       case SalesOrderActionId.alternativeReturn:
         return Icons.swap_horiz_outlined;
     }
@@ -1347,6 +1349,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         break;
       case SalesOrderActionId.markStuck:
         _showMarkStuckSheet(orderId);
+        break;
+      case SalesOrderActionId.resolveStuck:
+        controller.resolveStuckOrder(orderId);
         break;
       case SalesOrderActionId.alternativeReturn:
         _showQtySheet(order, 'alternative_return');
@@ -1994,8 +1999,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
 
   void _showSettleSheet(int orderId) {
     AppDependencyRegistry.ensureBoxes();
+    final currentOrder = controller.detail.value;
+    final carrierBalance = currentOrder?.carrierReceivableBalance ?? 0;
+    final customerDebt = currentOrder?.customerDebtBalance ?? 0;
+    final settlementBalance =
+        carrierBalance > 0 ? carrierBalance : customerDebt;
     controller.settleAmountController.text =
-        controller.detail.value?.total.toStringAsFixed(2) ?? '';
+        settlementBalance.toStringAsFixed(2);
     controller.settleBoxIdController.clear();
 
     Get.bottomSheet(
@@ -2006,7 +2016,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               boxesRepository: Get.find<BoxesImplement>(),
             ).call(screen: 0),
             builder: (context, snapshot) {
-              final boxes = snapshot.data ?? const <ShownBoxesModel>[];
+              final boxes = (snapshot.data ?? const <ShownBoxesModel>[])
+                  .where((box) => box.boxName.contains('صندوق الطلبيات اليومي'))
+                  .toList();
               ShownBoxesModel? selectedBox;
               final boxIdText = controller.settleBoxIdController.text.trim();
               if (boxIdText.isNotEmpty) {
@@ -2046,6 +2058,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             fontSize: 16.sp,
                           ),
                         ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          carrierBalance > 0
+                              ? 'المتبقي في ذمة شركة التوصيل: ${carrierBalance.toStringAsFixed(2)}'
+                              : 'المتبقي ديناً على الزبون: ${customerDebt.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: SalesOrdersController.textSecondary,
+                            fontSize: 13.sp,
+                          ),
+                        ),
                         SizedBox(height: 12.h),
                         TextField(
                           controller: controller.settleAmountController,
@@ -2064,7 +2086,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           const Center(child: CircularProgressIndicator())
                         else if (boxes.isEmpty)
                           Text(
-                            'salesOrderSettleBoxHint'.tr,
+                            'سيتم الإيداع تلقائياً في صندوق الطلبيات اليومي للجلسة المفتوحة.',
                             style: TextStyle(
                               color: SalesOrdersController.textSecondary,
                               fontSize: 12.sp,
@@ -2073,7 +2095,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         else
                           DropdownButtonFormField<ShownBoxesModel>(
                             isExpanded: true,
-                            value: selectedBox,
+                            initialValue: selectedBox,
                             decoration: InputDecoration(
                               labelText: 'salesOrderSettleBox'.tr,
                               filled: true,
@@ -2117,6 +2139,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         SizedBox(height: 12.h),
                         ElevatedButton(
                           onPressed: () {
+                            final entered = double.tryParse(controller
+                                    .settleAmountController.text
+                                    .trim()) ??
+                                0;
+                            if (entered <= 0 || entered > settlementBalance) {
+                              SalesOrderNotice.error(
+                                'أدخل مبلغاً أكبر من صفر ولا يتجاوز الرصيد المستحق',
+                              );
+                              return;
+                            }
                             Get.back();
                             controller.settle(orderId);
                           },

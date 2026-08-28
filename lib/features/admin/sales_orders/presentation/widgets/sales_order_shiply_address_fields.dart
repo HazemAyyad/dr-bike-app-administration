@@ -64,12 +64,14 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
         style: const TextStyle(color: SalesOrdersController.textPrimary),
         decoration: InputDecoration(
           hintText: 'search'.tr,
-          hintStyle: const TextStyle(color: SalesOrdersController.textSecondary),
+          hintStyle:
+              const TextStyle(color: SalesOrdersController.textSecondary),
           filled: true,
           fillColor: SalesOrdersController.surfaceGray,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: SalesOrdersController.borderGray),
+            borderSide:
+                const BorderSide(color: SalesOrdersController.borderGray),
           ),
         ),
       ),
@@ -232,11 +234,12 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               menuProps: MenuProps(
                 backgroundColor: SalesOrdersController.cardGray,
                 elevation: 2,
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               searchFieldProps: TextFieldProps(
-                style: const TextStyle(color: SalesOrdersController.textPrimary),
+                style:
+                    const TextStyle(color: SalesOrdersController.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'salesOrderShiplyAddressSearchHint'.tr,
                   hintStyle: const TextStyle(
@@ -258,7 +261,9 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
                 return ListTile(
                   dense: true,
                   leading: Icon(
-                    entry.isVillage ? Icons.home_work_outlined : Icons.location_city,
+                    entry.isVillage
+                        ? Icons.home_work_outlined
+                        : Icons.location_city,
                     size: 18,
                     color: SalesOrdersController.textSecondary,
                   ),
@@ -271,8 +276,8 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               },
             ),
             decoratorProps: DropDownDecoratorProps(
-              decoration: _fieldDecoration('salesOrderShiplyAddressSearch'.tr)
-                  .copyWith(
+              decoration:
+                  _fieldDecoration('salesOrderShiplyAddressSearch'.tr).copyWith(
                 prefixIcon: const Icon(
                   Icons.search,
                   color: SalesOrdersController.textSecondary,
@@ -319,20 +324,22 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               menuProps: MenuProps(
                 backgroundColor: SalesOrdersController.cardGray,
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               searchFieldProps: TextFieldProps(
-                style: const TextStyle(color: SalesOrdersController.textPrimary),
+                style:
+                    const TextStyle(color: SalesOrdersController.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'search'.tr,
-                  hintStyle:
-                      const TextStyle(color: SalesOrdersController.textSecondary),
+                  hintStyle: const TextStyle(
+                      color: SalesOrdersController.textSecondary),
                   filled: true,
                   fillColor: SalesOrdersController.surfaceGray,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: SalesOrdersController.borderGray),
+                    borderSide: const BorderSide(
+                        color: SalesOrdersController.borderGray),
                   ),
                 ),
               ),
@@ -357,7 +364,8 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               color: SalesOrdersController.textPrimary,
               fontSize: 14.sp,
             ),
-            decoration: _fieldDecoration('salesOrderStreetAddress'.tr, floatingLabel: true),
+            decoration: _fieldDecoration('salesOrderStreetAddress'.tr,
+                floatingLabel: true),
           ),
           if (showDeliveryFee) ...[
             SizedBox(height: 12.h),
@@ -368,7 +376,8 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
                 color: SalesOrdersController.textPrimary,
                 fontSize: 14.sp,
               ),
-              decoration: _fieldDecoration('salesOrderDeliveryFeeInput'.tr, floatingLabel: true),
+              decoration: _fieldDecoration('salesOrderDeliveryFeeInput'.tr,
+                  floatingLabel: true),
               onChanged: (_) => controller.onDeliveryFeeChanged(),
             ),
             SizedBox(height: 4.h),

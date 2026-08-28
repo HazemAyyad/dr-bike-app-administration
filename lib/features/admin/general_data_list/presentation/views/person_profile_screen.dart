@@ -20,6 +20,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'person_product_settings_screen.dart';
+import 'partner_addresses_sheet.dart';
 
 class PersonProfileScreen extends StatefulWidget {
   const PersonProfileScreen({
@@ -167,6 +168,11 @@ class _PersonProfileScreenState extends State<PersonProfileScreen> {
                           onEditData: _openEditData,
                           onEditProducts: _openProductSettings,
                           onOpenDebtLedger: _openDebtLedger,
+                          onManageAddresses: () => showPartnerAddressesSheet(
+                            context: context,
+                            partnerType: _personType,
+                            partnerId: widget.person.id,
+                          ),
                           onOpenInvoice: (invoice) => _openInvoice(
                             context,
                             type: invoice.invoiceType,
@@ -247,6 +253,7 @@ class _OverviewTab extends StatelessWidget {
     required this.onEditData,
     required this.onEditProducts,
     required this.onOpenDebtLedger,
+    required this.onManageAddresses,
     required this.onOpenInvoice,
   });
 
@@ -254,6 +261,7 @@ class _OverviewTab extends StatelessWidget {
   final VoidCallback onEditData;
   final VoidCallback onEditProducts;
   final VoidCallback onOpenDebtLedger;
+  final VoidCallback onManageAddresses;
   final ValueChanged<PersonProfileInvoice> onOpenInvoice;
 
   @override
@@ -266,6 +274,7 @@ class _OverviewTab extends StatelessWidget {
           person: profile.person,
           onEditData: onEditData,
           onEditProducts: onEditProducts,
+          onManageAddresses: onManageAddresses,
         ),
         SizedBox(height: 12.h),
         Wrap(
@@ -574,11 +583,13 @@ class _HeaderCard extends StatelessWidget {
     required this.person,
     required this.onEditData,
     required this.onEditProducts,
+    required this.onManageAddresses,
   });
 
   final PersonProfilePerson person;
   final VoidCallback onEditData;
   final VoidCallback onEditProducts;
+  final VoidCallback onManageAddresses;
 
   @override
   Widget build(BuildContext context) {
@@ -628,6 +639,11 @@ class _HeaderCard extends StatelessWidget {
                 onPressed: onEditProducts,
                 icon: const Icon(Icons.price_change_outlined),
                 label: const Text('تعديل المنتجات والأسعار'),
+              ),
+              OutlinedButton.icon(
+                onPressed: onManageAddresses,
+                icon: const Icon(Icons.location_on_outlined),
+                label: const Text('إدارة العناوين'),
               ),
             ],
           ),

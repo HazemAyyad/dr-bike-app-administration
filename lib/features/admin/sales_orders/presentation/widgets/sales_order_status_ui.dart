@@ -49,7 +49,8 @@ class SalesOrderStatusUi {
     }
   }
 
-  static Color statusBg(String status) => statusColor(status).withValues(alpha: 0.12);
+  static Color statusBg(String status) =>
+      statusColor(status).withValues(alpha: 0.12);
 
   static int workflowIndex(String status) {
     if (status == 'review' || status == 'partial_delivered') {
@@ -175,8 +176,9 @@ class SalesOrderStatusUi {
                                 color: current
                                     ? SalesOrdersController.textPrimary
                                     : SalesOrdersController.textSecondary,
-                                fontWeight:
-                                    current ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: current
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -219,6 +221,7 @@ enum SalesOrderActionId {
   revertStatus,
   postpone,
   markStuck,
+  resolveStuck,
   alternativeReturn,
 }
 
@@ -478,6 +481,18 @@ class SalesOrderActions {
           SalesOrderActionDef(
             id: SalesOrderActionId.markStuck,
             labelKey: 'salesOrderMarkStuck',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.share,
+            labelKey: 'salesOrderShare',
+          ),
+        ];
+      case 'stuck':
+        return const [
+          SalesOrderActionDef(
+            id: SalesOrderActionId.resolveStuck,
+            labelKey: 'salesOrderResolveStuck',
+            isPrimary: true,
           ),
           SalesOrderActionDef(
             id: SalesOrderActionId.share,

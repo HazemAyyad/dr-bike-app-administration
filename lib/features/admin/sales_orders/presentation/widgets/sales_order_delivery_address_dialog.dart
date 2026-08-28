@@ -54,8 +54,8 @@ class SalesOrderDeliveryAddressDialog extends StatelessWidget {
                 ),
                 decoration: InputDecoration(
                   labelText: 'salesOrderStreetAddress'.tr,
-                  labelStyle:
-                      const TextStyle(color: SalesOrdersController.textSecondary),
+                  labelStyle: const TextStyle(
+                      color: SalesOrdersController.textSecondary),
                   filled: true,
                   fillColor: SalesOrdersController.cardGray,
                   border: OutlineInputBorder(

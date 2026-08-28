@@ -3,6 +3,7 @@ import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 class DailySessionPayload {
   final DailySessionInfo? session;
   final List<DailyCurrencyRow> currencies;
+  final List<DailyCurrencyRow> salesOrdersCurrencies;
   final int instantSalesCount;
   final int profitSalesCount;
   final int? pendingClosingRequestId;
@@ -19,6 +20,7 @@ class DailySessionPayload {
   const DailySessionPayload({
     this.session,
     this.currencies = const [],
+    this.salesOrdersCurrencies = const [],
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.pendingClosingRequestId,
@@ -77,6 +79,13 @@ class DailySessionPayload {
       currencies: mapList(
         json['currencies'],
         (Map<String, dynamic> m) => DailyCurrencyRow.fromJson(m),
+      ),
+      salesOrdersCurrencies: mapList(
+        json['sales_orders_currencies'],
+        (Map<String, dynamic> m) => DailyCurrencyRow.fromJson({
+          ...m,
+          'sales_collected': m['orders_collected'] ?? m['sales_collected'],
+        }),
       ),
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),

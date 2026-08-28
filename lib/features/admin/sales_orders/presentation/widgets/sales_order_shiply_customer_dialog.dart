@@ -77,7 +77,8 @@ class _SalesOrderShiplyCustomerDialogState
       Dialog(
         backgroundColor: SalesOrdersController.surfaceGray,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
         child: Padding(
           padding: EdgeInsets.all(20.r),
           child: SingleChildScrollView(
@@ -137,14 +138,16 @@ class _SalesOrderShiplyCustomerDialogState
                         onPressed: () async {
                           final name = nameController.text.trim();
                           if (name.isEmpty) {
-                            SalesOrderNotice.error('salesOrderShiplyNameRequired'.tr);
+                            SalesOrderNotice.error(
+                                'salesOrderShiplyNameRequired'.tr);
                             return;
                           }
                           final phone =
                               PhoneFormatHelper.forApi(phoneController.text);
                           if (phone.isNotEmpty &&
                               !PhoneFormatHelper.isValidApiPhone(phone)) {
-                            SalesOrderNotice.error('salesOrderShiplyPhoneInvalid'.tr);
+                            SalesOrderNotice.error(
+                                'salesOrderShiplyPhoneInvalid'.tr);
                             return;
                           }
                           final partner =
@@ -342,7 +345,8 @@ class _SalesOrderShiplyCustomerDialogState
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: busy ? null : () => Get.back(result: false),
+                          onPressed:
+                              busy ? null : () => Get.back(result: false),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: SalesOrdersController.textPrimary,
                             side: const BorderSide(

@@ -40,6 +40,24 @@ class SalesOrdersDatasource {
         .toList();
   }
 
+  Future<List<PartnerAddressModel>> fetchPartnerAddresses({
+    required String partnerType,
+    required int partnerId,
+  }) async {
+    final raw = await api.get(
+      EndPoints.partnerAddresses,
+      queryParameters: {'partner_type': partnerType, 'partner_id': partnerId},
+    );
+    final response = _asMap(raw);
+    final rows = response['data'] as List<dynamic>? ?? const [];
+    return rows
+        .whereType<Map>()
+        .map((row) => PartnerAddressModel.fromJson(
+              Map<String, dynamic>.from(row),
+            ))
+        .toList();
+  }
+
   Future<SalesOrderDetailModel> fetchOrder(int orderId) async {
     final raw = await api.get(
       EndPoints.salesOrder,

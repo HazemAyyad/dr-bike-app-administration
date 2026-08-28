@@ -37,7 +37,7 @@ class SalesOrderCitySection extends GetView<SalesOrdersController> {
           ),
           SizedBox(height: 8.h),
           DropdownButtonFormField<int>(
-            value: controller.selectedCityId.value,
+            initialValue: controller.selectedCityId.value,
             decoration: InputDecoration(
               filled: true,
               fillColor: SalesOrdersController.cardGray,
