@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/person_data_model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -25,9 +26,24 @@ class GeneralDataListDatasource {
                 ? EndPoints.mainPageCustomers
                 : EndPoints.mainPageInComplete,
       );
-      List<GeneralDataModel> generalDataList = (response.data['data'] as List)
-          .map((e) => GeneralDataModel.fromJson(e))
-          .toList();
+      final endpoint = tab == 0
+          ? EndPoints.mainPageSellers
+          : tab == 1
+              ? EndPoints.mainPageCustomers
+              : EndPoints.mainPageInComplete;
+      final rawPeople = response.data['data'] as List;
+      if (kDebugMode) {
+        final summary = rawPeople.map((person) {
+          final map = person as Map<String, dynamic>;
+          return '${map['id']}:${map['type']}:${map['is_canceled']}';
+        }).join(', ');
+        debugPrint(
+          '[PERSON_LIST] endpoint=$endpoint count=${rawPeople.length} '
+          'people=[$summary]',
+        );
+      }
+      List<GeneralDataModel> generalDataList =
+          rawPeople.map((e) => GeneralDataModel.fromJson(e)).toList();
       return generalDataList;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -102,13 +118,37 @@ class GeneralDataListDatasource {
         );
       }
 
+      if (kDebugMode) {
+        debugPrint(
+            '[PERSON_EDIT] endpoint=${data.isEdit! ? EndPoints.editPerson : EndPoints.createPerson}');
+        debugPrint(
+          '[PERSON_EDIT] isEdit=${data.isEdit} customerId=$customerId '
+          'sellerId=$sellerId personType=${data.personType} '
+          'category=${data.customerCategory}',
+        );
+        debugPrint(
+          '[PERSON_EDIT] request customer_id=${formFields['customer_id']} '
+          'seller_id=${formFields['seller_id']} type=${formFields['type']} '
+          'name=${formFields['name']}',
+        );
+      }
+
       final response = await api.post(
         data.isEdit! ? EndPoints.editPerson : EndPoints.createPerson,
         data: formFields,
         isFormData: true,
       );
+      if (kDebugMode) {
+        debugPrint('[PERSON_EDIT] response=${response.data}');
+      }
       return response.data;
     } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PERSON_EDIT] DioException status=${e.response?.statusCode} '
+          'response=${e.response?.data} message=${e.message}',
+        );
+      }
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(

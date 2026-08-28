@@ -226,6 +226,7 @@ class GeneralDataListController extends GetxController {
     }
 
     final wasEditing = isEdit.value;
+    final targetPersonType = resolvedPersonType;
     isLoading(true);
     final result = await addPersonUseCase.call(
       data: AddPersonEntity(
@@ -303,6 +304,7 @@ class GeneralDataListController extends GetxController {
           return;
         }
         if (wasEditing) {
+          _selectTabForPersonType(targetPersonType);
           isLoading(false);
           update();
           Future.delayed(
@@ -430,6 +432,11 @@ class GeneralDataListController extends GetxController {
         .assignAll(await getCustomersUseCase.call(tab: 1));
     generalDataServes.inCompleteDataList
         .assignAll(await getCustomersUseCase.call(tab: 2));
+    // searchBar may replace these with filtered list copies. Always reconnect
+    // the visible lists to the freshly fetched data after add/edit/migration.
+    employeeSearch = generalDataServes.employeeDataList;
+    sellersSearch = generalDataServes.sellersDataList;
+    inCompleteDataSearch = generalDataServes.inCompleteDataList;
     closePeopleList.assignAll([
       ...generalDataServes.employeeDataList,
       ...generalDataServes.sellersDataList,
