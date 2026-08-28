@@ -1734,6 +1734,51 @@ const Map<String, String> en = {
   'salesOrderWorkflow': 'Order workflow',
   'salesOrderMoreActions': 'More actions',
   'salesOrderMediaRequirements': 'Media requirements',
+  'salesOrderRequiredNow': 'Required now',
+  'salesOrderNextUploadRequired': 'Upload @name',
+  'salesOrderNextUploadRequiredHint':
+      'This media is required to complete the current stage. After uploading, the order will refresh so you can continue.',
+  'salesOrderUploadNow': 'Upload now',
+  'salesOrderNextConfirmTitle': 'Review and confirm the order',
+  'salesOrderNextConfirmHint':
+      'Check the items, quantities, and customer information, then confirm the order to start preparation.',
+  'salesOrderNextPrepareTitle': 'Prepare the requested items',
+  'salesOrderNextPrepareHint':
+      'Collect the items, verify their quantities, then mark the order as ready.',
+  'salesOrderNextHandoverTitle': 'Hand the order to delivery',
+  'salesOrderNextHandoverHint':
+      'Choose the delivery method and enter the required carrier information.',
+  'salesOrderNextTrackShiplyTitle': 'Track the order with Shiply',
+  'salesOrderNextTrackShiplyHint':
+      'Follow the shipment status and record any partial delivery or return.',
+  'salesOrderNextDeliveryTitle': 'Record the delivery result',
+  'salesOrderNextDeliveryHint':
+      'Record full delivery when it arrives, or use the actions below for a partial delivery or return.',
+  'salesOrderNextCompleteRemainingTitle': 'Handle the remaining quantities',
+  'salesOrderNextCompleteRemainingHint':
+      'Review what was delivered or returned, then record the result of the quantities still pending.',
+  'salesOrderNextSettlementTitle': 'Collect and settle the remaining amount',
+  'salesOrderNextCarrierBalance': 'Due from delivery carrier: @amount ILS',
+  'salesOrderNextCustomerDebt': 'Customer debt: @amount ILS',
+  'salesOrderNextArchiveTitle': 'Order complete and ready to archive',
+  'salesOrderNextArchiveHint':
+      'Delivery and financial settlement are complete, with no remaining balance.',
+  'salesOrderNextStuckTitle': 'This order is stuck and needs attention',
+  'salesOrderNextStuckHint':
+      'Follow up on the issue and only mark it resolved after it has actually been handled.',
+  'salesOrderNextRecordedReason': 'Recorded reason: @reason',
+  'salesOrderNextPostponedTitle': 'This order is postponed',
+  'salesOrderNextPostponedHint':
+      'Review the postponement date and reason, then return it to the previous stage when ready.',
+  'salesOrderNextArchivedTitle': 'No action required',
+  'salesOrderNextArchivedHint': 'This order is complete and archived.',
+  'salesOrderNextCanceledTitle': 'This order is canceled',
+  'salesOrderNextCanceledHint': 'No operational action is required.',
+  'salesOrderNextReturnedTitle': 'This order was returned',
+  'salesOrderNextReturnedHint':
+      'Review the returned items and their financial state before closing follow-up.',
+  'salesOrderNextReviewHint':
+      'Review the order details and history, then choose the appropriate action below.',
   'salesOrderMediaOptional': 'Optional',
   'salesOrderMediaCategoryTitle': 'Media type',
   'salesOrderMediaCategory_items_group': 'Items together (before packaging)',

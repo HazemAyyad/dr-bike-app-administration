@@ -1794,6 +1794,51 @@ const Map<String, String> ar = {
   'salesOrderWorkflow': 'مسار الطلبية',
   'salesOrderMoreActions': 'إجراءات أخرى',
   'salesOrderMediaRequirements': 'متطلبات التصوير',
+  'salesOrderRequiredNow': 'المطلوب الآن',
+  'salesOrderNextUploadRequired': 'ارفع @name',
+  'salesOrderNextUploadRequiredHint':
+      'هذا التصوير إجباري لإكمال المرحلة الحالية. بعد الرفع ستتحدث الطلبية تلقائياً ويمكنك متابعة الخطوة التالية.',
+  'salesOrderUploadNow': 'رفع الصورة الآن',
+  'salesOrderNextConfirmTitle': 'راجع الطلبية ثم أكدها',
+  'salesOrderNextConfirmHint':
+      'تأكد من الأصناف والكميات وبيانات الزبون، ثم أكد الطلبية لبدء تجهيزها.',
+  'salesOrderNextPrepareTitle': 'جهّز الأصناف المطلوبة',
+  'salesOrderNextPrepareHint':
+      'اجمع الأصناف وافحص الكميات، ثم علّم الطلبية كجاهزة.',
+  'salesOrderNextHandoverTitle': 'سلّم الطلبية لوسيلة التوصيل',
+  'salesOrderNextHandoverHint':
+      'اختر وسيلة التوصيل وأدخل بيانات الناقل المطلوبة لإخراج الطلبية للتوصيل.',
+  'salesOrderNextTrackShiplyTitle': 'تابع الطلبية مع شبلي',
+  'salesOrderNextTrackShiplyHint':
+      'تابع حالة الشحنة، وسجّل أي توصيل جزئي أو إرجاع عند حدوثه.',
+  'salesOrderNextDeliveryTitle': 'سجّل نتيجة التوصيل',
+  'salesOrderNextDeliveryHint':
+      'عند وصول الطلبية سجّل التسليم الكامل، أو استخدم الخيارات أدناه للتسليم الجزئي أو الإرجاع.',
+  'salesOrderNextCompleteRemainingTitle': 'عالج الكميات المتبقية',
+  'salesOrderNextCompleteRemainingHint':
+      'راجع ما تم تسليمه أو إرجاعه، ثم سجّل نتيجة الكميات التي ما زالت معلقة.',
+  'salesOrderNextSettlementTitle': 'حصّل وسوِّ المبلغ المتبقي',
+  'salesOrderNextCarrierBalance': 'في ذمة شركة التوصيل: @amount ₪',
+  'salesOrderNextCustomerDebt': 'دين على الزبون: @amount ₪',
+  'salesOrderNextArchiveTitle': 'الطلبية مكتملة وجاهزة للأرشفة',
+  'salesOrderNextArchiveHint':
+      'تم التسليم والتسوية المالية بالكامل، ولا يوجد مبلغ متبقٍ.',
+  'salesOrderNextStuckTitle': 'الطلبية عالقة وتحتاج معالجة',
+  'salesOrderNextStuckHint':
+      'تابع سبب المشكلة مع الجهة المسؤولة، ولا تضغط «تم حل المشكلة» إلا بعد معالجتها فعلياً.',
+  'salesOrderNextRecordedReason': 'السبب المسجل: @reason',
+  'salesOrderNextPostponedTitle': 'الطلبية مؤجلة',
+  'salesOrderNextPostponedHint':
+      'راجع موعد وسبب التأجيل، وعند الاستعداد أعدها للمرحلة السابقة للمتابعة.',
+  'salesOrderNextArchivedTitle': 'لا يوجد إجراء مطلوب',
+  'salesOrderNextArchivedHint': 'الطلبية مكتملة ومحفوظة في الأرشيف.',
+  'salesOrderNextCanceledTitle': 'الطلبية ملغاة',
+  'salesOrderNextCanceledHint': 'لا يوجد إجراء تشغيلي مطلوب على هذه الطلبية.',
+  'salesOrderNextReturnedTitle': 'الطلبية مرتجعة',
+  'salesOrderNextReturnedHint':
+      'راجع الأصناف المرتجعة وحالتها المالية قبل إغلاق المتابعة.',
+  'salesOrderNextReviewHint':
+      'راجع تفاصيل الطلبية وسجل الحالات، ثم اختر الإجراء المناسب من الشريط السفلي.',
   'salesOrderMediaOptional': 'اختياري',
   'salesOrderMediaCategoryTitle': 'نوع التصوير',
   'salesOrderMediaCategory_items_group': 'صورة الأصناف مجتمعة (قبل التغليف)',

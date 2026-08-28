@@ -111,6 +111,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   children: [
                     _headerCard(order),
                     SizedBox(height: 12.h),
+                    _nextStepCard(order),
+                    SizedBox(height: 12.h),
                     SalesOrderStatusUi.workflowTimeline(
                       status: order.status,
                       controller: controller,
@@ -259,6 +261,321 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  Widget _nextStepCard(SalesOrderDetailModel order) {
+    final step = _nextStepFor(order);
+    final color = step.color;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(step.icon, color: color, size: 21.sp),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'salesOrderRequiredNow'.tr,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      step.title,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 9.h),
+          Text(
+            step.description,
+            style: TextStyle(
+              color: SalesOrdersController.textSecondary,
+              fontSize: 12.sp,
+              height: 1.5,
+            ),
+          ),
+          if (step.actionId != null || step.mediaCategory != null) ...[
+            SizedBox(height: 12.h),
+            Obx(() {
+              final busy = controller.isSubmitting.value;
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () {
+                          if (step.mediaCategory != null) {
+                            controller.pickAndUploadMedia(
+                              order.id,
+                              presetCategory: step.mediaCategory,
+                            );
+                            return;
+                          }
+                          _runAction(order.id, step.actionId!, order);
+                        },
+                  icon: busy
+                      ? SizedBox(
+                          width: 16.w,
+                          height: 16.w,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(step.actionIcon, size: 18.sp),
+                  label: Text(step.actionLabel ?? ''),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: color.withValues(alpha: 0.4),
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9.r),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  _SalesOrderNextStep _nextStepFor(SalesOrderDetailModel order) {
+    const activeColor = Color(0xFF2563EB);
+    const warningColor = Color(0xFFD97706);
+    const successColor = Color(0xFF059669);
+    const dangerColor = Color(0xFFDC2626);
+
+    String statusDescriptionWithLatestNote(String description) {
+      String? note;
+      for (final log in order.statusLogs.reversed) {
+        if (log.toStatus == order.status) {
+          note = log.note?.trim();
+          break;
+        }
+      }
+      if (note == null || note.isEmpty) return description;
+      return '$description\n${'salesOrderNextRecordedReason'.trParams({
+            'reason': note
+          })}';
+    }
+
+    _SalesOrderNextStep requiredMedia(String category) {
+      final requirement = order.mediaRequirements[category];
+      final translatedKey = 'salesOrderMediaCategory_$category';
+      final label = translatedKey.tr != translatedKey
+          ? translatedKey.tr
+          : (requirement?.label ?? category);
+      return _SalesOrderNextStep(
+        title: 'salesOrderNextUploadRequired'.trParams({'name': label}),
+        description: 'salesOrderNextUploadRequiredHint'.tr,
+        icon: Icons.add_a_photo_outlined,
+        color: dangerColor,
+        mediaCategory: category,
+        actionLabel: 'salesOrderUploadNow'.tr,
+        actionIcon: Icons.upload_outlined,
+      );
+    }
+
+    if (order.status == 'confirmed' &&
+        order.mediaRequirements['items_group']?.satisfied == false) {
+      return requiredMedia('items_group');
+    }
+    if (order.status == 'ready') {
+      for (final category in const ['items_group', 'packaged']) {
+        if (order.mediaRequirements[category]?.satisfied == false) {
+          return requiredMedia(category);
+        }
+      }
+    }
+
+    switch (order.status) {
+      case 'unconfirmed':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextConfirmTitle'.tr,
+          description: 'salesOrderNextConfirmHint'.tr,
+          icon: Icons.fact_check_outlined,
+          color: activeColor,
+          actionId: SalesOrderActionId.confirm,
+          actionLabel: 'confirm'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.confirm),
+        );
+      case 'confirmed':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextPrepareTitle'.tr,
+          description: 'salesOrderNextPrepareHint'.tr,
+          icon: Icons.inventory_2_outlined,
+          color: activeColor,
+          actionId: SalesOrderActionId.markReady,
+          actionLabel: 'salesOrderMarkReady'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.markReady),
+        );
+      case 'ready':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextHandoverTitle'.tr,
+          description: 'salesOrderNextHandoverHint'.tr,
+          icon: Icons.local_shipping_outlined,
+          color: activeColor,
+          actionId: SalesOrderActionId.handover,
+          actionLabel: 'salesOrderHandover'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.handover),
+        );
+      case 'with_delivery':
+        return _SalesOrderNextStep(
+          title: order.isShiplyDelivery
+              ? 'salesOrderNextTrackShiplyTitle'.tr
+              : 'salesOrderNextDeliveryTitle'.tr,
+          description: order.isShiplyDelivery
+              ? 'salesOrderNextTrackShiplyHint'.tr
+              : 'salesOrderNextDeliveryHint'.tr,
+          icon: Icons.delivery_dining_outlined,
+          color: warningColor,
+          actionId: order.isShiplyDelivery
+              ? SalesOrderActionId.partialDeliver
+              : SalesOrderActionId.deliver,
+          actionLabel: order.isShiplyDelivery
+              ? 'salesOrderPartialDeliver'.tr
+              : 'salesOrderDeliver'.tr,
+          actionIcon: _actionIcon(
+            order.isShiplyDelivery
+                ? SalesOrderActionId.partialDeliver
+                : SalesOrderActionId.deliver,
+          ),
+        );
+      case 'partial_return':
+      case 'review':
+      case 'partial_delivered':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextCompleteRemainingTitle'.tr,
+          description: 'salesOrderNextCompleteRemainingHint'.tr,
+          icon: Icons.pending_actions_outlined,
+          color: warningColor,
+          actionId: SalesOrderActionId.partialDeliver,
+          actionLabel: 'salesOrderPartialDeliver'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.partialDeliver),
+        );
+      case 'delivered':
+        final hasCarrierBalance = order.carrierReceivableBalance > 0.009;
+        final hasCustomerDebt = order.customerDebtBalance > 0.009;
+        if (hasCarrierBalance || hasCustomerDebt) {
+          final balances = <String>[];
+          if (hasCarrierBalance) {
+            balances.add(
+              'salesOrderNextCarrierBalance'.trParams({
+                'amount': order.carrierReceivableBalance.toStringAsFixed(2),
+              }),
+            );
+          }
+          if (hasCustomerDebt) {
+            balances.add(
+              'salesOrderNextCustomerDebt'.trParams({
+                'amount': order.customerDebtBalance.toStringAsFixed(2),
+              }),
+            );
+          }
+          return _SalesOrderNextStep(
+            title: 'salesOrderNextSettlementTitle'.tr,
+            description: balances.join(' • '),
+            icon: Icons.account_balance_wallet_outlined,
+            color: warningColor,
+            actionId: SalesOrderActionId.settle,
+            actionLabel: 'salesOrderSettle'.tr,
+            actionIcon: _actionIcon(SalesOrderActionId.settle),
+          );
+        }
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextArchiveTitle'.tr,
+          description: 'salesOrderNextArchiveHint'.tr,
+          icon: Icons.task_alt_outlined,
+          color: successColor,
+          actionId: SalesOrderActionId.archive,
+          actionLabel: 'salesOrderArchive'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.archive),
+        );
+      case 'stuck':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextStuckTitle'.tr,
+          description: statusDescriptionWithLatestNote(
+            'salesOrderNextStuckHint'.tr,
+          ),
+          icon: Icons.report_problem_outlined,
+          color: dangerColor,
+          actionId: SalesOrderActionId.resolveStuck,
+          actionLabel: 'salesOrderResolveStuck'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.resolveStuck),
+        );
+      case 'postponed':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextPostponedTitle'.tr,
+          description: statusDescriptionWithLatestNote(
+            'salesOrderNextPostponedHint'.tr,
+          ),
+          icon: Icons.schedule_outlined,
+          color: warningColor,
+          actionId: SalesOrderActionId.revertStatus,
+          actionLabel: 'salesOrderRevertStatus'.tr,
+          actionIcon: _actionIcon(SalesOrderActionId.revertStatus),
+        );
+      case 'archived':
+        return _SalesOrderNextStep(
+          title: 'salesOrderNextArchivedTitle'.tr,
+          description: 'salesOrderNextArchivedHint'.tr,
+          icon: Icons.inventory_outlined,
+          color: successColor,
+        );
+      case 'canceled':
+      case 'returned':
+        return _SalesOrderNextStep(
+          title: order.status == 'canceled'
+              ? 'salesOrderNextCanceledTitle'.tr
+              : 'salesOrderNextReturnedTitle'.tr,
+          description: order.status == 'canceled'
+              ? 'salesOrderNextCanceledHint'.tr
+              : 'salesOrderNextReturnedHint'.tr,
+          icon: Icons.block_outlined,
+          color: dangerColor,
+        );
+      default:
+        return _SalesOrderNextStep(
+          title: controller.statusLabel(order.status),
+          description: 'salesOrderNextReviewHint'.tr,
+          icon: Icons.info_outline,
+          color: activeColor,
+        );
+    }
   }
 
   Widget _deliveryIncludedBadge(bool includesDelivery) {
@@ -2351,4 +2668,26 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       isScrollControlled: true,
     );
   }
+}
+
+class _SalesOrderNextStep {
+  const _SalesOrderNextStep({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    this.actionId,
+    this.mediaCategory,
+    this.actionLabel,
+    this.actionIcon = Icons.arrow_forward,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final SalesOrderActionId? actionId;
+  final String? mediaCategory;
+  final String? actionLabel;
+  final IconData actionIcon;
 }
