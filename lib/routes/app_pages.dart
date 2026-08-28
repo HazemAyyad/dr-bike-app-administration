@@ -118,7 +118,9 @@ import '../features/admin/financial_affairs/presentation/binding/official_papers
 import '../features/admin/financial_affairs/presentation/views/assets_screens/add_new_assets_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_log_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/assets_screens/asset_details_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/add_expense_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/expenses_screens/expense_details_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
@@ -1086,7 +1088,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.FINANCIALAFFAIRSSCREEN,
       page: () => const FinancialAffairsScreen(),
-      binding: AssetsBinding(),
+      bindings: [AssetsBinding(), ExpensesBinding()],
       transition: _transitionFadeIn,
     ),
     // Assets
@@ -1107,6 +1109,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADDNEWASSETSCREEN,
       page: () => const AddNewAssetsScreen(),
+      binding: AssetsBinding(),
+      transition: _transitionSize,
+    ),
+    GetPage(
+      name: AppRoutes.ASSETDETAILSSCREEN,
+      page: () => const AssetDetailsScreen(),
       binding: AssetsBinding(),
       transition: _transitionSize,
     ),
@@ -1132,6 +1140,12 @@ class AppPages {
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.EXPENSEDETAILSSCREEN,
+      page: () => const ExpenseDetailsScreen(),
+      binding: ExpensesBinding(),
+      transition: _transitionSize,
     ),
     // official papers
     GetPage(

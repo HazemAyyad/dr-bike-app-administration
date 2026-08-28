@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../../core/helpers/costom_dialog_filter.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/show_no_data.dart';
@@ -16,36 +17,69 @@ import '../../controllers/expenses_controller.dart';
 import '../../widgets/expenses_widgets/destruction_card.dart';
 import '../../widgets/expenses_widgets/expenses_card.dart';
 import '../../widgets/financial_operational_ui.dart';
+import '../financial_reports_screen.dart';
 
 class ExpensesScreen extends GetView<ExpensesController> {
-  const ExpensesScreen({Key? key}) : super(key: key);
+  const ExpensesScreen({Key? key, this.embedded = false}) : super(key: key);
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'theExpenses',
-        fromDateController: controller.fromController,
-        toDateController: controller.toController,
-        action: false,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.download_rounded),
-            onSelected: controller.downloadExpenseReport,
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'pdf', child: Text('تنزيل PDF')),
-              PopupMenuItem(value: 'xlsx', child: Text('تنزيل Excel')),
-              PopupMenuItem(value: 'csv', child: Text('تنزيل CSV')),
-            ],
-          ),
-          SizedBox(width: 8.w),
-        ],
-        onPressedFilter: () {
-          controller.filterExpensesByDate();
-        },
-      ),
+      appBar: embedded
+          ? null
+          : CustomAppBar(
+              title: 'theExpenses',
+              fromDateController: controller.fromController,
+              toDateController: controller.toController,
+              action: false,
+              actions: [
+                Obx(() => IconButton(
+                      tooltip: 'search'.tr,
+                      onPressed: controller.toggleSearch,
+                      icon: Icon(
+                        controller.isSearchVisible.value
+                            ? Icons.search_off_rounded
+                            : Icons.search_rounded,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                      ),
+                    )),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.download_rounded),
+                  onSelected: controller.downloadExpenseReport,
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'pdf', child: Text('تنزيل PDF')),
+                    PopupMenuItem(value: 'xlsx', child: Text('تنزيل Excel')),
+                    PopupMenuItem(value: 'csv', child: Text('تنزيل CSV')),
+                  ],
+                ),
+                SizedBox(width: 8.w),
+              ],
+              onPressedFilter: () {
+                controller.filterExpensesByDate();
+              },
+            ),
       body: CustomScrollView(
         slivers: [
+          if (embedded)
+            SliverToBoxAdapter(
+              child: FinancialSectionToolbar(
+                onSearch: controller.toggleSearch,
+                onFilter: () => showCustomDialog(
+                  context,
+                  fromDateController: controller.fromController,
+                  toDateController: controller.toController,
+                  label: 'البحث في المصاريف',
+                  onPressed: controller.filterExpensesByDate,
+                ),
+                onReports: () => Get.to(() => const FinancialReportsScreen(
+                      kind: FinancialReportsKind.expenses,
+                    )),
+                onReset: controller.resetFilters,
+              ),
+            ),
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -91,20 +125,31 @@ class ExpensesScreen extends GetView<ExpensesController> {
             ),
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 50.w, vertical: 10.h),
-              child: SearchBar(
-                shadowColor: WidgetStateProperty.all(Colors.transparent),
-                leading: const Icon(Icons.search),
-                hintText: 'search'.tr,
-                backgroundColor: WidgetStateProperty.all(
-                  ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.customGreyColor7,
-                ),
-                onChanged: (value) => controller.searchBar(value),
-              ),
-            ),
+            child: Obx(() => controller.isSearchVisible.value
+                ? Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                    child: SearchBar(
+                      controller: controller.searchController,
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      leading: const Icon(Icons.search),
+                      trailing: [
+                        IconButton(
+                          tooltip: 'cancel'.tr,
+                          onPressed: controller.closeSearch,
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                      hintText: 'search'.tr,
+                      backgroundColor: WidgetStateProperty.all(
+                        ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor7,
+                      ),
+                      onChanged: controller.searchBar,
+                    ),
+                  )
+                : const SizedBox.shrink()),
           ),
           GetBuilder<ExpensesController>(
             builder: (controller) {

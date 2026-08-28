@@ -26,9 +26,9 @@ class AssetsCard extends GetView<AssetsController> {
         original <= 0 ? 0.0 : ((original - book) / original).clamp(0.0, 1.0);
     return FinancialOperationalCard(
       onTap: () {
-        controller.isEditing.value = true;
+        controller.isEditing.value = false;
         controller.getAssetsDetials(assetId: asset.assetId.toString());
-        Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
+        Get.toNamed(AppRoutes.ASSETDETAILSSCREEN);
       },
       onLongPress: () => Get.dialog(CancelFileDialog(
           fileName: asset.name, assetId: asset.assetId.toString())),

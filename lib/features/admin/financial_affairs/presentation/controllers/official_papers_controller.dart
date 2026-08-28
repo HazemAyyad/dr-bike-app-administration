@@ -58,6 +58,22 @@ class OfficialPapersController extends GetxController
   final RxInt currentTab = 0.obs;
   final tabs = ['company_documents', 'important_images'].obs;
   final RxString archiveStatusFilter = 'active'.obs;
+  final TextEditingController searchController = TextEditingController();
+  final RxBool isSearchVisible = false.obs;
+
+  void toggleSearch() {
+    isSearchVisible.toggle();
+    if (!isSearchVisible.value) {
+      searchController.clear();
+      searchBar('');
+    }
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    searchBar('');
+  }
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -66,6 +82,12 @@ class OfficialPapersController extends GetxController
 
   void setArchiveStatusFilter(String status) {
     archiveStatusFilter.value = status;
+    getAllExpenses();
+  }
+
+  void resetFilters() {
+    archiveStatusFilter.value = 'active';
+    closeSearch();
     getAllExpenses();
   }
 
@@ -488,6 +510,7 @@ class OfficialPapersController extends GetxController
     pictureDescriptionController.dispose();
     selectedFile.value = null;
     notesController.dispose();
+    searchController.dispose();
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;

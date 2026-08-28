@@ -6,6 +6,9 @@ class ExpenseDetailModel {
   final String name;
   final String price;
   final String boxId;
+  final String boxName;
+  final String expenseType;
+  final DateTime expenseDate;
   final String? notes;
   final List<String> invoiceImg;
   final List<String> media;
@@ -17,6 +20,9 @@ class ExpenseDetailModel {
     required this.name,
     required this.price,
     required this.boxId,
+    required this.boxName,
+    required this.expenseType,
+    required this.expenseDate,
     this.notes,
     required this.invoiceImg,
     required this.media,
@@ -39,6 +45,9 @@ class ExpenseDetailModel {
       name: asString(j['name']),
       price: asString(j['price'], '0'),
       boxId: asString(box['id'], '0'),
+      boxName: asString(box['name']),
+      expenseType: asString(j['expense_type'], 'general'),
+      expenseDate: parseApiDateTime(j['expense_date'] ?? j['created_at']),
       notes: asNullableString(j['notes']),
       invoiceImg: mapPhotoList(j['invoice_img']),
       media: mapPhotoList(j['media']),
@@ -53,6 +62,9 @@ class ExpenseDetailModel {
       'name': name,
       'price': price,
       'box': boxId,
+      'box_name': boxName,
+      'expense_type': expenseType,
+      'expense_date': expenseDate.toIso8601String(),
       'notes': notes,
       'invoice_img': invoiceImg,
       'media': media,

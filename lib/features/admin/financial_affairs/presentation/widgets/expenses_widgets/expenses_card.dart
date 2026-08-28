@@ -21,9 +21,8 @@ class ExpensesCard extends GetView<ExpensesController> {
   Widget build(BuildContext context) => FinancialOperationalCard(
         onTap: () {
           controller.isEditing.value = true;
-          controller.isExpenseReadOnly.value = true;
           controller.getExpensesData(expenseId: expense.id.toString());
-          Get.toNamed(AppRoutes.ADDEXPENSESCREEN);
+          Get.toNamed(AppRoutes.EXPENSEDETAILSSCREEN);
         },
         child: Row(children: [
           ClipRRect(

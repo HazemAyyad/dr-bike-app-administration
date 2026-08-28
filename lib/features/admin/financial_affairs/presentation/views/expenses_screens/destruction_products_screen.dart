@@ -7,9 +7,9 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../../../stock/presentation/widgets/search_widget.dart';
 import '../../controllers/expenses_controller.dart';
 import '../../widgets/financial_operational_ui.dart';
+import 'destruction_product_picker_screen.dart';
 
 class DestructionProductsScreen extends GetView<ExpensesController> {
   const DestructionProductsScreen({Key? key}) : super(key: key);
@@ -25,22 +25,37 @@ class DestructionProductsScreen extends GetView<ExpensesController> {
           children: [
             const FinancialGroupTitle(title: 'اختيار المنتجات'),
             FinancialOperationalCard(
-              child: Column(children: [
-                SearchWidget(
-                  isCloseouts: true,
-                  productIdController: controller.productIdController,
-                  productNameController: controller.productNameController,
+              onTap: () => Get.to(() => const DestructionProductPickerScreen()),
+              child: Row(children: [
+                Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.operationalSurface,
+                    borderRadius: BorderRadius.circular(11.r),
+                  ),
+                  child: Icon(Icons.add_shopping_cart_outlined,
+                      color: AppColors.operationalPurple, size: 21.sp),
                 ),
-                SizedBox(height: 8.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () =>
-                        controller.addSelectedDestructionProduct(context),
-                    icon: const Icon(Icons.add_shopping_cart_outlined),
-                    label: const Text('إضافة المنتج إلى جدول الإتلاف'),
+                SizedBox(width: 9.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('فتح صفحة اختيار المنتجات',
+                          style: TextStyle(
+                              fontSize: 12.5.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.operationalNavy)),
+                      SizedBox(height: 2.h),
+                      Text('اضغط على المنتج ليضاف مباشرة إلى الجدول',
+                          style: TextStyle(
+                              fontSize: 9.5.sp,
+                              color: AppColors.customGreyColor5)),
+                    ],
                   ),
                 ),
+                const Icon(Icons.chevron_left_rounded),
               ]),
             ),
             Obx(() => controller.destructionDraftLines.isEmpty

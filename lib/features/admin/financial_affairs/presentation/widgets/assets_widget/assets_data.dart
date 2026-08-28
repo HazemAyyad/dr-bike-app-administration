@@ -79,7 +79,7 @@ class AssetsData extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                 ),
                         text:
-                            '${'assetsConsumption'.tr}(${NumberFormat('#,###').format(double.parse(FinacialService().assets.value!.totalAssetsDepreciatePrices))})',
+                            'إهلاك أصول الشهر (${NumberFormat('#,###').format(double.parse(FinacialService().assets.value!.totalAssetsDepreciatePrices))})',
                         onPressed: () {
                           Get.dialog(const AssetsConsumption());
                         },

@@ -13,6 +13,7 @@ import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/expenses_models/destruction_model.dart';
 import '../../data/models/expenses_models/expense_data_model.dart';
+import '../../data/models/expenses_models/expense_detail_model.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
@@ -42,6 +43,22 @@ class ExpensesController extends GetxController
 
   final TextEditingController fromController = TextEditingController();
   final TextEditingController toController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
+  final RxBool isSearchVisible = false.obs;
+
+  void toggleSearch() {
+    isSearchVisible.toggle();
+    if (!isSearchVisible.value) {
+      searchController.clear();
+      searchBar('');
+    }
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    searchBar('');
+  }
 
   // assets
   final TextEditingController productIdController = TextEditingController();
@@ -52,7 +69,7 @@ class ExpensesController extends GetxController
   final RxList<DestructionDraftLine> destructionDraftLines =
       <DestructionDraftLine>[].obs;
 
-  Future<void> addSelectedDestructionProduct(BuildContext context) async {
+  Future<void> addSelectedDestructionProduct() async {
     final id = int.tryParse(productIdController.text);
     if (id == null || productNameController.text.trim().isEmpty) return;
     if (destructionDraftLines.any((line) => line.productId == id)) return;
@@ -163,15 +180,18 @@ class ExpensesController extends GetxController
     getAllExpenses(applyFilters: true);
   }
 
-  Future<void> downloadExpenseReport(String format) async {
+  Future<void> downloadExpenseReport(
+    String format, {
+    String? expenseTypeOverride,
+  }) async {
     try {
       final bytes = await getExpenseReportUsecase.call(
         format: format,
         filters: {
           if (fromController.text.isNotEmpty) 'from': fromController.text,
           if (toController.text.isNotEmpty) 'to': toController.text,
-          if (expenseTypeFilter.value.isNotEmpty)
-            'expense_type': expenseTypeFilter.value,
+          if ((expenseTypeOverride ?? expenseTypeFilter.value).isNotEmpty)
+            'expense_type': expenseTypeOverride ?? expenseTypeFilter.value,
         },
       );
       final root = Platform.isAndroid
@@ -188,6 +208,14 @@ class ExpensesController extends GetxController
     } catch (error) {
       Get.snackbar('error'.tr, error.toString());
     }
+  }
+
+  Future<void> resetFilters() async {
+    fromController.clear();
+    toController.clear();
+    expenseTypeFilter.value = '';
+    closeSearch();
+    await getAllExpenses();
   }
 
   void filterExpensesLocallyByDate() {
@@ -299,7 +327,9 @@ class ExpensesController extends GetxController
     final destructionsJson = destructions['destructions'] as List;
     final destructionsList = destructionsJson
         .map((e) => DestructionModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    FinacialService().destructionsTasks.clear();
     FinacialService().destructions.assignAll(destructionsList);
     destructionsFilter.value = FinacialService().destructionsTasks;
     for (var task in FinacialService().destructions) {
@@ -326,18 +356,23 @@ class ExpensesController extends GetxController
   /// Details open read-only first; the user explicitly enters edit mode.
   RxBool isExpenseReadOnly = false.obs;
   RxBool isLoadingGet = false.obs;
+  final Rxn<ExpenseDetailModel> selectedExpense = Rxn<ExpenseDetailModel>();
   String expenseId = '';
   // get expenses data
-  void getExpensesData({required String expenseId}) async {
+  Future<void> getExpensesData({required String expenseId}) async {
     isLoadingGet(true);
     update();
     // expenses
     final expenses = await getExpensesDataUsecase.call(expenseId: expenseId);
+    selectedExpense.value = expenses;
     this.expenseId = expenses.id.toString();
     expenseNameController.text = expenses.name;
     expensePriceController.text = expenses.price.toString();
     expenseNoteController.text = expenses.notes ?? '';
     boxIdController.text = expenses.boxId;
+    expenseType.value = expenses.expenseType;
+    expenseDateController.text =
+        DateFormat('yyyy-MM-dd').format(expenses.expenseDate);
     invoiceFile = expenses.invoiceImg.map((e) => File(e)).toList();
     expensesFile = expenses.media.map((e) => File(e)).toList();
     isLoadingGet(false);
@@ -348,7 +383,7 @@ class ExpensesController extends GetxController
   void addDestruction(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       if (destructionDraftLines.isEmpty) {
-        await addSelectedDestructionProduct(context);
+        await addSelectedDestructionProduct();
       }
       if (destructionDraftLines.isEmpty) return;
       isLoading(true);
@@ -577,6 +612,7 @@ class ExpensesController extends GetxController
     sizeAnimation.isDismissed;
     fromController.dispose();
     toController.dispose();
+    searchController.dispose();
     productIdController.dispose();
     productNameController.dispose();
     piecesCountController.dispose();

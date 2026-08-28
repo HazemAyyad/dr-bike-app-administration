@@ -141,3 +141,102 @@ class FinancialGroupTitle extends StatelessWidget {
         ]),
       );
 }
+
+class FinancialSectionToolbar extends StatelessWidget {
+  const FinancialSectionToolbar({
+    Key? key,
+    required this.onSearch,
+    required this.onFilter,
+    required this.onReset,
+    this.onReports,
+    this.extraAction,
+  }) : super(key: key);
+
+  final VoidCallback onSearch;
+  final VoidCallback onFilter;
+  final VoidCallback onReset;
+  final VoidCallback? onReports;
+  final Widget? extraAction;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+        child: Row(children: [
+          _FinancialToolbarButton(
+              label: 'بحث', icon: Icons.search_rounded, onTap: onSearch),
+          _FinancialToolbarButton(
+              label: 'الفلاتر', icon: Icons.tune_rounded, onTap: onFilter),
+          if (onReports != null)
+            _FinancialToolbarButton(
+                label: 'التقارير',
+                icon: Icons.assessment_outlined,
+                highlighted: true,
+                onTap: onReports!),
+          if (extraAction != null) extraAction!,
+          _FinancialToolbarButton(
+              label: 'إعادة ضبط',
+              icon: Icons.restart_alt_rounded,
+              onTap: onReset),
+        ]),
+      );
+}
+
+class _FinancialToolbarButton extends StatelessWidget {
+  const _FinancialToolbarButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.highlighted = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsetsDirectional.only(end: 7.w),
+        child: Material(
+          color: highlighted
+              ? AppColors.operationalPurple
+              : ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : AppColors.whiteColor,
+          borderRadius: BorderRadius.circular(10.r),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10.r),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: highlighted
+                      ? AppColors.operationalPurple
+                      : AppColors.operationalCardBorder,
+                ),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon,
+                    size: 16.sp,
+                    color: highlighted
+                        ? Colors.white
+                        : AppColors.operationalPurple),
+                SizedBox(width: 5.w),
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                        color: highlighted
+                            ? Colors.white
+                            : ThemeService.isDark.value
+                                ? Colors.white
+                                : AppColors.operationalNavy)),
+              ]),
+            ),
+          ),
+        ),
+      );
+}

@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/helpers/costom_dialog_filter.dart';
+import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/assets_controller.dart';
@@ -12,24 +14,87 @@ import '../../widgets/assets_widget/assets_card.dart';
 import '../../widgets/assets_widget/assets_data.dart';
 import '../../widgets/financial_skeletons.dart';
 import '../../widgets/financial_operational_ui.dart';
+import '../financial_reports_screen.dart';
 
 class AssetsScreen extends GetView<AssetsController> {
-  const AssetsScreen({Key? key}) : super(key: key);
+  const AssetsScreen({Key? key, this.embedded = false}) : super(key: key);
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'assets',
-        fromDateController: controller.fromController,
-        toDateController: controller.toController,
-        action: false,
-        onPressedFilter: () {
-          controller.filterAssetsByDate();
-        },
-      ),
+      appBar: embedded
+          ? null
+          : CustomAppBar(
+              title: 'assets',
+              fromDateController: controller.fromController,
+              toDateController: controller.toController,
+              action: false,
+              actions: [
+                Obx(() => IconButton(
+                      tooltip: 'search'.tr,
+                      onPressed: controller.toggleSearch,
+                      icon: Icon(
+                        controller.isSearchVisible.value
+                            ? Icons.search_off_rounded
+                            : Icons.search_rounded,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                      ),
+                    )),
+                SizedBox(width: 8.w),
+              ],
+              onPressedFilter: () {
+                controller.filterAssetsByDate();
+              },
+            ),
       body: CustomScrollView(
         slivers: [
+          if (embedded)
+            SliverToBoxAdapter(
+              child: FinancialSectionToolbar(
+                onSearch: controller.toggleSearch,
+                onFilter: () => showCustomDialog(
+                  context,
+                  fromDateController: controller.fromController,
+                  toDateController: controller.toController,
+                  label: 'البحث في الأصول',
+                  onPressed: controller.filterAssetsByDate,
+                ),
+                onReports: () => Get.to(() => const FinancialReportsScreen(
+                      kind: FinancialReportsKind.assets,
+                    )),
+                onReset: controller.resetFilters,
+              ),
+            ),
+          SliverToBoxAdapter(
+            child: Obx(() => controller.isSearchVisible.value
+                ? Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                    child: SearchBar(
+                      controller: controller.searchController,
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      leading: const Icon(Icons.search),
+                      trailing: [
+                        IconButton(
+                          tooltip: 'cancel'.tr,
+                          onPressed: controller.closeSearch,
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                      hintText: 'search'.tr,
+                      backgroundColor: WidgetStateProperty.all(
+                        ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor7,
+                      ),
+                      onChanged: controller.searchAssets,
+                    ),
+                  )
+                : const SizedBox.shrink()),
+          ),
           const AssetsData(),
           SliverToBoxAdapter(
             child: Obx(

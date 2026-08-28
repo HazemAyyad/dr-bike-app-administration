@@ -15,35 +15,68 @@ import '../../widgets/official_papers_widgets/add_picture.dart';
 import '../../widgets/official_papers_widgets/official_papers_card.dart';
 import '../../widgets/official_papers_widgets/picture_card.dart';
 import '../../widgets/financial_skeletons.dart';
+import '../../widgets/financial_operational_ui.dart';
 
 class OfficialPapersScreen extends GetView<OfficialPapersController> {
-  const OfficialPapersScreen({Key? key}) : super(key: key);
+  const OfficialPapersScreen({Key? key, this.embedded = false})
+      : super(key: key);
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'officialPapers',
-        action: false,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.inventory,
-              size: 25.sp,
+      appBar: embedded
+          ? null
+          : CustomAppBar(
+              title: 'officialPapers',
+              action: false,
+              actions: [
+                Obx(() => IconButton(
+                      tooltip: 'search'.tr,
+                      onPressed: controller.toggleSearch,
+                      icon: Icon(
+                        controller.isSearchVisible.value
+                            ? Icons.search_off_rounded
+                            : Icons.search_rounded,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                      ),
+                    )),
+                IconButton(
+                  icon: Icon(
+                    Icons.inventory,
+                    size: 25.sp,
+                  ),
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                  onPressed: () {
+                    controller.getTreasury();
+                    Get.toNamed(AppRoutes.SAFESSCREEN);
+                  },
+                ),
+                SizedBox(width: 15.w),
+              ],
             ),
-            color: ThemeService.isDark.value
-                ? AppColors.primaryColor
-                : AppColors.secondaryColor,
-            onPressed: () {
-              controller.getTreasury();
-              Get.toNamed(AppRoutes.SAFESSCREEN);
-            },
-          ),
-          SizedBox(width: 15.w),
-        ],
-      ),
       body: CustomScrollView(
         slivers: [
+          if (embedded)
+            SliverToBoxAdapter(
+              child: FinancialSectionToolbar(
+                onSearch: controller.toggleSearch,
+                onFilter: () => _showArchiveFilters(context),
+                onReset: controller.resetFilters,
+                extraAction: OutlinedButton.icon(
+                  onPressed: () {
+                    controller.getTreasury();
+                    Get.toNamed(AppRoutes.SAFESSCREEN);
+                  },
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('الخزن والملفات'),
+                ),
+              ),
+            ),
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -84,18 +117,31 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
             ),
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
-              child: SearchBar(
-                backgroundColor: WidgetStateProperty.all(
-                  ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                ),
-                hintText: 'search'.tr,
-                onChanged: (value) => controller.searchBar(value),
-              ),
-            ),
+            child: Obx(() => controller.isSearchVisible.value
+                ? Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                    child: SearchBar(
+                      controller: controller.searchController,
+                      shadowColor: WidgetStateProperty.all(Colors.transparent),
+                      leading: const Icon(Icons.search),
+                      trailing: [
+                        IconButton(
+                          tooltip: 'cancel'.tr,
+                          onPressed: controller.closeSearch,
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                      hintText: 'search'.tr,
+                      backgroundColor: WidgetStateProperty.all(
+                        ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor7,
+                      ),
+                      onChanged: controller.searchBar,
+                    ),
+                  )
+                : const SizedBox.shrink()),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
           GetBuilder<OfficialPapersController>(
@@ -137,10 +183,10 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                      crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
-                      childAspectRatio: 0.73,
+                      childAspectRatio: 0.88,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -181,6 +227,62 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showArchiveFilters(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('فلترة الأوراق والصور',
+                  style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.operationalNavy)),
+              SizedBox(height: 8.h),
+              for (final option in const <Map<String, dynamic>>[
+                {
+                  'value': 'active',
+                  'label': 'النشطة فقط',
+                  'icon': Icons.verified_outlined
+                },
+                {
+                  'value': 'archived',
+                  'label': 'المؤرشفة فقط',
+                  'icon': Icons.archive_outlined
+                },
+                {
+                  'value': 'all',
+                  'label': 'النشطة والمؤرشفة',
+                  'icon': Icons.all_inbox_outlined
+                },
+              ])
+                ListTile(
+                  leading: Icon(option['icon'] as IconData,
+                      color: AppColors.operationalPurple),
+                  title: Text(option['label'] as String),
+                  trailing: Obx(() =>
+                      controller.archiveStatusFilter.value == option['value']
+                          ? const Icon(Icons.check_circle_rounded,
+                              color: AppColors.operationalPurple)
+                          : const Icon(Icons.circle_outlined)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    controller
+                        .setArchiveStatusFilter(option['value'] as String);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );

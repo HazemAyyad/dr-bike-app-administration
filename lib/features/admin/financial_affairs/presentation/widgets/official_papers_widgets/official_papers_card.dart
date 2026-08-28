@@ -10,7 +10,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
 import '../../controllers/official_papers_controller.dart';
-import 'paper_details.dart';
+import '../../views/official_papers_screens/paper_details_screen.dart';
 import '../financial_operational_ui.dart';
 import '../financial_image_cache.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
@@ -24,7 +24,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Get.dialog(PaperDetails(paper: data));
+        Get.to(() => PaperDetailsScreen(paper: data));
       },
       onLongPress: () {
         Get.dialog(
@@ -186,7 +186,7 @@ class _PaperLocationPath extends StatelessWidget {
 
   Widget _arrow() => Padding(
         padding: EdgeInsets.symmetric(horizontal: 3.w),
-        child: Icon(Icons.chevron_left_rounded,
+        child: Icon(Icons.chevron_right_rounded,
             size: 14.sp, color: AppColors.customGreyColor5),
       );
 }

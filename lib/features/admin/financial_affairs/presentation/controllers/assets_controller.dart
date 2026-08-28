@@ -41,6 +41,42 @@ class AssetsController extends GetxController {
 
   final TextEditingController fromController = TextEditingController();
   final TextEditingController toController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
+  final RxBool isSearchVisible = false.obs;
+
+  void toggleSearch() {
+    isSearchVisible.toggle();
+    if (!isSearchVisible.value) {
+      searchController.clear();
+      searchAssets('');
+    }
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    searchAssets('');
+  }
+
+  void searchAssets(String value) {
+    final query = value.trim().toLowerCase();
+    if (query.isEmpty) {
+      assetsFilter.assignAll(FinacialService().assetsTasks);
+    } else {
+      final filtered = <String, List<Asset>>{};
+      FinacialService().assetsTasks.forEach((key, assets) {
+        final matches = assets
+            .where((asset) =>
+                asset.name.toLowerCase().contains(query) ||
+                asset.originalPrice.toLowerCase().contains(query) ||
+                asset.depreciationPrice.toLowerCase().contains(query))
+            .toList();
+        if (matches.isNotEmpty) filtered[key] = matches;
+      });
+      assetsFilter.assignAll(filtered);
+    }
+    update();
+  }
 
   final TextEditingController assetNameController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
@@ -85,6 +121,14 @@ class AssetsController extends GetxController {
   void setAssetStatusFilter(String status) {
     assetStatusFilter.value = status;
     getAllAssets(applyFilters: true);
+  }
+
+  Future<void> resetFilters() async {
+    fromController.clear();
+    toController.clear();
+    assetStatusFilter.value = '';
+    closeSearch();
+    await getAllAssets();
   }
 
   void filterAssetsLocallyByDate() {
@@ -283,7 +327,6 @@ class AssetsController extends GetxController {
     final result = await depreciateOneAssetsUsecase.call(assetId: assetId);
     result.fold(
       (failure) {
-        Get.back();
         Get.snackbar(
           "error".tr,
           failure.errMessage,
@@ -292,8 +335,9 @@ class AssetsController extends GetxController {
         );
       },
       (success) {
-        Get.back();
         getAllAssets();
+        final id = assetDetails.value?.id;
+        if (id != null) getAssetsDetials(assetId: id.toString());
 
         Get.snackbar(
           "success".tr,
@@ -339,7 +383,7 @@ class AssetsController extends GetxController {
   }
 
   // download report
-  Future<void> downloadReport() async {
+  Future<void> downloadReport({String? periodOverride}) async {
     try {
       Get.snackbar(
         "info".tr,
@@ -348,9 +392,9 @@ class AssetsController extends GetxController {
         duration: const Duration(milliseconds: 2500),
       );
       final response = await getAssetReportUsecase.call(
-        filters: assetLogPeriodFilter.value.isEmpty
+        filters: (periodOverride ?? assetLogPeriodFilter.value).isEmpty
             ? null
-            : {'period': assetLogPeriodFilter.value},
+            : {'period': periodOverride ?? assetLogPeriodFilter.value},
       );
       late Directory directory;
       if (Platform.isAndroid) {
@@ -398,6 +442,7 @@ class AssetsController extends GetxController {
   void onClose() {
     fromController.dispose();
     toController.dispose();
+    searchController.dispose();
     assetNameController.dispose();
     priceController.dispose();
     noteController.dispose();

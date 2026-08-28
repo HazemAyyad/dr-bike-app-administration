@@ -26,23 +26,8 @@ class AddExpenseScreen extends GetView<ExpensesController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: controller.isEditing.value ? 'تفاصيل المصروف' : 'addExpense',
+        title: controller.isEditing.value ? 'تعديل المصروف' : 'addExpense',
         action: false,
-        actions: [
-          if (controller.isEditing.value)
-            Obx(() => IconButton(
-                  tooltip: controller.isExpenseReadOnly.value
-                      ? 'تعديل المصروف'
-                      : 'إلغاء التعديل',
-                  onPressed: () {
-                    controller.isExpenseReadOnly.toggle();
-                    controller.update();
-                  },
-                  icon: Icon(controller.isExpenseReadOnly.value
-                      ? Icons.edit_outlined
-                      : Icons.close_rounded),
-                )),
-        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
