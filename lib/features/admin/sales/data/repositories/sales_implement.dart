@@ -311,6 +311,7 @@ class SalesImplement implements SalesRepository {
   Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
     String? search,
     int? createdByUserId,
+    String saveType = 'manual',
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
@@ -319,6 +320,7 @@ class SalesImplement implements SalesRepository {
       return await salesDatasource.getSuspendedInstantSales(
         search: search,
         createdByUserId: createdByUserId,
+        saveType: saveType,
       );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -326,12 +328,16 @@ class SalesImplement implements SalesRepository {
   }
 
   @override
-  Future<int> getSuspendedInstantSalesCount() async {
+  Future<int> getSuspendedInstantSalesCount({
+    String saveType = 'manual',
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      return await salesDatasource.getSuspendedInstantSalesCount();
+      return await salesDatasource.getSuspendedInstantSalesCount(
+        saveType: saveType,
+      );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
@@ -355,6 +361,7 @@ class SalesImplement implements SalesRepository {
   Future<Either<Failure, String>> suspendInstantSale({
     required String currentStep,
     required Map<String, dynamic> payload,
+    String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
   }) async {
@@ -365,6 +372,7 @@ class SalesImplement implements SalesRepository {
       final result = await salesDatasource.suspendInstantSale(
         currentStep: currentStep,
         payload: payload,
+        saveType: saveType,
         suspendedInstantSaleId: suspendedInstantSaleId,
         note: note,
       );

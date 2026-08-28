@@ -97,7 +97,9 @@ class _SuspendedTableRow extends StatelessWidget {
     final borderColor = Colors.grey.shade300;
     final summary = item.summaryLabel.isNotEmpty
         ? item.summaryLabel
-        : 'suspendedInvoicesDefaultLabel'.tr;
+        : (item.isAutoSaved
+            ? 'autoSavedSaleDraftDefaultLabel'.tr
+            : 'suspendedInvoicesDefaultLabel'.tr);
 
     return Container(
       decoration: BoxDecoration(

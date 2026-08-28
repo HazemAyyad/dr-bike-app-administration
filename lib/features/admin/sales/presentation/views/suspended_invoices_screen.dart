@@ -17,7 +17,7 @@ class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'suspendedInvoices',
         action: false,
       ),
@@ -33,6 +33,28 @@ class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
               physics: kRefreshableScrollPhysics,
               slivers: [
                 const SliverToBoxAdapter(child: SalesDailyStatusBar()),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
+                    child: Wrap(
+                      spacing: 8.w,
+                      children: [
+                        ChoiceChip(
+                          label: Text('suspendedInvoices'.tr),
+                          selected:
+                              controller.selectedSaveType.value == 'manual',
+                          onSelected: (_) =>
+                              controller.selectSaveType('manual'),
+                        ),
+                        ChoiceChip(
+                          label: Text('autoSavedSaleDrafts'.tr),
+                          selected: controller.selectedSaveType.value == 'auto',
+                          onSelected: (_) => controller.selectSaveType('auto'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 8.h),
@@ -76,7 +98,7 @@ class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
                     sliver: SliverToBoxAdapter(
                       child: SuspendedInvoicesTable(
                         items: controller.items,
-                        showOwner: controller.isAdmin,
+                        showOwner: controller.showOwner,
                         onResume: controller.resumeItem,
                         onNotes: (item) =>
                             controller.openNotesDialog(context, item),

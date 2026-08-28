@@ -789,6 +789,7 @@ class SalesController extends GetxController
       final result = await Get.find<SalesDatasource>().suspendInstantSale(
         currentStep: currentStep,
         payload: buildInstantSaleSuspendPayload(),
+        saveType: 'auto',
         suspendedInstantSaleId: activeSuspendedSaleId.value,
       );
 
@@ -1105,6 +1106,7 @@ class SalesController extends GetxController
 
   Timer? _autoSuspendDebounce;
   Timer? _localDraftDebounce;
+  Future<void>? _autoSuspendRequest;
   bool _isAutoSuspendingInstantSale = false;
   bool _activeSuspendedSaleIsAuto = false;
   bool _isRestoringLocalInstantSaleDraft = false;
@@ -1118,16 +1120,30 @@ class SalesController extends GetxController
   void _scheduleAutoSuspendLargeInstantSale() {
     _autoSuspendDebounce?.cancel();
 
+    if (_instantSaleSubmitInFlight) return;
     if (activeEditInstantSaleId.value != null) return;
     if (!canContinueFromPicker) return;
     if (activeSuspendedSaleId.value != null && !_activeSuspendedSaleIsAuto) {
       return;
     }
 
-    _autoSuspendDebounce = Timer(
-      const Duration(milliseconds: 900),
-      _autoSuspendInstantSale,
-    );
+    _autoSuspendDebounce = Timer(const Duration(milliseconds: 900), () {
+      final request = _autoSuspendInstantSale();
+      _autoSuspendRequest = request;
+      request.whenComplete(() {
+        if (identical(_autoSuspendRequest, request)) {
+          _autoSuspendRequest = null;
+        }
+      });
+    });
+  }
+
+  Future<void> _settleAutoSuspendBeforeSubmit() async {
+    _autoSuspendDebounce?.cancel();
+    final pending = _autoSuspendRequest;
+    if (pending != null) {
+      await pending;
+    }
   }
 
   Future<void> _autoSuspendInstantSale() async {
@@ -1145,6 +1161,7 @@ class SalesController extends GetxController
             ? 'checkout'
             : 'product_picker',
         payload: buildInstantSaleSuspendPayload(),
+        saveType: 'auto',
         suspendedInstantSaleId: activeSuspendedSaleId.value,
       );
       if (result['status'] == 'success') {
@@ -2191,7 +2208,7 @@ class SalesController extends GetxController
 
   String? get activeAutoSuspendedReferenceCode =>
       activeSuspendedSaleId.value != null && _activeSuspendedSaleIsAuto
-          ? 'ع-${activeSuspendedSaleId.value}'
+          ? 'م-${activeSuspendedSaleId.value}'
           : null;
 
   String? get activeEditInstantSaleReference =>
@@ -2418,6 +2435,9 @@ class SalesController extends GetxController
       return false;
     }
 
+    await _settleAutoSuspendBeforeSubmit();
+    if (!context.mounted) return false;
+
     final suspendNote = await _askSuspendedInvoiceNote(context);
 
     isLoading(true);
@@ -2446,6 +2466,7 @@ class SalesController extends GetxController
       final result = await Get.find<SalesImplement>().suspendInstantSale(
         currentStep: currentStep,
         payload: payload,
+        saveType: 'manual',
         suspendedInstantSaleId: activeSuspendedSaleId.value,
         note: suspendNote,
       );
@@ -2558,7 +2579,7 @@ class SalesController extends GetxController
     try {
       clearActiveEditInstantSale();
       activeSuspendedSaleId.value = sale.id;
-      _activeSuspendedSaleIsAuto = false;
+      _activeSuspendedSaleIsAuto = sale.isAutoSaved;
       resetInstantSaleForm(renewFormKey: true);
       setInstantSaleAdjustmentMode(
         sale.payload['sale_kind'] == kInstantSaleKindAdjustment,
@@ -4037,6 +4058,7 @@ class SalesController extends GetxController
 
     _instantSaleSubmitInFlight = true;
     try {
+      await _settleAutoSuspendBeforeSubmit();
       _instantSaleDebug('submit with payment requested', {
         'hasPackage': hasSelectedPackage,
         'cartLines': cartLines.length,
@@ -4552,7 +4574,6 @@ class SalesController extends GetxController
           }
 
           await _leaveInstantSaleFlow();
-          await Future<void>.delayed(const Duration(milliseconds: 350));
           await clearLocalInstantSaleDraft();
 
           if (!isClosed) {
@@ -4715,7 +4736,6 @@ class SalesController extends GetxController
           }
 
           await _leaveInstantSaleFlow();
-          await Future<void>.delayed(const Duration(milliseconds: 350));
           await clearLocalInstantSaleDraft();
 
           if (!isClosed) {

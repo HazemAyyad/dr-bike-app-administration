@@ -1268,6 +1268,7 @@ class SalesDatasource {
   Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
     String? search,
     int? createdByUserId,
+    String saveType = 'manual',
   }) async {
     try {
       _instantSaleDebug('GET suspended list', {
@@ -1281,6 +1282,7 @@ class SalesDatasource {
           if (search != null && search.trim().isNotEmpty)
             'search': search.trim(),
           if (createdByUserId != null) 'created_by_user_id': createdByUserId,
+          'save_type': saveType,
         },
       );
       _instantSaleDebug('suspended list response', response.data);
@@ -1319,11 +1321,16 @@ class SalesDatasource {
     }
   }
 
-  Future<int> getSuspendedInstantSalesCount() async {
+  Future<int> getSuspendedInstantSalesCount({
+    String saveType = 'manual',
+  }) async {
     try {
       _instantSaleDebug(
           'GET suspended count', EndPoints.suspendedInstantSalesCount);
-      final response = await api.get(EndPoints.suspendedInstantSalesCount);
+      final response = await api.get(
+        EndPoints.suspendedInstantSalesCount,
+        queryParameters: {'save_type': saveType},
+      );
       _instantSaleDebug('suspended count response', response.data);
       return asInt(response.data['suspended_count']);
     } on DioException catch (e) {
@@ -1381,12 +1388,14 @@ class SalesDatasource {
   Future<Map<String, dynamic>> suspendInstantSale({
     required String currentStep,
     required Map<String, dynamic> payload,
+    String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
   }) async {
     try {
       final data = {
         'current_step': currentStep,
+        'save_type': saveType,
         'payload': payload,
         if (suspendedInstantSaleId != null)
           'suspended_instant_sale_id': suspendedInstantSaleId,

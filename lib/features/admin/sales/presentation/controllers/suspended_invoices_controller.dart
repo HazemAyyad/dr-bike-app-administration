@@ -83,8 +83,18 @@ class SuspendedInvoicesController extends GetxController {
   final RxList<SuspendedInstantSaleModel> items =
       <SuspendedInstantSaleModel>[].obs;
   final TextEditingController searchController = TextEditingController();
+  final RxString selectedSaveType = 'manual'.obs;
 
   bool get isAdmin => userType == 'admin';
+  bool get isAutoDrafts => selectedSaveType.value == 'auto';
+  bool get showOwner => isAdmin && !isAutoDrafts;
+
+  Future<void> selectSaveType(String value) async {
+    if (value == selectedSaveType.value) return;
+    selectedSaveType.value = value;
+    items.clear();
+    await loadItems();
+  }
 
   @override
   void onInit() {
@@ -109,6 +119,7 @@ class SuspendedInvoicesController extends GetxController {
         search: searchController.text.trim().isEmpty
             ? null
             : searchController.text.trim(),
+        saveType: selectedSaveType.value,
       );
       _suspendedInvoiceDebug('load success', {'count': list.length});
       _suspendedInstantSaleDebug('load success', {
@@ -177,8 +188,12 @@ class SuspendedInvoicesController extends GetxController {
   ) async {
     final confirmed = await SuspendedInvoiceDialog.showConfirm(
       context: context,
-      titleKey: 'suspendedInvoiceCancelTitle',
-      messageKey: 'suspendedInvoiceCancelMessage',
+      titleKey: item.isAutoSaved
+          ? 'autoSavedDraftCancelTitle'
+          : 'suspendedInvoiceCancelTitle',
+      messageKey: item.isAutoSaved
+          ? 'autoSavedDraftCancelMessage'
+          : 'suspendedInvoiceCancelMessage',
     );
     if (confirmed != true) return;
 

@@ -30,6 +30,7 @@ class SuspendedInstantSaleModel {
   final int id;
   final String referenceCode;
   final String currentStep;
+  final String saveType;
   final String summaryLabel;
   final double totalCost;
   final String status;
@@ -46,6 +47,7 @@ class SuspendedInstantSaleModel {
     required this.id,
     required this.referenceCode,
     required this.currentStep,
+    required this.saveType,
     required this.summaryLabel,
     required this.totalCost,
     required this.status,
@@ -60,6 +62,7 @@ class SuspendedInstantSaleModel {
   });
 
   bool get isCheckoutStep => currentStep == 'checkout';
+  bool get isAutoSaved => saveType == 'auto';
   int get noteCount => noteLog.length;
 
   factory SuspendedInstantSaleModel.fromJson(Map<String, dynamic> json) {
@@ -70,8 +73,12 @@ class SuspendedInstantSaleModel {
     final latestRaw = json['latest_note'];
     return SuspendedInstantSaleModel(
       id: asInt(json['id']),
-      referenceCode: asString(json['reference_code'], 'ع-${asInt(json['id'])}'),
+      referenceCode: asString(
+        json['reference_code'],
+        '${asString(json['save_type'], 'manual') == 'auto' ? 'م' : 'ع'}-${asInt(json['id'])}',
+      ),
       currentStep: asString(json['current_step'], 'product_picker'),
+      saveType: asString(json['save_type'], 'manual'),
       summaryLabel: asString(json['summary_label'], ''),
       totalCost: asDouble(json['total_cost']),
       status: asString(json['status'], 'suspended'),

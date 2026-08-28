@@ -94,15 +94,17 @@ abstract class SalesRepository {
   Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
     String? search,
     int? createdByUserId,
+    String saveType = 'manual',
   });
 
-  Future<int> getSuspendedInstantSalesCount();
+  Future<int> getSuspendedInstantSalesCount({String saveType = 'manual'});
 
   Future<SuspendedInstantSaleModel> getSuspendedInstantSale({required int id});
 
   Future<Either<Failure, String>> suspendInstantSale({
     required String currentStep,
     required Map<String, dynamic> payload,
+    String saveType = 'manual',
     int? suspendedInstantSaleId,
     String? note,
   });
