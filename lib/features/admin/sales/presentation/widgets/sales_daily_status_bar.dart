@@ -9,7 +9,12 @@ import '../controllers/sales_controller.dart';
 import 'sales_skeleton_widgets.dart';
 
 class SalesDailyStatusBar extends GetView<SalesController> {
-  const SalesDailyStatusBar({Key? key}) : super(key: key);
+  const SalesDailyStatusBar({
+    this.salesOrders = false,
+    Key? key,
+  }) : super(key: key);
+
+  final bool salesOrders;
 
   double _parseOpeningAmount(String? value) {
     const eastern = {
@@ -56,7 +61,10 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       final session = payload.session;
       final status = session?.status ?? 'none';
       final color = _statusColor(status, payload);
-      final label = _statusLabel(status, payload);
+      final statusLabel = _statusLabel(status, payload);
+      final label = salesOrders
+          ? 'صندوق الطلبيات اليومي — $statusLabel'
+          : 'صندوق المبيعات اليومي — $statusLabel';
       final showClosingApproval =
           payload.isClosingRequested && payload.canFinalizeClosing;
       final showManagedClose = !showClosingApproval &&
@@ -182,14 +190,14 @@ class SalesDailyStatusBar extends GetView<SalesController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (row != null)
+        if (!salesOrders && row != null)
           Text(
-            'المبيعات الفورية: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
-            style: TextStyle(fontSize: 11.sp),
+            'الرصيد: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
           ),
-        if (ordersRow != null)
+        if (salesOrders && ordersRow != null)
           Text(
-            'الطلبيات: ${ordersRow.systemBalance.toStringAsFixed(0)} ${ordersRow.currency}',
+            'الرصيد: ${ordersRow.systemBalance.toStringAsFixed(0)} ${ordersRow.currency}',
             style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
           ),
       ],
@@ -277,92 +285,93 @@ class SalesDailyStatusBar extends GetView<SalesController> {
             color: dialogTextColor,
             fontSize: 13.sp,
           ),
-          title: Text('salesDailyOpeningCountTitle'.tr),
+          title: Text(
+            salesOrders
+                ? 'فتح صندوق الطلبيات اليومي'
+                : 'فتح صندوق المبيعات اليومي',
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'salesDailyOpeningCountHint'.tr,
-                  style: const TextStyle(color: dialogTextColor),
-                ),
-                SizedBox(height: 12.h),
-                ...expectedRows.map((row) {
-                  final previous = row.previousEmployeeName?.trim();
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 12.h),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          row.currency,
-                          style: const TextStyle(
-                            color: dialogTitleColor,
-                            fontWeight: FontWeight.w700,
+                if (!salesOrders) ...[
+                  Text(
+                    'salesDailyOpeningCountHint'.tr,
+                    style: const TextStyle(color: dialogTextColor),
+                  ),
+                  SizedBox(height: 12.h),
+                ],
+                if (!salesOrders)
+                  ...expectedRows.map((row) {
+                    final previous = row.previousEmployeeName?.trim();
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 12.h),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            row.currency,
+                            style: const TextStyle(
+                              color: dialogTitleColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'salesDailyExpectedOpening'.trParams({
-                            'amount': row.expectedAmount.toStringAsFixed(0),
-                            'currency': row.currency,
-                            'employee':
-                                previous?.isNotEmpty == true ? previous! : '—',
-                            'date': row.previousBusinessDate ?? '—',
-                          }),
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: dialogMutedColor,
+                          SizedBox(height: 4.h),
+                          Text(
+                            'salesDailyExpectedOpening'.trParams({
+                              'amount': row.expectedAmount.toStringAsFixed(0),
+                              'currency': row.currency,
+                              'employee': previous?.isNotEmpty == true
+                                  ? previous!
+                                  : '—',
+                              'date': row.previousBusinessDate ?? '—',
+                            }),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: dialogMutedColor,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 6.h),
-                        TextField(
-                          controller: controllers[row.currency],
-                          style: const TextStyle(color: dialogTitleColor),
+                          SizedBox(height: 6.h),
+                          TextField(
+                            controller: controllers[row.currency],
+                            style: const TextStyle(color: dialogTitleColor),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'salesDailyCountedOpening'.tr,
+                              labelStyle:
+                                  const TextStyle(color: dialogMutedColor),
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                if (salesOrders) ...[
+                  const Text(
+                    'أدخل رصيد افتتاح صندوق الطلبيات فقط.',
+                    style: TextStyle(color: dialogTextColor),
+                  ),
+                  SizedBox(height: 12.h),
+                  ...ordersExpectedRows.map((row) => Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: TextField(
+                          controller: ordersControllers[row.currency],
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'salesDailyCountedOpening'.tr,
-                            labelStyle:
-                                const TextStyle(color: dialogMutedColor),
+                            labelText: 'رصيد الافتتاح — ${row.currency}',
+                            helperText:
+                                'المتوقع: ${row.expectedAmount.toStringAsFixed(0)} ${row.currency}',
                             border: const OutlineInputBorder(),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(height: 28),
-                const Text(
-                  'صندوق الطلبيات اليومي المستقل',
-                  style: TextStyle(
-                    color: dialogTitleColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  'أدخل رصيد افتتاح صندوق الطلبيات بشكل منفصل عن صندوق المبيعات الفورية.',
-                  style: TextStyle(fontSize: 12.sp, color: dialogMutedColor),
-                ),
-                SizedBox(height: 10.h),
-                ...ordersExpectedRows.map((row) => Padding(
-                      padding: EdgeInsets.only(bottom: 12.h),
-                      child: TextField(
-                        controller: ordersControllers[row.currency],
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'رصيد افتتاح الطلبيات — ${row.currency}',
-                          helperText:
-                              'المتوقع: ${row.expectedAmount.toStringAsFixed(0)} ${row.currency}',
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    )),
+                      )),
+                ],
               ],
             ),
           ),

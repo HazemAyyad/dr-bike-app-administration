@@ -109,9 +109,6 @@ class SalesScreen extends GetView<SalesController> {
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
-                const SliverToBoxAdapter(
-                  child: SalesDailyStatusBar(),
-                ),
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
@@ -124,6 +121,13 @@ class SalesScreen extends GetView<SalesController> {
                       ),
                       SizedBox(height: 12.h),
                     ],
+                  ),
+                ),
+                Obx(
+                  () => SliverToBoxAdapter(
+                    child: SalesDailyStatusBar(
+                      salesOrders: controller.currentTab.value == 2,
+                    ),
                   ),
                 ),
                 Obx(

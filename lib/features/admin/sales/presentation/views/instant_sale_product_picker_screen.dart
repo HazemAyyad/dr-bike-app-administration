@@ -157,7 +157,8 @@ class _InstantSaleProductPickerScreenState
           children: [
             Column(
               children: [
-                if (_salesOrderFlow) const SalesDailyStatusBar(),
+                if (_salesOrderFlow)
+                  const SalesDailyStatusBar(salesOrders: true),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: Row(
