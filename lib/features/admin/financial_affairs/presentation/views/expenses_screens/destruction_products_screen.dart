@@ -1,6 +1,7 @@
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -154,12 +155,33 @@ class _DestructionLineCard extends StatelessWidget {
               onTap: () {
                 if (line.quantity.value > 1) line.quantity.value--;
               }),
-          Obx(() => SizedBox(
-              width: 38.w,
-              child: Text('${line.quantity.value}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 12.sp)))),
+          Obx(() => InkWell(
+                borderRadius: BorderRadius.circular(7.r),
+                onTap: () => _editQuantity(context, line),
+                child: Container(
+                  width: 46.w,
+                  height: 30.h,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.operationalPurple.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(7.r),
+                    border: Border.all(
+                      color: AppColors.operationalPurple.withValues(alpha: .24),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('${line.quantity.value}',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 12.sp)),
+                      SizedBox(width: 3.w),
+                      Icon(Icons.edit_outlined,
+                          size: 11.sp, color: AppColors.operationalPurple),
+                    ],
+                  ),
+                ),
+              )),
           _QtyButton(
               icon: Icons.add,
               onTap: () {
@@ -217,6 +239,75 @@ class _DestructionLineCard extends StatelessWidget {
         }),
       ]),
     );
+  }
+
+  Future<void> _editQuantity(
+    BuildContext context,
+    DestructionDraftLine line,
+  ) async {
+    final input = TextEditingController(text: '${line.quantity.value}');
+    final max = line.selectedLayer.value?.remainingQuantity.floor();
+    final result = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تعديل الكمية'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (max != null)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Text('الكمية المتاحة حسب سعر التكلفة: $max'),
+              ),
+            TextField(
+              controller: input,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'الكمية',
+                prefixIcon: Icon(Icons.numbers_rounded),
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _submitQuantity(dialogContext, input, max),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => _submitQuantity(dialogContext, input, max),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (result != null) line.quantity.value = result;
+  }
+
+  void _submitQuantity(
+    BuildContext dialogContext,
+    TextEditingController input,
+    int? max,
+  ) {
+    final value = int.tryParse(input.text);
+    if (value == null || value < 1 || (max != null && value > max)) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        SnackBar(
+          content: Text(max == null
+              ? 'أدخل كمية صحيحة أكبر من صفر'
+              : 'الكمية يجب أن تكون بين 1 و $max'),
+        ),
+      );
+      return;
+    }
+    Navigator.of(dialogContext).pop(value);
   }
 }
 

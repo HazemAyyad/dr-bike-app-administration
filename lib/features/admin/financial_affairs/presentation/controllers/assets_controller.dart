@@ -274,6 +274,7 @@ class AssetsController extends GetxController {
   // add new assets
   void addNewAssets(BuildContext context) async {
     if (formKey.currentState!.validate()) {
+      final wasEditing = isEditing.value;
       isLoading(true);
       assetUploadProgress.value = 0;
       final result = await addNewAssetsUsecase.call(
@@ -301,12 +302,15 @@ class AssetsController extends GetxController {
           depreciationRateController.clear();
           monthsNumberController.clear();
           selectedFile.clear();
+          isEditing.value = false;
           getAllAssets();
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
-              Get.back();
-              Get.back();
+              if (Get.key.currentState?.canPop() ?? false) Get.back();
+              if (wasEditing && (Get.key.currentState?.canPop() ?? false)) {
+                Get.back();
+              }
             },
           );
           Helpers.showCustomDialogSuccess(

@@ -419,6 +419,7 @@ class ExpensesController extends GetxController
           damageReasonController.clear();
           assetsFile.clear();
           getAllExpenses();
+          currentTab.value = 1;
           isEditing.value = false;
           expenseId = '';
           update();
@@ -474,6 +475,7 @@ class ExpensesController extends GetxController
   // add expense
   void addExpense(BuildContext context) async {
     if (formKey.currentState!.validate()) {
+      final wasEditing = isEditing.value;
       isAddLoading(true);
       uploadProgress.value = 0;
       final result = await addExpenseUsecase.call(
@@ -509,11 +511,16 @@ class ExpensesController extends GetxController
           expenseType.value = 'general';
           invoiceFile.clear();
           expensesFile.clear();
+          currentTab.value = 0;
+          isEditing.value = false;
+          update();
           Future.delayed(
             const Duration(milliseconds: 1500),
             () {
-              Get.back();
-              Get.back();
+              if (Get.key.currentState?.canPop() ?? false) Get.back();
+              if (wasEditing && (Get.key.currentState?.canPop() ?? false)) {
+                Get.back();
+              }
             },
           );
           Helpers.showCustomDialogSuccess(

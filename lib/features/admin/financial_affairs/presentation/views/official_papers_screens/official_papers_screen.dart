@@ -15,7 +15,6 @@ import '../../widgets/official_papers_widgets/add_picture.dart';
 import '../../widgets/official_papers_widgets/official_papers_card.dart';
 import '../../widgets/official_papers_widgets/picture_card.dart';
 import '../../widgets/financial_skeletons.dart';
-import '../../widgets/financial_operational_ui.dart';
 
 class OfficialPapersScreen extends GetView<OfficialPapersController> {
   const OfficialPapersScreen({Key? key, this.embedded = false})
@@ -61,22 +60,6 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
             ),
       body: CustomScrollView(
         slivers: [
-          if (embedded)
-            SliverToBoxAdapter(
-              child: FinancialSectionToolbar(
-                onSearch: controller.toggleSearch,
-                onFilter: () => _showArchiveFilters(context),
-                onReset: controller.resetFilters,
-                extraAction: OutlinedButton.icon(
-                  onPressed: () {
-                    controller.getTreasury();
-                    Get.toNamed(AppRoutes.SAFESSCREEN);
-                  },
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  label: const Text('الخزن والملفات'),
-                ),
-              ),
-            ),
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -227,62 +210,6 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showArchiveFilters(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 16.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('فلترة الأوراق والصور',
-                  style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.operationalNavy)),
-              SizedBox(height: 8.h),
-              for (final option in const <Map<String, dynamic>>[
-                {
-                  'value': 'active',
-                  'label': 'النشطة فقط',
-                  'icon': Icons.verified_outlined
-                },
-                {
-                  'value': 'archived',
-                  'label': 'المؤرشفة فقط',
-                  'icon': Icons.archive_outlined
-                },
-                {
-                  'value': 'all',
-                  'label': 'النشطة والمؤرشفة',
-                  'icon': Icons.all_inbox_outlined
-                },
-              ])
-                ListTile(
-                  leading: Icon(option['icon'] as IconData,
-                      color: AppColors.operationalPurple),
-                  title: Text(option['label'] as String),
-                  trailing: Obx(() =>
-                      controller.archiveStatusFilter.value == option['value']
-                          ? const Icon(Icons.check_circle_rounded,
-                              color: AppColors.operationalPurple)
-                          : const Icon(Icons.circle_outlined)),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    controller
-                        .setArchiveStatusFilter(option['value'] as String);
-                  },
-                ),
-            ],
-          ),
         ),
       ),
     );

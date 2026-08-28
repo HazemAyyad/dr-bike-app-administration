@@ -25,6 +25,7 @@ class _DestructionProductPickerScreenState
     extends State<DestructionProductPickerScreen> {
   late final StockController stock;
   late final ExpensesController expenses;
+  final ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
@@ -34,19 +35,40 @@ class _DestructionProductPickerScreenState
     stock.searchProducts.clear();
     stock.stockSearchQueryController.clear();
     stock.stockSearchActiveQuery.value = '';
+    if (stock.allProducts.isEmpty && !stock.isLoading.value) {
+      stock.reloadProductsList();
+    }
+    scrollController.addListener(_loadMoreProducts);
+  }
+
+  void _loadMoreProducts() {
+    if (!scrollController.hasClients ||
+        stock.stockSearchActiveQuery.value.trim().isNotEmpty) {
+      return;
+    }
+    if (scrollController.position.extentAfter < 220) {
+      stock.getAllProducts(isRefresh: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_loadMoreProducts);
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(title: 'اختيار منتج للإتلاف', action: false),
-      body: CustomScrollView(slivers: [
+      body: CustomScrollView(controller: scrollController, slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 10.h),
             child: TextField(
               controller: stock.stockSearchQueryController,
-              autofocus: true,
+              autofocus: false,
               decoration: InputDecoration(
                 hintText: 'ابحث باسم المنتج أو الباركود',
                 prefixIcon: const Icon(Icons.search_rounded),
@@ -80,11 +102,27 @@ class _DestructionProductPickerScreenState
           ),
         ),
         GetBuilder<StockController>(builder: (_) {
-          if (stock.isSearchLoading.value) {
+          final query = stock.stockSearchActiveQuery.value.trim();
+          final isSearching = query.isNotEmpty;
+          final products = !isSearching
+              ? stock.allProducts
+              : query.length < 2
+                  ? stock.allProducts
+                      .where((product) =>
+                          product.name.toLowerCase().contains(
+                                query.toLowerCase(),
+                              ) ||
+                          product.productId.contains(query))
+                      .toList()
+                  : stock.searchProducts;
+          final loading = isSearching
+              ? stock.isSearchLoading.value
+              : stock.isLoading.value && products.isEmpty;
+          if (loading) {
             return const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()));
           }
-          if (stock.searchProducts.isEmpty) {
+          if (products.isEmpty) {
             return const SliverFillRemaining(
                 hasScrollBody: false, child: ShowNoData());
           }
@@ -98,16 +136,16 @@ class _DestructionProductPickerScreenState
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => _DestructionPickerCard(
-                  product: stock.searchProducts[index],
+                  product: products[index],
                   onTap: () async {
-                    final product = stock.searchProducts[index];
+                    final product = products[index];
                     expenses.productIdController.text = product.productId;
                     expenses.productNameController.text = product.name;
                     await expenses.addSelectedDestructionProduct();
                     if (context.mounted) Get.back();
                   },
                 ),
-                childCount: stock.searchProducts.length,
+                childCount: products.length,
               ),
             ),
           );

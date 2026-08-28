@@ -10,6 +10,8 @@ class AssetDetailsModel {
   final String monthsNumber;
   final List<String> media;
   final List<AssetLog> logs;
+  final bool depreciatedThisMonth;
+  final String depreciationPeriod;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +24,8 @@ class AssetDetailsModel {
     required this.monthsNumber,
     required this.media,
     required this.logs,
+    required this.depreciatedThisMonth,
+    required this.depreciationPeriod,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -52,6 +56,8 @@ class AssetDetailsModel {
         asset['logs'],
         (Map<String, dynamic> m) => AssetLog.fromJson(m),
       ),
+      depreciatedThisMonth: asBool(asset['depreciated_this_month']),
+      depreciationPeriod: asString(asset['depreciation_period']),
       createdAt: parseApiDateTime(asset['created_at']),
       updatedAt: parseApiDateTime(asset['updated_at']),
     );
@@ -67,6 +73,8 @@ class AssetDetailsModel {
       'months_number': monthsNumber,
       'media': media,
       'logs': logs.map((e) => e.toJson()).toList(),
+      'depreciated_this_month': depreciatedThisMonth,
+      'depreciation_period': depreciationPeriod,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -77,11 +85,13 @@ class AssetLog {
   final String total;
   final DateTime createdAt;
   final String type;
+  final String depreciationPeriod;
 
   AssetLog({
     required this.total,
     required this.createdAt,
     required this.type,
+    required this.depreciationPeriod,
   });
 
   factory AssetLog.fromJson(Map<String, dynamic> json) {
@@ -90,6 +100,7 @@ class AssetLog {
       total: asString(j['total']),
       createdAt: parseApiDateTime(j['created_at']),
       type: asString(j['type']),
+      depreciationPeriod: asString(j['depreciation_period']),
     );
   }
 
@@ -98,6 +109,7 @@ class AssetLog {
       'total': total,
       'created_at': createdAt.toIso8601String(),
       'type': type,
+      'depreciation_period': depreciationPeriod,
     };
   }
 }

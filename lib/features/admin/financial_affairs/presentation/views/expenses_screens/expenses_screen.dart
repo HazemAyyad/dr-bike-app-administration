@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../../../../core/helpers/costom_dialog_filter.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/show_no_data.dart';
@@ -17,7 +16,6 @@ import '../../controllers/expenses_controller.dart';
 import '../../widgets/expenses_widgets/destruction_card.dart';
 import '../../widgets/expenses_widgets/expenses_card.dart';
 import '../../widgets/financial_operational_ui.dart';
-import '../financial_reports_screen.dart';
 
 class ExpensesScreen extends GetView<ExpensesController> {
   const ExpensesScreen({Key? key, this.embedded = false}) : super(key: key);
@@ -63,23 +61,6 @@ class ExpensesScreen extends GetView<ExpensesController> {
             ),
       body: CustomScrollView(
         slivers: [
-          if (embedded)
-            SliverToBoxAdapter(
-              child: FinancialSectionToolbar(
-                onSearch: controller.toggleSearch,
-                onFilter: () => showCustomDialog(
-                  context,
-                  fromDateController: controller.fromController,
-                  toDateController: controller.toController,
-                  label: 'البحث في المصاريف',
-                  onPressed: controller.filterExpensesByDate,
-                ),
-                onReports: () => Get.to(() => const FinancialReportsScreen(
-                      kind: FinancialReportsKind.expenses,
-                    )),
-                onReset: controller.resetFilters,
-              ),
-            ),
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,

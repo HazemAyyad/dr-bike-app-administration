@@ -6,12 +6,19 @@ import '../../../../../core/utils/app_colors.dart';
 
 class FinancialOperationalCard extends StatelessWidget {
   const FinancialOperationalCard(
-      {Key? key, required this.child, this.onTap, this.onLongPress})
+      {Key? key,
+      required this.child,
+      this.onTap,
+      this.onLongPress,
+      this.backgroundColor,
+      this.borderColor})
       : super(key: key);
 
   final Widget child;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final Color? backgroundColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +34,11 @@ class FinancialOperationalCard extends StatelessWidget {
           margin: EdgeInsets.symmetric(horizontal: 1.w, vertical: 2.h),
           padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
+            color: backgroundColor ??
+                (isDark ? AppColors.customGreyColor : AppColors.whiteColor),
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: AppColors.operationalCardBorder),
+            border: Border.all(
+                color: borderColor ?? AppColors.operationalCardBorder),
             boxShadow: [
               BoxShadow(
                 color: AppColors.operationalNavy.withValues(alpha: .04),

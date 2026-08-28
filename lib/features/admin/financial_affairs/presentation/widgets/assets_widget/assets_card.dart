@@ -24,7 +24,14 @@ class AssetsCard extends GetView<AssetsController> {
     final book = double.tryParse(asset.depreciationPrice) ?? 0;
     final progress =
         original <= 0 ? 0.0 : ((original - book) / original).clamp(0.0, 1.0);
+    final depreciatedThisMonth = asset.depreciatedThisMonth;
     return FinancialOperationalCard(
+      backgroundColor: depreciatedThisMonth
+          ? AppColors.customGreen1.withValues(alpha: .055)
+          : null,
+      borderColor: depreciatedThisMonth
+          ? AppColors.customGreen1.withValues(alpha: .5)
+          : null,
       onTap: () {
         controller.isEditing.value = false;
         controller.getAssetsDetials(assetId: asset.assetId.toString());
@@ -68,6 +75,16 @@ class AssetsCard extends GetView<AssetsController> {
                 Text(showData(asset.createdAt),
                     style: TextStyle(
                         fontSize: 10.sp, color: AppColors.customGreyColor5)),
+                if (depreciatedThisMonth) ...[
+                  SizedBox(height: 3.h),
+                  FinancialMiniChip(
+                    label: asset.depreciationPeriod.isEmpty
+                        ? 'تم إهلاك هذا الشهر'
+                        : 'تم إهلاك ${asset.depreciationPeriod}',
+                    color: AppColors.customGreen1,
+                    icon: Icons.check_circle_outline_rounded,
+                  ),
+                ],
               ])),
           FinancialMiniChip(
               label: '${NumberFormat('#,###').format(book)} ₪',
@@ -100,7 +117,9 @@ class AssetsCard extends GetView<AssetsController> {
                 value: progress,
                 minHeight: 3.h,
                 backgroundColor: AppColors.operationalSurface,
-                color: AppColors.operationalPurple)),
+                color: depreciatedThisMonth
+                    ? AppColors.customGreen1
+                    : AppColors.operationalPurple)),
       ]),
     );
   }

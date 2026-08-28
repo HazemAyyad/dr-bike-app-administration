@@ -44,6 +44,8 @@ class Asset {
   final String originalPrice;
   final String depreciationRate;
   final String depreciationPrice;
+  final bool depreciatedThisMonth;
+  final String depreciationPeriod;
   final DateTime createdAt;
   final String image;
 
@@ -53,6 +55,8 @@ class Asset {
     required this.originalPrice,
     required this.depreciationRate,
     required this.depreciationPrice,
+    required this.depreciatedThisMonth,
+    required this.depreciationPeriod,
     required this.createdAt,
     required this.image,
   });
@@ -65,6 +69,8 @@ class Asset {
       originalPrice: asString(j['original_price'], '0.0'),
       depreciationRate: asString(j['depreciation_rate'], '0.0'),
       depreciationPrice: asString(j['depreciation_price'], '0.0'),
+      depreciatedThisMonth: asBool(j['depreciated_this_month']),
+      depreciationPeriod: asString(j['depreciation_period']),
       createdAt: parseApiDateTime(j['created_at']),
       image: ShowNetImage.getPhoto(asNullableString(j['image'])),
     );
@@ -77,6 +83,8 @@ class Asset {
       'original_price': originalPrice,
       'depreciation_rate': depreciationRate,
       'depreciation_price': depreciationPrice,
+      'depreciated_this_month': depreciatedThisMonth,
+      'depreciation_period': depreciationPeriod,
       'created_at': createdAt.toIso8601String(),
       'image': image,
     };

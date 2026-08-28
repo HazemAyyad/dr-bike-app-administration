@@ -49,6 +49,12 @@ class AssetDetailsScreen extends GetView<AssetsController> {
         final currentValue = (price - depreciated).clamp(0, price);
         final sortedLogs = asset.logs.toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final currentPeriod = DateFormat('yyyy-MM').format(DateTime.now());
+        final depreciatedThisMonth = asset.depreciatedThisMonth ||
+            asset.logs.any((log) =>
+                log.depreciationPeriod == currentPeriod ||
+                (log.createdAt.year == DateTime.now().year &&
+                    log.createdAt.month == DateTime.now().month));
         return ListView(
           padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 40.h),
           children: [
@@ -107,21 +113,64 @@ class AssetDetailsScreen extends GetView<AssetsController> {
                           label: 'مدة الإهلاك', value: '$months شهر')),
                 ]),
                 SizedBox(height: 11.h),
+                if (depreciatedThisMonth) ...[
+                  Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.only(bottom: 9.h),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.customGreen1.withValues(alpha: .1),
+                      borderRadius: BorderRadius.circular(10.r),
+                      border: Border.all(
+                        color: AppColors.customGreen1.withValues(alpha: .35),
+                      ),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.verified_rounded,
+                          color: AppColors.customGreen1),
+                      SizedBox(width: 7.w),
+                      Expanded(
+                        child: Text(
+                          'تم تنفيذ إهلاك هذا الأصل للفترة $currentPeriod',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.customGreen1,
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
                 SizedBox(
                   width: double.infinity,
                   child: Obx(() => FilledButton.icon(
-                        onPressed: controller.isLoading.value
-                            ? null
-                            : () => controller
-                                .destructionOneAssets(asset.id.toString()),
+                        onPressed:
+                            controller.isLoading.value || depreciatedThisMonth
+                                ? null
+                                : () => controller
+                                    .destructionOneAssets(asset.id.toString()),
                         icon: controller.isLoading.value
                             ? SizedBox(
                                 width: 17.w,
                                 height: 17.w,
                                 child: const CircularProgressIndicator(
                                     strokeWidth: 2))
-                            : const Icon(Icons.trending_down_rounded),
-                        label: const Text('تنفيذ إهلاك هذا الشهر يدويًا'),
+                            : Icon(depreciatedThisMonth
+                                ? Icons.check_circle_rounded
+                                : Icons.trending_down_rounded),
+                        label: Text(depreciatedThisMonth
+                            ? 'تم الإهلاك لهذا الشهر'
+                            : 'تنفيذ إهلاك هذا الشهر يدويًا'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.operationalPurple,
+                          disabledBackgroundColor: depreciatedThisMonth
+                              ? AppColors.customGreen1
+                              : null,
+                          disabledForegroundColor:
+                              depreciatedThisMonth ? Colors.white : null,
+                        ),
                       )),
                 ),
                 Padding(

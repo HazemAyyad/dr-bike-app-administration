@@ -1,4 +1,3 @@
-import 'package:doctorbike/routes/app_routes.dart' show AppRoutes;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -65,46 +64,6 @@ class AssetsData extends StatelessWidget {
                     ],
                   ),
                 ),
-                SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        isSafeArea: false,
-                        color: AppColors.primaryColor,
-                        textStyle:
-                            Theme.of(context).textTheme.bodyLarge!.copyWith(
-                                  color: AppColors.whiteColor,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                        text:
-                            'إهلاك أصول الشهر (${NumberFormat('#,###').format(double.parse(FinacialService().assets.value!.totalAssetsDepreciatePrices))})',
-                        onPressed: () {
-                          Get.dialog(const AssetsConsumption());
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 20.w),
-                    Expanded(
-                      child: AppButton(
-                        isSafeArea: false,
-                        color: AppColors.primaryColor,
-                        textStyle:
-                            Theme.of(context).textTheme.bodyLarge!.copyWith(
-                                  color: AppColors.whiteColor,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                        text: 'log',
-                        onPressed: () {
-                          controller.getAssetsLogs();
-                          Get.toNamed(AppRoutes.ASSETLOGSCREEN);
-                        },
-                      ),
-                    ),
-                  ],
-                )
               ],
             );
           },

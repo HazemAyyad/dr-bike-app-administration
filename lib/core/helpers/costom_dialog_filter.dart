@@ -21,7 +21,6 @@ void showCustomDialog(
     // ignore: deprecated_member_use
     WillPopScope(
       onWillPop: () async {
-        onPressed();
         return true;
       },
       child: Dialog(

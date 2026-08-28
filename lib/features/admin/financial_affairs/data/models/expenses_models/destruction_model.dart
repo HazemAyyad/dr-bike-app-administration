@@ -6,6 +6,8 @@ class DestructionModel {
   final String productId;
   final String productName;
   final double destructionValue;
+  final double unitCost;
+  final String costMethod;
   final String piecesNumber;
   final String destructionReason;
   final DateTime createdAt;
@@ -16,6 +18,8 @@ class DestructionModel {
     required this.productId,
     required this.productName,
     required this.destructionValue,
+    required this.unitCost,
+    required this.costMethod,
     required this.piecesNumber,
     required this.destructionReason,
     required this.createdAt,
@@ -36,6 +40,8 @@ class DestructionModel {
       productId: asString(j['product_id']),
       productName: asString(j['product_name']),
       destructionValue: asDouble(j['destruction_value']),
+      unitCost: asDouble(j['unit_cost']),
+      costMethod: asString(j['cost_method']),
       piecesNumber: asString(j['pieces_number']),
       destructionReason: asString(j['destruction_reason']),
       createdAt: parseApiDateTime(j['created_at']),
@@ -49,6 +55,8 @@ class DestructionModel {
       'product_id': productId,
       'product_name': productName,
       'destruction_value': destructionValue,
+      'unit_cost': unitCost,
+      'cost_method': costMethod,
       'pieces_number': piecesNumber,
       'destruction_reason': destructionReason,
       'created_at': createdAt,
