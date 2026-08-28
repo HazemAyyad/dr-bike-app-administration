@@ -1488,12 +1488,32 @@ class SalesOrdersController extends GetxController {
         ));
   }
 
-  Future<void> markStuckOrder(int orderId, {String? reason}) async {
-    await runAction(() => repository.markStuck(orderId, reason: reason));
+  Future<void> markStuckOrder(
+    int orderId, {
+    required String reason,
+    required String stuckType,
+    int? assignedTo,
+    DateTime? followUpAt,
+  }) async {
+    await runAction(() => repository.markStuck(
+          orderId,
+          reason: reason,
+          stuckType: stuckType,
+          assignedTo: assignedTo,
+          followUpAt: followUpAt?.toIso8601String(),
+        ));
   }
 
-  Future<void> resolveStuckOrder(int orderId) async {
-    await runAction(() => repository.resolveStuck(orderId));
+  Future<void> resolveStuckOrder(
+    int orderId, {
+    required String targetStatus,
+    required String note,
+  }) async {
+    await runAction(() => repository.resolveStuck(
+          orderId,
+          targetStatus: targetStatus,
+          note: note,
+        ));
   }
 
   void toggleBulkMode([bool? value]) {

@@ -1,5 +1,6 @@
 class EmployeeEntity {
   final int id;
+  final int? userId;
   final String employeeName;
   final String hourWorkPrice;
   final String points;
@@ -20,6 +21,7 @@ class EmployeeEntity {
 
   const EmployeeEntity({
     required this.id,
+    this.userId,
     required this.employeeName,
     required this.hourWorkPrice,
     required this.points,

@@ -312,6 +312,13 @@ class SalesOrderDetailModel {
   final List<SalesOrderStatusLogModel> statusLogs;
   final SalesOrderShiplyTrackingModel? shiplyTracking;
   final Map<String, SalesOrderMediaRequirementModel> mediaRequirements;
+  final String? stuckPreviousStatus;
+  final String? stuckType;
+  final String? stuckReason;
+  final int? stuckAssignedTo;
+  final String? stuckAssignedToName;
+  final String? stuckFollowUpAt;
+  final String? stuckResolvedAt;
 
   SalesOrderDetailModel({
     required this.id,
@@ -356,6 +363,13 @@ class SalesOrderDetailModel {
     this.statusLogs = const [],
     this.shiplyTracking,
     this.mediaRequirements = const {},
+    this.stuckPreviousStatus,
+    this.stuckType,
+    this.stuckReason,
+    this.stuckAssignedTo,
+    this.stuckAssignedToName,
+    this.stuckFollowUpAt,
+    this.stuckResolvedAt,
   });
 
   factory SalesOrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -445,6 +459,13 @@ class SalesOrderDetailModel {
           ? SalesOrderShiplyTrackingModel.fromJson(trackingJson)
           : null,
       mediaRequirements: mediaRequirements,
+      stuckPreviousStatus: json['stuck_previous_status'] as String?,
+      stuckType: json['stuck_type'] as String?,
+      stuckReason: json['stuck_reason'] as String?,
+      stuckAssignedTo: json['stuck_assigned_to'] as int?,
+      stuckAssignedToName: json['stuck_assigned_to_name'] as String?,
+      stuckFollowUpAt: json['stuck_follow_up_at'] as String?,
+      stuckResolvedAt: json['stuck_resolved_at'] as String?,
     );
   }
 }

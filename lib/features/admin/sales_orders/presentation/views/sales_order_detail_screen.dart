@@ -10,6 +10,8 @@ import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
+import '../../../employee_section/domain/entities/employee_entity.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
@@ -393,6 +395,43 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           })}';
     }
 
+    String stuckDescription() {
+      final details = <String>['salesOrderNextStuckHint'.tr];
+      final reason = order.stuckReason?.trim();
+      if (reason != null && reason.isNotEmpty) {
+        details.add(
+          'salesOrderNextRecordedReason'.trParams({'reason': reason}),
+        );
+      }
+      final type = order.stuckType?.trim();
+      if (type != null && type.isNotEmpty) {
+        details.add(
+          'salesOrderStuckTypeValue'.trParams({
+            'type': 'salesOrderStuckType_$type'.tr,
+          }),
+        );
+      }
+      final assignedName = order.stuckAssignedToName?.trim();
+      if (assignedName != null && assignedName.isNotEmpty) {
+        details.add(
+          'salesOrderStuckAssignedValue'.trParams({'name': assignedName}),
+        );
+      }
+      final followUpRaw = order.stuckFollowUpAt?.trim();
+      if (followUpRaw != null && followUpRaw.isNotEmpty) {
+        final parsed = DateTime.tryParse(followUpRaw);
+        details.add(
+          'salesOrderStuckFollowUpValue'.trParams({
+            'date': parsed == null ? followUpRaw : _displayDateTime(parsed),
+          }),
+        );
+      }
+      if (details.length == 1) {
+        return statusDescriptionWithLatestNote(details.first);
+      }
+      return details.join('\n');
+    }
+
     _SalesOrderNextStep requiredMedia(String category) {
       final requirement = order.mediaRequirements[category];
       final translatedKey = 'salesOrderMediaCategory_$category';
@@ -528,9 +567,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       case 'stuck':
         return _SalesOrderNextStep(
           title: 'salesOrderNextStuckTitle'.tr,
-          description: statusDescriptionWithLatestNote(
-            'salesOrderNextStuckHint'.tr,
-          ),
+          description: stuckDescription(),
           icon: Icons.report_problem_outlined,
           color: dangerColor,
           actionId: SalesOrderActionId.resolveStuck,
@@ -1688,7 +1725,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         _showMarkStuckSheet(orderId);
         break;
       case SalesOrderActionId.resolveStuck:
-        controller.resolveStuckOrder(orderId);
+        _showResolveStuckSheet(order);
         break;
       case SalesOrderActionId.alternativeReturn:
         _showQtySheet(order, 'alternative_return');
@@ -2604,69 +2641,337 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     );
   }
 
-  void _showMarkStuckSheet(int orderId) {
+  Future<void> _showMarkStuckSheet(int orderId) async {
     final reasonController = TextEditingController();
+    var selectedType = 'delivery';
+    int? selectedEmployeeId;
+    DateTime? followUpAt;
+    var employees = <EmployeeEntity>[];
+
+    AppDependencyRegistry.ensureEmployeeSection();
+    try {
+      employees = await Get.find<EmployeeImplement>().getEmployees();
+    } catch (_) {
+      // Assignment stays on the current user when the employee list is not
+      // available. The backend applies that safe default.
+    }
+
+    if (!mounted) return;
 
     Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.all(20.r),
-        decoration: BoxDecoration(
-          color: SalesOrdersController.surfaceGray,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'salesOrderMarkStuck'.tr,
-              style: TextStyle(
-                color: SalesOrdersController.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16.sp,
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Container(
+              padding: EdgeInsets.all(20.r),
+              decoration: BoxDecoration(
+                color: SalesOrdersController.surfaceGray,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'salesOrderMarkStuck'.tr,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.sp,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      'salesOrderMarkStuckHint'.tr,
+                      style: TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedType,
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderStuckType'.tr,
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                      ),
+                      items: const [
+                        'customer',
+                        'address',
+                        'phone',
+                        'delivery',
+                        'collection',
+                        'stock',
+                        'other',
+                      ]
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text('salesOrderStuckType_$type'.tr),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) selectedType = value;
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    TextField(
+                      controller: reasonController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: '${'salesOrderStuckReason'.tr} *',
+                        hintText: 'salesOrderStuckReasonHint'.tr,
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    DropdownButtonFormField<int?>(
+                      initialValue: selectedEmployeeId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderStuckAssignedTo'.tr,
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                      ),
+                      items: [
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text('salesOrderStuckAssignCurrent'.tr),
+                        ),
+                        ...employees
+                            .where((employee) => employee.userId != null)
+                            .map(
+                              (employee) => DropdownMenuItem<int?>(
+                                value: employee.userId,
+                                child: Text(
+                                  employee.employeeName,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                      ],
+                      onChanged: (value) => selectedEmployeeId = value,
+                    ),
+                    SizedBox(height: 12.h),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final now = DateTime.now();
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate:
+                              followUpAt ?? now.add(const Duration(days: 1)),
+                          firstDate: now,
+                          lastDate: now.add(const Duration(days: 365)),
+                        );
+                        if (date == null || !context.mounted) return;
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(
+                            followUpAt ?? now.add(const Duration(hours: 1)),
+                          ),
+                        );
+                        if (time == null) return;
+                        setSheetState(() {
+                          followUpAt = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      },
+                      icon: const Icon(Icons.event_outlined),
+                      label: Text(
+                        followUpAt == null
+                            ? 'salesOrderStuckAddFollowUp'.tr
+                            : 'salesOrderStuckFollowUpValue'.trParams({
+                                'date': _displayDateTime(followUpAt!),
+                              }),
+                      ),
+                    ),
+                    if (followUpAt != null)
+                      TextButton(
+                        onPressed: () => setSheetState(() => followUpAt = null),
+                        child: Text('salesOrderStuckRemoveFollowUp'.tr),
+                      ),
+                    SizedBox(height: 12.h),
+                    ElevatedButton(
+                      onPressed: () {
+                        final reason = reasonController.text.trim();
+                        if (reason.isEmpty) {
+                          SalesOrderNotice.error(
+                            'salesOrderStuckReasonRequired'.tr,
+                          );
+                          return;
+                        }
+                        if (followUpAt != null &&
+                            !followUpAt!.isAfter(DateTime.now())) {
+                          SalesOrderNotice.error(
+                            'salesOrderStuckFollowUpFuture'.tr,
+                          );
+                          return;
+                        }
+                        Get.back();
+                        controller.markStuckOrder(
+                          orderId,
+                          reason: reason,
+                          stuckType: selectedType,
+                          assignedTo: selectedEmployeeId,
+                          followUpAt: followUpAt,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                      ),
+                      child: Text('confirm'.tr),
+                    ),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: 8.h),
-            Text(
-              'salesOrderMarkStuckHint'.tr,
-              style: TextStyle(
-                color: SalesOrdersController.textSecondary,
-                fontSize: 12.sp,
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showResolveStuckSheet(SalesOrderDetailModel order) {
+    final noteController = TextEditingController();
+    const allowedStatuses = [
+      'ready',
+      'with_delivery',
+      'review',
+      'partial_delivered',
+      'partial_return',
+      'returned',
+      'canceled',
+    ];
+    var targetStatus = allowedStatuses.contains(order.stuckPreviousStatus)
+        ? order.stuckPreviousStatus!
+        : 'with_delivery';
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: EdgeInsets.all(20.r),
+            decoration: BoxDecoration(
+              color: SalesOrdersController.surfaceGray,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'salesOrderResolveStuck'.tr,
+                    style: TextStyle(
+                      color: SalesOrdersController.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  if ((order.stuckReason ?? '').trim().isNotEmpty)
+                    Text(
+                      'salesOrderNextRecordedReason'.trParams({
+                        'reason': order.stuckReason!.trim(),
+                      }),
+                      style: TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  SizedBox(height: 12.h),
+                  DropdownButtonFormField<String>(
+                    initialValue: targetStatus,
+                    decoration: InputDecoration(
+                      labelText: 'salesOrderResolveTargetStatus'.tr,
+                      filled: true,
+                      fillColor: SalesOrdersController.cardGray,
+                    ),
+                    items: allowedStatuses
+                        .map(
+                          (status) => DropdownMenuItem(
+                            value: status,
+                            child: Text(controller.statusLabel(status)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setSheetState(() => targetStatus = value);
+                      }
+                    },
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: noteController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: '${'salesOrderResolutionNote'.tr} *',
+                      hintText: 'salesOrderResolutionNoteHint'.tr,
+                      filled: true,
+                      fillColor: SalesOrdersController.cardGray,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final note = noteController.text.trim();
+                      if (note.isEmpty) {
+                        SalesOrderNotice.error(
+                          'salesOrderResolutionNoteRequired'.tr,
+                        );
+                        return;
+                      }
+                      Get.back();
+                      controller.resolveStuckOrder(
+                        order.id,
+                        targetStatus: targetStatus,
+                        note: note,
+                      );
+                    },
+                    icon: const Icon(Icons.task_alt_outlined),
+                    label: Text('salesOrderResolveStuck'.tr),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: 12.h),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'salesOrderStuckReason'.tr,
-                filled: true,
-                fillColor: SalesOrdersController.cardGray,
-              ),
-            ),
-            SizedBox(height: 12.h),
-            ElevatedButton(
-              onPressed: () {
-                Get.back();
-                controller.markStuckOrder(
-                  orderId,
-                  reason: reasonController.text.trim().isEmpty
-                      ? null
-                      : reasonController.text.trim(),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9333EA),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-              ),
-              child: Text('confirm'.tr),
-            ),
-          ],
+          ),
         ),
       ),
       isScrollControlled: true,
     );
+  }
+
+  String _displayDateTime(DateTime value) {
+    final local = value.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day $hour:$minute';
   }
 }
 

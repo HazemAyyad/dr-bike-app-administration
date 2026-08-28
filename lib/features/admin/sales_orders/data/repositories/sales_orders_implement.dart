@@ -75,7 +75,10 @@ abstract class SalesOrdersRepository {
 
   Future<Either<Failure, SalesOrderDetailModel>> markStuck(
     int orderId, {
-    String? reason,
+    required String reason,
+    required String stuckType,
+    int? assignedTo,
+    String? followUpAt,
   });
 
   Future<Either<Failure, SalesOrderDetailModel>> resolveStuck(
@@ -297,13 +300,19 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   @override
   Future<Either<Failure, SalesOrderDetailModel>> markStuck(
     int orderId, {
-    String? reason,
+    required String reason,
+    required String stuckType,
+    int? assignedTo,
+    String? followUpAt,
   }) =>
       _guard(() => datasource.postAction(
             EndPoints.salesOrderMarkStuck,
             orderId,
             extra: {
-              if (reason != null && reason.isNotEmpty) 'reason': reason,
+              'reason': reason,
+              'stuck_type': stuckType,
+              if (assignedTo != null) 'stuck_assigned_to': assignedTo,
+              if (followUpAt != null) 'stuck_follow_up_at': followUpAt,
             },
           ));
 

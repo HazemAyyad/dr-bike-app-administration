@@ -7,6 +7,7 @@ import '../../domain/entities/employee_entity.dart';
 class EmployeeModel extends EmployeeEntity {
   const EmployeeModel({
     required int id,
+    int? userId,
     required String name,
     required String hourWorkPrice,
     required String points,
@@ -26,6 +27,7 @@ class EmployeeModel extends EmployeeEntity {
     EmployeePointsSummaryEntity? pointsSummary,
   }) : super(
           id: id,
+          userId: userId,
           employeeName: name,
           hourWorkPrice: hourWorkPrice,
           points: points,
@@ -65,6 +67,7 @@ class EmployeeModel extends EmployeeEntity {
     final wifiStatus = asMap(j['wifi_status']);
     return EmployeeModel(
       id: asInt(j[ApiKey.id]),
+      userId: j['user_id'] == null ? null : asInt(j['user_id']),
       name: asString(j[ApiKey.employee_name], 'unknown'),
       hourWorkPrice: asString(j[ApiKey.hour_work_price], '0'),
       points: asString(j[ApiKey.points], '0'),
@@ -93,6 +96,7 @@ class EmployeeModel extends EmployeeEntity {
   Map<String, dynamic> toJson() {
     return {
       ApiKey.id: id,
+      'user_id': userId,
       ApiKey.employee_name: employeeName,
       ApiKey.hour_work_price: hourWorkPrice,
       ApiKey.points: points,
