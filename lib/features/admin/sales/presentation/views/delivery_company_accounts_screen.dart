@@ -5,6 +5,8 @@ import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../controllers/sales_controller.dart';
+
 class DeliveryCompanyAccountsScreen extends StatefulWidget {
   const DeliveryCompanyAccountsScreen({Key? key}) : super(key: key);
 
@@ -404,6 +406,9 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
         'idempotency_key':
             'carrier-${widget.companyId}-${DateTime.now().microsecondsSinceEpoch}',
       });
+      if (Get.isRegistered<SalesController>()) {
+        await Get.find<SalesController>().loadDailySession();
+      }
       Get.back(result: true);
       Get.snackbar('تمت التسوية',
           'تمت الإضافة إلى صندوق الطلبيات اليومي وبقيت أي مديونية متبقية');

@@ -416,7 +416,7 @@ class SalesOrdersController extends GetxController {
       'partner_address_id': address.id,
     });
     isSubmitting.value = false;
-    return result.fold(
+    final succeeded = result.fold(
       (failure) {
         SalesOrderNotice.error(_humanizeFailure(failure));
         return false;
@@ -427,6 +427,10 @@ class SalesOrdersController extends GetxController {
         return true;
       },
     );
+    if (succeeded && Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
+    return succeeded;
   }
 
   void clearActiveEditSalesOrder() {
@@ -814,7 +818,7 @@ class SalesOrdersController extends GetxController {
       return null;
     }
 
-    if (!isSelectedCompanyShiply && !isSelectedCompanyTaxi) {
+    if (isSelectedCompanyOffice) {
       if (carrierOfficeNameController.text.trim().isEmpty) {
         return 'salesOrderOfficeNameRequired'.tr;
       }
@@ -1423,6 +1427,9 @@ class SalesOrdersController extends GetxController {
       ),
       message: 'salesOrderActionInProgress'.tr,
     );
+    if (Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
   }
 
   Future<void> markReady(int orderId) async {
@@ -1445,7 +1452,7 @@ class SalesOrdersController extends GetxController {
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
       body['carrier_vehicle_number'] =
           carrierVehicleNumberController.text.trim();
-    } else if (!isSelectedCompanyShiply) {
+    } else if (isSelectedCompanyOffice) {
       body['carrier_office_name'] = carrierOfficeNameController.text.trim();
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
@@ -1483,6 +1490,9 @@ class SalesOrdersController extends GetxController {
 
   Future<void> deliver(int orderId) async {
     await runAction(() => repository.deliver(orderId, {}));
+    if (Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
   }
 
   Future<void> settle(int orderId) async {
@@ -1499,6 +1509,9 @@ class SalesOrdersController extends GetxController {
               'settlement-$orderId-${DateTime.now().microsecondsSinceEpoch}',
           if (amount > 0 && boxId != null) 'payment_box_id': boxId,
         }));
+    if (Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
   }
 
   Future<void> postponeOrder(

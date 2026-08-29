@@ -2275,7 +2275,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     );
                   }
 
-                  if (!controller.isSelectedCompanyShiply) {
+                  if (controller.isSelectedCompanyOffice) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
