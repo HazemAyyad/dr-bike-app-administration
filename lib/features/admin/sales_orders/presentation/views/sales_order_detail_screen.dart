@@ -1743,7 +1743,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         controller.pickAndUploadMedia(orderId);
         break;
       case SalesOrderActionId.cancel:
-        controller.cancelOrder(orderId);
+        _confirmCancellation(order);
         break;
       case SalesOrderActionId.revertStatus:
         controller.revertOrderStatus(orderId);
@@ -1760,6 +1760,42 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       case SalesOrderActionId.alternativeReturn:
         _showQtySheet(order, 'alternative_return');
         break;
+    }
+  }
+
+  Future<void> _confirmCancellation(SalesOrderDetailModel order) async {
+    final isReturn = const {
+      'with_delivery',
+      'partial_return',
+      'partial_delivered',
+      'review',
+    }.contains(order.status);
+    final paidAmount = order.paymentAmount;
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(isReturn ? 'تأكيد إرجاع الطلبية' : 'تأكيد إلغاء الطلبية'),
+        content: Text(
+          paidAmount > 0
+              ? 'سيتم عكس مبلغ ${paidAmount.toStringAsFixed(2)} من صندوق الطلبيات وتصفير الدفعة والدين. تأكد أن المبلغ أُعيد للزبون.'
+              : 'سيتم إلغاء الطلبية وتصفير أي مديونية مرتبطة بها.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('تراجع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+            onPressed: () => Get.back(result: true),
+            child: Text(isReturn ? 'تأكيد الإرجاع' : 'تأكيد الإلغاء'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.cancelOrder(order.id);
     }
   }
 

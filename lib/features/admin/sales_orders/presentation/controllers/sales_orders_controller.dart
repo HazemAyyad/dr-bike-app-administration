@@ -1605,6 +1605,9 @@ class SalesOrdersController extends GetxController {
 
   Future<void> cancelOrder(int orderId) async {
     await runAction(() => repository.cancel(orderId));
+    if (Get.isRegistered<SalesController>()) {
+      await Get.find<SalesController>().loadDailySession();
+    }
   }
 
   Future<void> partialDeliver(
