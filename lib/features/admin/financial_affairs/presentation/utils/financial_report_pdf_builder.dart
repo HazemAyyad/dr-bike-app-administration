@@ -78,6 +78,7 @@ class FinancialReportPdfBuilder {
         4: pw.FlexColumnWidth(1.2),
         5: pw.FlexColumnWidth(.45),
       },
+      rtlColumns: const {0, 1, 2, 3},
     );
   }
 
@@ -130,6 +131,7 @@ class FinancialReportPdfBuilder {
         5: pw.FlexColumnWidth(1),
         6: pw.FlexColumnWidth(.4),
       },
+      rtlColumns: const {4},
     );
   }
 
@@ -140,6 +142,7 @@ class FinancialReportPdfBuilder {
     required List<String> headers,
     required List<List<String>> data,
     required Map<int, pw.TableColumnWidth> widths,
+    required Set<int> rtlColumns,
   }) async {
     final regular = await _font('Regular');
     final bold = await _font('Bold');
@@ -157,6 +160,7 @@ class FinancialReportPdfBuilder {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('دكتور بايك - تقرير محاسبي',
+                  textDirection: pw.TextDirection.rtl,
                   style: pw.TextStyle(fontSize: 8, color: _muted)),
               pw.Text('${context.pageNumber} / ${context.pagesCount}',
                   textDirection: pw.TextDirection.ltr,
@@ -174,6 +178,8 @@ class FinancialReportPdfBuilder {
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
                   pw.Text('دكتور بايك',
+                      textDirection: pw.TextDirection.rtl,
+                      textAlign: pw.TextAlign.right,
                       style: pw.TextStyle(
                           font: bold, fontSize: 22, color: _brand)),
                   pw.Text('نظام الإدارة المالية',
@@ -187,10 +193,17 @@ class FinancialReportPdfBuilder {
               margin: const pw.EdgeInsets.symmetric(vertical: 10),
               height: 1.5,
               color: _brand),
-          pw.Text(title, style: pw.TextStyle(font: bold, fontSize: 17)),
+          pw.Text(
+            title,
+            textDirection: pw.TextDirection.rtl,
+            textAlign: pw.TextAlign.right,
+            style: pw.TextStyle(font: bold, fontSize: 17),
+          ),
           pw.SizedBox(height: 4),
           pw.Text(
             '$subtitle • تاريخ الإنشاء: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+            textDirection: pw.TextDirection.rtl,
+            textAlign: pw.TextAlign.right,
             style: pw.TextStyle(fontSize: 9, color: _muted),
           ),
           pw.SizedBox(height: 12),
@@ -208,6 +221,8 @@ class FinancialReportPdfBuilder {
                         ),
                         child: pw.Column(children: [
                           pw.Text(item[0],
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: pw.TextAlign.center,
                               style: pw.TextStyle(fontSize: 8, color: _muted)),
                           pw.SizedBox(height: 3),
                           pw.Text(item[1],
@@ -224,24 +239,54 @@ class FinancialReportPdfBuilder {
               padding: const pw.EdgeInsets.all(24),
               decoration:
                   pw.BoxDecoration(border: pw.Border.all(color: _border)),
-              child: pw.Center(child: pw.Text('لا توجد بيانات لهذه الفترة')),
+              child: pw.Center(
+                child: pw.Text(
+                  'لا توجد بيانات لهذه الفترة',
+                  textDirection: pw.TextDirection.rtl,
+                ),
+              ),
             )
           else
             pw.TableHelper.fromTextArray(
               headers: headers,
               data: data,
+              tableDirection: pw.TextDirection.ltr,
+              headerDirection: pw.TextDirection.rtl,
               columnWidths: widths,
               headerDecoration: pw.BoxDecoration(color: _brand),
               headerStyle:
                   pw.TextStyle(font: bold, fontSize: 8, color: PdfColors.white),
               cellStyle: const pw.TextStyle(fontSize: 7.5),
-              cellAlignment: pw.Alignment.centerRight,
-              headerAlignment: pw.Alignment.centerRight,
+              cellAlignments: {
+                for (var index = 0; index < headers.length; index++)
+                  index: rtlColumns.contains(index)
+                      ? pw.Alignment.centerRight
+                      : pw.Alignment.center,
+              },
+              headerAlignments: {
+                for (var index = 0; index < headers.length; index++)
+                  index: rtlColumns.contains(index)
+                      ? pw.Alignment.centerRight
+                      : pw.Alignment.center,
+              },
               border: pw.TableBorder.all(color: _border, width: .6),
               oddRowDecoration:
                   pw.BoxDecoration(color: PdfColor.fromHex('#F9FAFB')),
               cellPadding:
                   const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 6),
+              cellBuilder: (index, value, rowNumber) => pw.Text(
+                value.toString(),
+                textDirection: rtlColumns.contains(index)
+                    ? pw.TextDirection.rtl
+                    : pw.TextDirection.ltr,
+                textAlign: rtlColumns.contains(index)
+                    ? pw.TextAlign.right
+                    : pw.TextAlign.center,
+                style: pw.TextStyle(
+                  font: rtlColumns.contains(index) ? regular : bold,
+                  fontSize: 7.5,
+                ),
+              ),
             ),
         ],
       ),

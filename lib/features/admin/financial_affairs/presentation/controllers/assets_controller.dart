@@ -439,6 +439,8 @@ class AssetsController extends GetxController {
           "${directory.path}/سجل_الأهلاك${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
       final file = File(filePath);
       await file.writeAsBytes(response);
+      _closeReportProgress();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       Get.snackbar(
         "fileDownloadedSuccessfully".tr,
         filePath,

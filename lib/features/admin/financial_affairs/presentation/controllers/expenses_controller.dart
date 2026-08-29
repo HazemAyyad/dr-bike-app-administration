@@ -221,8 +221,10 @@ class ExpensesController extends GetxController
       final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
       final file = File('${root.path}/expenses-$stamp.$format');
       await file.writeAsBytes(bytes, flush: true);
-      await OpenFilex.open(file.path);
+      _closeReportProgress();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       Get.snackbar('success'.tr, 'تم تنزيل التقرير: ${file.path}');
+      await OpenFilex.open(file.path);
     } catch (error) {
       Get.snackbar('error'.tr, error.toString());
     } finally {
