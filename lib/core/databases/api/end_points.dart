@@ -62,6 +62,24 @@ class EndPoints {
   static const String adminUiPreferences = 'admin/ui-preferences';
 
   static const String adminNotifications = 'admin/notifications';
+  static const String adminNotificationCatalog = 'admin/notification-catalog';
+  static const String adminNotificationPolicies = 'admin/notification-policies';
+  static String adminNotificationPolicy(String type) =>
+      'admin/notification-policies/$type';
+  static String adminNotificationPolicyReset(String type) =>
+      'admin/notification-policies/$type/reset';
+  static const String adminNotificationSounds = 'admin/notification-sounds';
+  static const String adminNotificationTemplates =
+      'admin/notification-templates';
+  static String adminNotificationTemplate(String type) =>
+      'admin/notification-templates/$type';
+  static const String adminNotificationSoundsManifest =
+      'admin/notification-sounds-manifest';
+  static const String adminNotificationDeviceSoundsSync =
+      'admin/notification-device-sounds/sync';
+  static const String adminNotificationDevices = 'admin/notification-devices';
+  static const String adminNotificationDeliveries =
+      'admin/notification-deliveries';
   static const String adminNotificationsUnreadCount =
       'admin/notifications/unread-count';
   static String adminNotificationMarkRead(int id) =>

@@ -33,6 +33,8 @@ import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_bi
 import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
 import '../features/admin/notifications/presentation/bindings/admin_notification_center_binding.dart';
 import '../features/admin/notifications/presentation/views/admin_notification_center_screen.dart';
+import '../features/admin/notifications/presentation/bindings/admin_notification_settings_binding.dart';
+import '../features/admin/notifications/presentation/views/admin_notification_settings_screen.dart';
 import '../features/admin/whatsapp_center/presentation/bindings/whatsapp_center_binding.dart';
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_center_screen.dart';
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_conversation_screen.dart';
@@ -320,6 +322,12 @@ class AppPages {
       name: AppRoutes.NOTIFICATIONCENTER,
       page: () => const AdminNotificationCenterScreen(),
       binding: AdminNotificationCenterBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.NOTIFICATIONSETTINGSCENTER,
+      page: () => const AdminNotificationSettingsScreen(),
+      binding: AdminNotificationSettingsBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

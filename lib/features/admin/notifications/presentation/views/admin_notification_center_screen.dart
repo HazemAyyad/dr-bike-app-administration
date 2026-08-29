@@ -6,6 +6,7 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/admin_notification_router.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/admin_notification_center_controller.dart';
 
 class AdminNotificationCenterScreen extends GetView<AdminNotificationCenterController> {
@@ -19,6 +20,11 @@ class AdminNotificationCenterScreen extends GetView<AdminNotificationCenterContr
         title: 'notificationCenterTitle',
         action: false,
         actions: [
+          IconButton(
+            tooltip: 'مركز التحكم',
+            onPressed: () => Get.toNamed(AppRoutes.NOTIFICATIONSETTINGSCENTER),
+            icon: const Icon(Icons.tune),
+          ),
           Obx(
             () => TextButton(
               onPressed: controller.isBusyAction.value

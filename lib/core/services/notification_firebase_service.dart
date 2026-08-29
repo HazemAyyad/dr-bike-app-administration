@@ -22,6 +22,7 @@ import 'admin_notification_api_service.dart';
 import 'admin_notification_router.dart';
 import 'employee_attendance_persistent_notification_service.dart';
 import 'employee_notification_router.dart';
+import 'notification_uploaded_sound_service.dart';
 import 'impersonation_state.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
@@ -30,6 +31,12 @@ import 'user_data.dart';
 /// google-services.json project_id should match [DefaultFirebaseOptions] projectId.
 const String kDrBikeAdminNotificationChannelId = 'dr_bike_admin_notifications';
 const String kDrBikeAdminNotificationChannelName = 'Dr Bike Notifications';
+const String kDrBikeForegroundCustomSoundChannelId =
+    'dr_bike_foreground_custom_sound_silent';
+const String kDrBikeForegroundCustomSoundChannelName =
+    'أصوات الإشعارات المخصصة';
+const String kDrBikeSilentNotificationChannelId = 'dr_bike_admin_silent';
+const String kDrBikeSilentNotificationChannelName = 'إشعارات صامتة';
 
 /// Must match Laravel [FirebaseService::EMPLOYEE_TASK_CHANNEL_ID] and res/raw/task_sos_alert.
 const String kDrBikeTaskNotificationChannelId = 'dr_bike_task_notifications';
@@ -209,7 +216,7 @@ bool isEmployeeNotificationType(String? type) =>
 bool get _supportsFirebaseMessaging =>
     !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-_TrayAlertStyle? resolveShiplyTrayStyle(
+_TrayAlertStyle? _resolveShiplyTrayStyle(
     String type, Map<String, dynamic> data) {
   if (isShiplyDeliveredNotificationType(type)) {
     return _TrayAlertStyle.shiplyDelivered;
@@ -663,6 +670,28 @@ class NotificationFirebaseService {
     );
     await androidPlugin?.createNotificationChannel(adminChannel);
 
+    const customForegroundChannel = AndroidNotificationChannel(
+      kDrBikeForegroundCustomSoundChannelId,
+      kDrBikeForegroundCustomSoundChannelName,
+      description: 'يعرض الإشعار بينما يشغّل التطبيق الصوت المرفوع',
+      importance: Importance.max,
+      playSound: false,
+      enableVibration: true,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(customForegroundChannel);
+
+    const silentChannel = AndroidNotificationChannel(
+      kDrBikeSilentNotificationChannelId,
+      kDrBikeSilentNotificationChannelName,
+      description: 'إشعارات بدون صوت',
+      importance: Importance.high,
+      playSound: false,
+      enableVibration: false,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(silentChannel);
+
     final taskChannel = AndroidNotificationChannel(
       kDrBikeTaskNotificationChannelId,
       kDrBikeTaskNotificationChannelName,
@@ -884,7 +913,7 @@ class NotificationFirebaseService {
 
   Future<void> showForegroundNotification(RemoteMessage message) async {
     final type = message.data['type']?.toString() ?? '';
-    final shiplyStyle = resolveShiplyTrayStyle(type, message.data);
+    final shiplyStyle = _resolveShiplyTrayStyle(type, message.data);
     final _TrayAlertStyle style;
     if (isAdminLoginNotificationType(type)) {
       style = _TrayAlertStyle.adminLogin;
@@ -913,18 +942,56 @@ class NotificationFirebaseService {
     await setupFlutterNotifications();
 
     final RemoteNotification? notification = message.notification;
-    final String title = notification?.title ??
-        message.data['title']?.toString() ??
+    final String title = message.data['title']?.toString() ??
+        notification?.title ??
         'DoctorBike';
     final String body =
-        notification?.body ?? message.data['body']?.toString() ?? '';
+        message.data['body']?.toString() ?? notification?.body ?? '';
 
     if (title.isEmpty && body.isEmpty) {
       return;
     }
 
     final AndroidNotificationDetails androidDetails;
-    if (style == _TrayAlertStyle.employeeTaskUrgent) {
+    final silentRequested =
+        message.data['notification_sound_key']?.toString() == 'silent';
+    final customSoundPlayed = await NotificationUploadedSoundService.instance
+        .playForegroundIfAvailable(message.data);
+    if (silentRequested) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeSilentNotificationChannelId,
+        kDrBikeSilentNotificationChannelName,
+        channelDescription: 'إشعارات بدون صوت',
+        icon: 'ic_notification',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: false,
+        enableVibration: false,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (customSoundPlayed) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeForegroundCustomSoundChannelId,
+        kDrBikeForegroundCustomSoundChannelName,
+        channelDescription: 'أصوات رفعها الأدمن وتعمل أثناء فتح التطبيق',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: false,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.employeeTaskUrgent) {
       androidDetails = AndroidNotificationDetails(
         kDrBikeTaskNotificationChannelId,
         kDrBikeTaskNotificationChannelName,
@@ -1157,8 +1224,8 @@ class NotificationFirebaseService {
     final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
-      presentSound: true,
-      sound: iosSound,
+      presentSound: !customSoundPlayed && !silentRequested,
+      sound: customSoundPlayed || silentRequested ? null : iosSound,
     );
 
     final payload = jsonEncode(_payloadFromMessage(message));
@@ -1261,7 +1328,9 @@ class NotificationFirebaseService {
         debugPrint('[FCM] Drop employee foreground push during impersonation');
         return;
       }
-      await showForegroundNotification(message);
+      if (message.data['notification_foreground_banner']?.toString() != '0') {
+        await showForegroundNotification(message);
+      }
       _refreshNotificationBadge();
       _handleEmployeeSalesDailyForeground(_payloadFromMessage(message));
     });

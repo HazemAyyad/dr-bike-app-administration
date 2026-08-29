@@ -140,6 +140,11 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.GENERALSETTINGSSCREEN
     },
     {
+      'id': '74',
+      'title': 'مركز التحكم بالإشعارات',
+      'route': AppRoutes.NOTIFICATIONSETTINGSCENTER,
+    },
+    {
       'id': '23',
       'title': 'employeeReminders',
       'route': AppRoutes.EMPLOYEEREMINDERSSCREEN

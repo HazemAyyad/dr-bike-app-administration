@@ -42,6 +42,7 @@ class AppRoutes {
   static const DEBTSSCREEN = '/DebtsScreen';
   static const ADMINACTIVTILOGSCREEN = '/AdminActivtiLogScreen';
   static const NOTIFICATIONCENTER = '/AdminNotificationCenter';
+  static const NOTIFICATIONSETTINGSCENTER = '/AdminNotificationSettingsCenter';
   static const EMPLOYEENOTIFICATIONCENTER = '/EmployeeNotificationCenter';
   static const WHATSAPPCENTER = '/WhatsAppCenter';
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
