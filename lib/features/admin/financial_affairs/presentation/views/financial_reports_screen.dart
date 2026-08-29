@@ -258,8 +258,10 @@ class _FinancialReportsModalState extends State<_FinancialReportsModal> {
                 final period = report.keyName == 'current_month'
                     ? DateFormat('yyyy-MM').format(DateTime.now())
                     : '';
-                Get.find<AssetsController>()
-                    .downloadReport(periodOverride: period);
+                Get.find<AssetsController>().downloadReport(
+                  periodOverride: period,
+                  reportTitle: report.title,
+                );
               },
             ),
         ],
@@ -336,6 +338,7 @@ class _FinancialReportsModalState extends State<_FinancialReportsModal> {
     Get.find<ExpensesController>().downloadExpenseReport(
       format,
       expenseTypeOverride: selectedReport?.keyName,
+      reportTitle: selectedReport?.title,
     );
   }
 }

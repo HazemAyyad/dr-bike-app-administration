@@ -15,6 +15,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/assets_models/assets_detials_model.dart';
+import '../models/assets_models/asset_depreciation_preview_model.dart';
 import '../models/assets_models/assets_log_model.dart';
 import '../models/expenses_models/expense_detail_model.dart';
 import '../models/official_papers_models/file_data_model.dart';
@@ -161,6 +162,24 @@ class FinancialAffairsDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<AssetDepreciationPreview> getDepreciationPreview() async {
+    try {
+      final response = await api.get(EndPoints.depreciationPreview);
+      return AssetDepreciationPreview.fromJson(
+        Map<String, dynamic>.from(response.data),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
         ),
       );
     }

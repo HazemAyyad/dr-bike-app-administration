@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_detials_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/asset_depreciation_preview_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_log_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/expenses_models/expense_detail_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/file_data_model.dart';
@@ -119,6 +120,16 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
       );
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<AssetDepreciationPreview> getDepreciationPreview() async {
+    if (!await networkInfo.isConnected) throw NoConnectionFailure();
+    try {
+      return await financialAffairsDatasource.getDepreciationPreview();
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

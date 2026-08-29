@@ -7,6 +7,9 @@ class AssetLogModel {
   final String depreciationRate;
   final String total;
   final String type;
+  final String depreciationPeriod;
+  final double valueBefore;
+  final double depreciationAmount;
 
   AssetLogModel({
     required this.assetId,
@@ -15,6 +18,9 @@ class AssetLogModel {
     required this.depreciationRate,
     required this.total,
     required this.type,
+    required this.depreciationPeriod,
+    required this.valueBefore,
+    required this.depreciationAmount,
   });
 
   factory AssetLogModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +32,9 @@ class AssetLogModel {
       depreciationRate: asString(j['depreciation_rate'], '0'),
       total: asString(j['total'], '0'),
       type: asString(j['type']),
+      depreciationPeriod: asString(j['depreciation_period']),
+      valueBefore: asDouble(j['value_before']),
+      depreciationAmount: asDouble(j['depreciation_amount']),
     );
   }
 
@@ -37,6 +46,9 @@ class AssetLogModel {
       'depreciation_rate': depreciationRate,
       'total': total,
       'type': type,
+      'depreciation_period': depreciationPeriod,
+      'value_before': valueBefore,
+      'depreciation_amount': depreciationAmount,
     };
   }
 }

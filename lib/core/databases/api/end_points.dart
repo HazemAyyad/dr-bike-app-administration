@@ -631,6 +631,7 @@ class EndPoints {
   static const String addNewAsset = 'add/asset';
   static const String editAsset = 'edit/asset';
   static const String depreciateAssets = 'depreciate/all/assets';
+  static const String depreciationPreview = 'assets/depreciation/preview';
   static const String assetsDetails = 'show/asset';
   static const String getAllAssets = 'get/all/assets';
   static const String getAssetsLogs = 'get/all/asset/logs';

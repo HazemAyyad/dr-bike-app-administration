@@ -193,8 +193,17 @@ class _DestructionLineCard extends StatelessWidget {
           SizedBox(width: 8.w),
           Expanded(
             child: line.layers.isEmpty
-                ? const FinancialMiniChip(
-                    label: 'لا توجد طبقات تكلفة', color: Colors.red)
+                ? FinancialMiniChip(
+                    label: line.fallbackUnitCost > 0
+                        ? 'تكلفة المنتج ${line.fallbackUnitCost.toStringAsFixed(2)} شيكل'
+                        : 'لا يوجد سعر تكلفة',
+                    color: line.fallbackUnitCost > 0
+                        ? AppColors.customGreen1
+                        : Colors.red,
+                    icon: line.fallbackUnitCost > 0
+                        ? Icons.inventory_outlined
+                        : Icons.warning_amber_rounded,
+                  )
                 : Obx(() => DropdownButtonFormField<DestructionCostLayer>(
                       isExpanded: true,
                       initialValue: line.selectedLayer.value,
@@ -223,7 +232,8 @@ class _DestructionLineCard extends StatelessWidget {
           ),
         ]),
         Obx(() {
-          final cost = line.selectedLayer.value?.unitCost ?? 0;
+          final cost =
+              line.selectedLayer.value?.unitCost ?? line.fallbackUnitCost;
           return Align(
             alignment: AlignmentDirectional.centerEnd,
             child: Padding(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expense_report_usecase.dart';
+import '../utils/financial_report_pdf_builder.dart';
 import 'finacial_service.dart';
 
 class ExpensesController extends GetxController
@@ -78,6 +80,9 @@ class ExpensesController extends GetxController
       filters: {'product_id': id},
     );
     final raw = response is Map ? response['layers'] : null;
+    final fallbackUnitCost = response is Map
+        ? double.tryParse('${response['fallback_unit_cost']}') ?? 0
+        : 0.0;
     final layers = raw is List
         ? raw
             .whereType<Map>()
@@ -89,6 +94,7 @@ class ExpensesController extends GetxController
       productId: id,
       productName: productNameController.text.trim(),
       layers: layers,
+      fallbackUnitCost: fallbackUnitCost,
     ));
     productIdController.clear();
     productNameController.clear();
@@ -183,10 +189,12 @@ class ExpensesController extends GetxController
   Future<void> downloadExpenseReport(
     String format, {
     String? expenseTypeOverride,
+    String? reportTitle,
   }) async {
+    _showReportProgress('جاري تجهيز التقرير');
     try {
-      final bytes = await getExpenseReportUsecase.call(
-        format: format,
+      final sourceBytes = await getExpenseReportUsecase.call(
+        format: format == 'pdf' ? 'data' : format,
         filters: {
           if (fromController.text.isNotEmpty) 'from': fromController.text,
           if (toController.text.isNotEmpty) 'to': toController.text,
@@ -194,6 +202,16 @@ class ExpensesController extends GetxController
             'expense_type': expenseTypeOverride ?? expenseTypeFilter.value,
         },
       );
+      final bytes = format == 'pdf'
+          ? await FinancialReportPdfBuilder.buildExpenses(
+              payload: Map<String, dynamic>.from(
+                jsonDecode(utf8.decode(sourceBytes)) as Map,
+              ),
+              title: reportTitle ?? 'تقرير المصاريف',
+              from: fromController.text,
+              to: toController.text,
+            )
+          : sourceBytes;
       final root = Platform.isAndroid
           ? Directory('/storage/emulated/0/Download/Doctor Bike/Reports')
           : Directory(
@@ -203,11 +221,51 @@ class ExpensesController extends GetxController
       final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
       final file = File('${root.path}/expenses-$stamp.$format');
       await file.writeAsBytes(bytes, flush: true);
-      Get.snackbar('success'.tr, 'تم تنزيل التقرير: ${file.path}');
       await OpenFilex.open(file.path);
+      Get.snackbar('success'.tr, 'تم تنزيل التقرير: ${file.path}');
     } catch (error) {
       Get.snackbar('error'.tr, error.toString());
+    } finally {
+      _closeReportProgress();
     }
+  }
+
+  void _showReportProgress(String title) {
+    Get.dialog<void>(
+      PopScope(
+        canPop: false,
+        child: Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(children: [
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    const Text('يتم إنشاء الملف داخل التطبيق، يرجى الانتظار'),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void _closeReportProgress() {
+    if (Get.isDialogOpen ?? false) Get.back<void>();
   }
 
   Future<void> resetFilters() async {
@@ -662,12 +720,14 @@ class DestructionDraftLine {
   DestructionDraftLine(
       {required this.productId,
       required this.productName,
-      required this.layers}) {
+      required this.layers,
+      this.fallbackUnitCost = 0}) {
     if (layers.isNotEmpty) selectedLayer.value = layers.first;
   }
   final int productId;
   final String productName;
   final List<DestructionCostLayer> layers;
+  final double fallbackUnitCost;
   final RxInt quantity = 1.obs;
   final Rxn<DestructionCostLayer> selectedLayer = Rxn<DestructionCostLayer>();
 }

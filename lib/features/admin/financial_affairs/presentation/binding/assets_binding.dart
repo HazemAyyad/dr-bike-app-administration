@@ -5,7 +5,7 @@ import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
 import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_assets_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_one_assets_usecase.dart';
-import '../../domain/usecases/assets_usecases/get_asset_report_usecase.dart';
+import '../../domain/usecases/assets_usecases/get_depreciation_preview_usecase.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
 import '../controllers/assets_controller.dart';
@@ -34,10 +34,10 @@ class AssetsBinding extends Bindings {
         depreciateAssetsUsecase: DepreciateAssetsUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
-        assetsDetialsUsecase: AssetsDetialsUsecase(
+        getDepreciationPreviewUsecase: GetDepreciationPreviewUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
-        getAssetReportUsecase: GetAssetReportUsecase(
+        assetsDetialsUsecase: AssetsDetialsUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
         depreciateOneAssetsUsecase: DepreciateOneAssetsUsecase(

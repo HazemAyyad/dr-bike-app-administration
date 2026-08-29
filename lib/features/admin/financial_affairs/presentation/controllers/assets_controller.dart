@@ -8,15 +8,17 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/assets_models/assets_data_model.dart';
+import '../../data/models/assets_models/asset_depreciation_preview_model.dart';
 import '../../data/models/assets_models/assets_detials_model.dart';
 import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
 import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_assets_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_one_assets_usecase.dart';
-import '../../domain/usecases/assets_usecases/get_asset_report_usecase.dart';
+import '../../domain/usecases/assets_usecases/get_depreciation_preview_usecase.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
 import 'finacial_service.dart';
+import '../utils/financial_report_pdf_builder.dart';
 
 class AssetsController extends GetxController {
   final GetAllFinancialUsecase getAllFinancialUsecase;
@@ -24,8 +26,8 @@ class AssetsController extends GetxController {
   final AddNewAssetsUsecase addNewAssetsUsecase;
   final DepreciateAssetsUsecase depreciateAssetsUsecase;
   final AssetsDetialsUsecase assetsDetialsUsecase;
-  final GetAssetReportUsecase getAssetReportUsecase;
   final DepreciateOneAssetsUsecase depreciateOneAssetsUsecase;
+  final GetDepreciationPreviewUsecase getDepreciationPreviewUsecase;
 
   AssetsController({
     required this.getAllFinancialUsecase,
@@ -33,8 +35,8 @@ class AssetsController extends GetxController {
     required this.addNewAssetsUsecase,
     required this.depreciateAssetsUsecase,
     required this.assetsDetialsUsecase,
-    required this.getAssetReportUsecase,
     required this.depreciateOneAssetsUsecase,
+    required this.getDepreciationPreviewUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -110,6 +112,19 @@ class AssetsController extends GetxController {
   final RxDouble assetUploadProgress = 0.0.obs;
   final RxString assetStatusFilter = ''.obs;
   final RxString assetLogPeriodFilter = ''.obs;
+  final Rxn<AssetDepreciationPreview> depreciationPreview = Rxn();
+  final RxBool isLoadingDepreciationPreview = false.obs;
+
+  Future<void> loadDepreciationPreview() async {
+    isLoadingDepreciationPreview.value = true;
+    try {
+      depreciationPreview.value = await getDepreciationPreviewUsecase.call();
+    } catch (error) {
+      Get.snackbar('error'.tr, error.toString());
+    } finally {
+      isLoadingDepreciationPreview.value = false;
+    }
+  }
 
   // filter assets by date
   final assetsFilter = <String, List<Asset>>{}.obs;
@@ -216,7 +231,7 @@ class AssetsController extends GetxController {
     getAssetsLogs();
   }
 
-  void getAssetsLogs() async {
+  Future<void> getAssetsLogs() async {
     FinacialService().assetsLogs.isEmpty
         ? isLoadingDepreciate(true)
         : isLoadingDepreciate(false);
@@ -372,6 +387,8 @@ class AssetsController extends GetxController {
       },
       (success) {
         getAllAssets();
+        getAssetsLogs();
+        loadDepreciationPreview();
         Get.back();
         Get.snackbar(
           'success'.tr,
@@ -387,18 +404,22 @@ class AssetsController extends GetxController {
   }
 
   // download report
-  Future<void> downloadReport({String? periodOverride}) async {
+  Future<void> downloadReport({
+    String? periodOverride,
+    String? reportTitle,
+  }) async {
+    _showReportProgress();
     try {
-      Get.snackbar(
-        "info".tr,
-        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2500),
-      );
-      final response = await getAssetReportUsecase.call(
+      final selectedPeriod = periodOverride ?? assetLogPeriodFilter.value;
+      final logs = await getAssetsLogsUsecase.call(
         filters: (periodOverride ?? assetLogPeriodFilter.value).isEmpty
             ? null
             : {'period': periodOverride ?? assetLogPeriodFilter.value},
+      );
+      final response = await FinancialReportPdfBuilder.buildAssetLogs(
+        logs: logs,
+        title: reportTitle ?? 'سجل إهلاك الأصول',
+        period: selectedPeriod,
       );
       late Directory directory;
       if (Platform.isAndroid) {
@@ -432,7 +453,47 @@ class AssetsController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(milliseconds: 2500),
       );
+    } finally {
+      _closeReportProgress();
     }
+  }
+
+  void _showReportProgress() {
+    Get.dialog<void>(
+      const PopScope(
+        canPop: false,
+        child: Dialog(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Row(children: [
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('جاري تجهيز تقرير الإهلاك',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text('يتم إنشاء PDF العربي داخل التطبيق، يرجى الانتظار'),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void _closeReportProgress() {
+    if (Get.isDialogOpen ?? false) Get.back<void>();
   }
 
   @override

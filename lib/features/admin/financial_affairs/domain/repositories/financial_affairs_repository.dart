@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/assets_models/assets_detials_model.dart';
+import '../../data/models/assets_models/asset_depreciation_preview_model.dart';
 import '../../data/models/assets_models/assets_log_model.dart';
 import '../../data/models/expenses_models/expense_detail_model.dart';
 import '../../data/models/official_papers_models/file_data_model.dart';
@@ -20,6 +21,8 @@ abstract class FinancialAffairsRepository {
   Future<List<AssetLogModel>> getAssetsLogs({Map<String, dynamic>? filters});
 
   Future<Either<Failure, String>> depreciateAssets();
+
+  Future<AssetDepreciationPreview> getDepreciationPreview();
 
   Future<AssetDetailsModel> assetsDetails({required String assetId});
 
