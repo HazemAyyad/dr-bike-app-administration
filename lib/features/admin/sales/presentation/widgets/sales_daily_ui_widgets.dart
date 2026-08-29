@@ -286,10 +286,13 @@ class SalesDailySessionTile extends StatelessWidget {
 
   String _subtitle() {
     final parts = <String>[
+      item.sessionType == 'sales_orders' ? 'صندوق الطلبيات' : 'صندوق المبيعات',
       if (showEmployee && (item.employeeName?.isNotEmpty ?? false))
         item.businessDate,
-      '${'instant_sales'.tr}:${item.instantSalesCount}',
-      '${'cashProfit'.tr}:${item.profitSalesCount}',
+      if (item.sessionType != 'sales_orders')
+        '${'instant_sales'.tr}:${item.instantSalesCount}',
+      if (item.sessionType != 'sales_orders')
+        '${'cashProfit'.tr}:${item.profitSalesCount}',
       if (item.closedOnNextDay) 'salesDailyClosedOnNextDayShort'.tr,
     ];
     return parts.join('  •  ');

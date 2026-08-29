@@ -159,7 +159,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       _ordersFloat[row.currency] = TextEditingController(text: '0');
       _ordersNotes[row.currency] = TextEditingController();
     }
-    _controllersReady = _physical.isNotEmpty;
+    _controllersReady = _physical.isNotEmpty || _ordersPhysical.isNotEmpty;
     if (_canFinalizeClosing) {
       _loadShownBoxes();
     }
@@ -328,12 +328,14 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
               _lateReasonCard(),
             ],
             SizedBox(height: 10.h),
-            _sectionLabel('salesDailyBox'.tr),
-            SizedBox(height: 6.h),
-            ...payload.currencies.map(_currencySection),
+            if (payload.currencies.isNotEmpty) ...[
+              _sectionLabel('salesDailyBox'.tr),
+              SizedBox(height: 6.h),
+              ...payload.currencies.map(_currencySection),
+            ],
             if (payload.salesOrdersCurrencies.isNotEmpty) ...[
               SizedBox(height: 14.h),
-              _sectionLabel('صندوق الطلبيات اليومي (منفصل)'),
+              _sectionLabel('صندوق الطلبيات اليومي'),
               SizedBox(height: 6.h),
               ...payload.salesOrdersCurrencies.map(
                 (row) => _currencySection(

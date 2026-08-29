@@ -458,6 +458,7 @@ class DailyCashCountRow {
 
 class DailySessionSummaryModel {
   final int id;
+  final String sessionType;
   final int userId;
   final int? employeeId;
   final String? employeeName;
@@ -475,6 +476,7 @@ class DailySessionSummaryModel {
 
   const DailySessionSummaryModel({
     required this.id,
+    this.sessionType = 'instant_sales',
     required this.userId,
     this.employeeId,
     this.employeeName,
@@ -497,6 +499,7 @@ class DailySessionSummaryModel {
   factory DailySessionSummaryModel.fromJson(Map<String, dynamic> json) {
     return DailySessionSummaryModel(
       id: asInt(json['id']),
+      sessionType: asString(json['session_type'], 'instant_sales'),
       userId: asInt(json['user_id']),
       employeeId: json['employee_id'] == null
           ? null

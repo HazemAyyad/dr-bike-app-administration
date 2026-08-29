@@ -574,6 +574,8 @@ class SalesController extends GetxController
 
   final Rxn<DailySessionPayload> dailySessionPayload =
       Rxn<DailySessionPayload>();
+  final Rxn<DailySessionPayload> salesOrdersDailySessionPayload =
+      Rxn<DailySessionPayload>();
   final isDailySessionLoading = false.obs;
 
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
@@ -598,9 +600,15 @@ class SalesController extends GetxController
     isDailySessionLoading(true);
     try {
       final ds = Get.find<SalesDatasource>();
-      dailySessionPayload.value = await ds.getDailySessionCurrent();
+      final payloads = await Future.wait([
+        ds.getDailySessionCurrent(),
+        ds.getDailySessionCurrent(sessionType: 'sales_orders'),
+      ]);
+      dailySessionPayload.value = payloads[0];
+      salesOrdersDailySessionPayload.value = payloads[1];
     } catch (_) {
       dailySessionPayload.value = null;
+      salesOrdersDailySessionPayload.value = null;
     } finally {
       isDailySessionLoading(false);
     }
@@ -613,8 +621,14 @@ class SalesController extends GetxController
   void applyDailyBoxToPayment(
     PaymentController payment, {
     String currency = 'شيكل',
+    bool salesOrders = false,
   }) {
-    final row = dailySessionPayload.value?.rowForCurrency(currency);
+    final payload = salesOrders
+        ? salesOrdersDailySessionPayload.value
+        : dailySessionPayload.value;
+    final rows =
+        salesOrders ? payload?.salesOrdersCurrencies : payload?.currencies;
+    final row = rows?.firstWhereOrNull((item) => item.currency == currency);
     if (row == null) {
       payment.clearDailySalesBox();
       payment.boxIdController.clear();
@@ -855,6 +869,7 @@ class SalesController extends GetxController
   }
 
   Future<void> requestDailyOpen({
+    String sessionType = 'instant_sales',
     List<Map<String, dynamic>> openingCounts = const [],
     List<Map<String, dynamic>> salesOrdersOpeningCounts = const [],
     bool confirmOpeningVariance = false,
@@ -865,6 +880,7 @@ class SalesController extends GetxController
     );
     try {
       final message = await ds.openDailySession(
+        sessionType: sessionType,
         openingCounts: openingCounts,
         salesOrdersOpeningCounts: salesOrdersOpeningCounts,
         confirmOpeningVariance: confirmOpeningVariance,

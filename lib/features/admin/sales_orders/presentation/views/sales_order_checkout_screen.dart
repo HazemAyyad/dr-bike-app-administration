@@ -49,7 +49,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
       await sales.loadDailySession();
       if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
         final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
-        sales.applyDailyBoxToPayment(payment);
+        sales.applyDailyBoxToPayment(payment, salesOrders: true);
       }
       sales.syncCartToItems();
       orders.initializeEditableTotal(

@@ -850,8 +850,13 @@ class SalesDatasource {
     }
   }
 
-  Future<DailySessionPayload> getDailySessionCurrent() async {
-    final response = await api.get(EndPoints.salesDailySessionCurrent);
+  Future<DailySessionPayload> getDailySessionCurrent({
+    String sessionType = 'instant_sales',
+  }) async {
+    final response = await api.get(
+      EndPoints.salesDailySessionCurrent,
+      queryParameters: {'session_type': sessionType},
+    );
     final raw = response.data['daily_session'];
     if (raw is! Map) {
       return const DailySessionPayload();
@@ -860,6 +865,7 @@ class SalesDatasource {
   }
 
   Future<String> openDailySession({
+    String sessionType = 'instant_sales',
     List<Map<String, dynamic>> openingCounts = const [],
     List<Map<String, dynamic>> salesOrdersOpeningCounts = const [],
     bool confirmOpeningVariance = false,
@@ -872,6 +878,7 @@ class SalesDatasource {
         .where((row) => (row['currency'] as String).trim().isNotEmpty)
         .toList();
     final data = {
+      'session_type': sessionType,
       'opening_counts': normalizedOpeningCounts,
       'sales_orders_opening_counts': salesOrdersOpeningCounts,
       'confirm_opening_variance': confirmOpeningVariance,

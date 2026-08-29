@@ -53,7 +53,9 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         return const SalesDailyStatusBarSkeleton();
       }
 
-      final payload = controller.dailySessionPayload.value;
+      final payload = salesOrders
+          ? controller.salesOrdersDailySessionPayload.value
+          : controller.dailySessionPayload.value;
       if (payload == null) {
         return const SizedBox.shrink();
       }
@@ -149,7 +151,10 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                 ),
               if (showDirectClose)
                 TextButton(
-                  onPressed: () => Get.toNamed(AppRoutes.SALESDAILYCLOSESCREEN),
+                  onPressed: () => Get.toNamed(
+                    AppRoutes.SALESDAILYCLOSESCREEN,
+                    arguments: session?.id,
+                  ),
                   child: Text('salesDailyCloseDay'.tr),
                 ),
               if (showClosingApproval)
@@ -238,7 +243,9 @@ class SalesDailyStatusBar extends GetView<SalesController> {
   }
 
   Future<void> _openDrawer(BuildContext context) async {
-    final payload = controller.dailySessionPayload.value;
+    final payload = salesOrders
+        ? controller.salesOrdersDailySessionPayload.value
+        : controller.dailySessionPayload.value;
     const dialogBg = Colors.white;
     const dialogTitleColor = Color(0xFF111827);
     const dialogTextColor = Color(0xFF374151);
@@ -508,6 +515,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         '[SalesDailyOpenDebug][Dialog] submit openingCounts=$counts confirmOpeningVariance=$confirmVariance',
       );
       await controller.requestDailyOpen(
+        sessionType: salesOrders ? 'sales_orders' : 'instant_sales',
         openingCounts: counts,
         salesOrdersOpeningCounts: ordersCounts,
         confirmOpeningVariance: confirmVariance,
