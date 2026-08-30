@@ -10,10 +10,16 @@ import '../../domain/usecases/request_over_time_loan_usecase.dart';
 import '../../../../admin/employee_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_usecase.dart';
 import '../controllers/employee_dashbord_controller.dart';
+import '../controllers/employee_salary_receipt_controller.dart';
+import '../../../../../core/databases/api/dio_consumer.dart';
 
 class EmployeeDashbordBinding extends Bindings {
   @override
   void dependencies() {
+    Get.lazyPut(
+      () => EmployeeSalaryReceiptController(Get.find<DioConsumer>()),
+      fenix: true,
+    );
     Get.lazyPut(
       () => EmployeeDashbordController(
         requestOverTimeLoanUsecase: RequestOverTimeLoanUsecase(

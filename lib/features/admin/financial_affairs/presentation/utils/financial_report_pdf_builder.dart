@@ -135,6 +135,80 @@ class FinancialReportPdfBuilder {
     );
   }
 
+  static Future<Uint8List> buildPayroll({
+    required Map<String, dynamic> payload,
+  }) async {
+    final rows = (payload['rows'] as List? ?? const [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final summary = Map<String, dynamic>.from(
+      payload['summary'] as Map? ?? const {},
+    );
+    final month = '${payload['month'] ?? ''}';
+
+    return _build(
+      title: 'تقرير الرواتب الشهري',
+      subtitle: month.isEmpty ? 'جميع الفترات' : 'شهر الرواتب: $month',
+      summary: [
+        ['عدد الموظفين', '${summary['employees_count'] ?? rows.length}'],
+        ['إجمالي الاستحقاقات', _money(summary['gross_total'])],
+        ['السلف المسواة', _money(summary['advances_total'])],
+        ['المدفوع النقدي', _money(summary['paid_total'])],
+        ['المتبقي', _money(summary['remaining_total'])],
+        [
+          'إقرارات الاستلام',
+          '${summary['received_count'] ?? 0} مستلم • '
+              '${summary['pending_count'] ?? 0} معلق • '
+              '${summary['disputed_count'] ?? 0} اعتراض'
+        ],
+      ],
+      headers: const [
+        'الإقرارات',
+        'الحالة',
+        'المتبقي',
+        'المدفوع',
+        'السلف',
+        'الاستحقاق',
+        'الموظف',
+        '#',
+      ],
+      data: rows.asMap().entries.map((entry) {
+        final row = entry.value;
+        return [
+          '${row['received_count'] ?? 0} مستلم / '
+              '${row['pending_count'] ?? 0} معلق / '
+              '${row['disputed_count'] ?? 0} اعتراض',
+          _payrollStatus('${row['status'] ?? ''}'),
+          '${_money(row['remaining'])} شيكل',
+          '${_money(row['total_paid'])} شيكل',
+          '${_money(row['advances_applied'])} شيكل',
+          '${_money(row['gross_entitlement'])} شيكل',
+          '${row['employee_name'] ?? '-'}',
+          '${entry.key + 1}',
+        ];
+      }).toList(),
+      widths: const {
+        0: pw.FlexColumnWidth(1.45),
+        1: pw.FlexColumnWidth(1),
+        2: pw.FlexColumnWidth(1.1),
+        3: pw.FlexColumnWidth(1.1),
+        4: pw.FlexColumnWidth(1),
+        5: pw.FlexColumnWidth(1.15),
+        6: pw.FlexColumnWidth(1.8),
+        7: pw.FlexColumnWidth(.4),
+      },
+      rtlColumns: const {0, 1, 2, 3, 4, 5, 6},
+    );
+  }
+
+  static String _payrollStatus(String status) {
+    if (status == 'paid') return 'مدفوع بالكامل';
+    if (status == 'partially_paid') return 'مدفوع جزئياً';
+    if (status == 'cancelled') return 'ملغي';
+    return 'محسوب';
+  }
+
   static Future<Uint8List> _build({
     required String title,
     required String subtitle,

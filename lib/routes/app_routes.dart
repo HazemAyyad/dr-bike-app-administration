@@ -44,6 +44,7 @@ class AppRoutes {
   static const NOTIFICATIONCENTER = '/AdminNotificationCenter';
   static const NOTIFICATIONSETTINGSCENTER = '/AdminNotificationSettingsCenter';
   static const EMPLOYEENOTIFICATIONCENTER = '/EmployeeNotificationCenter';
+  static const EMPLOYEESALARYRECEIPTSSCREEN = '/EmployeeSalaryReceiptsScreen';
   static const WHATSAPPCENTER = '/WhatsAppCenter';
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
   static const TECHNICALSUPPORT = '/TechnicalSupport';
@@ -135,6 +136,7 @@ class AppRoutes {
   static const DESTRUCTIONPRODUCTSSCREEN = '/DestructionProductsScreen';
   static const ADDEXPENSESCREEN = '/AddExpenseScreen';
   static const EXPENSEDETAILSSCREEN = '/ExpenseDetailsScreen';
+  static const PAYROLLSCREEN = '/PayrollScreen';
   static const ASSETDETAILSSCREEN = '/AssetDetailsScreen';
   static const SAFESSCREEN = '/SafesScreen';
   static const FILEBOXSCREEN = '/FileBoxScreen';

@@ -167,6 +167,11 @@ class ExpensesController extends GetxController
       'route': AppRoutes.ADDEXPENSESCREEN,
     },
     {
+      'title': 'دفع الرواتب',
+      'icon': AssetsManager.moneyIcon,
+      'route': AppRoutes.PAYROLLSCREEN,
+    },
+    {
       'title': 'DestructionProducts',
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.DESTRUCTIONPRODUCTSSCREEN,

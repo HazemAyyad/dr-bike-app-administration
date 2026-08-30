@@ -5,6 +5,7 @@ import '../../features/admin/sales/presentation/controllers/sales_controller.dar
 import '../../routes/app_routes.dart';
 import 'app_dependency_registry.dart';
 import 'initial_bindings.dart';
+import '../../features/employee/employee_dashbord/presentation/controllers/employee_salary_receipt_controller.dart';
 
 /// Maps FCM / notification payloads to employee screens.
 class EmployeeNotificationRouter {
@@ -76,8 +77,13 @@ class EmployeeNotificationRouter {
         type == 'employee_task_co_main_done' ||
         type == 'employee_task_co_main_completed' ||
         type == 'employee_points_changed' ||
-        type == 'employee_reward_earned') {
+        type == 'employee_reward_earned' ||
+        type == 'salary_paid') {
       if (_openDashboard()) {
+        if (type == 'salary_paid' &&
+            Get.isRegistered<EmployeeSalaryReceiptController>()) {
+          Get.find<EmployeeSalaryReceiptController>().load();
+        }
         return;
       }
     }

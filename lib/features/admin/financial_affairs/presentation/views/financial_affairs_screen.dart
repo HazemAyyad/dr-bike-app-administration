@@ -45,6 +45,12 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
               onPressed: () => _openFilters(context),
               icon: Icons.tune_rounded,
             ),
+            if (selectedTab == 0)
+              _appBarAction(
+                tooltip: 'دفع الرواتب',
+                onPressed: () => Get.toNamed(AppRoutes.PAYROLLSCREEN),
+                icon: Icons.payments_rounded,
+              ),
             if (selectedTab == 1)
               _appBarAction(
                 tooltip: 'تنفيذ إهلاك أصول الشهر',

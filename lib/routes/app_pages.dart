@@ -46,6 +46,7 @@ import '../features/smart_home/presentation/bindings/smart_home_binding.dart';
 import '../features/smart_home/presentation/views/smart_home_dashboard_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
+import '../features/employee/employee_dashbord/presentation/views/salary_receipts/employee_salary_receipts_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
 import '../features/employee_suggestions/presentation/employee_suggestions_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
@@ -125,6 +126,7 @@ import '../features/admin/financial_affairs/presentation/views/expenses_screens/
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expense_details_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/payroll_screens/payroll_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/file_box_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/files_screen.dart';
@@ -395,6 +397,12 @@ class AppPages {
       page: () => const EmployeeNotificationCenterScreen(),
       binding: EmployeeNotificationCenterBinding(),
       transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEESALARYRECEIPTSSCREEN,
+      page: () => const EmployeeSalaryReceiptsScreen(),
+      binding: EmployeeDashbordBinding(),
+      transition: _transitionSize,
     ),
     GetPage(
       name: AppRoutes.EMPLOYEEREMINDERSSCREEN,
@@ -1164,6 +1172,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.EXPENSEDETAILSSCREEN,
       page: () => const ExpenseDetailsScreen(),
+      binding: ExpensesBinding(),
+      transition: _transitionSize,
+    ),
+    GetPage(
+      name: AppRoutes.PAYROLLSCREEN,
+      page: () => const PayrollScreen(),
       binding: ExpensesBinding(),
       transition: _transitionSize,
     ),

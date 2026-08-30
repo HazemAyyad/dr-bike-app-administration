@@ -23,10 +23,16 @@ import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expense_report_usecase.dart';
 import '../controllers/expenses_controller.dart';
+import '../controllers/payroll_controller.dart';
+import '../../../../../core/databases/api/dio_consumer.dart';
 
 class ExpensesBinding extends Bindings {
   @override
   void dependencies() {
+    Get.lazyPut(
+      () => PayrollController(Get.find<DioConsumer>()),
+      fenix: true,
+    );
     Get.lazyPut(
       () => ExpensesController(
         getAllFinancialUsecase: GetAllFinancialUsecase(

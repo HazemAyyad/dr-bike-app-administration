@@ -27,6 +27,22 @@ class EndPoints {
 
   // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
+  static const String payrollEmployees = 'payroll/employees';
+  static const String payrollBoxes = 'payroll/boxes';
+  static const String payrollPreview = 'payroll/preview';
+  static const String payrollPay = 'payroll/pay';
+  static const String payrollPeriods = 'payroll/periods';
+  static const String payrollReport = 'payroll/report';
+  static String payrollReceipt(int id) => 'payroll/receipts/$id';
+  static const String employeePendingSalaryReceipts =
+      'employee/payroll/receipts/pending';
+  static const String employeeSalaryReceipts = 'employee/payroll/receipts';
+  static String employeeSalaryReceipt(int id) =>
+      'employee/payroll/receipts/$id';
+  static String acknowledgeSalaryReceipt(int id) =>
+      'employee/payroll/receipts/$id/acknowledge';
+  static String disputeSalaryReceipt(int id) =>
+      'employee/payroll/receipts/$id/dispute';
   static const String employeeWifiPresence = 'employee/wifi-presence';
   static const String employeeMyAttendanceHistory =
       'employee/my/attendance/history';

@@ -21,6 +21,8 @@ import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
 import '../widgets/employee_attendance_app_bar_button.dart';
 import '../widgets/impersonation_exit_button.dart';
+import '../widgets/employee_salary_receipt_alert.dart';
+import '../controllers/employee_salary_receipt_controller.dart';
 
 class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
   const EmployeeDashbordScreen({Key? key}) : super(key: key);
@@ -133,6 +135,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
           onRefresh: () async {
             await controller.refreshWifiPresencePermissions(request: true);
             await controller.getEmployeeData(scrollToTodayb: false);
+            if (Get.isRegistered<EmployeeSalaryReceiptController>()) {
+              await Get.find<EmployeeSalaryReceiptController>().load();
+            }
           },
           child: SingleChildScrollView(
             physics: kRefreshableScrollPhysics,
@@ -143,7 +148,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                 SizedBox(height: 10.h),
                 // بطاقات الإحصائيات
                 const EmployeeHomeStatisticsCard(),
-                SizedBox(height: 15.h),
+                SizedBox(height: 12.h),
+                const EmployeeSalaryReceiptAlert(),
+                SizedBox(height: 3.h),
                 const _EmployeeSharedGoalsSection(),
                 SizedBox(height: 12.h),
                 // أزرار الوظائف

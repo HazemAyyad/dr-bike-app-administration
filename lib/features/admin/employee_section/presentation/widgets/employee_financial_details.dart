@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/financial_details_model.dart';
 import '../controllers/employee_section_controller.dart';
+import '../../../../../routes/app_routes.dart';
 
 /// Lightweight financial summary for a selected calendar day (API day view).
 class EmployeeFinancialDetails extends StatelessWidget {
@@ -308,42 +307,49 @@ class _PaymentForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.bodyMedium!;
-    return Form(
-      key: controller.formKey,
-      child: Column(
-        children: [
-          CustomTextField(
-            labelTextstyle: textStyle.copyWith(
-              color: Colors.green,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-            ),
-            label: 'paySalary',
-            hintText: 'salary',
-            hintStyle: textStyle.copyWith(
-              color: Colors.grey,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w700,
-            ),
-            controller: controller.paySalaryController,
-          ),
-          SizedBox(height: 8.h),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.h),
-            child: AppButton(
-              isLoading: controller.isLoading,
-              text: 'apply',
-              onPressed: () => controller.isLoading.value
-                  ? null
-                  : controller.paySalaryToEmployee(
-                      context,
-                      employee.employeeId.toString(),
-                    ),
-            ),
-          ),
-        ],
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(10.r),
+      decoration: BoxDecoration(
+        color: AppColors.operationalPurple.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: AppColors.operationalPurple.withValues(alpha: .25),
+        ),
       ),
+      child: Column(children: [
+        const Row(children: [
+          Icon(Icons.info_outline_rounded, color: AppColors.operationalPurple),
+          SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              'يتم صرف الراتب من الشاشة المحاسبية المستقلة لضمان احتساب السلف والصندوق وإقرار الاستلام.',
+            ),
+          ),
+        ]),
+        SizedBox(height: 9.h),
+        SizedBox(
+          width: double.infinity,
+          height: 45.h,
+          child: FilledButton.icon(
+            onPressed: () {
+              Get.back();
+              Get.toNamed(
+                AppRoutes.PAYROLLSCREEN,
+                arguments: {
+                  'employee_id': employee.employeeId,
+                  'month': employee.month,
+                },
+              );
+            },
+            icon: const Icon(Icons.payments_rounded),
+            label: const Text('فتح شاشة دفع الراتب'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.operationalPurple,
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
