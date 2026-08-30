@@ -12,6 +12,7 @@ import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_useca
 import '../controllers/employee_dashbord_controller.dart';
 import '../controllers/employee_salary_receipt_controller.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../common_feature/presentation/user_profile/controllers/employee_signatures_controller.dart';
 
 class EmployeeDashbordBinding extends Bindings {
   static void ensureSalaryReceiptController() {
@@ -25,9 +26,21 @@ class EmployeeDashbordBinding extends Bindings {
     );
   }
 
+  static void ensureEmployeeSignaturesController() {
+    if (Get.isRegistered<EmployeeSignaturesController>() ||
+        Get.isPrepared<EmployeeSignaturesController>()) {
+      return;
+    }
+    Get.lazyPut(
+      () => EmployeeSignaturesController(Get.find<DioConsumer>()),
+      fenix: true,
+    );
+  }
+
   @override
   void dependencies() {
     ensureSalaryReceiptController();
+    ensureEmployeeSignaturesController();
     Get.lazyPut(
       () => EmployeeDashbordController(
         requestOverTimeLoanUsecase: RequestOverTimeLoanUsecase(

@@ -43,6 +43,8 @@ class EndPoints {
       'employee/payroll/receipts/$id/acknowledge';
   static String disputeSalaryReceipt(int id) =>
       'employee/payroll/receipts/$id/dispute';
+  static const String employeeSignatures = 'employee/signatures';
+  static String employeeSignature(int id) => 'employee/signatures/$id';
   static const String employeeWifiPresence = 'employee/wifi-presence';
   static const String employeeMyAttendanceHistory =
       'employee/my/attendance/history';

@@ -45,6 +45,7 @@ class AppRoutes {
   static const NOTIFICATIONSETTINGSCENTER = '/AdminNotificationSettingsCenter';
   static const EMPLOYEENOTIFICATIONCENTER = '/EmployeeNotificationCenter';
   static const EMPLOYEESALARYRECEIPTSSCREEN = '/EmployeeSalaryReceiptsScreen';
+  static const EMPLOYEESIGNATURESSCREEN = '/EmployeeSignaturesScreen';
   static const WHATSAPPCENTER = '/WhatsAppCenter';
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
   static const TECHNICALSUPPORT = '/TechnicalSupport';

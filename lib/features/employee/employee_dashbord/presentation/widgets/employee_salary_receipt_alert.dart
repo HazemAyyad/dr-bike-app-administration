@@ -1,11 +1,10 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../common_feature/presentation/user_profile/controllers/employee_signatures_controller.dart';
+import '../../../../common_feature/presentation/user_profile/widgets/signature_capture_flow.dart';
 import '../binding/employee_dashbord_binding.dart';
 import '../controllers/employee_salary_receipt_controller.dart';
 import '../../../../../routes/app_routes.dart';
@@ -210,95 +209,230 @@ class EmployeeSalaryReceiptAlert
 
   Future<void> _signatureDialog(
       BuildContext context, Map<String, dynamic> row) async {
-    final signatureKey = GlobalKey();
-    final strokes = <List<Offset>>[].obs;
-    await showDialog<void>(
+    EmployeeDashbordBinding.ensureEmployeeSignaturesController();
+    final signatures = Get.find<EmployeeSignaturesController>();
+    await signatures.load();
+    if (!context.mounted) return;
+    final selectedId = RxnInt(signatures.defaultSignature?.id);
+    await showModalBottomSheet<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: const Text('توقيع استلام الراتب'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text(
-                'وقّع بإصبعك داخل المربع. توقيعك يعني أنك استلمت المبلغ الموضح.'),
-            SizedBox(height: 10.h),
-            RepaintBoundary(
-              key: signatureKey,
-              child: Container(
-                height: 190.h,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                      color: AppColors.operationalPurple, width: 1.5),
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: .78,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+            child: Column(children: [
+              Row(children: [
+                Container(
+                  padding: EdgeInsets.all(10.r),
+                  decoration: BoxDecoration(
+                    color: AppColors.customGreen1.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(13.r),
+                  ),
+                  child: const Icon(Icons.verified_user_rounded,
+                      color: AppColors.customGreen1),
                 ),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanStart: (details) => strokes.add([details.localPosition]),
-                  onPanUpdate: (details) {
-                    if (strokes.isEmpty) return;
-                    strokes.last.add(details.localPosition);
-                    strokes.refresh();
-                  },
-                  child: Obx(() => CustomPaint(
-                        painter: _SignaturePainter(
-                            strokes.map((e) => List<Offset>.from(e)).toList()),
-                        child: const SizedBox.expand(),
+                SizedBox(width: 9.w),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('اختر توقيع الاستلام',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 18)),
+                      Text('يجب تأكيد استخدام التوقيع لكل سند بشكل مستقل'),
+                    ],
+                  ),
+                ),
+              ]),
+              SizedBox(height: 12.h),
+              if (signatures.signatures.isEmpty)
+                Expanded(
+                  child: _NoSavedSignature(
+                    onCreate: () async {
+                      Navigator.pop(sheetContext);
+                      await _useNewSignature(context, row, signatures);
+                    },
+                  ),
+                )
+              else ...[
+                Expanded(
+                  child: Obx(() => ListView.separated(
+                        itemCount: signatures.signatures.length,
+                        separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                        itemBuilder: (_, index) {
+                          final signature = signatures.signatures[index];
+                          return Obx(() => _SalarySignatureOption(
+                                signature: signature,
+                                selected: selectedId.value == signature.id,
+                                onTap: () => selectedId.value = signature.id,
+                              ));
+                        },
                       )),
                 ),
-              ),
-            ),
-            Obx(() => Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    onPressed: strokes.isEmpty ? null : strokes.clear,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('مسح التوقيع'),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(sheetContext);
+                    await _useNewSignature(context, row, signatures);
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('إنشاء توقيع جديد لهذه العملية'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size.fromHeight(46.h),
                   ),
-                )),
-          ]),
+                ),
+                SizedBox(height: 8.h),
+                Obx(() => FilledButton.icon(
+                      onPressed: selectedId.value == null ||
+                              controller.isSubmitting.value
+                          ? null
+                          : () async {
+                              final accepted = await _confirmSignatureUse(
+                                context,
+                                signatures.signatures
+                                    .firstWhere(
+                                      (item) => item.id == selectedId.value,
+                                    )
+                                    .name,
+                              );
+                              if (!accepted) return;
+                              final success =
+                                  await controller.acknowledgeStored(
+                                int.parse('${row['id']}'),
+                                selectedId.value!,
+                              );
+                              if (success && sheetContext.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
+                            },
+                      icon: controller.isSubmitting.value
+                          ? SizedBox.square(
+                              dimension: 18.r,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.verified_rounded),
+                      label: const Text('استخدام التوقيع وتأكيد الاستلام'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.customGreen1,
+                        minimumSize: Size.fromHeight(49.h),
+                      ),
+                    )),
+              ],
+            ]),
+          ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _useNewSignature(
+    BuildContext context,
+    Map<String, dynamic> row,
+    EmployeeSignaturesController signatures,
+  ) async {
+    final capture = await showEmployeeSignatureCapture(context);
+    if (capture == null || !context.mounted) return;
+    final name = TextEditingController(
+        text: signatures.signatures.isEmpty
+            ? 'التوقيع الرسمي'
+            : 'توقيع ${signatures.signatures.length + 1}');
+    final save = true.obs;
+    final makeDefault = signatures.signatures.isEmpty.obs;
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تأكيد التوقيع الجديد'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            height: 115.h,
+            width: double.infinity,
+            padding: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: AppColors.operationalCardBorder),
+            ),
+            child: Image.memory(capture.processedBytes, fit: BoxFit.contain),
+          ),
+          SizedBox(height: 10.h),
+          TextField(
+            controller: name,
+            decoration: const InputDecoration(
+              labelText: 'اسم التوقيع',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          Obx(() => CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: save.value,
+                onChanged: (value) => save.value = value ?? false,
+                title: const Text('حفظ التوقيع في ملفي'),
+              )),
+          Obx(() => save.value
+              ? CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: makeDefault.value,
+                  onChanged: (value) => makeDefault.value = value ?? false,
+                  title: const Text('تعيينه كتوقيع افتراضي'),
+                )
+              : const SizedBox.shrink()),
+        ]),
         actions: [
           TextButton(
-              onPressed: controller.isSubmitting.value
-                  ? null
-                  : () => Navigator.pop(context),
-              child: const Text('إلغاء')),
-          Obx(() => FilledButton(
-                onPressed: controller.isSubmitting.value
-                    ? null
-                    : () async {
-                        if (strokes.isEmpty ||
-                            strokes.every((line) => line.length < 2)) {
-                          Get.snackbar(
-                              'التوقيع مطلوب', 'وقّع داخل المربع أولاً');
-                          return;
-                        }
-                        final boundary = signatureKey.currentContext
-                            ?.findRenderObject() as RenderRepaintBoundary?;
-                        if (boundary == null) return;
-                        final image = await boundary.toImage(pixelRatio: 2.5);
-                        final data = await image.toByteData(
-                            format: ui.ImageByteFormat.png);
-                        if (data == null) return;
-                        final success = await controller.acknowledge(
-                          int.parse('${row['id']}'),
-                          data.buffer.asUint8List(),
-                        );
-                        if (success && context.mounted) Navigator.pop(context);
-                      },
-                child: controller.isSubmitting.value
-                    ? SizedBox.square(
-                        dimension: 18.r,
-                        child: const CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Text('حفظ التوقيع والتأكيد'),
-              )),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('توقيع وتأكيد الاستلام'),
+          ),
         ],
       ),
     );
+    if (accepted == true) {
+      final success = await controller.acknowledgeNew(
+        int.parse('${row['id']}'),
+        capture.originalBytes,
+        source: capture.source,
+        name: name.text.trim().isEmpty ? 'توقيع الراتب' : name.text.trim(),
+        saveSignature: save.value,
+        makeDefault: makeDefault.value,
+      );
+      if (success && save.value) await signatures.load();
+    }
+    name.dispose();
+  }
+
+  Future<bool> _confirmSignatureUse(
+      BuildContext context, String signatureName) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            icon: const Icon(Icons.verified_rounded,
+                color: AppColors.customGreen1, size: 42),
+            title: const Text('تأكيد استلام الراتب'),
+            content: Text(
+              'سيتم استخدام «$signatureName» لتوثيق استلام هذا السند. هل تؤكد الاستلام؟',
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('رجوع'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('أؤكد الاستلام'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _disputeDialog(
@@ -334,6 +468,104 @@ class EmployeeSalaryReceiptAlert
     );
     reason.dispose();
   }
+}
+
+class _SalarySignatureOption extends StatelessWidget {
+  const _SalarySignatureOption({
+    required this.signature,
+    required this.selected,
+    required this.onTap,
+  });
+  final EmployeeSignatureModel signature;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15.r),
+        child: Container(
+          padding: EdgeInsets.all(10.r),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.customGreen1.withValues(alpha: .07)
+                : AppColors.operationalSurface,
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(
+              color: selected
+                  ? AppColors.customGreen1
+                  : AppColors.operationalCardBorder,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Container(
+              width: 92.w,
+              height: 62.h,
+              padding: EdgeInsets.all(7.r),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Image.network(
+                signature.imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.broken_image_outlined),
+              ),
+            ),
+            SizedBox(width: 9.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(signature.name,
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Text(
+                    signature.isDefault ? 'التوقيع الافتراضي' : 'توقيع محفوظ',
+                    style: TextStyle(
+                      color:
+                          signature.isDefault ? AppColors.customGreen1 : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              selected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              color: selected ? AppColors.customGreen1 : Colors.grey,
+            ),
+          ]),
+        ),
+      );
+}
+
+class _NoSavedSignature extends StatelessWidget {
+  const _NoSavedSignature({required this.onCreate});
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.draw_outlined,
+              size: 54.sp, color: AppColors.operationalPurple),
+          SizedBox(height: 9.h),
+          const Text('لا يوجد توقيع محفوظ',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+          const Text(
+            'أنشئ توقيعًا يدويًا أو صوّره أو ارفعه من الجهاز.',
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 13.h),
+          FilledButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('إنشاء توقيع الآن'),
+          ),
+        ]),
+      );
 }
 
 class _ReceiptAmounts extends StatelessWidget {
@@ -403,30 +635,4 @@ class _InfoLine extends StatelessWidget {
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
         ]),
       );
-}
-
-class _SignaturePainter extends CustomPainter {
-  _SignaturePainter(this.strokes);
-  final List<List<Offset>> strokes;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF17213A)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-    for (final stroke in strokes) {
-      if (stroke.length < 2) continue;
-      final path = Path()..moveTo(stroke.first.dx, stroke.first.dy);
-      for (var i = 1; i < stroke.length; i++) {
-        path.lineTo(stroke[i].dx, stroke[i].dy);
-      }
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SignaturePainter oldDelegate) => true;
 }

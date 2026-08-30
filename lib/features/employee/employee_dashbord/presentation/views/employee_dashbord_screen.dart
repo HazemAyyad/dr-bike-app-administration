@@ -294,7 +294,9 @@ class _EmployeeSharedGoalsSection extends GetView<EmployeeDashbordController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final goals = controller.employeeData.value?.sharedGoals ?? const [];
+      final goals = List<EmployeeSharedGoal>.from(
+        controller.employeeData.value?.sharedGoals ?? const [],
+      )..sort((a, b) => b.id.compareTo(a.id));
       if (goals.isEmpty) return const SizedBox.shrink();
 
       return Column(

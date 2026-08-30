@@ -62,6 +62,14 @@ class BuildProfileSidebar extends GetView<ProfileController> {
             Get.toNamed(AppRoutes.CHANGEPASSWORDSCREEN);
           },
         ),
+        if (userType == 'employee')
+          BuildSidebarItem(
+            title: 'توقيعاتي المعتمدة',
+            icon: Icons.draw_rounded,
+            route: () {
+              Get.toNamed(AppRoutes.EMPLOYEESIGNATURESSCREEN);
+            },
+          ),
         if (userType != 'admin')
           BuildSidebarItem(
             title: 'myOrders'.tr,

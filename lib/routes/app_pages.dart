@@ -206,6 +206,7 @@ import '../features/common_feature/presentation/personal_details/binding/persona
 import '../features/common_feature/presentation/personal_details/views/personal_details_screen.dart';
 import '../features/common_feature/presentation/user_profile/binding/profile_binding.dart';
 import '../features/common_feature/presentation/user_profile/views/profile_screen.dart';
+import '../features/common_feature/presentation/user_profile/views/employee_signatures_screen.dart';
 import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
 import '../features/employee/scan_qrcode/presentation/views/qr_code_screen.dart';
 import '../features/home/binding/home_page_binding.dart';
@@ -1257,6 +1258,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.PROFILESCREEN,
       page: () => const ProfileScreen(),
+      binding: ProfileScreenBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEESIGNATURESSCREEN,
+      page: () => const EmployeeSignaturesScreen(),
       binding: ProfileScreenBinding(),
       transition: _transitionDownToUp,
     ),

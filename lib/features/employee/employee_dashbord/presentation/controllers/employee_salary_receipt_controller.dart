@@ -120,12 +120,45 @@ class EmployeeSalaryReceiptController extends GetxController {
   }
 
   Future<bool> acknowledge(int id, List<int> pngBytes) async {
+    return acknowledgeNew(
+      id,
+      Uint8List.fromList(pngBytes),
+      source: 'manual',
+      name: 'توقيع الراتب',
+    );
+  }
+
+  Future<bool> acknowledgeStored(int id, int signatureId) =>
+      _acknowledge(id, {'signature_id': signatureId});
+
+  Future<bool> acknowledgeNew(
+    int id,
+    Uint8List originalBytes, {
+    required String source,
+    required String name,
+    bool saveSignature = false,
+    bool makeDefault = false,
+  }) {
+    final jpeg = originalBytes.length > 2 &&
+        originalBytes[0] == 0xff &&
+        originalBytes[1] == 0xd8;
+    return _acknowledge(id, {
+      'signature':
+          'data:image/${jpeg ? 'jpeg' : 'png'};base64,${base64Encode(originalBytes)}',
+      'signature_source': source,
+      'signature_name': name,
+      'save_signature': saveSignature,
+      'make_default': makeDefault,
+    });
+  }
+
+  Future<bool> _acknowledge(int id, Map<String, dynamic> signatureData) async {
     isSubmitting.value = true;
     try {
       final response = await api.post(
         EndPoints.acknowledgeSalaryReceipt(id),
         data: {
-          'signature': 'data:image/png;base64,${base64Encode(pngBytes)}',
+          ...signatureData,
           'device': GetPlatform.isAndroid
               ? 'Doctor Bike Android App'
               : 'Doctor Bike App',
