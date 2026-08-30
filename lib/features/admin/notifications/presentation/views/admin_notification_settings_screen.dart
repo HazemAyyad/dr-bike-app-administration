@@ -28,7 +28,7 @@ class AdminNotificationSettingsScreen
         ),
         body: Column(
           children: [
-            Obx(() => _ControlCenterSummary(controller: controller)),
+            _ControlCenterSummary(controller: controller),
             Container(
               margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               decoration: BoxDecoration(
@@ -83,6 +83,10 @@ class _ControlCenterSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(12),
@@ -535,6 +539,10 @@ class _PoliciesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (controller.catalog.isEmpty) {
       return const _EmptyState(label: 'لا توجد أنواع إشعارات');
     }
@@ -713,6 +721,10 @@ class _SoundsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Column(
       children: [
         Padding(
@@ -795,6 +807,10 @@ class _DevicesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Column(
       children: [
         Card(
@@ -875,6 +891,10 @@ class _DeliveriesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (controller.deliveries.isEmpty) {
       return const _EmptyState(label: 'لا توجد محاولات تسليم مسجلة');
     }
@@ -922,6 +942,10 @@ class _AuditsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Obx(() => _buildContent(context));
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (controller.audits.isEmpty) {
       return const _EmptyState(label: 'لا توجد تغييرات إدارية مسجلة بعد');
     }
