@@ -26,6 +26,7 @@ class AdminNotificationApiService {
     bool? unreadOnly,
     String? dateFrom,
     String? dateTo,
+    String? search,
   }) async {
     final Map<String, dynamic> q = {
       'page': page,
@@ -42,6 +43,9 @@ class AdminNotificationApiService {
     }
     if (dateTo != null && dateTo.isNotEmpty) {
       q['date_to'] = dateTo;
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      q['q'] = search.trim();
     }
     final Response res = await _api.get(
       EndPoints.adminNotifications,
@@ -60,6 +64,20 @@ class AdminNotificationApiService {
 
   Future<void> deleteNotification(int id) async {
     await _api.delete(EndPoints.adminNotificationDelete(id));
+  }
+
+  Future<void> reportDeliveryEvent({
+    required int notificationId,
+    required String event,
+    String? fcmToken,
+  }) async {
+    await _api.post(
+      EndPoints.adminNotificationDeliveryEvent(notificationId),
+      data: {
+        'event': event,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+      },
+    );
   }
 
   /// Returns response body map on success for logging.

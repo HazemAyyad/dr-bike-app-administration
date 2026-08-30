@@ -150,6 +150,75 @@ const List<Map<String, String>> kNotificationLibrarySounds = [
   },
 ];
 
+const List<Map<String, String>> kCoreNotificationSounds = [
+  {
+    'channel': kDrBikeTaskNotificationChannelId,
+    'name': kDrBikeTaskNotificationChannelName,
+    'resource': kTaskSosSoundResource,
+  },
+  {
+    'channel': kDrBikeTaskSuccessChannelId,
+    'name': kDrBikeTaskSuccessChannelName,
+    'resource': kTaskSuccessSoundResource,
+  },
+  {
+    'channel': kDrBikeAdminLoginChannelId,
+    'name': kDrBikeAdminLoginChannelName,
+    'resource': kAdminLoginMotivateSoundResource,
+  },
+  {
+    'channel': kDrBikeShiplyMotorcycleChannelId,
+    'name': kDrBikeShiplyMotorcycleChannelName,
+    'resource': kShiplyMotorcycleSoundResource,
+  },
+  {
+    'channel': kDrBikeShiplyStuckChannelId,
+    'name': kDrBikeShiplyStuckChannelName,
+    'resource': kShiplyStuckSoundResource,
+  },
+  {
+    'channel': kDrBikeShiplyReturnedChannelId,
+    'name': kDrBikeShiplyReturnedChannelName,
+    'resource': kShiplyReturnedSoundResource,
+  },
+  {
+    'channel': kDrBikeShiplyDeliveredChannelId,
+    'name': kDrBikeShiplyDeliveredChannelName,
+    'resource': kShiplyDeliveredSoundResource,
+  },
+  {
+    'channel': kDrBikeSalesOrderStatusChannelId,
+    'name': kDrBikeSalesOrderStatusChannelName,
+    'resource': kSalesOrderChurchBellSoundResource,
+  },
+];
+
+Importance _importanceFromPayload(Map<String, dynamic> data) {
+  switch (data['notification_priority']?.toString()) {
+    case 'low':
+      return Importance.low;
+    case 'normal':
+      return Importance.defaultImportance;
+    case 'critical':
+      return Importance.max;
+    default:
+      return Importance.high;
+  }
+}
+
+Priority _priorityFromPayload(Map<String, dynamic> data) {
+  switch (data['notification_priority']?.toString()) {
+    case 'low':
+      return Priority.low;
+    case 'normal':
+      return Priority.defaultPriority;
+    case 'critical':
+      return Priority.max;
+    default:
+      return Priority.high;
+  }
+}
+
 /// SOS-style alert for employee task push notifications.
 final Int64List kTaskSosVibrationPattern =
     Int64List.fromList([0, 400, 200, 400, 200, 600]);
@@ -693,6 +762,10 @@ class NotificationFirebaseService {
       if (response != null) {
         debugPrint('[FCM] response: $response');
       }
+      await NotificationUploadedSoundService.instance.syncForAdminDevice(
+        fcmToken: finalToken,
+        notifications: _flutterLocalNotificationsPlugin,
+      );
     } on DioException catch (e) {
       debugPrint(
         '[FCM] admin/device-token DioException status=${e.response?.statusCode}',
@@ -745,6 +818,29 @@ class NotificationFirebaseService {
     );
     await androidPlugin?.createNotificationChannel(silentChannel);
 
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        '${kDrBikeAdminNotificationChannelId}_no_vibration',
+        'Dr Bike Notifications · بدون اهتزاز',
+        description: 'إشعارات Doctor Bike بدون اهتزاز',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: false,
+        showBadge: true,
+      ),
+    );
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        '${kDrBikeSilentNotificationChannelId}_no_vibration',
+        'إشعارات صامتة · بدون اهتزاز',
+        description: 'إشعارات صامتة بالكامل',
+        importance: Importance.high,
+        playSound: false,
+        enableVibration: false,
+        showBadge: true,
+      ),
+    );
+
     for (final sound in kNotificationLibrarySounds) {
       await androidPlugin?.createNotificationChannel(
         AndroidNotificationChannel(
@@ -755,6 +851,18 @@ class NotificationFirebaseService {
           playSound: true,
           sound: RawResourceAndroidNotificationSound(sound['resource']!),
           enableVibration: true,
+          showBadge: true,
+        ),
+      );
+      await androidPlugin?.createNotificationChannel(
+        AndroidNotificationChannel(
+          '${sound['channel']!}_no_vibration',
+          '${sound['name']!} · بدون اهتزاز',
+          description: 'صوت جاهز من المكتبة بدون اهتزاز',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(sound['resource']!),
+          enableVibration: false,
           showBadge: true,
         ),
       );
@@ -887,6 +995,21 @@ class NotificationFirebaseService {
       showBadge: true,
     );
     await androidPlugin?.createNotificationChannel(salesOrderStatusChannel);
+
+    for (final sound in kCoreNotificationSounds) {
+      await androidPlugin?.createNotificationChannel(
+        AndroidNotificationChannel(
+          '${sound['channel']!}_no_vibration',
+          '${sound['name']!} · بدون اهتزاز',
+          description: 'صوت إشعار Doctor Bike بدون اهتزاز',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(sound['resource']!),
+          enableVibration: false,
+          showBadge: true,
+        ),
+      );
+    }
 
     debugPrint(
       '[FCM] Android channels: admin=$kDrBikeAdminNotificationChannelId '
@@ -1029,6 +1152,10 @@ class NotificationFirebaseService {
         message.data['notification_android_sound']?.toString() ?? '';
     final selectedChannelId =
         message.data['notification_channel_id']?.toString() ?? '';
+    final hasPolicySoundSelection =
+        message.data.containsKey('notification_sound_key');
+    final selectedImportance = _importanceFromPayload(message.data);
+    final selectedPriority = _priorityFromPayload(message.data);
     final hasSelectedBundledSound = !customSoundPlayed &&
         !silentRequested &&
         selectedSoundResource.isNotEmpty &&
@@ -1037,12 +1164,14 @@ class NotificationFirebaseService {
         selectedChannelId.isNotEmpty;
     if (silentRequested) {
       androidDetails = AndroidNotificationDetails(
-        kDrBikeSilentNotificationChannelId,
+        selectedChannelId.isEmpty
+            ? kDrBikeSilentNotificationChannelId
+            : selectedChannelId,
         kDrBikeSilentNotificationChannelName,
         channelDescription: 'إشعارات بدون صوت',
         icon: 'ic_notification',
-        importance: Importance.high,
-        priority: Priority.high,
+        importance: selectedImportance,
+        priority: selectedPriority,
         playSound: false,
         enableVibration: false,
         visibility: NotificationVisibility.public,
@@ -1058,8 +1187,8 @@ class NotificationFirebaseService {
         kDrBikeForegroundCustomSoundChannelName,
         channelDescription: 'أصوات رفعها الأدمن وتعمل أثناء فتح التطبيق',
         icon: 'ic_notification',
-        importance: Importance.max,
-        priority: Priority.max,
+        importance: selectedImportance,
+        priority: selectedPriority,
         playSound: false,
         enableVibration: true,
         visibility: NotificationVisibility.public,
@@ -1075,10 +1204,30 @@ class NotificationFirebaseService {
         'صوت إشعار Doctor Bike',
         channelDescription: 'الصوت المختار من مركز التحكم بالإشعارات',
         icon: 'ic_notification',
-        importance: Importance.max,
-        priority: Priority.max,
+        importance: selectedImportance,
+        priority: selectedPriority,
         playSound: true,
         sound: RawResourceAndroidNotificationSound(selectedSoundResource),
+        enableVibration:
+            message.data['notification_vibration']?.toString() != '0',
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (hasPolicySoundSelection) {
+      androidDetails = AndroidNotificationDetails(
+        selectedChannelId.isEmpty
+            ? kDrBikeAdminNotificationChannelId
+            : selectedChannelId,
+        'إشعارات Doctor Bike',
+        channelDescription: 'الإعداد المختار من مركز التحكم بالإشعارات',
+        icon: 'ic_notification',
+        importance: selectedImportance,
+        priority: selectedPriority,
+        playSound: true,
         enableVibration:
             message.data['notification_vibration']?.toString() != '0',
         visibility: NotificationVisibility.public,
@@ -1383,6 +1532,27 @@ class NotificationFirebaseService {
     }
   }
 
+  Future<void> _reportAdminDeliveryEvent(
+    Map<String, dynamic> data,
+    String event,
+  ) async {
+    if (userType != 'admin' || !Get.isRegistered<DioConsumer>()) return;
+    final id = int.tryParse(data['notification_id']?.toString() ?? '');
+    if (id == null) return;
+    try {
+      final token = _supportsFirebaseMessaging
+          ? await firebaseMessaging.getToken()
+          : null;
+      await AdminNotificationApiService().reportDeliveryEvent(
+        notificationId: id,
+        event: event,
+        fcmToken: token,
+      );
+    } catch (error) {
+      debugPrint('[FCM] delivery acknowledgement failed: $error');
+    }
+  }
+
   void _handleEmployeeSalesDailyForeground(Map<String, dynamic> data) {
     if (userType != 'employee' ||
         ImpersonationState.isAdminImpersonatingEmployee) {
@@ -1435,6 +1605,7 @@ class NotificationFirebaseService {
       if (message.data['notification_foreground_banner']?.toString() != '0') {
         await showForegroundNotification(message);
       }
+      await _reportAdminDeliveryEvent(message.data, 'delivered');
       _refreshNotificationBadge();
       _handleEmployeeSalesDailyForeground(_payloadFromMessage(message));
     });
@@ -1454,6 +1625,7 @@ class NotificationFirebaseService {
   void _handleOpenedMessage(RemoteMessage message) {
     debugPrint('[FCM] notification opened app');
     final data = _payloadFromMessage(message);
+    _reportAdminDeliveryEvent(data, 'opened');
     _routeNotificationPayload(data);
     _refreshNotificationBadge();
   }

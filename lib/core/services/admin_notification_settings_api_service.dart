@@ -19,6 +19,21 @@ class AdminNotificationSettingsApiService {
     return _listFrom(res.data, 'sounds');
   }
 
+  Future<List<Map<String, dynamic>>> fetchSoundManifest() async {
+    final res = await _api.get(EndPoints.adminNotificationSoundsManifest);
+    return _listFrom(res.data, 'sounds');
+  }
+
+  Future<void> syncDeviceSounds({
+    required String fcmToken,
+    required List<Map<String, dynamic>> sounds,
+  }) async {
+    await _api.post(
+      EndPoints.adminNotificationDeviceSoundsSync,
+      data: {'fcm_token': fcmToken, 'sounds': sounds},
+    );
+  }
+
   Future<List<Map<String, dynamic>>> fetchTemplates() async {
     final res = await _api.get(EndPoints.adminNotificationTemplates);
     return _listFrom(res.data, 'templates');
@@ -36,6 +51,39 @@ class AdminNotificationSettingsApiService {
       return _listFrom(data['deliveries'], 'data');
     }
     return const [];
+  }
+
+  Future<Map<String, dynamic>> fetchAudienceOptions() async {
+    final res = await _api.get(EndPoints.adminNotificationAudienceOptions);
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> fetchEmployeeAudienceOptions() async {
+    final res = await _api.get(EndPoints.adminNotificationEmployeeOptions);
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<Map<String, dynamic>> sendManualEmployeeNotification(
+    Map<String, dynamic> values,
+  ) async {
+    final res = await _api.post(
+      EndPoints.adminManualEmployeeNotification,
+      data: values,
+    );
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAudits() async {
+    final res = await _api.get(EndPoints.adminNotificationAudits);
+    final data = res.data;
+    if (data is Map && data['audits'] is Map) {
+      return _listFrom(data['audits'], 'data');
+    }
+    return const [];
+  }
+
+  Future<void> retryDelivery(int id) async {
+    await _api.post(EndPoints.adminNotificationDeliveryRetry(id));
   }
 
   Future<Map<String, dynamic>> updatePolicy(

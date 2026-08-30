@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/admin_notification_settings_api_service.dart';
+import '../../../../../core/services/notification_firebase_service.dart';
 
 class AdminNotificationSettingsController extends GetxController {
   final _api = AdminNotificationSettingsApiService();
@@ -17,6 +18,49 @@ class AdminNotificationSettingsController extends GetxController {
   final templates = <Map<String, dynamic>>[].obs;
   final devices = <Map<String, dynamic>>[].obs;
   final deliveries = <Map<String, dynamic>>[].obs;
+  final audits = <Map<String, dynamic>>[].obs;
+  final audienceUsers = <Map<String, dynamic>>[].obs;
+  final audienceRoles = <String>[].obs;
+  final employeeOptions = <Map<String, dynamic>>[].obs;
+  final failedSections = <String>{}.obs;
+  final isSendingManual = false.obs;
+  final manualAudience = 'all'.obs;
+  final selectedEmployeeIds = <int>{}.obs;
+  final manualPriority = 'normal'.obs;
+  final manualVibration = true.obs;
+  final manualPush = true.obs;
+  final manualSoundId = RxnInt();
+  final employeeSearch = ''.obs;
+  final manualTitleController = TextEditingController();
+  final manualBodyController = TextEditingController();
+
+  int get activePolicies => catalog.where((row) {
+        final policy = row['policy'] as Map?;
+        return policy?['is_enabled'] == true;
+      }).length;
+  int get readySounds => sounds.where((row) => row['is_active'] == true).length;
+  int get healthyDevices =>
+      devices.where((row) => row['is_active'] == true).length;
+  int get failedDeliveries =>
+      deliveries.where((row) => row['status'] == 'failed').length;
+
+  List<Map<String, dynamic>> get manualSounds => sounds.where((row) {
+        if (row['source'] != 'bundled' || row['is_active'] != true) {
+          return false;
+        }
+        final ios = row['ios_filename']?.toString().toLowerCase() ?? '';
+        return ios.isEmpty || ios == 'silent' || !ios.endsWith('.mp3');
+      }).toList();
+
+  List<Map<String, dynamic>> get filteredEmployeeOptions {
+    final query = employeeSearch.value.trim().toLowerCase();
+    if (query.isEmpty) return employeeOptions.toList();
+    return employeeOptions.where((row) {
+      return '${row['name'] ?? ''} ${row['job_title'] ?? ''} ${row['email'] ?? ''}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
+  }
 
   @override
   void onInit() {
@@ -27,28 +71,211 @@ class AdminNotificationSettingsController extends GetxController {
   @override
   void onClose() {
     _player.dispose();
+    manualTitleController.dispose();
+    manualBodyController.dispose();
     super.onClose();
   }
 
   Future<void> load() async {
     isLoading.value = true;
+    failedSections.clear();
+    await Future.wait([
+      _loadSection('الأنواع', _api.fetchCatalog, catalog.assignAll),
+      _loadSection('الأصوات', _api.fetchSounds, sounds.assignAll),
+      _loadSection('القوالب', _api.fetchTemplates, templates.assignAll),
+      _loadSection('الأجهزة', _api.fetchDevices, devices.assignAll),
+      _loadSection('التسليم', _api.fetchDeliveries, deliveries.assignAll),
+      _loadSection('التدقيق', _api.fetchAudits, audits.assignAll),
+      _loadAudience(),
+      _loadEmployeeAudience(),
+    ]);
+    manualSoundId.value ??= int.tryParse(
+      '${manualSounds.firstWhereOrNull((row) => row['key'] == 'default')?['id']}',
+    );
+    isLoading.value = false;
+    if (failedSections.isNotEmpty) {
+      Get.snackbar(
+        'تحميل جزئي',
+        'تعذر تحميل: ${failedSections.join('، ')}',
+      );
+    }
+  }
+
+  Future<void> _loadSection(
+    String name,
+    Future<List<Map<String, dynamic>>> Function() loader,
+    void Function(Iterable<Map<String, dynamic>>) assign,
+  ) async {
     try {
-      final results = await Future.wait([
-        _api.fetchCatalog(),
-        _api.fetchSounds(),
-        _api.fetchTemplates(),
-        _api.fetchDevices(),
-        _api.fetchDeliveries(),
-      ]);
-      catalog.assignAll(results[0]);
-      sounds.assignAll(results[1]);
-      templates.assignAll(results[2]);
-      devices.assignAll(results[3]);
-      deliveries.assignAll(results[4]);
-    } catch (error) {
-      Get.snackbar('خطأ', 'تعذر تحميل إعدادات مركز الإشعارات');
+      assign(await loader());
+    } catch (_) {
+      failedSections.add(name);
+    }
+  }
+
+  Future<void> _loadAudience() async {
+    try {
+      final data = await _api.fetchAudienceOptions();
+      audienceUsers.assignAll(
+        (data['users'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row)),
+      );
+      audienceRoles.assignAll(
+        (data['roles'] as List? ?? const []).map((role) => role.toString()),
+      );
+    } catch (_) {
+      failedSections.add('المستلمون');
+    }
+  }
+
+  Future<void> _loadEmployeeAudience() async {
+    try {
+      final data = await _api.fetchEmployeeAudienceOptions();
+      employeeOptions.assignAll(
+        (data['employees'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row)),
+      );
+    } catch (_) {
+      failedSections.add('موظفو الإرسال');
+    }
+  }
+
+  void toggleEmployee(int id) {
+    selectedEmployeeIds.contains(id)
+        ? selectedEmployeeIds.remove(id)
+        : selectedEmployeeIds.add(id);
+  }
+
+  Future<void> sendManualEmployeeNotification() async {
+    final title = manualTitleController.text.trim();
+    final body = manualBodyController.text.trim();
+    final soundId = manualSoundId.value ??
+        int.tryParse(
+            '${manualSounds.firstWhereOrNull((row) => row['key'] == 'default')?['id']}');
+    if (title.isEmpty || body.isEmpty) {
+      Get.snackbar('بيانات ناقصة', 'اكتب عنوان الإشعار ومحتواه');
+      return;
+    }
+    if (employeeOptions.isEmpty) {
+      Get.snackbar('لا يوجد مستلمون', 'لم يتم العثور على موظفين نشطين');
+      return;
+    }
+    if (manualAudience.value == 'selected' && selectedEmployeeIds.isEmpty) {
+      Get.snackbar('حدد المستلمين', 'اختر موظفاً واحداً على الأقل');
+      return;
+    }
+    if (soundId == null) {
+      Get.snackbar('الصوت غير جاهز', 'حدّث المركز ثم اختر صوتاً');
+      return;
+    }
+
+    final recipientCount = manualAudience.value == 'all'
+        ? employeeOptions.length
+        : selectedEmployeeIds.length;
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('تأكيد إرسال الإشعار'),
+        content: Text(
+          'سيتم حفظ الإشعار في مركز $recipientCount موظف'
+          '${manualPush.value ? ' وإرساله كتنبيه Push.' : ' بدون Push.'}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('مراجعة'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Get.back(result: true),
+            icon: const Icon(Icons.send),
+            label: const Text('إرسال الآن'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    isSendingManual.value = true;
+    try {
+      final response = await _api.sendManualEmployeeNotification({
+        'audience': manualAudience.value,
+        if (manualAudience.value == 'selected')
+          'employee_ids': selectedEmployeeIds.toList(),
+        'title': title,
+        'body': body,
+        'sound_id': soundId,
+        'priority': manualPriority.value,
+        'vibration_enabled': manualVibration.value,
+        'push_enabled': manualPush.value,
+      });
+      final summary =
+          Map<String, dynamic>.from(response['summary'] as Map? ?? {});
+      manualTitleController.clear();
+      manualBodyController.clear();
+      selectedEmployeeIds.clear();
+      audits.assignAll(await _api.fetchAudits());
+      await Get.dialog<void>(
+        AlertDialog(
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+          title: const Text('تم إرسال الإشعار'),
+          content: Text(
+            'المستلمون: ${summary['created'] ?? 0}\n'
+            'Push ناجح: ${summary['push_sent'] ?? 0}\n'
+            'محفوظ بدون وصول Push: ${(summary['push_failed'] ?? 0) + (summary['in_app_only'] ?? 0)}',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            FilledButton(
+              onPressed: Get.back,
+              child: const Text('تم'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      Get.snackbar('تعذر الإرسال', 'راجع البيانات والاتصال ثم حاول مرة أخرى');
     } finally {
-      isLoading.value = false;
+      isSendingManual.value = false;
+    }
+  }
+
+  Future<void> previewManualSound() async {
+    final id = manualSoundId.value;
+    final sound = manualSounds.firstWhereOrNull(
+      (row) => int.tryParse('${row['id']}') == id,
+    );
+    if (sound != null) await preview(sound);
+  }
+
+  Future<void> retryDelivery(Map<String, dynamic> row) async {
+    final id = int.tryParse('${row['id']}');
+    if (id == null) return;
+    busyType.value = 'delivery_$id';
+    try {
+      await _api.retryDelivery(id);
+      deliveries.assignAll(await _api.fetchDeliveries());
+      Get.snackbar('تمت إعادة المحاولة', 'تم إرسال الإشعار للجهاز مرة أخرى');
+    } catch (_) {
+      Get.snackbar('تعذر الإرسال', 'راجع اتصال الجهاز وبيانات Firebase');
+    } finally {
+      busyType.value = '';
+    }
+  }
+
+  Future<void> syncCurrentDeviceSounds() async {
+    busyType.value = 'sound_sync';
+    try {
+      await NotificationFirebaseService.instance
+          .registerAdminDeviceTokenIfReady(
+        source: 'notification_center_manual_sync',
+      );
+      devices.assignAll(await _api.fetchDevices());
+      Get.snackbar('اكتملت المزامنة', 'تم تحديث جاهزية الأصوات على هذا الجهاز');
+    } catch (_) {
+      Get.snackbar('تعذرت المزامنة', 'تحقق من الاتصال ثم حاول مرة أخرى');
+    } finally {
+      busyType.value = '';
     }
   }
 
@@ -89,13 +316,15 @@ class AdminNotificationSettingsController extends GetxController {
     final cooldown = TextEditingController(
       text: '${policy['cooldown_seconds'] ?? 0}',
     );
-    final recipientValues = TextEditingController(
-      text: ((policy['audience'] == 'roles'
-                  ? policy['recipient_roles']
-                  : policy['recipient_user_ids']) as List?)
-              ?.join(', ') ??
-          '',
-    );
+    final selectedUsers = <int>{
+      ...((policy['recipient_user_ids'] as List? ?? const [])
+          .map((id) => int.tryParse('$id'))
+          .whereType<int>()),
+    };
+    final selectedRoles = <String>{
+      ...((policy['recipient_roles'] as List? ?? const [])
+          .map((role) => role.toString())),
+    };
     var audience = policy['audience']?.toString() ?? 'all_admins';
     var bypassQuiet = policy['bypass_quiet_hours'] == true;
     var foregroundBanner = policy['show_foreground_banner'] == true;
@@ -158,15 +387,47 @@ class AdminNotificationSettingsController extends GetxController {
                     audience = value ?? audience;
                   }),
                 ),
-                if (audience != 'all_admins')
-                  TextField(
-                    controller: recipientValues,
-                    decoration: InputDecoration(
-                      labelText: audience == 'roles'
-                          ? 'الأدوار مفصولة بفاصلة'
-                          : 'أرقام المستخدمين مفصولة بفاصلة',
-                    ),
+                if (audience == 'selected_users') ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('اختر الأدمن (${selectedUsers.length})'),
                   ),
+                  Wrap(
+                    spacing: 6,
+                    children: audienceUsers.map((user) {
+                      final id = int.tryParse('${user['id']}');
+                      return FilterChip(
+                        label: Text(user['name']?.toString() ?? '#$id'),
+                        selected: id != null && selectedUsers.contains(id),
+                        onSelected: id == null
+                            ? null
+                            : (value) => setState(() => value
+                                ? selectedUsers.add(id)
+                                : selectedUsers.remove(id)),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                if (audience == 'roles') ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('اختر الأدوار (${selectedRoles.length})'),
+                  ),
+                  Wrap(
+                    spacing: 6,
+                    children: audienceRoles
+                        .map((role) => FilterChip(
+                              label: Text(role),
+                              selected: selectedRoles.contains(role),
+                              onSelected: (value) => setState(() => value
+                                  ? selectedRoles.add(role)
+                                  : selectedRoles.remove(role)),
+                            ))
+                        .toList(),
+                  ),
+                ],
                 DropdownButtonFormField<int>(
                   initialValue: fallbackId,
                   decoration: const InputDecoration(
@@ -203,11 +464,6 @@ class AdminNotificationSettingsController extends GetxController {
             TextButton(onPressed: Get.back, child: const Text('إلغاء')),
             FilledButton(
               onPressed: () {
-                final recipients = recipientValues.text
-                    .split(',')
-                    .map((value) => value.trim())
-                    .where((value) => value.isNotEmpty)
-                    .toList();
                 Get.back(
                   result: {
                     'quiet_hours_start':
@@ -217,9 +473,10 @@ class AdminNotificationSettingsController extends GetxController {
                     'cooldown_seconds': int.tryParse(cooldown.text) ?? 0,
                     'audience': audience,
                     'recipient_user_ids': audience == 'selected_users'
-                        ? recipients.map(int.tryParse).whereType<int>().toList()
+                        ? selectedUsers.toList()
                         : null,
-                    'recipient_roles': audience == 'roles' ? recipients : null,
+                    'recipient_roles':
+                        audience == 'roles' ? selectedRoles.toList() : null,
                     'fallback_sound_id': fallbackId,
                     'bypass_quiet_hours': bypassQuiet,
                     'show_foreground_banner': foregroundBanner,
@@ -235,7 +492,6 @@ class AdminNotificationSettingsController extends GetxController {
     start.dispose();
     end.dispose();
     cooldown.dispose();
-    recipientValues.dispose();
     if (values != null) await updatePolicy(type, values);
   }
 
@@ -319,30 +575,89 @@ class AdminNotificationSettingsController extends GetxController {
     final nameController = TextEditingController(
       text: result!.files.single.name.replaceFirst(RegExp(r'\.[^.]+$'), ''),
     );
-    final name = await Get.dialog<String>(
-      AlertDialog(
-        title: const Text('رفع صوت جديد'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: 'اسم الصوت'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('إلغاء')),
-          FilledButton(
-            onPressed: () => Get.back(result: nameController.text.trim()),
-            child: const Text('رفع'),
+    var category = 'custom';
+    int? fallbackId = int.tryParse('${sounds.firstWhereOrNull(
+      (row) => row['key'] == 'default',
+    )?['id']}');
+    final values = await Get.dialog<Map<String, dynamic>>(
+      StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('رفع صوت جديد'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'اسم الصوت'),
+                  autofocus: true,
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'التصنيف'),
+                  items: const [
+                    DropdownMenuItem(value: 'custom', child: Text('مخصص')),
+                    DropdownMenuItem(value: 'urgent', child: Text('عاجل')),
+                    DropdownMenuItem(value: 'sales', child: Text('مبيعات')),
+                    DropdownMenuItem(value: 'tasks', child: Text('مهام')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => category = value ?? category),
+                ),
+                DropdownButtonFormField<int>(
+                  initialValue: fallbackId,
+                  decoration:
+                      const InputDecoration(labelText: 'الصوت الاحتياطي'),
+                  items: sounds
+                      .where((row) =>
+                          row['source'] == 'bundled' &&
+                          row['is_active'] == true)
+                      .map((row) => DropdownMenuItem<int>(
+                            value: int.tryParse('${row['id']}'),
+                            child: Text(row['name']?.toString() ?? ''),
+                          ))
+                      .toList(),
+                  onChanged: (value) => setState(() => fallbackId = value),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'حتى 2MB و30 ثانية. WAV هو الأفضل لكل الأجهزة؛ MP3 يعمل على Android ويستخدم الاحتياطي على iOS.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: Get.back, child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () => Get.back(result: {
+                'name': nameController.text.trim(),
+                'category': category,
+                'fallback_sound_id': fallbackId,
+              }),
+              child: const Text('رفع ومزامنة'),
+            ),
+          ],
+        ),
       ),
     );
-    if (name == null || name.isEmpty) return;
+    final name = values?['name']?.toString() ?? '';
+    if (name.isEmpty) return;
 
     isLoading.value = true;
     try {
-      await _api.uploadSound(name: name, filePath: path);
+      await _api.uploadSound(
+        name: name,
+        filePath: path,
+        category: values?['category']?.toString(),
+        fallbackSoundId: values?['fallback_sound_id'] as int?,
+      );
+      await NotificationFirebaseService.instance
+          .registerAdminDeviceTokenIfReady(
+        source: 'notification_sound_upload',
+      );
       sounds.assignAll(await _api.fetchSounds());
-      Get.snackbar('تم', 'تم رفع الصوت إلى المكتبة');
+      Get.snackbar('تم', 'تم رفع الصوت وبدأت مزامنته مع هذا الجهاز');
     } catch (_) {
       Get.snackbar('خطأ', 'تعذر رفع الصوت. تأكد من الصيغة والحجم.');
     } finally {

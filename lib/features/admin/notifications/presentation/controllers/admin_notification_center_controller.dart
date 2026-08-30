@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/admin_notification_api_service.dart';
@@ -11,6 +12,12 @@ class AdminNotificationCenterController extends GetxController {
   final isBusyAction = false.obs;
   final items = <Map<String, dynamic>>[].obs;
   final selectedFilter = 'all'.obs;
+  final search = ''.obs;
+  final errorMessage = ''.obs;
+  final hasMore = true.obs;
+  final searchController = TextEditingController();
+  int _page = 1;
+  Worker? _searchWorker;
 
   static const List<Map<String, String>> filterDefs = [
     {'id': 'all', 'labelKey': 'notifFilterAll'},
@@ -49,39 +56,60 @@ class AdminNotificationCenterController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _searchWorker = debounce(
+      search,
+      (_) => load(),
+      time: const Duration(milliseconds: 450),
+    );
     load();
   }
 
-  Future<void> load() async {
+  @override
+  void onClose() {
+    _searchWorker?.dispose();
+    searchController.dispose();
+    super.onClose();
+  }
+
+  Future<void> load({bool loadMore = false}) async {
     if (userType != 'admin') {
       return;
     }
+    if (isLoading.value || (loadMore && !hasMore.value)) return;
+    if (!loadMore) {
+      _page = 1;
+      hasMore.value = true;
+    }
     isLoading.value = true;
+    errorMessage.value = '';
     try {
       final String f = selectedFilter.value;
       final bool unreadOnly = f == 'unread';
-      final String? type =
-          (f == 'all' || f == 'unread') ? null : f;
+      final String? type = (f == 'all' || f == 'unread') ? null : f;
 
       final Map<String, dynamic> res = await _api.fetchNotifications(
-        page: 1,
-        perPage: 50,
+        page: _page,
+        perPage: 25,
         type: type,
         unreadOnly: unreadOnly ? true : null,
+        search: search.value,
       );
 
       final dynamic block = res['notifications'];
       if (block is Map && block['data'] is List) {
-        items.assignAll(
-          (block['data'] as List)
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList(),
-        );
-      } else {
+        final rows = (block['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        loadMore ? items.addAll(rows) : items.assignAll(rows);
+        final current = int.tryParse('${block['current_page']}') ?? _page;
+        final last = int.tryParse('${block['last_page']}') ?? current;
+        hasMore.value = current < last;
+        if (hasMore.value) _page = current + 1;
+      } else if (!loadMore) {
         items.clear();
       }
     } catch (_) {
-      items.clear();
+      errorMessage.value = 'تعذر تحميل الإشعارات. اسحب للتحديث وحاول مجدداً.';
     } finally {
       isLoading.value = false;
     }
@@ -134,4 +162,11 @@ class AdminNotificationCenterController extends GetxController {
     selectedFilter.value = id;
     load();
   }
+
+  void setSearch(String value) => search.value = value.trim();
+
+  int get unreadCount => items.where((row) {
+        final read = row['is_read'];
+        return read != true && read != 1;
+      }).length;
 }

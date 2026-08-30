@@ -1,4 +1,4 @@
-// !$*UTF8*$!
+﻿// !$*UTF8*$!
 {
 	archiveVersion = 1;
 	classes = {
@@ -25,16 +25,16 @@
 		F6G7H8091CF9000F007C1183 /* sales_order_church_bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */; };
 		F6F708091CF9000F007C1183 /* shiply_stuck.wav in Resources */ = {isa = PBXBuildFile; fileRef = F6F708081CF9000F007C1183 /* shiply_stuck.wav */; };
 		F7F8091A1CF9000F007C1184 /* shiply_returned.wav in Resources */ = {isa = PBXBuildFile; fileRef = F7F809191CF9000F007C1184 /* shiply_returned.wav */; };
-		A10000000000000000000001 /* library_correct_answer.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* library_correct_answer.mp3 */; };
-		A10000000000000000000002 /* library_message_pop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* library_message_pop.mp3 */; };
-		A10000000000000000000003 /* library_happy_bells.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* library_happy_bells.mp3 */; };
-		A10000000000000000000004 /* library_arabian_harp.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* library_arabian_harp.mp3 */; };
-		A10000000000000000000005 /* library_clear_announce.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* library_clear_announce.mp3 */; };
-		A10000000000000000000006 /* library_reward.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* library_reward.mp3 */; };
-		A10000000000000000000007 /* library_magic_marimba.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* library_magic_marimba.mp3 */; };
-		A10000000000000000000008 /* library_digital_quick.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* library_digital_quick.mp3 */; };
-		A10000000000000000000009 /* library_bell.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* library_bell.mp3 */; };
-		A1000000000000000000000A /* library_dry_pop.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* library_dry_pop.mp3 */; };
+		A10000000000000000000001 /* library_correct_answer.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* library_correct_answer.wav */; };
+		A10000000000000000000002 /* library_message_pop.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* library_message_pop.wav */; };
+		A10000000000000000000003 /* library_happy_bells.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* library_happy_bells.wav */; };
+		A10000000000000000000004 /* library_arabian_harp.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* library_arabian_harp.wav */; };
+		A10000000000000000000005 /* library_clear_announce.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* library_clear_announce.wav */; };
+		A10000000000000000000006 /* library_reward.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* library_reward.wav */; };
+		A10000000000000000000007 /* library_magic_marimba.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* library_magic_marimba.wav */; };
+		A10000000000000000000008 /* library_digital_quick.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* library_digital_quick.wav */; };
+		A10000000000000000000009 /* library_bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* library_bell.wav */; };
+		A1000000000000000000000A /* library_dry_pop.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* library_dry_pop.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,16 +94,16 @@
 		F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sales_order_church_bell.wav; sourceTree = "<group>"; };
 		F6F708081CF9000F007C1183 /* shiply_stuck.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_stuck.wav; sourceTree = "<group>"; };
 		F7F809191CF9000F007C1184 /* shiply_returned.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_returned.wav; sourceTree = "<group>"; };
-		A20000000000000000000001 /* library_correct_answer.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_correct_answer.mp3; sourceTree = "<group>"; };
-		A20000000000000000000002 /* library_message_pop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_message_pop.mp3; sourceTree = "<group>"; };
-		A20000000000000000000003 /* library_happy_bells.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_happy_bells.mp3; sourceTree = "<group>"; };
-		A20000000000000000000004 /* library_arabian_harp.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_arabian_harp.mp3; sourceTree = "<group>"; };
-		A20000000000000000000005 /* library_clear_announce.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_clear_announce.mp3; sourceTree = "<group>"; };
-		A20000000000000000000006 /* library_reward.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_reward.mp3; sourceTree = "<group>"; };
-		A20000000000000000000007 /* library_magic_marimba.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_magic_marimba.mp3; sourceTree = "<group>"; };
-		A20000000000000000000008 /* library_digital_quick.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_digital_quick.mp3; sourceTree = "<group>"; };
-		A20000000000000000000009 /* library_bell.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_bell.mp3; sourceTree = "<group>"; };
-		A2000000000000000000000A /* library_dry_pop.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = library_dry_pop.mp3; sourceTree = "<group>"; };
+		A20000000000000000000001 /* library_correct_answer.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_correct_answer.wav; sourceTree = "<group>"; };
+		A20000000000000000000002 /* library_message_pop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_message_pop.wav; sourceTree = "<group>"; };
+		A20000000000000000000003 /* library_happy_bells.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_happy_bells.wav; sourceTree = "<group>"; };
+		A20000000000000000000004 /* library_arabian_harp.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_arabian_harp.wav; sourceTree = "<group>"; };
+		A20000000000000000000005 /* library_clear_announce.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_clear_announce.wav; sourceTree = "<group>"; };
+		A20000000000000000000006 /* library_reward.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_reward.wav; sourceTree = "<group>"; };
+		A20000000000000000000007 /* library_magic_marimba.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_magic_marimba.wav; sourceTree = "<group>"; };
+		A20000000000000000000008 /* library_digital_quick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_digital_quick.wav; sourceTree = "<group>"; };
+		A20000000000000000000009 /* library_bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_bell.wav; sourceTree = "<group>"; };
+		A2000000000000000000000A /* library_dry_pop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = library_dry_pop.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -209,16 +209,16 @@
 				F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */,
 				F6F708081CF9000F007C1183 /* shiply_stuck.wav */,
 				F7F809191CF9000F007C1184 /* shiply_returned.wav */,
-				A20000000000000000000001 /* library_correct_answer.mp3 */,
-				A20000000000000000000002 /* library_message_pop.mp3 */,
-				A20000000000000000000003 /* library_happy_bells.mp3 */,
-				A20000000000000000000004 /* library_arabian_harp.mp3 */,
-				A20000000000000000000005 /* library_clear_announce.mp3 */,
-				A20000000000000000000006 /* library_reward.mp3 */,
-				A20000000000000000000007 /* library_magic_marimba.mp3 */,
-				A20000000000000000000008 /* library_digital_quick.mp3 */,
-				A20000000000000000000009 /* library_bell.mp3 */,
-				A2000000000000000000000A /* library_dry_pop.mp3 */,
+				A20000000000000000000001 /* library_correct_answer.wav */,
+				A20000000000000000000002 /* library_message_pop.wav */,
+				A20000000000000000000003 /* library_happy_bells.wav */,
+				A20000000000000000000004 /* library_arabian_harp.wav */,
+				A20000000000000000000005 /* library_clear_announce.wav */,
+				A20000000000000000000006 /* library_reward.wav */,
+				A20000000000000000000007 /* library_magic_marimba.wav */,
+				A20000000000000000000008 /* library_digital_quick.wav */,
+				A20000000000000000000009 /* library_bell.wav */,
+				A2000000000000000000000A /* library_dry_pop.wav */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -332,16 +332,16 @@
 				F6G7H8091CF9000F007C1183 /* sales_order_church_bell.wav in Resources */,
 				F6F708091CF9000F007C1183 /* shiply_stuck.wav in Resources */,
 				F7F8091A1CF9000F007C1184 /* shiply_returned.wav in Resources */,
-				A10000000000000000000001 /* library_correct_answer.mp3 in Resources */,
-				A10000000000000000000002 /* library_message_pop.mp3 in Resources */,
-				A10000000000000000000003 /* library_happy_bells.mp3 in Resources */,
-				A10000000000000000000004 /* library_arabian_harp.mp3 in Resources */,
-				A10000000000000000000005 /* library_clear_announce.mp3 in Resources */,
-				A10000000000000000000006 /* library_reward.mp3 in Resources */,
-				A10000000000000000000007 /* library_magic_marimba.mp3 in Resources */,
-				A10000000000000000000008 /* library_digital_quick.mp3 in Resources */,
-				A10000000000000000000009 /* library_bell.mp3 in Resources */,
-				A1000000000000000000000A /* library_dry_pop.mp3 in Resources */,
+				A10000000000000000000001 /* library_correct_answer.wav in Resources */,
+				A10000000000000000000002 /* library_message_pop.wav in Resources */,
+				A10000000000000000000003 /* library_happy_bells.wav in Resources */,
+				A10000000000000000000004 /* library_arabian_harp.wav in Resources */,
+				A10000000000000000000005 /* library_clear_announce.wav in Resources */,
+				A10000000000000000000006 /* library_reward.wav in Resources */,
+				A10000000000000000000007 /* library_magic_marimba.wav in Resources */,
+				A10000000000000000000008 /* library_digital_quick.wav in Resources */,
+				A10000000000000000000009 /* library_bell.wav in Resources */,
+				A1000000000000000000000A /* library_dry_pop.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

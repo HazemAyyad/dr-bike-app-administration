@@ -96,6 +96,17 @@ class EndPoints {
   static const String adminNotificationDevices = 'admin/notification-devices';
   static const String adminNotificationDeliveries =
       'admin/notification-deliveries';
+  static const String adminNotificationAudienceOptions =
+      'admin/notification-audience-options';
+  static const String adminNotificationEmployeeOptions =
+      'admin/notification-employee-options';
+  static const String adminManualEmployeeNotification =
+      'admin/notifications/manual-employees';
+  static const String adminNotificationAudits = 'admin/notification-audits';
+  static String adminNotificationDeliveryRetry(int id) =>
+      'admin/notification-deliveries/$id/retry';
+  static String adminNotificationDeliveryEvent(int id) =>
+      'admin/notifications/$id/delivery-event';
   static const String adminNotificationsUnreadCount =
       'admin/notifications/unread-count';
   static String adminNotificationMarkRead(int id) =>
