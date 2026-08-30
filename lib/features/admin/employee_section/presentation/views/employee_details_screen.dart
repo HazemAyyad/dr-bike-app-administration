@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -189,6 +190,7 @@ class _EmployeeOverviewTab extends StatelessWidget {
             workingTimeLabel: _workingTimeLabel,
             weeklyDaysOffLabel: _weeklyDaysOffLabel,
             onCopyEmail: () => _copyEmail(context, employee.email),
+            onWhatsApp: () => _openWhatsApp(context),
           ),
           if (employee.currentlyInToday && canManageEmployeesAttendance) ...[
             SizedBox(height: 12.h),
@@ -227,6 +229,34 @@ class _EmployeeOverviewTab extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    final rawPhone = _phone.isNotEmpty ? _phone : _subPhone;
+    var digits = rawPhone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) digits = digits.substring(2);
+    if (digits.startsWith('0')) digits = '972${digits.substring(1)}';
+
+    final isSupportedNumber =
+        (digits.startsWith('970') || digits.startsWith('972')) &&
+            digits.length >= 11;
+    if (!isSupportedNumber) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رقم الموظف غير صالح للتواصل عبر واتساب')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(
+      Uri.https('wa.me', '/$digits'),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
+      );
+    }
+  }
 }
 
 class _EmployeeHeaderCard extends StatelessWidget {
@@ -238,6 +268,7 @@ class _EmployeeHeaderCard extends StatelessWidget {
     required this.workingTimeLabel,
     required this.weeklyDaysOffLabel,
     required this.onCopyEmail,
+    required this.onWhatsApp,
   });
 
   final EmployeeDetailsEntity employee;
@@ -247,6 +278,7 @@ class _EmployeeHeaderCard extends StatelessWidget {
   final String workingTimeLabel;
   final String weeklyDaysOffLabel;
   final VoidCallback onCopyEmail;
+  final VoidCallback onWhatsApp;
 
   @override
   Widget build(BuildContext context) {
@@ -305,6 +337,13 @@ class _EmployeeHeaderCard extends StatelessWidget {
                           color: AppColors.secondaryColor,
                           onTap: onCopyEmail,
                         ),
+                        if (phone.isNotEmpty || subPhone.isNotEmpty)
+                          _MetricChip(
+                            icon: Icons.chat_rounded,
+                            label: 'تواصل واتساب',
+                            color: const Color(0xFF25D366),
+                            onTap: onWhatsApp,
+                          ),
                         if (canViewEmployeesPermissions)
                           _MetricChip(
                             icon: Icons.admin_panel_settings_outlined,

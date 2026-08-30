@@ -1027,7 +1027,7 @@ class EmployeeSectionController extends GetxController
   }
 
   // Get Employee Details
-  void getEmployeeDetails(String employeeId) async {
+  Future<void> getEmployeeDetails(String employeeId) async {
     employeeId == employeeService.employeeDetails.value?.id.toString()
         ? isDialogLoading(false)
         : isDialogLoading(true);

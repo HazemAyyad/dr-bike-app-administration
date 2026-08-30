@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/services/impersonation_service.dart';
@@ -49,6 +50,10 @@ class EmployeeList extends GetView<EmployeeSectionController> {
           Navigator.of(ctx).pop();
           _openDetails();
         },
+        onWhatsApp: () async {
+          Navigator.of(ctx).pop();
+          await _openWhatsApp(context);
+        },
         onDelete: () async {
           Navigator.of(ctx).pop();
           final confirmed = await _confirmDelete(context);
@@ -76,6 +81,40 @@ class EmployeeList extends GetView<EmployeeSectionController> {
         },
       ),
     );
+  }
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    await controller.getEmployeeDetails(employee.id.toString());
+    final details = controller.employeeService.employeeDetails.value;
+    if (details == null || details.id != employee.id) return;
+
+    final primaryPhone = details.phone.replaceAll(' ', '');
+    final alternatePhone = details.subPhone.replaceAll(' ', '');
+    final rawPhone = primaryPhone.isNotEmpty ? primaryPhone : alternatePhone;
+    var digits = rawPhone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) digits = digits.substring(2);
+    if (digits.startsWith('0')) digits = '972${digits.substring(1)}';
+
+    final isSupportedNumber =
+        (digits.startsWith('970') || digits.startsWith('972')) &&
+            digits.length >= 11;
+    if (!isSupportedNumber) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('رقم الموظف غير صالح للتواصل عبر واتساب')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(
+      Uri.https('wa.me', '/$digits'),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
+      );
+    }
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context) async {
@@ -519,6 +558,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
   const _EmployeeActionsSheet({
     required this.employee,
     required this.onView,
+    required this.onWhatsApp,
     required this.onDelete,
     required this.onSuspend,
     required this.onRestore,
@@ -527,6 +567,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
 
   final EmployeeEntity employee;
   final VoidCallback onView;
+  final VoidCallback onWhatsApp;
   final VoidCallback onDelete;
   final VoidCallback onSuspend;
   final VoidCallback onRestore;
@@ -613,6 +654,12 @@ class _EmployeeActionsSheet extends StatelessWidget {
               label: 'viewEmployee'.tr,
               color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
               onTap: onView,
+            ),
+            _ActionTile(
+              icon: Icons.chat_rounded,
+              label: 'تواصل واتساب',
+              color: const Color(0xFF25D366),
+              onTap: onWhatsApp,
             ),
             if (canManageEmployeesPasswords)
               _ActionTile(
