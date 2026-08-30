@@ -14,6 +14,7 @@ import '../../features/bottom_nav_bar/binding/binding.dart';
 import '../../features/bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../features/bottom_nav_bar/views/bottom_nav_bar_screen.dart';
 import '../../features/employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
+import '../../features/employee/employee_dashbord/presentation/controllers/employee_salary_receipt_controller.dart';
 import '../../features/employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../routes/app_routes.dart';
 import 'final_classes.dart';
@@ -177,6 +178,10 @@ class ImpersonationService {
     }
     if (Get.isRegistered<EmployeeDashbordController>()) {
       await Get.delete<EmployeeDashbordController>(force: true);
+    }
+    if (Get.isRegistered<EmployeeSalaryReceiptController>() ||
+        Get.isPrepared<EmployeeSalaryReceiptController>()) {
+      await Get.delete<EmployeeSalaryReceiptController>(force: true);
     }
   }
 

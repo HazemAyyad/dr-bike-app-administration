@@ -6,12 +6,19 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/utils/app_colors.dart';
+import '../binding/employee_dashbord_binding.dart';
 import '../controllers/employee_salary_receipt_controller.dart';
 import '../../../../../routes/app_routes.dart';
 
 class EmployeeSalaryReceiptAlert
     extends GetView<EmployeeSalaryReceiptController> {
   const EmployeeSalaryReceiptAlert({Key? key}) : super(key: key);
+
+  @override
+  EmployeeSalaryReceiptController get controller {
+    EmployeeDashbordBinding.ensureSalaryReceiptController();
+    return Get.find<EmployeeSalaryReceiptController>();
+  }
 
   @override
   Widget build(BuildContext context) => Obx(() {

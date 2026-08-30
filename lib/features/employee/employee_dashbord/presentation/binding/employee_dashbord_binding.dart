@@ -14,12 +14,20 @@ import '../controllers/employee_salary_receipt_controller.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
 
 class EmployeeDashbordBinding extends Bindings {
-  @override
-  void dependencies() {
+  static void ensureSalaryReceiptController() {
+    if (Get.isRegistered<EmployeeSalaryReceiptController>() ||
+        Get.isPrepared<EmployeeSalaryReceiptController>()) {
+      return;
+    }
     Get.lazyPut(
       () => EmployeeSalaryReceiptController(Get.find<DioConsumer>()),
       fenix: true,
     );
+  }
+
+  @override
+  void dependencies() {
+    ensureSalaryReceiptController();
     Get.lazyPut(
       () => EmployeeDashbordController(
         requestOverTimeLoanUsecase: RequestOverTimeLoanUsecase(

@@ -29,6 +29,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
 
   @override
   EmployeeDashbordController get controller {
+    EmployeeDashbordBinding.ensureSalaryReceiptController();
     if (!Get.isRegistered<EmployeeDashbordController>() &&
         !Get.isPrepared<EmployeeDashbordController>()) {
       EmployeeDashbordBinding().dependencies();
