@@ -53,9 +53,16 @@ class PayrollScreen extends GetView<PayrollController> {
                   unselectedLabelColor: ThemeService.isDark.value
                       ? Colors.white70
                       : AppColors.operationalNavy,
+                  labelPadding: EdgeInsets.zero,
                   tabs: const [
-                    Tab(icon: Icon(Icons.payments_rounded), text: 'صرف جديد'),
-                    Tab(icon: Icon(Icons.receipt_long_rounded), text: 'السجل'),
+                    _PayrollTab(
+                      icon: Icons.payments_rounded,
+                      label: 'صرف جديد',
+                    ),
+                    _PayrollTab(
+                      icon: Icons.receipt_long_rounded,
+                      label: 'السجل',
+                    ),
                   ],
                 ),
               ),
@@ -145,6 +152,38 @@ class PayrollScreen extends GetView<PayrollController> {
   }
 }
 
+class _PayrollTab extends StatelessWidget {
+  const _PayrollTab({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Tab(
+        height: 35.h,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18.sp),
+            SizedBox(width: 6.w),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 class _NewPaymentTab extends GetView<PayrollController> {
   const _NewPaymentTab();
 
@@ -186,74 +225,147 @@ class _CycleCard extends GetView<PayrollController> {
           const _Title(
             icon: Icons.calendar_month_rounded,
             title: 'دورة الراتب',
-            subtitle: 'حدد الشهر وصندوق الدفع النقدي',
+            subtitle: 'حدد الشهر ثم اختر صندوق الخصم بشكل صريح',
           ),
           SizedBox(height: 10.h),
-          Row(children: [
-            Expanded(
-              child: Obx(() => _Picker(
-                    icon: Icons.event_rounded,
-                    label: 'الشهر',
-                    value: controller.month.value,
-                    onTap: () => controller.selectMonth(context),
-                  )),
-            ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Obx(() {
-                final box = controller.boxes.firstWhereOrNull(
-                  (e) =>
-                      int.tryParse('${e['id']}') ==
-                      controller.selectedBoxId.value,
-                );
-                return _Picker(
-                  icon: Icons.account_balance_wallet_rounded,
-                  label: 'الصندوق',
-                  value: '${box?['name'] ?? 'اختر الصندوق'}',
-                  color: box == null ? Colors.orange : AppColors.customGreen1,
-                  onTap: () => _boxesSheet(context),
-                );
-              }),
-            ),
-          ]),
+          Obx(() => _Picker(
+                icon: Icons.event_rounded,
+                label: 'شهر الراتب',
+                value: controller.month.value,
+                onTap: () => controller.selectMonth(context),
+              )),
+          SizedBox(height: 8.h),
+          Obx(() {
+            final box = controller.boxes.firstWhereOrNull(
+              (e) =>
+                  int.tryParse('${e['id']}') == controller.selectedBoxId.value,
+            );
+            return _Picker(
+              icon: Icons.account_balance_wallet_rounded,
+              label: 'صندوق الخصم (إلزامي)',
+              value: box == null
+                  ? 'اضغط هنا لاختيار صندوق الدفع'
+                  : '${box['name']} • ${PayrollController.money(box['total'])} شيكل',
+              color: box == null ? Colors.orange : AppColors.customGreen1,
+              onTap: () => _boxesSheet(context),
+            );
+          }),
         ]),
       );
 
   void _boxesSheet(BuildContext context) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
+        isScrollControlled: true,
         builder: (_) => SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const _Title(
-                icon: Icons.account_balance_wallet_rounded,
-                title: 'صندوق الدفع',
-                subtitle: 'الصناديق المسموحة واليومية المفتوحة فقط',
-              ),
-              SizedBox(height: 10.h),
-              if (controller.boxes.isEmpty)
-                const ListTile(title: Text('لا يوجد صندوق شيكل متاح')),
-              ...controller.boxes.map((box) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          AppColors.operationalPurple.withValues(alpha: .1),
-                      child: const Icon(Icons.wallet_rounded,
-                          color: AppColors.operationalPurple),
+          child: FractionallySizedBox(
+            heightFactor: .68,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+              child: Column(children: [
+                const _Title(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'اختر صندوق الخصم',
+                  subtitle: 'الظاهر حسب صلاحياتك أو صندوق يومي مفتوح',
+                ),
+                SizedBox(height: 10.h),
+                if (controller.boxes.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.account_balance_wallet_outlined,
+                              size: 44.sp, color: Colors.orange),
+                          SizedBox(height: 9.h),
+                          const Text(
+                            'لا يوجد صندوق شيكل متاح للصرف',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                          const Text(
+                            'راجع صلاحيات الصناديق أو افتح صندوقًا يوميًا',
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                    title: Text('${box['name']}',
-                        style: const TextStyle(fontWeight: FontWeight.w800)),
-                    subtitle: Text(
-                        '${PayrollController.money(box['total'])} شيكل${box['is_daily_open'] == true ? ' • يومي مفتوح' : ''}'),
-                    trailing: const Icon(Icons.chevron_left_rounded),
-                    onTap: () {
-                      controller.selectedBoxId.value =
-                          int.tryParse('${box['id']}');
-                      Navigator.pop(context);
-                    },
-                  )),
-            ]),
+                  )
+                else
+                  Expanded(
+                    child: Obx(() => ListView.separated(
+                          itemCount: controller.boxes.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 7.h),
+                          itemBuilder: (_, index) {
+                            final box = controller.boxes[index];
+                            final id = int.tryParse('${box['id']}');
+                            final selected =
+                                id == controller.selectedBoxId.value;
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(14.r),
+                              onTap: () {
+                                controller.selectedBoxId.value = id;
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(11.r),
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? AppColors.customGreen1
+                                          .withValues(alpha: .08)
+                                      : AppColors.operationalSurface,
+                                  borderRadius: BorderRadius.circular(14.r),
+                                  border: Border.all(
+                                    color: selected
+                                        ? AppColors.customGreen1
+                                        : AppColors.operationalCardBorder,
+                                    width: selected ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(children: [
+                                  CircleAvatar(
+                                    backgroundColor: selected
+                                        ? AppColors.customGreen1
+                                            .withValues(alpha: .12)
+                                        : AppColors.operationalPurple
+                                            .withValues(alpha: .1),
+                                    child: Icon(
+                                      Icons.wallet_rounded,
+                                      color: selected
+                                          ? AppColors.customGreen1
+                                          : AppColors.operationalPurple,
+                                    ),
+                                  ),
+                                  SizedBox(width: 9.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('${box['name']}',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.w900)),
+                                        Text(
+                                          '${PayrollController.money(box['total'])} شيكل${box['is_daily_open'] == true ? ' • صندوق يومي مفتوح' : ' • صندوق مسموح'}',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    selected
+                                        ? Icons.check_circle_rounded
+                                        : Icons.chevron_left_rounded,
+                                    color: selected
+                                        ? AppColors.customGreen1
+                                        : null,
+                                  ),
+                                ]),
+                              ),
+                            );
+                          },
+                        )),
+                  ),
+              ]),
+            ),
           ),
         ),
       );
@@ -263,70 +375,209 @@ class _EmployeesCard extends GetView<PayrollController> {
   @override
   Widget build(BuildContext context) => FinancialOperationalCard(
         child: Column(children: [
-          Row(children: [
-            const Expanded(
-              child: _Title(
-                icon: Icons.groups_rounded,
-                title: 'الموظفون',
-                subtitle: 'موظف واحد أو عدة موظفين معاً',
-              ),
-            ),
-            TextButton.icon(
-              onPressed: controller.selectAllVisible,
-              icon: const Icon(Icons.done_all_rounded),
-              label: const Text('الكل'),
-            ),
-          ]),
-          SizedBox(height: 8.h),
-          TextField(
-            controller: controller.employeeSearchController,
-            onChanged: (_) => controller.update(),
-            decoration: InputDecoration(
-              hintText: 'ابحث باسم الموظف أو المسمى',
-              prefixIcon: const Icon(Icons.search_rounded),
-              isDense: true,
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(13.r),
-                borderSide: BorderSide.none,
-              ),
-            ),
+          const _Title(
+            icon: Icons.groups_rounded,
+            title: 'الموظفون',
+            subtitle: 'اختيار متعدد مع البحث',
           ),
-          SizedBox(height: 7.h),
-          GetBuilder<PayrollController>(builder: (_) {
-            final rows = controller.filteredEmployees;
-            return ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: 245.h),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: rows.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, index) {
-                  final row = rows[index];
-                  final id = int.tryParse('${row['id']}') ?? 0;
-                  return Obx(() => CheckboxListTile(
-                        value: controller.selectedEmployeeIds.contains(id),
-                        onChanged: (_) => controller.toggleEmployee(id),
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        title: Text('${row['name']}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w800)),
-                        subtitle: Text('${row['job_title'] ?? 'موظف'}'),
-                        secondary: CircleAvatar(
-                          backgroundColor:
-                              AppColors.operationalPurple.withValues(alpha: .1),
-                          child: const Icon(Icons.person_rounded,
-                              color: AppColors.operationalPurple),
+          SizedBox(height: 9.h),
+          Obx(() {
+            final count = controller.selectedEmployeeIds.length;
+            final color =
+                count == 0 ? Colors.orange : AppColors.operationalPurple;
+            return InkWell(
+              onTap: () => _showEmployeePicker(context),
+              borderRadius: BorderRadius.circular(14.r),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .05),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(color: color.withValues(alpha: .45)),
+                ),
+                child: Row(children: [
+                  Icon(Icons.person_search_rounded, color: color),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'اختيار الموظفين',
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
-                      ));
-                },
+                        Text(
+                          count == 0
+                              ? 'اضغط للبحث وتحديد موظف أو أكثر'
+                              : 'تم تحديد $count موظف',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.expand_more_rounded, color: color),
+                ]),
+              ),
+            );
+          }),
+          Obx(() {
+            final selected = controller.employees.where((employee) {
+              final id = int.tryParse('${employee['id']}');
+              return id != null && controller.selectedEmployeeIds.contains(id);
+            }).toList();
+            if (selected.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: EdgeInsets.only(top: 10.h),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: selected.map((employee) {
+                    final id = int.parse('${employee['id']}');
+                    return InputChip(
+                      avatar: const Icon(Icons.person_rounded, size: 17),
+                      label: Text('${employee['name']}'),
+                      onDeleted: () => controller.toggleEmployee(id),
+                      deleteIcon: const Icon(Icons.close_rounded, size: 17),
+                      side: BorderSide(
+                        color:
+                            AppColors.operationalPurple.withValues(alpha: .25),
+                      ),
+                      backgroundColor:
+                          AppColors.operationalPurple.withValues(alpha: .07),
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
+                ),
               ),
             );
           }),
         ]),
       );
+
+  void _showEmployeePicker(BuildContext context) {
+    controller.employeeSearchController.clear();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: FractionallySizedBox(
+            heightFactor: .82,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 12.h),
+              child: Column(children: [
+                const _Title(
+                  icon: Icons.groups_rounded,
+                  title: 'اختيار الموظفين',
+                  subtitle: 'ابحث وحدد موظفًا واحدًا أو عدة موظفين',
+                ),
+                SizedBox(height: 11.h),
+                TextField(
+                  controller: controller.employeeSearchController,
+                  autofocus: true,
+                  onChanged: (_) => setSheetState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'ابحث باسم الموظف أو المسمى الوظيفي',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: controller.employeeSearchController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            onPressed: () {
+                              controller.employeeSearchController.clear();
+                              setSheetState(() {});
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 7.h),
+                Row(children: [
+                  Obx(() => Text(
+                        'المحدد: ${controller.selectedEmployeeIds.length}',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      )),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: controller.selectAllVisible,
+                    icon: const Icon(Icons.done_all_rounded),
+                    label: const Text('تحديد الظاهر'),
+                  ),
+                ]),
+                Expanded(
+                  child: Builder(builder: (_) {
+                    final rows = controller.filteredEmployees;
+                    if (rows.isEmpty) {
+                      return const Center(
+                        child: Text('لا توجد نتائج مطابقة للبحث'),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: rows.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final employee = rows[index];
+                        final id = int.parse('${employee['id']}');
+                        return Obx(() => CheckboxListTile(
+                              value:
+                                  controller.selectedEmployeeIds.contains(id),
+                              onChanged: (_) => controller.toggleEmployee(id),
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: Text(
+                                '${employee['name']}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w900),
+                              ),
+                              subtitle:
+                                  Text('${employee['job_title'] ?? 'موظف'}'),
+                              secondary: CircleAvatar(
+                                backgroundColor: AppColors.operationalPurple
+                                    .withValues(alpha: .1),
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  color: AppColors.operationalPurple,
+                                ),
+                              ),
+                            ));
+                      },
+                    );
+                  }),
+                ),
+                SizedBox(height: 8.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.check_rounded),
+                    label: Obx(() => Text(
+                          controller.selectedEmployeeIds.isEmpty
+                              ? 'إغلاق'
+                              : 'اعتماد ${controller.selectedEmployeeIds.length} موظف',
+                        )),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.operationalPurple,
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PreviewButton extends GetView<PayrollController> {
@@ -500,6 +751,47 @@ class _SubmitCard extends GetView<PayrollController> {
   @override
   Widget build(BuildContext context) => FinancialOperationalCard(
         child: Column(children: [
+          Obx(() {
+            final box = controller.boxes.firstWhereOrNull(
+              (item) =>
+                  int.tryParse('${item['id']}') ==
+                  controller.selectedBoxId.value,
+            );
+            return Container(
+              padding: EdgeInsets.all(10.r),
+              decoration: BoxDecoration(
+                color: (box == null ? Colors.orange : AppColors.customGreen1)
+                    .withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(13.r),
+                border: Border.all(
+                  color: box == null ? Colors.orange : AppColors.customGreen1,
+                ),
+              ),
+              child: Row(children: [
+                Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: box == null ? Colors.orange : AppColors.customGreen1,
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('سيتم الخصم من',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      Text(
+                        box == null
+                            ? 'لم يتم اختيار صندوق الدفع'
+                            : '${box['name']} • ${PayrollController.money(box['total'])} شيكل',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
+            );
+          }),
+          SizedBox(height: 10.h),
           TextField(
             controller: controller.notesController,
             minLines: 2,
@@ -540,15 +832,56 @@ class _SubmitCard extends GetView<PayrollController> {
       );
 
   Future<void> _confirm(BuildContext context) async {
+    final box = controller.boxes.firstWhereOrNull(
+      (item) => int.tryParse('${item['id']}') == controller.selectedBoxId.value,
+    );
+    if (box == null) {
+      Get.snackbar(
+          'صندوق الدفع مطلوب', 'ارجع إلى أعلى الشاشة واختر صندوق الخصم');
+      return;
+    }
+    final cashTotal = controller.previewRows.fold<double>(0, (total, row) {
+      final employeeId = int.tryParse('${row['employee_id']}');
+      return total +
+          (double.tryParse(
+                  controller.paymentAmounts[employeeId]?.text.trim() ?? '') ??
+              0);
+    });
     final accepted = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         icon: const Icon(Icons.payments_rounded,
             color: AppColors.customGreen1, size: 42),
         title: const Text('تأكيد صرف الرواتب'),
-        content: const Text(
-          'سيتم خصم الدفعة النقدية من الصندوق وإرسال طلب توقيع الاستلام لكل موظف.',
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'سيتم إرسال طلب توقيع الاستلام لكل موظف بعد الصرف.',
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(11.r),
+              decoration: BoxDecoration(
+                color: AppColors.customGreen1.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                    color: AppColors.customGreen1.withValues(alpha: .35)),
+              ),
+              child: Column(children: [
+                Text('${box['name']}',
+                    style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text(
+                  'قيمة الخصم: ${cashTotal.toStringAsFixed(2)} شيكل',
+                  style: const TextStyle(
+                      color: AppColors.customGreen1,
+                      fontWeight: FontWeight.w900),
+                ),
+              ]),
+            ),
+          ],
         ),
         actions: [
           TextButton(

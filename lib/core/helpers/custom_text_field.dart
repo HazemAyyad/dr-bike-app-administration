@@ -37,6 +37,8 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.focusNode,
     this.onFieldSubmitted,
+    this.readOnly = false,
+    this.onTap,
   }) : super(key: key);
 
   final String label;
@@ -64,6 +66,8 @@ class CustomTextField extends StatefulWidget {
   final Function(String)? onChanged;
   final FocusNode? focusNode;
   final void Function(String)? onFieldSubmitted;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -207,6 +211,7 @@ class _CustomTextFieldState extends State<CustomTextField>
             obscureText: widget.obscureText,
             controller: widget.controller,
             enabled: widget.enabled,
+            readOnly: widget.readOnly,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontSize: 16.sp,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -216,6 +221,7 @@ class _CustomTextFieldState extends State<CustomTextField>
             onTap: () {
               _shouldKeepKeyboard = true;
               _selectZeroOnNumericFocus();
+              widget.onTap?.call();
             },
             decoration: widget.border != null
                 ? InputDecoration(

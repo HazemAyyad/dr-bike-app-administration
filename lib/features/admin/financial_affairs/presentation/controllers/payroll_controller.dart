@@ -72,14 +72,16 @@ class PayrollController extends GetxController {
       employees.assignAll(_mapList(results[0].data['employees']));
       boxes.assignAll(_mapList(results[1].data['boxes']));
       _setPeriods(results[2].data);
-      if (boxes.length == 1) selectedBoxId.value = _toInt(boxes.first['id']);
+      if (selectedBoxId.value != null &&
+          !boxes.any((box) => _toInt(box['id']) == selectedBoxId.value)) {
+        selectedBoxId.value = null;
+      }
 
       final args = Get.arguments;
       final employeeId = args is Map ? _toInt(args['employee_id']) : null;
       if (employeeId != null &&
           employees.any((row) => _toInt(row['id']) == employeeId)) {
         selectedEmployeeIds.add(employeeId);
-        await preview();
       }
     } catch (error) {
       _error(error);
@@ -147,6 +149,10 @@ class PayrollController extends GetxController {
   }
 
   Future<void> preview() async {
+    if (selectedBoxId.value == null) {
+      Get.snackbar('صندوق الدفع مطلوب', 'اختر الصندوق الذي سيُخصم منه الراتب');
+      return;
+    }
     if (selectedEmployeeIds.isEmpty) {
       Get.snackbar('تنبيه', 'اختر موظفاً واحداً على الأقل');
       return;
@@ -224,6 +230,7 @@ class PayrollController extends GetxController {
           'تم بنجاح', response.data['message']?.toString() ?? 'تم صرف الرواتب');
       previewRows.clear();
       selectedEmployeeIds.clear();
+      selectedBoxId.value = null;
       notesController.clear();
       await loadInitial();
     } catch (error) {

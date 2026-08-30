@@ -10,7 +10,15 @@ class WhatsAppCapture {
 }
 
 class WhatsAppCameraScreen extends StatefulWidget {
-  const WhatsAppCameraScreen({Key? key}) : super(key: key);
+  const WhatsAppCameraScreen({
+    Key? key,
+    this.allowPhoto = true,
+    this.allowVideo = true,
+  })  : assert(allowPhoto || allowVideo),
+        super(key: key);
+
+  final bool allowPhoto;
+  final bool allowVideo;
 
   @override
   State<WhatsAppCameraScreen> createState() => _WhatsAppCameraScreenState();
@@ -29,6 +37,7 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
   @override
   void initState() {
     super.initState();
+    _videoMode = !widget.allowPhoto && widget.allowVideo;
     _loadCameras();
   }
 
@@ -149,7 +158,7 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
                 bottom: 16,
                 child: Column(
                   children: [
-                    if (!_recording)
+                    if (!_recording && widget.allowPhoto && widget.allowVideo)
                       SegmentedButton<bool>(
                         style: ButtonStyle(
                           backgroundColor: WidgetStateProperty.resolveWith(

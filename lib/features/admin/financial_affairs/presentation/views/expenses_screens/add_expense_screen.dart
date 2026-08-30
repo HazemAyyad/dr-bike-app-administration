@@ -16,6 +16,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
+import '../../widgets/financial_media_camera.dart';
 import '../../widgets/financial_operational_ui.dart';
 import '../../widgets/financial_skeletons.dart';
 
@@ -99,14 +100,13 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                         ),
                         SizedBox(width: 8.w),
                         Expanded(
-                          child: TextFormField(
+                          child: CustomTextField(
+                            label: 'التاريخ',
+                            hintText: 'التاريخ',
                             controller: controller.expenseDateController,
                             readOnly: true,
-                            decoration: const InputDecoration(
-                              labelText: 'التاريخ',
-                              border: OutlineInputBorder(),
-                              suffixIcon: Icon(Icons.calendar_month_rounded),
-                            ),
+                            suffixIcon:
+                                const Icon(Icons.calendar_month_rounded),
                             validator: (value) => value == null || value.isEmpty
                                 ? 'حدد التاريخ'
                                 : null,
@@ -177,82 +177,101 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                     ]),
                   ),
                   SizedBox(height: 10.h),
-                  if (controller.isEditing.value &&
-                      controller.invoiceFile.isNotEmpty)
-                    GestureDetector(
-                      onTap: () {
-                        showGeneralDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          barrierLabel: 'Dismiss',
-                          barrierColor: Colors.black.withAlpha(128),
-                          transitionDuration: const Duration(milliseconds: 300),
-                          pageBuilder: (context, anim1, anim2) {
-                            return FullScreenZoomImage(
-                              imageUrl: controller.invoiceFile.first.path,
-                              imageUrls: controller.invoiceFile
-                                  .map((file) => file.path)
-                                  .toList(),
-                              downloadFolderSegments: [
-                                'Expenses',
-                                controller.expenseNameController.text,
-                                'Invoices',
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      child: CachedNetworkImage(
-                        cacheManager: CacheManager(
-                          Config(
-                            'imagesCache',
-                            stalePeriod: const Duration(days: 7),
-                            maxNrOfCacheObjects: 100,
-                          ),
-                        ),
-                        imageBuilder: (context, imageProvider) => Container(
-                          height: 125.h,
-                          width: 125.w,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: imageProvider,
-                              fit: BoxFit.fill,
-                              filterQuality: FilterQuality.medium,
+                  FinancialOperationalCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.attach_file_rounded,
+                              color: AppColors.operationalPurple,
+                              size: 20.sp,
                             ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'مرفقات المصروف',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!controller.isExpenseReadOnly.value) ...[
+                          SizedBox(height: 9.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: MediaUploadButton(
+                                  height: 72.h,
+                                  isShowPreview: false,
+                                  allowedType: MediaType.image,
+                                  customCameraCapture: () =>
+                                      captureFinancialMedia(
+                                    allowVideo: false,
+                                  ),
+                                  onFilesChanged: controller.setInvoiceFiles,
+                                  title: 'invoiceImage',
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: MediaUploadButton(
+                                  height: 72.h,
+                                  isShowPreview: false,
+                                  customCameraCapture: () =>
+                                      captureFinancialMedia(),
+                                  onFilesChanged:
+                                      controller.setExpenseMediaFiles,
+                                  title: 'uploadMedia',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        GetBuilder<ExpensesController>(
+                          builder: (controller) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (controller.invoiceFile.isNotEmpty) ...[
+                                SizedBox(height: 8.h),
+                                Text(
+                                  'صورة الفاتورة',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                _ExpenseAttachmentPreview(
+                                  files: controller.invoiceFile,
+                                  onRemove: controller.removeInvoiceFileAt,
+                                  canRemove:
+                                      !controller.isExpenseReadOnly.value,
+                                ),
+                              ],
+                              if (controller.expensesFile.isNotEmpty) ...[
+                                SizedBox(height: 6.h),
+                                Text(
+                                  'صور وفيديو المصروف',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                _ExpenseAttachmentPreview(
+                                  files: controller.expensesFile,
+                                  onRemove: controller.removeExpenseMediaAt,
+                                  canRemove:
+                                      !controller.isExpenseReadOnly.value,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        imageUrl: controller.invoiceFile.isNotEmpty
-                            ? controller.invoiceFile.first.path
-                            : '',
-                        fadeInDuration: const Duration(milliseconds: 200),
-                        fadeOutDuration: const Duration(milliseconds: 200),
-                        placeholder: (context, url) => SizedBox(
-                          height: 125.h,
-                          width: 125.w,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
-                      ),
+                      ],
                     ),
-                  SizedBox(height: 10.h),
-                  if (!controller.isExpenseReadOnly.value)
-                    MediaUploadButton(
-                      allowedType: MediaType.image,
-                      onFilesChanged: (files) {
-                        controller.setInvoiceFiles(files);
-                      },
-                      title: 'invoiceImage',
-                    ),
-                  if (!controller.isExpenseReadOnly.value)
-                    GetBuilder<ExpensesController>(
-                      builder: (controller) => _ExpenseAttachmentPreview(
-                        files: controller.invoiceFile,
-                        onRemove: controller.removeInvoiceFileAt,
-                      ),
-                    ),
+                  ),
                   SizedBox(height: 10.h),
                   CustomTextField(
                     controller: controller.expenseNoteController,
@@ -265,22 +284,6 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                     maxLines: 5,
                     validator: (p0) => null,
                   ),
-                  SizedBox(height: 10.h),
-                  const EditImagesWidget(),
-                  if (!controller.isExpenseReadOnly.value)
-                    MediaUploadButton(
-                      onFilesChanged: (files) {
-                        controller.setExpenseMediaFiles(files);
-                      },
-                      title: 'uploadMedia',
-                    ),
-                  if (!controller.isExpenseReadOnly.value)
-                    GetBuilder<ExpensesController>(
-                      builder: (controller) => _ExpenseAttachmentPreview(
-                        files: controller.expensesFile,
-                        onRemove: controller.removeExpenseMediaAt,
-                      ),
-                    ),
                   SizedBox(height: 18.h),
                   Obx(
                     () => controller.isAddLoading.value &&
@@ -329,10 +332,12 @@ class _ExpenseAttachmentPreview extends StatelessWidget {
   const _ExpenseAttachmentPreview({
     required this.files,
     required this.onRemove,
+    this.canRemove = true,
   });
 
   final List<File> files;
   final ValueChanged<int> onRemove;
+  final bool canRemove;
 
   bool _isVideo(String path) {
     final value = path.toLowerCase();
@@ -349,7 +354,7 @@ class _ExpenseAttachmentPreview extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(top: 10.h),
       child: SizedBox(
-        height: 92.h,
+        height: 70.h,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: files.length,
@@ -357,56 +362,75 @@ class _ExpenseAttachmentPreview extends StatelessWidget {
           itemBuilder: (context, index) {
             final path = files[index].path;
             final remote = path.startsWith('http');
-            return Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10.r),
-                  child: Container(
-                    width: 86.w,
-                    height: 86.h,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.06),
-                    child: _isVideo(path)
-                        ? const Icon(Icons.play_circle_outline_rounded)
-                        : remote
-                            ? CachedNetworkImage(
-                                imageUrl: path,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => SkeletonBlock(
-                                  width: 86.w,
-                                  height: 86.h,
-                                  radius: 10,
-                                ),
-                                errorWidget: (_, __, ___) =>
-                                    const Icon(Icons.broken_image_outlined),
-                              )
-                            : Image.file(
-                                files[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.insert_drive_file_outlined),
-                              ),
-                  ),
+            return GestureDetector(
+              onTap: () => showGeneralDialog(
+                context: context,
+                barrierDismissible: true,
+                barrierLabel: 'Dismiss',
+                barrierColor: Colors.black.withAlpha(128),
+                transitionDuration: const Duration(milliseconds: 250),
+                pageBuilder: (_, __, ___) => FullScreenZoomImage(
+                  imageUrl: path,
+                  imageUrls: files.map((file) => file.path).toList(),
+                  initialIndex: index,
+                  downloadFolderSegments: const ['Expenses', 'Attachments'],
                 ),
-                PositionedDirectional(
-                  top: 3,
-                  end: 3,
-                  child: InkWell(
-                    onTap: () => onRemove(index),
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(9.r),
                     child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close,
-                          color: Colors.white, size: 16),
+                      width: 66.w,
+                      height: 66.h,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.06),
+                      child: _isVideo(path)
+                          ? const Icon(Icons.play_circle_outline_rounded)
+                          : remote
+                              ? CachedNetworkImage(
+                                  imageUrl: path,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => SkeletonBlock(
+                                    width: 66.w,
+                                    height: 66.h,
+                                    radius: 9,
+                                  ),
+                                  errorWidget: (_, __, ___) =>
+                                      const Icon(Icons.broken_image_outlined),
+                                )
+                              : Image.file(
+                                  files[index],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.insert_drive_file_outlined),
+                                ),
                     ),
                   ),
-                ),
-              ],
+                  if (canRemove)
+                    PositionedDirectional(
+                      top: 3,
+                      end: 3,
+                      child: InkWell(
+                        onTap: () => onRemove(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             );
           },
         ),

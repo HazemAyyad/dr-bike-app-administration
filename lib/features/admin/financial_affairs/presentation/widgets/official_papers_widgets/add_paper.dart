@@ -11,6 +11,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../../controllers/official_papers_controller.dart';
+import '../financial_media_camera.dart';
 
 class AddPaper extends GetView<OfficialPapersController> {
   const AddPaper({Key? key, this.fileId}) : super(key: key);
@@ -170,6 +171,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                   ),
                 SizedBox(height: 20.h),
                 MediaUploadButton(
+                  customCameraCapture: () => captureFinancialMedia(),
                   isShowPreview: controller.isEdit ? false : true,
                   onFilesChanged: (files) {
                     final uniqueNewFiles = files.where((file) {

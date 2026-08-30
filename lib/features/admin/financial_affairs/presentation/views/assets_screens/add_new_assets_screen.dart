@@ -10,6 +10,7 @@ import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/show_image_or_video.dart';
 import '../../controllers/assets_controller.dart';
 import '../../widgets/assets_widget/asset_logs.dart';
+import '../../widgets/financial_media_camera.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 
 class AddNewAssetsScreen extends GetView<AssetsController> {
@@ -107,6 +108,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                     const EditImagesWidget(),
                     SizedBox(height: 10.h),
                     MediaUploadButton(
+                      customCameraCapture: () => captureFinancialMedia(),
                       isShowPreview: controller.isEditing.value ? false : true,
                       onFilesChanged: (files) {
                         final uniqueNewFiles = files.where((file) {

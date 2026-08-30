@@ -16,6 +16,7 @@ import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../data/models/expenses_models/destruction_model.dart';
 import '../../controllers/expenses_controller.dart';
 import '../financial_image_cache.dart';
+import '../financial_media_camera.dart';
 import '../financial_operational_ui.dart';
 
 class DestructionCard extends StatelessWidget {
@@ -374,6 +375,7 @@ class DestructionDetailsScreen extends GetView<ExpensesController> {
               ),
               SizedBox(height: 10.h),
               MediaUploadButton(
+                customCameraCapture: () => captureFinancialMedia(),
                 onFilesChanged: (files) => controller.assetsFile = files,
                 title: 'إضافة مرفقات جديدة',
               ),

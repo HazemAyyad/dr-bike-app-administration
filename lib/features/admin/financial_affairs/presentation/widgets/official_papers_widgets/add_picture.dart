@@ -8,6 +8,7 @@ import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/official_papers_controller.dart';
+import '../financial_media_camera.dart';
 
 class AddPicture extends GetView<OfficialPapersController> {
   const AddPicture({Key? key}) : super(key: key);
@@ -154,6 +155,7 @@ class AddPicture extends GetView<OfficialPapersController> {
                 SizedBox(height: 20.h),
                 UploadImageButton(
                   isVideo: true,
+                  customCameraCapture: () => captureFinancialMedia(),
                   selectedFile: controller.selectedFile,
                   // onFilesChanged: (files) {
                   //   final uniqueNewFiles = files.where((file) {

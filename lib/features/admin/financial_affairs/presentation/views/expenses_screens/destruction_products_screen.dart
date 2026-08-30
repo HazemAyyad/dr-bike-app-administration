@@ -9,6 +9,7 @@ import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/expenses_controller.dart';
+import '../../widgets/financial_media_camera.dart';
 import '../../widgets/financial_operational_ui.dart';
 import 'destruction_product_picker_screen.dart';
 
@@ -93,6 +94,7 @@ class DestructionProductsScreen extends GetView<ExpensesController> {
                 ),
                 SizedBox(height: 10.h),
                 MediaUploadButton(
+                  customCameraCapture: () => captureFinancialMedia(),
                   onFilesChanged: (files) => controller.assetsFile = files,
                   title: 'uploadMedia',
                 ),

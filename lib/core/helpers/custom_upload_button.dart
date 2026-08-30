@@ -23,6 +23,7 @@ class UploadImageButton extends StatefulWidget {
   final String title;
   final TextStyle? titleStyle;
   final bool isVideo;
+  final Future<File?> Function()? customCameraCapture;
 
   const UploadImageButton({
     Key? key,
@@ -33,6 +34,7 @@ class UploadImageButton extends StatefulWidget {
     required this.title,
     this.titleStyle,
     this.isVideo = false,
+    this.customCameraCapture,
   }) : super(key: key);
 
   @override
@@ -43,6 +45,7 @@ class UploadImageButton extends StatefulWidget {
     BuildContext context,
     Rx<XFile?> selectedFile, {
     bool isVideo = false,
+    Future<File?> Function()? customCameraCapture,
   }) async {
     final picker = ImagePicker();
 
@@ -97,7 +100,11 @@ class UploadImageButton extends StatefulWidget {
       }
     }
 
-    if (choice == 'camera_image') {
+    if ((choice == 'camera_image' || choice == 'camera_video') &&
+        customCameraCapture != null) {
+      final file = await customCameraCapture();
+      if (file != null) pickedFile = XFile(file.path);
+    } else if (choice == 'camera_image') {
       pickedFile = await picker.pickImage(source: ImageSource.camera);
     } else if (choice == 'gallery_image') {
       pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -153,6 +160,7 @@ class _UploadImageButtonState extends State<UploadImageButton> {
       context,
       widget.selectedFile,
       isVideo: widget.isVideo,
+      customCameraCapture: widget.customCameraCapture,
     );
     _checkAndGenerateThumbnail();
   }
@@ -374,8 +382,13 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
             showMediaPermissionDeniedSnackbar();
             return;
           }
-          final image = await picker.pickImage(source: ImageSource.camera);
-          if (image != null) picked.add(image);
+          if (widget.customCameraCapture != null) {
+            final file = await widget.customCameraCapture!();
+            if (file != null) picked.add(XFile(file.path));
+          } else {
+            final image = await picker.pickImage(source: ImageSource.camera);
+            if (image != null) picked.add(image);
+          }
         } else if (choice == 'gallery') {
           if (!await ensurePhotosPermission()) {
             showMediaPermissionDeniedSnackbar();
@@ -396,8 +409,13 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
             showMediaPermissionDeniedSnackbar();
             return;
           }
-          final video = await picker.pickVideo(source: ImageSource.camera);
-          if (video != null) picked.add(video);
+          if (widget.customCameraCapture != null) {
+            final file = await widget.customCameraCapture!();
+            if (file != null) picked.add(XFile(file.path));
+          } else {
+            final video = await picker.pickVideo(source: ImageSource.camera);
+            if (video != null) picked.add(video);
+          }
         } else if (choice == 'gallery') {
           if (!await ensurePhotosPermission()) {
             showMediaPermissionDeniedSnackbar();
@@ -454,12 +472,17 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
             return;
           }
         }
-        if (choice == 'camera_image') {
-          final image = await picker.pickImage(source: ImageSource.camera);
-          if (image != null) picked.add(image);
-        } else if (choice == 'camera_video') {
-          final video = await picker.pickVideo(source: ImageSource.camera);
-          if (video != null) picked.add(video);
+        if (choice == 'camera_image' || choice == 'camera_video') {
+          if (widget.customCameraCapture != null) {
+            final file = await widget.customCameraCapture!();
+            if (file != null) picked.add(XFile(file.path));
+          } else if (choice == 'camera_image') {
+            final image = await picker.pickImage(source: ImageSource.camera);
+            if (image != null) picked.add(image);
+          } else {
+            final video = await picker.pickVideo(source: ImageSource.camera);
+            if (video != null) picked.add(video);
+          }
         }
         break;
     }
