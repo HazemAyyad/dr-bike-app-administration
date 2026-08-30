@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/admin_notification_settings_api_service.dart';
@@ -350,15 +351,33 @@ class AdminNotificationSettingsController extends GetxController {
   }
 
   Future<void> preview(Map<String, dynamic> sound) async {
-    if (sound['source'] != 'uploaded') {
-      Get.snackbar(
-          'صوت جاهز', 'يتم تشغيل هذا الصوت من موارد التطبيق عند وصول الإشعار.');
-      return;
-    }
     try {
-      final bytes = await _api.downloadSound(int.parse(sound['id'].toString()));
       await _player.stop();
-      await _player.play(BytesSource(bytes));
+      if (sound['source'] == 'uploaded') {
+        final bytes =
+            await _api.downloadSound(int.parse(sound['id'].toString()));
+        await _player.play(BytesSource(bytes));
+        return;
+      }
+
+      final key = sound['key']?.toString() ?? '';
+      if (key == 'silent') {
+        Get.snackbar('بدون صوت', 'هذا الخيار يرسل الإشعار بشكل صامت.');
+        return;
+      }
+      if (key == 'default') {
+        await SystemSound.play(SystemSoundType.alert);
+        return;
+      }
+
+      final fileName = sound['ios_filename']?.toString() ?? '';
+      if (fileName.isEmpty) {
+        throw StateError('Missing bundled sound filename');
+      }
+      final data = await rootBundle.load(
+        'android/app/src/main/res/raw/$fileName',
+      );
+      await _player.play(BytesSource(data.buffer.asUint8List()));
     } catch (_) {
       Get.snackbar('خطأ', 'تعذر تشغيل معاينة الصوت');
     }

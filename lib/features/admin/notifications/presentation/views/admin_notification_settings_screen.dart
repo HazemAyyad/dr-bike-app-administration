@@ -34,7 +34,7 @@ class AdminNotificationSettingsScreen
                 tabs: [
                   Tab(text: 'الأنواع'),
                   Tab(text: 'الأصوات'),
-                  Tab(text: 'الأجهزة'),
+                  Tab(text: 'أجهزة الإشعارات'),
                   Tab(text: 'سجل التسليم'),
                 ],
               ),
@@ -268,6 +268,7 @@ class _SoundsTab extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final sound = controller.sounds[index];
                     final bundled = sound['source'] == 'bundled';
+                    final fromLibrary = sound['category'] == 'library';
                     final active = sound['is_active'] == true;
                     return Card(
                       child: ListTile(
@@ -278,12 +279,21 @@ class _SoundsTab extends StatelessWidget {
                         ),
                         title: Text(sound['name']?.toString() ?? ''),
                         subtitle: Text(
-                          bundled
-                              ? 'جاهز مع التطبيق · يعمل بالخلفية'
-                              : 'مرفوع · المعاينة وForeground · الخلفية تستخدم الصوت الاحتياطي',
+                          fromLibrary
+                              ? 'من مكتبة الأصوات الجاهزة · يعمل بالخلفية'
+                              : bundled
+                                  ? 'جاهز مع التطبيق · يعمل بالخلفية'
+                                  : 'مرفوع · المعاينة وForeground · الخلفية تستخدم الصوت الاحتياطي',
                         ),
                         trailing: bundled
-                            ? const Chip(label: Text('نظام'))
+                            ? Chip(
+                                avatar: fromLibrary
+                                    ? const Icon(Icons.library_music, size: 16)
+                                    : null,
+                                label: Text(
+                                  fromLibrary ? 'مكتبة جاهزة' : 'نظام',
+                                ),
+                              )
                             : PopupMenuButton<String>(
                                 onSelected: (action) {
                                   if (action == 'toggle') {
@@ -320,39 +330,59 @@ class _DevicesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (controller.devices.isEmpty) {
-      return const _EmptyState(label: 'لا توجد أجهزة أدمن مسجلة');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: controller.devices.length,
-      itemBuilder: (context, index) {
-        final device = controller.devices[index];
-        final user = device['user'] as Map?;
-        return Card(
-          child: ListTile(
-            leading: Icon(
-              device['platform'] == 'ios' ? Icons.phone_iphone : Icons.android,
-            ),
-            title: Text(device['device_name']?.toString() ?? 'جهاز غير مسمى'),
-            subtitle: Text(
-              '${user?['name'] ?? ''}\nآخر ظهور: ${device['last_seen_at'] ?? '-'}',
-            ),
-            isThreeLine: true,
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        const Card(
+          margin: EdgeInsets.all(12),
+          child: Padding(
+            padding: EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${device['ready_sounds_count'] ?? 0} جاهز'),
-                if ('${device['failed_sounds_count'] ?? 0}' != '0')
-                  Text(
-                    '${device['failed_sounds_count']} فشل',
-                    style: const TextStyle(color: Colors.red),
+                Icon(Icons.info_outline),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'يعرض هذا التبويب أجهزة الأدمن المسجلة لاستقبال الإشعارات، والمنصة وصاحب الجهاز وآخر اتصال بالسيرفر.',
                   ),
+                ),
               ],
             ),
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: controller.devices.isEmpty
+              ? const _EmptyState(label: 'لا توجد أجهزة أدمن مسجلة')
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  itemCount: controller.devices.length,
+                  itemBuilder: (context, index) {
+                    final device = controller.devices[index];
+                    final user = device['user'] as Map?;
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(
+                          device['platform'] == 'ios'
+                              ? Icons.phone_iphone
+                              : Icons.android,
+                        ),
+                        title: Text(
+                          device['device_name']?.toString() ?? 'جهاز غير مسمى',
+                        ),
+                        subtitle: Text(
+                          '${user?['name'] ?? ''}\nآخر اتصال: ${device['last_seen_at'] ?? '-'}',
+                        ),
+                        isThreeLine: true,
+                        trailing: const Chip(
+                          avatar: Icon(Icons.notifications_active, size: 16),
+                          label: Text('FCM'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

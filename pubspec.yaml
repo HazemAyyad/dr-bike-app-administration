@@ -108,6 +108,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
+    - android/app/src/main/res/raw/
 
   fonts:
     - family: Almarai

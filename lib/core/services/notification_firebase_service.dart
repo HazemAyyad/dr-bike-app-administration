@@ -97,6 +97,59 @@ const String kSalesOrderChurchBellSoundIos = 'sales_order_church_bell.wav';
 const String kAdminLoginMotivateSoundResource = 'admin_login_motivate';
 const String kAdminLoginMotivateSoundIos = 'admin_login_motivate.wav';
 
+const List<Map<String, String>> kNotificationLibrarySounds = [
+  {
+    'channel': 'dr_bike_library_correct_answer',
+    'name': 'مكتبة - تأكيد ناجح',
+    'resource': 'library_correct_answer',
+  },
+  {
+    'channel': 'dr_bike_library_message_pop',
+    'name': 'مكتبة - رسالة قصيرة',
+    'resource': 'library_message_pop',
+  },
+  {
+    'channel': 'dr_bike_library_happy_bells',
+    'name': 'مكتبة - أجراس سعيدة',
+    'resource': 'library_happy_bells',
+  },
+  {
+    'channel': 'dr_bike_library_arabian_harp',
+    'name': 'مكتبة - نغمة عربية',
+    'resource': 'library_arabian_harp',
+  },
+  {
+    'channel': 'dr_bike_library_clear_announce',
+    'name': 'مكتبة - تنبيه واضح',
+    'resource': 'library_clear_announce',
+  },
+  {
+    'channel': 'dr_bike_library_reward',
+    'name': 'مكتبة - مكافأة',
+    'resource': 'library_reward',
+  },
+  {
+    'channel': 'dr_bike_library_magic_marimba',
+    'name': 'مكتبة - ماريمبا',
+    'resource': 'library_magic_marimba',
+  },
+  {
+    'channel': 'dr_bike_library_digital_quick',
+    'name': 'مكتبة - رقمي سريع',
+    'resource': 'library_digital_quick',
+  },
+  {
+    'channel': 'dr_bike_library_bell',
+    'name': 'مكتبة - جرس هادئ',
+    'resource': 'library_bell',
+  },
+  {
+    'channel': 'dr_bike_library_dry_pop',
+    'name': 'مكتبة - نقرة خفيفة',
+    'resource': 'library_dry_pop',
+  },
+];
+
 /// SOS-style alert for employee task push notifications.
 final Int64List kTaskSosVibrationPattern =
     Int64List.fromList([0, 400, 200, 400, 200, 600]);
@@ -692,6 +745,21 @@ class NotificationFirebaseService {
     );
     await androidPlugin?.createNotificationChannel(silentChannel);
 
+    for (final sound in kNotificationLibrarySounds) {
+      await androidPlugin?.createNotificationChannel(
+        AndroidNotificationChannel(
+          sound['channel']!,
+          sound['name']!,
+          description: 'صوت جاهز من مكتبة إشعارات Doctor Bike',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(sound['resource']!),
+          enableVibration: true,
+          showBadge: true,
+        ),
+      );
+    }
+
     final taskChannel = AndroidNotificationChannel(
       kDrBikeTaskNotificationChannelId,
       kDrBikeTaskNotificationChannelName,
@@ -957,6 +1025,16 @@ class NotificationFirebaseService {
         message.data['notification_sound_key']?.toString() == 'silent';
     final customSoundPlayed = await NotificationUploadedSoundService.instance
         .playForegroundIfAvailable(message.data);
+    final selectedSoundResource =
+        message.data['notification_android_sound']?.toString() ?? '';
+    final selectedChannelId =
+        message.data['notification_channel_id']?.toString() ?? '';
+    final hasSelectedBundledSound = !customSoundPlayed &&
+        !silentRequested &&
+        selectedSoundResource.isNotEmpty &&
+        selectedSoundResource != 'default' &&
+        selectedSoundResource != 'silent' &&
+        selectedChannelId.isNotEmpty;
     if (silentRequested) {
       androidDetails = AndroidNotificationDetails(
         kDrBikeSilentNotificationChannelId,
@@ -984,6 +1062,25 @@ class NotificationFirebaseService {
         priority: Priority.max,
         playSound: false,
         enableVibration: true,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (hasSelectedBundledSound) {
+      androidDetails = AndroidNotificationDetails(
+        selectedChannelId,
+        'صوت إشعار Doctor Bike',
+        channelDescription: 'الصوت المختار من مركز التحكم بالإشعارات',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(selectedSoundResource),
+        enableVibration:
+            message.data['notification_vibration']?.toString() != '0',
         visibility: NotificationVisibility.public,
         color: AppColors.primaryColor,
         styleInformation: BigTextStyleInformation(
@@ -1199,8 +1296,15 @@ class NotificationFirebaseService {
       );
     }
 
+    final selectedIosSound =
+        message.data['notification_ios_sound']?.toString() ?? '';
     final String? iosSound;
-    if (style == _TrayAlertStyle.taskSuccess) {
+    if (hasSelectedBundledSound &&
+        selectedIosSound.isNotEmpty &&
+        selectedIosSound != 'default' &&
+        selectedIosSound != 'silent') {
+      iosSound = selectedIosSound;
+    } else if (style == _TrayAlertStyle.taskSuccess) {
       iosSound = kTaskSuccessSoundIos;
     } else if (style == _TrayAlertStyle.shiplyDelivered) {
       iosSound = kShiplyDeliveredSoundIos;
