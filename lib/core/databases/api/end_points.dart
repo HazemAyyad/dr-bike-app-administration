@@ -439,6 +439,7 @@ class EndPoints {
   static const String addBoxBalance = 'add/box/balance';
   static const String editBox = 'edit/box';
   static const String boxLogsReport = 'box/logs/report';
+  static const String boxLogsData = 'box/logs/data';
   static const String deleteBox = 'delete/box';
 
   // check section

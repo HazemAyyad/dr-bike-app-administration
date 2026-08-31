@@ -7,6 +7,8 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 
+import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -23,6 +25,7 @@ import '../../domain/usecases/edit_box_usecase.dart';
 import '../../domain/usecases/get_shown_box_usecase.dart';
 import '../../domain/usecases/transfer_box_balance_usecase.dart';
 import 'boxes_serves.dart';
+import '../widgets/box_report_pdf_builder.dart';
 
 class BoxesController extends GetxController {
   AddBoxesUsecase boxesUsecase;
@@ -602,70 +605,77 @@ class BoxesController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(milliseconds: 2500),
       );
-      final response = await getReportByType.call(
-        type: '',
-        boxId: boxId,
-        fromDate: DateTime.parse(fromDateController.text),
-        toDate: DateTime.parse(toDateController.text),
-        direction: reportDirection.value,
-        movementTypes: reportMovementTypes.toList(),
-        search: reportSearchController.text,
-        minAmount: double.tryParse(reportMinAmountController.text),
-        maxAmount: double.tryParse(reportMaxAmountController.text),
+      final response = await Get.find<DioConsumer>().post(
+        EndPoints.boxLogsData,
+        data: {
+          'box_id': boxId,
+          'from_date': fromDateController.text,
+          'to_date': toDateController.text,
+          'all': true,
+          if (reportDirection.value.isNotEmpty)
+            'direction': reportDirection.value,
+          if (reportMovementTypes.isNotEmpty)
+            'types': reportMovementTypes.toList(),
+          if (reportSearchController.text.trim().isNotEmpty)
+            'search': reportSearchController.text.trim(),
+          if (double.tryParse(reportMinAmountController.text) != null)
+            'min_amount': double.parse(reportMinAmountController.text),
+          if (double.tryParse(reportMaxAmountController.text) != null)
+            'max_amount': double.parse(reportMaxAmountController.text),
+        },
+      );
+      final root = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      if (root['status'] != 'success' || root['data'] is! Map) {
+        throw Exception(root['message'] ?? 'تعذر تجهيز بيانات التقرير');
+      }
+      final success = await BoxReportPdfBuilder.build(
+          Map<String, dynamic>.from(root['data'] as Map));
+      final safeName = boxName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final reportFileName =
+          'تقرير_صندوق_${safeName}_${fromDateController.text}_${toDateController.text}.pdf';
+      if (action == 'share') {
+        await Printing.sharePdf(bytes: success, filename: reportFileName);
+        _clearReportFilters();
+        return;
+      }
+      if (action == 'print') {
+        await Printing.layoutPdf(
+          name: reportFileName,
+          onLayout: (_) async => success,
+        );
+        _clearReportFilters();
+        return;
+      }
+      late Directory directory;
+
+      if (Platform.isAndroid) {
+        directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+      } else if (Platform.isIOS) {
+        // على iOS نحفظ في Documents الخاص بالتطبيق
+        final appDocDir = await getApplicationDocumentsDirectory();
+        directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
+      } else {
+        directory = Directory(
+            "${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF");
+      }
+
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      final filePath = "${directory.path}/$reportFileName";
+      final file = File(filePath);
+      await file.writeAsBytes(success);
+      Get.snackbar(
+        "fileDownloadedSuccessfully".tr,
+        filePath,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2000),
       );
 
-      response.fold((failure) {
-        Helpers.showCustomDialogError(
-          context: context,
-          title: failure.errMessage,
-          message: failure.data['message'] ?? 'Unknown error',
-        );
-      }, (success) async {
-        final safeName = boxName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-        final reportFileName =
-            'تقرير_صندوق_${safeName}_${fromDateController.text}_${toDateController.text}.pdf';
-        if (action == 'share') {
-          await Printing.sharePdf(bytes: success, filename: reportFileName);
-          _clearReportFilters();
-          return;
-        }
-        if (action == 'print') {
-          await Printing.layoutPdf(
-            name: reportFileName,
-            onLayout: (_) async => success,
-          );
-          _clearReportFilters();
-          return;
-        }
-        late Directory directory;
-
-        if (Platform.isAndroid) {
-          directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
-        } else if (Platform.isIOS) {
-          // على iOS نحفظ في Documents الخاص بالتطبيق
-          final appDocDir = await getApplicationDocumentsDirectory();
-          directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
-        } else {
-          directory = Directory(
-              "${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF");
-        }
-
-        if (!await directory.exists()) {
-          await directory.create(recursive: true);
-        }
-        final filePath = "${directory.path}/$reportFileName";
-        final file = File(filePath);
-        await file.writeAsBytes(success);
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
-        );
-
-        await OpenFilex.open(filePath);
-        _clearReportFilters();
-      });
+      await OpenFilex.open(filePath);
+      _clearReportFilters();
     } catch (e) {
       Get.snackbar(
         "error".tr,

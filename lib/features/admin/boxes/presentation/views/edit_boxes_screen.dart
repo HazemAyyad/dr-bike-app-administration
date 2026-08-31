@@ -14,7 +14,7 @@ import 'package:doctorbike/core/utils/app_colors.dart';
 
 import '../../domain/entity/all_boxes_logs_entity.dart';
 import '../controllers/boxes_controller.dart';
-import '../widgets/movements_widget.dart';
+import '../widgets/box_report_filter_sheet.dart';
 
 class EditBoxesScreen extends StatefulWidget {
   const EditBoxesScreen({Key? key}) : super(key: key);
@@ -221,6 +221,21 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
             ),
           ),
           actions: [
+            IconButton(
+              tooltip: 'تقرير PDF',
+              onPressed: () => Get.bottomSheet(
+                BoxReportFilterSheet(
+                  boxId: boxId,
+                  boxName: controller.editBoxNameController.text,
+                ),
+                isScrollControlled: true,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              ),
+              icon: const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: Color(0xFFB42318),
+              ),
+            ),
             TextButton.icon(
               onPressed: _openEditSheet,
               icon: Icon(
@@ -365,7 +380,13 @@ class _BoxProfileTab extends StatelessWidget {
               label: 'آخر حركة',
               value: logs.isEmpty
                   ? 'noData'.tr
-                  : DateFormat('yyyy-MM-dd  HH:mm').format(logs.last.createdAt),
+                  : DateFormat('yyyy-MM-dd  HH:mm').format(
+                      ([
+                        ...logs
+                      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+                          .first
+                          .createdAt,
+                    ),
             ),
           ],
         ),
@@ -801,17 +822,21 @@ class _MovementProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
+    final outgoing = log.type == 'minus' || log.value < 0;
     final amountColor = log.type == 'transfer'
         ? AppColors.customOrange3
-        : log.value >= 0
-            ? AppColors.customGreen1
-            : AppColors.redColor;
+        : outgoing
+            ? AppColors.redColor
+            : AppColors.customGreen1;
+    final description = log.description.trim().isEmpty
+        ? _typeLabel(log.type)
+        : log.description.trim();
 
     return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
+      margin: EdgeInsets.only(bottom: 6.h),
       decoration: BoxDecoration(
         color: isDark ? AppColors.customGreyColor : Colors.white,
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(11.r),
         border: Border.all(color: amountColor.withAlpha(35)),
         boxShadow: [
           BoxShadow(
@@ -821,48 +846,116 @@ class _MovementProfileCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          SizedBox(height: 74.h, child: MovementsWidget(box: log)),
-          Padding(
-            padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.schedule_outlined,
-                  size: 15.sp,
-                  color: AppColors.customGreyColor5,
-                ),
-                SizedBox(width: 5.w),
-                Expanded(
-                  child: Text(
-                    DateFormat('yyyy-MM-dd  HH:mm').format(log.createdAt),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+        child: Row(
+          children: [
+            Container(
+              width: 34.r,
+              height: 34.r,
+              decoration: BoxDecoration(
+                color: amountColor.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(9.r),
+              ),
+              child: Icon(
+                outgoing ? Icons.north_east_rounded : Icons.south_west_rounded,
+                color: amountColor,
+                size: 18.sp,
+              ),
+            ),
+            SizedBox(width: 9.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 10.5.sp,
-                          color: AppColors.customGreyColor5,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5.sp,
+                          fontWeight: FontWeight.w800,
                         ),
+                  ),
+                  SizedBox(height: 3.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_outlined,
+                        size: 15.sp,
+                        color: AppColors.customGreyColor5,
+                      ),
+                      SizedBox(width: 5.w),
+                      Expanded(
+                        child: Text(
+                          DateFormat('yyyy-MM-dd  HH:mm').format(log.createdAt),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize: 10.5.sp,
+                                    color: AppColors.customGreyColor5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if ((log.note ?? '').trim().isNotEmpty)
+                    Text(
+                      log.note!.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.customGreyColor5,
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(width: 7.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${outgoing ? '-' : '+'}${NumberFormat('#,##0.##').format(log.value.abs())}',
+                  style: TextStyle(
+                    color: amountColor,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 if (log.boxBalanceAfter != null)
                   Text(
-                    '${'الرصيد بعد الحركة'}: ${NumberFormat('#,###.##').format(log.boxBalanceAfter)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 10.5.sp,
-                          color: AppColors.customGreyColor5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    'بعدها ${NumberFormat('#,##0.##').format(log.boxBalanceAfter)}',
+                    style: TextStyle(
+                      color: AppColors.customGreyColor5,
+                      fontSize: 9.5.sp,
+                    ),
                   ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  String _typeLabel(String? type) {
+    switch (type) {
+      case 'add':
+        return 'إضافة رصيد';
+      case 'minus':
+        return 'سحب رصيد';
+      case 'transfer':
+        return 'تحويل رصيد';
+      case 'maintenance':
+        return 'حركة صيانة';
+      default:
+        return 'حركة صندوق';
+    }
   }
 }
 
