@@ -17,38 +17,6 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Obx(
-              () => Tooltip(
-                message: controller.instantSalesSortDescending.value
-                    ? 'sortNewestFirst'.tr
-                    : 'sortOldestFirst'.tr,
-                child: Material(
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: controller.toggleInstantSalesSort,
-                    child: SizedBox(
-                      width: 44.w,
-                      height: 44.w,
-                      child: Icon(
-                        controller.instantSalesSortDescending.value
-                            ? Icons.arrow_downward_rounded
-                            : Icons.arrow_upward_rounded,
-                        color: AppColors.primaryColor,
-                        size: 22.sp,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 8.h),
           Obx(
             () => Row(
               children: [

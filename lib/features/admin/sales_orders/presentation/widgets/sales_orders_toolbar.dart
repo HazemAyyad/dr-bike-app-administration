@@ -99,10 +99,17 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
 
             return Padding(
               padding: EdgeInsets.only(top: 8.h),
-              child: Row(
+              child: Wrap(
+                spacing: 6.w,
+                runSpacing: 4.h,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   FilterChip(
-                    label: Text('salesOrderBulkMode'.tr),
+                    label: Text(
+                      'salesOrderBulkMode'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     selected: controller.bulkMode.value,
                     onSelected: controller.toggleBulkMode,
                     avatar: Icon(
@@ -113,7 +120,6 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
                     ),
                   ),
                   if (controller.bulkMode.value) ...[
-                    SizedBox(width: 8.w),
                     TextButton(
                       onPressed: controller.selectAllVisibleOrders,
                       child: Text('salesOrderBulkSelectAll'.tr),
@@ -122,7 +128,6 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
                       onPressed: controller.clearOrderSelection,
                       child: Text('salesOrderBulkClear'.tr),
                     ),
-                    const Spacer(),
                     Text(
                       'salesOrderBulkSelected'.trParams({
                         'count': '${controller.selectedOrderIds.length}',

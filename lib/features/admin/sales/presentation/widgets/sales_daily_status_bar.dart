@@ -11,10 +11,14 @@ import 'sales_skeleton_widgets.dart';
 class SalesDailyStatusBar extends GetView<SalesController> {
   const SalesDailyStatusBar({
     this.salesOrders = false,
+    this.onOpened,
+    this.autoOpen = false,
     Key? key,
   }) : super(key: key);
 
   final bool salesOrders;
+  final Future<void> Function()? onOpened;
+  final bool autoOpen;
 
   double _parseOpeningAmount(String? value) {
     const eastern = {
@@ -56,6 +60,15 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       final payload = salesOrders
           ? controller.salesOrdersDailySessionPayload.value
           : controller.dailySessionPayload.value;
+      if (autoOpen &&
+          (payload?.canRequestOpen == true ||
+              payload?.needsManualOpen == true)) {
+        final args = Get.arguments;
+        if (args is Map) args['openDrawer'] = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) _openDrawer(context);
+        });
+      }
       if (payload == null) {
         return const SizedBox.shrink();
       }
@@ -520,6 +533,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         salesOrdersOpeningCounts: ordersCounts,
         confirmOpeningVariance: confirmVariance,
       );
+      await onOpened?.call();
     } catch (e) {
       debugPrint('[SalesDailyOpenDebug][Dialog] error=$e');
       Get.snackbar('error'.tr, e.toString());

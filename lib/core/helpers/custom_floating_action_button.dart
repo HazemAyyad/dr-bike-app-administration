@@ -18,6 +18,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     this.addList,
     this.customWidget,
     this.useGrid = false,
+    this.beforeNavigate,
   }) : super(key: key);
 
   final RxBool isAddMenuOpen;
@@ -27,6 +28,7 @@ class CustomFloatingActionButton extends StatelessWidget {
   final List<Map<String, String>>? addList;
   final Widget? customWidget;
   final bool useGrid;
+  final Future<bool> Function(Map<String, String> item)? beforeNavigate;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +118,7 @@ class CustomFloatingActionButton extends StatelessWidget {
                                     item: addList![index],
                                     compactCard: true,
                                     onTap: () => onTap!(),
+                                    beforeNavigate: beforeNavigate,
                                   ),
                                 )
                               : ListView(
@@ -126,6 +129,7 @@ class CustomFloatingActionButton extends StatelessWidget {
                                         (e) => BuildAddMenuItem(
                                           item: e,
                                           onTap: () => onTap!(),
+                                          beforeNavigate: beforeNavigate,
                                         ),
                                       )
                                       .toList(),
@@ -170,6 +174,7 @@ class BuildAddMenuItem extends StatelessWidget {
     this.route,
     this.compactCard = false,
     required this.onTap,
+    this.beforeNavigate,
   }) : super(key: key);
 
   final Map<String, String>? item;
@@ -178,6 +183,7 @@ class BuildAddMenuItem extends StatelessWidget {
   final String? route;
   final void Function()? onTap;
   final bool compactCard;
+  final Future<bool> Function(Map<String, String> item)? beforeNavigate;
 
   String get _title => item?['title'] ?? title ?? '';
   String get _iconAsset => item?['icon'] ?? iconAsset ?? '';
@@ -214,7 +220,14 @@ class BuildAddMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-      onTap: () {
+      onTap: () async {
+        if (item != null && beforeNavigate != null) {
+          final allowed = await beforeNavigate!(item!);
+          if (!allowed) {
+            onTap?.call();
+            return;
+          }
+        }
         if (_route.isNotEmpty) {
           final args = <String, dynamic>{
             'isNewCheck': _title == 'newCheck',

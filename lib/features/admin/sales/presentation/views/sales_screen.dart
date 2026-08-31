@@ -15,7 +15,6 @@ import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/profit_sale_card.dart';
-import '../widgets/profit_sales_toolbar.dart';
 import '../widgets/sales_invoices_toolbar.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
@@ -34,15 +33,12 @@ class SalesScreen extends GetView<SalesController> {
         actions: [
           _SalesAppBarTabs(controller: controller),
           Obx(
-            () => IconButton(
+            () => _SmallSalesAction(
               tooltip: 'search'.tr,
-              onPressed: controller.toggleSalesSearch,
-              icon: Icon(
-                controller.isSalesSearchVisible.value
-                    ? Icons.search_off_rounded
-                    : Icons.search_rounded,
-                color: AppColors.secondaryColor,
-              ),
+              onTap: controller.toggleSalesSearch,
+              icon: controller.isSalesSearchVisible.value
+                  ? Icons.search_off_rounded
+                  : Icons.search_rounded,
             ),
           ),
           if (MediaQuery.sizeOf(context).width >= 700)
@@ -50,8 +46,9 @@ class SalesScreen extends GetView<SalesController> {
               route: AppRoutes.SALESSCREEN,
               title: 'sales',
             ),
-          _SalesMoreMenu(controller: controller),
-          SizedBox(width: 10.w),
+          _SalesDailyBoxButton(controller: controller),
+          _SalesTopActions(controller: controller),
+          SizedBox(width: 4.w),
         ],
       ),
       body: Stack(
@@ -77,10 +74,14 @@ class SalesScreen extends GetView<SalesController> {
                         child: SalesOrdersToolbar(),
                       );
                     }
-                    final toolbar = controller.currentTab.value == 0
-                        ? const SalesInvoicesToolbar()
-                        : const ProfitSalesToolbar();
-                    return SliverToBoxAdapter(child: toolbar);
+                    if (controller.currentTab.value == 0) {
+                      return const SliverToBoxAdapter(
+                        child: SalesInvoicesToolbar(),
+                      );
+                    }
+                    return const SliverToBoxAdapter(
+                      child: SizedBox.shrink(),
+                    );
                   },
                 ),
                 SliverPadding(
@@ -170,6 +171,7 @@ class SalesScreen extends GetView<SalesController> {
         opacityAnimation: controller.sizeAnimation,
         sizeAnimation: controller.opacityAnimation,
         addList: controller.addList,
+        beforeNavigate: controller.prepareCreateNavigation,
       ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
@@ -216,6 +218,8 @@ class _SalesAppBarTabs extends StatelessWidget {
           return Tooltip(
             message: item.label,
             child: IconButton(
+              constraints: BoxConstraints.tightFor(width: 36.w, height: 38.h),
+              padding: EdgeInsets.all(1.w),
               visualDensity: VisualDensity.compact,
               onPressed: () => controller.changeTab(index),
               icon: Badge(
@@ -325,8 +329,8 @@ class _SalesSectionTabData {
   final int count;
 }
 
-class _SalesMoreMenu extends StatelessWidget {
-  const _SalesMoreMenu({required this.controller});
+class _SalesTopActions extends StatelessWidget {
+  const _SalesTopActions({required this.controller});
 
   final SalesController controller;
 
@@ -334,58 +338,150 @@ class _SalesMoreMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final suspended = controller.suspendedInvoicesCount.value;
-      return PopupMenuButton<String>(
-        tooltip: 'المزيد',
-        icon: Badge(
-          isLabelVisible: suspended > 0,
-          label: Text(suspended > 99 ? '99+' : '$suspended'),
-          child: const Icon(Icons.more_vert_rounded),
-        ),
-        onSelected: (value) async {
-          if (value == 'settings') {
-            Get.toNamed(AppRoutes.SALESSETTINGSSCREEN);
-          } else if (value == 'suspended') {
-            await Get.toNamed(AppRoutes.SUSPENDEDINVOICESSCREEN);
-            await controller.loadSuspendedInvoicesCount();
-          } else if (value == 'daily') {
-            Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN);
-          } else if (value == 'admin') {
-            await Get.toNamed(AppRoutes.SALESDAILYADMINSCREEN);
-            await controller.loadDailySession();
-          }
-        },
-        itemBuilder: (_) => [
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (controller.currentTab.value != 2)
+            _SmallSalesAction(
+              tooltip: (controller.currentTab.value == 0
+                      ? controller.instantSalesSortDescending.value
+                      : controller.profitSalesSortDescending.value)
+                  ? 'sortNewestFirst'.tr
+                  : 'sortOldestFirst'.tr,
+              icon: (controller.currentTab.value == 0
+                      ? controller.instantSalesSortDescending.value
+                      : controller.profitSalesSortDescending.value)
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded,
+              onTap: controller.currentTab.value == 0
+                  ? controller.toggleInstantSalesSort
+                  : controller.toggleProfitSalesSort,
+            ),
           if (canManageSalesSettings || canManageDeliveryCompanyAccounts)
-            const PopupMenuItem(
-              value: 'settings',
-              child: ListTile(
-                leading: Icon(Icons.settings_outlined),
-                title: Text('إعدادات المبيعات'),
-              ),
+            _SmallSalesAction(
+              tooltip: 'إعدادات المبيعات',
+              icon: Icons.settings_outlined,
+              onTap: () => Get.toNamed(AppRoutes.SALESSETTINGSSCREEN),
             ),
-          PopupMenuItem(
-            value: 'suspended',
-            child: ListTile(
-              leading: const Icon(Icons.pause_circle_outline),
-              title: Text('${'suspendedInvoices'.tr} ($suspended)'),
-            ),
+          _SmallSalesAction(
+            tooltip: 'suspendedInvoices'.tr,
+            icon: Icons.pause_circle_outline,
+            badge: suspended,
+            onTap: () async {
+              await Get.toNamed(AppRoutes.SUSPENDEDINVOICESSCREEN);
+              await controller.loadSuspendedInvoicesCount();
+            },
           ),
-          const PopupMenuItem(
-            value: 'daily',
-            child: ListTile(
-              leading: Icon(Icons.account_balance_wallet_outlined),
-              title: Text('سجل صندوق المبيعات اليومي'),
-            ),
-          ),
-          if (userType == 'admin')
-            const PopupMenuItem(
-              value: 'admin',
-              child: ListTile(
-                leading: Icon(Icons.pending_actions_outlined),
-                title: Text('طلبات إغلاق الصندوق'),
-              ),
-            ),
         ],
+      );
+    });
+  }
+}
+
+class _SmallSalesAction extends StatelessWidget {
+  const _SmallSalesAction({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        constraints: BoxConstraints.tightFor(width: 34.w, height: 38.h),
+        padding: EdgeInsets.all(3.w),
+        visualDensity: VisualDensity.compact,
+        onPressed: onTap,
+        icon: Badge(
+          isLabelVisible: badge > 0,
+          label: Text(badge > 99 ? '99+' : '$badge'),
+          child: Icon(icon, size: 19.sp, color: AppColors.secondaryColor),
+        ),
+      ),
+    );
+  }
+}
+
+class _SalesDailyBoxButton extends StatelessWidget {
+  const _SalesDailyBoxButton({required this.controller});
+
+  final SalesController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final orders = controller.currentTab.value == 2;
+      final payload = orders
+          ? controller.salesOrdersDailySessionPayload.value
+          : controller.dailySessionPayload.value;
+      final rows =
+          orders ? payload?.salesOrdersCurrencies : payload?.currencies;
+      final shekel = rows?.firstWhereOrNull((row) => row.currency == 'شيكل');
+      final balance = shekel?.systemBalance ?? 0;
+      final closingRequests = controller.pendingDailyClosingCount.value;
+      final loading = controller.isDailySessionLoading.value;
+      final closing = payload?.isClosingRequested ?? false;
+      final open = payload?.allowsSales ?? false;
+      final color = loading
+          ? Colors.grey
+          : closing
+              ? Colors.orange
+              : open
+                  ? Colors.green
+                  : Colors.redAccent;
+      final status = loading
+          ? 'جارٍ تحميل حالة الصندوق'
+          : closing
+              ? 'بانتظار إغلاق الصندوق'
+              : open
+                  ? 'الصندوق اليومي مفتوح'
+                  : 'الصندوق اليومي مغلق';
+
+      return Tooltip(
+        message:
+            '${orders ? 'صندوق الطلبيات اليومي' : 'صندوق المبيعات اليومي'} — $status — ${balance.toStringAsFixed(0)} ₪',
+        child: IconButton(
+          constraints: BoxConstraints.tightFor(width: 38.w, height: 40.h),
+          padding: EdgeInsets.all(2.w),
+          visualDensity: VisualDensity.compact,
+          onPressed: () => Get.toNamed(
+            AppRoutes.SALESDAILYHISTORYSCREEN,
+            arguments: {
+              'sessionType': orders ? 'sales_orders' : 'instant_sales',
+            },
+          ),
+          icon: Badge(
+            isLabelVisible: closingRequests > 0,
+            label: Text(
+              closingRequests > 99 ? '99+' : '$closingRequests',
+            ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 30.w,
+              height: 30.w,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 2),
+              ),
+              child: Icon(
+                orders
+                    ? Icons.local_shipping_outlined
+                    : Icons.account_balance_wallet_outlined,
+                color: color,
+                size: 17.sp,
+              ),
+            ),
+          ),
+        ),
       );
     });
   }

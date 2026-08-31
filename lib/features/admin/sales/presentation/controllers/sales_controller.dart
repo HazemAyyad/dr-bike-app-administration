@@ -577,6 +577,8 @@ class SalesController extends GetxController
   final Rxn<DailySessionPayload> salesOrdersDailySessionPayload =
       Rxn<DailySessionPayload>();
   final isDailySessionLoading = false.obs;
+  final pendingDailyClosingCount = 0.obs;
+  final pendingDailyClosingRequests = <DailyClosingRequestModel>[].obs;
 
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
   final salesListRevision = 0.obs;
@@ -620,11 +622,61 @@ class SalesController extends GetxController
       ]);
       dailySessionPayload.value = payloads[0];
       salesOrdersDailySessionPayload.value = payloads[1];
+      try {
+        final requests = await ds.getPendingDailyClosing();
+        pendingDailyClosingRequests.assignAll(requests);
+        pendingDailyClosingCount.value = requests.length;
+      } catch (_) {
+        pendingDailyClosingRequests.clear();
+        pendingDailyClosingCount.value = [
+          payloads[0].pendingClosingRequestId,
+          payloads[1].pendingClosingRequestId,
+        ].whereType<int>().toSet().length;
+      }
     } catch (_) {
       dailySessionPayload.value = null;
       salesOrdersDailySessionPayload.value = null;
+      pendingDailyClosingCount.value = 0;
+      pendingDailyClosingRequests.clear();
     } finally {
       isDailySessionLoading(false);
+    }
+  }
+
+  Future<void> rejectDailyClosingInline(int requestId) async {
+    try {
+      final ds = Get.find<SalesDatasource>();
+      await ds.rejectDailyClosing(closingRequestId: requestId);
+      await loadDailySession();
+      Get.snackbar('success'.tr, 'تم رفض طلب إغلاق الصندوق');
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+    }
+  }
+
+  Future<void> approveDailyClosingInline(
+      DailyClosingRequestModel request) async {
+    final needsTransfers = request.cashCounts
+            .any((row) => row.amountToTransfer > 0) ||
+        request.salesOrdersCashCounts.any((row) => row.amountToTransfer > 0);
+    if (needsTransfers) {
+      Get.snackbar(
+        'تنبيه',
+        'هذا الطلب يحتاج اختيار صناديق ترحيل؛ افتح التفاصيل لاختيارها.',
+        backgroundColor: Colors.orange,
+      );
+      return;
+    }
+    try {
+      final ds = Get.find<SalesDatasource>();
+      await ds.approveDailyClosing(
+        closingRequestId: request.id,
+        transfers: const [],
+      );
+      await loadDailySession();
+      Get.snackbar('success'.tr, 'تمت الموافقة على إغلاق الصندوق');
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
     }
   }
 
@@ -755,6 +807,58 @@ class SalesController extends GetxController
     );
 
     return confirmed == true;
+  }
+
+  Future<bool> prepareCreateNavigation(Map<String, String> item) async {
+    final salesOrders = item['freshSalesOrder'] == 'true';
+    await loadDailySession();
+    final payload = salesOrders
+        ? salesOrdersDailySessionPayload.value
+        : dailySessionPayload.value;
+    if (payload == null) return false;
+
+    if (payload.canRequestOpen || payload.needsManualOpen) {
+      await Get.toNamed(
+        AppRoutes.SALESDAILYHISTORYSCREEN,
+        arguments: {
+          'sessionType': salesOrders ? 'sales_orders' : 'instant_sales',
+          'openDrawer': true,
+          'returnRoute': item['route'],
+          'returnArguments': Map<String, String>.from(item),
+        },
+      );
+      return false;
+    }
+
+    if (!payload.allowsSales) {
+      showSalesBlockedMessage();
+      return false;
+    }
+
+    if (payload.blockedByOtherSession) {
+      final owner = payload.blockedByEmployeeName ?? 'موظف آخر';
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('تنبيه الصندوق اليومي'),
+          content: Text(
+            'سيتم تسجيل هذه العملية في صندوق $owner المفتوح حاليًا. هل تريد المتابعة؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('continue'.tr),
+            ),
+          ],
+        ),
+      );
+      return confirmed == true;
+    }
+
+    return true;
   }
 
   Future<bool> ensureInstantSaleCanBeFinalized() async {
