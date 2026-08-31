@@ -14,6 +14,7 @@ import 'archive_widget.dart';
 import 'boxes_widget.dart';
 import 'movements_widget.dart';
 import 'on_long_press_in_box.dart';
+import 'box_report_filter_sheet.dart';
 
 class VeiwBoxes extends GetView<BoxesController> {
   const VeiwBoxes({Key? key}) : super(key: key);
@@ -58,6 +59,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                       : controller.filteredShownBoxesArchive.reversed
                           .toList()[section];
 
+              final shownBox = box is ShownBoxesModel ? box : null;
               return GestureDetector(
                 onTap: controller.currentTab.value == 1
                     ? null
@@ -86,22 +88,21 @@ class VeiwBoxes extends GetView<BoxesController> {
                     : null,
                 child: Container(
                   margin: EdgeInsets.only(
-                    bottom: 10.h,
-                    right: 24.w,
-                    left: 24.w,
+                    bottom: 6.h,
+                    right: 16.w,
+                    left: 16.w,
                   ),
-                  constraints: BoxConstraints(minHeight: 82.h),
+                  constraints: BoxConstraints(minHeight: 60.h),
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor
                         : AppColors.whiteColor2,
-                    borderRadius: BorderRadius.circular(14.r),
+                    borderRadius: BorderRadius.circular(11.r),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withAlpha(32),
-                        blurRadius: 2.r,
-                        spreadRadius: 1.r,
-                        offset: const Offset(0, 0),
+                        blurRadius: 8.r,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -120,14 +121,42 @@ class VeiwBoxes extends GetView<BoxesController> {
                       // ),
                       // SizedBox(width: 10.w),
                       controller.currentTab.value == 0
-                          ? BoxesWidget(box: box as ShownBoxesModel)
+                          ? Expanded(
+                              child: BoxesWidget(
+                                box: shownBox!,
+                                lastMovement:
+                                    controller.lastMovementFor(shownBox.boxId),
+                                onReport: () => Get.bottomSheet(
+                                  BoxReportFilterSheet(
+                                    boxId: shownBox.boxId.toString(),
+                                    boxName: shownBox.boxName,
+                                  ),
+                                  isScrollControlled: true,
+                                  backgroundColor:
+                                      Theme.of(context).scaffoldBackgroundColor,
+                                ),
+                              ),
+                            )
                           : controller.currentTab.value == 1
                               ? Expanded(
                                   child: MovementsWidget(
                                     box: box as BoxLogModel,
                                   ),
                                 )
-                              : ArchiveWidget(box: box as ShownBoxesModel)
+                              : Expanded(
+                                  child: ArchiveWidget(
+                                    box: shownBox!,
+                                    onReport: () => Get.bottomSheet(
+                                      BoxReportFilterSheet(
+                                        boxId: shownBox.boxId.toString(),
+                                        boxName: shownBox.boxName,
+                                      ),
+                                      isScrollControlled: true,
+                                      backgroundColor: Theme.of(context)
+                                          .scaffoldBackgroundColor,
+                                    ),
+                                  ),
+                                )
                     ],
                   ),
                 ),

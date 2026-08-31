@@ -62,12 +62,78 @@ class BoxesController extends GetxController {
   final tabs = ['boxes', 'movements', 'archive'].obs;
 
   final RxInt currentTab = 0.obs;
+  final RxBool isSearchVisible = false.obs;
+  final RxString listCurrencyFilter = ''.obs;
 
   final RxBool isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
     update();
+  }
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    if (!isSearchVisible.value) {
+      boxNameController.clear();
+      searchBar('');
+    }
+    update(['boxesSearch']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    boxNameController.clear();
+    searchBar('');
+    update(['boxesSearch']);
+  }
+
+  BoxLogModel? lastMovementFor(int boxId) {
+    final id = boxId.toString();
+    BoxLogModel? result;
+    for (final log in BoxesServes().allBoxesLogs) {
+      if (log.boxId != id && log.fromBoxId != id && log.toBoxId != id) {
+        continue;
+      }
+      if (result == null || log.createdAt.isAfter(result.createdAt)) {
+        result = log;
+      }
+    }
+    return result;
+  }
+
+  List<String> get availableBoxCurrencies => BoxesServes()
+      .shownBoxes
+      .map((box) => box.currency.trim())
+      .where((currency) => currency.isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort();
+
+  void applyListFilters() {
+    final query = boxNameController.text.trim().toLowerCase();
+    final currency = listCurrencyFilter.value;
+    filteredShownBoxes.assignAll(
+      BoxesServes().shownBoxes.where((box) {
+        final matchesQuery = query.isEmpty ||
+            box.boxName.toLowerCase().contains(query) ||
+            box.currency.toLowerCase().contains(query) ||
+            box.totalBalance.toString().contains(query) ||
+            (lastMovementFor(box.boxId)
+                    ?.description
+                    .toLowerCase()
+                    .contains(query) ??
+                false);
+        return matchesQuery &&
+            (currency.isEmpty || box.currency.trim() == currency);
+      }),
+    );
+    update();
+  }
+
+  void clearListFilters() {
+    listCurrencyFilter.value = '';
+    applyListFilters();
   }
 
   final List<String> currency = ['currency1', 'currency2', 'currency'];
@@ -444,6 +510,10 @@ class BoxesController extends GetxController {
           (box.totalBalance.toString().toLowerCase().contains(q));
     }
 
+    if (currentTab.value == 0) {
+      applyListFilters();
+      return;
+    }
     if (value.isNotEmpty) {
       filteredShownBoxes = BoxesServes()
           .shownBoxes

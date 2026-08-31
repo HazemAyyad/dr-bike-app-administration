@@ -6,9 +6,14 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/get_shown_boxes_model.dart';
 
 class ArchiveWidget extends StatelessWidget {
-  const ArchiveWidget({Key? key, required this.box}) : super(key: key);
+  const ArchiveWidget({
+    Key? key,
+    required this.box,
+    required this.onReport,
+  }) : super(key: key);
 
   final ShownBoxesModel box;
+  final VoidCallback onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +40,20 @@ class ArchiveWidget extends StatelessWidget {
             ),
             SizedBox(width: 8.w),
             Text(
-              'غير ظاهر',
+              box.currency.trim().isEmpty ? 'بدون عملة' : box.currency,
               style: textStyle.copyWith(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w400,
-                color: Colors.red,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            IconButton(
+              tooltip: 'تقرير PDF',
+              visualDensity: VisualDensity.compact,
+              onPressed: onReport,
+              icon: const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: Color(0xFFB42318),
               ),
             ),
           ],

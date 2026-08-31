@@ -25,6 +25,49 @@ class BoxesScreen extends GetView<BoxesController> {
         label: 'boxName',
         onPressedFilter: () => controller.filterLists(),
         action: false,
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: 'بحث في الصناديق',
+              onPressed: controller.toggleSearch,
+              icon: Icon(
+                controller.isSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'فلترة الصناديق',
+            onPressed: () => _showBoxesFilter(context, controller),
+            icon: Obx(
+              () => Badge(
+                isLabelVisible: controller.listCurrencyFilter.value.isNotEmpty,
+                smallSize: 7,
+                child: Icon(
+                  Icons.tune_rounded,
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'الصناديق اليومية',
+            onPressed: () => Get.toNamed(AppRoutes.DAILYBOXESSCREEN),
+            icon: Icon(
+              Icons.today_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+          ),
+          SizedBox(width: 6.w),
+        ],
       ),
       body: AppPullToRefresh(
         onRefresh: controller.pullToRefresh,
@@ -45,27 +88,47 @@ class BoxesScreen extends GetView<BoxesController> {
               ),
             ),
             SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: SearchBar(
-                  shadowColor: WidgetStateProperty.all(Colors.transparent),
-                  textStyle: WidgetStateProperty.all(
-                    const TextStyle(fontSize: 16),
-                  ),
-                  hintStyle: WidgetStateProperty.all(
-                    const TextStyle(fontSize: 16),
-                  ),
-                  leading: const Icon(
-                    Icons.search,
-                  ),
-                  hintText: 'search'.tr,
-                  backgroundColor: WidgetStateProperty.all(
-                    ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.customGreyColor7,
-                  ),
-                  onChanged: (value) => controller.searchBar(value),
+            GetBuilder<BoxesController>(
+              id: 'boxesSearch',
+              builder: (_) => SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 4.h,
+                          ),
+                          child: SearchBar(
+                            controller: controller.boxNameController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            textStyle: WidgetStateProperty.all(
+                              const TextStyle(fontSize: 16),
+                            ),
+                            hintStyle: WidgetStateProperty.all(
+                              const TextStyle(fontSize: 16),
+                            ),
+                            leading: const Icon(
+                              Icons.search,
+                            ),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closeSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText:
+                                'ابحث بالاسم أو العملة أو الرصيد أو الحركة',
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: (value) => controller.searchBar(value),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -86,6 +149,77 @@ class BoxesScreen extends GetView<BoxesController> {
   }
 }
 
+void _showBoxesFilter(BuildContext context, BoxesController controller) {
+  Get.bottomSheet(
+    SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'فلترة الصناديق',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () {
+                    controller.clearListFilters();
+                    Get.back();
+                  },
+                  child: const Text('مسح الفلتر'),
+                ),
+              ],
+            ),
+            const Text('العملة'),
+            SizedBox(height: 6.h),
+            Obx(
+              () => Wrap(
+                spacing: 7.w,
+                runSpacing: 6.h,
+                children: [
+                  ChoiceChip(
+                    label: const Text('كل العملات'),
+                    selected: controller.listCurrencyFilter.value.isEmpty,
+                    onSelected: (_) => controller.listCurrencyFilter.value = '',
+                  ),
+                  ...controller.availableBoxCurrencies.map(
+                    (currency) => ChoiceChip(
+                      label: Text(currency),
+                      selected: controller.listCurrencyFilter.value == currency,
+                      onSelected: (_) =>
+                          controller.listCurrencyFilter.value = currency,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.h),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  controller.applyListFilters();
+                  Get.back();
+                },
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('عرض النتائج'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+  );
+}
+
 class _BoxesOverview extends StatelessWidget {
   const _BoxesOverview({required this.controller});
 
@@ -102,8 +236,8 @@ class _BoxesOverview extends StatelessWidget {
       );
     }
     return Container(
-      margin: EdgeInsets.fromLTRB(24.w, 14.h, 24.w, 2.h),
-      padding: EdgeInsets.all(14.r),
+      margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -111,7 +245,7 @@ class _BoxesOverview extends StatelessWidget {
             AppColors.primaryColor.withValues(alpha: .78),
           ],
         ),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +269,7 @@ class _BoxesOverview extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 7.h),
           if (totals.isEmpty)
             const Text('لا توجد صناديق ظاهرة',
                 style: TextStyle(color: Colors.white70))
@@ -147,7 +281,7 @@ class _BoxesOverview extends StatelessWidget {
                   .map(
                     (entry) => Container(
                       padding:
-                          EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: .15),
                         borderRadius: BorderRadius.circular(10.r),
