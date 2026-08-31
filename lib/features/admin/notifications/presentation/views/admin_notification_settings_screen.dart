@@ -46,9 +46,9 @@ class AdminNotificationSettingsScreen
                   Tab(icon: Icon(Icons.campaign), text: 'إرسال'),
                   Tab(icon: Icon(Icons.tune), text: 'السياسات'),
                   Tab(icon: Icon(Icons.library_music), text: 'الأصوات'),
-                  Tab(icon: Icon(Icons.devices), text: 'الأجهزة'),
-                  Tab(icon: Icon(Icons.route), text: 'التسليم'),
-                  Tab(icon: Icon(Icons.history), text: 'التدقيق'),
+                  Tab(icon: Icon(Icons.devices), text: 'أجهزة الاستقبال'),
+                  Tab(icon: Icon(Icons.route), text: 'حالة الإرسال'),
+                  Tab(icon: Icon(Icons.history), text: 'سجل التغييرات'),
                 ],
               ),
             ),
@@ -144,7 +144,7 @@ class _ControlCenterSummary extends StatelessWidget {
                   value: controller.readySounds,
                   icon: Icons.volume_up),
               _SummaryPill(
-                  label: 'جهاز نشط',
+                  label: 'جهاز مسجل',
                   value: controller.healthyDevices,
                   icon: Icons.smartphone),
               _SummaryPill(
@@ -763,13 +763,14 @@ class _SoundsTab extends StatelessWidget {
                                 ? 'صوت نظام · جاهز بالخلفية'
                                 : 'مرفوع · يتزامن تلقائياً مع أجهزة الأدمن'),
                         trailing: bundled
-                            ? Chip(
-                                avatar: fromLibrary
-                                    ? const Icon(Icons.library_music, size: 16)
-                                    : null,
-                                label: Text(
-                                  fromLibrary ? 'مكتبة جاهزة' : 'نظام',
-                                ),
+                            ? _StatusLabel(
+                                icon: fromLibrary
+                                    ? Icons.library_music
+                                    : Icons.inventory_2_outlined,
+                                label: fromLibrary
+                                    ? 'مكتبة جاهزة'
+                                    : 'مدمج بالتطبيق',
+                                color: const Color(0xFF6844A5),
                               )
                             : PopupMenuButton<String>(
                                 onSelected: (action) {
@@ -870,9 +871,10 @@ class _DevicesTab extends StatelessWidget {
                           'أصوات جاهزة: ${device['ready_sounds_count'] ?? 0} · فشل: ${device['failed_sounds_count'] ?? 0}',
                         ),
                         isThreeLine: true,
-                        trailing: const Chip(
-                          avatar: Icon(Icons.notifications_active, size: 16),
-                          label: Text('FCM'),
+                        trailing: const _StatusLabel(
+                          icon: Icons.circle,
+                          label: 'Push متصل',
+                          color: Color(0xFF268B69),
                         ),
                       ),
                     );
@@ -895,42 +897,60 @@ class _DeliveriesTab extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    if (controller.deliveries.isEmpty) {
-      return const _EmptyState(label: 'لا توجد محاولات تسليم مسجلة');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: controller.deliveries.length,
-      itemBuilder: (context, index) {
-        final row = controller.deliveries[index];
-        final notification = row['notification'] as Map?;
-        final sent =
-            const ['sent', 'delivered', 'opened'].contains(row['status']);
-        return Card(
-          child: ListTile(
-            leading: Icon(
-              sent ? Icons.check_circle : Icons.error_outline,
-              color: sent ? Colors.green : Colors.red,
-            ),
-            title: Text(notification?['title']?.toString() ?? 'إشعار'),
-            subtitle: Text(
-              '${notification?['type'] ?? ''} · ${row['channel_id'] ?? '-'}\n'
-              '${row['used_fallback'] == true ? 'استُخدم الصوت الاحتياطي' : 'الصوت المطلوب'}',
-            ),
-            isThreeLine: true,
-            trailing: sent
-                ? const Chip(label: Text('أُرسل'))
-                : IconButton.filledTonal(
-                    tooltip: 'إعادة المحاولة',
-                    onPressed:
-                        controller.busyType.value == 'delivery_${row['id']}'
-                            ? null
-                            : () => controller.retryDelivery(row),
-                    icon: const Icon(Icons.refresh),
-                  ),
-          ),
-        );
-      },
+    return Column(
+      children: [
+        const _InfoCard(
+          icon: Icons.route,
+          title: 'ماذا تعني حالة الإرسال؟',
+          body:
+              'يعرض كل محاولة Push إلى جهاز أدمن: أرسله السيرفر، وصل للتطبيق، تم فتحه، أو فشل ويمكن إعادة المحاولة.',
+        ),
+        Expanded(
+          child: controller.deliveries.isEmpty
+              ? const _EmptyState(label: 'لا توجد محاولات إرسال مسجلة بعد')
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  itemCount: controller.deliveries.length,
+                  itemBuilder: (context, index) {
+                    final row = controller.deliveries[index];
+                    final notification = row['notification'] as Map?;
+                    final status = row['status']?.toString() ?? 'pending';
+                    final successful =
+                        const ['sent', 'delivered', 'opened'].contains(status);
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(
+                          successful ? Icons.check_circle : Icons.error_outline,
+                          color: successful ? Colors.green : Colors.red,
+                        ),
+                        title: Text(
+                          notification?['title']?.toString() ?? 'إشعار',
+                        ),
+                        subtitle: Text(
+                          '${notification?['type'] ?? ''}\n'
+                          '${row['used_fallback'] == true ? 'استُخدم الصوت الاحتياطي' : 'استُخدم الصوت المختار'}',
+                        ),
+                        isThreeLine: true,
+                        trailing: status == 'failed'
+                            ? IconButton.filledTonal(
+                                tooltip: 'إعادة المحاولة',
+                                onPressed: controller.busyType.value ==
+                                        'delivery_${row['id']}'
+                                    ? null
+                                    : () => controller.retryDelivery(row),
+                                icon: const Icon(Icons.refresh),
+                              )
+                            : _StatusLabel(
+                                icon: _deliveryStatusIcon(status),
+                                label: _deliveryStatusLabel(status),
+                                color: _deliveryStatusColor(status),
+                              ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -946,26 +966,38 @@ class _AuditsTab extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    if (controller.audits.isEmpty) {
-      return const _EmptyState(label: 'لا توجد تغييرات إدارية مسجلة بعد');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: controller.audits.length,
-      itemBuilder: (context, index) {
-        final row = controller.audits[index];
-        final user = row['user'] as Map?;
-        return Card(
-          child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.history)),
-            title: Text(
-                '${_auditAction(row['action'])} · ${row['auditable_type'] ?? ''}'),
-            subtitle: Text(
-                '${user?['name'] ?? 'أدمن'} · ${row['created_at'] ?? '-'}'),
-            trailing: Text('#${row['auditable_id'] ?? '-'}'),
-          ),
-        );
-      },
+    return Column(
+      children: [
+        const _InfoCard(
+          icon: Icons.manage_history,
+          title: 'ما هو سجل التغييرات؟',
+          body:
+              'يحفظ من غيّر سياسة أو قالباً أو صوتاً، ومتى حدث التغيير، لتسهيل المراجعة ومعرفة سبب أي إعداد.',
+        ),
+        Expanded(
+          child: controller.audits.isEmpty
+              ? const _EmptyState(label: 'لا توجد تغييرات إدارية مسجلة بعد')
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  itemCount: controller.audits.length,
+                  itemBuilder: (context, index) {
+                    final row = controller.audits[index];
+                    final user = row['user'] as Map?;
+                    return Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.history)),
+                        title: Text(
+                          '${_auditAction(row['action'])} · ${_auditType(row['auditable_type'])}',
+                        ),
+                        subtitle: Text(
+                          '${user?['name'] ?? 'أدمن'} · ${row['created_at'] ?? '-'}',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -984,6 +1016,134 @@ String _auditAction(dynamic action) {
       return 'إرسال';
     default:
       return action?.toString() ?? 'تغيير';
+  }
+}
+
+String _auditType(dynamic type) {
+  switch (type) {
+    case 'policy':
+      return 'سياسة إشعار';
+    case 'template':
+      return 'قالب رسالة';
+    case 'sound':
+      return 'صوت';
+    case 'manual_employee_notification':
+      return 'إشعار موظفين يدوي';
+    default:
+      return type?.toString() ?? 'إعداد';
+  }
+}
+
+String _deliveryStatusLabel(String status) {
+  switch (status) {
+    case 'sent':
+      return 'أرسله السيرفر';
+    case 'delivered':
+      return 'وصل للتطبيق';
+    case 'opened':
+      return 'تم فتحه';
+    case 'pending':
+      return 'قيد الإرسال';
+    default:
+      return status;
+  }
+}
+
+IconData _deliveryStatusIcon(String status) {
+  switch (status) {
+    case 'opened':
+      return Icons.mark_email_read_outlined;
+    case 'delivered':
+      return Icons.phone_android;
+    case 'sent':
+      return Icons.cloud_done_outlined;
+    default:
+      return Icons.schedule;
+  }
+}
+
+Color _deliveryStatusColor(String status) {
+  switch (status) {
+    case 'opened':
+      return const Color(0xFF268B69);
+    case 'delivered':
+      return const Color(0xFF3F70B5);
+    default:
+      return const Color(0xFF6844A5);
+  }
+}
+
+class _StatusLabel extends StatelessWidget {
+  const _StatusLabel({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0EAF9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCCEF0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF6844A5)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text(body, style: const TextStyle(fontSize: 12, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1029,6 +1189,8 @@ IconData _categoryIcon(String? category) {
       return Icons.receipt_long_outlined;
     case 'security':
       return Icons.security;
+    case 'messages':
+      return Icons.forum_outlined;
     case 'stock':
       return Icons.inventory_2_outlined;
     default:

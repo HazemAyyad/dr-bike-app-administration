@@ -39,8 +39,7 @@ class AdminNotificationSettingsController extends GetxController {
         return policy?['is_enabled'] == true;
       }).length;
   int get readySounds => sounds.where((row) => row['is_active'] == true).length;
-  int get healthyDevices =>
-      devices.where((row) => row['is_active'] == true).length;
+  int get healthyDevices => devices.length;
   int get failedDeliveries =>
       deliveries.where((row) => row['status'] == 'failed').length;
 

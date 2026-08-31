@@ -350,6 +350,12 @@ Color _notificationColor(String type) {
   if (type.contains('sales') || type.contains('order')) {
     return const Color(0xFFE58A2B);
   }
+  if (type.contains('whatsapp')) {
+    return const Color(0xFF1FAF67);
+  }
+  if (type.contains('social')) {
+    return const Color(0xFF3F70B5);
+  }
   if (type.contains('login') || type.contains('security')) {
     return const Color(0xFF3F70B5);
   }
@@ -365,6 +371,12 @@ IconData _notificationIcon(String type) {
   }
   if (type.contains('sales') || type.contains('order')) {
     return Icons.shopping_bag_outlined;
+  }
+  if (type.contains('whatsapp')) {
+    return Icons.chat_outlined;
+  }
+  if (type.contains('social')) {
+    return Icons.forum_outlined;
   }
   if (type.contains('login')) {
     return Icons.login;

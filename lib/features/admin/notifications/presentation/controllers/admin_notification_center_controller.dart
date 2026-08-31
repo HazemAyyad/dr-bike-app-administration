@@ -39,6 +39,8 @@ class AdminNotificationCenterController extends GetxController {
     {'id': 'check_due_reminder', 'labelKey': 'notifFilterChecks'},
     {'id': 'check_cashed', 'labelKey': 'notifFilterCheckCashed'},
     {'id': 'check_returned', 'labelKey': 'notifFilterCheckReturned'},
+    {'id': 'whatsapp_message_received', 'labelKey': 'واتساب'},
+    {'id': 'social_message_received', 'labelKey': 'التواصل الاجتماعي'},
     {
       'id': 'sales_order_shiply_handover',
       'labelKey': 'notifFilterShiplyHandover',
