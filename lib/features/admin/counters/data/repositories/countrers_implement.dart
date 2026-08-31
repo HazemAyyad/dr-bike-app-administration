@@ -38,6 +38,11 @@ class CountrersImplement implements CountersRepository {
     DateTime? fromDate,
     DateTime? toDate,
     String? boxId,
+    String? direction,
+    List<String>? movementTypes,
+    String? search,
+    double? minAmount,
+    double? maxAmount,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -47,6 +52,11 @@ class CountrersImplement implements CountersRepository {
           fromDate: fromDate,
           toDate: toDate,
           boxId: boxId,
+          direction: direction,
+          movementTypes: movementTypes,
+          search: search,
+          minAmount: minAmount,
+          maxAmount: maxAmount,
         );
         return Right(reportInformation);
       } on ServerException catch (e) {

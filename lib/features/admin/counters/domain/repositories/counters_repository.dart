@@ -13,5 +13,10 @@ abstract class CountersRepository {
     DateTime? fromDate,
     DateTime? toDate,
     String? boxId,
+    String? direction,
+    List<String>? movementTypes,
+    String? search,
+    double? minAmount,
+    double? maxAmount,
   });
 }

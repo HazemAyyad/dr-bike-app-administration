@@ -90,12 +90,12 @@ class VeiwBoxes extends GetView<BoxesController> {
                     right: 24.w,
                     left: 24.w,
                   ),
-                  height: 70.h,
+                  constraints: BoxConstraints(minHeight: 82.h),
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor
                         : AppColors.whiteColor2,
-                    borderRadius: BorderRadius.circular(4.r),
+                    borderRadius: BorderRadius.circular(14.r),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withAlpha(32),

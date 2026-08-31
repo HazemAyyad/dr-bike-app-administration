@@ -20,18 +20,42 @@ class BoxesWidget extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 12.w),
         child: Row(
           children: [
+            Container(
+              width: 44.r,
+              height: 44.r,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            SizedBox(width: 12.w),
             Expanded(
-              child: Text(
-                box.boxName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle.copyWith(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor3
-                      : Colors.black.withValues(alpha: 0.5),
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    box.boxName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    box.type.isEmpty ? 'صندوق عادي' : box.type,
+                    style: textStyle.copyWith(
+                      fontSize: 11.sp,
+                      color: Theme.of(context).hintColor,
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(width: 8.w),
@@ -42,11 +66,11 @@ class BoxesWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
                 style: textStyle.copyWith(
-                  fontSize: 16.sp,
+                  fontSize: 17.sp,
                   fontWeight: FontWeight.w700,
                   color: ThemeService.isDark.value
                       ? AppColors.customGreyColor3
-                      : Colors.black.withValues(alpha: 0.5),
+                      : AppColors.primaryColor,
                 ),
               ),
             ),

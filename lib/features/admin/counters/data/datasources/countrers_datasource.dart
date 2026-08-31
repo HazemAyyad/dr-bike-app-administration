@@ -35,6 +35,11 @@ class CountrersDatasource {
     DateTime? fromDate,
     DateTime? toDate,
     String? boxId,
+    String? direction,
+    List<String>? movementTypes,
+    String? search,
+    double? minAmount,
+    double? maxAmount,
   }) async {
     try {
       final response = await api.post(
@@ -47,6 +52,13 @@ class CountrersDatasource {
           if (type != null) 'type': type,
           if (employeeId != null) 'employee_id': employeeId,
           if (boxId != null) 'box_id': boxId,
+          if (direction != null && direction.isNotEmpty) 'direction': direction,
+          if (movementTypes != null && movementTypes.isNotEmpty)
+            'types': movementTypes,
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+          if (minAmount != null) 'min_amount': minAmount,
+          if (maxAmount != null) 'max_amount': maxAmount,
           'from_date': fromDate,
           'to_date': toDate,
         },

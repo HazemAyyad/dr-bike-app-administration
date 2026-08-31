@@ -20,6 +20,7 @@ import '../../data/models/get_shown_boxes_model.dart';
 import '../controllers/boxes_controller.dart';
 import '../controllers/boxes_serves.dart';
 import '../widgets/transfer_balance_widget.dart';
+import '../widgets/box_report_filter_sheet.dart';
 
 class DailyBoxesScreen extends StatefulWidget {
   const DailyBoxesScreen({Key? key}) : super(key: key);
@@ -540,6 +541,17 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       }),
     );
   }
+}
+
+void _openBoxReport(BuildContext context, ShownBoxesModel box) {
+  Get.bottomSheet(
+    BoxReportFilterSheet(
+      boxId: box.boxId.toString(),
+      boxName: box.boxName,
+    ),
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+  );
 }
 
 class _FilterBar extends StatelessWidget {
@@ -1705,25 +1717,38 @@ class _MaintenanceBoxSessionTile extends StatelessWidget {
             ),
           ),
           children: [
-            Align(
-              alignment: AlignmentDirectional.center,
-              child: ElevatedButton.icon(
-                onPressed: onTransfer,
-                icon: const Icon(Icons.swap_horiz),
-                label: Text(
-                  'transferBalanceToAnotherBox'.tr ==
-                          'transferBalanceToAnotherBox'
-                      ? 'ترحيل لصندوق آخر'
-                      : 'transferBalanceToAnotherBox'.tr,
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondaryColor,
-                  foregroundColor: AppColors.whiteColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onTransfer,
+                    icon: const Icon(Icons.swap_horiz),
+                    label: Text(
+                      'transferBalanceToAnotherBox'.tr ==
+                              'transferBalanceToAnotherBox'
+                          ? 'ترحيل لصندوق آخر'
+                          : 'transferBalanceToAnotherBox'.tr,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryColor,
+                      foregroundColor: AppColors.whiteColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openBoxReport(context, box),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: const Text('تقرير PDF'),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 10.h),
             Align(
@@ -2190,20 +2215,37 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
             ),
           ),
           children: [
-            SizedBox(
-              height: 40.h,
-              child: ElevatedButton.icon(
-                onPressed: widget.onTransfer,
-                icon: Icon(Icons.swap_horiz, size: 20.sp),
-                label: Text('transferToAnotherBox'.tr),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondaryColor,
-                  foregroundColor: AppColors.whiteColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 40.h,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onTransfer,
+                      icon: Icon(Icons.swap_horiz, size: 20.sp),
+                      label: Text('transferToAnotherBox'.tr),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondaryColor,
+                        foregroundColor: AppColors.whiteColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: SizedBox(
+                    height: 40.h,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openBoxReport(context, widget.box),
+                      icon: Icon(Icons.picture_as_pdf_outlined, size: 19.sp),
+                      label: const Text('تقرير PDF'),
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 12.h),
             Text(

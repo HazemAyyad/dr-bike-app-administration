@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/helpers.dart';
@@ -50,6 +51,13 @@ class BoxesController extends GetxController {
 
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
+  final TextEditingController reportSearchController = TextEditingController();
+  final TextEditingController reportMinAmountController =
+      TextEditingController();
+  final TextEditingController reportMaxAmountController =
+      TextEditingController();
+  final RxString reportDirection = ''.obs;
+  final RxList<String> reportMovementTypes = <String>[].obs;
 
   final tabs = ['boxes', 'movements', 'archive'].obs;
 
@@ -514,6 +522,7 @@ class BoxesController extends GetxController {
     required BuildContext context,
     required String boxId,
     required String boxName,
+    String action = 'save',
   }) async {
     try {
       Get.back();
@@ -528,6 +537,11 @@ class BoxesController extends GetxController {
         boxId: boxId,
         fromDate: DateTime.parse(fromDateController.text),
         toDate: DateTime.parse(toDateController.text),
+        direction: reportDirection.value,
+        movementTypes: reportMovementTypes.toList(),
+        search: reportSearchController.text,
+        minAmount: double.tryParse(reportMinAmountController.text),
+        maxAmount: double.tryParse(reportMaxAmountController.text),
       );
 
       response.fold((failure) {
@@ -537,6 +551,22 @@ class BoxesController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
+        final safeName = boxName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+        final reportFileName =
+            'تقرير_صندوق_${safeName}_${fromDateController.text}_${toDateController.text}.pdf';
+        if (action == 'share') {
+          await Printing.sharePdf(bytes: success, filename: reportFileName);
+          _clearReportFilters();
+          return;
+        }
+        if (action == 'print') {
+          await Printing.layoutPdf(
+            name: reportFileName,
+            onLayout: (_) async => success,
+          );
+          _clearReportFilters();
+          return;
+        }
         late Directory directory;
 
         if (Platform.isAndroid) {
@@ -553,8 +583,7 @@ class BoxesController extends GetxController {
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
-        final filePath =
-            "${directory.path}/تقرير صندوق_$boxName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final filePath = "${directory.path}/$reportFileName";
         final file = File(filePath);
         await file.writeAsBytes(success);
         Get.snackbar(
@@ -565,8 +594,7 @@ class BoxesController extends GetxController {
         );
 
         await OpenFilex.open(filePath);
-        fromDateController.clear();
-        toDateController.clear();
+        _clearReportFilters();
       });
     } catch (e) {
       Get.snackbar(
@@ -576,6 +604,16 @@ class BoxesController extends GetxController {
         duration: const Duration(milliseconds: 2500),
       );
     }
+  }
+
+  void _clearReportFilters() {
+    fromDateController.clear();
+    toDateController.clear();
+    reportSearchController.clear();
+    reportMinAmountController.clear();
+    reportMaxAmountController.clear();
+    reportDirection.value = '';
+    reportMovementTypes.clear();
   }
 
   @override
@@ -609,6 +647,9 @@ class BoxesController extends GetxController {
     currencyController.dispose();
     fromDateController.dispose();
     toDateController.dispose();
+    reportSearchController.dispose();
+    reportMinAmountController.dispose();
+    reportMaxAmountController.dispose();
 
     super.onClose();
   }

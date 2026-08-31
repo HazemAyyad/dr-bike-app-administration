@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/costom_dialog_filter.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/boxes_controller.dart';
 import 'movements_widget.dart';
+import 'box_report_filter_sheet.dart';
 
 class TaskDetailsTransfer extends StatelessWidget {
   const TaskDetailsTransfer({Key? key}) : super(key: key);
@@ -64,37 +64,15 @@ class TaskDetailsTransfer extends StatelessWidget {
                               size: 25.h,
                             ),
                             onPressed: () {
-                              showCustomDialog(
-                                context,
-                                fromDateController:
-                                    controller.fromDateController,
-                                toDateController: controller.toDateController,
-                                label: 'movements'.tr,
-                                onClear: () {
-                                  controller.fromDateController.clear();
-                                  controller.toDateController.clear();
-                                  Get.back();
-                                },
-                                onPressed: () {
-                                  if (controller
-                                          .fromDateController.text.isEmpty ||
-                                      controller
-                                          .toDateController.text.isEmpty) {
-                                    Get.snackbar(
-                                      "error".tr,
-                                      "برجاء اختيار مدة محدده".tr,
-                                      snackPosition: SnackPosition.BOTTOM,
-                                      duration: const Duration(seconds: 1),
-                                    );
-                                    return;
-                                  }
-                                  controller.downloadReport(
-                                    context: context,
-                                    boxId: controller.boxDetailsId,
-                                    boxName:
-                                        controller.editBoxNameController.text,
-                                  );
-                                },
+                              Get.bottomSheet(
+                                BoxReportFilterSheet(
+                                  boxId: controller.boxDetailsId,
+                                  boxName:
+                                      controller.editBoxNameController.text,
+                                ),
+                                isScrollControlled: true,
+                                backgroundColor:
+                                    Theme.of(context).scaffoldBackgroundColor,
                               );
                             },
                           ),

@@ -15,6 +15,11 @@ class GetReportByTypeUsecase {
     DateTime? fromDate,
     DateTime? toDate,
     String? boxId,
+    String? direction,
+    List<String>? movementTypes,
+    String? search,
+    double? minAmount,
+    double? maxAmount,
   }) {
     return countersRepository.getReportByType(
       type: type,
@@ -22,6 +27,11 @@ class GetReportByTypeUsecase {
       fromDate: fromDate,
       toDate: toDate,
       boxId: boxId,
+      direction: direction,
+      movementTypes: movementTypes,
+      search: search,
+      minAmount: minAmount,
+      maxAmount: maxAmount,
     );
   }
 }
