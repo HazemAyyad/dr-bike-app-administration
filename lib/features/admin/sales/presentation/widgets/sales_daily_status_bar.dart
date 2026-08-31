@@ -90,7 +90,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
           !showClosingApproval;
 
       return GestureDetector(
-        onTap: () => _openStatusTarget(showClosingApproval),
+        onTap: _openStatusTarget,
         child: Container(
           margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -172,7 +172,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                 ),
               if (showClosingApproval)
                 TextButton(
-                  onPressed: _openClosingRequests,
+                  onPressed: _openStatusTarget,
                   child: Text('salesDailyReviewClosingRequest'.tr),
                 ),
               Icon(Icons.chevron_left, color: color, size: 20.sp),
@@ -183,19 +183,8 @@ class SalesDailyStatusBar extends GetView<SalesController> {
     });
   }
 
-  void _openStatusTarget(bool showClosingApproval) {
-    if (showClosingApproval) {
-      _openClosingRequests();
-      return;
-    }
+  void _openStatusTarget() {
     Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN);
-  }
-
-  void _openClosingRequests() {
-    Get.toNamed(
-      AppRoutes.SALESDAILYADMINSCREEN,
-      arguments: {'initialTab': 1},
-    );
   }
 
   Widget _shekelSummary(DailySessionPayload payload) {

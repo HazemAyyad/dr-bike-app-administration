@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/app_settings_service.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../notifications/presentation/controllers/admin_notification_badge_controller.dart';
+import '../../../sales/data/datasources/sales_datasources.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
@@ -19,7 +21,7 @@ import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../../domain/usecases/save_admin_ui_preferences_usecase.dart';
 
 class AdminDashboardController extends GetxController
-    with GetTickerProviderStateMixin {
+    with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
   final GetAdminLogsUsecase getAdminLogsUsecase;
   final GetActivitySummaryUsecase getActivitySummaryUsecase;
@@ -27,6 +29,8 @@ class AdminDashboardController extends GetxController
   final GetMainDashboardDataUsecase getMainDashboardDataUsecase;
   final GetAdminUiPreferencesUsecase getAdminUiPreferencesUsecase;
   final SaveAdminUiPreferencesUsecase saveAdminUiPreferencesUsecase;
+  bool _closingPromptShownForCurrentResume = false;
+  bool _checkingClosingRequests = false;
 
   AdminDashboardController({
     required this.getAllEmployeeUsecase,
@@ -605,6 +609,7 @@ class AdminDashboardController extends GetxController
 
   @override
   void onInit() async {
+    WidgetsBinding.instance.addObserver(this);
     if (userType == 'admin') {
       if (!Get.isRegistered<AdminNotificationBadgeController>()) {
         Get.put(AdminNotificationBadgeController(), permanent: true);
@@ -632,10 +637,88 @@ class AdminDashboardController extends GetxController
         animController.reverse();
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPendingClosingPromptIfNeeded();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _closingPromptShownForCurrentResume = false;
+      return;
+    }
+    if (state == AppLifecycleState.resumed) {
+      Future<void>.delayed(
+        const Duration(milliseconds: 450),
+        _showPendingClosingPromptIfNeeded,
+      );
+    }
+  }
+
+  Future<void> _showPendingClosingPromptIfNeeded() async {
+    if (userType != 'admin' ||
+        _closingPromptShownForCurrentResume ||
+        _checkingClosingRequests) {
+      return;
+    }
+    _checkingClosingRequests = true;
+    try {
+      AppDependencyRegistry.ensureSales();
+      final requests =
+          await Get.find<SalesDatasource>().getPendingDailyClosing();
+      if (requests.isEmpty || Get.isDialogOpen == true) return;
+      _closingPromptShownForCurrentResume = true;
+      final names = requests
+          .map((item) => item.employeeName?.trim())
+          .whereType<String>()
+          .where((name) => name.isNotEmpty)
+          .toSet()
+          .take(3)
+          .join('، ');
+      final goToRequests = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('طلبات إغلاق بانتظارك'),
+          content: Text(
+            'يوجد ${requests.length} طلب إغلاق صندوق بانتظار المراجعة'
+            '${names.isEmpty ? '.' : ' من: $names.'}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('تجاهل الآن'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Get.back(result: true),
+              icon: const Icon(Icons.lock_clock_outlined),
+              label: const Text('مراجعة وإغلاق'),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+      if (goToRequests == true) {
+        final first = requests.first;
+        final type = first.cashCounts.isEmpty &&
+                first.salesOrdersCashCounts.isNotEmpty
+            ? 'sales_orders'
+            : 'instant_sales';
+        Get.toNamed(
+          AppRoutes.SALESDAILYHISTORYSCREEN,
+          arguments: {'sessionType': type},
+        );
+      }
+    } catch (_) {
+      // Keep the dashboard usable when the reminder endpoint is unavailable.
+    } finally {
+      _checkingClosingRequests = false;
+    }
   }
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;

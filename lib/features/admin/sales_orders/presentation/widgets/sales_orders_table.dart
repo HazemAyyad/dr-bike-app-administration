@@ -1,367 +1,297 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import 'package:get/get.dart';
-
 import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
-
 import '../../../../../core/utils/app_colors.dart';
-
 import '../../../../../routes/app_routes.dart';
-
 import '../../data/models/sales_order_model.dart';
-
 import '../controllers/sales_orders_controller.dart';
+import 'sales_order_status_ui.dart';
 
-/// جدول الطلبيات — نفس أسلوب جدول المبيعات الفورية.
-
+/// عرض الطلبيات كبطاقات تشغيلية مضغوطة، بنفس لغة قسم الصيانة.
 class SalesOrdersTable extends GetView<SalesOrdersController> {
   const SalesOrdersTable({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final groups = _groupOrdersByDate(controller.orders);
-
-      if (groups.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      final showBulk =
+      final groups = _groupByDate(controller.orders);
+      if (groups.isEmpty) return const SizedBox.shrink();
+      final bulk =
           controller.bulkMode.value && controller.canBulkSelectCurrentTab;
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _OrdersTableHeader(showBulkColumn: showBulk),
-          for (var i = 0; i < groups.length; i++) ...[
-            if (i > 0) SizedBox(height: 14.h),
-            _DateGroupHeader(label: groups[i].label),
-            ...groups[i].orders.map(
-                  (order) => _OrderTableRow(
-                    order: order,
-                    showBulkCheckbox: showBulk,
-                    isSelected: controller.selectedOrderIds.contains(order.id),
-                    onSelectionChanged: (selected) =>
-                        controller.toggleOrderSelection(order.id, selected),
-                    onTap: () {
-                      if (showBulk) {
-                        controller.toggleOrderSelection(
-                          order.id,
-                          !controller.selectedOrderIds.contains(order.id),
-                        );
-
-                        return;
-                      }
-
-                      Get.toNamed(
-                        AppRoutes.SALESORDERDETAILSCREEN,
-                        arguments: order.id,
-                      );
-                    },
-                    onConfirm: order.status == 'unconfirmed' && !showBulk
-                        ? () => controller.confirmOrder(order.id)
-                        : null,
-                  ),
-                ),
+          for (final group in groups) ...[
+            _DateHeader(label: group.label, count: group.orders.length),
+            ...group.orders.map(
+              (order) => _OrderCard(
+                order: order,
+                bulk: bulk,
+                selected: controller.selectedOrderIds.contains(order.id),
+                onSelect: (value) =>
+                    controller.toggleOrderSelection(order.id, value),
+                onTap: () {
+                  if (bulk) {
+                    controller.toggleOrderSelection(
+                      order.id,
+                      !controller.selectedOrderIds.contains(order.id),
+                    );
+                    return;
+                  }
+                  Get.toNamed(
+                    AppRoutes.SALESORDERDETAILSCREEN,
+                    arguments: order.id,
+                  );
+                },
+                onLongPress: order.status == 'unconfirmed' && !bulk
+                    ? () => controller.confirmOrder(order.id)
+                    : null,
+              ),
+            ),
+            SizedBox(height: 7.h),
           ],
-          SizedBox(height: 4.h),
         ],
       );
     });
   }
 
-  List<_OrderDateGroup> _groupOrdersByDate(
-      List<SalesOrderListItemModel> orders) {
-    final map = <String, List<SalesOrderListItemModel>>{};
-
+  List<_OrderGroup> _groupByDate(List<SalesOrderListItemModel> orders) {
+    final grouped = <String, List<SalesOrderListItemModel>>{};
     for (final order in orders) {
-      final key = _dateKey(order.createdAt);
-
-      map.putIfAbsent(key, () => []).add(order);
+      final raw = order.createdAt ?? '';
+      final parsed = DateTime.tryParse(raw);
+      final key = parsed == null
+          ? (raw.length >= 10 ? raw.substring(0, 10) : '—')
+          : DateFormat('yyyy-MM-dd').format(parsed);
+      grouped.putIfAbsent(key, () => []).add(order);
     }
-
-    final keys = map.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    return keys.map((key) {
-      return _OrderDateGroup(
-        label: _formatDateHeader(key, map[key]!.length),
-        orders: map[key]!,
-      );
-    }).toList();
-  }
-
-  String _dateKey(String? raw) {
-    if (raw == null || raw.isEmpty) return '—';
-
-    try {
-      return DateFormat('yyyy-MM-dd').format(DateTime.parse(raw));
-    } catch (_) {
-      return raw.length >= 10 ? raw.substring(0, 10) : raw;
-    }
-  }
-
-  String _formatDateHeader(String key, int count) {
-    if (key == '—') {
-      return '${'salesOrders'.tr} ($count)';
-    }
-
-    try {
-      final dt = DateTime.parse(key);
-
-      final day =
-          DateFormat('EEEE d MMMM yyyy', Get.locale?.languageCode ?? 'ar')
-              .format(dt);
-
-      return '$day ($count)';
-    } catch (_) {
-      return '$key ($count)';
-    }
+    final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    return keys.map((key) => _OrderGroup(key, grouped[key]!)).toList();
   }
 }
 
-class _OrderDateGroup {
-  const _OrderDateGroup({required this.label, required this.orders});
-
+class _OrderGroup {
+  const _OrderGroup(this.label, this.orders);
   final String label;
-
   final List<SalesOrderListItemModel> orders;
 }
 
-class _DateGroupHeader extends StatelessWidget {
-  const _DateGroupHeader({required this.label});
-
+class _DateHeader extends StatelessWidget {
+  const _DateHeader({required this.label, required this.count});
   final String label;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
-    final bg = ThemeService.isDark.value
-        ? AppColors.primaryColor.withValues(alpha: 0.15)
-        : AppColors.primaryColor.withValues(alpha: 0.08);
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade300),
-          right: BorderSide(color: Colors.grey.shade300),
-          bottom: BorderSide(color: Colors.grey.shade300),
-        ),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppColors.primaryColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 13.sp,
-        ),
-      ),
-    );
-  }
-}
-
-class _OrdersTableHeader extends StatelessWidget {
-  const _OrdersTableHeader({required this.showBulkColumn});
-
-  final bool showBulkColumn;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = ThemeService.isDark.value
-        ? AppColors.customGreyColor
-        : SalesOrdersController.surfaceGray;
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
+    final date = DateTime.tryParse(label);
+    final text = date == null
+        ? label
+        : DateFormat('EEEE d MMMM', Get.locale?.languageCode ?? 'ar')
+            .format(date);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 4.h),
       child: Row(
         children: [
-          if (showBulkColumn) SizedBox(width: 36.w),
-          const _HeaderCell('salesOrderNumber', flex: 2),
-          const _HeaderCell('customer', flex: 3),
-          const _HeaderCell('total', flex: 2),
-          const _HeaderCell('orderDate', flex: 3),
+          Container(
+            width: 4.w,
+            height: 18.h,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor,
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+          ),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Text('$count', style: TextStyle(fontSize: 10.sp)),
+          ),
         ],
       ),
     );
   }
 }
 
-class _HeaderCell extends StatelessWidget {
-  const _HeaderCell(this.labelKey, {required this.flex});
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({
+    required this.order,
+    required this.bulk,
+    required this.selected,
+    required this.onSelect,
+    required this.onTap,
+    this.onLongPress,
+  });
 
-  final String labelKey;
-
-  final int flex;
+  final SalesOrderListItemModel order;
+  final bool bulk;
+  final bool selected;
+  final ValueChanged<bool> onSelect;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        labelKey.tr,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 11.sp,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primaryColor,
+    final dark = ThemeService.isDark.value;
+    final statusColor = SalesOrderStatusUi.statusColor(order.status);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+          padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primaryColor.withValues(alpha: 0.08)
+                : dark
+                    ? AppColors.customGreyColor
+                    : Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: AppColors.operationalCardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.035),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              if (bulk)
+                Checkbox(
+                  value: selected,
+                  onChanged: (value) => onSelect(value ?? false),
+                  visualDensity: VisualDensity.compact,
+                )
+              else
+                Container(
+                  width: 38.w,
+                  height: 38.w,
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.local_shipping_outlined,
+                    color: statusColor,
+                    size: 19.sp,
+                  ),
+                ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            order.customerName ?? '—',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          order.serialNumber ?? '#${order.id}',
+                          style: TextStyle(
+                            color: AppColors.primaryColor,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4.h),
+                    Row(
+                      children: [
+                        _Meta(
+                          icon: Icons.location_on_outlined,
+                          text: order.cityName ?? '—',
+                        ),
+                        SizedBox(width: 8.w),
+                        _Meta(
+                          icon: Icons.payments_outlined,
+                          text: '${order.total.toStringAsFixed(2)} ₪',
+                          strong: true,
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 7.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20.r),
+                          ),
+                          child: Text(
+                            Get.find<SalesOrdersController>()
+                                .statusLabel(order.status),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 3.w),
+              Icon(Icons.chevron_left_rounded, size: 19.sp, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _OrderTableRow extends StatelessWidget {
-  const _OrderTableRow({
-    required this.order,
-    required this.onTap,
-    this.onConfirm,
-    this.showBulkCheckbox = false,
-    this.isSelected = false,
-    this.onSelectionChanged,
-  });
-
-  final SalesOrderListItemModel order;
-  final VoidCallback onTap;
-
-  final VoidCallback? onConfirm;
-
-  final bool showBulkCheckbox;
-
-  final bool isSelected;
-
-  final ValueChanged<bool>? onSelectionChanged;
-
-  String _formatTime(String? raw) {
-    if (raw == null || raw.isEmpty) return '—';
-
-    try {
-      final dt = DateTime.parse(raw);
-      final locale = Get.locale?.languageCode ?? 'ar';
-      return DateFormat('d/M/yyyy hh:mm a', locale).format(dt);
-    } catch (_) {
-      return raw;
-    }
-  }
+class _Meta extends StatelessWidget {
+  const _Meta({required this.icon, required this.text, this.strong = false});
+  final IconData icon;
+  final String text;
+  final bool strong;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-
-    final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
-
-    final cancelled = order.status == 'canceled';
-
-    return Material(
-      color: cancelled
-          ? Colors.red.withValues(alpha: 0.06)
-          : isSelected
-              ? AppColors.primaryColor.withValues(alpha: 0.08)
-              : bg,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onConfirm,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 11.h),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: Colors.grey.shade300),
-              right: BorderSide(color: Colors.grey.shade300),
-              bottom: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (showBulkCheckbox)
-                SizedBox(
-                  width: 36.w,
-                  child: Checkbox(
-                    value: isSelected,
-                    onChanged: (v) => onSelectionChanged?.call(v ?? false),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  order.serialNumber ?? '#${order.id}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryColor,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.primaryColor,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      order.customerName ?? '—',
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11.sp),
-                    ),
-                    if (order.cityName != null) ...[
-                      SizedBox(height: 2.h),
-                      Text(
-                        order.cityName!,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${order.total.toStringAsFixed(2)} ₪',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: cancelled ? Colors.red.shade700 : null,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  _formatTime(order.createdAt),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ),
-            ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13.sp, color: Colors.grey.shade600),
+        SizedBox(width: 2.w),
+        Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 10.sp,
+            fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
+            color: strong ? AppColors.primaryColor : Colors.grey.shade700,
           ),
         ),
-      ),
+      ],
     );
   }
 }

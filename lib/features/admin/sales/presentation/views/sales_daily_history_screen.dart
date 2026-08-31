@@ -8,6 +8,8 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
 import '../controllers/sales_daily_history_controller.dart';
+import '../controllers/sales_daily_admin_controller.dart';
+import 'sales_daily_admin_screen.dart';
 import '../widgets/sales_daily_ui_widgets.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 import '../widgets/sales_daily_status_bar.dart';
@@ -43,13 +45,9 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'صناديق المبيعات اليومية',
         action: false,
-        actions: [
-          if (sales != null) _ClosingRequestsButton(sales: sales!),
-          SizedBox(width: 8.w),
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -74,7 +72,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
           onRefresh: _refresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 24.h),
+            padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
             children: [
               if (_shouldOfferOpening()) ...[
                 SalesDailyStatusBar(
@@ -82,42 +80,47 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
                   onOpened: _continueAfterOpening,
                   autoOpen: true,
                 ),
-                SizedBox(height: 10.h),
+                SizedBox(height: 6.h),
               ],
               _ActiveDrawerBanner(
                 session: active,
                 type: selectedType,
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 7.h),
               _DrawerTypeSelector(
                 selectedType: selectedType,
                 onChanged: (value) => setState(() => selectedType = value),
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 7.h),
               SalesDailySummaryStrip(
                 openCount: overview.openCount,
                 pendingCount: overview.closingRequestedCount,
                 closedCount: overview.closedCount,
               ),
               if (sales?.pendingDailyClosingRequests.isNotEmpty == true) ...[
-                SizedBox(height: 12.h),
+                SizedBox(height: 7.h),
                 _InlineClosingRequests(sales: sales!),
               ],
-              SizedBox(height: 12.h),
+              if (sales?.pendingSalesCancellationRequests.isNotEmpty ==
+                  true) ...[
+                SizedBox(height: 7.h),
+                _InlineCancellationRequests(sales: sales!),
+              ],
+              SizedBox(height: 7.h),
               _ListModeSelector(
                 showHistory: showHistory,
                 onChanged: (value) => setState(() => showHistory = value),
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 7.h),
               if (list.isEmpty)
                 Padding(
-                  padding: EdgeInsets.only(top: 45.h),
+                  padding: EdgeInsets.only(top: 24.h),
                   child: const ShowNoData(),
                 )
               else
                 ...list.map(
                   (item) => Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
+                    padding: EdgeInsets.only(bottom: 6.h),
                     child: SalesDailySessionTile(
                       item: item,
                       onTap: () => controller.openSessionDetail(item.id),
@@ -177,7 +180,7 @@ class _InlineClosingRequests extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14.r),
@@ -196,12 +199,12 @@ class _InlineClosingRequests extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 4.h),
           ...sales.pendingDailyClosingRequests.map(
             (request) => Container(
               width: double.infinity,
-              margin: EdgeInsets.only(top: 6.h),
-              padding: EdgeInsets.all(10.w),
+              margin: EdgeInsets.only(top: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10.r),
@@ -222,12 +225,15 @@ class _InlineClosingRequests extends StatelessWidget {
                     style:
                         TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
                   ),
-                  SizedBox(height: 7.h),
+                  SizedBox(height: 4.h),
                   Wrap(
                     spacing: 6.w,
                     runSpacing: 4.h,
                     children: [
                       TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
                         onPressed: () =>
                             sales.rejectDailyClosingInline(request.id),
                         icon:
@@ -236,18 +242,21 @@ class _InlineClosingRequests extends StatelessWidget {
                             style: TextStyle(color: Colors.red)),
                       ),
                       FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
                         onPressed: () =>
                             sales.approveDailyClosingInline(request),
                         icon: const Icon(Icons.check_rounded),
                         label: const Text('موافقة'),
                       ),
                       TextButton.icon(
-                        onPressed: () => Get.toNamed(
-                          AppRoutes.SALESDAILYADMINSCREEN,
-                          arguments: {'initialTab': 1},
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
                         ),
+                        onPressed: () => _showClosingDetails(context, request),
                         icon: const Icon(Icons.tune_rounded),
-                        label: const Text('تفاصيل الترحيل'),
+                        label: const Text('التفاصيل والترحيل'),
                       ),
                     ],
                   ),
@@ -259,35 +268,113 @@ class _InlineClosingRequests extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _showClosingDetails(
+    BuildContext context,
+    DailyClosingRequestModel request,
+  ) async {
+    if (!Get.isRegistered<SalesDailyAdminController>()) {
+      SalesDailyAdminBinding().dependencies();
+    }
+    final admin = Get.find<SalesDailyAdminController>();
+    await admin.loadAll();
+    if (!context.mounted) return;
+    await SalesDailyClosingRequestsList.showClosingSheet(
+      context,
+      admin,
+      request,
+    );
+    await sales.loadDailySession();
+  }
 }
 
-class _ClosingRequestsButton extends StatelessWidget {
-  const _ClosingRequestsButton({required this.sales});
+class _InlineCancellationRequests extends StatelessWidget {
+  const _InlineCancellationRequests({required this.sales});
 
   final SalesController sales;
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final count = sales.pendingDailyClosingCount.value;
-      return Tooltip(
-        message: 'طلبات إغلاق الصناديق',
-        child: IconButton(
-          onPressed: () async {
-            await Get.toNamed(
-              AppRoutes.SALESDAILYADMINSCREEN,
-              arguments: {'initialTab': 1},
-            );
-            await sales.loadDailySession();
-          },
-          icon: Badge(
-            isLabelVisible: count > 0,
-            label: Text(count > 99 ? '99+' : '$count'),
-            child: const Icon(Icons.pending_actions_outlined),
+    return Container(
+      padding: EdgeInsets.all(9.w),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_outlined,
+                  color: Colors.red.shade700, size: 19.sp),
+              SizedBox(width: 6.w),
+              Text(
+                'طلبات إلغاء الفواتير (${sales.pendingSalesCancellationRequests.length})',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
-        ),
-      );
-    });
+          ...sales.pendingSalesCancellationRequests.map(
+            (request) => Container(
+              margin: EdgeInsets.only(top: 5.h),
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(9.r),
+                border: Border.all(color: Colors.red.shade100),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${request.saleType == 'instant' ? 'بيع فوري' : 'بيع ربحي'} #${request.saleId} — ${request.employeeName ?? '—'}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          request.reason,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'رفض',
+                    onPressed: () => sales.reviewSalesCancellationInline(
+                      request,
+                      approve: false,
+                    ),
+                    icon: const Icon(Icons.close_rounded, color: Colors.red),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'موافقة',
+                    onPressed: () => sales.reviewSalesCancellationInline(
+                      request,
+                      approve: true,
+                    ),
+                    icon: const Icon(Icons.check_rounded, color: Colors.green),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -317,19 +404,19 @@ class _ActiveDrawerBanner extends StatelessWidget {
     final balance = shekel?.systemBalance ?? 0;
 
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [color, color.withValues(alpha: 0.72)],
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
         ),
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(14.r),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -339,8 +426,8 @@ class _ActiveDrawerBanner extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 44.w,
-                height: 44.w,
+                width: 34.w,
+                height: 34.w,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
@@ -351,7 +438,7 @@ class _ActiveDrawerBanner extends StatelessWidget {
                       ? Icons.local_shipping_outlined
                       : Icons.account_balance_wallet_outlined,
                   color: Colors.white,
-                  size: 24.sp,
+                  size: 19.sp,
                 ),
               ),
               SizedBox(width: 10.w),
@@ -365,7 +452,7 @@ class _ActiveDrawerBanner extends StatelessWidget {
                           : 'صندوق المبيعات اليومي',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16.sp,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -378,22 +465,22 @@ class _ActiveDrawerBanner extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 18.h),
+          SizedBox(height: 8.h),
           Text(
             '${balance.toStringAsFixed(2)} ₪',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 30.sp,
+              fontSize: 22.sp,
               fontWeight: FontWeight.w900,
               height: 1,
             ),
           ),
-          SizedBox(height: 5.h),
+          SizedBox(height: 2.h),
           Text('الرصيد الحالي',
               style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
-          SizedBox(height: 14.h),
+          SizedBox(height: 7.h),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(10.r),
@@ -420,13 +507,14 @@ class _ActiveDrawerBanner extends StatelessWidget {
             ),
           ),
           if (session?.canClose == true) ...[
-            SizedBox(height: 12.h),
+            SizedBox(height: 7.h),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: color,
+                  visualDensity: VisualDensity.compact,
                 ),
                 onPressed: () => Get.toNamed(
                   AppRoutes.SALESDAILYCLOSESCREEN,
@@ -441,10 +529,10 @@ class _ActiveDrawerBanner extends StatelessWidget {
               ),
             ),
           ] else if (session?.isClosingRequested == true) ...[
-            SizedBox(height: 12.h),
+            SizedBox(height: 7.h),
             Container(
               width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(10.r),
@@ -528,7 +616,7 @@ class _TypeButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12.r),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 11.h),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.primaryColor.withValues(alpha: 0.12)
@@ -542,7 +630,7 @@ class _TypeButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon,
-                size: 19.sp,
+                size: 17.sp,
                 color: selected ? AppColors.primaryColor : Colors.grey),
             SizedBox(width: 6.w),
             Flexible(
@@ -551,7 +639,7 @@ class _TypeButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 11.sp,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                   color:
                       selected ? AppColors.primaryColor : Colors.grey.shade700,
@@ -577,6 +665,12 @@ class _ListModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<bool>(
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        padding: WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+        ),
+      ),
       segments: const [
         ButtonSegment(
           value: false,

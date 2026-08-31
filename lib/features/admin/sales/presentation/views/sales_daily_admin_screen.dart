@@ -40,7 +40,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
           return TabBarView(
             children: [
               _OpenSessionsList(controller: controller),
-              _ClosingList(controller: controller),
+              SalesDailyClosingRequestsList(controller: controller),
               _CancellationList(controller: controller),
             ],
           );
@@ -106,7 +106,11 @@ class _OpenSessionsList extends StatelessWidget {
                     (r) => r.id == item.pendingClosingRequestId,
                   );
                   if (pending != null) {
-                    _ClosingList.showClosingSheet(context, controller, pending);
+                    SalesDailyClosingRequestsList.showClosingSheet(
+                      context,
+                      controller,
+                      pending,
+                    );
                     return;
                   }
                 }
@@ -120,8 +124,9 @@ class _OpenSessionsList extends StatelessWidget {
   }
 }
 
-class _ClosingList extends StatelessWidget {
-  const _ClosingList({required this.controller});
+class SalesDailyClosingRequestsList extends StatelessWidget {
+  const SalesDailyClosingRequestsList({required this.controller, Key? key})
+      : super(key: key);
 
   final SalesDailyAdminController controller;
 
@@ -153,8 +158,11 @@ class _ClosingList extends StatelessWidget {
             ),
             isThreeLine: true,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () =>
-                _ClosingList.showClosingSheet(context, controller, item),
+            onTap: () => SalesDailyClosingRequestsList.showClosingSheet(
+              context,
+              controller,
+              item,
+            ),
           ),
         );
       },

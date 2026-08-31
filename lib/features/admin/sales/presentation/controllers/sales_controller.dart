@@ -579,6 +579,8 @@ class SalesController extends GetxController
   final isDailySessionLoading = false.obs;
   final pendingDailyClosingCount = 0.obs;
   final pendingDailyClosingRequests = <DailyClosingRequestModel>[].obs;
+  final pendingSalesCancellationRequests =
+      <SalesCancellationRequestModel>[].obs;
 
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
   final salesListRevision = 0.obs;
@@ -633,13 +635,41 @@ class SalesController extends GetxController
           payloads[1].pendingClosingRequestId,
         ].whereType<int>().toSet().length;
       }
+      try {
+        pendingSalesCancellationRequests
+            .assignAll(await ds.getPendingCancellations());
+      } catch (_) {
+        pendingSalesCancellationRequests.clear();
+      }
     } catch (_) {
       dailySessionPayload.value = null;
       salesOrdersDailySessionPayload.value = null;
       pendingDailyClosingCount.value = 0;
       pendingDailyClosingRequests.clear();
+      pendingSalesCancellationRequests.clear();
     } finally {
       isDailySessionLoading(false);
+    }
+  }
+
+  Future<void> reviewSalesCancellationInline(
+    SalesCancellationRequestModel request, {
+    required bool approve,
+  }) async {
+    try {
+      final ds = Get.find<SalesDatasource>();
+      if (approve) {
+        await ds.approveSalesCancellation(request.id);
+      } else {
+        await ds.rejectSalesCancellation(request.id);
+      }
+      await loadDailySession();
+      Get.snackbar(
+        'success'.tr,
+        approve ? 'تمت الموافقة على طلب الإلغاء' : 'تم رفض طلب الإلغاء',
+      );
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
     }
   }
 

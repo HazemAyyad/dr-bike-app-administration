@@ -135,15 +135,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   children: [
                     _headerCard(order),
                     SizedBox(height: 12.h),
-                    _nextStepCard(order),
-                    SizedBox(height: 12.h),
-                    SalesOrderStatusUi.workflowTimeline(
-                      status: order.status,
-                      controller: controller,
-                    ),
+                    _itemsSection(order),
                     if (order.mediaRequirements.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       _mediaRequirementsCard(order),
+                    ],
+                    if (order.media.isNotEmpty) ...[
+                      SizedBox(height: 12.h),
+                      _mediaCard(order),
                     ],
                     SizedBox(height: 12.h),
                     _customerCard(order),
@@ -152,7 +151,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       _logisticsCard(order),
                     ],
                     SizedBox(height: 12.h),
-                    _itemsSection(order),
+                    _nextStepCard(order),
                     if (order.statusLogs.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       _statusHistoryCard(order),
@@ -160,10 +159,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     if (order.childOrders.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       _childOrdersCard(order),
-                    ],
-                    if (order.media.isNotEmpty) ...[
-                      SizedBox(height: 12.h),
-                      _mediaCard(order),
                     ],
                     SizedBox(height: 100.h),
                   ],
@@ -222,7 +217,27 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ],
                 ),
               ),
-              SalesOrderStatusUi.statusBadge(order.status, controller),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showWorkflowDialog(order),
+                  borderRadius: BorderRadius.circular(20.r),
+                  child: Padding(
+                    padding: EdgeInsets.all(2.r),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SalesOrderStatusUi.statusBadge(
+                          order.status,
+                          controller,
+                        ),
+                        SizedBox(width: 3.w),
+                        Icon(Icons.expand_more_rounded, size: 18.sp),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           if (order.instantSaleId != null) ...[
@@ -1543,6 +1558,190 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     );
   }
 
+  Future<void> _showWorkflowDialog(SalesOrderDetailModel order) async {
+    final currentIndex = SalesOrderStatusUi.workflowIndex(order.status);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('مسار الطلبية'),
+        contentPadding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 6.h),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: SalesOrderStatusUi.workflowSteps.length,
+            separatorBuilder: (_, __) => Container(
+              margin: EdgeInsetsDirectional.only(start: 18.w),
+              width: 2,
+              height: 10.h,
+              color: SalesOrdersController.borderGray,
+            ),
+            itemBuilder: (_, index) {
+              final status = SalesOrderStatusUi.workflowSteps[index];
+              final current = index == currentIndex;
+              final completed = index < currentIndex;
+              final color = SalesOrderStatusUi.statusColor(status);
+              return Material(
+                color: current
+                    ? color.withValues(alpha: 0.08)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10.r),
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8.w),
+                  leading: CircleAvatar(
+                    radius: 15.r,
+                    backgroundColor: color.withValues(alpha: 0.13),
+                    child: Icon(
+                      completed
+                          ? Icons.check_rounded
+                          : current
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.circle_outlined,
+                      size: 17.sp,
+                      color: color,
+                    ),
+                  ),
+                  title: Text(
+                    controller.statusLabel(status),
+                    style: TextStyle(
+                      fontWeight: current ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    current
+                        ? 'الحالة الحالية'
+                        : completed
+                            ? 'تمت هذه المرحلة'
+                            : _workflowRequirement(status),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: index > currentIndex
+                      ? const Icon(Icons.arrow_back_rounded)
+                      : null,
+                  onTap: index <= currentIndex
+                      ? null
+                      : () {
+                          Navigator.pop(dialogContext);
+                          _confirmWorkflowTarget(order, status);
+                        },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _workflowRequirement(String status) {
+    switch (status) {
+      case 'confirmed':
+        return 'تأكيد بيانات الزبون وحجز المنتجات';
+      case 'ready':
+        return 'تجهيز المنتجات وإرفاق صورة المنتجات المطلوبة';
+      case 'with_delivery':
+        return 'صورة التغليف وبيانات شركة التوصيل والعنوان';
+      case 'delivered':
+        return 'تأكيد التسليم وتسجيل المبالغ المستلمة';
+      case 'archived':
+        return 'إنهاء التسوية المالية ثم أرشفة الطلبية';
+      default:
+        return 'إكمال متطلبات المرحلة السابقة';
+    }
+  }
+
+  Future<void> _confirmWorkflowTarget(
+    SalesOrderDetailModel order,
+    String target,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('الانتقال إلى ${controller.statusLabel(target)}'),
+        content: Text(
+          'سيتم تنفيذ المراحل المطلوبة بالترتيب حتى الوصول لهذه الحالة.\n\n'
+          'المطلوب: ${_workflowRequirement(target)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('تراجع'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ابدأ المتطلبات'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _advanceOrderTo(order.id, target);
+    }
+  }
+
+  Future<void> _advanceOrderTo(int orderId, String target) async {
+    final targetIndex = SalesOrderStatusUi.workflowSteps.indexOf(target);
+    if (targetIndex < 0) return;
+    for (var attempt = 0; attempt < 6; attempt++) {
+      final order = controller.detail.value;
+      if (order == null || order.id != orderId) return;
+      final currentIndex = SalesOrderStatusUi.workflowIndex(order.status);
+      if (currentIndex >= targetIndex) return;
+      final before = order.status;
+      switch (order.status) {
+        case 'unconfirmed':
+          await controller.confirmOrder(orderId);
+          break;
+        case 'confirmed':
+          var current = order;
+          if (current.mediaRequirements['items_group']?.satisfied == false) {
+            await controller.pickAndUploadMedia(
+              orderId,
+              presetCategory: 'items_group',
+            );
+            await controller.loadDetail(orderId);
+            current = controller.detail.value ?? current;
+          }
+          if (current.mediaRequirements['items_group']?.satisfied != false) {
+            await controller.markReady(orderId);
+          }
+          break;
+        case 'ready':
+          var current = order;
+          if (current.mediaRequirements['packaged']?.satisfied == false) {
+            await controller.pickAndUploadMedia(
+              orderId,
+              presetCategory: 'packaged',
+            );
+            await controller.loadDetail(orderId);
+            current = controller.detail.value ?? current;
+          }
+          if (current.mediaRequirements['packaged']?.satisfied != false) {
+            await _startHandover(current);
+          }
+          break;
+        case 'with_delivery':
+          await controller.deliver(orderId);
+          break;
+        case 'delivered':
+          await controller.archive(orderId);
+          break;
+        default:
+          return;
+      }
+      final after = controller.detail.value?.status;
+      if (after == null || after == before) return;
+    }
+  }
+
   Widget _bottomActions(SalesOrderDetailModel order) {
     final actions = SalesOrderActions.forStatus(
       order.status,
@@ -1553,7 +1752,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     if (actions.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 12.h),
+      padding: EdgeInsets.fromLTRB(8.w, 6.h, 8.w, 7.h),
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
         border: const Border(
@@ -1612,23 +1811,23 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             : SalesOrdersController.surfaceGray;
 
     return SizedBox(
-      width: 72.w,
+      width: 58.w,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: busy ? null : () => _runAction(order.id, action.id, order),
           borderRadius: BorderRadius.circular(10.r),
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 4.h),
+            padding: EdgeInsets.symmetric(vertical: 2.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 44.w,
-                  height: 44.w,
+                  width: 36.w,
+                  height: 36.w,
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: BorderRadius.circular(10.r),
                     border: Border.all(
                       color: isDanger
                           ? const Color(0xFFDC2626).withValues(alpha: 0.35)
@@ -1640,17 +1839,17 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   child: Icon(
                     _actionIcon(action.id),
                     color: busy ? iconColor.withValues(alpha: 0.35) : iconColor,
-                    size: 22.sp,
+                    size: 19.sp,
                   ),
                 ),
-                SizedBox(height: 6.h),
+                SizedBox(height: 3.h),
                 Text(
                   action.label,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10.sp,
+                    fontSize: 9.sp,
                     height: 1.2,
                     fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w500,
                     color: isDanger
