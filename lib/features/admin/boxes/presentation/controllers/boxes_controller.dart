@@ -67,11 +67,14 @@ class BoxesController extends GetxController {
   final RxInt currentTab = 0.obs;
   final RxBool isSearchVisible = false.obs;
   final RxString listCurrencyFilter = ''.obs;
+  final RxnInt movementBoxFilter = RxnInt();
 
   final RxBool isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
+    boxNameController.clear();
+    if (index == 1) applyMovementFilters();
     update();
   }
 
@@ -136,7 +139,48 @@ class BoxesController extends GetxController {
 
   void clearListFilters() {
     listCurrencyFilter.value = '';
+    movementBoxFilter.value = null;
+    if (currentTab.value == 1) {
+      applyMovementFilters();
+      return;
+    }
     applyListFilters();
+  }
+
+  List<ShownBoxesModel> get movementFilterBoxes {
+    final unique = <int, ShownBoxesModel>{};
+    for (final box in [
+      ...BoxesServes().shownBoxes,
+      ...BoxesServes().shownBoxesArchive
+    ]) {
+      unique[box.boxId] = box;
+    }
+    return unique.values.toList()
+      ..sort((a, b) => a.boxName.compareTo(b.boxName));
+  }
+
+  void applyMovementFilters() {
+    final query = boxNameController.text.trim().toLowerCase();
+    final selectedId = movementBoxFilter.value?.toString();
+    filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs.where((log) {
+      final matchesBox = selectedId == null ||
+          log.boxId == selectedId ||
+          log.fromBoxId == selectedId ||
+          log.toBoxId == selectedId;
+      final fields = [
+        log.description,
+        log.note ?? '',
+        log.value.toString(),
+        log.type ?? '',
+        log.box?.name ?? '',
+        log.fromBox?.name ?? '',
+        log.toBox?.name ?? ''
+      ];
+      return matchesBox &&
+          (query.isEmpty ||
+              fields.any((field) => field.toLowerCase().contains(query)));
+    }));
+    update();
   }
 
   final List<String> currency = ['currency1', 'currency2', 'currency'];
@@ -515,6 +559,10 @@ class BoxesController extends GetxController {
 
     if (currentTab.value == 0) {
       applyListFilters();
+      return;
+    }
+    if (currentTab.value == 1) {
+      applyMovementFilters();
       return;
     }
     if (value.isNotEmpty) {

@@ -1,140 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../domain/entity/all_boxes_logs_entity.dart';
 
 class MovementsWidget extends StatelessWidget {
   const MovementsWidget({Key? key, required this.box}) : super(key: key);
-
   final BoxLog box;
-
-  String get _headline {
-    final description = box.description.trim();
-    if (description.isNotEmpty) {
-      return description;
-    }
-    if (box.type == 'transfer') {
-      return 'transferBalance'.tr;
-    }
-    if (box.type == 'add') {
-      return 'addBalance'.tr;
-    }
-    return 'withdrawBalance'.tr;
-  }
-
-  String? get _subline {
-    final note = (box.note ?? '').trim();
-    final description = box.description.trim();
-    if (note.isEmpty) {
-      return null;
-    }
-    if (note == description) {
-      return null;
-    }
-    return note;
-  }
+  bool get _outgoing => box.type == 'minus' || box.value < 0;
+  String get _title => box.description.trim().isNotEmpty
+      ? box.description.trim()
+      : box.type == 'transfer'
+          ? 'تحويل رصيد'
+          : _outgoing
+              ? 'سحب رصيد'
+              : 'إضافة رصيد';
+  String get _boxLabel => box.type == 'transfer'
+      ? '${box.fromBox?.name ?? 'صندوق'} ← ${box.toBox?.name ?? 'صندوق'}'
+      : box.box?.name ??
+          box.fromBox?.name ??
+          box.toBox?.name ??
+          'صندوق غير محدد';
 
   @override
   Widget build(BuildContext context) {
-    TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _headline,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: textStyle.copyWith(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor3
-                        : Colors.black.withValues(alpha: 0.85),
-                  ),
-                ),
-                // SizedBox(height: 2.h),
-                box.fromBox != null
-                    ? Text(
-                        "${'from'.tr} : ${box.fromBox!.name} ${'to'.tr} : ${box.toBox?.name ?? ''}",
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: textStyle.copyWith(
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w400,
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor3
-                              : Colors.black.withValues(alpha: 0.5),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-                if (_subline != null)
-                  Text(
-                    _subline!,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: textStyle.copyWith(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w500,
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor3
-                          : Colors.black.withValues(alpha: 0.6),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+    final color = box.type == 'transfer'
+        ? AppColors.customOrange3
+        : _outgoing
+            ? AppColors.redColor
+            : AppColors.customGreen1;
+    final muted = ThemeService.isDark.value
+        ? AppColors.graywhiteColor
+        : AppColors.customGreyColor5;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      child: Row(children: [
         Container(
-          constraints: BoxConstraints(minWidth: 56.w, maxWidth: 72.w),
-          height: 70.h,
-          padding: EdgeInsets.symmetric(horizontal: 4.w),
-          decoration: BoxDecoration(
-            color: box.type == 'transfer'
-                ? AppColors.customOrange3
-                : box.type == 'add'
-                    ? AppColors.customGreen1
-                    : AppColors.redColor,
-            borderRadius: Get.locale!.languageCode == 'en'
-                ? BorderRadius.only(
-                    topRight: Radius.circular(4.r),
-                    bottomRight: Radius.circular(4.r),
-                  )
-                : BorderRadius.only(
-                    topLeft: Radius.circular(4.r),
-                    bottomLeft: Radius.circular(4.r),
-                  ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  NumberFormat('#,###').format(box.value),
-                  textAlign: TextAlign.center,
-                  style: textStyle.copyWith(
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+            width: 34.r,
+            height: 34.r,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(9.r)),
+            child: Icon(
+                box.type == 'transfer'
+                    ? Icons.swap_horiz_rounded
+                    : _outgoing
+                        ? Icons.north_east_rounded
+                        : Icons.south_west_rounded,
+                color: color,
+                size: 18.sp)),
+        SizedBox(width: 9.w),
+        Expanded(
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Text(_title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12.5.sp, fontWeight: FontWeight.w800)),
+              SizedBox(height: 3.h),
+              Row(children: [
+                Icon(Icons.account_balance_wallet_outlined,
+                    size: 12.sp, color: AppColors.primaryColor),
+                SizedBox(width: 3.w),
+                Expanded(
+                    child: Text(_boxLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: AppColors.primaryColor,
+                            fontSize: 10.5.sp,
+                            fontWeight: FontWeight.w700)))
+              ]),
+              Text(
+                  DateFormat('d/M/yyyy · HH:mm')
+                      .format(box.createdAt.toLocal()),
+                  style: TextStyle(color: muted, fontSize: 9.5.sp)),
+            ])),
+        SizedBox(width: 7.w),
+        Text(
+            '${box.type == 'transfer' ? '' : _outgoing ? '-' : '+'}${NumberFormat('#,##0.##').format(box.value.abs())}',
+            style: TextStyle(
+                color: color, fontSize: 14.sp, fontWeight: FontWeight.w900)),
+      ]),
     );
   }
 }

@@ -29,6 +29,7 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
   final TextEditingController _movementSearchController =
       TextEditingController();
   String _movementQuery = '';
+  bool _isMovementSearchVisible = false;
 
   @override
   void initState() {
@@ -222,6 +223,25 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
           ),
           actions: [
             IconButton(
+              tooltip: 'بحث في سجل الحركات',
+              onPressed: () {
+                setState(() {
+                  _isMovementSearchVisible = !_isMovementSearchVisible;
+                  if (!_isMovementSearchVisible) {
+                    _movementSearchController.clear();
+                    _movementQuery = '';
+                  }
+                });
+              },
+              icon: Icon(
+                _isMovementSearchVisible
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color:
+                    isDark ? AppColors.primaryColor : AppColors.secondaryColor,
+              ),
+            ),
+            IconButton(
               tooltip: 'تقرير PDF',
               onPressed: () => Get.bottomSheet(
                 BoxReportFilterSheet(
@@ -279,6 +299,7 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
                   ),
                   _BoxMovementsTab(
                     logs: _filteredLogs(controller.boxDetailsLogs),
+                    searchVisible: _isMovementSearchVisible,
                     searchController: _movementSearchController,
                     onSearchChanged: (value) {
                       setState(() => _movementQuery = value);
@@ -402,11 +423,13 @@ class _BoxMovementsTab extends StatelessWidget {
     required this.logs,
     required this.searchController,
     required this.onSearchChanged,
+    required this.searchVisible,
   });
 
   final List<BoxLog> logs;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
+  final bool searchVisible;
 
   @override
   Widget build(BuildContext context) {
@@ -414,41 +437,45 @@ class _BoxMovementsTab extends StatelessWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 8.h),
-          child: SearchBar(
-            controller: searchController,
-            shadowColor: WidgetStateProperty.all(Colors.transparent),
-            leading: const Icon(Icons.search_rounded),
-            trailing: [
-              if (searchController.text.isNotEmpty)
-                IconButton(
-                  tooltip: 'clear'.tr,
-                  onPressed: () {
-                    searchController.clear();
-                    onSearchChanged('');
-                  },
-                  icon: const Icon(Icons.close_rounded),
-                ),
-            ],
-            hintText: 'ابحث بالمبلغ أو وصف الحركة',
-            onChanged: onSearchChanged,
-            backgroundColor: WidgetStateProperty.all(
-              ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : Colors.white,
-            ),
-            textStyle: WidgetStateProperty.all(
-              Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13.sp),
-            ),
-            hintStyle: WidgetStateProperty.all(
-              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 13.sp,
-                    color: AppColors.customGreyColor5,
+        if (searchVisible)
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 8.h),
+            child: SearchBar(
+              controller: searchController,
+              shadowColor: WidgetStateProperty.all(Colors.transparent),
+              leading: const Icon(Icons.search_rounded),
+              trailing: [
+                if (searchController.text.isNotEmpty)
+                  IconButton(
+                    tooltip: 'clear'.tr,
+                    onPressed: () {
+                      searchController.clear();
+                      onSearchChanged('');
+                    },
+                    icon: const Icon(Icons.close_rounded),
                   ),
+              ],
+              hintText: 'ابحث بالحركة أو المبلغ أو الملاحظة',
+              onChanged: onSearchChanged,
+              backgroundColor: WidgetStateProperty.all(
+                ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : Colors.white,
+              ),
+              textStyle: WidgetStateProperty.all(
+                Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontSize: 13.sp),
+              ),
+              hintStyle: WidgetStateProperty.all(
+                Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 13.sp,
+                      color: AppColors.customGreyColor5,
+                    ),
+              ),
             ),
           ),
-        ),
         Expanded(
           child: reversedLogs.isEmpty
               ? const Center(child: ShowNoData())

@@ -45,7 +45,9 @@ class BoxesScreen extends GetView<BoxesController> {
             onPressed: () => _showBoxesFilter(context, controller),
             icon: Obx(
               () => Badge(
-                isLabelVisible: controller.listCurrencyFilter.value.isNotEmpty,
+                isLabelVisible:
+                    controller.listCurrencyFilter.value.isNotEmpty ||
+                        controller.movementBoxFilter.value != null,
                 smallSize: 7,
                 child: Icon(
                   Icons.tune_rounded,
@@ -118,8 +120,9 @@ class BoxesScreen extends GetView<BoxesController> {
                                 icon: const Icon(Icons.close_rounded),
                               ),
                             ],
-                            hintText:
-                                'ابحث بالاسم أو العملة أو الرصيد أو الحركة',
+                            hintText: controller.currentTab.value == 1
+                                ? 'ابحث بالحركة أو الصندوق أو المبلغ'
+                                : 'ابحث بالاسم أو العملة أو الرصيد أو الحركة',
                             backgroundColor: WidgetStateProperty.all(
                               ThemeService.isDark.value
                                   ? AppColors.customGreyColor
@@ -150,6 +153,7 @@ class BoxesScreen extends GetView<BoxesController> {
 }
 
 void _showBoxesFilter(BuildContext context, BoxesController controller) {
+  final movementsTab = controller.currentTab.value == 1;
   Get.bottomSheet(
     SafeArea(
       child: Padding(
@@ -161,7 +165,7 @@ void _showBoxesFilter(BuildContext context, BoxesController controller) {
             Row(
               children: [
                 Text(
-                  'فلترة الصناديق',
+                  movementsTab ? 'فلترة الحركات' : 'فلترة الصناديق',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -176,27 +180,47 @@ void _showBoxesFilter(BuildContext context, BoxesController controller) {
                 ),
               ],
             ),
-            const Text('العملة'),
+            Text(movementsTab ? 'الصندوق' : 'العملة'),
             SizedBox(height: 6.h),
             Obx(
               () => Wrap(
                 spacing: 7.w,
                 runSpacing: 6.h,
-                children: [
-                  ChoiceChip(
-                    label: const Text('كل العملات'),
-                    selected: controller.listCurrencyFilter.value.isEmpty,
-                    onSelected: (_) => controller.listCurrencyFilter.value = '',
-                  ),
-                  ...controller.availableBoxCurrencies.map(
-                    (currency) => ChoiceChip(
-                      label: Text(currency),
-                      selected: controller.listCurrencyFilter.value == currency,
-                      onSelected: (_) =>
-                          controller.listCurrencyFilter.value = currency,
-                    ),
-                  ),
-                ],
+                children: movementsTab
+                    ? [
+                        ChoiceChip(
+                          label: const Text('كل الصناديق'),
+                          selected: controller.movementBoxFilter.value == null,
+                          onSelected: (_) =>
+                              controller.movementBoxFilter.value = null,
+                        ),
+                        ...controller.movementFilterBoxes
+                            .map((box) => ChoiceChip(
+                                  label: Text(box.boxName),
+                                  selected:
+                                      controller.movementBoxFilter.value ==
+                                          box.boxId,
+                                  onSelected: (_) => controller
+                                      .movementBoxFilter.value = box.boxId,
+                                )),
+                      ]
+                    : [
+                        ChoiceChip(
+                          label: const Text('كل العملات'),
+                          selected: controller.listCurrencyFilter.value.isEmpty,
+                          onSelected: (_) =>
+                              controller.listCurrencyFilter.value = '',
+                        ),
+                        ...controller.availableBoxCurrencies.map(
+                          (currency) => ChoiceChip(
+                            label: Text(currency),
+                            selected:
+                                controller.listCurrencyFilter.value == currency,
+                            onSelected: (_) =>
+                                controller.listCurrencyFilter.value = currency,
+                          ),
+                        ),
+                      ],
               ),
             ),
             SizedBox(height: 16.h),
@@ -204,7 +228,11 @@ void _showBoxesFilter(BuildContext context, BoxesController controller) {
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () {
-                  controller.applyListFilters();
+                  if (movementsTab) {
+                    controller.applyMovementFilters();
+                  } else {
+                    controller.applyListFilters();
+                  }
                   Get.back();
                 },
                 icon: const Icon(Icons.check_rounded),
