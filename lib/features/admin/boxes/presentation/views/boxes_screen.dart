@@ -253,69 +253,93 @@ void _showMovementBoxSelect(
   BuildContext context,
   BoxesController controller,
 ) {
-  final search = TextEditingController();
   Get.bottomSheet(
-    StatefulBuilder(builder: (context, setState) {
-      final query = search.text.trim().toLowerCase();
-      final boxes = controller.movementFilterBoxes
-          .where((box) =>
-              query.isEmpty ||
-              box.boxName.toLowerCase().contains(query) ||
-              box.currency.toLowerCase().contains(query))
-          .toList();
-      return SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * .68,
-          child: Column(children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-              child: SearchBar(
-                controller: search,
-                autoFocus: true,
-                leading: const Icon(Icons.search_rounded),
-                hintText: 'ابحث باسم الصندوق أو العملة',
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.all_inbox_outlined),
-              title: const Text('كل الصناديق'),
-              trailing: controller.movementBoxFilter.value == null
-                  ? const Icon(Icons.check_rounded)
-                  : null,
-              onTap: () {
-                controller.movementBoxFilter.value = null;
-                Get.back();
-              },
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.builder(
-                itemCount: boxes.length,
-                itemBuilder: (context, index) {
-                  final box = boxes[index];
-                  return ListTile(
-                    leading: const Icon(Icons.account_balance_wallet_outlined),
-                    title: Text(box.boxName),
-                    subtitle: Text(box.currency),
-                    trailing: controller.movementBoxFilter.value == box.boxId
-                        ? const Icon(Icons.check_rounded)
-                        : null,
-                    onTap: () {
-                      controller.movementBoxFilter.value = box.boxId;
-                      Get.back();
-                    },
-                  );
-                },
-              ),
-            ),
-          ]),
-        ),
-      );
-    }),
+    _MovementBoxSelectSheet(controller: controller),
     isScrollControlled: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-  ).whenComplete(search.dispose);
+  );
+}
+
+class _MovementBoxSelectSheet extends StatefulWidget {
+  const _MovementBoxSelectSheet({required this.controller});
+
+  final BoxesController controller;
+
+  @override
+  State<_MovementBoxSelectSheet> createState() =>
+      _MovementBoxSelectSheetState();
+}
+
+class _MovementBoxSelectSheetState extends State<_MovementBoxSelectSheet> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _searchController.text.trim().toLowerCase();
+    final boxes = widget.controller.movementFilterBoxes
+        .where((box) =>
+            query.isEmpty ||
+            box.boxName.toLowerCase().contains(query) ||
+            box.currency.toLowerCase().contains(query))
+        .toList();
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * .68,
+        child: Column(children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
+            child: SearchBar(
+              controller: _searchController,
+              autoFocus: true,
+              leading: const Icon(Icons.search_rounded),
+              hintText: 'ابحث باسم الصندوق أو العملة',
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.all_inbox_outlined),
+            title: const Text('كل الصناديق'),
+            trailing: widget.controller.movementBoxFilter.value == null
+                ? const Icon(Icons.check_rounded)
+                : null,
+            onTap: () {
+              widget.controller.movementBoxFilter.value = null;
+              Get.back();
+            },
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.builder(
+              itemCount: boxes.length,
+              itemBuilder: (context, index) {
+                final box = boxes[index];
+                return ListTile(
+                  leading: const Icon(Icons.account_balance_wallet_outlined),
+                  title: Text(box.boxName),
+                  subtitle: Text(box.currency),
+                  trailing:
+                      widget.controller.movementBoxFilter.value == box.boxId
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                  onTap: () {
+                    widget.controller.movementBoxFilter.value = box.boxId;
+                    Get.back();
+                  },
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 class _BoxesOverview extends StatelessWidget {
