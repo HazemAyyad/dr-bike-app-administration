@@ -28,6 +28,34 @@ class CountrersDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> getAnalytics({
+    required String period,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    final response = await api.get(
+      EndPoints.adminReportsAnalytics,
+      queryParameters: {
+        'period': period,
+        if (fromDate != null) 'from_date': _date(fromDate),
+        if (toDate != null) 'to_date': _date(toDate),
+      },
+    );
+    final body = response.data;
+    if (body is! Map || body['status'] != 'success') {
+      throw ServerException(ErrorModel(
+        errorMessage:
+            body is Map ? body['message'] ?? 'Unknown error' : 'Unknown error',
+        status: 500,
+        data: body is Map ? body['data'] ?? {} : {},
+      ));
+    }
+    return Map<String, dynamic>.from(body['data'] ?? {});
+  }
+
+  String _date(DateTime value) =>
+      '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
   // download report
   Future<Uint8List> getReportByType({
     String? type,

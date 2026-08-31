@@ -733,6 +733,7 @@ class EndPoints {
   // report information
   static const String adminSalesReport = 'admin/reports/sales';
   static const String adminReportsData = 'admin/reports/data';
+  static const String adminReportsAnalytics = 'admin/reports/analytics';
   static const String adminReportsPeople = 'admin/reports/people';
   static const String getAllReportInformation = 'get/all/report/information';
   static const String getReportByType = 'get/reprot/by/type';

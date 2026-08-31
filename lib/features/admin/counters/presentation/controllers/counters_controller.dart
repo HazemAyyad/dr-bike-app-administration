@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../data/datasources/countrers_datasource.dart';
 import '../../domain/usecases/get_report_by_type_usecase.dart';
 import '../../domain/usecases/get_report_information_usecase.dart';
 import 'counters_serves.dart';
@@ -26,8 +27,51 @@ class CountersController extends GetxController {
   final TextEditingController toDateController = TextEditingController();
 
   final RxBool isLoading = false.obs;
+  final RxBool analyticsLoading = false.obs;
+  final RxnString analyticsError = RxnString();
+  final RxMap<String, dynamic> analytics = <String, dynamic>{}.obs;
+  final RxString selectedPeriod = 'month'.obs;
+  DateTime? customFrom;
+  DateTime? customTo;
 
-  // get report information
+  static const analyticsPeriods = [
+    {'key': 'today', 'label': 'اليوم'},
+    {'key': 'week', 'label': 'الأسبوع'},
+    {'key': 'month', 'label': 'الشهر'},
+    {'key': 'quarter', 'label': '3 شهور'},
+    {'key': 'year', 'label': 'السنة'},
+    {'key': 'custom', 'label': 'مخصص'},
+  ];
+
+  Future<void> loadAnalytics() async {
+    analyticsLoading(true);
+    analyticsError.value = null;
+    try {
+      final data = await Get.find<CountrersDatasource>().getAnalytics(
+        period: selectedPeriod.value,
+        fromDate: selectedPeriod.value == 'custom' ? customFrom : null,
+        toDate: selectedPeriod.value == 'custom' ? customTo : null,
+      );
+      analytics.assignAll(data);
+    } catch (error) {
+      analyticsError.value = error.toString();
+    } finally {
+      analyticsLoading(false);
+    }
+  }
+
+  Future<void> selectAnalyticsPeriod(String period) async {
+    selectedPeriod(period);
+    if (period != 'custom') await loadAnalytics();
+  }
+
+  Future<void> setCustomPeriod(DateTime from, DateTime to) async {
+    customFrom = from;
+    customTo = to;
+    selectedPeriod('custom');
+    await loadAnalytics();
+  }
+
   Future<void> getReportInformation() async {
     CountersServes().reportInformationData.value == null
         ? isLoading(true)
@@ -52,7 +96,7 @@ class CountersController extends GetxController {
     'expenses',
     'returns',
   ];
-  // download report
+
   Future<void> downloadReport({
     required String type,
     required BuildContext context,
@@ -85,7 +129,6 @@ class CountersController extends GetxController {
         if (Platform.isAndroid) {
           directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
         } else if (Platform.isIOS) {
-          // على iOS نحفظ في Documents الخاص بالتطبيق
           final appDocDir = await getApplicationDocumentsDirectory();
           directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
         } else {
@@ -115,7 +158,7 @@ class CountersController extends GetxController {
 
   @override
   void onInit() {
-    getReportInformation();
+    loadAnalytics();
     super.onInit();
   }
 }
