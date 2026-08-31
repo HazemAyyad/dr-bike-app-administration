@@ -77,6 +77,7 @@ class SalesOrdersController extends GetxController {
   int? _loadingDetailOrderId;
   final isPreparingEdit = false.obs;
   final orders = <SalesOrderListItemModel>[].obs;
+  final statusCounts = <String, int>{}.obs;
   final statusFilter = 'unconfirmed'.obs;
   final detail = Rxn<SalesOrderDetailModel>();
   final cities = <CityModel>[].obs;
@@ -105,6 +106,8 @@ class SalesOrdersController extends GetxController {
   final settleAmountController = TextEditingController();
   final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
+  final searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   final bulkMode = false.obs;
   final selectedOrderIds = <int>{}.obs;
@@ -236,6 +239,18 @@ class SalesOrdersController extends GetxController {
     'archived',
   ];
 
+  List<String> get visibleStatusTabs {
+    if (statusCounts.isEmpty) {
+      return [statusFilter.value];
+    }
+    final visible =
+        statusTabs.where((status) => (statusCounts[status] ?? 0) > 0).toList();
+    return visible.isEmpty ? [statusFilter.value] : visible;
+  }
+
+  int get totalOrdersCount =>
+      statusCounts.values.fold<int>(0, (total, count) => total + count);
+
   @override
   void onInit() {
     super.onInit();
@@ -246,6 +261,7 @@ class SalesOrdersController extends GetxController {
   @override
   void onClose() {
     _stockAvailabilityDebounce?.cancel();
+    _searchDebounce?.cancel();
     customerNameController.dispose();
     customerPhoneController.dispose();
     customerAddressController.dispose();
@@ -259,6 +275,7 @@ class SalesOrdersController extends GetxController {
     settleAmountController.dispose();
     settleBoxIdController.dispose();
     notesController.dispose();
+    searchController.dispose();
     super.onClose();
   }
 
@@ -281,12 +298,46 @@ class SalesOrdersController extends GetxController {
 
   Future<void> loadOrders() async {
     isLoading.value = true;
-    final result = await repository.getOrders(status: statusFilter.value);
+    final result = await repository.getOrders(
+      status: statusFilter.value,
+      search: searchController.text,
+    );
     result.fold(
-      (_) => orders.clear(),
-      (data) => orders.assignAll(data),
+      (_) {
+        orders.clear();
+        statusCounts.clear();
+      },
+      (data) {
+        orders.assignAll(data.orders);
+        statusCounts.assignAll(data.statusCounts);
+        if ((statusCounts[statusFilter.value] ?? 0) == 0) {
+          final next = statusTabs.firstWhereOrNull(
+            (status) => (statusCounts[status] ?? 0) > 0,
+          );
+          if (next != null && next != statusFilter.value) {
+            statusFilter.value = next;
+            isLoading.value = false;
+            loadOrders();
+            return;
+          }
+        }
+      },
     );
     isLoading.value = false;
+  }
+
+  void onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      loadOrders,
+    );
+  }
+
+  void clearSearch() {
+    _searchDebounce?.cancel();
+    searchController.clear();
+    loadOrders();
   }
 
   Future<void> loadDetail(int orderId) async {

@@ -10,8 +10,9 @@ import '../../../checks/data/models/check_model.dart';
 import '../models/sales_order_model.dart';
 
 abstract class SalesOrdersRepository {
-  Future<Either<Failure, List<SalesOrderListItemModel>>> getOrders({
+  Future<Either<Failure, SalesOrdersPageModel>> getOrders({
     String? status,
+    String? search,
   });
 
   Future<Either<Failure, SalesOrderDetailModel>> getOrder(int orderId);
@@ -178,10 +179,11 @@ class SalesOrdersImplement implements SalesOrdersRepository {
           ));
 
   @override
-  Future<Either<Failure, List<SalesOrderListItemModel>>> getOrders({
+  Future<Either<Failure, SalesOrdersPageModel>> getOrders({
     String? status,
+    String? search,
   }) =>
-      _guard(() => datasource.fetchOrders(status: status));
+      _guard(() => datasource.fetchOrders(status: status, search: search));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> getOrder(int orderId) =>

@@ -1,3 +1,13 @@
+class SalesOrdersPageModel {
+  const SalesOrdersPageModel({
+    required this.orders,
+    required this.statusCounts,
+  });
+
+  final List<SalesOrderListItemModel> orders;
+  final Map<String, int> statusCounts;
+}
+
 class SalesOrderListItemModel {
   final int id;
   final String? serialNumber;
@@ -321,6 +331,7 @@ class SalesOrderDetailModel {
   final String? stuckAssignedToName;
   final String? stuckFollowUpAt;
   final String? stuckResolvedAt;
+  final String? createdAt;
 
   SalesOrderDetailModel({
     required this.id,
@@ -374,6 +385,7 @@ class SalesOrderDetailModel {
     this.stuckAssignedToName,
     this.stuckFollowUpAt,
     this.stuckResolvedAt,
+    this.createdAt,
   });
 
   factory SalesOrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -472,6 +484,7 @@ class SalesOrderDetailModel {
       stuckAssignedToName: json['stuck_assigned_to_name'] as String?,
       stuckFollowUpAt: json['stuck_follow_up_at'] as String?,
       stuckResolvedAt: json['stuck_resolved_at'] as String?,
+      createdAt: json['created_at'] as String?,
     );
   }
 }

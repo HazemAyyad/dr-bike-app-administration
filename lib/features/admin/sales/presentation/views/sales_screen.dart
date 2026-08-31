@@ -11,9 +11,8 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
-import '../widgets/sales_daily_status_bar.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
-import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/profit_sale_card.dart';
 import '../widgets/profit_sales_toolbar.dart';
@@ -33,66 +32,27 @@ class SalesScreen extends GetView<SalesController> {
         title: 'sales',
         action: false,
         actions: [
-          const OpenDesktopWindowButton(
-            route: AppRoutes.SALESSCREEN,
-            title: 'sales',
-          ),
-          if (canManageSalesSettings || canManageDeliveryCompanyAccounts)
-            IconButton(
-              tooltip: 'إعدادات المبيعات',
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => Get.toNamed(AppRoutes.SALESSETTINGSSCREEN),
-            ),
+          _SalesAppBarTabs(controller: controller),
           Obx(
-            () {
-              final count = controller.suspendedInvoicesCount.value;
-              return IconButton(
-                tooltip: 'suspendedInvoices'.tr,
-                icon: Badge(
-                  isLabelVisible: count > 0,
-                  label: Text('$count'),
-                  child: const Icon(Icons.pause_circle_outline),
-                ),
-                onPressed: () async {
-                  await Get.toNamed(AppRoutes.SUSPENDEDINVOICESSCREEN);
-                  await controller.loadSuspendedInvoicesCount();
-                },
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-            onPressed: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
-          ),
-          if (userType == 'admin')
-            IconButton(
-              icon: const Icon(Icons.pending_actions_outlined),
-              onPressed: () async {
-                await Get.toNamed(AppRoutes.SALESDAILYADMINSCREEN);
-                await controller.loadDailySession();
-              },
+            () => IconButton(
+              tooltip: 'search'.tr,
+              onPressed: controller.toggleSalesSearch,
+              icon: Icon(
+                controller.isSalesSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: AppColors.secondaryColor,
+              ),
             ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: () {
-              if (controller.currentTab.value == 0) {
-                controller.pickInstantSalesDate(context);
-                return;
-              }
-              controller.filterLists(true);
-            },
           ),
+          if (MediaQuery.sizeOf(context).width >= 700)
+            const OpenDesktopWindowButton(
+              route: AppRoutes.SALESSCREEN,
+              title: 'sales',
+            ),
+          _SalesMoreMenu(controller: controller),
           SizedBox(width: 10.w),
         ],
-        onPressedFilter: () {
-          if (controller.currentTab.value == 0) {
-            controller.pickInstantSalesDate(context);
-            return;
-          }
-          controller.filterLists(true);
-        },
-        fromDateController: controller.fromDateController,
-        toDateController: controller.toDateController,
       ),
       body: Stack(
         children: [
@@ -109,27 +69,7 @@ class SalesScreen extends GetView<SalesController> {
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      Center(
-                        child: AppTabs(
-                          tabs: controller.tabs,
-                          currentTab: controller.currentTab,
-                          changeTab: controller.changeTab,
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-                    ],
-                  ),
-                ),
-                Obx(
-                  () => SliverToBoxAdapter(
-                    child: SalesDailyStatusBar(
-                      salesOrders: controller.currentTab.value == 2,
-                    ),
-                  ),
-                ),
+                const SliverToBoxAdapter(child: _SalesSearchBar()),
                 Obx(
                   () {
                     if (controller.currentTab.value == 2) {
@@ -140,14 +80,7 @@ class SalesScreen extends GetView<SalesController> {
                     final toolbar = controller.currentTab.value == 0
                         ? const SalesInvoicesToolbar()
                         : const ProfitSalesToolbar();
-                    return SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          toolbar,
-                          SizedBox(height: 8.h),
-                        ],
-                      ),
-                    );
+                    return SliverToBoxAdapter(child: toolbar);
                   },
                 ),
                 SliverPadding(
@@ -242,5 +175,218 @@ class SalesScreen extends GetView<SalesController> {
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
     );
+  }
+}
+
+class _SalesAppBarTabs extends StatelessWidget {
+  const _SalesAppBarTabs({required this.controller});
+
+  final SalesController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final _ = controller.salesListRevision.value;
+      final ordersController = Get.isRegistered<SalesOrdersController>()
+          ? Get.find<SalesOrdersController>()
+          : null;
+      final items = [
+        _SalesSectionTabData(
+          label: 'spotSale'.tr,
+          icon: Icons.point_of_sale_outlined,
+          count: controller.visibleInstantSalesCount,
+        ),
+        _SalesSectionTabData(
+          label: 'cashProfit'.tr,
+          icon: Icons.trending_up_rounded,
+          count: controller.visibleProfitSalesCount,
+        ),
+        _SalesSectionTabData(
+          label: 'salesOrders'.tr,
+          icon: Icons.local_shipping_outlined,
+          count: ordersController?.totalOrdersCount ?? 0,
+        ),
+      ];
+
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          final selected = controller.currentTab.value == index;
+          return Tooltip(
+            message: item.label,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: () => controller.changeTab(index),
+              icon: Badge(
+                isLabelVisible: item.count > 0,
+                label: Text(item.count > 99 ? '99+' : '${item.count}'),
+                child: Container(
+                  width: 34.w,
+                  height: 34.w,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.secondaryColor
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    item.icon,
+                    size: 19.sp,
+                    color: selected ? Colors.white : AppColors.secondaryColor,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      );
+    });
+  }
+}
+
+class _SalesSearchBar extends GetView<SalesController> {
+  const _SalesSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (!controller.isSalesSearchVisible.value) {
+        return const SizedBox.shrink();
+      }
+      final tab = controller.currentTab.value;
+      if (tab == 2) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+          child: const _SalesOrdersSearchBar(),
+        );
+      }
+      final textController = tab == 0
+          ? controller.instantSalesSearchController
+          : controller.profitSalesSearchController;
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+        child: SearchBar(
+          controller: textController,
+          shadowColor: WidgetStateProperty.all(Colors.transparent),
+          leading: const Icon(Icons.search),
+          trailing: [
+            IconButton(
+              tooltip: 'cancel'.tr,
+              onPressed: controller.closeSalesSearch,
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ],
+          hintText: tab == 0 ? 'searchInvoicesHint'.tr : 'بحث في البيع الربحي',
+          backgroundColor: WidgetStateProperty.all(
+            AppColors.customGreyColor7,
+          ),
+          onChanged: tab == 0
+              ? controller.onInstantSalesSearchChanged
+              : controller.onProfitSalesSearchChanged,
+        ),
+      );
+    });
+  }
+}
+
+class _SalesOrdersSearchBar extends GetView<SalesOrdersController> {
+  const _SalesOrdersSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return SearchBar(
+      controller: controller.searchController,
+      shadowColor: WidgetStateProperty.all(Colors.transparent),
+      leading: const Icon(Icons.search),
+      trailing: [
+        IconButton(
+          tooltip: 'cancel'.tr,
+          onPressed: Get.find<SalesController>().closeSalesSearch,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+      hintText: 'البحث برقم الطلبية أو اسم الزبون أو الهاتف',
+      backgroundColor: WidgetStateProperty.all(AppColors.customGreyColor7),
+      onChanged: controller.onSearchChanged,
+    );
+  }
+}
+
+class _SalesSectionTabData {
+  const _SalesSectionTabData({
+    required this.label,
+    required this.icon,
+    required this.count,
+  });
+
+  final String label;
+  final IconData icon;
+  final int count;
+}
+
+class _SalesMoreMenu extends StatelessWidget {
+  const _SalesMoreMenu({required this.controller});
+
+  final SalesController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final suspended = controller.suspendedInvoicesCount.value;
+      return PopupMenuButton<String>(
+        tooltip: 'المزيد',
+        icon: Badge(
+          isLabelVisible: suspended > 0,
+          label: Text(suspended > 99 ? '99+' : '$suspended'),
+          child: const Icon(Icons.more_vert_rounded),
+        ),
+        onSelected: (value) async {
+          if (value == 'settings') {
+            Get.toNamed(AppRoutes.SALESSETTINGSSCREEN);
+          } else if (value == 'suspended') {
+            await Get.toNamed(AppRoutes.SUSPENDEDINVOICESSCREEN);
+            await controller.loadSuspendedInvoicesCount();
+          } else if (value == 'daily') {
+            Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN);
+          } else if (value == 'admin') {
+            await Get.toNamed(AppRoutes.SALESDAILYADMINSCREEN);
+            await controller.loadDailySession();
+          }
+        },
+        itemBuilder: (_) => [
+          if (canManageSalesSettings || canManageDeliveryCompanyAccounts)
+            const PopupMenuItem(
+              value: 'settings',
+              child: ListTile(
+                leading: Icon(Icons.settings_outlined),
+                title: Text('إعدادات المبيعات'),
+              ),
+            ),
+          PopupMenuItem(
+            value: 'suspended',
+            child: ListTile(
+              leading: const Icon(Icons.pause_circle_outline),
+              title: Text('${'suspendedInvoices'.tr} ($suspended)'),
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'daily',
+            child: ListTile(
+              leading: Icon(Icons.account_balance_wallet_outlined),
+              title: Text('سجل صندوق المبيعات اليومي'),
+            ),
+          ),
+          if (userType == 'admin')
+            const PopupMenuItem(
+              value: 'admin',
+              child: ListTile(
+                leading: Icon(Icons.pending_actions_outlined),
+                title: Text('طلبات إغلاق الصندوق'),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }

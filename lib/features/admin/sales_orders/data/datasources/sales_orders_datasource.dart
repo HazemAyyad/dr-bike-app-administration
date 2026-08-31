@@ -25,19 +25,28 @@ class SalesOrdersDatasource {
     return <String, dynamic>{};
   }
 
-  Future<List<SalesOrderListItemModel>> fetchOrders({String? status}) async {
+  Future<SalesOrdersPageModel> fetchOrders({
+    String? status,
+    String? search,
+  }) async {
     final raw = await api.get(
       EndPoints.salesOrders,
       queryParameters: {
         if (status != null && status.isNotEmpty) 'status': status,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
       },
     );
     final response = _asMap(raw);
     _ensureSuccess(response);
     final list = response['sales_orders'] as List<dynamic>? ?? [];
-    return list
+    final orders = list
         .map((e) => SalesOrderListItemModel.fromJson(e as Map<String, dynamic>))
         .toList();
+    final rawCounts = response['status_counts'] as Map? ?? const {};
+    final counts = rawCounts.map(
+      (key, value) => MapEntry('$key', (value as num?)?.toInt() ?? 0),
+    );
+    return SalesOrdersPageModel(orders: orders, statusCounts: counts);
   }
 
   Future<List<PartnerAddressModel>> fetchPartnerAddresses({

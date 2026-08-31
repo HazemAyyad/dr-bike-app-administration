@@ -580,6 +580,7 @@ class SalesController extends GetxController
 
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
   final salesListRevision = 0.obs;
+  final isSalesSearchVisible = false.obs;
 
   List<String> tabs = ['spotSale', 'cashProfit', 'salesOrders'];
 
@@ -592,6 +593,19 @@ class SalesController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
+  }
+
+  void toggleSalesSearch() => isSalesSearchVisible.toggle();
+
+  void closeSalesSearch() {
+    isSalesSearchVisible(false);
+    if (currentTab.value == 0) {
+      clearInstantSalesSearch();
+    } else if (currentTab.value == 1) {
+      clearProfitSalesSearch();
+    } else if (Get.isRegistered<SalesOrdersController>()) {
+      Get.find<SalesOrdersController>().clearSearch();
+    }
   }
 
   bool get canCreateSales => dailySessionPayload.value?.allowsSales ?? false;
@@ -617,6 +631,23 @@ class SalesController extends GetxController
   bool get hasInstantSalesData => salesService.instantSalesTasks.isNotEmpty;
 
   bool get hasProfitSalesData => salesService.filterProfitSalesTasks.isNotEmpty;
+
+  int get visibleInstantSalesCount => orderedInstantSalesGroupsFiltered
+      .fold<int>(0, (total, group) => total + group.value.length);
+
+  int get visibleProfitSalesCount => salesService.filterProfitSalesTasks.values
+      .fold<int>(0, (total, sales) => total + sales.length);
+
+  int instantSalesCompositionCount(int mode) {
+    if (mode == 0) return visibleInstantSalesCount;
+    return orderedInstantSalesGroups
+        .expand((group) => group.value)
+        .where((sale) {
+      if (mode == 1) return sale.compositionKind == 'package';
+      if (mode == 2) return sale.compositionKind == 'mixed';
+      return sale.compositionKind == 'product';
+    }).length;
+  }
 
   void applyDailyBoxToPayment(
     PaymentController payment, {

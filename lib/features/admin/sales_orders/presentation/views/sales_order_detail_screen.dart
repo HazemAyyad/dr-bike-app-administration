@@ -17,6 +17,7 @@ import '../../../general_data_list/presentation/views/partner_addresses_sheet.da
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
+import '../widgets/sales_order_invoice_pdf.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
@@ -75,6 +76,25 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           ),
         ),
         actions: [
+          Obx(() {
+            final order = controller.detail.value;
+            if (order == null) return const SizedBox.shrink();
+            return PopupMenuButton<String>(
+              tooltip: 'فاتورة PDF',
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              onSelected: (value) {
+                if (value == 'print') {
+                  SalesOrderInvoicePdf.print(order);
+                } else {
+                  SalesOrderInvoicePdf.share(order);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'print', child: Text('طباعة الفاتورة')),
+                PopupMenuItem(value: 'share', child: Text('مشاركة PDF')),
+              ],
+            );
+          }),
           Obx(() {
             final order = controller.detail.value;
             if (order == null ||

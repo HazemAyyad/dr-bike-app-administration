@@ -8,7 +8,6 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/data/models/check_model.dart';
@@ -117,15 +116,27 @@ class _NewCashProfitScreenState extends State<NewCashProfitScreen> {
                 },
               ),
               SizedBox(height: 20.h),
-              UploadImageButton(
-                selectedFile: controller.profitSaleImage,
-                title: 'invoiceImage',
-              ),
-              SizedBox(height: 14.h),
-              UploadImageButton(
-                selectedFile: controller.profitSaleVideo,
-                title: 'video',
-                isVideo: true,
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.only(bottom: 8.h),
+                leading: const Icon(Icons.attach_file_outlined),
+                title: Text(
+                  'إضافة صورة أو فيديو (اختياري)',
+                  style:
+                      TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+                ),
+                children: [
+                  UploadImageButton(
+                    selectedFile: controller.profitSaleImage,
+                    title: 'invoiceImage',
+                  ),
+                  SizedBox(height: 12.h),
+                  UploadImageButton(
+                    selectedFile: controller.profitSaleVideo,
+                    title: 'video',
+                    isVideo: true,
+                  ),
+                ],
               ),
               SizedBox(height: 20.h),
               const _ProfitSalePaymentSection(),
@@ -248,43 +259,18 @@ class _ProfitSalePaymentSection extends StatelessWidget {
           ),
         ),
         SizedBox(height: 12.h),
-        Obx(
-          () => Row(
-            children: [
-              Expanded(
-                child: CustomDropdownFieldWithSearch(
-                  tital: 'boxName'.tr,
-                  hint: 'boxNameExample',
-                  isRequired: false,
-                  items: controller.useDailySalesBox.value
-                      ? controller.selectableBoxes
-                      : sales.dailyBoxesForProfitPicker.isNotEmpty
-                          ? sales.dailyBoxesForProfitPicker
-                          : controller.shownBoxes,
-                  value: controller.selectedBox.value,
-                  onChanged: (value) {
-                    controller.onBoxSelected(
-                      value is ShownBoxesModel ? value : null,
-                    );
-                  },
-                  validator: (_) => null,
-                  itemAsString: (item) => item.boxName,
-                  compareFn: (a, b) => a.boxId == b.boxId,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'cashValue',
-                  hintText: 'totalExample',
-                  controller: controller.cashValueController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => sales.update(),
-                  validator: (_) => null,
-                ),
-              ),
-            ],
-          ),
+        CustomTextField(
+          label: 'cashValue',
+          hintText: 'totalExample',
+          controller: controller.cashValueController,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => sales.update(),
+          validator: (_) => null,
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          'سيُضاف المبلغ المقبوض تلقائيًا إلى صندوق المبيعات اليومي.',
+          style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
         ),
         SizedBox(height: 12.h),
         _ProfitPaymentSummary(sales: sales, payment: controller),

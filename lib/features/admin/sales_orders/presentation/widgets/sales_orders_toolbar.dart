@@ -30,7 +30,7 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: controller.statusTabs.map((status) {
+                children: controller.visibleStatusTabs.map((status) {
                   final selected = active == status;
 
                   final color = SalesOrderStatusUi.statusColor(status);
@@ -38,18 +38,43 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
                   return Padding(
                     padding: EdgeInsets.only(left: 8.w),
                     child: FilterChip(
-                      label: Text(
-                        controller.statusLabel(status),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.normal,
-                          color: selected
-                              ? AppColors.primaryColor
-                              : (ThemeService.isDark.value
-                                  ? AppColors.whiteColor
-                                  : Colors.grey.shade700),
-                        ),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            controller.statusLabel(status),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: selected
+                                  ? AppColors.primaryColor
+                                  : (ThemeService.isDark.value
+                                      ? AppColors.whiteColor
+                                      : Colors.grey.shade700),
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(99.r),
+                            ),
+                            child: Text(
+                              '${controller.statusCounts[status] ?? 0}',
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       selected: selected,
                       onSelected: (_) => controller.changeStatusFilter(status),

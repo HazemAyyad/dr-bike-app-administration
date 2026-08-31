@@ -17,88 +17,36 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller.instantSalesSearchController,
-                  textInputAction: TextInputAction.search,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: ThemeService.isDark.value
-                        ? AppColors.whiteColor
-                        : AppColors.darkColor,
-                  ),
-                  onChanged: controller.onInstantSalesSearchChanged,
-                  onSubmitted: controller.onInstantSalesSearchSubmitted,
-                  decoration: InputDecoration(
-                    hintText: 'searchInvoicesHint'.tr,
-                    hintStyle: TextStyle(
-                      fontSize: 14.sp,
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor5
-                          : AppColors.customGreyColor4,
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: ThemeService.isDark.value
-                          ? AppColors.whiteColor
-                          : AppColors.secondaryColor,
-                    ),
-                    suffixIcon: Obx(() {
-                      if (controller.instantSalesSearchQuery.value.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return IconButton(
-                        icon: const Icon(Icons.clear, size: 20),
-                        onPressed: controller.clearInstantSalesSearch,
-                      );
-                    }),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25.r),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.whiteColor2,
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: 12.h,
-                      horizontal: 12.w,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Obx(
-                () => Tooltip(
-                  message: controller.instantSalesSortDescending.value
-                      ? 'sortNewestFirst'.tr
-                      : 'sortOldestFirst'.tr,
-                  child: Material(
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.whiteColor2,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: controller.toggleInstantSalesSort,
-                      child: SizedBox(
-                        width: 44.w,
-                        height: 44.w,
-                        child: Icon(
-                          controller.instantSalesSortDescending.value
-                              ? Icons.arrow_downward_rounded
-                              : Icons.arrow_upward_rounded,
-                          color: AppColors.primaryColor,
-                          size: 22.sp,
-                        ),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Obx(
+              () => Tooltip(
+                message: controller.instantSalesSortDescending.value
+                    ? 'sortNewestFirst'.tr
+                    : 'sortOldestFirst'.tr,
+                child: Material(
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.whiteColor2,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: controller.toggleInstantSalesSort,
+                    child: SizedBox(
+                      width: 44.w,
+                      height: 44.w,
+                      child: Icon(
+                        controller.instantSalesSortDescending.value
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        color: AppColors.primaryColor,
+                        size: 22.sp,
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
           SizedBox(height: 8.h),
           Obx(
@@ -172,28 +120,36 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _FilterChip(
+                    _CompositionFilter(
                       label: 'instantSaleFilterAll'.tr,
+                      icon: Icons.grid_view_rounded,
+                      count: controller.instantSalesCompositionCount(0),
                       selected: mode == 0,
                       onTap: () => controller.setInstantSalesPackageFilter(0),
                     ),
                     SizedBox(width: 6.w),
-                    _FilterChip(
+                    _CompositionFilter(
                       label: 'instantSaleCompositionPackage'.tr,
+                      icon: Icons.inventory_2_outlined,
+                      count: controller.instantSalesCompositionCount(1),
                       selected: mode == 1,
                       accent: const Color(0xFFE65100),
                       onTap: () => controller.setInstantSalesPackageFilter(1),
                     ),
                     SizedBox(width: 6.w),
-                    _FilterChip(
+                    _CompositionFilter(
                       label: 'instantSaleCompositionMixed'.tr,
+                      icon: Icons.layers_outlined,
+                      count: controller.instantSalesCompositionCount(2),
                       selected: mode == 2,
                       accent: const Color(0xFF6A1B9A),
                       onTap: () => controller.setInstantSalesPackageFilter(2),
                     ),
                     SizedBox(width: 6.w),
-                    _FilterChip(
+                    _CompositionFilter(
                       label: 'instantSaleCompositionProduct'.tr,
+                      icon: Icons.two_wheeler_outlined,
+                      count: controller.instantSalesCompositionCount(3),
                       selected: mode == 3,
                       onTap: () => controller.setInstantSalesPackageFilter(3),
                     ),
@@ -250,15 +206,19 @@ class _DateNavButton extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
+class _CompositionFilter extends StatelessWidget {
+  const _CompositionFilter({
     required this.label,
+    required this.icon,
+    required this.count,
     required this.selected,
     required this.onTap,
     this.accent,
   });
 
   final String label;
+  final IconData icon;
+  final int count;
   final bool selected;
   final VoidCallback onTap;
   final Color? accent;
@@ -266,23 +226,54 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = accent ?? AppColors.primaryColor;
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12.sp,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color: selected ? color : null,
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 44.w,
+          height: 44.w,
+          decoration: BoxDecoration(
+            color: selected ? color : color.withValues(alpha: 0.10),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withValues(alpha: 0.28)),
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, color: selected ? Colors.white : color, size: 21.sp),
+              if (count > 0)
+                PositionedDirectional(
+                  top: -5.h,
+                  end: -6.w,
+                  child: Container(
+                    constraints: BoxConstraints(minWidth: 18.w),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(99.r),
+                      border: Border.all(color: Colors.white),
+                    ),
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: color.withValues(alpha: 0.14),
-      checkmarkColor: color,
-      side: BorderSide(
-        color: selected ? color : Colors.grey.shade400,
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 0),
     );
   }
 }
