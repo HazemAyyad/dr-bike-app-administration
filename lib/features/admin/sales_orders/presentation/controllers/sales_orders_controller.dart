@@ -78,7 +78,7 @@ class SalesOrdersController extends GetxController {
   final isPreparingEdit = false.obs;
   final orders = <SalesOrderListItemModel>[].obs;
   final statusCounts = <String, int>{}.obs;
-  final statusFilter = 'unconfirmed'.obs;
+  final statusFilter = 'all'.obs;
   final detail = Rxn<SalesOrderDetailModel>();
   final cities = <CityModel>[].obs;
   final shiplyCities = <ShiplyCityModel>[].obs;
@@ -225,6 +225,7 @@ class SalesOrdersController extends GetxController {
   }
 
   final statusTabs = const [
+    'all',
     'unconfirmed',
     'confirmed',
     'ready',
@@ -241,15 +242,19 @@ class SalesOrdersController extends GetxController {
 
   List<String> get visibleStatusTabs {
     if (statusCounts.isEmpty) {
-      return [statusFilter.value];
+      return const ['all', 'archived'];
     }
-    final visible =
-        statusTabs.where((status) => (statusCounts[status] ?? 0) > 0).toList();
-    return visible.isEmpty ? [statusFilter.value] : visible;
+    return statusTabs
+        .where((status) =>
+            status == 'all' ||
+            status == 'archived' ||
+            (statusCounts[status] ?? 0) > 0)
+        .toList();
   }
 
-  int get totalOrdersCount =>
-      statusCounts.values.fold<int>(0, (total, count) => total + count);
+  int get totalOrdersCount => statusCounts.entries
+      .where((entry) => entry.key != 'all')
+      .fold<int>(0, (total, entry) => total + entry.value);
 
   @override
   void onInit() {
@@ -310,6 +315,9 @@ class SalesOrdersController extends GetxController {
       (data) {
         orders.assignAll(data.orders);
         statusCounts.assignAll(data.statusCounts);
+        statusCounts['all'] = data.statusCounts.entries
+            .where((entry) => entry.key != 'archived')
+            .fold<int>(0, (sum, entry) => sum + entry.value);
         if ((statusCounts[statusFilter.value] ?? 0) == 0) {
           final next = statusTabs.firstWhereOrNull(
             (status) => (statusCounts[status] ?? 0) > 0,
@@ -1870,6 +1878,7 @@ class SalesOrdersController extends GetxController {
   }
 
   String statusLabel(String status) {
+    if (status == 'all') return 'الكل';
     if (status == 'unconfirmed') return 'salesOrderStatusUnconfirmed'.tr;
     if (status == 'confirmed') return 'salesOrderStatusConfirmed'.tr;
     if (status == 'ready') return 'salesOrderStatusReady'.tr;

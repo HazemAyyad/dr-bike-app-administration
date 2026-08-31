@@ -19,6 +19,8 @@ class SalesOrderListItemModel {
   final String paymentType;
   final String? createdAt;
   final String? createdByName;
+  final String? deliveryCompanyName;
+  final String? deliveryCompanyCode;
 
   SalesOrderListItemModel({
     required this.id,
@@ -31,6 +33,8 @@ class SalesOrderListItemModel {
     required this.paymentType,
     this.createdAt,
     this.createdByName,
+    this.deliveryCompanyName,
+    this.deliveryCompanyCode,
   });
 
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +49,8 @@ class SalesOrderListItemModel {
       paymentType: json['payment_type'] as String? ?? 'cash',
       createdAt: json['created_at'] as String?,
       createdByName: json['created_by_name'] as String?,
+      deliveryCompanyName: json['delivery_company_name'] as String?,
+      deliveryCompanyCode: json['delivery_company_code'] as String?,
     );
   }
 }

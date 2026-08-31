@@ -36,6 +36,11 @@ class SalesOrderDetailScreen extends StatefulWidget {
 class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   late final int orderId;
   bool _requestedLoad = false;
+  final _itemsKey = GlobalKey();
+  final _mediaKey = GlobalKey();
+  final _customerKey = GlobalKey();
+  final _logisticsKey = GlobalKey();
+  final _historyKey = GlobalKey();
 
   SalesOrdersController get controller => Get.find<SalesOrdersController>();
 
@@ -134,27 +139,47 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
                   children: [
                     _headerCard(order),
-                    SizedBox(height: 12.h),
-                    _itemsSection(order),
+                    SizedBox(height: 8.h),
+                    _quickNavigation(order),
+                    SizedBox(height: 8.h),
+                    KeyedSubtree(
+                      key: _itemsKey,
+                      child: _itemsSection(order),
+                    ),
                     if (order.mediaRequirements.isNotEmpty) ...[
                       SizedBox(height: 12.h),
-                      _mediaRequirementsCard(order),
+                      KeyedSubtree(
+                        key: _mediaKey,
+                        child: _mediaRequirementsCard(order),
+                      ),
                     ],
                     if (order.media.isNotEmpty) ...[
                       SizedBox(height: 12.h),
-                      _mediaCard(order),
+                      KeyedSubtree(
+                        key: order.mediaRequirements.isEmpty ? _mediaKey : null,
+                        child: _mediaCard(order),
+                      ),
                     ],
                     SizedBox(height: 12.h),
-                    _customerCard(order),
+                    KeyedSubtree(
+                      key: _customerKey,
+                      child: _customerCard(order),
+                    ),
                     if (_hasLogisticsInfo(order)) ...[
                       SizedBox(height: 12.h),
-                      _logisticsCard(order),
+                      KeyedSubtree(
+                        key: _logisticsKey,
+                        child: _logisticsCard(order),
+                      ),
                     ],
                     SizedBox(height: 12.h),
                     _nextStepCard(order),
                     if (order.statusLogs.isNotEmpty) ...[
                       SizedBox(height: 12.h),
-                      _statusHistoryCard(order),
+                      KeyedSubtree(
+                        key: _historyKey,
+                        child: _statusHistoryCard(order),
+                      ),
                     ],
                     if (order.childOrders.isNotEmpty) ...[
                       SizedBox(height: 12.h),
@@ -299,6 +324,100 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           _totalsSummary(order),
         ],
       ),
+    );
+  }
+
+  Widget _quickNavigation(SalesOrderDetailModel order) {
+    final hasMedia =
+        order.mediaRequirements.isNotEmpty || order.media.isNotEmpty;
+    final items = <_OrderQuickLink>[
+      _OrderQuickLink(
+        label: 'المنتجات',
+        icon: Icons.inventory_2_outlined,
+        key: _itemsKey,
+      ),
+      _OrderQuickLink(
+        label: 'الصور',
+        icon: Icons.photo_library_outlined,
+        key: _mediaKey,
+        enabled: hasMedia,
+      ),
+      _OrderQuickLink(
+        label: 'الزبون',
+        icon: Icons.person_outline,
+        key: _customerKey,
+      ),
+      _OrderQuickLink(
+        label: 'التوصيل',
+        icon: Icons.local_shipping_outlined,
+        key: _logisticsKey,
+        enabled: _hasLogisticsInfo(order),
+      ),
+      _OrderQuickLink(
+        label: 'السجل',
+        icon: Icons.route_outlined,
+        key: _historyKey,
+        enabled: order.statusLogs.isNotEmpty,
+      ),
+    ];
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: SalesOrdersController.cardGray,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: SalesOrdersController.borderGray),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: items
+            .map(
+              (item) => Tooltip(
+                message: item.label,
+                child: InkWell(
+                  onTap: item.enabled ? () => _scrollTo(item.key) : null,
+                  borderRadius: BorderRadius.circular(10.r),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: 20.sp,
+                          color: item.enabled
+                              ? SalesOrdersController.textPrimary
+                              : SalesOrdersController.borderGray,
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 9.sp,
+                            color: item.enabled
+                                ? SalesOrdersController.textSecondary
+                                : SalesOrdersController.borderGray,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  void _scrollTo(GlobalKey key) {
+    final target = key.currentContext;
+    if (target == null) return;
+    Scrollable.ensureVisible(
+      target,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
     );
   }
 
@@ -887,9 +1006,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   }
 
   Widget _statusHistoryCard(SalesOrderDetailModel order) {
-    final logs = order.statusLogs.reversed.take(8).toList();
+    final logs = order.statusLogs.reversed.toList();
     return Container(
-      padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
         borderRadius: BorderRadius.circular(12.r),
@@ -898,61 +1016,141 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'salesOrderStatusHistory'.tr,
-            style: TextStyle(
-              color: SalesOrdersController.textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 13.sp,
+          Padding(
+            padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 8.h),
+            child: Row(
+              children: [
+                Icon(Icons.route_outlined,
+                    size: 19.sp, color: SalesOrdersController.textPrimary),
+                SizedBox(width: 7.w),
+                Text(
+                  'salesOrderStatusHistory'.tr,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${logs.length}',
+                  style: TextStyle(
+                    color: SalesOrdersController.textSecondary,
+                    fontSize: 11.sp,
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 8.h),
-          ...logs.map((log) {
+          ...logs.asMap().entries.map((entry) {
+            final log = entry.value;
             final label = controller.statusLabel(log.toStatus);
-            final when = log.createdAt ?? '';
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.h),
+            final date = _historyDate(log.createdAt);
+            final time = _historyTime(log.createdAt);
+            final color = SalesOrderStatusUi.statusColor(log.toStatus);
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 11.h),
+              color: entry.key.isEven
+                  ? SalesOrdersController.surfaceGray.withValues(alpha: 0.72)
+                  : SalesOrdersController.cardGray,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 6.w,
-                    height: 6.w,
-                    margin: EdgeInsets.only(top: 5.h),
-                    decoration: BoxDecoration(
-                      color: SalesOrderStatusUi.statusColor(log.toStatus),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
+                  SizedBox(
+                    width: 92.w,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          label,
+                          date,
                           style: TextStyle(
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w600,
-                            color: SalesOrdersController.textPrimary,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (log.note != null && log.note!.trim().isNotEmpty)
-                          Text(
-                            log.note!,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: SalesOrdersController.textSecondary,
-                            ),
+                        Text(
+                          time,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: SalesOrdersController.textSecondary,
                           ),
-                        if (when.isNotEmpty)
-                          Text(
-                            when,
-                            style: TextStyle(
-                              fontSize: 9.sp,
-                              color: SalesOrdersController.textSecondary,
-                            ),
+                        ),
+                        if ((log.userName ?? '').trim().isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(Icons.person,
+                                  size: 11.sp,
+                                  color: SalesOrdersController.textSecondary),
+                              SizedBox(width: 2.w),
+                              Expanded(
+                                child: Text(
+                                  log.userName!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: SalesOrdersController.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: SalesOrdersController.textPrimary,
+                      size: 25.sp,
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 40.w,
+                          height: 40.w,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Icon(
+                            _historyStatusIcon(log.toStatus),
+                            color: Colors.white,
+                            size: 21.sp,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: SalesOrdersController.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                (log.note ?? '').trim().isEmpty
+                                    ? 'لا توجد ملاحظات'
+                                    : log.note!.trim(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: SalesOrdersController.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -963,6 +1161,44 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  String _historyDate(String? raw) {
+    final parsed = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+    if (parsed == null) return raw?.split(' ').first ?? '—';
+    final month = parsed.month.toString().padLeft(2, '0');
+    final day = parsed.day.toString().padLeft(2, '0');
+    return '${parsed.year}/$month/$day';
+  }
+
+  String _historyTime(String? raw) {
+    final parsed = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+    if (parsed == null) return '';
+    final hour = parsed.hour % 12 == 0 ? 12 : parsed.hour % 12;
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${parsed.hour >= 12 ? 'م' : 'ص'}';
+  }
+
+  IconData _historyStatusIcon(String status) {
+    switch (status) {
+      case 'confirmed':
+        return Icons.fact_check_outlined;
+      case 'ready':
+        return Icons.inventory_2_outlined;
+      case 'with_delivery':
+        return Icons.local_shipping;
+      case 'delivered':
+        return Icons.check_rounded;
+      case 'archived':
+        return Icons.archive_outlined;
+      case 'postponed':
+        return Icons.schedule_outlined;
+      case 'canceled':
+      case 'returned':
+        return Icons.close_rounded;
+      default:
+        return Icons.receipt_long_outlined;
+    }
   }
 
   Widget _customerCard(SalesOrderDetailModel order) {
@@ -3299,6 +3535,20 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     final minute = local.minute.toString().padLeft(2, '0');
     return '${local.year}-$month-$day $hour:$minute';
   }
+}
+
+class _OrderQuickLink {
+  const _OrderQuickLink({
+    required this.label,
+    required this.icon,
+    required this.key,
+    this.enabled = true,
+  });
+
+  final String label;
+  final IconData icon;
+  final GlobalKey key;
+  final bool enabled;
 }
 
 class _SalesOrderNextStep {

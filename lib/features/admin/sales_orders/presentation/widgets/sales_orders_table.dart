@@ -255,6 +255,29 @@ class _OrderCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    SizedBox(height: 3.h),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.delivery_dining_outlined,
+                          size: 13.sp,
+                          color: statusColor,
+                        ),
+                        SizedBox(width: 3.w),
+                        Expanded(
+                          child: Text(
+                            'وسيلة التوصيل: ${_deliveryLabel(order)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 9.sp,
+                              color: SalesOrdersController.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -265,6 +288,18 @@ class _OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _deliveryLabel(SalesOrderListItemModel order) {
+    final name = order.deliveryCompanyName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    if (order.status == 'unconfirmed' ||
+        order.status == 'confirmed' ||
+        order.status == 'ready' ||
+        order.status == 'postponed') {
+      return 'لم تُحدد بعد';
+    }
+    return 'غير مسجلة';
   }
 }
 

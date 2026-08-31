@@ -19,6 +19,8 @@ class SalesOrderStatusUi {
 
   static Color statusColor(String status) {
     switch (status) {
+      case 'all':
+        return const Color(0xFF0F766E);
       case 'unconfirmed':
         return const Color(0xFF6B7280);
       case 'confirmed':
