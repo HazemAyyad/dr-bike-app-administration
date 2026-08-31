@@ -21,6 +21,7 @@ class BoxReportFilterSheet extends StatefulWidget {
 
 class _BoxReportFilterSheetState extends State<BoxReportFilterSheet> {
   final controller = Get.find<BoxesController>();
+  String _selectedQuickRange = 'month';
   final _types = const <String, String>{
     'add': 'إضافة رصيد',
     'minus': 'سحب رصيد',
@@ -49,14 +50,16 @@ class _BoxReportFilterSheetState extends State<BoxReportFilterSheet> {
     if (range == 'today') {
       from = DateTime(now.year, now.month, now.day);
     } else if (range == 'week') {
+      final daysSinceSaturday = (now.weekday + 1) % 7;
       from = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: now.weekday - 1));
+          .subtract(Duration(days: daysSinceSaturday));
     } else if (range == 'year') {
       from = DateTime(now.year);
     } else {
       from = DateTime(now.year, now.month);
     }
     setState(() {
+      _selectedQuickRange = range;
       controller.fromDateController.text = _format(from);
       controller.toDateController.text = _format(now);
     });
@@ -69,7 +72,12 @@ class _BoxReportFilterSheetState extends State<BoxReportFilterSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (selected != null) setState(() => target.text = _format(selected));
+    if (selected != null) {
+      setState(() {
+        _selectedQuickRange = 'custom';
+        target.text = _format(selected);
+      });
+    }
   }
 
   Future<void> _export(String action) async {
@@ -130,18 +138,22 @@ class _BoxReportFilterSheetState extends State<BoxReportFilterSheet> {
             Wrap(
               spacing: 8,
               children: [
-                ActionChip(
+                ChoiceChip(
                     label: const Text('اليوم'),
-                    onPressed: () => _quickRange('today')),
-                ActionChip(
+                    selected: _selectedQuickRange == 'today',
+                    onSelected: (_) => _quickRange('today')),
+                ChoiceChip(
                     label: const Text('هذا الأسبوع'),
-                    onPressed: () => _quickRange('week')),
-                ActionChip(
+                    selected: _selectedQuickRange == 'week',
+                    onSelected: (_) => _quickRange('week')),
+                ChoiceChip(
                     label: const Text('هذا الشهر'),
-                    onPressed: () => _quickRange('month')),
-                ActionChip(
+                    selected: _selectedQuickRange == 'month',
+                    onSelected: (_) => _quickRange('month')),
+                ChoiceChip(
                     label: const Text('هذه السنة'),
-                    onPressed: () => _quickRange('year')),
+                    selected: _selectedQuickRange == 'year',
+                    onSelected: (_) => _quickRange('year')),
               ],
             ),
             const SizedBox(height: 12),

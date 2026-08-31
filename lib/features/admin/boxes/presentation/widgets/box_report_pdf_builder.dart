@@ -33,20 +33,6 @@ class BoxReportPdfBuilder {
       margin: const pw.EdgeInsets.fromLTRB(26, 24, 26, 26),
       textDirection: pw.TextDirection.rtl,
       theme: pw.ThemeData.withFont(base: regular, bold: bold),
-      header: (_) => pw.Directionality(
-        textDirection: pw.TextDirection.ltr,
-        child: pw.Row(children: [
-          pw.Image(logo, width: 125, height: 76),
-          pw.Spacer(),
-          pw.Text(DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
-              textDirection: pw.TextDirection.ltr,
-              style: pw.TextStyle(fontSize: 8, color: _muted)),
-          pw.Spacer(),
-          pw.Text('دكتور بايك - تقرير صندوق',
-              textDirection: pw.TextDirection.rtl,
-              style: pw.TextStyle(font: bold, fontSize: 20, color: _brand)),
-        ]),
-      ),
       footer: (context) => pw.Row(children: [
         pw.Text('${context.pageNumber} / ${context.pagesCount}',
             textDirection: pw.TextDirection.ltr,
@@ -56,6 +42,7 @@ class BoxReportPdfBuilder {
             style: pw.TextStyle(fontSize: 8, color: _muted)),
       ]),
       build: (_) => [
+        _reportHeader(logo, bold),
         pw.Container(height: 1.4, color: _brand),
         pw.SizedBox(height: 8),
         pw.Center(
@@ -70,6 +57,23 @@ class BoxReportPdfBuilder {
       ],
     ));
     return doc.save();
+  }
+
+  static pw.Widget _reportHeader(pw.MemoryImage logo, pw.Font bold) {
+    return pw.Directionality(
+      textDirection: pw.TextDirection.ltr,
+      child: pw.Row(children: [
+        pw.Image(logo, width: 125, height: 76),
+        pw.Spacer(),
+        pw.Text(DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+            textDirection: pw.TextDirection.ltr,
+            style: pw.TextStyle(fontSize: 8, color: _muted)),
+        pw.Spacer(),
+        pw.Text('دكتور بايك - تقرير صندوق',
+            textDirection: pw.TextDirection.rtl,
+            style: pw.TextStyle(font: bold, fontSize: 20, color: _brand)),
+      ]),
+    );
   }
 
   static pw.Widget _meta(Map<String, dynamic> box, Map<String, dynamic> filters,
@@ -177,6 +181,15 @@ class BoxReportPdfBuilder {
         4: pw.Alignment.center,
         5: pw.Alignment.center,
         6: pw.Alignment.center
+      },
+      cellBuilder: (index, data, rowNum) {
+        final isArabic = index == 2 || index == 3 || index == 4;
+        return pw.Text(
+          data.toString(),
+          textDirection: isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+          textAlign: isArabic ? pw.TextAlign.right : pw.TextAlign.center,
+          style: const pw.TextStyle(fontSize: 8.5),
+        );
       },
     );
   }
