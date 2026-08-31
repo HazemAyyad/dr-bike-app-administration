@@ -61,6 +61,7 @@ class BoxesController extends GetxController {
       TextEditingController();
   final RxString reportDirection = ''.obs;
   final RxList<String> reportMovementTypes = <String>[].obs;
+  final RxBool isReportLoading = false.obs;
 
   final tabs = ['boxes', 'movements', 'archive'].obs;
 
@@ -645,14 +646,9 @@ class BoxesController extends GetxController {
     required String boxName,
     String action = 'save',
   }) async {
+    if (isReportLoading.value) return;
+    isReportLoading.value = true;
     try {
-      Get.back();
-      Get.snackbar(
-        "info".tr,
-        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2500),
-      );
       final response = await Get.find<DioConsumer>().post(
         EndPoints.boxLogsData,
         data: {
@@ -686,6 +682,7 @@ class BoxesController extends GetxController {
       if (action == 'share') {
         await Printing.sharePdf(bytes: success, filename: reportFileName);
         _clearReportFilters();
+        if (Get.isBottomSheetOpen == true) Get.back();
         return;
       }
       if (action == 'print') {
@@ -694,6 +691,7 @@ class BoxesController extends GetxController {
           onLayout: (_) async => success,
         );
         _clearReportFilters();
+        if (Get.isBottomSheetOpen == true) Get.back();
         return;
       }
       late Directory directory;
@@ -724,6 +722,7 @@ class BoxesController extends GetxController {
 
       await OpenFilex.open(filePath);
       _clearReportFilters();
+      if (Get.isBottomSheetOpen == true) Get.back();
     } catch (e) {
       Get.snackbar(
         "error".tr,
@@ -731,6 +730,8 @@ class BoxesController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(milliseconds: 2500),
       );
+    } finally {
+      isReportLoading.value = false;
     }
   }
 

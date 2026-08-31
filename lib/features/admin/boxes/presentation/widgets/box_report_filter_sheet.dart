@@ -223,33 +223,52 @@ class _BoxReportFilterSheetState extends State<BoxReportFilterSheet> {
               ),
             ),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _export('share'),
-                    icon: const Icon(Icons.share_outlined),
-                    label: const Text('مشاركة'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _export('print'),
-                    icon: const Icon(Icons.print_outlined),
-                    label: const Text('معاينة'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () => _export('save'),
-                    icon: const Icon(Icons.download_outlined),
-                    label: const Text('حفظ'),
-                  ),
-                ),
-              ],
-            ),
+            Obx(() => Column(children: [
+                  if (controller.isReportLoading.value) ...[
+                    const LinearProgressIndicator(),
+                    const SizedBox(height: 8),
+                    const Text('جاري تجهيز وتحميل التقرير...'),
+                    const SizedBox(height: 10),
+                  ],
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: controller.isReportLoading.value
+                            ? null
+                            : () => _export('share'),
+                        icon: const Icon(Icons.share_outlined),
+                        label: const Text('مشاركة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: controller.isReportLoading.value
+                            ? null
+                            : () => _export('print'),
+                        icon: const Icon(Icons.print_outlined),
+                        label: const Text('معاينة'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: controller.isReportLoading.value
+                            ? null
+                            : () => _export('save'),
+                        icon: controller.isReportLoading.value
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.download_outlined),
+                        label: const Text('حفظ'),
+                      ),
+                    ),
+                  ]),
+                ])),
           ],
         ),
       ),

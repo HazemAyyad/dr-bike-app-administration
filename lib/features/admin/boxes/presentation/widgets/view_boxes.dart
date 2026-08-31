@@ -141,6 +141,9 @@ class VeiwBoxes extends GetView<BoxesController> {
                               ? Expanded(
                                   child: MovementsWidget(
                                     box: box as BoxLogModel,
+                                    onTap: () => _openMovementBox(box),
+                                    onDetails: () =>
+                                        _showMovementDetails(context, box),
                                   ),
                                 )
                               : Expanded(
@@ -172,4 +175,67 @@ class VeiwBoxes extends GetView<BoxesController> {
       },
     );
   }
+}
+
+void _openMovementBox(BoxLogModel log) {
+  final id = log.boxId ?? log.fromBoxId ?? log.toBoxId;
+  if (id == null || id.isEmpty) {
+    Get.snackbar('تنبيه', 'لا يوجد صندوق مرتبط بهذه الحركة');
+    return;
+  }
+  Get.toNamed(AppRoutes.EDITBOXESSCREEN, arguments: id);
+}
+
+void _showMovementDetails(BuildContext context, BoxLogModel log) {
+  final rows = <MapEntry<String, String>>[
+    MapEntry('رقم الحركة', '${log.id}'),
+    MapEntry('الوصف', log.description),
+    MapEntry('النوع', log.type ?? '—'),
+    MapEntry('القيمة', '${log.value}'),
+    MapEntry('الصندوق', log.box?.name ?? '—'),
+    MapEntry('من صندوق', log.fromBox?.name ?? '—'),
+    MapEntry('إلى صندوق', log.toBox?.name ?? '—'),
+    MapEntry('الملاحظة', log.note ?? '—'),
+    MapEntry('طريقة الدفع', log.paymentMethod ?? '—'),
+    MapEntry('رقم الفاتورة', log.invoiceNumber ?? '—'),
+    MapEntry('رقم الصيانة', log.maintenanceId ?? '—'),
+    MapEntry('الرصيد قبل الحركة', log.boxBalanceBefore?.toString() ?? '—'),
+    MapEntry('الرصيد بعد الحركة', log.boxBalanceAfter?.toString() ?? '—'),
+    MapEntry('تؤثر على الكاش', log.affectsCashBalance ? 'نعم' : 'لا'),
+    MapEntry('التاريخ', log.createdAt.toLocal().toString()),
+  ];
+  Get.bottomSheet(
+    SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 20.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('تفاصيل الحركة',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    )),
+            SizedBox(height: 10.h),
+            ...rows.map((row) => Padding(
+                  padding: EdgeInsets.symmetric(vertical: 5.h),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 115.w,
+                        child: Text(row.key,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                      Expanded(child: Text(row.value)),
+                    ],
+                  ),
+                )),
+          ],
+        ),
+      ),
+    ),
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+  );
 }

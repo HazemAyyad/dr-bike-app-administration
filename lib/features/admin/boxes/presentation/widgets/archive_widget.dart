@@ -19,45 +19,43 @@ class ArchiveWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return Expanded(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                box.boxName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle.copyWith(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor3
-                      : Colors.black.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              box.currency.trim().isEmpty ? 'بدون عملة' : box.currency,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              box.boxName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: textStyle.copyWith(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryColor,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor3
+                    : Colors.black.withValues(alpha: 0.5),
               ),
             ),
-            IconButton(
-              tooltip: 'تقرير PDF',
-              visualDensity: VisualDensity.compact,
-              onPressed: onReport,
-              icon: const Icon(
-                Icons.picture_as_pdf_outlined,
-                color: Color(0xFFB42318),
-              ),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            box.currency.trim().isEmpty ? 'بدون عملة' : box.currency,
+            style: textStyle.copyWith(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryColor,
             ),
-          ],
-        ),
+          ),
+          IconButton(
+            tooltip: 'تقرير PDF',
+            visualDensity: VisualDensity.compact,
+            onPressed: onReport,
+            icon: const Icon(
+              Icons.picture_as_pdf_outlined,
+              color: Color(0xFFB42318),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -182,47 +182,48 @@ void _showBoxesFilter(BuildContext context, BoxesController controller) {
             ),
             Text(movementsTab ? 'الصندوق' : 'العملة'),
             SizedBox(height: 6.h),
-            Obx(
-              () => Wrap(
-                spacing: 7.w,
-                runSpacing: 6.h,
-                children: movementsTab
-                    ? [
-                        ChoiceChip(
-                          label: const Text('كل الصناديق'),
-                          selected: controller.movementBoxFilter.value == null,
-                          onSelected: (_) =>
-                              controller.movementBoxFilter.value = null,
-                        ),
-                        ...controller.movementFilterBoxes
-                            .map((box) => ChoiceChip(
-                                  label: Text(box.boxName),
-                                  selected:
-                                      controller.movementBoxFilter.value ==
-                                          box.boxId,
-                                  onSelected: (_) => controller
-                                      .movementBoxFilter.value = box.boxId,
-                                )),
-                      ]
-                    : [
-                        ChoiceChip(
-                          label: const Text('كل العملات'),
-                          selected: controller.listCurrencyFilter.value.isEmpty,
-                          onSelected: (_) =>
-                              controller.listCurrencyFilter.value = '',
-                        ),
-                        ...controller.availableBoxCurrencies.map(
-                          (currency) => ChoiceChip(
-                            label: Text(currency),
-                            selected:
-                                controller.listCurrencyFilter.value == currency,
-                            onSelected: (_) =>
-                                controller.listCurrencyFilter.value = currency,
-                          ),
-                        ),
-                      ],
+            if (movementsTab)
+              Obx(() {
+                final selected = controller.movementFilterBoxes
+                    .firstWhereOrNull((box) =>
+                        box.boxId == controller.movementBoxFilter.value);
+                return SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _showMovementBoxSelect(context, controller),
+                    icon: const Icon(Icons.search_rounded),
+                    label: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(selected?.boxName ?? 'كل الصناديق'),
+                    ),
+                  ),
+                );
+              })
+            else
+              Obx(
+                () => Wrap(
+                  spacing: 7.w,
+                  runSpacing: 6.h,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('كل العملات'),
+                      selected: controller.listCurrencyFilter.value.isEmpty,
+                      onSelected: (_) =>
+                          controller.listCurrencyFilter.value = '',
+                    ),
+                    ...controller.availableBoxCurrencies.map(
+                      (currency) => ChoiceChip(
+                        label: Text(currency),
+                        selected:
+                            controller.listCurrencyFilter.value == currency,
+                        onSelected: (_) =>
+                            controller.listCurrencyFilter.value = currency,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             SizedBox(height: 16.h),
             SizedBox(
               width: double.infinity,
@@ -246,6 +247,75 @@ void _showBoxesFilter(BuildContext context, BoxesController controller) {
     isScrollControlled: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
   );
+}
+
+void _showMovementBoxSelect(
+  BuildContext context,
+  BoxesController controller,
+) {
+  final search = TextEditingController();
+  Get.bottomSheet(
+    StatefulBuilder(builder: (context, setState) {
+      final query = search.text.trim().toLowerCase();
+      final boxes = controller.movementFilterBoxes
+          .where((box) =>
+              query.isEmpty ||
+              box.boxName.toLowerCase().contains(query) ||
+              box.currency.toLowerCase().contains(query))
+          .toList();
+      return SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .68,
+          child: Column(children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
+              child: SearchBar(
+                controller: search,
+                autoFocus: true,
+                leading: const Icon(Icons.search_rounded),
+                hintText: 'ابحث باسم الصندوق أو العملة',
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.all_inbox_outlined),
+              title: const Text('كل الصناديق'),
+              trailing: controller.movementBoxFilter.value == null
+                  ? const Icon(Icons.check_rounded)
+                  : null,
+              onTap: () {
+                controller.movementBoxFilter.value = null;
+                Get.back();
+              },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                itemCount: boxes.length,
+                itemBuilder: (context, index) {
+                  final box = boxes[index];
+                  return ListTile(
+                    leading: const Icon(Icons.account_balance_wallet_outlined),
+                    title: Text(box.boxName),
+                    subtitle: Text(box.currency),
+                    trailing: controller.movementBoxFilter.value == box.boxId
+                        ? const Icon(Icons.check_rounded)
+                        : null,
+                    onTap: () {
+                      controller.movementBoxFilter.value = box.boxId;
+                      Get.back();
+                    },
+                  );
+                },
+              ),
+            ),
+          ]),
+        ),
+      );
+    }),
+    isScrollControlled: true,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+  ).whenComplete(search.dispose);
 }
 
 class _BoxesOverview extends StatelessWidget {
