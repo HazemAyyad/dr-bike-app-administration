@@ -391,6 +391,7 @@ class WhatsAppEmployeeAccess {
   final String name;
   final String? phone, jobTitle;
   final bool hasAccess;
+  final Set<String> channelAccess;
 
   const WhatsAppEmployeeAccess({
     required this.id,
@@ -398,6 +399,7 @@ class WhatsAppEmployeeAccess {
     this.phone,
     this.jobTitle,
     required this.hasAccess,
+    this.channelAccess = const {},
   });
 
   factory WhatsAppEmployeeAccess.fromJson(Map<String, dynamic> json) =>
@@ -406,8 +408,19 @@ class WhatsAppEmployeeAccess {
         name: json['name']?.toString() ?? '',
         phone: json['phone']?.toString(),
         jobTitle: json['job_title']?.toString(),
-        hasAccess: json['has_whatsapp_access'] == true ||
-            json['has_whatsapp_access'] == 1,
+        hasAccess: json['has_social_center_access'] == true ||
+            json['has_social_center_access'] == 1,
+        channelAccess: {
+          if (json['has_social_center_access'] == true ||
+              json['has_social_center_access'] == 1)
+            'main',
+          ...(json['channel_access'] is Map
+              ? (json['channel_access'] as Map)
+                  .entries
+                  .where((entry) => entry.value == true || entry.value == 1)
+                  .map((entry) => entry.key.toString())
+              : const <String>[]),
+        },
       );
 }
 

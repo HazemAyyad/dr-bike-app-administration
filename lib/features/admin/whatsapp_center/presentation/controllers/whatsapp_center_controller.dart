@@ -29,7 +29,7 @@ class WhatsAppCenterController extends GetxController {
   final templates = <WhatsAppTemplate>[].obs;
   final settings = Rxn<WhatsAppSettings>();
   final whatsAppEmployees = <WhatsAppEmployeeAccess>[].obs;
-  final selectedWhatsAppEmployeeIds = <int>{}.obs;
+  final selectedEmployeeChannelAccess = <int, Set<String>>{}.obs;
   final selectedWhatsAppAccountId = RxnInt();
   final canManageWhatsAppEmployees = false.obs;
   final qrBytes = Rxn<Uint8List>();
@@ -147,9 +147,7 @@ class WhatsAppCenterController extends GetxController {
             : const [];
         whatsAppEmployees.assignAll(employees.whereType<Map>().map((item) =>
             WhatsAppEmployeeAccess.fromJson(Map<String, dynamic>.from(item))));
-        selectedWhatsAppEmployeeIds.assignAll(whatsAppEmployees
-            .where((employee) => employee.hasAccess)
-            .map((employee) => employee.id));
+        _syncEmployeeChannelAccess();
         try {
           qrBytes.value = Uint8List.fromList(
               await api.getQr(accountId: selectedWhatsAppAccountId.value));
@@ -174,24 +172,39 @@ class WhatsAppCenterController extends GetxController {
     }
   }
 
-  void toggleWhatsAppEmployee(int id, bool selected) {
-    final values = Set<int>.from(selectedWhatsAppEmployeeIds);
-    selected ? values.add(id) : values.remove(id);
-    selectedWhatsAppEmployeeIds.assignAll(values);
+  void toggleSocialCenterEmployee(int id, bool selected) {
+    final values = Map<int, Set<String>>.from(selectedEmployeeChannelAccess);
+    selected ? values[id] = {'main'} : values.remove(id);
+    selectedEmployeeChannelAccess.assignAll(values);
+  }
+
+  void toggleEmployeeChannel(int id, String channel, bool selected) {
+    final values = Map<int, Set<String>>.from(selectedEmployeeChannelAccess);
+    final channels = Set<String>.from(values[id] ?? const {});
+    if (selected) channels.add('main');
+    selected ? channels.add(channel) : channels.remove(channel);
+    values[id] = channels;
+    selectedEmployeeChannelAccess.assignAll(values);
+  }
+
+  void _syncEmployeeChannelAccess() {
+    selectedEmployeeChannelAccess.assignAll({
+      for (final employee in whatsAppEmployees)
+        if (employee.channelAccess.isNotEmpty)
+          employee.id: Set<String>.from(employee.channelAccess),
+    });
   }
 
   Future<void> saveWhatsAppEmployees() async {
     actionLoading.value = true;
     try {
-      final result = await api
-          .updateWhatsAppEmployees(selectedWhatsAppEmployeeIds.toList());
+      final result = await api.updateWhatsAppEmployees(
+          Map<int, Set<String>>.from(selectedEmployeeChannelAccess));
       final employees =
           result['employees'] is List ? result['employees'] as List : const [];
       whatsAppEmployees.assignAll(employees.whereType<Map>().map((item) =>
           WhatsAppEmployeeAccess.fromJson(Map<String, dynamic>.from(item))));
-      selectedWhatsAppEmployeeIds.assignAll(whatsAppEmployees
-          .where((employee) => employee.hasAccess)
-          .map((employee) => employee.id));
+      _syncEmployeeChannelAccess();
       Get.snackbar('تم', 'تم تحديث صلاحيات مركز التواصل');
     } catch (e) {
       Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);

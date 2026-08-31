@@ -172,8 +172,13 @@ class WhatsAppApiService {
           Map<String, dynamic> data) =>
       _post('$_base/settings', data);
 
-  Future<Map<String, dynamic>> updateWhatsAppEmployees(List<int> employeeIds) =>
-      _post('$_base/settings/employees', {'employee_ids': employeeIds});
+  Future<Map<String, dynamic>> updateWhatsAppEmployees(
+          Map<int, Set<String>> employeeChannelAccess) =>
+      _post('$_base/settings/employees', {
+        'employee_channel_access': employeeChannelAccess.map(
+          (id, channels) => MapEntry(id.toString(), channels.toList()),
+        ),
+      });
 
   Future<Map<String, dynamic>> sendWhatsAppTestMessage(
           String phone, String message,

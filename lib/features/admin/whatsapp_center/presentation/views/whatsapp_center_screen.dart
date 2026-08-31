@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../../core/services/initial_bindings.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_center_controller.dart';
 
@@ -383,7 +384,7 @@ class _SocialChannelBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const channels = [
+    const allChannels = [
       _SocialChannel(
         id: 'all',
         icon: Icons.all_inbox_outlined,
@@ -409,6 +410,17 @@ class _SocialChannelBar extends StatelessWidget {
         color: Color(0xFFE4405F),
       ),
     ];
+    final channels = userType == 'admin'
+        ? allChannels
+        : allChannels.where((channel) {
+            if (channel.id == 'all') return true;
+            const permissions = {
+              'whatsapp': 'Social Center WhatsApp',
+              'facebook': 'Social Center Facebook',
+              'instagram': 'Social Center Instagram',
+            };
+            return employeePermissionNames.contains(permissions[channel.id]);
+          }).toList(growable: false);
 
     return Container(
       width: double.infinity,
@@ -1197,24 +1209,70 @@ class _SettingsTab extends StatelessWidget {
                   )
                 else
                   ...controller.whatsAppEmployees.map((employee) {
-                    final selected = controller.selectedWhatsAppEmployeeIds
-                        .contains(employee.id);
-                    return CheckboxListTile(
-                      value: selected,
-                      activeColor: const Color(0xFF00A884),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(employee.name),
-                      subtitle: Text([
-                        if (employee.jobTitle?.isNotEmpty == true)
-                          employee.jobTitle!,
-                        if (employee.phone?.isNotEmpty == true) employee.phone!,
-                      ].join(' • ')),
-                      secondary: CircleAvatar(
-                        backgroundColor: const Color(0xFFD9EEE8),
-                        child: Text(employee.name.characters.first),
-                      ),
-                      onChanged: (value) => controller.toggleWhatsAppEmployee(
-                          employee.id, value == true),
+                    final channels = controller
+                            .selectedEmployeeChannelAccess[employee.id] ??
+                        const <String>{};
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Column(children: [
+                        CheckboxListTile(
+                          value: channels.contains('main'),
+                          activeColor: const Color(0xFF00A884),
+                          title: Text(employee.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
+                          subtitle: Text([
+                            if (employee.jobTitle?.isNotEmpty == true)
+                              employee.jobTitle!,
+                            if (employee.phone?.isNotEmpty == true)
+                              employee.phone!,
+                          ].join(' • ')),
+                          secondary: CircleAvatar(
+                            backgroundColor: const Color(0xFFD9EEE8),
+                            child: Text(employee.name.characters.first),
+                          ),
+                          onChanged: (value) =>
+                              controller.toggleSocialCenterEmployee(
+                                  employee.id, value == true),
+                        ),
+                        if (channels.contains('main'))
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 52, 8),
+                            child: Column(
+                              children: const <Map<String, dynamic>>[
+                                {
+                                  'id': 'whatsapp',
+                                  'label': 'واتساب',
+                                  'icon': Icons.chat,
+                                },
+                                {
+                                  'id': 'facebook',
+                                  'label': 'فيسبوك',
+                                  'icon': Icons.facebook,
+                                },
+                                {
+                                  'id': 'instagram',
+                                  'label': 'إنستغرام',
+                                  'icon': Icons.camera_alt,
+                                },
+                              ].map((item) {
+                                final channel = item['id']! as String;
+                                return CheckboxListTile(
+                                  dense: true,
+                                  value: channels.contains(channel),
+                                  title: Text(item['label']! as String),
+                                  secondary:
+                                      Icon(item['icon']! as IconData, size: 20),
+                                  onChanged: (value) =>
+                                      controller.toggleEmployeeChannel(
+                                          employee.id,
+                                          channel,
+                                          value == true),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                      ]),
                     );
                   }),
                 const SizedBox(height: 6),

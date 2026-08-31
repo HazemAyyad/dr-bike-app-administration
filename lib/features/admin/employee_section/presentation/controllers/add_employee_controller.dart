@@ -524,14 +524,22 @@ class AddEmployeeController extends GetxController {
         employeeHiddenPermissionIds.contains(id.toString());
     final preferredName = Get.locale?.languageCode == 'en' ? nameEn : nameAr;
     final fallbackName = nameAr ?? nameEn ?? '';
-    final displayName = preferredName?.toString().trim().isNotEmpty == true
+    var displayName = preferredName?.toString().trim().isNotEmpty == true
         ? preferredName.toString()
         : fallbackName.toString();
+    if ({
+      'Social Center WhatsApp',
+      'Social Center Facebook',
+      'Social Center Instagram'
+    }.contains(nameEn?.toString())) {
+      displayName = '↳ $displayName';
+    }
 
     return {
       'name': displayName,
       'id': id.toString(),
       'group': group.toString(),
+      'nameEn': nameEn?.toString() ?? '',
       'permission': false.obs,
       'adminOnly': adminOnly,
       'grantPolicy': grantPolicy,
@@ -621,6 +629,9 @@ class AddEmployeeController extends GetxController {
       'Maintenance': 'maintenance',
       'Maintenance Services Settings': 'maintenance',
       'Messages Section': 'communication',
+      'Social Center WhatsApp': 'communication',
+      'Social Center Facebook': 'communication',
+      'Social Center Instagram': 'communication',
       'Technical Support': 'communication',
     };
     return groupsByName[nameEn?.toString()] ?? 'general';
@@ -635,6 +646,15 @@ class AddEmployeeController extends GetxController {
             employeeHiddenPermissionIds.contains(permission['id'].toString());
       grouped.putIfAbsent(group, () => <Map<String, dynamic>>[]).add(row);
     }
+    const socialOrder = {
+      'Messages Section': 0,
+      'Social Center WhatsApp': 1,
+      'Social Center Facebook': 2,
+      'Social Center Instagram': 3,
+      'Technical Support': 4,
+    };
+    grouped['communication']?.sort((a, b) => (socialOrder[a['nameEn']] ?? 99)
+        .compareTo(socialOrder[b['nameEn']] ?? 99));
 
     return _permissionGroupOrder
         .where((group) => grouped[group.key]?.isNotEmpty == true)
@@ -743,7 +763,23 @@ class AddEmployeeController extends GetxController {
 
   void setPermissionValue(Map<String, dynamic> permission, bool? value) {
     if (!canEditPermissionAssignments.value) return;
-    permission['permission'].value = value ?? false;
+    final selected = value ?? false;
+    final nameEn = permission['nameEn']?.toString();
+    const channelPermissions = {
+      'Social Center WhatsApp',
+      'Social Center Facebook',
+      'Social Center Instagram',
+    };
+    permission['permission'].value = selected;
+    if (selected && channelPermissions.contains(nameEn)) {
+      permissionsList
+          .where((item) => item['nameEn'] == 'Messages Section')
+          .forEach((item) => item['permission'].value = true);
+    } else if (!selected && nameEn == 'Messages Section') {
+      permissionsList
+          .where((item) => channelPermissions.contains(item['nameEn']))
+          .forEach((item) => item['permission'].value = false);
+    }
     isAllPermissionsSelected.value = visiblePermissionsList.isNotEmpty &&
         visiblePermissionsList
             .every((permission) => permission['permission'].value == true);
