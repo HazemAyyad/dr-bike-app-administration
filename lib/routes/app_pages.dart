@@ -127,6 +127,7 @@ import '../features/admin/financial_affairs/presentation/views/expenses_screens/
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/payroll_screens/payroll_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/payroll_screens/salary_period_details_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/file_box_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/files_screen.dart';
@@ -1179,6 +1180,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.PAYROLLSCREEN,
       page: () => const PayrollScreen(),
+      binding: ExpensesBinding(),
+      transition: _transitionSize,
+    ),
+    GetPage(
+      name: AppRoutes.SALARYPERIODDETAILSSCREEN,
+      page: () => const SalaryPeriodDetailsScreen(),
       binding: ExpensesBinding(),
       transition: _transitionSize,
     ),

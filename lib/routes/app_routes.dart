@@ -138,6 +138,7 @@ class AppRoutes {
   static const ADDEXPENSESCREEN = '/AddExpenseScreen';
   static const EXPENSEDETAILSSCREEN = '/ExpenseDetailsScreen';
   static const PAYROLLSCREEN = '/PayrollScreen';
+  static const SALARYPERIODDETAILSSCREEN = '/SalaryPeriodDetailsScreen';
   static const ASSETDETAILSSCREEN = '/AssetDetailsScreen';
   static const SAFESSCREEN = '/SafesScreen';
   static const FILEBOXSCREEN = '/FileBoxScreen';

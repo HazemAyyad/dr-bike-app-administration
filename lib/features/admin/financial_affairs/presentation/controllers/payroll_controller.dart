@@ -21,6 +21,8 @@ class PayrollController extends GetxController {
   final isPaying = false.obs;
   final downloadingReceiptId = RxnInt();
   final isReportLoading = false.obs;
+  final isPeriodProfileLoading = false.obs;
+  final periodProfile = Rxn<Map<String, dynamic>>();
   final employees = <Map<String, dynamic>>[].obs;
   final boxes = <Map<String, dynamic>>[].obs;
   final previewRows = <Map<String, dynamic>>[].obs;
@@ -253,6 +255,22 @@ class PayrollController extends GetxController {
       _setPeriods(response.data);
     } catch (error) {
       _error(error);
+    }
+  }
+
+  Future<void> loadPeriodProfile(int periodId) async {
+    isPeriodProfileLoading.value = true;
+    periodProfile.value = null;
+    try {
+      final response = await api.get(EndPoints.payrollPeriod(periodId));
+      _ensureSuccess(response.data);
+      final raw = response.data['period'];
+      if (raw is! Map) throw Exception('تعذر قراءة ملف الراتب');
+      periodProfile.value = Map<String, dynamic>.from(raw);
+    } catch (error) {
+      _error(error);
+    } finally {
+      isPeriodProfileLoading.value = false;
     }
   }
 

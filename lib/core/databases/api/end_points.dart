@@ -32,6 +32,7 @@ class EndPoints {
   static const String payrollPreview = 'payroll/preview';
   static const String payrollPay = 'payroll/pay';
   static const String payrollPeriods = 'payroll/periods';
+  static String payrollPeriod(int id) => 'payroll/periods/$id';
   static const String payrollReport = 'payroll/report';
   static String payrollReceipt(int id) => 'payroll/receipts/$id';
   static const String employeePendingSalaryReceipts =

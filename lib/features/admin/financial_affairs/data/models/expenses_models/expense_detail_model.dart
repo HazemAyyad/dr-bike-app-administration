@@ -14,6 +14,7 @@ class ExpenseDetailModel {
   final List<String> media;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? salaryPeriodId;
 
   ExpenseDetailModel({
     required this.id,
@@ -28,6 +29,7 @@ class ExpenseDetailModel {
     required this.media,
     required this.createdAt,
     required this.updatedAt,
+    this.salaryPeriodId,
   });
 
   factory ExpenseDetailModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,8 @@ class ExpenseDetailModel {
       media: mapPhotoList(j['media']),
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
+      salaryPeriodId:
+          j['salary_period_id'] == null ? null : asInt(j['salary_period_id']),
     );
   }
 
@@ -70,6 +74,7 @@ class ExpenseDetailModel {
       'media': media,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'salary_period_id': salaryPeriodId,
     };
   }
 }

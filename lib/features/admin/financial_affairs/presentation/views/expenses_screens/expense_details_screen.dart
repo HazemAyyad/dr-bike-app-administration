@@ -23,15 +23,33 @@ class ExpenseDetailsScreen extends GetView<ExpensesController> {
         title: 'تفاصيل المصروف',
         action: false,
         actions: [
-          IconButton(
-            tooltip: 'تعديل المصروف',
-            onPressed: () {
-              controller.isEditing.value = true;
-              controller.isExpenseReadOnly.value = false;
-              Get.toNamed(AppRoutes.ADDEXPENSESCREEN);
-            },
-            icon: const Icon(Icons.edit_outlined),
-          ),
+          Obx(() {
+            final expense = controller.selectedExpense.value;
+            if (expense == null) return const SizedBox.shrink();
+            final salary = expense.expenseType == 'salary';
+            return IconButton(
+              tooltip: salary ? 'فتح ملف الراتب' : 'تعديل المصروف',
+              onPressed: () {
+                if (salary) {
+                  final periodId = expense.salaryPeriodId;
+                  if (periodId == null) {
+                    Get.snackbar('ملف الراتب غير متاح',
+                        'لم يتم العثور على دورة الراتب المرتبطة بهذا القيد');
+                    return;
+                  }
+                  Get.toNamed(
+                    AppRoutes.SALARYPERIODDETAILSSCREEN,
+                    arguments: {'period_id': periodId},
+                  );
+                  return;
+                }
+                controller.isEditing.value = true;
+                controller.isExpenseReadOnly.value = false;
+                Get.toNamed(AppRoutes.ADDEXPENSESCREEN);
+              },
+              icon: Icon(salary ? Icons.badge_outlined : Icons.edit_outlined),
+            );
+          }),
           SizedBox(width: 8.w),
         ],
       ),
@@ -50,6 +68,45 @@ class ExpenseDetailsScreen extends GetView<ExpensesController> {
         return ListView(
           padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 36.h),
           children: [
+            if (expense.expenseType == 'salary') ...[
+              FinancialOperationalCard(
+                child: Row(children: [
+                  Container(
+                    padding: EdgeInsets.all(10.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.customGreen1.withValues(alpha: .08),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: const Icon(Icons.lock_rounded,
+                        color: AppColors.customGreen1),
+                  ),
+                  SizedBox(width: 9.w),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('قيد راتب مرتبط آليًا',
+                            style: TextStyle(fontWeight: FontWeight.w900)),
+                        Text(
+                            'يُعرض ويُدار من ملف الراتب ولا يُعدّل كمصروف يدوي'),
+                      ],
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: expense.salaryPeriodId == null
+                        ? null
+                        : () => Get.toNamed(
+                              AppRoutes.SALARYPERIODDETAILSSCREEN,
+                              arguments: {
+                                'period_id': expense.salaryPeriodId,
+                              },
+                            ),
+                    child: const Text('فتح الملف'),
+                  ),
+                ]),
+              ),
+              SizedBox(height: 10.h),
+            ],
             FinancialOperationalCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

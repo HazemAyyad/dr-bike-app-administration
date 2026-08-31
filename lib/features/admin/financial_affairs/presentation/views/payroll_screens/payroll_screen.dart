@@ -6,6 +6,7 @@ import '../../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../../core/services/theme_service.dart';
 import '../../../../../../../core/utils/app_colors.dart';
 import '../../../../../../../core/widgets/skeleton_loading.dart';
+import '../../../../../../../routes/app_routes.dart';
 import '../../controllers/payroll_controller.dart';
 import '../../widgets/financial_operational_ui.dart';
 
@@ -1024,13 +1025,17 @@ class _PeriodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<PayrollController>();
     final employee = row['employee'];
     final user = employee is Map ? employee['user'] : null;
     final payments =
         row['payments'] is List ? row['payments'] as List : const [];
     final month = '${row['salary_month'] ?? ''}';
+    void openProfile() => Get.toNamed(
+          AppRoutes.SALARYPERIODDETAILSSCREEN,
+          arguments: {'period_id': row['id']},
+        );
     return FinancialOperationalCard(
+      onTap: openProfile,
       child: Column(children: [
         Row(children: [
           const CircleAvatar(child: Icon(Icons.person_rounded)),
@@ -1066,7 +1071,7 @@ class _PeriodCard extends StatelessWidget {
         ]),
         if (payments.isNotEmpty) ...[
           const Divider(),
-          ...payments.map((p) => Obx(() => ListTile(
+          ...payments.map((p) => ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
@@ -1088,16 +1093,22 @@ class _PeriodCard extends StatelessWidget {
                     : p['receipt_status'] == 'disputed'
                         ? 'اعترض الموظف'
                         : 'بانتظار توقيع الموظف'),
-                trailing: controller.downloadingReceiptId.value ==
-                        int.tryParse('${p['id']}')
-                    ? SizedBox.square(
-                        dimension: 19.r,
-                        child: const CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.picture_as_pdf_rounded,
-                        color: Colors.red),
-                onTap: () =>
-                    controller.downloadReceipt(int.parse('${p['id']}')),
-              ))),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                    size: 17, color: AppColors.operationalPurple),
+                onTap: openProfile,
+              )),
+          const Divider(),
+          Row(children: [
+            const Icon(Icons.badge_outlined,
+                color: AppColors.operationalPurple),
+            SizedBox(width: 7.w),
+            const Expanded(
+              child: Text('عرض ملف الراتب والتوقيعات',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+            const Icon(Icons.arrow_forward_rounded,
+                color: AppColors.operationalPurple),
+          ]),
         ],
       ]),
     );

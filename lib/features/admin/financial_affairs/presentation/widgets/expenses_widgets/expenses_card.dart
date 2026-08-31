@@ -20,7 +20,16 @@ class ExpensesCard extends GetView<ExpensesController> {
   @override
   Widget build(BuildContext context) => FinancialOperationalCard(
         onTap: () {
-          controller.isEditing.value = true;
+          if (expense.expenseType == 'salary' &&
+              expense.salaryPeriodId != null) {
+            Get.toNamed(
+              AppRoutes.SALARYPERIODDETAILSSCREEN,
+              arguments: {'period_id': expense.salaryPeriodId},
+            );
+            return;
+          }
+          controller.isEditing.value = false;
+          controller.isExpenseReadOnly.value = true;
           controller.getExpensesData(expenseId: expense.id.toString());
           Get.toNamed(AppRoutes.EXPENSEDETAILSSCREEN);
         },
