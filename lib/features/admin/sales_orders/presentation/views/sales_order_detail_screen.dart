@@ -153,13 +153,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         child: _mediaRequirementsCard(order),
                       ),
                     ],
-                    if (_hasLogisticsInfo(order)) ...[
-                      SizedBox(height: 12.h),
-                      KeyedSubtree(
-                        key: _logisticsKey,
-                        child: _logisticsCard(order),
-                      ),
-                    ],
                     SizedBox(height: 12.h),
                     _nextStepCard(order),
                     if (order.childOrders.isNotEmpty) ...[
@@ -392,6 +385,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       ? () {
                           if (item.label == 'السجل') {
                             _showStatusHistoryModal(order);
+                          } else if (item.label == 'التوصيل') {
+                            _showLogisticsModal(order);
                           } else {
                             _scrollTo(item.key);
                           }
@@ -1008,6 +1003,65 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _showLogisticsModal(SalesOrderDetailModel order) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.68,
+        minChildSize: 0.38,
+        maxChildSize: 0.94,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: SalesOrdersController.surfaceGray,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          child: Column(children: [
+            Container(
+              width: 42.w,
+              height: 4.h,
+              margin: EdgeInsets.symmetric(vertical: 9.h),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
+              child: Row(children: [
+                const Icon(Icons.local_shipping_outlined,
+                    color: SalesOrdersController.textPrimary),
+                SizedBox(width: 7.w),
+                Expanded(
+                  child: Text(
+                    'بيانات الشحن والتوصيل',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: Get.back,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ]),
+            ),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 20.h),
+                children: [_logisticsCard(order)],
+              ),
+            ),
+          ]),
+        ),
       ),
     );
   }
@@ -3055,11 +3109,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     );
   }
 
-  void _showSettleSheet(int orderId) {
+  Future<void> _showSettleSheet(int orderId) async {
     AppDependencyRegistry.ensureBoxes();
+    await controller.loadDetail(orderId);
     final currentOrder = controller.detail.value;
-    final carrierBalance = currentOrder?.carrierReceivableBalance ?? 0;
-    final customerDebt = currentOrder?.customerDebtBalance ?? 0;
+    if (currentOrder == null) {
+      SalesOrderNotice.error('تعذر تحديث الرصيد الحالي للطلبية');
+      return;
+    }
+    final carrierBalance = currentOrder.carrierReceivableBalance;
+    final customerDebt = currentOrder.customerDebtBalance;
     final settlementBalance =
         carrierBalance > 0 ? carrierBalance : customerDebt;
     controller.settleAmountController.text =
@@ -3201,7 +3260,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                     .settleAmountController.text
                                     .trim()) ??
                                 0;
-                            if (entered <= 0 || entered > settlementBalance) {
+                            if (entered <= 0 ||
+                                entered > settlementBalance + .001) {
                               SalesOrderNotice.error(
                                 'أدخل مبلغاً أكبر من صفر ولا يتجاوز الرصيد المستحق',
                               );

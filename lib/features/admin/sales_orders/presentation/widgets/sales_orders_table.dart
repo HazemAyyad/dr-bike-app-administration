@@ -117,6 +117,12 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
               label: 'اتصال عادي',
               onTap: () => _launchPhone(phone),
             ),
+            for (final candidate in _whatsAppNumbers(phone))
+              _ContactAction(
+                icon: Icons.chat_outlined,
+                label: 'واتساب +${candidate.substring(0, 3)}',
+                onTap: () => _launchWhatsApp(candidate),
+              ),
             _ContactAction(
               icon: Icons.copy_rounded,
               label: 'نسخ الرقم',
@@ -236,6 +242,25 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
     if (!await launchUrl(uri)) {
       Get.snackbar('تعذر الاتصال', 'لا يوجد تطبيق اتصال متاح');
     }
+  }
+
+  Future<void> _launchWhatsApp(String phone) async {
+    Get.back();
+    final uri = Uri.parse('https://wa.me/$phone');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Get.snackbar('تعذر فتح واتساب', 'تأكد من تثبيت واتساب على الجهاز');
+    }
+  }
+
+  List<String> _whatsAppNumbers(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) digits = digits.substring(2);
+    if (digits.startsWith('970') || digits.startsWith('972')) {
+      return [digits];
+    }
+    if (digits.startsWith('0')) digits = digits.substring(1);
+    if (digits.isEmpty) return const [];
+    return ['970$digits', '972$digits'];
   }
 
   List<_OrderGroup> _groupByDate(List<SalesOrderListItemModel> orders) {

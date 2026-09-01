@@ -21,6 +21,7 @@ class SalesOrderListItemModel {
   final String paymentType;
   final String? createdAt;
   final String? createdByName;
+  final int? deliveryCompanyId;
   final String? deliveryCompanyName;
   final String? deliveryCompanyCode;
 
@@ -37,6 +38,7 @@ class SalesOrderListItemModel {
     required this.paymentType,
     this.createdAt,
     this.createdByName,
+    this.deliveryCompanyId,
     this.deliveryCompanyName,
     this.deliveryCompanyCode,
   });
@@ -57,6 +59,7 @@ class SalesOrderListItemModel {
       paymentType: json['payment_type'] as String? ?? 'cash',
       createdAt: json['created_at'] as String?,
       createdByName: json['created_by_name'] as String?,
+      deliveryCompanyId: (json['delivery_company_id'] as num?)?.toInt(),
       deliveryCompanyName: json['delivery_company_name'] as String?,
       deliveryCompanyCode: json['delivery_company_code'] as String?,
     );

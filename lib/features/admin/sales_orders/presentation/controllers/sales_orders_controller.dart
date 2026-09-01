@@ -1731,7 +1731,8 @@ class SalesOrdersController extends GetxController {
   }
 
   bool get canBulkSelectCurrentTab {
-    return const {'unconfirmed', 'confirmed'}.contains(statusFilter.value);
+    return const {'unconfirmed', 'confirmed', 'settlement'}
+        .contains(statusFilter.value);
   }
 
   List<String> get bulkActionsForCurrentTab {
@@ -1740,6 +1741,8 @@ class SalesOrdersController extends GetxController {
         return const ['confirm', 'cancel'];
       case 'confirmed':
         return const ['mark_ready', 'cancel'];
+      case 'settlement':
+        return const ['settle'];
       default:
         return const [];
     }
@@ -1753,6 +1756,8 @@ class SalesOrdersController extends GetxController {
         return 'salesOrderMarkReady'.tr;
       case 'cancel':
         return 'cancel'.tr;
+      case 'settle':
+        return 'تسوية المحدد';
       default:
         return action;
     }
