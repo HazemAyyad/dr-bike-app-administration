@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -849,40 +851,175 @@ class _InfoIcon extends StatelessWidget {
 
 void _openInventoryList(String title, List<Map<String, dynamic>> items,
     {bool showSales = false}) {
-  Get.to(() => Scaffold(
+  Get.to(() => _InventoryListScreen(
+        title: title,
+        items: items,
+        showSales: showSales,
+      ));
+}
+
+class _InventoryListScreen extends StatelessWidget {
+  const _InventoryListScreen(
+      {required this.title, required this.items, required this.showSales});
+  final String title;
+  final List<Map<String, dynamic>> items;
+  final bool showSales;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(title), centerTitle: true),
         body: items.isEmpty
             ? const Center(child: Text('لا توجد عناصر'))
-            : ListView.separated(
-                padding: EdgeInsets.all(12.r),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => SizedBox(height: 7.h),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            AppColors.primaryColor.withValues(alpha: .12),
-                        child: Text('${index + 1}',
-                            style:
-                                const TextStyle(color: AppColors.primaryColor)),
-                      ),
-                      title: Text(item['label']?.toString() ?? '-'),
-                      subtitle: Text(showSales
-                          ? 'المباع خلال الفترة: ${_compact(_number(item['sold_quantity']))}'
-                          : 'الكمية الحالية: ${_compact(_number(item['quantity']))}'),
-                      trailing: showSales
-                          ? null
-                          : Text(_money(item['value']),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryColor)),
+            : Column(children: [
+                Container(
+                  margin: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 4.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 11.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .09),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.inventory_2_outlined,
+                        color: AppColors.primaryColor),
+                    SizedBox(width: 7.w),
+                    Expanded(
+                      child: Text('$title — ${items.length} منتج',
+                          style: TextStyle(
+                              fontSize: 12.sp, fontWeight: FontWeight.w800)),
                     ),
-                  );
-                },
+                  ]),
+                ),
+                Expanded(
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 900
+                        ? 3
+                        : constraints.maxWidth >= 560
+                            ? 2
+                            : 1;
+                    return GridView.builder(
+                      padding: EdgeInsets.all(10.r),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 8.w,
+                        mainAxisSpacing: 8.h,
+                        mainAxisExtent: 82.h,
+                      ),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) => _InventoryProductCard(
+                        item: items[index],
+                        rank: index + 1,
+                        showSales: showSales,
+                      ),
+                    );
+                  }),
+                ),
+              ]),
+      );
+}
+
+class _InventoryProductCard extends StatelessWidget {
+  const _InventoryProductCard(
+      {required this.item, required this.rank, required this.showSales});
+  final Map<String, dynamic> item;
+  final int rank;
+  final bool showSales;
+
+  @override
+  Widget build(BuildContext context) {
+    final rawImage = item['image']?.toString() ?? '';
+    final thumb = ShowNetImage.getThumbnailPhoto(rawImage);
+    final original = ShowNetImage.getPhoto(rawImage);
+    return Container(
+      padding: EdgeInsets.all(7.r),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : Colors.white,
+        borderRadius: BorderRadius.circular(11.r),
+        border: Border.all(color: Colors.grey.withValues(alpha: .12)),
+      ),
+      child: Row(children: [
+        GestureDetector(
+          onTap: rawImage.isEmpty
+              ? null
+              : () => FullScreenZoomImage.open(context, original,
+                  title: item['label']?.toString()),
+          child: Stack(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Image.network(
+                thumb,
+                width: 58.r,
+                height: 58.r,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 58.r,
+                  height: 58.r,
+                  color: Colors.grey.withValues(alpha: .10),
+                  child: const Icon(Icons.inventory_2_outlined,
+                      color: AppColors.primaryColor),
+                ),
               ),
-      ));
+            ),
+            if (rawImage.isNotEmpty)
+              PositionedDirectional(
+                end: 3.r,
+                bottom: 3.r,
+                child: Container(
+                  padding: EdgeInsets.all(3.r),
+                  decoration: const BoxDecoration(
+                      color: Colors.black54, shape: BoxShape.circle),
+                  child: Icon(Icons.zoom_in_rounded,
+                      size: 11.sp, color: Colors.white),
+                ),
+              ),
+          ]),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item['label']?.toString() ?? '-',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800)),
+              SizedBox(height: 3.h),
+              Text(
+                showSales
+                    ? 'المباع: ${_compact(_number(item['sold_quantity']))}'
+                    : 'المتوفر: ${_compact(_number(item['quantity']))}',
+                style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600),
+              ),
+              if (!showSales)
+                Text('القيمة: ${_money(item['value'])}',
+                    style: TextStyle(
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor)),
+            ],
+          ),
+        ),
+        Container(
+          width: 24.r,
+          height: 24.r,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withValues(alpha: .10),
+            shape: BoxShape.circle,
+          ),
+          child: Text('$rank',
+              style: TextStyle(
+                  fontSize: 8.sp,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryColor)),
+        ),
+      ]),
+    );
+  }
 }
 
 class _Surface extends StatelessWidget {
