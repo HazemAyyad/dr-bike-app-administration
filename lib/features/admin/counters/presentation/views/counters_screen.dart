@@ -271,6 +271,7 @@ class _SummaryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style:
                       TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700))),
+          _InfoIcon(title: meta.label, message: meta.description),
         ]),
         SizedBox(height: 10.h),
         Text(_money(item['value']),
@@ -309,8 +310,13 @@ class _ChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _Surface(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title,
-              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+          Row(children: [
+            Expanded(
+                child: Text(title,
+                    style: TextStyle(
+                        fontSize: 15.sp, fontWeight: FontWeight.w900))),
+            _InfoIcon(title: title, message: _explanationFor(title)),
+          ]),
           SizedBox(height: 3.h),
           Text(subtitle,
               style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600)),
@@ -680,8 +686,16 @@ class _InventoryCard extends StatelessWidget {
     final top = _maps(data['top_value']);
     return _Surface(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('المخزون',
-            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+        Row(children: [
+          Expanded(
+              child: Text('المخزون',
+                  style:
+                      TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900))),
+          const _InfoIcon(
+              title: 'المخزون',
+              message:
+                  'القيمة الحالية للبضاعة الموجودة، محسوبة من الكمية المتوفرة وتكلفة شراء كل منتج.'),
+        ]),
         SizedBox(height: 12.h),
         Row(children: [
           _InventoryMetric('قيمة المخزون', _money(data['value']),
@@ -732,10 +746,49 @@ class _InventoryMetric extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900)),
         SizedBox(height: 2.h),
-        Text(label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 8.sp, color: Colors.grey.shade600))
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Flexible(
+              child: Text(label,
+                  textAlign: TextAlign.center,
+                  style:
+                      TextStyle(fontSize: 8.sp, color: Colors.grey.shade600))),
+          _InfoIcon(title: label, message: _explanationFor(label), size: 13),
+        ])
       ]));
+}
+
+class _InfoIcon extends StatelessWidget {
+  const _InfoIcon({required this.title, required this.message, this.size = 15});
+  final String title;
+  final String message;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: message,
+        triggerMode: TooltipTriggerMode.tap,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20.r),
+          onTap: () => Get.dialog(AlertDialog(
+            title: Row(children: [
+              const Icon(Icons.info_outline_rounded,
+                  color: AppColors.primaryColor),
+              SizedBox(width: 8.w),
+              Expanded(child: Text(title)),
+            ]),
+            content:
+                Text(message, style: TextStyle(fontSize: 13.sp, height: 1.7)),
+            actions: [
+              TextButton(onPressed: Get.back, child: const Text('فهمت'))
+            ],
+          )),
+          child: Padding(
+            padding: EdgeInsets.all(3.r),
+            child: Icon(Icons.info_outline_rounded,
+                size: size.sp, color: Colors.grey.shade500),
+          ),
+        ),
+      );
 }
 
 class _Surface extends StatelessWidget {
@@ -857,25 +910,59 @@ String _dateTime(String value) {
 }
 
 class _SummaryMeta {
-  const _SummaryMeta(this.label, this.icon, this.color);
+  const _SummaryMeta(this.label, this.icon, this.color, this.description);
   final String label;
   final IconData icon;
   final Color color;
+  final String description;
 }
 
 _SummaryMeta _summaryMeta(String key) {
   if (key == 'sales') {
     return const _SummaryMeta(
-        'صافي المبيعات', Icons.point_of_sale_rounded, AppColors.primaryColor);
+        'صافي المبيعات',
+        Icons.point_of_sale_rounded,
+        AppColors.primaryColor,
+        'إجمالي الفواتير الفورية والمبيعات الربحية الفعالة بعد طرح الخصومات، من دون الفواتير الملغاة.');
   }
   if (key == 'net_profit') {
     return const _SummaryMeta(
-        'صافي الربح', Icons.trending_up_rounded, Color(0xff15966A));
+        'صافي الربح',
+        Icons.trending_up_rounded,
+        Color(0xff15966A),
+        'صافي المبيعات ناقص تكلفة جميع المنتجات المباعة ناقص المصاريف. تستخدم تكلفة FIFO المسجلة وقت البيع، أو سعر الجملة للفواتير القديمة.');
   }
   if (key == 'expenses') {
     return const _SummaryMeta(
-        'المصاريف', Icons.payments_outlined, Color(0xffD65345));
+        'المصاريف',
+        Icons.payments_outlined,
+        Color(0xffD65345),
+        'مجموع المصاريف المسجلة خلال الفترة المختارة. ارتفاعها يظهر كتغير سلبي.');
   }
-  return const _SummaryMeta('المبلغ المحصل',
-      Icons.account_balance_wallet_outlined, Color(0xff4B72C2));
+  return const _SummaryMeta(
+      'المبلغ المحصل',
+      Icons.account_balance_wallet_outlined,
+      Color(0xff4B72C2),
+      'المبلغ الذي دخل فعلياً إلى صناديق الدفع من المبيعات خلال الفترة، ولا يشمل الجزء المتبقي على الدين.');
+}
+
+String _explanationFor(String title) {
+  const explanations = {
+    'المبيعات والأرباح':
+        'يعرض تغير صافي المبيعات وصافي الربح عبر أيام أو شهور الفترة المختارة.',
+    'حركة الأعمال':
+        'مقارنة زمنية بين صافي المبيعات والمصاريف والمشتريات المكتملة.',
+    'طرق الدفع':
+        'توزيع قيمة المبيعات حسب الدفع النقدي، البيع على الدين، أو الدفع المختلط.',
+    'الديون الحالية':
+        'إجمالي الديون غير المسددة لنا مقابل الديون غير المسددة علينا حتى الآن، وليست محصورة بتاريخ الفترة.',
+    'الشيكات': 'قيمة الشيكات الواردة والصادرة غير المصروفة حتى الآن.',
+    'إنجاز المهام':
+        'عدد المهام المنجزة وغير المنجزة التي أُنشئت خلال الفترة المختارة.',
+    'قيمة المخزون': 'الكمية الحالية لكل منتج مضروبة في آخر تكلفة شراء متوفرة.',
+    'إجمالي الكمية': 'مجموع كميات جميع المنتجات الموجودة حالياً في المخزون.',
+    'مخزون منخفض': 'عدد المنتجات التي كميتها الحالية 3 قطع أو أقل.',
+  };
+  return explanations[title] ??
+      'مؤشر محسوب من بيانات النظام ضمن الفترة والفلاتر المختارة.';
 }
