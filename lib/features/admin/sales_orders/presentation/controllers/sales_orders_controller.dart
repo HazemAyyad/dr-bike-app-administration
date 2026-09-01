@@ -1751,11 +1751,11 @@ class SalesOrdersController extends GetxController {
   String bulkActionLabel(String action) {
     switch (action) {
       case 'confirm':
-        return 'confirm'.tr;
+        return 'تأكيد المحدد';
       case 'mark_ready':
-        return 'salesOrderMarkReady'.tr;
+        return 'نقل المحدد إلى جاهزة';
       case 'cancel':
-        return 'cancel'.tr;
+        return 'إلغاء المحدد';
       case 'settle':
         return 'تسوية المحدد';
       default:

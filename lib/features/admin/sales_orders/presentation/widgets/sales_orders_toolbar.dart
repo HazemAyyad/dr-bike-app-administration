@@ -108,7 +108,11 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
                 children: [
                   FilterChip(
                     label: Text(
-                      'salesOrderBulkMode'.tr,
+                      controller.statusFilter.value == 'unconfirmed'
+                          ? 'تحديد عدة طلبيات للتأكيد'
+                          : controller.statusFilter.value == 'confirmed'
+                              ? 'تحديد عدة طلبيات للتجهيز'
+                              : 'تحديد عدة طلبيات للتسوية',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
