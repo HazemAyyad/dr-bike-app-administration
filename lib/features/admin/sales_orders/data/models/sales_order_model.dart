@@ -523,12 +523,14 @@ class SalesOrderMediaRequirementModel {
   final String label;
   final bool satisfied;
   final bool optional;
+  final List<String> requiredFor;
 
   SalesOrderMediaRequirementModel({
     required this.category,
     required this.label,
     required this.satisfied,
     this.optional = false,
+    this.requiredFor = const [],
   });
 
   factory SalesOrderMediaRequirementModel.fromJson(
@@ -540,6 +542,9 @@ class SalesOrderMediaRequirementModel {
       label: json['label'] as String? ?? key,
       satisfied: json['satisfied'] == true,
       optional: json['optional'] == true,
+      requiredFor: (json['required_for'] as List<dynamic>? ?? const [])
+          .map((item) => '$item')
+          .toList(),
     );
   }
 }

@@ -195,6 +195,95 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
     );
   }
 
+  void _showOrderMediaRequirementsDialog() {
+    final raw = _settings['sales_order_media_requirements'];
+    final source =
+        raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final values = <String, Map<String, bool>>{};
+    for (final stage in const ['mark_ready', 'handover']) {
+      final stageRaw = source[stage];
+      final map = stageRaw is Map
+          ? Map<String, dynamic>.from(stageRaw)
+          : <String, dynamic>{};
+      values[stage] = {
+        'items_group': map['items_group'] == true,
+        'packaged': map['packaged'] == true,
+        'testing': map['testing'] == true,
+        'document': map['document'] == true,
+      };
+    }
+    showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('صور مراحل الطلبيات'),
+          content: SizedBox(
+            width: 460,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'فعّل الصور التي يجب رفعها قبل السماح بالانتقال لكل مرحلة.',
+                  ),
+                  const SizedBox(height: 12),
+                  for (final stage in const ['mark_ready', 'handover']) ...[
+                    Text(
+                      stage == 'mark_ready'
+                          ? 'قبل تحويل الطلبية إلى جاهزة'
+                          : 'قبل تسليم الطلبية لشركة التوصيل',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    for (final category in const [
+                      'items_group',
+                      'packaged',
+                      'testing',
+                      'document',
+                    ])
+                      SwitchListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_mediaCategoryLabel(category)),
+                        value: values[stage]![category] ?? false,
+                        onChanged: (enabled) => setDialogState(
+                          () => values[stage]![category] = enabled,
+                        ),
+                      ),
+                    const Divider(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: Get.back, child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () => _save({
+                'sales_order_media_requirements': values,
+              }),
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _mediaCategoryLabel(String category) {
+    switch (category) {
+      case 'items_group':
+        return 'صورة المنتجات مجتمعة';
+      case 'packaged':
+        return 'صورة الطلبية بعد التغليف';
+      case 'testing':
+        return 'صورة الفحص والتجربة';
+      case 'document':
+        return 'صورة مستند أو بوليصة';
+      default:
+        return category;
+    }
+  }
+
   void _showError(Object error) {
     if (!mounted) return;
     Get.snackbar('تعذر إكمال العملية', error.toString());
@@ -234,6 +323,13 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
                       subtitle:
                           'تفعيل الربط واختيار البيئة التجريبية أو الفعلية',
                       onTap: _showShiplyDialog,
+                    ),
+                    _SettingsCard(
+                      icon: Icons.add_a_photo_outlined,
+                      title: 'صور مراحل الطلبيات',
+                      subtitle:
+                          'تحديد الصور الإلزامية لكل مرحلة وتفعيلها أو تعطيلها',
+                      onTap: _showOrderMediaRequirementsDialog,
                     ),
                   ],
                 ],

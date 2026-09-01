@@ -38,7 +38,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   bool _requestedLoad = false;
   final _itemsKey = GlobalKey();
   final _mediaKey = GlobalKey();
-  final _customerKey = GlobalKey();
   final _logisticsKey = GlobalKey();
   final _historyKey = GlobalKey();
 
@@ -160,11 +159,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         child: _mediaCard(order),
                       ),
                     ],
-                    SizedBox(height: 12.h),
-                    KeyedSubtree(
-                      key: _customerKey,
-                      child: _customerCard(order),
-                    ),
                     if (_hasLogisticsInfo(order)) ...[
                       SizedBox(height: 12.h),
                       KeyedSubtree(
@@ -278,6 +272,24 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               ),
             ],
           ),
+          if ((order.customerPhone ?? '').trim().isNotEmpty) ...[
+            SizedBox(height: 3.h),
+            Row(
+              children: [
+                Icon(Icons.phone_outlined,
+                    size: 16.sp, color: SalesOrdersController.textSecondary),
+                SizedBox(width: 6.w),
+                Text(
+                  order.customerPhone!,
+                  style: TextStyle(
+                    color: SalesOrdersController.textSecondary,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (order.instantSaleId != null) ...[
             SizedBox(height: 12.h),
             Material(
@@ -354,11 +366,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         icon: Icons.photo_library_outlined,
         key: _mediaKey,
         enabled: hasMedia,
-      ),
-      _OrderQuickLink(
-        label: 'الزبون',
-        icon: Icons.person_outline,
-        key: _customerKey,
       ),
       _OrderQuickLink(
         label: 'التوصيل',
@@ -917,7 +924,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   Widget _logisticsCard(SalesOrderDetailModel order) {
     final handover = order.latestHandover;
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(9.r),
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
         borderRadius: BorderRadius.circular(12.r),
@@ -1260,34 +1267,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       default:
         return Icons.receipt_long_outlined;
     }
-  }
-
-  Widget _customerCard(SalesOrderDetailModel order) {
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: SalesOrdersController.cardGray,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: SalesOrdersController.borderGray),
-      ),
-      child: Column(
-        children: [
-          _infoRow(Icons.person_outline, order.customerName ?? '—'),
-          if (order.customerPhone != null && order.customerPhone!.isNotEmpty)
-            _infoRow(Icons.phone_outlined, order.customerPhone!),
-          if (order.shiplyAddressLabel != null &&
-              order.shiplyAddressLabel!.isNotEmpty)
-            _infoRow(Icons.location_on_outlined, order.shiplyAddressLabel!)
-          else if (order.cityName != null)
-            _infoRow(Icons.location_on_outlined, order.cityName!),
-          if (order.customerAddress != null &&
-              order.customerAddress!.trim().isNotEmpty)
-            _infoRow(Icons.signpost_outlined, order.customerAddress!),
-          if (order.notes != null && order.notes!.trim().isNotEmpty)
-            _infoRow(Icons.notes_outlined, order.notes!),
-        ],
-      ),
-    );
   }
 
   Widget _infoRow(IconData icon, String text) {
@@ -1677,7 +1656,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       });
 
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(9.r),
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
         borderRadius: BorderRadius.circular(12.r),
@@ -1694,7 +1673,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               fontSize: 14.sp,
             ),
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 6.h),
           ...entries.map((entry) {
             final req = entry.value;
             final labelKey = 'salesOrderMediaCategory_${req.category}';
@@ -1710,8 +1689,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             return Obx(() {
               final busy = controller.isSubmitting.value;
               return Container(
-                margin: EdgeInsets.only(bottom: 7.h),
-                padding: EdgeInsets.all(9.r),
+                margin: EdgeInsets.only(bottom: 4.h),
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.055),
                   borderRadius: BorderRadius.circular(10.r),
@@ -1758,19 +1737,10 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         ),
                       ],
                     ),
-                    if (uploaded.isEmpty) ...[
-                      SizedBox(height: 4.h),
-                      Text(
-                        'اضغط على أيقونة الكاميرا لرفع صورة لهذا المتطلب',
-                        style: TextStyle(
-                          fontSize: 9.sp,
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                      ),
-                    ] else ...[
-                      SizedBox(height: 7.h),
+                    if (uploaded.isNotEmpty) ...[
+                      SizedBox(height: 5.h),
                       SizedBox(
-                        height: 54.w,
+                        height: 38.w,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: uploaded.length,
@@ -1785,8 +1755,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                 borderRadius: BorderRadius.circular(7.r),
                                 child: CachedNetworkImage(
                                   imageUrl: url,
-                                  width: 54.w,
-                                  height: 54.w,
+                                  width: 38.w,
+                                  height: 38.w,
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -2027,29 +1997,31 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           break;
         case 'confirmed':
           var current = order;
-          if (current.mediaRequirements['items_group']?.satisfied == false) {
+          final missing = _missingMediaFor(current, 'mark_ready');
+          if (missing != null) {
             await controller.pickAndUploadMedia(
               orderId,
-              presetCategory: 'items_group',
+              presetCategory: missing,
             );
             await controller.loadDetail(orderId);
             current = controller.detail.value ?? current;
           }
-          if (current.mediaRequirements['items_group']?.satisfied != false) {
+          if (_missingMediaFor(current, 'mark_ready') == null) {
             await controller.markReady(orderId);
           }
           break;
         case 'ready':
           var current = order;
-          if (current.mediaRequirements['packaged']?.satisfied == false) {
+          final missing = _missingMediaFor(current, 'handover');
+          if (missing != null) {
             await controller.pickAndUploadMedia(
               orderId,
-              presetCategory: 'packaged',
+              presetCategory: missing,
             );
             await controller.loadDetail(orderId);
             current = controller.detail.value ?? current;
           }
-          if (current.mediaRequirements['packaged']?.satisfied != false) {
+          if (_missingMediaFor(current, 'handover') == null) {
             await _startHandover(current);
           }
           break;
@@ -2239,20 +2211,18 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         controller.confirmOrder(orderId);
         break;
       case SalesOrderActionId.markReady:
-        final missingItems = order.mediaRequirements['items_group'];
-        if (missingItems != null && !missingItems.satisfied) {
+        final missingReady = _missingMediaFor(order, 'mark_ready');
+        if (missingReady != null) {
           controller.pickAndUploadMedia(
             orderId,
-            presetCategory: 'items_group',
+            presetCategory: missingReady,
           );
         } else {
           controller.markReady(orderId);
         }
         break;
       case SalesOrderActionId.handover:
-        final missingMedia = ['items_group', 'packaged'].firstWhereOrNull(
-          (category) => order.mediaRequirements[category]?.satisfied == false,
-        );
+        final missingMedia = _missingMediaFor(order, 'handover');
         if (missingMedia != null) {
           controller.pickAndUploadMedia(
             orderId,
@@ -2305,6 +2275,15 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         _showQtySheet(order, 'alternative_return');
         break;
     }
+  }
+
+  String? _missingMediaFor(SalesOrderDetailModel order, String action) {
+    for (final entry in order.mediaRequirements.entries) {
+      if (entry.value.requiredFor.contains(action) && !entry.value.satisfied) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   Future<void> _confirmCancellation(SalesOrderDetailModel order) async {

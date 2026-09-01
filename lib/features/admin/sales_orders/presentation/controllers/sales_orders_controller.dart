@@ -231,8 +231,10 @@ class SalesOrdersController extends GetxController {
     'ready',
     'with_delivery',
     'review',
+    'partial_delivered',
     'delivered',
     'partial_return',
+    'alternative_return',
     'returned',
     'stuck',
     'canceled',
@@ -317,7 +319,9 @@ class SalesOrdersController extends GetxController {
         statusCounts['all'] = data.statusCounts.entries
             .where((entry) => entry.key != 'archived')
             .fold<int>(0, (sum, entry) => sum + entry.value);
-        if ((statusCounts[statusFilter.value] ?? 0) == 0) {
+        if (statusFilter.value != 'all' &&
+            statusFilter.value != 'archived' &&
+            (statusCounts[statusFilter.value] ?? 0) == 0) {
           final next = statusTabs.firstWhereOrNull(
             (status) => (statusCounts[status] ?? 0) > 0,
           );

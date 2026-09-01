@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
@@ -20,7 +21,21 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
       final groups = controller.statusFilter.value == 'all'
           ? _groupOperationally(controller.orders)
           : _groupByDate(controller.orders);
-      if (groups.isEmpty) return const SizedBox.shrink();
+      if (groups.isEmpty) {
+        return Padding(
+          padding: EdgeInsets.only(top: 30.h),
+          child: Column(
+            children: [
+              const ShowNoData(),
+              if (controller.statusFilter.value == 'archived')
+                Text(
+                  'لا توجد طلبيات مؤرشفة',
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                ),
+            ],
+          ),
+        );
+      }
       final bulk =
           controller.bulkMode.value && controller.canBulkSelectCurrentTab;
       return Column(
@@ -91,60 +106,64 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
   List<_OrderGroup> _groupOperationally(
     List<SalesOrderListItemModel> orders,
   ) {
-    const definitions = <_OperationalGroupDefinition>[
-      _OperationalGroupDefinition(
-          'طلبات جديدة', ['unconfirmed'], Colors.blue, Icons.fiber_new_rounded),
-      _OperationalGroupDefinition('قيد التجهيز', ['confirmed', 'ready'],
-          Colors.orange, Icons.inventory_2_outlined),
-      _OperationalGroupDefinition('مع التوصيل', ['with_delivery'],
-          Color(0xFFD97706), Icons.local_shipping_outlined),
-      _OperationalGroupDefinition(
-          'متابعة وإرجاع',
-          [
-            'review',
-            'partial_delivered',
-            'partial_return',
-            'alternative_return',
-            'returned',
-            'stuck'
-          ],
-          Colors.deepPurple,
-          Icons.sync_problem_outlined),
-      _OperationalGroupDefinition('تم التسليم', ['delivered'], Colors.green,
-          Icons.check_circle_outline_rounded),
-      _OperationalGroupDefinition(
-          'ملغاة', ['canceled'], Colors.red, Icons.cancel_outlined),
-      _OperationalGroupDefinition(
-          'مؤجلة سابقاً', ['postponed'], Colors.grey, Icons.schedule_outlined),
+    const statuses = [
+      'unconfirmed',
+      'confirmed',
+      'ready',
+      'with_delivery',
+      'review',
+      'partial_delivered',
+      'partial_return',
+      'alternative_return',
+      'returned',
+      'stuck',
+      'delivered',
+      'canceled',
+      'postponed',
     ];
-    return definitions
-        .map((definition) {
-          final rows = orders
-              .where((order) => definition.statuses.contains(order.status))
-              .toList();
-          return _OrderGroup(
-            definition.label,
-            rows,
-            color: definition.color,
-            icon: definition.icon,
-          );
-        })
-        .where((group) => group.orders.isNotEmpty)
-        .toList();
+    final known = statuses.where(
+      (status) => orders.any((order) => order.status == status),
+    );
+    final unknown = orders
+        .map((order) => order.status)
+        .where((status) => !statuses.contains(status))
+        .toSet();
+    return [...known, ...unknown].map((status) {
+      final rows = orders.where((order) => order.status == status).toList();
+      return _OrderGroup(
+        controller.statusLabel(status),
+        rows,
+        color: SalesOrderStatusUi.statusColor(status),
+        icon: _statusIcon(status),
+      );
+    }).toList();
   }
-}
 
-class _OperationalGroupDefinition {
-  const _OperationalGroupDefinition(
-    this.label,
-    this.statuses,
-    this.color,
-    this.icon,
-  );
-  final String label;
-  final List<String> statuses;
-  final Color color;
-  final IconData icon;
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'unconfirmed':
+        return Icons.fiber_new_rounded;
+      case 'confirmed':
+        return Icons.fact_check_outlined;
+      case 'ready':
+        return Icons.inventory_2_outlined;
+      case 'with_delivery':
+        return Icons.local_shipping_outlined;
+      case 'delivered':
+        return Icons.check_circle_outline_rounded;
+      case 'archived':
+        return Icons.archive_outlined;
+      case 'canceled':
+      case 'returned':
+        return Icons.keyboard_return_rounded;
+      case 'postponed':
+        return Icons.schedule_outlined;
+      case 'stuck':
+        return Icons.report_problem_outlined;
+      default:
+        return Icons.sync_alt_rounded;
+    }
+  }
 }
 
 class _OrderGroup {
