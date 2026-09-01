@@ -94,6 +94,7 @@ class _SalesOrderProductPickerScreenState
               route: AppRoutes.NEWSALESORDERSCREEN,
               title: 'instantSalePickProducts',
             ),
+            const SalesOrderPartnerSelectorIcon(),
             _CartAppBarButton(
               onTap: () => showInstantSaleCartSheet(context),
             ),
@@ -103,10 +104,6 @@ class _SalesOrderProductPickerScreenState
           children: [
             Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-                  child: const SalesOrderPartnerSelector(compact: true),
-                ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: TextField(

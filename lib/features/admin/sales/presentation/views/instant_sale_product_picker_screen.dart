@@ -146,6 +146,7 @@ class _InstantSaleProductPickerScreenState
             ),
             if (!_maintenanceFlow && !_salesOrderFlow)
               const InstantSalePickerPartnerIcon(),
+            if (_salesOrderFlow) const SalesOrderPartnerSelectorIcon(),
             IconButton(
               tooltip: 'instantSalePasteProductList'.tr,
               onPressed: _openPasteProductListDialog,
@@ -160,11 +161,6 @@ class _InstantSaleProductPickerScreenState
           children: [
             Column(
               children: [
-                if (_salesOrderFlow)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-                    child: const SalesOrderPartnerSelector(compact: true),
-                  ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: Row(

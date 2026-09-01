@@ -8,6 +8,73 @@ import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../../data/models/sales_order_model.dart';
 
+class SalesOrderPartnerSelectorIcon extends StatelessWidget {
+  const SalesOrderPartnerSelectorIcon({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final sales = Get.find<SalesController>();
+    return Obx(() {
+      final selected = sales.pickerSelectedPartner.value != null;
+      return IconButton(
+        tooltip:
+            selected ? 'تغيير الزبون أو المورد' : 'اختيار الزبون أو المورد',
+        onPressed: () async {
+          await sales.ensurePickerPartnersLoaded();
+          if (!context.mounted) return;
+          await showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: Container(
+                  margin: EdgeInsets.all(12.r),
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: SalesOrdersController.surfaceGray,
+                    borderRadius: BorderRadius.circular(18.r),
+                  ),
+                  child: const SingleChildScrollView(
+                    child: SalesOrderPartnerSelector(compact: true),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              selected ? Icons.person_pin_circle : Icons.person_add_alt_1,
+              color: AppColors.primaryColor,
+              size: 26.sp,
+            ),
+            if (selected)
+              Positioned(
+                left: -2,
+                top: -2,
+                child: Container(
+                  width: 9.w,
+                  height: 9.w,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
 class SalesOrderPartnerSelector extends StatefulWidget {
   const SalesOrderPartnerSelector({this.compact = false, Key? key})
       : super(key: key);
