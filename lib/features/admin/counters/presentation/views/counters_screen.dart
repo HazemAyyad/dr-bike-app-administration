@@ -65,19 +65,19 @@ class _DashboardBody extends StatelessWidget {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 28.h),
+      padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 20.h),
       children: [
         _Header(
           controller: controller,
           period: period,
           generatedAt: data['generated_at']?.toString(),
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: 8.h),
         LayoutBuilder(builder: (context, constraints) {
           final width = (constraints.maxWidth - 8.w) / 2;
           return Wrap(
             spacing: 8.w,
-            runSpacing: 8.h,
+            runSpacing: 6.h,
             children: summary
                 .map((item) => SizedBox(
                       width: width,
@@ -86,10 +86,11 @@ class _DashboardBody extends StatelessWidget {
                 .toList(),
           );
         }),
-        SizedBox(height: 12.h),
+        SizedBox(height: 8.h),
         _ChartCard(
           title: 'المبيعات والأرباح',
           subtitle: 'الحركة خلال الفترة المحددة',
+          chartHeight: 165,
           child: _LineChart(
             data: sales,
             series: const [
@@ -98,10 +99,11 @@ class _DashboardBody extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 8.h),
         _ChartCard(
           title: 'حركة الأعمال',
           subtitle: 'المبيعات مقابل المصاريف والمشتريات',
+          chartHeight: 150,
           child: _BarChart(
             data: operations,
             series: const [
@@ -111,49 +113,47 @@ class _DashboardBody extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: 10.h),
-        LayoutBuilder(builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 720;
-          final cards = [
-            _ChartCard(
-              title: 'طرق الدفع',
-              subtitle: 'توزيع قيمة المبيعات',
-              child: _DonutChart(data: payment),
-            ),
-            _ChartCard(
-              title: 'الديون الحالية',
-              subtitle: 'لنا وعلينا حتى هذه اللحظة',
-              child: _HorizontalBars(data: debts),
-            ),
-            _ChartCard(
-              title: 'الشيكات',
-              subtitle: 'الشيكات الواردة والصادرة غير المصروفة',
-              child: _HorizontalBars(data: checks),
-            ),
-            _ChartCard(
-              title: 'إنجاز المهام',
-              subtitle: 'المهام المنشأة ضمن الفترة',
-              child: _DonutChart(data: tasks),
-            ),
-          ];
-          if (!wide) {
-            return Column(children: [
-              for (var i = 0; i < cards.length; i++) ...[
-                cards[i],
-                if (i != cards.length - 1) SizedBox(height: 10.h),
-              ]
-            ]);
-          }
-          return Wrap(
-            spacing: 10.w,
-            runSpacing: 10.h,
-            children: cards
-                .map((card) => SizedBox(
-                    width: (constraints.maxWidth - 10.w) / 2, child: card))
+        SizedBox(height: 8.h),
+        SizedBox(
+          height: 215.h,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _ChartCard(
+                title: 'طرق الدفع',
+                subtitle: 'توزيع قيمة المبيعات',
+                chartHeight: 135,
+                child: _DonutChart(data: payment),
+              ),
+              SizedBox(width: 8.w),
+              _ChartCard(
+                title: 'الديون الحالية',
+                subtitle: 'لنا وعلينا حتى هذه اللحظة',
+                chartHeight: 135,
+                child: _HorizontalBars(data: debts),
+              ),
+              SizedBox(width: 8.w),
+              _ChartCard(
+                title: 'الشيكات',
+                subtitle: 'الشيكات الواردة والصادرة غير المصروفة',
+                chartHeight: 135,
+                child: _HorizontalBars(data: checks),
+              ),
+              SizedBox(width: 8.w),
+              _ChartCard(
+                title: 'إنجاز المهام',
+                subtitle: 'المهام المنشأة ضمن الفترة',
+                chartHeight: 135,
+                child: _DonutChart(data: tasks),
+              ),
+            ]
+                .map((widget) => widget is _ChartCard
+                    ? SizedBox(width: 280.w, child: widget)
+                    : widget)
                 .toList(),
-          );
-        }),
-        SizedBox(height: 10.h),
+          ),
+        ),
+        SizedBox(height: 8.h),
         _InventoryCard(data: inventory),
       ],
     );
@@ -298,10 +298,14 @@ class _SummaryCard extends StatelessWidget {
 
 class _ChartCard extends StatelessWidget {
   const _ChartCard(
-      {required this.title, required this.subtitle, required this.child});
+      {required this.title,
+      required this.subtitle,
+      required this.child,
+      this.chartHeight = 170});
   final String title;
   final String subtitle;
   final Widget child;
+  final double chartHeight;
   @override
   Widget build(BuildContext context) => _Surface(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -310,8 +314,8 @@ class _ChartCard extends StatelessWidget {
           SizedBox(height: 3.h),
           Text(subtitle,
               style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600)),
-          SizedBox(height: 14.h),
-          SizedBox(height: 210.h, child: child),
+          SizedBox(height: 8.h),
+          SizedBox(height: chartHeight.h, child: child),
         ]),
       );
 }
@@ -692,7 +696,7 @@ class _InventoryCard extends StatelessWidget {
           Text('الأعلى قيمة في المخزون',
               style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800)),
           SizedBox(height: 8.h),
-          ...top.take(5).map((row) => Padding(
+          ...top.take(3).map((row) => Padding(
                 padding: EdgeInsets.symmetric(vertical: 5.h),
                 child: Row(children: [
                   Expanded(

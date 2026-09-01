@@ -30,7 +30,7 @@ class CountersController extends GetxController {
   final RxBool analyticsLoading = false.obs;
   final RxnString analyticsError = RxnString();
   final RxMap<String, dynamic> analytics = <String, dynamic>{}.obs;
-  final RxString selectedPeriod = 'month'.obs;
+  final RxString selectedPeriod = 'quarter'.obs;
   DateTime? customFrom;
   DateTime? customTo;
 
