@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -50,28 +52,33 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
               formatAsDate: group.formatAsDate,
             ),
             ...group.orders.map(
-              (order) => _OrderCard(
-                order: order,
-                bulk: bulk,
-                selected: controller.selectedOrderIds.contains(order.id),
-                onSelect: (value) =>
-                    controller.toggleOrderSelection(order.id, value),
-                onTap: () {
-                  if (bulk) {
-                    controller.toggleOrderSelection(
-                      order.id,
-                      !controller.selectedOrderIds.contains(order.id),
+              (order) => _SwipeOrderCard(
+                enabled: !bulk,
+                onCall: () => _showRecipientContact(context, order),
+                onOptions: () => _showOrderOptions(context, order),
+                child: _OrderCard(
+                  order: order,
+                  bulk: bulk,
+                  selected: controller.selectedOrderIds.contains(order.id),
+                  onSelect: (value) =>
+                      controller.toggleOrderSelection(order.id, value),
+                  onTap: () {
+                    if (bulk) {
+                      controller.toggleOrderSelection(
+                        order.id,
+                        !controller.selectedOrderIds.contains(order.id),
+                      );
+                      return;
+                    }
+                    Get.toNamed(
+                      AppRoutes.SALESORDERDETAILSCREEN,
+                      arguments: order.id,
                     );
-                    return;
-                  }
-                  Get.toNamed(
-                    AppRoutes.SALESORDERDETAILSCREEN,
-                    arguments: order.id,
-                  );
-                },
-                onLongPress: order.status == 'unconfirmed' && !bulk
-                    ? () => controller.confirmOrder(order.id)
-                    : null,
+                  },
+                  onLongPress: order.status == 'unconfirmed' && !bulk
+                      ? () => controller.confirmOrder(order.id)
+                      : null,
+                ),
               ),
             ),
             SizedBox(height: 7.h),
@@ -79,6 +86,156 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
         ],
       );
     });
+  }
+
+  Future<void> _showRecipientContact(
+    BuildContext context,
+    SalesOrderListItemModel order,
+  ) async {
+    final phone = (order.customerPhone ?? '').trim();
+    if (phone.isEmpty) {
+      Get.snackbar('لا يوجد رقم للمستلم', 'أضف رقم المستلم من تفاصيل الطلبية');
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 18.h),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(order.customerName ?? 'المستلم',
+                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w900)),
+            SizedBox(height: 3.h),
+            Text(phone, style: TextStyle(color: Colors.grey.shade600)),
+            SizedBox(height: 14.h),
+            _ContactAction(
+              icon: Icons.phone_outlined,
+              label: 'اتصال عادي',
+              onTap: () => _launchPhone(phone),
+            ),
+            _ContactAction(
+              icon: Icons.copy_rounded,
+              label: 'نسخ الرقم',
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: phone));
+                Get.back();
+                Get.snackbar('تم النسخ', phone);
+              },
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showOrderOptions(
+    BuildContext context,
+    SalesOrderListItemModel order,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 16.h),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              title: Text(order.customerName ?? 'الطلبية',
+                  style: const TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: Text(order.serialNumber ?? '#${order.id}'),
+              trailing: Icon(Icons.circle,
+                  size: 13.sp,
+                  color: SalesOrderStatusUi.statusColor(order.status)),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.open_in_new_rounded),
+              title: const Text('فتح تفاصيل الطلبية'),
+              onTap: () {
+                Get.back();
+                Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN,
+                    arguments: order.id);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.phone_outlined),
+              title: const Text('الاتصال بالمستلم'),
+              onTap: () {
+                Get.back();
+                _showRecipientContact(context, order);
+              },
+            ),
+            if (order.status == 'unconfirmed')
+              ListTile(
+                leading:
+                    const Icon(Icons.fact_check_outlined, color: Colors.green),
+                title: const Text('تأكيد الطلبية'),
+                onTap: () => _runQuickAction(
+                  context,
+                  title: 'تأكيد الطلبية؟',
+                  action: () => controller.confirmOrder(order.id),
+                ),
+              ),
+            if (order.status == 'confirmed')
+              ListTile(
+                leading:
+                    const Icon(Icons.inventory_2_outlined, color: Colors.green),
+                title: const Text('تحديد كجاهزة'),
+                onTap: () => _runQuickAction(
+                  context,
+                  title: 'تحديد الطلبية كجاهزة؟',
+                  action: () => controller.markReady(order.id),
+                ),
+              ),
+            const ListTile(
+              dense: true,
+              leading: Icon(Icons.info_outline_rounded),
+              title: Text(
+                  'بقية الإجراءات تظهر داخل الطلبية حسب حالتها ومتطلباتها'),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runQuickAction(
+    BuildContext context, {
+    required String title,
+    required Future<void> Function() action,
+  }) async {
+    Get.back();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: const Text('سيتم تحديث حالة الطلبية مباشرة.'),
+        actions: [
+          TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('رجوع')),
+          FilledButton(
+              onPressed: () => Get.back(result: true),
+              child: const Text('تأكيد')),
+        ],
+      ),
+    );
+    if (confirmed == true) await action();
+  }
+
+  Future<void> _launchPhone(String phone) async {
+    Get.back();
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (!await launchUrl(uri)) {
+      Get.snackbar('تعذر الاتصال', 'لا يوجد تطبيق اتصال متاح');
+    }
   }
 
   List<_OrderGroup> _groupByDate(List<SalesOrderListItemModel> orders) {
@@ -235,6 +392,151 @@ class _DateHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SwipeOrderCard extends StatefulWidget {
+  const _SwipeOrderCard({
+    required this.child,
+    required this.enabled,
+    required this.onCall,
+    required this.onOptions,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final VoidCallback onCall;
+  final VoidCallback onOptions;
+
+  @override
+  State<_SwipeOrderCard> createState() => _SwipeOrderCardState();
+}
+
+class _SwipeOrderCardState extends State<_SwipeOrderCard> {
+  double offset = 0;
+  static const double revealWidth = 146;
+
+  void _update(DragUpdateDetails details) {
+    if (!widget.enabled) return;
+    setState(() => offset = (offset + details.delta.dx).clamp(0, revealWidth));
+  }
+
+  void _finish(DragEndDetails details) {
+    if (!widget.enabled) return;
+    final shouldOpen =
+        offset > revealWidth * .34 || (details.primaryVelocity ?? 0) > 350;
+    setState(() => offset = shouldOpen ? revealWidth : 0);
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Positioned(
+            left: 12.w,
+            child: Row(children: [
+              _SwipeAction(
+                icon: Icons.phone_outlined,
+                label: 'اتصال',
+                color: const Color(0xFF0F766E),
+                onTap: () {
+                  setState(() => offset = 0);
+                  widget.onCall();
+                },
+              ),
+              SizedBox(width: 5.w),
+              _SwipeAction(
+                icon: Icons.more_horiz_rounded,
+                label: 'الخيارات',
+                color: AppColors.primaryColor,
+                onTap: () {
+                  setState(() => offset = 0);
+                  widget.onOptions();
+                },
+              ),
+            ]),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            transform: Matrix4.translationValues(offset, 0, 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: _update,
+              onHorizontalDragEnd: _finish,
+              child: widget.child,
+            ),
+          ),
+        ],
+      );
+}
+
+class _SwipeAction extends StatelessWidget {
+  const _SwipeAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: color,
+        borderRadius: BorderRadius.circular(11.r),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(11.r),
+          child: SizedBox(
+            width: 66.w,
+            height: 66.h,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 20.sp),
+                SizedBox(height: 3.h),
+                Text(label,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.sp,
+                        fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _ContactAction extends StatelessWidget {
+  const _ContactAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.only(bottom: 8.h),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r)),
+            ),
+            onPressed: onTap,
+            icon: Icon(icon),
+            label: Text(label),
+          ),
+        ),
+      );
 }
 
 class _OrderCard extends StatelessWidget {
