@@ -32,6 +32,7 @@ class DailyBoxesScreen extends StatefulWidget {
 class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
   final BoxesController controller = Get.find<BoxesController>();
   String _filter = 'all';
+  bool _dedicatedMaintenance = false;
   List<DailySessionSummaryModel> _salesSessions = const [];
   List<DailySessionSummaryModel> _maintenanceSessions = const [];
   bool _loadingSalesSessions = false;
@@ -50,8 +51,9 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       if (['all', 'sales', 'orders', 'maintenance'].contains(filter)) {
         _filter = filter;
       }
+      _dedicatedMaintenance = args['dedicated'] == true;
     }
-    _loadSalesSessions();
+    if (!_dedicatedMaintenance) _loadSalesSessions();
     _loadMaintenanceSessions();
   }
 
@@ -398,12 +400,16 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: CustomAppBar(
-        title: 'dailyBoxes',
+        title: _dedicatedMaintenance ? 'صناديق الصيانة اليومية' : 'dailyBoxes',
         action: false,
         actions: [
           IconButton(
             tooltip: 'refresh'.tr,
-            onPressed: () => controller.getAllBoxes(showLoading: true),
+            onPressed: () async {
+              await controller.getAllBoxes(showLoading: true);
+              if (!_dedicatedMaintenance) await _loadSalesSessions();
+              await _loadMaintenanceSessions();
+            },
             icon: const Icon(Icons.refresh),
           ),
           SizedBox(width: 8.w),
@@ -430,7 +436,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
           onRefresh: () async {
             await Future.wait([
               controller.pullToRefresh(),
-              _loadSalesSessions(),
+              if (!_dedicatedMaintenance) _loadSalesSessions(),
               _loadMaintenanceSessions(),
             ]);
           },
@@ -438,11 +444,13 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
             children: [
-              _FilterBar(
-                value: _filter,
-                onChanged: (value) => setState(() => _filter = value),
-              ),
-              SizedBox(height: 12.h),
+              if (!_dedicatedMaintenance) ...[
+                _FilterBar(
+                  value: _filter,
+                  onChanged: (value) => setState(() => _filter = value),
+                ),
+                SizedBox(height: 12.h),
+              ],
               if (showSalesSessions)
                 _SalesSessionsSection(
                   sessions: _salesSessions,

@@ -55,14 +55,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
                 AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
               ),
             ),
-          IconButton(
-            tooltip: 'صناديق الصيانة اليومية',
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-            onPressed: () => Get.toNamed(
-              AppRoutes.DAILYBOXESSCREEN,
-              arguments: {'filter': 'maintenance'},
-            ),
-          ),
+          _MaintenanceDailyBoxButton(controller: controller),
           if (userType == 'admin')
             IconButton(
               tooltip: 'إدارة إغلاق صناديق الصيانة اليومية',
@@ -145,8 +138,6 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
-          const SliverToBoxAdapter(child: _MaintenanceDailyBoxStatus()),
           const MaintenanceDataWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 60.h)),
         ],
@@ -331,8 +322,10 @@ class _MaintenanceFilterChip extends StatelessWidget {
   }
 }
 
-class _MaintenanceDailyBoxStatus extends GetView<MaintenanceController> {
-  const _MaintenanceDailyBoxStatus();
+class _MaintenanceDailyBoxButton extends StatelessWidget {
+  const _MaintenanceDailyBoxButton({required this.controller});
+
+  final MaintenanceController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -343,158 +336,91 @@ class _MaintenanceDailyBoxStatus extends GetView<MaintenanceController> {
       final isLoading = controller.isDailyBoxLoading.value;
       final canOpen = controller.canRequestMaintenanceDailyOpen;
       final canClose = controller.canRequestMaintenanceDailyClosing;
-      final canReview =
-          isClosingRequested && controller.canFinalizeMaintenanceDailyClosing;
-      final color = isOpen
-          ? AppColors.customGreen1
+      final color = isLoading
+          ? Colors.grey
           : isClosingRequested
               ? Colors.orange
-              : controller.isMaintenanceDailyBlockedByOther
-                  ? AppColors.primaryColor
-                  : Colors.blueGrey;
-      final label = isOpen
-          ? 'صندوق الصيانة اليومي مفتوح'
+              : isOpen
+                  ? Colors.green
+                  : Colors.redAccent;
+      final status = isLoading
+          ? 'جارٍ تحميل حالة الصندوق'
           : isClosingRequested
-              ? 'طلب إغلاق صندوق الصيانة معلق'
-              : controller.isMaintenanceDailyBlockedByOther
-                  ? 'صندوق صيانة مفتوح'
-                  : 'صندوق الصيانة اليومي غير مفتوح';
+              ? 'بانتظار إغلاق الصندوق'
+              : isOpen
+                  ? 'الصندوق اليومي مفتوح'
+                  : 'الصندوق اليومي مغلق';
+      final balance = controller.maintenanceDailyExpectedClosingBalance;
 
-      return GestureDetector(
-        onTap: () => Get.toNamed(
-          AppRoutes.DAILYBOXESSCREEN,
-          arguments: {'filter': 'maintenance'},
-        ),
-        child: Container(
-          margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.account_balance_wallet_outlined,
+      return Tooltip(
+        message:
+            'صندوق الصيانة اليومي — $status — ${balance.toStringAsFixed(0)} ₪',
+        child: PopupMenuButton<String>(
+          tooltip: 'صندوق الصيانة اليومي',
+          padding: EdgeInsets.zero,
+          onSelected: (value) async {
+            if (value == 'history') {
+              await Get.toNamed(
+                AppRoutes.DAILYBOXESSCREEN,
+                arguments: {'filter': 'maintenance', 'dedicated': true},
+              );
+            } else if (value == 'open') {
+              await _showOpenDialog(context);
+            } else if (value == 'close') {
+              await Get.toNamed(AppRoutes.MAINTENANCEDAILYCLOSESCREEN);
+              await controller.loadMaintenanceDailySession();
+            }
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+              value: 'history',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.history_rounded),
+                title: Text('صفحة صناديق الصيانة'),
+              ),
+            ),
+            if (canOpen)
+              const PopupMenuItem(
+                value: 'open',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.lock_open_rounded),
+                  title: Text('فتح صندوق الصيانة'),
+                ),
+              ),
+            if (canClose)
+              const PopupMenuItem(
+                value: 'close',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.lock_clock_outlined),
+                  title: Text('إغلاق صندوق اليوم'),
+                ),
+              ),
+          ],
+          child: Badge(
+            isLabelVisible: isClosingRequested,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 30.w,
+              height: 30.w,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 2),
+              ),
+              child: Icon(
+                Icons.build_circle_outlined,
                 color: color,
-                size: 20.sp,
+                size: 17.sp,
               ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                    if (isClosingRequested)
-                      Text(
-                        'بانتظار مراجعة طلب الإغلاق',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.grey.shade700,
-                        ),
-                      )
-                    else if (controller.isMaintenanceDailyBlockedByOther)
-                      Text(
-                        'الموظف: ${controller.maintenanceDailyBlockedByEmployeeName ?? '-'}',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.grey.shade700,
-                        ),
-                      )
-                    else if (controller.dailyBoxSession != null)
-                      Text(
-                        'تاريخ اليوم: ${controller.dailyBoxSession?['business_date'] ?? ''}',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    Text(
-                      'رصيد النظام: ${_money(controller.maintenanceDailyExpectedClosingBalance)} شيكل',
-                      style: TextStyle(fontSize: 11.sp),
-                    ),
-                    Text(
-                      'رصيد اليوم: ${_money(controller.maintenanceDailyCashTotal)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (canOpen)
-                TextButton(
-                  onPressed: isLoading ? null : () => _showOpenDialog(context),
-                  child: isLoading
-                      ? SizedBox(
-                          width: 16.w,
-                          height: 16.w,
-                          child:
-                              const CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('فتح الصندوق'),
-                ),
-              if (canClose)
-                TextButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                          await Get.toNamed(
-                            AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
-                            arguments: userType == 'admin'
-                                ? {
-                                    'mode': 'direct',
-                                    'session': Map<String, dynamic>.from(
-                                      controller.dailyBoxPayload,
-                                    ),
-                                  }
-                                : null,
-                          );
-                          await controller.loadMaintenanceDailySession();
-                        },
-                  child: isLoading
-                      ? SizedBox(
-                          width: 16.w,
-                          height: 16.w,
-                          child:
-                              const CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('إغلاق اليوم'),
-                ),
-              if (canReview)
-                TextButton(
-                  onPressed: controller.isDailyClosingReviewLoading.value
-                      ? null
-                      : () async {
-                          await Get.toNamed(
-                            AppRoutes.MAINTENANCEDAILYADMINSCREEN,
-                          );
-                          await controller.loadMaintenanceDailySession();
-                        },
-                  child: const Text('مراجعة الإغلاق'),
-                ),
-              Icon(Icons.chevron_left, color: color, size: 20.sp),
-            ],
+            ),
           ),
         ),
       );
     });
   }
-
-  String _money(double value) => value.toStringAsFixed(2);
 
   Future<void> _showOpenDialog(BuildContext context) async {
     final amount = await showDialog<double>(
