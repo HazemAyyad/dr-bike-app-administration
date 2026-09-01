@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide MultipartFile;
 // ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
@@ -260,29 +260,50 @@ class EmployeeTasksDatasource {
     required bool cancelWithRepetition,
     required bool isCompleted,
   }) async {
+    final endpoint = cancelWithRepetition
+        ? EndPoints.cancelEmployeeTaskWithRepetition
+        : isCompleted
+            ? EndPoints.changeEmployeeTaskToCompleted
+            : EndPoints.cancelEmployeeTask;
+    final requestData = <String, dynamic>{
+      if (occurrenceId != null && occurrenceId > 0)
+        'occurrence_id': occurrenceId,
+      if (employeeTaskId.isNotEmpty) 'employee_task_id': employeeTaskId,
+    };
     try {
+      debugPrint(
+        '[EmployeeTaskDelete] REQUEST | POST $endpoint | '
+        'cancelWithRepetition=$cancelWithRepetition | isCompleted=$isCompleted | '
+        'payload=$requestData',
+      );
       final response = await api.post(
-        cancelWithRepetition
-            ? EndPoints.cancelEmployeeTaskWithRepetition
-            : isCompleted
-                ? EndPoints.changeEmployeeTaskToCompleted
-                : EndPoints.cancelEmployeeTask,
-        data: {
-          if (occurrenceId != null && occurrenceId > 0)
-            'occurrence_id': occurrenceId,
-          if (employeeTaskId.isNotEmpty) 'employee_task_id': employeeTaskId,
-        },
+        endpoint,
+        data: requestData,
       );
       final data = response.data;
-      // print('Response data: $response');
+      debugPrint(
+        '[EmployeeTaskDelete] RESPONSE | statusCode=${response.statusCode ?? '-'} | '
+        'payload=$data',
+      );
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;
+      debugPrint(
+        '[EmployeeTaskDelete] DIO_ERROR | endpoint=$endpoint | '
+        'statusCode=${e.response?.statusCode ?? '-'} | type=${e.type} | '
+        'message=${e.message ?? '-'} | payload=$data',
+      );
+      final responseMap =
+          data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: responseMap['message']?.toString() ??
+              e.message ??
+              'Unknown error',
+          status: responseMap['status'] ?? e.response?.statusCode ?? 500,
+          data: responseMap['data'] is Map
+              ? Map<String, dynamic>.from(responseMap['data'])
+              : responseMap,
         ),
       );
     }

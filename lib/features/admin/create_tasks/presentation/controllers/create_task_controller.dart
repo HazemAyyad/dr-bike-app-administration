@@ -689,6 +689,16 @@ class CreateTaskController extends GetxController {
 
   // دالة لإنشاء المهمة
   void createTask(BuildContext context, {int employeeTaskId = 0}) async {
+    if (isEdit) {
+      final details = employeeTaskService.taskDetails.value;
+      debugPrint(
+        '[EmployeeTaskEdit] SUBMIT_START | employeeTaskId=$employeeTaskId | '
+        'detailsTaskId=${details?.taskId ?? '-'} | '
+        'templateId=${details?.templateId ?? '-'} | '
+        'occurrenceId=${details?.occurrenceId ?? '-'} | '
+        'assigneeIds=$employeeIdsForApi | subtasks=${subTasks.length}',
+      );
+    }
     if (formKey.currentState!.validate()) {
       if (employeeIdsForApi.isEmpty) {
         Helpers.showCustomDialogError(
@@ -755,6 +765,12 @@ class CreateTaskController extends GetxController {
         if (!context.mounted) return;
         result.fold(
           (failure) {
+            if (isEdit) {
+              debugPrint(
+                '[EmployeeTaskEdit] FAILURE | error=${failure.errMessage} | '
+                'data=${failure.data}',
+              );
+            }
             Helpers.showCustomDialogError(
               context: context,
               title: failure.errMessage,
@@ -762,6 +778,9 @@ class CreateTaskController extends GetxController {
             );
           },
           (success) {
+            if (isEdit) {
+              debugPrint('[EmployeeTaskEdit] SUCCESS | message=$success');
+            }
             uploadProgress.value = 1;
             employeeTaskService.taskDetails.value = null;
             TaskDetailsDebug.clearTraces();
@@ -1052,6 +1071,12 @@ class CreateTaskController extends GetxController {
 
   void updateEmployeeTask() {
     final data = employeeTaskService.taskDetails.value!;
+    debugPrint(
+      '[EmployeeTaskEdit] FORM_INIT | taskId=${data.taskId} | '
+      'templateId=${data.templateId ?? '-'} | '
+      'occurrenceId=${data.occurrenceId ?? '-'} | status=${data.status} | '
+      'recurrence=${data.taskRecurrence} | assigneeIds=${data.assigneeIds}',
+    );
     editTemplateId = data.templateId;
     editOccurrenceId = data.occurrenceId;
     taskNameController.text = data.taskName;

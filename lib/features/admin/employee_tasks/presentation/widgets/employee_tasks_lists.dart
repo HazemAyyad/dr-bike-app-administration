@@ -166,7 +166,9 @@ class EmployeeTasksLists extends StatelessWidget {
                               text: 'reopenTask',
                               onPressed: () => controller.reopenCompletedTask(
                                 taskId: order.taskId.toString(),
-                                occurrenceId: order.occurrenceId,
+                                occurrenceId: order.isOccurrence
+                                    ? order.occurrenceId
+                                    : null,
                                 notes: notesController.text,
                               ),
                             ),

@@ -809,6 +809,12 @@ class EmployeeTasksController extends GetxController {
     required bool cancelWithRepetition,
     bool isCompleted = false,
   }) async {
+    debugPrint(
+      '[EmployeeTaskDelete] CONTROLLER_START | taskId=$taskId | '
+      'occurrenceId=${occurrenceId ?? '-'} | '
+      'cancelWithRepetition=$cancelWithRepetition | isCompleted=$isCompleted | '
+      'tab=${currentTab.value}',
+    );
     isLoading(true);
     isCompleted ? uploadTaskImage(taskId: taskId) : null;
     final result = await cancelEmployeeTaskUsecase.call(
@@ -820,6 +826,10 @@ class EmployeeTasksController extends GetxController {
 
     result.fold(
       (failure) {
+        debugPrint(
+          '[EmployeeTaskDelete] FAILURE | error=${failure.errMessage} | '
+          'data=${failure.data}',
+        );
         Get.back();
         Get.snackbar(
           failure.errMessage,
@@ -829,6 +839,9 @@ class EmployeeTasksController extends GetxController {
         );
       },
       (success) {
+        debugPrint(
+          '[EmployeeTaskDelete] SUCCESS | message=$success | refreshingTasks=true',
+        );
         Get.closeAllSnackbars();
         Get.back();
         getEmployeeTasks(scrollToTodayb: false);
@@ -844,6 +857,7 @@ class EmployeeTasksController extends GetxController {
     deleteTask.value = false;
     isLoading(false);
     update();
+    debugPrint('[EmployeeTaskDelete] CONTROLLER_END | taskId=$taskId');
   }
 
   bool taskHasEmployeeImage(TaskDetailsModel data) {
