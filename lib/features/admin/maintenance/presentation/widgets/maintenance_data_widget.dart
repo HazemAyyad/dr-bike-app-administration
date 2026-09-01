@@ -239,13 +239,21 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
         ? item.sellerName!
         : item.customerName;
     final isDark = ThemeService.isDark.value;
+    final bulk = controller.maintenanceBulkMode.value &&
+        controller.maintenanceViewFilter.value ==
+            MaintenanceController.maintenanceFilterReady;
+    final selected = controller.selectedMaintenanceIds.contains(item.id);
 
-    return Material(
+    final card = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: readOnly
             ? null
             : () async {
+                if (bulk) {
+                  controller.toggleMaintenanceSelection(item.id, !selected);
+                  return;
+                }
                 await controller.getMaintenancesDetails(
                   maintenanceId: item.id.toString(),
                 );
@@ -253,8 +261,16 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                   Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
                 }
               },
-        onLongPress:
-            readOnly ? null : () => _showMaintenanceActions(context, item),
+        onLongPress: readOnly
+            ? null
+            : () {
+                if (item.status == 'ready') {
+                  controller.toggleMaintenanceBulkMode(true);
+                  controller.toggleMaintenanceSelection(item.id, true);
+                  return;
+                }
+                _showMaintenanceActions(context, item);
+              },
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
           margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
@@ -277,6 +293,12 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  if (bulk)
+                    Checkbox(
+                      value: selected,
+                      onChanged: (value) => controller
+                          .toggleMaintenanceSelection(item.id, value == true),
+                    ),
                   _MaintenanceThumb(imageUrl: item.mediaFiles),
                   SizedBox(width: 8.w),
                   Expanded(
@@ -362,6 +384,16 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
         ),
       ),
     );
+
+    final phone = _resolvePhone(item);
+    return _SwipeMaintenanceCard(
+      enabled: !readOnly && !bulk,
+      onCall: phone == null || phone.isEmpty
+          ? null
+          : () => launchDialer(phoneNumber: phone),
+      onOptions: () => _showMaintenanceActions(context, item),
+      child: card,
+    );
   }
 
   Future<void> _showMaintenanceActions(
@@ -418,6 +450,136 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
       ),
     );
   }
+}
+
+class _SwipeMaintenanceCard extends StatefulWidget {
+  const _SwipeMaintenanceCard({
+    required this.child,
+    required this.enabled,
+    required this.onCall,
+    required this.onOptions,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final VoidCallback? onCall;
+  final VoidCallback onOptions;
+
+  @override
+  State<_SwipeMaintenanceCard> createState() => _SwipeMaintenanceCardState();
+}
+
+class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
+  double offset = 0;
+  static const double revealWidth = 146;
+
+  @override
+  void didUpdateWidget(covariant _SwipeMaintenanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled && offset != 0) offset = 0;
+  }
+
+  void _update(DragUpdateDetails details) {
+    if (!widget.enabled) return;
+    setState(() => offset = (offset + details.delta.dx).clamp(0, revealWidth));
+  }
+
+  void _finish(DragEndDetails details) {
+    if (!widget.enabled) return;
+    final shouldOpen =
+        offset > revealWidth * .34 || (details.primaryVelocity ?? 0) > 350;
+    setState(() => offset = shouldOpen ? revealWidth : 0);
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          if (widget.enabled)
+            Positioned(
+              left: 12.w,
+              child: Row(
+                children: [
+                  _MaintenanceSwipeAction(
+                    icon: Icons.phone_outlined,
+                    label: 'اتصال',
+                    color: const Color(0xFF0F766E),
+                    onTap: widget.onCall == null
+                        ? null
+                        : () {
+                            setState(() => offset = 0);
+                            widget.onCall!();
+                          },
+                  ),
+                  SizedBox(width: 5.w),
+                  _MaintenanceSwipeAction(
+                    icon: Icons.more_horiz_rounded,
+                    label: 'الخيارات',
+                    color: AppColors.primaryColor,
+                    onTap: () {
+                      setState(() => offset = 0);
+                      widget.onOptions();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            transform: Matrix4.translationValues(offset, 0, 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: widget.enabled ? _update : null,
+              onHorizontalDragEnd: widget.enabled ? _finish : null,
+              child: widget.child,
+            ),
+          ),
+        ],
+      );
+}
+
+class _MaintenanceSwipeAction extends StatelessWidget {
+  const _MaintenanceSwipeAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: onTap == null ? Colors.grey : color,
+        borderRadius: BorderRadius.circular(11.r),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(11.r),
+          child: SizedBox(
+            width: 66.w,
+            height: 66.h,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 20.sp),
+                SizedBox(height: 3.h),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 class _MaintenanceSectionHeader extends StatelessWidget {

@@ -93,6 +93,8 @@ class MaintenanceController extends GetxController {
 
   RxInt currentTab = 0.obs;
   final RxString maintenanceViewFilter = maintenanceFilterAll.obs;
+  final RxBool maintenanceBulkMode = false.obs;
+  final RxSet<int> selectedMaintenanceIds = <int>{}.obs;
   final RxBool isSearchVisible = false.obs;
   RxBool selectedSellers = false.obs;
   RxBool isCalendarVisible = false.obs;
@@ -252,6 +254,11 @@ class MaintenanceController extends GetxController {
 
   void setMaintenanceViewFilter(String value) {
     maintenanceViewFilter.value = value;
+    if (value != maintenanceFilterReady) {
+      toggleMaintenanceBulkMode(false);
+    } else {
+      selectedMaintenanceIds.clear();
+    }
     if (value == maintenanceFilterOngoing) {
       currentTab.value = 1;
     } else if (value == maintenanceFilterReady) {
@@ -263,6 +270,34 @@ class MaintenanceController extends GetxController {
     } else {
       currentTab.value = 0;
     }
+    update();
+  }
+
+  void toggleMaintenanceBulkMode([bool? value]) {
+    maintenanceBulkMode.value = value ?? !maintenanceBulkMode.value;
+    if (!maintenanceBulkMode.value) selectedMaintenanceIds.clear();
+    update();
+  }
+
+  void toggleMaintenanceSelection(int id, bool selected) {
+    if (selected) {
+      selectedMaintenanceIds.add(id);
+    } else {
+      selectedMaintenanceIds.remove(id);
+    }
+    selectedMaintenanceIds.refresh();
+    update();
+  }
+
+  void selectAllReadyMaintenances() {
+    selectedMaintenanceIds
+      ..clear()
+      ..addAll(
+        readyMaintenancesSearch.values
+            .expand((items) => items)
+            .map((e) => e.id),
+      );
+    selectedMaintenanceIds.refresh();
     update();
   }
 
@@ -1137,6 +1172,7 @@ class MaintenanceController extends GetxController {
     required double paymentAmount,
     int? paymentBoxId,
     List<Map<String, dynamic>> payments = const [],
+    bool batchMode = false,
   }) async {
     if (maintenanceId == null || maintenanceId!.isEmpty) return false;
 
@@ -1176,32 +1212,36 @@ class MaintenanceController extends GetxController {
     var ok = false;
     result.fold(
       (failure) {
-        Get.snackbar(
-          failure.data['message']?.toString() ?? 'error'.tr,
-          '',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        if (!batchMode) {
+          Get.snackbar(
+            failure.data['message']?.toString() ?? 'error'.tr,
+            '',
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
       },
       (success) async {
         ok = true;
         isDelivered(true);
         selectedStep(4);
-        getMaintenancesData();
-        Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success['message']?.toString() ?? '',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        if (maintenanceId != null &&
-            maintenanceId!.isNotEmpty &&
-            Get.context != null) {
-          await openMaintenanceInvoice(
-            context: Get.context!,
-            maintenanceId: maintenanceId!,
+        if (!batchMode) {
+          getMaintenancesData();
+          Get.back();
+          Get.snackbar(
+            'success'.tr,
+            success['message']?.toString() ?? '',
+            snackPosition: SnackPosition.BOTTOM,
           );
+          if (maintenanceId != null &&
+              maintenanceId!.isNotEmpty &&
+              Get.context != null) {
+            await openMaintenanceInvoice(
+              context: Get.context!,
+              maintenanceId: maintenanceId!,
+            );
+          }
         }
       },
     );
@@ -1209,6 +1249,63 @@ class MaintenanceController extends GetxController {
     isLoading(false);
     update();
     return ok;
+  }
+
+  Future<void> deliverSelectedMaintenances(BuildContext context) async {
+    final ids = selectedMaintenanceIds.toList();
+    if (ids.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('تسليم ${ids.length} طلبات صيانة'),
+        content: const Text(
+          'سيتم احتساب العربون والدفعات المثبتة لكل طلب، وأي مبلغ متبقٍ سيسجل ديناً على الزبون أو التاجر.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.delivery_dining_outlined),
+            label: const Text('تسليم المحدد'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await loadMaintenanceDailySession();
+    if (!isMaintenanceDailyBoxOpen) {
+      Get.snackbar(
+        'تنبيه',
+        'يجب فتح صندوق الصيانة اليومي قبل التسليم الجماعي',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    var delivered = 0;
+    for (final id in ids) {
+      await getMaintenancesDetails(maintenanceId: '$id');
+      if (maintenanceId != '$id') continue;
+      await syncProductsIfPossible();
+      final ok = await deliverMaintenance(
+        paymentAmount: 0,
+        batchMode: true,
+      );
+      if (ok) delivered++;
+    }
+    toggleMaintenanceBulkMode(false);
+    await getMaintenancesData();
+    Get.snackbar(
+      delivered == ids.length ? 'تم التسليم' : 'اكتمل التسليم جزئياً',
+      'تم تسليم $delivered من أصل ${ids.length}',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: delivered == ids.length ? Colors.green : Colors.orange,
+      colorText: Colors.white,
+    );
   }
 
   Future<bool> addMaintenancePayment({

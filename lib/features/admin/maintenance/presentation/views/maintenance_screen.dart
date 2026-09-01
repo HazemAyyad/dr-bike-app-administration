@@ -138,6 +138,49 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
+          SliverToBoxAdapter(
+            child: GetBuilder<MaintenanceController>(
+              builder: (c) {
+                if (c.maintenanceViewFilter.value !=
+                    MaintenanceController.maintenanceFilterReady) {
+                  return const SizedBox.shrink();
+                }
+                final bulk = c.maintenanceBulkMode.value;
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(12.w, 6.h, 12.w, 2.h),
+                  child: Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => c.toggleMaintenanceBulkMode(),
+                        icon: Icon(
+                          bulk ? Icons.close : Icons.checklist_rounded,
+                          size: 18.sp,
+                        ),
+                        label: Text(bulk ? 'إلغاء التحديد' : 'تحديد عدة طلبات'),
+                      ),
+                      if (bulk) ...[
+                        SizedBox(width: 7.w),
+                        TextButton(
+                          onPressed: c.selectAllReadyMaintenances,
+                          child: const Text('تحديد الكل'),
+                        ),
+                        const Spacer(),
+                        FilledButton.icon(
+                          onPressed: c.selectedMaintenanceIds.isEmpty
+                              ? null
+                              : () => c.deliverSelectedMaintenances(context),
+                          icon: const Icon(Icons.delivery_dining_outlined),
+                          label: Text(
+                            'تسليم (${c.selectedMaintenanceIds.length})',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
           const MaintenanceDataWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 60.h)),
         ],
