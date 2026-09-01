@@ -180,7 +180,9 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: 5.h),
+                SizedBox(height: 10.h),
+                const SalesOrderPartnerSelector(),
+                SizedBox(height: 12.h),
                 const AddNewInstantSaleWidget(),
                 Divider(
                   color: ThemeService.isDark.value
@@ -194,7 +196,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showNotes: false,
                   showHints: false,
                 ),
-                const SalesOrderPartnerSelector(),
                 SizedBox(height: 16.h),
                 // Notes are not needed for sales orders at the moment.
                 Divider(color: Colors.grey.shade300, height: 1),

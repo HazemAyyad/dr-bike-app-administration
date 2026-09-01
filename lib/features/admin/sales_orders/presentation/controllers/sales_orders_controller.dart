@@ -444,13 +444,16 @@ class SalesOrdersController extends GetxController {
       (failure) => SalesOrderNotice.error(_humanizeFailure(failure)),
       (addresses) {
         partnerAddresses.assignAll(addresses);
-        if (addresses.isNotEmpty) {
-          selectPartnerAddress(
-            addresses.firstWhereOrNull((a) => a.isDefault) ?? addresses.first,
-          );
-        }
       },
     );
+  }
+
+  void clearPartnerAddress() {
+    selectedPartnerAddressId.value = null;
+    customerAddressController.clear();
+    selectedCityId.value = null;
+    selectedShiplyCityId.value = null;
+    selectedShiplyVillageId.value = null;
   }
 
   void selectPartnerAddress(PartnerAddressModel address) {

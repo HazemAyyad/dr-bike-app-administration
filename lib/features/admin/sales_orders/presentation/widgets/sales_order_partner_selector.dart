@@ -283,43 +283,47 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
                     ),
             ),
           if (partner != null) ...[
-            SizedBox(height: 8.h),
+            SizedBox(height: 6.h),
             InkWell(
               onTap: _openAddresses,
-              borderRadius: BorderRadius.circular(10.r),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: SalesOrdersController.borderGray),
-                ),
+              borderRadius: BorderRadius.circular(8.r),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 5.h),
                 child: Row(children: [
-                  const Icon(Icons.location_on_outlined,
-                      color: AppColors.primaryColor),
-                  SizedBox(width: 7.w),
+                  Icon(Icons.location_on_outlined,
+                      size: 19.sp, color: AppColors.primaryColor),
+                  SizedBox(width: 6.w),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedAddress == null
-                              ? 'اختر عنواناً أو أضف عنواناً جديداً'
-                              : selectedAddress.label,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        if (selectedAddress != null)
-                          Text(selectedAddress.streetAddress,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 11.sp,
-                                  color: Colors.grey.shade600)),
-                      ],
+                    child: Text(
+                      selectedAddress == null
+                          ? 'العنوان اختياري — اضغط للاختيار'
+                          : '${selectedAddress.label} • ${selectedAddress.streetAddress}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5.sp,
+                        fontWeight: selectedAddress == null
+                            ? FontWeight.w500
+                            : FontWeight.w700,
+                        color: selectedAddress == null
+                            ? Colors.grey.shade600
+                            : SalesOrdersController.textPrimary,
+                      ),
                     ),
                   ),
-                  const Icon(Icons.chevron_left_rounded),
+                  if (selectedAddress != null)
+                    InkWell(
+                      onTap: orders.clearPartnerAddress,
+                      borderRadius: BorderRadius.circular(20.r),
+                      child: Padding(
+                        padding: EdgeInsets.all(4.r),
+                        child: Icon(Icons.close_rounded,
+                            size: 17.sp, color: Colors.grey.shade600),
+                      ),
+                    )
+                  else
+                    Icon(Icons.chevron_left_rounded,
+                        size: 20.sp, color: Colors.grey.shade600),
                 ]),
               ),
             ),
