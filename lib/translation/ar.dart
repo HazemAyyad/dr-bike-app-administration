@@ -2932,9 +2932,9 @@ const Map<String, String> ar = {
       'يوجد صندوق مبيعات مفتوح بتاريخ @date ومسؤوله @employee. يجب إغلاق هذا الصندوق، لكن يمكنك تأكيد المتابعة وترحيل الحركة عليه.',
   'salesDailyPreviousDayOpenDetails':
       'تاريخ الصندوق: @date - المسؤول: @employee',
-  'salesDailyInvoiceSuspendedNoDrawerTitle': 'تم تعليق الفاتورة',
+  'salesDailyInvoiceSuspendedNoDrawerTitle': 'تم حفظ الفاتورة مؤقتاً',
   'salesDailyInvoiceSuspendedNoDrawerBody':
-      'تم حفظ الفاتورة كمعلقة لأن صندوق المبيعات غير مفتوح. افتح صندوق مبيعات ثم استكمل العملية من نفس الفاتورة.',
+      'تم حفظ آخر فاتورة غير مكتملة على هذا الجهاز. افتح جلسة المبيعات ثم ارجع لإكمالها.',
   'salesDailyBusinessDate': 'تاريخ اليوم',
   'salesDailyCloseDay': 'إغلاق اليوم',
   'salesDailyBox': 'الصندوق اليومي',

@@ -2965,9 +2965,9 @@ const Map<String, String> en = {
   'salesDailyPreviousDaySaleWarningBody':
       'There is an open sales drawer for @date owned by @employee. This drawer should be closed, but you can confirm and continue posting this movement to it.',
   'salesDailyPreviousDayOpenDetails': 'Drawer date: @date - owner: @employee',
-  'salesDailyInvoiceSuspendedNoDrawerTitle': 'Invoice suspended',
+  'salesDailyInvoiceSuspendedNoDrawerTitle': 'Invoice saved temporarily',
   'salesDailyInvoiceSuspendedNoDrawerBody':
-      'The invoice was saved as suspended because the sales drawer is not open. Open a sales drawer, then continue from the same invoice.',
+      'The last unfinished invoice was saved on this device. Open a sales session, then return to continue it.',
   'salesDailyBusinessDate': 'Business date',
   'salesDailyCloseDay': 'Close day',
   'salesDailyBox': 'Daily box',

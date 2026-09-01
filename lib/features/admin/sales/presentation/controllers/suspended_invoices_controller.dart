@@ -83,18 +83,9 @@ class SuspendedInvoicesController extends GetxController {
   final RxList<SuspendedInstantSaleModel> items =
       <SuspendedInstantSaleModel>[].obs;
   final TextEditingController searchController = TextEditingController();
-  final RxString selectedSaveType = 'manual'.obs;
 
   bool get isAdmin => userType == 'admin';
-  bool get isAutoDrafts => selectedSaveType.value == 'auto';
-  bool get showOwner => isAdmin && !isAutoDrafts;
-
-  Future<void> selectSaveType(String value) async {
-    if (value == selectedSaveType.value) return;
-    selectedSaveType.value = value;
-    items.clear();
-    await loadItems();
-  }
+  bool get showOwner => isAdmin;
 
   @override
   void onInit() {
@@ -119,7 +110,7 @@ class SuspendedInvoicesController extends GetxController {
         search: searchController.text.trim().isEmpty
             ? null
             : searchController.text.trim(),
-        saveType: selectedSaveType.value,
+        saveType: 'manual',
       );
       _suspendedInvoiceDebug('load success', {'count': list.length});
       _suspendedInstantSaleDebug('load success', {
@@ -143,7 +134,7 @@ class SuspendedInvoicesController extends GetxController {
       _suspendedInvoiceDebug('load failed', e);
       items.clear();
       final ctx = Get.context;
-      if (ctx != null) {
+      if (ctx != null && ctx.mounted) {
         Helpers.showCustomDialogError(
           context: ctx,
           title: 'error'.tr,
@@ -188,12 +179,8 @@ class SuspendedInvoicesController extends GetxController {
   ) async {
     final confirmed = await SuspendedInvoiceDialog.showConfirm(
       context: context,
-      titleKey: item.isAutoSaved
-          ? 'autoSavedDraftCancelTitle'
-          : 'suspendedInvoiceCancelTitle',
-      messageKey: item.isAutoSaved
-          ? 'autoSavedDraftCancelMessage'
-          : 'suspendedInvoiceCancelMessage',
+      titleKey: 'suspendedInvoiceCancelTitle',
+      messageKey: 'suspendedInvoiceCancelMessage',
     );
     if (confirmed != true) return;
 

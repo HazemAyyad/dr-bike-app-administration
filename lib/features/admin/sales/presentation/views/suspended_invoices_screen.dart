@@ -8,7 +8,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../controllers/suspended_invoices_controller.dart';
-import '../widgets/sales_daily_status_bar.dart';
 import '../widgets/suspended_invoices_table.dart';
 
 class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
@@ -32,32 +31,9 @@ class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
-                const SliverToBoxAdapter(child: SalesDailyStatusBar()),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
-                    child: Wrap(
-                      spacing: 8.w,
-                      children: [
-                        ChoiceChip(
-                          label: Text('suspendedInvoices'.tr),
-                          selected:
-                              controller.selectedSaveType.value == 'manual',
-                          onSelected: (_) =>
-                              controller.selectSaveType('manual'),
-                        ),
-                        ChoiceChip(
-                          label: Text('autoSavedSaleDrafts'.tr),
-                          selected: controller.selectedSaveType.value == 'auto',
-                          onSelected: (_) => controller.selectSaveType('auto'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 8.h),
+                    padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 8.h),
                     child: TextField(
                       controller: controller.searchController,
                       textInputAction: TextInputAction.search,

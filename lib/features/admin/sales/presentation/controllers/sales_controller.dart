@@ -965,35 +965,8 @@ class SalesController extends GetxController
     required String currentStep,
   }) async {
     try {
-      final result = await Get.find<SalesDatasource>().suspendInstantSale(
-        currentStep: currentStep,
-        payload: buildInstantSaleSuspendPayload(),
-        saveType: 'auto',
-        suspendedInstantSaleId: activeSuspendedSaleId.value,
-      );
-
-      if (result['status'] == 'success') {
-        final raw = result['suspended_instant_sale'];
-        if (raw is Map) {
-          final id = int.tryParse('${raw['id']}');
-          if (id != null) {
-            activeSuspendedSaleId.value = id;
-            _activeSuspendedSaleIsAuto = true;
-          }
-        }
-        final count = int.tryParse('${result['suspended_count']}');
-        if (count != null) {
-          suspendedInvoicesCount.value = count;
-        }
-        return true;
-      }
-
-      Get.snackbar(
-        'error'.tr,
-        result['message']?.toString() ?? 'Unknown error',
-        backgroundColor: Colors.red,
-      );
-      return false;
+      await saveLocalInstantSaleDraft();
+      return hasLocalInstantSaleDraft;
     } catch (e) {
       Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
       return false;
@@ -1338,29 +1311,7 @@ class SalesController extends GetxController
 
     _isAutoSuspendingInstantSale = true;
     try {
-      final result = await Get.find<SalesDatasource>().suspendInstantSale(
-        currentStep: Get.currentRoute == AppRoutes.NEWINSTANTSALESCREEN
-            ? 'checkout'
-            : 'product_picker',
-        payload: buildInstantSaleSuspendPayload(),
-        saveType: 'auto',
-        suspendedInstantSaleId: activeSuspendedSaleId.value,
-      );
-      if (result['status'] == 'success') {
-        final raw = result['suspended_instant_sale'];
-        if (raw is Map) {
-          final id = int.tryParse('${raw['id']}');
-          if (id != null) {
-            activeSuspendedSaleId.value = id;
-            _activeSuspendedSaleIsAuto = true;
-          }
-        }
-        final count = int.tryParse('${result['suspended_count']}');
-        if (count != null) {
-          suspendedInvoicesCount.value = count;
-        }
-        await saveLocalInstantSaleDraft();
-      }
+      await saveLocalInstantSaleDraft();
     } catch (e) {
       assert(() {
         debugPrint('[SalesController.autoSuspendInstantSale] $e');
