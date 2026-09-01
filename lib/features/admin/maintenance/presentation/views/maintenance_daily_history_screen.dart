@@ -65,7 +65,7 @@ class _MaintenanceDailyHistoryScreenState
     }
   }
 
-  DailySessionSummaryModel? get _active => _today.firstWhereOrNull(
+  DailySessionSummaryModel? get _active => _history.firstWhereOrNull(
         (item) => item.isOpen || item.isClosingRequested,
       );
 
@@ -127,8 +127,9 @@ class _MaintenanceDailyHistoryScreenState
 
   Widget _activeCard(BuildContext context) {
     final active = _active;
-    final closing = active?.isClosingRequested == true;
-    final open = active?.isOpen == true;
+    final closing = active?.isClosingRequested == true ||
+        controller.isMaintenanceDailyBoxClosingRequested;
+    final open = active?.isOpen == true || controller.isMaintenanceDailyBoxOpen;
     final color = closing
         ? Colors.orange
         : open

@@ -347,7 +347,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               },
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(vertical: 2.h),
           padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
           decoration: BoxDecoration(
             color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
@@ -564,7 +563,7 @@ class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.r),
           child: Stack(
