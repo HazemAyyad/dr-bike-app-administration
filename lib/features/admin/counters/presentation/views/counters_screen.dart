@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/product_image_utils.dart';
 import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -930,14 +931,12 @@ class _InventoryProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final images = (item['images'] as List? ?? const [])
-        .map((value) => value?.toString().trim() ?? '')
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);
+    final images = ProductImageUtils.allValidUrlsFromList(item['images']);
     final fallbackImage = item['image']?.toString().trim() ?? '';
-    final priorityImages = images.isEmpty && fallbackImage.isNotEmpty
-        ? <String>[fallbackImage]
-        : images;
+    final priorityImages =
+        images.isEmpty && ProductImageUtils.isValidUrl(fallbackImage)
+            ? <String>[fallbackImage]
+            : images;
     final original = priorityImages.isEmpty
         ? ''
         : ShowNetImage.getPhoto(priorityImages.first);
