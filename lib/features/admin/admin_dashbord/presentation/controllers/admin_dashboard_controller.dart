@@ -677,11 +677,21 @@ class AdminDashboardController extends GetxController
           .toSet()
           .take(3)
           .join('، ');
+      final salesCount = requests
+          .where((request) => request.sessionType != 'sales_orders')
+          .length;
+      final ordersCount = requests
+          .where((request) => request.sessionType == 'sales_orders')
+          .length;
+      final typesText = [
+        if (salesCount > 0) '$salesCount صندوق مبيعات',
+        if (ordersCount > 0) '$ordersCount صندوق طلبيات',
+      ].join(' و');
       final goToRequests = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('طلبات إغلاق بانتظارك'),
+          title: const Text('طلبات إغلاق صناديق بانتظارك'),
           content: Text(
-            'يوجد ${requests.length} طلب إغلاق صندوق بانتظار المراجعة'
+            'يوجد $typesText بانتظار المراجعة'
             '${names.isEmpty ? '.' : ' من: $names.'}',
           ),
           actions: [

@@ -99,7 +99,10 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
               ),
               if (sales?.pendingDailyClosingRequests.isNotEmpty == true) ...[
                 SizedBox(height: 7.h),
-                _InlineClosingRequests(sales: sales!),
+                _InlineClosingRequests(
+                  sales: sales!,
+                  sessionType: selectedType,
+                ),
               ],
               if (sales?.pendingSalesCancellationRequests.isNotEmpty ==
                   true) ...[
@@ -173,12 +176,22 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
 }
 
 class _InlineClosingRequests extends StatelessWidget {
-  const _InlineClosingRequests({required this.sales});
+  const _InlineClosingRequests({
+    required this.sales,
+    required this.sessionType,
+  });
 
   final SalesController sales;
+  final String sessionType;
 
   @override
   Widget build(BuildContext context) {
+    final requests = sales.pendingDailyClosingRequests
+        .where((request) => request.sessionType == sessionType)
+        .toList();
+    if (requests.isEmpty) return const SizedBox.shrink();
+    final drawerName =
+        sessionType == 'sales_orders' ? 'صندوق الطلبيات' : 'صندوق المبيعات';
     return Container(
       padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
@@ -194,13 +207,13 @@ class _InlineClosingRequests extends StatelessWidget {
               const Icon(Icons.pending_actions_outlined, color: Colors.orange),
               SizedBox(width: 7.w),
               Text(
-                'طلبات إغلاق الصناديق (${sales.pendingDailyClosingRequests.length})',
+                'طلبات إغلاق $drawerName (${requests.length})',
                 style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
               ),
             ],
           ),
           SizedBox(height: 4.h),
-          ...sales.pendingDailyClosingRequests.map(
+          ...requests.map(
             (request) => Container(
               width: double.infinity,
               margin: EdgeInsets.only(top: 4.h),

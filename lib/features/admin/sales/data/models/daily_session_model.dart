@@ -305,6 +305,7 @@ class DailySessionConfig {
 class DailyClosingRequestModel {
   final int id;
   final String status;
+  final String sessionType;
   final String? requestedAt;
   final String? requestedDate;
   final String? employeeName;
@@ -325,6 +326,7 @@ class DailyClosingRequestModel {
   const DailyClosingRequestModel({
     required this.id,
     required this.status,
+    this.sessionType = 'instant_sales',
     this.requestedAt,
     this.requestedDate,
     this.employeeName,
@@ -354,6 +356,9 @@ class DailyClosingRequestModel {
     return DailyClosingRequestModel(
       id: asInt(json['id']),
       status: asString(json['status']),
+      sessionType: asString(json['session_type']).isEmpty
+          ? 'instant_sales'
+          : asString(json['session_type']),
       requestedAt: asNullableString(json['requested_at']),
       requestedDate: asNullableString(json['requested_date']),
       employeeName: asNullableString(json['employee_name']),
