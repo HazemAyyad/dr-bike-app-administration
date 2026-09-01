@@ -9,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../maintenance/data/repositories/maintenance_implement.dart';
 import '../widgets/sales_daily_session_orders_log.dart';
 import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_daily_ui_widgets.dart';
@@ -27,6 +28,7 @@ class _SalesDailySessionDetailScreenState
   bool _loading = true;
   String? _error;
   DailySessionDetailModel? _detail;
+  bool _maintenanceMode = false;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _SalesDailySessionDetailScreenState
 
   Future<void> _load() async {
     final args = Get.arguments;
+    _maintenanceMode = args is Map && args['maintenance'] == true;
     if (args is DailySessionDetailModel) {
       setState(() {
         _detail = args;
@@ -44,7 +47,8 @@ class _SalesDailySessionDetailScreenState
       return;
     }
 
-    final sessionId = args is int ? args : int.tryParse('$args');
+    final rawId = args is Map ? args['session_id'] : args;
+    final sessionId = rawId is int ? rawId : int.tryParse('$rawId');
     if (sessionId == null) {
       setState(() {
         _loading = false;
@@ -59,9 +63,16 @@ class _SalesDailySessionDetailScreenState
     });
 
     try {
-      AppDependencyRegistry.ensureSales();
-      final ds = Get.find<SalesDatasource>();
-      final detail = await ds.getDailySessionDetail(sessionId);
+      final DailySessionDetailModel detail;
+      if (_maintenanceMode) {
+        detail = await Get.find<MaintenanceImplement>()
+            .maintenanceDatasource
+            .getDailySessionDetail(sessionId);
+      } else {
+        AppDependencyRegistry.ensureSales();
+        final ds = Get.find<SalesDatasource>();
+        detail = await ds.getDailySessionDetail(sessionId);
+      }
       if (!mounted) return;
       setState(() {
         _detail = detail;
@@ -80,7 +91,12 @@ class _SalesDailySessionDetailScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7F9),
-      appBar: const CustomAppBar(title: 'تفاصيل الجلسة اليومية', action: false),
+      appBar: CustomAppBar(
+        title: _maintenanceMode
+            ? 'تفاصيل جلسة صندوق الصيانة'
+            : 'تفاصيل الجلسة اليومية',
+        action: false,
+      ),
       body: _buildBody(),
     );
   }
@@ -116,9 +132,9 @@ class _SalesDailySessionDetailScreenState
     return ListView(
       padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 16.h),
       children: [
-        _SessionHero(detail: detail),
+        _SessionHero(detail: detail, maintenanceMode: _maintenanceMode),
         SizedBox(height: 10.h),
-        _SessionMetrics(detail: detail),
+        _SessionMetrics(detail: detail, maintenanceMode: _maintenanceMode),
         if (session.status == 'open' ||
             session.status == 'closing_requested') ...[
           SizedBox(height: 10.h),
@@ -140,7 +156,9 @@ class _SalesDailySessionDetailScreenState
                 : 'إغلاق الجلسة اليومية'),
             onPressed: () async {
               await Get.toNamed(
-                AppRoutes.SALESDAILYCLOSESCREEN,
+                _maintenanceMode
+                    ? AppRoutes.MAINTENANCEDAILYCLOSESCREEN
+                    : AppRoutes.SALESDAILYCLOSESCREEN,
                 arguments: session.id,
               );
               await _load();
@@ -153,10 +171,15 @@ class _SalesDailySessionDetailScreenState
           const SalesDailySectionTitle(title: 'طلبيات الجلسة'),
           SalesDailySessionOrdersLog(orders: detail.salesOrders),
         ] else ...[
-          const SalesDailySectionTitle(title: 'فواتير الجلسة'),
+          SalesDailySectionTitle(
+            title: _maintenanceMode
+                ? 'طلبات وفواتير الصيانة في الجلسة'
+                : 'فواتير الجلسة',
+          ),
           SalesDailySessionSalesLog(
             instantSales: detail.instantSales,
             profitSales: detail.profitSales,
+            maintenanceMode: _maintenanceMode,
           ),
         ],
         if (detail.closingRequests.isNotEmpty) ...[
@@ -171,8 +194,9 @@ class _SalesDailySessionDetailScreenState
 }
 
 class _SessionHero extends StatelessWidget {
-  const _SessionHero({required this.detail});
+  const _SessionHero({required this.detail, required this.maintenanceMode});
   final DailySessionDetailModel detail;
+  final bool maintenanceMode;
 
   @override
   Widget build(BuildContext context) {
@@ -184,9 +208,11 @@ class _SessionHero extends StatelessWidget {
         : pending
             ? Colors.orange.shade800
             : Colors.blueGrey;
-    final type = session.sessionType == 'sales_orders'
-        ? 'جلسة الطلبيات اليومية'
-        : 'جلسة المبيعات اليومية';
+    final type = maintenanceMode
+        ? 'جلسة صندوق الصيانة اليومية'
+        : session.sessionType == 'sales_orders'
+            ? 'جلسة الطلبيات اليومية'
+            : 'جلسة المبيعات اليومية';
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
@@ -202,9 +228,11 @@ class _SessionHero extends StatelessWidget {
               borderRadius: BorderRadius.circular(11.r),
             ),
             child: Icon(
-              session.sessionType == 'sales_orders'
-                  ? Icons.inventory_2_outlined
-                  : Icons.point_of_sale_outlined,
+              maintenanceMode
+                  ? Icons.build_circle_outlined
+                  : session.sessionType == 'sales_orders'
+                      ? Icons.inventory_2_outlined
+                      : Icons.point_of_sale_outlined,
               color: Colors.white,
             ),
           ),
@@ -268,8 +296,9 @@ class _SessionHero extends StatelessWidget {
 }
 
 class _SessionMetrics extends StatelessWidget {
-  const _SessionMetrics({required this.detail});
+  const _SessionMetrics({required this.detail, required this.maintenanceMode});
   final DailySessionDetailModel detail;
+  final bool maintenanceMode;
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +315,11 @@ class _SessionMetrics extends StatelessWidget {
           'المقبوض', '${sales.toStringAsFixed(2)} ₪', Icons.payments_outlined),
       SizedBox(width: 7.w),
       _metric(
-        orders ? 'الطلبيات' : 'الفواتير',
+        maintenanceMode
+            ? 'طلبات الصيانة'
+            : orders
+                ? 'الطلبيات'
+                : 'الفواتير',
         '${orders ? detail.salesOrdersCount : detail.instantSalesCount + detail.profitSalesCount}',
         Icons.receipt_long_outlined,
       ),

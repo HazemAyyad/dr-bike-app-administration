@@ -16,10 +16,12 @@ class SalesDailySessionSalesLog extends StatelessWidget {
     Key? key,
     required this.instantSales,
     required this.profitSales,
+    this.maintenanceMode = false,
   }) : super(key: key);
 
   final List<DailySessionSaleLogRow> instantSales;
   final List<DailySessionSaleLogRow> profitSales;
+  final bool maintenanceMode;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,16 @@ class SalesDailySessionSalesLog extends StatelessWidget {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 8.h),
         child: Text('noData'.tr, style: TextStyle(fontSize: 12.sp)),
+      );
+    }
+
+    if (maintenanceMode) {
+      return SizedBox(
+        height: 360.h,
+        child: _SalesList(
+          items: instantSales,
+          emptyLabel: 'لا توجد طلبات صيانة في هذه الجلسة',
+        ),
       );
     }
 

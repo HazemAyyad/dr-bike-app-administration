@@ -372,63 +372,16 @@ class _MaintenanceDailyHistoryScreenState
           '${balance.toStringAsFixed(2)} ₪',
           style: TextStyle(color: color, fontWeight: FontWeight.w900),
         ),
-        onTap: () => _showDetails(context, item),
-      ),
-    );
-  }
-
-  Future<void> _showDetails(
-    BuildContext context,
-    DailySessionSummaryModel item,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(18.w, 0, 18.w, 20.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'تفاصيل صندوق ${item.businessDate}',
-                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 12.h),
-              _detailRow('الموظف', item.employeeName ?? '—'),
-              _detailRow('الحالة', _statusLabel(item.status)),
-              _detailRow('طلبات الصيانة', '${item.instantSalesCount}'),
-              _detailRow('وقت الفتح', item.openedAt ?? '—'),
-              _detailRow('وقت الإغلاق', item.closedAt ?? '—'),
-              SizedBox(height: 10.h),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Get.toNamed(
-                    AppRoutes.DAILYBOXESSCREEN,
-                    arguments: {'filter': 'maintenance', 'dedicated': true},
-                  );
-                },
-                icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('عرض الحركات والفواتير'),
-              ),
-            ],
-          ),
+        onTap: () => Get.toNamed(
+          AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+          arguments: {
+            'session_id': item.id,
+            'maintenance': true,
+          },
         ),
       ),
     );
   }
-
-  Widget _detailRow(String label, String value) => Padding(
-        padding: EdgeInsets.only(bottom: 7.h),
-        child: Row(
-          children: [
-            Expanded(child: Text(label)),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
-          ],
-        ),
-      );
 
   Future<void> _openDrawer(BuildContext context) async {
     final input = TextEditingController();
