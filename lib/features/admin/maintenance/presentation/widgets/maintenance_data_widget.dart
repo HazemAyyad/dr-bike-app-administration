@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -18,6 +19,79 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
   const MaintenanceDataWidget({Key? key}) : super(key: key);
 
   String _money(double value) => value.toStringAsFixed(2);
+
+  Future<void> _showRecipientContact(
+    BuildContext context,
+    MaintenanceDataModel item,
+  ) async {
+    final phone = _resolvePhone(item)?.trim() ?? '';
+    if (phone.isEmpty) {
+      Get.snackbar('لا يوجد رقم', 'أضف رقم الزبون أو التاجر من بياناته');
+      return;
+    }
+    final name = (item.sellerName?.trim().isNotEmpty == true)
+        ? item.sellerName!
+        : item.customerName;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 18.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 3.h),
+              Text(phone, style: TextStyle(color: Colors.grey.shade600)),
+              SizedBox(height: 14.h),
+              _MaintenanceContactAction(
+                icon: Icons.phone_outlined,
+                label: 'اتصال عادي',
+                onTap: () async {
+                  Get.back();
+                  await launchDialer(phoneNumber: phone);
+                },
+              ),
+              for (final candidate in _whatsAppNumbers(phone))
+                _MaintenanceContactAction(
+                  icon: Icons.chat_outlined,
+                  label: 'واتساب +${candidate.substring(0, 3)}',
+                  onTap: () async {
+                    Get.back();
+                    await launchWhatsApp(phoneNumber: candidate);
+                  },
+                ),
+              _MaintenanceContactAction(
+                icon: Icons.copy_rounded,
+                label: 'نسخ الرقم',
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: phone));
+                  Get.back();
+                  Get.snackbar('تم النسخ', phone);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<String> _whatsAppNumbers(String raw) {
+    var digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) digits = digits.substring(2);
+    if (digits.startsWith('970') || digits.startsWith('972')) return [digits];
+    if (digits.startsWith('0')) digits = digits.substring(1);
+    if (digits.isEmpty) return const [];
+    return ['970$digits', '972$digits'];
+  }
 
   Widget _compactActionButton({
     required String tooltip,
@@ -273,7 +347,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
               },
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+          margin: EdgeInsets.symmetric(vertical: 2.h),
           padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
           decoration: BoxDecoration(
             color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
@@ -385,12 +459,9 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
       ),
     );
 
-    final phone = _resolvePhone(item);
     return _SwipeMaintenanceCard(
       enabled: !readOnly && !bulk,
-      onCall: phone == null || phone.isEmpty
-          ? null
-          : () => launchDialer(phoneNumber: phone),
+      onCall: () => _showRecipientContact(context, item),
       onOptions: () => _showMaintenanceActions(context, item),
       child: card,
     );
@@ -492,50 +563,54 @@ class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
   }
 
   @override
-  Widget build(BuildContext context) => Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          if (widget.enabled)
-            Positioned(
-              left: 12.w,
-              child: Row(
-                children: [
-                  _MaintenanceSwipeAction(
-                    icon: Icons.phone_outlined,
-                    label: 'اتصال',
-                    color: const Color(0xFF0F766E),
-                    onTap: widget.onCall == null
-                        ? null
-                        : () {
-                            setState(() => offset = 0);
-                            widget.onCall!();
-                          },
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.r),
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              if (widget.enabled)
+                Positioned(
+                  left: 0,
+                  child: Row(
+                    children: [
+                      _MaintenanceSwipeAction(
+                        icon: Icons.phone_outlined,
+                        label: 'اتصال',
+                        color: const Color(0xFF0F766E),
+                        onTap: () {
+                          setState(() => offset = 0);
+                          widget.onCall?.call();
+                        },
+                      ),
+                      SizedBox(width: 5.w),
+                      _MaintenanceSwipeAction(
+                        icon: Icons.more_horiz_rounded,
+                        label: 'الخيارات',
+                        color: AppColors.primaryColor,
+                        onTap: () {
+                          setState(() => offset = 0);
+                          widget.onOptions();
+                        },
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 5.w),
-                  _MaintenanceSwipeAction(
-                    icon: Icons.more_horiz_rounded,
-                    label: 'الخيارات',
-                    color: AppColors.primaryColor,
-                    onTap: () {
-                      setState(() => offset = 0);
-                      widget.onOptions();
-                    },
-                  ),
-                ],
+                ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                transform: Matrix4.translationValues(offset, 0, 0),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragUpdate: widget.enabled ? _update : null,
+                  onHorizontalDragEnd: widget.enabled ? _finish : null,
+                  child: widget.child,
+                ),
               ),
-            ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            transform: Matrix4.translationValues(offset, 0, 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragUpdate: widget.enabled ? _update : null,
-              onHorizontalDragEnd: widget.enabled ? _finish : null,
-              child: widget.child,
-            ),
+            ],
           ),
-        ],
+        ),
       );
 }
 
@@ -576,6 +651,35 @@ class _MaintenanceSwipeAction extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _MaintenanceContactAction extends StatelessWidget {
+  const _MaintenanceContactAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.only(bottom: 8.h),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onTap,
+            icon: Icon(icon),
+            label: Text(label),
+            style: OutlinedButton.styleFrom(
+              alignment: AlignmentDirectional.centerStart,
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
             ),
           ),
         ),
