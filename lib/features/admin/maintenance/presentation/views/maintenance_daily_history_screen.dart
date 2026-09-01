@@ -39,16 +39,17 @@ class _MaintenanceDailyHistoryScreenState
     if (mounted) setState(() => _loading = true);
     _loadError = null;
     try {
-      await controller.loadMaintenanceDailySession().timeout(
-            const Duration(seconds: 15),
-          );
       final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final results = await Future.wait<dynamic>([
+        _refreshCurrentSessionSafely(),
+        datasource
+            .getDailySessionsHistory()
+            .timeout(const Duration(seconds: 20)),
+      ]);
+      final history = results[1] as List<DailySessionSummaryModel>;
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final history = await datasource
-          .getDailySessionsHistory()
-          .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       _today
         ..clear()
@@ -62,6 +63,16 @@ class _MaintenanceDailyHistoryScreenState
       _loadError = 'تعذر تحميل صناديق الصيانة';
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _refreshCurrentSessionSafely() async {
+    try {
+      await controller.loadMaintenanceDailySession().timeout(
+            const Duration(seconds: 20),
+          );
+    } catch (_) {
+      // The history list can still render if refreshing the status request fails.
     }
   }
 

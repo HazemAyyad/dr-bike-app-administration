@@ -228,6 +228,8 @@ class MaintenanceController extends GetxController {
             dailyBoxSession?['expected_closing_balance'],
       );
 
+  Future<void>? _maintenanceDailySessionLoad;
+
   String get maintenanceDailyBoxName =>
       dailyBoxInfo?['name']?.toString() ?? 'صندوق الصيانة اليومي';
 
@@ -305,7 +307,21 @@ class MaintenanceController extends GetxController {
 
   void recalculateTotals() => maintenanceProducts.refresh();
 
-  Future<void> loadMaintenanceDailySession() async {
+  Future<void> loadMaintenanceDailySession() {
+    final activeLoad = _maintenanceDailySessionLoad;
+    if (activeLoad != null) return activeLoad;
+
+    late final Future<void> load;
+    load = _loadMaintenanceDailySession().whenComplete(() {
+      if (identical(_maintenanceDailySessionLoad, load)) {
+        _maintenanceDailySessionLoad = null;
+      }
+    });
+    _maintenanceDailySessionLoad = load;
+    return load;
+  }
+
+  Future<void> _loadMaintenanceDailySession() async {
     isDailyBoxLoading(true);
     final result = await getMaintenanceDailySessionUsecase.call();
     result.fold(
