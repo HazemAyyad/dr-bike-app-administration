@@ -139,6 +139,7 @@ import '../features/admin/general_data_list/presentation/views/general_data_list
 import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_daily_admin_screen.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_daily_close_screen.dart';
+import '../features/admin/maintenance/presentation/views/maintenance_daily_history_screen.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_services_settings_screen.dart';
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
@@ -981,6 +982,12 @@ class AppPages {
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.MAINTENANCEDAILYHISTORYSCREEN,
+      page: () => const MaintenanceDailyHistoryScreen(),
+      binding: MaintenanceBinding(),
+      transition: _transitionFadeIn,
     ),
     GetPage(
       name: AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,

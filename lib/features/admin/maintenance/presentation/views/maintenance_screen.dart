@@ -334,8 +334,6 @@ class _MaintenanceDailyBoxButton extends StatelessWidget {
       final isClosingRequested =
           controller.isMaintenanceDailyBoxClosingRequested;
       final isLoading = controller.isDailyBoxLoading.value;
-      final canOpen = controller.canRequestMaintenanceDailyOpen;
-      final canClose = controller.canRequestMaintenanceDailyClosing;
       final color = isLoading
           ? Colors.grey
           : isClosingRequested
@@ -355,51 +353,15 @@ class _MaintenanceDailyBoxButton extends StatelessWidget {
       return Tooltip(
         message:
             'صندوق الصيانة اليومي — $status — ${balance.toStringAsFixed(0)} ₪',
-        child: PopupMenuButton<String>(
-          tooltip: 'صندوق الصيانة اليومي',
-          padding: EdgeInsets.zero,
-          onSelected: (value) async {
-            if (value == 'history') {
-              await Get.toNamed(
-                AppRoutes.DAILYBOXESSCREEN,
-                arguments: {'filter': 'maintenance', 'dedicated': true},
-              );
-            } else if (value == 'open') {
-              await _showOpenDialog(context);
-            } else if (value == 'close') {
-              await Get.toNamed(AppRoutes.MAINTENANCEDAILYCLOSESCREEN);
-              await controller.loadMaintenanceDailySession();
-            }
+        child: IconButton(
+          constraints: BoxConstraints.tightFor(width: 38.w, height: 40.h),
+          padding: EdgeInsets.all(2.w),
+          visualDensity: VisualDensity.compact,
+          onPressed: () async {
+            await Get.toNamed(AppRoutes.MAINTENANCEDAILYHISTORYSCREEN);
+            await controller.loadMaintenanceDailySession();
           },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: 'history',
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.history_rounded),
-                title: Text('صفحة صناديق الصيانة'),
-              ),
-            ),
-            if (canOpen)
-              const PopupMenuItem(
-                value: 'open',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.lock_open_rounded),
-                  title: Text('فتح صندوق الصيانة'),
-                ),
-              ),
-            if (canClose)
-              const PopupMenuItem(
-                value: 'close',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.lock_clock_outlined),
-                  title: Text('إغلاق صندوق اليوم'),
-                ),
-              ),
-          ],
-          child: Badge(
+          icon: Badge(
             isLabelVisible: isClosingRequested,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -420,74 +382,5 @@ class _MaintenanceDailyBoxButton extends StatelessWidget {
         ),
       );
     });
-  }
-
-  Future<void> _showOpenDialog(BuildContext context) async {
-    final amount = await showDialog<double>(
-      context: context,
-      builder: (_) => _MaintenanceOpenBoxDialog(
-        initialAmount: controller.maintenanceDailyOpeningBalance,
-      ),
-    );
-    if (amount == null) return;
-    await controller.openMaintenanceDailySession(openingBalance: amount);
-  }
-}
-
-class _MaintenanceOpenBoxDialog extends StatefulWidget {
-  const _MaintenanceOpenBoxDialog({required this.initialAmount});
-
-  final double initialAmount;
-
-  @override
-  State<_MaintenanceOpenBoxDialog> createState() =>
-      _MaintenanceOpenBoxDialogState();
-}
-
-class _MaintenanceOpenBoxDialogState extends State<_MaintenanceOpenBoxDialog> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: widget.initialAmount > 0
-          ? widget.initialAmount.toStringAsFixed(2)
-          : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('فتح صندوق الصيانة'),
-      content: TextField(
-        controller: _controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: const InputDecoration(
-          labelText: 'الفكة المستلمة',
-          hintText: '0.00',
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('cancel'.tr),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(
-            context,
-            double.tryParse(_controller.text.trim()) ?? 0,
-          ),
-          child: Text('confirm'.tr),
-        ),
-      ],
-    );
   }
 }
