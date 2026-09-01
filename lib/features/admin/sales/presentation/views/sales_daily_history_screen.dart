@@ -67,6 +67,11 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
             ) ??
             (today.isEmpty ? null : today.first);
         final list = showHistory ? history : today;
+        if (_shouldAutoOpen() && _shouldOfferOpening()) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openSelectedDrawer(context);
+          });
+        }
 
         return RefreshIndicator(
           onRefresh: _refresh,
@@ -74,17 +79,11 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
             children: [
-              if (_shouldOfferOpening()) ...[
-                SalesDailyStatusBar(
-                  salesOrders: selectedType == 'sales_orders',
-                  onOpened: _continueAfterOpening,
-                  autoOpen: _shouldAutoOpen(),
-                ),
-                SizedBox(height: 6.h),
-              ],
               _ActiveDrawerBanner(
                 session: active,
                 type: selectedType,
+                canOpen: _shouldOfferOpening(),
+                onOpen: () => _openSelectedDrawer(context),
               ),
               SizedBox(height: 7.h),
               _DrawerTypeSelector(
@@ -93,9 +92,11 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
               ),
               SizedBox(height: 7.h),
               SalesDailySummaryStrip(
-                openCount: overview.openCount,
-                pendingCount: overview.closingRequestedCount,
-                closedCount: overview.closedCount,
+                openCount: today.where((item) => item.isOpen).length,
+                pendingCount:
+                    today.where((item) => item.isClosingRequested).length,
+                closedCount:
+                    today.where((item) => item.status == 'closed').length,
               ),
               if (sales?.pendingDailyClosingRequests.isNotEmpty == true) ...[
                 SizedBox(height: 7.h),
@@ -155,6 +156,16 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
   bool _shouldAutoOpen() {
     final args = Get.arguments;
     return args is Map && args['openDrawer'] == true;
+  }
+
+  Future<void> _openSelectedDrawer(BuildContext context) async {
+    final args = Get.arguments;
+    final autoOpen = _shouldAutoOpen();
+    if (autoOpen && args is Map) args['openDrawer'] = false;
+    await SalesDailyStatusBar(
+      salesOrders: selectedType == 'sales_orders',
+      onOpened: _continueAfterOpening,
+    ).openDrawer(context);
   }
 
   Future<void> _continueAfterOpening() async {
@@ -395,10 +406,17 @@ class _InlineCancellationRequests extends StatelessWidget {
 }
 
 class _ActiveDrawerBanner extends StatelessWidget {
-  const _ActiveDrawerBanner({required this.session, required this.type});
+  const _ActiveDrawerBanner({
+    required this.session,
+    required this.type,
+    required this.canOpen,
+    required this.onOpen,
+  });
 
   final DailySessionSummaryModel? session;
   final String type;
+  final bool canOpen;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -559,6 +577,23 @@ class _ActiveDrawerBanner extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style:
                     TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ] else if (canOpen) ...[
+            SizedBox(height: 7.h),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: color,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: onOpen,
+                icon: const Icon(Icons.lock_open_rounded),
+                label: Text(orders
+                    ? 'فتح صندوق الطلبيات اليومي'
+                    : 'فتح صندوق المبيعات اليومي'),
               ),
             ),
           ],

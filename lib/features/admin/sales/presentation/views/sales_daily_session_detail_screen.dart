@@ -303,8 +303,8 @@ class _SessionMetrics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = detail.session.sessionType == 'sales_orders';
-    final balance =
-        detail.currencies.fold<double>(0, (sum, row) => sum + row.boxBalance);
+    final balance = detail.currencies
+        .fold<double>(0, (sum, row) => sum + row.systemBalance);
     final sales = detail.currencies
         .fold<double>(0, (sum, row) => sum + row.salesCollected);
     return Row(children: [

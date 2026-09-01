@@ -66,7 +66,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         final args = Get.arguments;
         if (args is Map) args['openDrawer'] = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) _openDrawer(context);
+          if (context.mounted) openDrawer(context);
         });
       }
       if (payload == null) {
@@ -159,7 +159,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                 ),
               if (payload.canRequestOpen || payload.needsManualOpen)
                 TextButton(
-                  onPressed: () => _openDrawer(context),
+                  onPressed: () => openDrawer(context),
                   child: Text('salesDailyOpenDrawer'.tr),
                 ),
               if (showDirectClose)
@@ -244,7 +244,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
     }
   }
 
-  Future<void> _openDrawer(BuildContext context) async {
+  Future<void> openDrawer(BuildContext context) async {
     final payload = salesOrders
         ? controller.salesOrdersDailySessionPayload.value
         : controller.dailySessionPayload.value;
