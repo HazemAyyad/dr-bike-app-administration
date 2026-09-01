@@ -7,10 +7,13 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../stock/presentation/binding/stock_binding.dart';
+import '../../../stock/presentation/controllers/stock_controller.dart';
 import '../controllers/counters_controller.dart';
 
 class CountersScreen extends GetView<CountersController> {
@@ -254,7 +257,7 @@ class _SummaryCard extends StatelessWidget {
     final change = _number(item['change_percent']);
     final increased = change >= 0;
     final favorable = key == 'expenses' ? change <= 0 : change >= 0;
-    final meta = _summaryMeta(key);
+    final meta = _summaryMeta(key, item);
     final value = _number(item['value']);
     final valueColor =
         key == 'net_profit' && value < 0 ? const Color(0xffD65345) : meta.color;
@@ -927,9 +930,17 @@ class _InventoryProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rawImage = item['image']?.toString() ?? '';
-    final thumb = ShowNetImage.getThumbnailPhoto(rawImage);
-    final original = ShowNetImage.getPhoto(rawImage);
+    final images = (item['images'] as List? ?? const [])
+        .map((value) => value?.toString().trim() ?? '')
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final fallbackImage = item['image']?.toString().trim() ?? '';
+    final priorityImages = images.isEmpty && fallbackImage.isNotEmpty
+        ? <String>[fallbackImage]
+        : images;
+    final original = priorityImages.isEmpty
+        ? ''
+        : ShowNetImage.getPhoto(priorityImages.first);
     return Container(
       padding: EdgeInsets.all(7.r),
       decoration: BoxDecoration(
@@ -939,86 +950,102 @@ class _InventoryProductCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(11.r),
         border: Border.all(color: Colors.grey.withValues(alpha: .12)),
       ),
-      child: Row(children: [
-        GestureDetector(
-          onTap: rawImage.isEmpty
-              ? null
-              : () => FullScreenZoomImage.open(context, original,
-                  title: item['label']?.toString()),
-          child: Stack(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.r),
-              child: Image.network(
-                thumb,
-                width: 58.r,
-                height: 58.r,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10.r),
+        onTap: () => _openProductDetails(item['id']),
+        child: Row(children: [
+          GestureDetector(
+            onTap: priorityImages.isEmpty
+                ? null
+                : () => FullScreenZoomImage.open(context, original,
+                    title: item['label']?.toString()),
+            child: Stack(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: ProductPriorityImage(
+                  imageUrls: priorityImages,
                   width: 58.r,
                   height: 58.r,
-                  color: Colors.grey.withValues(alpha: .10),
-                  child: const Icon(Icons.inventory_2_outlined,
-                      color: AppColors.primaryColor),
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(8.r),
+                  missingPlaceholder: Container(
+                    width: 58.r,
+                    height: 58.r,
+                    color: Colors.grey.withValues(alpha: .10),
+                    child: const Icon(Icons.inventory_2_outlined,
+                        color: AppColors.primaryColor),
+                  ),
                 ),
               ),
-            ),
-            if (rawImage.isNotEmpty)
-              PositionedDirectional(
-                end: 3.r,
-                bottom: 3.r,
-                child: Container(
-                  padding: EdgeInsets.all(3.r),
-                  decoration: const BoxDecoration(
-                      color: Colors.black54, shape: BoxShape.circle),
-                  child: Icon(Icons.zoom_in_rounded,
-                      size: 11.sp, color: Colors.white),
+              if (priorityImages.isNotEmpty)
+                PositionedDirectional(
+                  end: 3.r,
+                  bottom: 3.r,
+                  child: Container(
+                    padding: EdgeInsets.all(3.r),
+                    decoration: const BoxDecoration(
+                        color: Colors.black54, shape: BoxShape.circle),
+                    child: Icon(Icons.zoom_in_rounded,
+                        size: 11.sp, color: Colors.white),
+                  ),
                 ),
-              ),
-          ]),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(item['label']?.toString() ?? '-',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800)),
-              SizedBox(height: 3.h),
-              Text(
-                showSales
-                    ? 'المباع: ${_compact(_number(item['sold_quantity']))}'
-                    : 'المتوفر: ${_compact(_number(item['quantity']))}',
-                style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600),
-              ),
-              if (!showSales)
-                Text('القيمة: ${_money(item['value'])}',
+            ]),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item['label']?.toString() ?? '-',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryColor)),
-            ],
+                        fontSize: 11.sp, fontWeight: FontWeight.w800)),
+                SizedBox(height: 3.h),
+                Text(
+                  showSales
+                      ? 'المباع: ${_compact(_number(item['sold_quantity']))}'
+                      : 'المتوفر: ${_compact(_number(item['quantity']))}',
+                  style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600),
+                ),
+                if (!showSales)
+                  Text('القيمة: ${_money(item['value'])}',
+                      style: TextStyle(
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryColor)),
+              ],
+            ),
           ),
-        ),
-        Container(
-          width: 24.r,
-          height: 24.r,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withValues(alpha: .10),
-            shape: BoxShape.circle,
+          Container(
+            width: 24.r,
+            height: 24.r,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withValues(alpha: .10),
+              shape: BoxShape.circle,
+            ),
+            child: Text('$rank',
+                style: TextStyle(
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primaryColor)),
           ),
-          child: Text('$rank',
-              style: TextStyle(
-                  fontSize: 8.sp,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primaryColor)),
-        ),
-      ]),
+        ]),
+      ),
     );
+  }
+}
+
+Future<void> _openProductDetails(dynamic productId) async {
+  final id = productId?.toString() ?? '';
+  if (id.isEmpty) return;
+  StockBinding().dependencies();
+  final stock = Get.find<StockController>();
+  await stock.getProductDetails(productId: id);
+  if (stock.productDetails.value != null) {
+    await Get.toNamed(AppRoutes.PRODUCTDETAILSSCREEN);
   }
 }
 
@@ -1148,7 +1175,7 @@ class _SummaryMeta {
   final String description;
 }
 
-_SummaryMeta _summaryMeta(String key) {
+_SummaryMeta _summaryMeta(String key, Map<String, dynamic> item) {
   if (key == 'sales') {
     return const _SummaryMeta(
         'صافي المبيعات',
@@ -1157,11 +1184,15 @@ _SummaryMeta _summaryMeta(String key) {
         'إجمالي الفواتير الفورية والمبيعات الربحية الفعالة بعد طرح الخصومات، من دون الفواتير الملغاة. الطلبيات المُرحلة مالياً داخلة من خلال فاتورة البيع المرتبطة بها ولا تُحسب مرتين.');
   }
   if (key == 'net_profit') {
-    return const _SummaryMeta(
+    final netSales = _money(item['net_sales']);
+    final cost = _money(item['cost_of_sales']);
+    final expenses = _money(item['expenses']);
+    final result = _money(item['value']);
+    return _SummaryMeta(
         'صافي الربح',
         Icons.trending_up_rounded,
-        Color(0xff15966A),
-        'صافي المبيعات ناقص تكلفة جميع المنتجات المباعة ناقص المصاريف. تستخدم تكلفة FIFO المسجلة وقت البيع، أو سعر الجملة للفواتير القديمة.');
+        const Color(0xff15966A),
+        'الحسبة الحالية: $netSales صافي مبيعات - $cost تكلفة البضاعة - $expenses مصاريف = $result. القيمة السالبة طبيعية إذا كانت التكلفة والمصاريف أكبر من صافي المبيعات.');
   }
   if (key == 'expenses') {
     return const _SummaryMeta(
