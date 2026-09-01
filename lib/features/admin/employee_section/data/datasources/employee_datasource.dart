@@ -651,6 +651,10 @@ class EmployeeDatasource {
     required int employeeOrderId,
     String reason = '',
   }) async {
+    debugPrint(
+      '[employee-advance-cancel] request '
+      'employee_order_id=$employeeOrderId reason_length=${reason.trim().length}',
+    );
     try {
       final response = await api.post(
         EndPoints.cancelEmployeeLoanOrder,
@@ -659,9 +663,18 @@ class EmployeeDatasource {
           if (reason.trim().isNotEmpty) 'cancellation_reason': reason.trim(),
         },
       );
+      debugPrint(
+        '[employee-advance-cancel] response '
+        'status_code=${response.statusCode} data=${response.data}',
+      );
       return Map<String, dynamic>.from(response.data);
     } on DioException catch (e) {
       final data = e.response?.data;
+      debugPrint(
+        '[employee-advance-cancel] dio_error '
+        'type=${e.type} status_code=${e.response?.statusCode} '
+        'message=${e.message} data=$data error=${e.error}',
+      );
       throw ServerException(
         ErrorModel(
           errorMessage: data is Map
@@ -671,6 +684,13 @@ class EmployeeDatasource {
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
+    } catch (e, stackTrace) {
+      debugPrint('[employee-advance-cancel] unexpected_error $e');
+      debugPrintStack(
+        label: '[employee-advance-cancel] stack_trace',
+        stackTrace: stackTrace,
+      );
+      rethrow;
     }
   }
 
