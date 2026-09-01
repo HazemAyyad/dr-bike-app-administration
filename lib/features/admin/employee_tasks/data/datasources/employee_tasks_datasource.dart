@@ -268,7 +268,9 @@ class EmployeeTasksDatasource {
     final requestData = <String, dynamic>{
       if (occurrenceId != null && occurrenceId > 0)
         'occurrence_id': occurrenceId,
-      if (employeeTaskId.isNotEmpty) 'employee_task_id': employeeTaskId,
+      if ((occurrenceId == null || occurrenceId <= 0) &&
+          employeeTaskId.isNotEmpty)
+        'employee_task_id': employeeTaskId,
     };
     try {
       debugPrint(
