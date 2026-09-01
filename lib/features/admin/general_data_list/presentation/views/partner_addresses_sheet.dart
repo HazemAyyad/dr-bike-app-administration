@@ -266,18 +266,17 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
                                   icon: Icons.location_city_outlined,
                                 ),
                               ),
-                              popupProps: PopupProps.menu(
+                              popupProps: const PopupProps.menu(
                                 showSearchBox: true,
-                                searchDelay: const Duration(milliseconds: 120),
-                                constraints:
-                                    const BoxConstraints(maxHeight: 360),
-                                menuProps: const MenuProps(
+                                searchDelay: Duration(milliseconds: 120),
+                                constraints: BoxConstraints(maxHeight: 360),
+                                menuProps: MenuProps(
                                   backgroundColor: Colors.white,
                                   borderRadius:
                                       BorderRadius.all(Radius.circular(14)),
                                 ),
                                 searchFieldProps: TextFieldProps(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'بحث',
                                     hintText: 'مثال: الخليل أو القريبة',
                                     prefixIcon: Icon(Icons.search),
