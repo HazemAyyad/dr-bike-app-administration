@@ -440,6 +440,14 @@ class _SwipeOrderCardState extends State<_SwipeOrderCard> {
   double offset = 0;
   static const double revealWidth = 146;
 
+  @override
+  void didUpdateWidget(covariant _SwipeOrderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled && offset != 0) {
+      offset = 0;
+    }
+  }
+
   void _update(DragUpdateDetails details) {
     if (!widget.enabled) return;
     setState(() => offset = (offset + details.delta.dx).clamp(0, revealWidth));
@@ -456,38 +464,39 @@ class _SwipeOrderCardState extends State<_SwipeOrderCard> {
   Widget build(BuildContext context) => Stack(
         alignment: Alignment.centerLeft,
         children: [
-          Positioned(
-            left: 12.w,
-            child: Row(children: [
-              _SwipeAction(
-                icon: Icons.phone_outlined,
-                label: 'اتصال',
-                color: const Color(0xFF0F766E),
-                onTap: () {
-                  setState(() => offset = 0);
-                  widget.onCall();
-                },
-              ),
-              SizedBox(width: 5.w),
-              _SwipeAction(
-                icon: Icons.more_horiz_rounded,
-                label: 'الخيارات',
-                color: AppColors.primaryColor,
-                onTap: () {
-                  setState(() => offset = 0);
-                  widget.onOptions();
-                },
-              ),
-            ]),
-          ),
+          if (widget.enabled)
+            Positioned(
+              left: 12.w,
+              child: Row(children: [
+                _SwipeAction(
+                  icon: Icons.phone_outlined,
+                  label: 'اتصال',
+                  color: const Color(0xFF0F766E),
+                  onTap: () {
+                    setState(() => offset = 0);
+                    widget.onCall();
+                  },
+                ),
+                SizedBox(width: 5.w),
+                _SwipeAction(
+                  icon: Icons.more_horiz_rounded,
+                  label: 'الخيارات',
+                  color: AppColors.primaryColor,
+                  onTap: () {
+                    setState(() => offset = 0);
+                    widget.onOptions();
+                  },
+                ),
+              ]),
+            ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
             transform: Matrix4.translationValues(offset, 0, 0),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
-              onHorizontalDragUpdate: _update,
-              onHorizontalDragEnd: _finish,
+              onHorizontalDragUpdate: widget.enabled ? _update : null,
+              onHorizontalDragEnd: widget.enabled ? _finish : null,
               child: widget.child,
             ),
           ),
