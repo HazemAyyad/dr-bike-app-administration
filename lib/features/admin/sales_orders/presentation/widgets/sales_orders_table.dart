@@ -368,6 +368,32 @@ class _OrderCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (order.customerDebtBalance > 0.009 ||
+                        order.carrierReceivableBalance > 0.009) ...[
+                      SizedBox(height: 3.h),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet_outlined,
+                            size: 13.sp,
+                            color: const Color(0xFFB45309),
+                          ),
+                          SizedBox(width: 3.w),
+                          Expanded(
+                            child: Text(
+                              _settlementLabel(order),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                color: const Color(0xFFB45309),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     SizedBox(height: 3.h),
                     Row(
                       children: [
@@ -413,6 +439,21 @@ class _OrderCard extends StatelessWidget {
       return 'لم تُحدد بعد';
     }
     return 'غير مسجلة';
+  }
+
+  String _settlementLabel(SalesOrderListItemModel order) {
+    final parts = <String>[];
+    if (order.carrierReceivableBalance > 0.009) {
+      parts.add(
+        'مستحق شركة التوصيل ${order.carrierReceivableBalance.toStringAsFixed(2)} ₪',
+      );
+    }
+    if (order.customerDebtBalance > 0.009) {
+      parts.add(
+        'دين الزبون ${order.customerDebtBalance.toStringAsFixed(2)} ₪',
+      );
+    }
+    return parts.join(' • ');
   }
 }
 

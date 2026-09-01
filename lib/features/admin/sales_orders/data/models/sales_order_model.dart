@@ -16,6 +16,8 @@ class SalesOrderListItemModel {
   final String? customerPhone;
   final String? cityName;
   final double total;
+  final double customerDebtBalance;
+  final double carrierReceivableBalance;
   final String paymentType;
   final String? createdAt;
   final String? createdByName;
@@ -30,6 +32,8 @@ class SalesOrderListItemModel {
     this.customerPhone,
     this.cityName,
     required this.total,
+    this.customerDebtBalance = 0,
+    this.carrierReceivableBalance = 0,
     required this.paymentType,
     this.createdAt,
     this.createdByName,
@@ -46,6 +50,10 @@ class SalesOrderListItemModel {
       customerPhone: json['customer_phone'] as String?,
       cityName: json['city_name'] as String?,
       total: (json['total'] as num?)?.toDouble() ?? 0,
+      customerDebtBalance:
+          (json['customer_debt_balance'] as num?)?.toDouble() ?? 0,
+      carrierReceivableBalance:
+          (json['carrier_receivable_balance'] as num?)?.toDouble() ?? 0,
       paymentType: json['payment_type'] as String? ?? 'cash',
       createdAt: json['created_at'] as String?,
       createdByName: json['created_by_name'] as String?,

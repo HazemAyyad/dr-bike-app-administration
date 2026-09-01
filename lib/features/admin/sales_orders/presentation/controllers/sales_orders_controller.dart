@@ -233,6 +233,7 @@ class SalesOrdersController extends GetxController {
     'review',
     'partial_delivered',
     'delivered',
+    'settlement',
     'partial_return',
     'alternative_return',
     'returned',
@@ -254,7 +255,7 @@ class SalesOrdersController extends GetxController {
   }
 
   int get totalOrdersCount => statusCounts.entries
-      .where((entry) => entry.key != 'all')
+      .where((entry) => entry.key != 'all' && entry.key != 'settlement')
       .fold<int>(0, (total, entry) => total + entry.value);
 
   @override
@@ -317,7 +318,8 @@ class SalesOrdersController extends GetxController {
         orders.assignAll(data.orders);
         statusCounts.assignAll(data.statusCounts);
         statusCounts['all'] = data.statusCounts.entries
-            .where((entry) => entry.key != 'archived')
+            .where(
+                (entry) => entry.key != 'archived' && entry.key != 'settlement')
             .fold<int>(0, (sum, entry) => sum + entry.value);
         if (statusFilter.value != 'all' &&
             statusFilter.value != 'archived' &&
@@ -823,8 +825,19 @@ class SalesOrdersController extends GetxController {
   }) async {
     selectedShiplyCityId.value = cityId;
     selectedShiplyVillageId.value = villageId;
+    selectedCityId.value = null;
     shiplyQuotedDeliveryFee.value = null;
     if (villageId == null) return;
+    for (final city in shiplyCities) {
+      if (city.id != cityId) continue;
+      final village = city.villages.firstWhereOrNull(
+        (item) => item.id == villageId,
+      );
+      if (village != null) {
+        customerAddressController.text = '${village.name}، ${city.name}';
+      }
+      break;
+    }
     await _applyShiplyDeliveryFeeQuote(villageId, parcelPrice: parcelPrice);
   }
 
@@ -1378,6 +1391,20 @@ class SalesOrdersController extends GetxController {
           ? '----'
           : customerAddressController.text.trim(),
       if (selectedCityId.value != null) 'city_id': selectedCityId.value,
+      if (selectedShiplyCityId.value != null)
+        'shiply_city_id': selectedShiplyCityId.value,
+      if (selectedShiplyVillageId.value != null)
+        'shiply_village_id': selectedShiplyVillageId.value,
+      if (selectedShiplyCityId.value != null)
+        'shiply_city_name': shiplyCities
+            .firstWhereOrNull((city) => city.id == selectedShiplyCityId.value)
+            ?.name,
+      if (selectedShiplyVillageId.value != null)
+        'shiply_village_name': selectedShiplyVillages
+            .firstWhereOrNull(
+              (village) => village.id == selectedShiplyVillageId.value,
+            )
+            ?.name,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
       if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
@@ -1882,6 +1909,7 @@ class SalesOrdersController extends GetxController {
 
   String statusLabel(String status) {
     if (status == 'all') return 'الكل';
+    if (status == 'settlement') return 'بانتظار التسوية';
     if (status == 'unconfirmed') return 'salesOrderStatusUnconfirmed'.tr;
     if (status == 'confirmed') return 'salesOrderStatusConfirmed'.tr;
     if (status == 'ready') return 'salesOrderStatusReady'.tr;

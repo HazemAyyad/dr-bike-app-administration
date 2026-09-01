@@ -156,6 +156,7 @@ class DailyExpectedOpeningCount {
 
 class DailySessionInfo {
   final int id;
+  final String sessionType;
   final String businessDate;
   final String status;
   final bool allowsSales;
@@ -173,6 +174,7 @@ class DailySessionInfo {
 
   const DailySessionInfo({
     required this.id,
+    this.sessionType = 'instant_sales',
     required this.businessDate,
     required this.status,
     this.allowsSales = false,
@@ -192,6 +194,7 @@ class DailySessionInfo {
   factory DailySessionInfo.fromJson(Map<String, dynamic> json) {
     return DailySessionInfo(
       id: asInt(json['id']),
+      sessionType: asString(json['session_type'], 'instant_sales'),
       businessDate: asString(json['business_date']),
       status: asString(json['status']),
       allowsSales: json['allows_sales'] == true || json['allows_sales'] == 1,

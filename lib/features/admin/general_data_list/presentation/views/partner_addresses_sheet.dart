@@ -1,10 +1,20 @@
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../sales_orders/data/models/sales_order_model.dart';
+
+class _PartnerAddressOption {
+  const _PartnerAddressOption({required this.city, required this.village});
+  final ShiplyCityModel city;
+  final ShiplyVillageModel village;
+
+  String get label => '${village.name} — ${city.name}';
+  String get key => '${city.id}_${village.id}';
+}
 
 Future<Map<String, dynamic>?> showPartnerAddressesSheet({
   required BuildContext context,
@@ -39,7 +49,6 @@ class _PartnerAddressesSheet extends StatefulWidget {
 class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
   final DioConsumer _api = Get.find<DioConsumer>();
   List<Map<String, dynamic>> _rows = const [];
-  List<CityModel> _cities = const [];
   List<ShiplyCityModel> _shiplyCities = const [];
   bool _loading = true;
 
@@ -70,16 +79,9 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
   }
 
   Future<void> _loadAddressOptions() async {
-    final responses = await Future.wait([
-      _api.get(EndPoints.cities),
-      _api.get(EndPoints.shiplyAddressOptions),
-    ]);
-    _cities = mapList(
-      asMap(responses[0].data)['cities'],
-      (row) => CityModel.fromJson(row),
-    );
+    final response = await _api.get(EndPoints.shiplyAddressOptions);
     _shiplyCities = mapList(
-      asMap(responses[1].data)['cities'],
+      asMap(response.data)['cities'],
       (row) => ShiplyCityModel.fromJson(row),
     );
   }
@@ -95,10 +97,6 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
             : asString(row?['street_address']));
     final phone = TextEditingController(text: asString(row?['phone']));
     final notes = TextEditingController(text: asString(row?['delivery_notes']));
-    int? cityId = asInt(row?['city_id']);
-    if (cityId == 0 || !_cities.any((city) => city.id == cityId)) {
-      cityId = null;
-    }
     int? shiplyCityId = asInt(row?['shiply_city_id']);
     if (shiplyCityId == 0 ||
         !_shiplyCities.any((city) => city.id == shiplyCityId)) {
@@ -117,6 +115,20 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
         .any((village) => village.id == shiplyVillageId)) {
       shiplyVillageId = null;
     }
+    List<_PartnerAddressOption> options() => [
+          for (final city in _shiplyCities)
+            for (final village in city.villages)
+              if (!village.isClosed)
+                _PartnerAddressOption(city: city, village: village),
+        ];
+    _PartnerAddressOption? selectedOption() {
+      return options().firstWhereOrNull(
+        (option) =>
+            option.city.id == shiplyCityId &&
+            option.village.id == shiplyVillageId,
+      );
+    }
+
     var isDefault = row?['is_default'] == true || row?['is_default'] == 1;
     final saved = await showDialog<bool>(
       context: context,
@@ -134,65 +146,49 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
                     hintText: 'مثال: المنزل أو المكتب',
                   ),
                 ),
-                DropdownButtonFormField<int>(
-                  initialValue: cityId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'المدينة العامة (اختياري)',
-                  ),
-                  items: _cities
-                      .map(
-                        (city) => DropdownMenuItem(
-                          value: city.id,
-                          child: Text(city.nameAr),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setLocal(() => cityId = value),
-                ),
-                DropdownButtonFormField<int>(
-                  initialValue: shiplyCityId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'مدينة التوصيل *',
-                  ),
-                  validator: (value) =>
-                      value == null ? 'مدينة التوصيل مطلوبة قبل الحفظ' : null,
-                  items: _shiplyCities
-                      .map(
-                        (city) => DropdownMenuItem(
-                          value: city.id,
-                          child: Text(city.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setLocal(() {
-                    shiplyCityId = value;
-                    shiplyVillageId = null;
-                  }),
-                ),
-                DropdownButtonFormField<int>(
-                  key: ValueKey(shiplyCityId),
-                  initialValue: shiplyVillageId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'قرية / منطقة التوصيل *',
-                  ),
+                DropdownSearch<_PartnerAddressOption>(
+                  selectedItem: selectedOption(),
+                  items: (filter, _) async {
+                    final query = filter.trim().toLowerCase();
+                    if (query.isEmpty) return options();
+                    return options()
+                        .where((option) =>
+                            option.city.name.toLowerCase().contains(query) ||
+                            option.village.name.toLowerCase().contains(query))
+                        .toList();
+                  },
+                  itemAsString: (option) => option.label,
+                  compareFn: (a, b) => a.key == b.key,
                   validator: (value) => value == null
-                      ? 'قرية أو منطقة التوصيل مطلوبة قبل الحفظ'
+                      ? 'اختر القرية أو المنطقة مع المدينة قبل الحفظ'
                       : null,
-                  items: villagesFor(shiplyCityId)
-                      .where((village) => !village.isClosed)
-                      .map(
-                        (village) => DropdownMenuItem(
-                          value: village.id,
-                          child: Text(village.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: shiplyCityId == null
-                      ? null
-                      : (value) => setLocal(() => shiplyVillageId = value),
+                  decoratorProps: const DropDownDecoratorProps(
+                    decoration: InputDecoration(
+                      labelText: 'ابحث عن المدينة أو القرية *',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  popupProps: const PopupProps.menu(
+                    showSearchBox: true,
+                    searchDelay: Duration.zero,
+                    constraints: BoxConstraints(maxHeight: 360),
+                    searchFieldProps: TextFieldProps(
+                      decoration: InputDecoration(
+                        hintText: 'مثال: الخليل أو القريبة',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  onChanged: (option) => setLocal(() {
+                    shiplyCityId = option?.city.id;
+                    shiplyVillageId = option?.village.id;
+                    if (option != null) {
+                      street.text =
+                          '${option.village.name}، ${option.city.name}';
+                    }
+                  }),
                 ),
                 TextFormField(
                   controller: street,
@@ -246,7 +242,7 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
       if (row != null) 'address_id': asInt(row['id']),
       'label':
           label.text.trim().isEmpty ? 'العنوان الرئيسي' : label.text.trim(),
-      'city_id': cityId,
+      'city_id': null,
       'shiply_city_id': shiplyCityId,
       'shiply_village_id': shiplyVillageId,
       'shiply_city_name': selectedShiplyCity?.name,

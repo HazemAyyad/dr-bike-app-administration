@@ -46,7 +46,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-        title: 'صناديق المبيعات اليومية',
+        title: 'صناديق المبيعات والطلبيات اليومية',
         action: false,
       ),
       body: Obx(() {
@@ -78,7 +78,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
                 SalesDailyStatusBar(
                   salesOrders: selectedType == 'sales_orders',
                   onOpened: _continueAfterOpening,
-                  autoOpen: true,
+                  autoOpen: _shouldAutoOpen(),
                 ),
                 SizedBox(height: 6.h),
               ],
@@ -145,17 +145,20 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
   }
 
   bool _shouldOfferOpening() {
-    final args = Get.arguments;
-    if (args is! Map || args['openDrawer'] != true || sales == null) {
-      return false;
-    }
+    if (sales == null) return false;
     final payload = selectedType == 'sales_orders'
         ? sales!.salesOrdersDailySessionPayload.value
         : sales!.dailySessionPayload.value;
     return payload?.canRequestOpen == true || payload?.needsManualOpen == true;
   }
 
+  bool _shouldAutoOpen() {
+    final args = Get.arguments;
+    return args is Map && args['openDrawer'] == true;
+  }
+
   Future<void> _continueAfterOpening() async {
+    await _refresh();
     final args = Get.arguments;
     if (args is! Map) return;
     final route = '${args['returnRoute'] ?? ''}';

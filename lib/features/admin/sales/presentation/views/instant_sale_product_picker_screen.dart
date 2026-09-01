@@ -18,7 +18,6 @@ import '../widgets/sales_location_filter_fab.dart';
 import '../widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
-import '../widgets/sales_daily_status_bar.dart';
 
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
@@ -159,8 +158,6 @@ class _InstantSaleProductPickerScreenState
           children: [
             Column(
               children: [
-                if (_salesOrderFlow)
-                  const SalesDailyStatusBar(salesOrders: true),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: Row(

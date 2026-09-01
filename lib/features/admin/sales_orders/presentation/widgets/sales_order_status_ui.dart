@@ -31,6 +31,8 @@ class SalesOrderStatusUi {
         return const Color(0xFFD97706);
       case 'delivered':
         return const Color(0xFF059669);
+      case 'settlement':
+        return const Color(0xFFB45309);
       case 'archived':
         return const Color(0xFF374151);
       case 'review':

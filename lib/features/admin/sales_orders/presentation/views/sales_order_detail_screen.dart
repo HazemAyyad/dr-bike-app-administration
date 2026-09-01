@@ -145,18 +145,12 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       key: _itemsKey,
                       child: _itemsSection(order),
                     ),
-                    if (order.mediaRequirements.isNotEmpty) ...[
+                    if (order.mediaRequirements.isNotEmpty ||
+                        order.media.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       KeyedSubtree(
                         key: _mediaKey,
                         child: _mediaRequirementsCard(order),
-                      ),
-                    ],
-                    if (_unassignedMedia(order).isNotEmpty) ...[
-                      SizedBox(height: 12.h),
-                      KeyedSubtree(
-                        key: order.mediaRequirements.isEmpty ? _mediaKey : null,
-                        child: _mediaCard(order),
                       ),
                     ],
                     if (_hasLogisticsInfo(order)) ...[
@@ -633,16 +627,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       );
     }
 
-    if (order.status == 'confirmed' &&
-        order.mediaRequirements['items_group']?.satisfied == false) {
-      return requiredMedia('items_group');
+    if (order.status == 'confirmed') {
+      final missing = _missingMediaFor(order, 'mark_ready');
+      if (missing != null) return requiredMedia(missing);
     }
     if (order.status == 'ready') {
-      for (final category in const ['items_group', 'packaged']) {
-        if (order.mediaRequirements[category]?.satisfied == false) {
-          return requiredMedia(category);
-        }
-      }
+      final missing = _missingMediaFor(order, 'handover');
+      if (missing != null) return requiredMedia(missing);
     }
 
     switch (order.status) {
@@ -1006,8 +997,15 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               SizedBox(height: 8.h),
               _shiplyTestModeChip(),
             ],
-            SizedBox(height: 12.h),
-            SalesOrderShiplyTimeline(tracking: order.shiplyTracking!),
+            SizedBox(height: 8.h),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showDeliveryTracking(order),
+                icon: const Icon(Icons.route_outlined),
+                label: const Text('عرض تتبع الشحنة'),
+              ),
+            ),
           ],
         ],
       ),
@@ -1028,6 +1026,51 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           color: const Color(0xFFE65100),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeliveryTracking(SalesOrderDetailModel order) async {
+    final tracking = order.shiplyTracking;
+    if (tracking == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.72,
+        minChildSize: 0.4,
+        maxChildSize: 0.94,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
+          decoration: BoxDecoration(
+            color: SalesOrdersController.surfaceGray,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Center(
+                child: Container(
+                  width: 42.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: 12.h),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+              ),
+              Text(
+                'تتبع الشحنة',
+                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 10.h),
+              SalesOrderShiplyTimeline(tracking: tracking),
+            ],
+          ),
         ),
       ),
     );
@@ -1770,35 +1813,32 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               );
             });
           }),
+          if (_unassignedMedia(order).isNotEmpty)
+            _unassignedMediaSection(order),
         ],
       ),
     );
   }
 
-  Widget _mediaCard(SalesOrderDetailModel order) {
+  Widget _unassignedMediaSection(SalesOrderDetailModel order) {
     final mediaRows = _unassignedMedia(order);
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: SalesOrdersController.cardGray,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: SalesOrdersController.borderGray),
-      ),
+    return Padding(
+      padding: EdgeInsets.only(top: 5.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'salesOrderUploadMedia'.tr,
+            'صور أخرى مرفوعة',
             style: TextStyle(
-              color: SalesOrdersController.textPrimary,
+              color: SalesOrdersController.textSecondary,
               fontWeight: FontWeight.w600,
-              fontSize: 14.sp,
+              fontSize: 10.sp,
             ),
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 5.h),
           Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
+            spacing: 5.w,
+            runSpacing: 5.h,
             children: mediaRows.map((m) {
               if (m.url == null) return const SizedBox.shrink();
               final url = m.url!;
@@ -1810,12 +1850,12 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     onTap: () => Get.to(() => VideoView(videoPath: url)),
                     borderRadius: BorderRadius.circular(8.r),
                     child: SizedBox(
-                      width: 88.w,
-                      height: 88.w,
+                      width: 38.w,
+                      height: 38.w,
                       child: const Icon(
                         Icons.play_circle_fill,
                         color: Colors.white,
-                        size: 38,
+                        size: 22,
                       ),
                     ),
                   ),
@@ -1831,8 +1871,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     borderRadius: BorderRadius.circular(8.r),
                     child: CachedNetworkImage(
                       imageUrl: url,
-                      width: 88.w,
-                      height: 88.w,
+                      width: 38.w,
+                      height: 38.w,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -2045,7 +2085,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       isShiplyDelivery: order.isShiplyDelivery,
       needsSettlement: order.customerDebtBalance > 0.009 ||
           order.carrierReceivableBalance > 0.009,
-    );
+    ).where((action) => action.id != SalesOrderActionId.uploadMedia).toList();
     if (actions.isEmpty) return const SizedBox.shrink();
 
     return Container(

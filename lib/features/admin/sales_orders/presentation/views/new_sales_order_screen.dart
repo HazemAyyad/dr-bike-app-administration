@@ -8,6 +8,7 @@ import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
+import '../widgets/sales_order_shiply_address_fields.dart';
 
 class NewSalesOrderScreen extends StatefulWidget {
   const NewSalesOrderScreen({Key? key}) : super(key: key);
@@ -163,44 +164,29 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Obx(
-                  () => DropdownButtonFormField<int>(
-                    initialValue: controller.selectedCityId.value,
-                    decoration: _inputDecoration().copyWith(
-                      labelText: 'المدينة العامة (اختياري)',
-                    ),
-                    items: controller.cities
-                        .map((c) => DropdownMenuItem(
-                            value: c.id, child: Text(c.nameAr)))
-                        .toList(),
-                    onChanged: (v) => controller.selectedCityId.value = v,
-                  ),
-                ),
+          SalesOrderShiplyAddressFields(
+            controller: controller,
+            showShiplyBranding: false,
+            parcelPriceForFee: sales.totalCost.value,
+          ),
+          SizedBox(height: 10.h),
+          Obx(
+            () => DropdownButtonFormField<String>(
+              initialValue: controller.selectedPaymentType.value,
+              decoration: _inputDecoration().copyWith(
+                labelText: 'طريقة الدفع',
               ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: Obx(
-                  () => DropdownButtonFormField<String>(
-                    initialValue: controller.selectedPaymentType.value,
-                    decoration: _inputDecoration(),
-                    items: [
-                      DropdownMenuItem(value: 'cash', child: Text('cash'.tr)),
-                      DropdownMenuItem(
-                          value: 'credit', child: Text('credit'.tr)),
-                      DropdownMenuItem(value: 'visa', child: Text('visa'.tr)),
-                      DropdownMenuItem(
-                          value: 'mixed', child: Text('salesOrderMixed'.tr)),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) controller.selectedPaymentType.value = v;
-                    },
-                  ),
-                ),
-              ),
-            ],
+              items: [
+                DropdownMenuItem(value: 'cash', child: Text('cash'.tr)),
+                DropdownMenuItem(value: 'credit', child: Text('credit'.tr)),
+                DropdownMenuItem(value: 'visa', child: Text('visa'.tr)),
+                DropdownMenuItem(
+                    value: 'mixed', child: Text('salesOrderMixed'.tr)),
+              ],
+              onChanged: (v) {
+                if (v != null) controller.selectedPaymentType.value = v;
+              },
+            ),
           ),
           SizedBox(height: 10.h),
           TextField(

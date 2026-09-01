@@ -10,6 +10,7 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -116,9 +117,14 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   DailySessionPayload? get _payload =>
       _adminPayload ?? controller.dailySessionPayload.value;
 
+  bool get _isOrdersSession => _payload?.session?.sessionType == 'sales_orders';
+
   void _initControllers() {
     final payload = _payload;
-    if (payload == null || payload.isClosingRequested) return;
+    if (payload == null ||
+        (payload.isClosingRequested && !payload.canFinalizeClosing)) {
+      return;
+    }
 
     for (final c in _physical.values) {
       c.dispose();
@@ -242,7 +248,12 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     return Scaffold(
       backgroundColor: _pageBg,
       appBar: appBar ??
-          const CustomAppBar(title: 'salesDailyCloseDay', action: false),
+          CustomAppBar(
+            title: _isOrdersSession
+                ? 'إغلاق صندوق الطلبيات اليومي'
+                : 'إغلاق صندوق المبيعات اليومي',
+            action: false,
+          ),
       body: body,
     );
   }
@@ -267,7 +278,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       return _scaffold(const SalesDailyCloseSkeleton());
     }
 
-    if (payload.isClosingRequested) {
+    if (payload.isClosingRequested && !payload.canFinalizeClosing) {
       return _scaffold(
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -322,7 +333,13 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
           children: [
             _headerCard(payload, session),
             SizedBox(height: 8.h),
-            _salesCountRow(payload),
+            _closingStepsCard(),
+            SizedBox(height: 8.h),
+            _drawerTotals(payload),
+            if (!_isOrdersSession) ...[
+              SizedBox(height: 8.h),
+              _salesCountRow(payload),
+            ],
             if (payload.requiresLateCloseReason) ...[
               SizedBox(height: 8.h),
               _lateReasonCard(),
@@ -400,6 +417,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   Widget _headerCard(DailySessionPayload payload, DailySessionInfo? session) {
     final employeeLabel = session?.employeeName;
     final businessDate = session?.businessDate;
+    final openedAt = session?.openedAt;
 
     return _surfaceCard(
       child: Column(
@@ -417,7 +435,9 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(
-                  Icons.point_of_sale_outlined,
+                  _isOrdersSession
+                      ? Icons.local_shipping_outlined
+                      : Icons.point_of_sale_outlined,
                   size: 22.sp,
                   color: _titleColor,
                 ),
@@ -427,9 +447,19 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      _isOrdersSession
+                          ? 'صندوق الطلبيات اليومي'
+                          : 'صندوق المبيعات اليومي',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
                     if (employeeLabel != null && employeeLabel.isNotEmpty)
                       Text(
-                        employeeLabel,
+                        'المسؤول: $employeeLabel',
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w800,
@@ -443,6 +473,11 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                         style: TextStyle(fontSize: 12.sp, color: _mutedColor),
                       ),
                     ],
+                    if (openedAt != null && openedAt.isNotEmpty)
+                      Text(
+                        'فتح في: ${_displayDateTime(openedAt)}',
+                        style: TextStyle(fontSize: 11.sp, color: _mutedColor),
+                      ),
                   ],
                 ),
               ),
@@ -451,6 +486,20 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
           SizedBox(height: 12.h),
           Divider(height: 1, color: _borderColor),
           SizedBox(height: 12.h),
+          if (session != null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Get.toNamed(
+                  AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+                  arguments: session.id,
+                ),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('عرض الحركات وتفاصيل الصندوق'),
+              ),
+            ),
+            SizedBox(height: 8.h),
+          ],
           Text(
             payload.isBlockingPreviousDay
                 ? 'salesDailyClosePreviousDayIntro'.tr
@@ -463,6 +512,103 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  String _displayDateTime(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    final hour = parsed.hour % 12 == 0 ? 12 : parsed.hour % 12;
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    return '${parsed.year}-${parsed.month.toString().padLeft(2, '0')}-${parsed.day.toString().padLeft(2, '0')}  $hour:$minute ${parsed.hour >= 12 ? 'م' : 'ص'}';
+  }
+
+  Widget _closingStepsCard() {
+    const icons = [
+      Icons.calculate_outlined,
+      Icons.payments_outlined,
+      Icons.compare_arrows_rounded,
+    ];
+    const labels = [
+      'راجع المتوقع',
+      'أدخل الموجود',
+      'راجع الفرق والعهدة',
+    ];
+    return _surfaceCard(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      child: Row(
+        children: [
+          for (var index = 0; index < labels.length; index++) ...[
+            Expanded(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 14.r,
+                    backgroundColor:
+                        AppColors.primaryColor.withValues(alpha: 0.1),
+                    child: Icon(
+                      icons[index],
+                      size: 15.sp,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    labels[index],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w700,
+                      color: _titleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (index < labels.length - 1)
+              Icon(Icons.chevron_left_rounded, size: 16.sp, color: _mutedColor),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerTotals(DailySessionPayload payload) {
+    final rows =
+        _isOrdersSession ? payload.salesOrdersCurrencies : payload.currencies;
+    final primary = rows.firstWhereOrNull((row) => row.currency == 'شيكل') ??
+        (rows.isEmpty ? null : rows.first);
+    if (primary == null) return const SizedBox.shrink();
+    return Row(
+      children: [
+        Expanded(
+          child: _statChip(
+            icon: Icons.account_balance_outlined,
+            label: 'رصيد الافتتاح',
+            value:
+                '${primary.openingFloat.toStringAsFixed(2)} ${primary.currency}',
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: _statChip(
+            icon: Icons.add_card_outlined,
+            label: _isOrdersSession ? 'تحصيل الطلبيات' : 'المبيعات المقبوضة',
+            value:
+                '${primary.salesCollected.toStringAsFixed(2)} ${primary.currency}',
+          ),
+        ),
+        SizedBox(width: 6.w),
+        Expanded(
+          child: _statChip(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'المتوقع الآن',
+            value:
+                '${primary.systemBalance.toStringAsFixed(2)} ${primary.currency}',
+          ),
+        ),
+      ],
     );
   }
 
@@ -513,7 +659,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 18.sp,
+                    fontSize: value.length > 8 ? 12.sp : 18.sp,
                     fontWeight: FontWeight.w800,
                     color: _titleColor,
                   ),

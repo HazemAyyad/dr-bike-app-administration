@@ -157,7 +157,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                   ),
                   child: Text('salesDailyCloseDay'.tr),
                 ),
-              if (payload.canRequestOpen)
+              if (payload.canRequestOpen || payload.needsManualOpen)
                 TextButton(
                   onPressed: () => _openDrawer(context),
                   child: Text('salesDailyOpenDrawer'.tr),

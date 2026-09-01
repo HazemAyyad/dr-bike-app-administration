@@ -200,16 +200,24 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
     final source =
         raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final values = <String, Map<String, bool>>{};
-    for (final stage in const ['mark_ready', 'handover']) {
+    for (final stage in const ['visible', 'mark_ready', 'handover']) {
       final stageRaw = source[stage];
       final map = stageRaw is Map
           ? Map<String, dynamic>.from(stageRaw)
           : <String, dynamic>{};
       values[stage] = {
-        'items_group': map['items_group'] == true,
-        'packaged': map['packaged'] == true,
-        'testing': map['testing'] == true,
-        'document': map['document'] == true,
+        'items_group': stage == 'visible'
+            ? map['items_group'] != false
+            : map['items_group'] == true,
+        'packaged': stage == 'visible'
+            ? map['packaged'] != false
+            : map['packaged'] == true,
+        'testing': stage == 'visible'
+            ? map['testing'] != false
+            : map['testing'] == true,
+        'document': stage == 'visible'
+            ? map['document'] != false
+            : map['document'] == true,
       };
     }
     showDialog<void>(
@@ -224,32 +232,70 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'فعّل الصور التي يجب رفعها قبل السماح بالانتقال لكل مرحلة.',
+                    'حدد ما يظهر للموظف، ثم اختر إن كان إلزامياً قبل مرحلة معينة.',
                   ),
                   const SizedBox(height: 12),
-                  for (final stage in const ['mark_ready', 'handover']) ...[
-                    Text(
-                      stage == 'mark_ready'
-                          ? 'قبل تحويل الطلبية إلى جاهزة'
-                          : 'قبل تسليم الطلبية لشركة التوصيل',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    for (final category in const [
-                      'items_group',
-                      'packaged',
-                      'testing',
-                      'document',
-                    ])
-                      SwitchListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(_mediaCategoryLabel(category)),
-                        value: values[stage]![category] ?? false,
-                        onChanged: (enabled) => setDialogState(
-                          () => values[stage]![category] = enabled,
+                  for (final category in const [
+                    'items_group',
+                    'packaged',
+                    'testing',
+                    'document',
+                  ]) ...[
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          children: [
+                            SwitchListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                _mediaCategoryLabel(category),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                values['visible']![category] == true
+                                    ? 'ظاهر في الطلبية'
+                                    : 'مخفي ما لم توجد له صور مرفوعة',
+                              ),
+                              value: values['visible']![category] ?? true,
+                              onChanged: (enabled) => setDialogState(() {
+                                values['visible']![category] = enabled;
+                                if (!enabled) {
+                                  values['mark_ready']![category] = false;
+                                  values['handover']![category] = false;
+                                }
+                              }),
+                            ),
+                            CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('إلزامي قبل حالة جاهزة'),
+                              value: values['mark_ready']![category] ?? false,
+                              onChanged: values['visible']![category] != true
+                                  ? null
+                                  : (required) => setDialogState(() =>
+                                      values['mark_ready']![category] =
+                                          required ?? false),
+                            ),
+                            CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('إلزامي قبل التسليم للتوصيل'),
+                              value: values['handover']![category] ?? false,
+                              onChanged: values['visible']![category] != true
+                                  ? null
+                                  : (required) => setDialogState(() =>
+                                      values['handover']![category] =
+                                          required ?? false),
+                            ),
+                          ],
                         ),
                       ),
-                    const Divider(),
+                    ),
                   ],
                 ],
               ),

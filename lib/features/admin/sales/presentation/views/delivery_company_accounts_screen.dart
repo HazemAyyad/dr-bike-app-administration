@@ -7,6 +7,11 @@ import 'package:get/get.dart';
 
 import '../controllers/sales_controller.dart';
 
+const _navy = Color(0xFF12304A);
+const _surface = Color(0xFFF4F7F9);
+const _border = Color(0xFFDDE5EA);
+const _warning = Color(0xFFB45309);
+
 class DeliveryCompanyAccountsScreen extends StatefulWidget {
   const DeliveryCompanyAccountsScreen({Key? key}) : super(key: key);
 
@@ -47,6 +52,7 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: _surface,
         appBar: AppBar(title: const Text('حسابات شركات التوصيل')),
         body: loading && accounts.isEmpty
             ? const Center(child: CircularProgressIndicator())
@@ -59,26 +65,89 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
                         Center(child: Text('لا توجد حسابات شركات توصيل بعد')),
                       ])
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: accounts.length,
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                        itemCount: accounts.length + 1,
                         itemBuilder: (_, i) {
-                          final a = accounts[i];
+                          if (i == 0) {
+                            final total = accounts.fold<double>(
+                              0,
+                              (sum, row) =>
+                                  sum + number(row['outstanding_balance']),
+                            );
+                            final orderCount = accounts.fold<int>(
+                              0,
+                              (sum, row) =>
+                                  sum +
+                                  (row['outstanding_orders_count'] as num? ?? 0)
+                                      .toInt(),
+                            );
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _AccountsOverview(
+                                companies: accounts.length,
+                                orders: orderCount,
+                                balance: total,
+                              ),
+                            );
+                          }
+                          final accountIndex = i - 1;
+                          final a = accounts[accountIndex];
                           final balance = number(a['outstanding_balance']);
+                          final count =
+                              (a['outstanding_orders_count'] as num? ?? 0)
+                                  .toInt();
                           return Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: const BorderSide(color: _border),
+                            ),
                             child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              leading: const CircleAvatar(
-                                  child: Icon(Icons.local_shipping_outlined)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 9,
+                              ),
+                              leading: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: (balance > 0 ? _warning : Colors.green)
+                                      .withValues(alpha: .1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.local_shipping_outlined,
+                                  color: balance > 0 ? _warning : Colors.green,
+                                ),
+                              ),
                               title: Text(
-                                  '${a['delivery_company_name'] ?? 'شركة توصيل'}'),
+                                '${a['delivery_company_name'] ?? 'شركة توصيل'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: _navy,
+                                ),
+                              ),
                               subtitle: Text(
-                                  'طلبيات غير مسددة: ${a['outstanding_orders_count'] ?? 0}'),
-                              trailing: Text(balance.toStringAsFixed(2),
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: balance > 0
-                                          ? Colors.red
-                                          : Colors.green)),
+                                count == 0
+                                    ? 'الحساب مسدد بالكامل'
+                                    : '$count طلبيات بانتظار التسوية',
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${balance.toStringAsFixed(2)} ₪',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color:
+                                          balance > 0 ? _warning : Colors.green,
+                                    ),
+                                  ),
+                                  const Icon(Icons.chevron_left_rounded,
+                                      size: 18),
+                                ],
+                              ),
                               onTap: () async {
                                 await Get.to(() =>
                                     DeliveryCompanyAccountDetailScreen(
@@ -90,6 +159,56 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
                         },
                       ),
               ),
+      );
+}
+
+class _AccountsOverview extends StatelessWidget {
+  const _AccountsOverview({
+    required this.companies,
+    required this.orders,
+    required this.balance,
+  });
+  final int companies;
+  final int orders;
+  final double balance;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _navy,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('المبالغ المنتظرة من شركات التوصيل',
+                style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 4),
+            Text('${balance.toStringAsFixed(2)} ₪',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900)),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: _overviewValue('الشركات', '$companies')),
+              Expanded(child: _overviewValue('طلبيات معلقة', '$orders')),
+            ]),
+          ],
+        ),
+      );
+
+  Widget _overviewValue(String label, String value) => Container(
+        margin: const EdgeInsetsDirectional.only(end: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text('$label  $value',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w700)),
       );
 }
 
@@ -110,6 +229,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
   Map<String, dynamic> account = {};
   final Set<int> selected = {};
   bool loading = true;
+  int section = 0;
 
   int get companyId => (widget.account['delivery_company_id'] as num).toInt();
   String get companyName => '${widget.account['delivery_company_name'] ?? ''}';
@@ -157,6 +277,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
     final batches =
         rawBatches is List ? rawBatches.whereType<Map>().toList() : <Map>[];
     return Scaffold(
+      backgroundColor: _surface,
       appBar: AppBar(title: Text(companyName)),
       bottomNavigationBar: selected.isEmpty
           ? null
@@ -164,10 +285,13 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
               child: Padding(
               padding: const EdgeInsets.all(12),
               child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                    backgroundColor: _navy,
+                    padding: const EdgeInsets.symmetric(vertical: 14)),
                 onPressed: settle,
                 icon: const Icon(Icons.payments_outlined),
                 label: Text(
-                    'تسوية المحدد (${selected.length}) — ${selectedTotal.toStringAsFixed(2)}'),
+                    'تسوية ${selected.length} طلبيات — ${selectedTotal.toStringAsFixed(2)} ₪'),
               ),
             )),
       body: loading && account.isEmpty
@@ -176,104 +300,147 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
               onRefresh: load,
               child: ListView(padding: const EdgeInsets.all(16), children: [
                 Card(
-                  color: Theme.of(context).colorScheme.primaryContainer,
+                  elevation: 0,
+                  color: _navy,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(18),
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('إجمالي المبلغ المطلوب من الشركة'),
+                          const Expanded(
+                              child: Text('إجمالي المبلغ المطلوب من الشركة',
+                                  style: TextStyle(color: Colors.white70))),
                           Text(
                               number(account['outstanding_balance'])
                                   .toStringAsFixed(2),
                               style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold)),
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold)),
                         ]),
                   ),
                 ),
-                Row(children: [
-                  const Expanded(
-                      child: Text('الطلبيات غير المسددة',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold))),
-                  TextButton(
-                    onPressed: outstanding.isEmpty
-                        ? null
-                        : () => setState(() {
-                              if (selected.length == outstanding.length) {
-                                selected.clear();
-                              } else {
-                                selected
-                                  ..clear()
-                                  ..addAll(outstanding
-                                      .map((o) => (o['id'] as num).toInt()));
-                              }
-                            }),
-                    child: Text(selected.length == outstanding.length &&
-                            outstanding.isNotEmpty
-                        ? 'إلغاء تحديد الكل'
-                        : 'تحديد الكل'),
-                  ),
-                ]),
-                if (outstanding.isEmpty)
-                  const Card(
-                      child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(child: Text('الحساب مسدد بالكامل')))),
-                for (final o in outstanding)
-                  CheckboxListTile(
-                    value: selected.contains((o['id'] as num).toInt()),
-                    onChanged: (v) => setState(() {
-                      final id = (o['id'] as num).toInt();
-                      v == true ? selected.add(id) : selected.remove(id);
-                    }),
-                    title: Text(
-                        '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}'),
-                    subtitle: Text('تاريخ الطلبية: ${date(o['created_at'])}'),
-                    secondary: Text(
-                        number(o['carrier_receivable_balance'])
-                            .toStringAsFixed(2),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.red)),
-                  ),
-                const SizedBox(height: 20),
-                const Text('سجل طلبيات الشركة',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                for (final o in orders)
-                  Card(
-                    child: ListTile(
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: [
+                    _sectionChip(0, 'بانتظار التسوية', outstanding.length),
+                    _sectionChip(1, 'كل الطلبيات', orders.length),
+                    _sectionChip(2, 'سجل التسويات', batches.length),
+                  ]),
+                ),
+                if (section == 0) ...[
+                  Row(children: [
+                    const Expanded(
+                        child: Text('الطلبيات غير المسددة',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold))),
+                    TextButton(
+                      onPressed: outstanding.isEmpty
+                          ? null
+                          : () => setState(() {
+                                if (selected.length == outstanding.length) {
+                                  selected.clear();
+                                } else {
+                                  selected
+                                    ..clear()
+                                    ..addAll(outstanding
+                                        .map((o) => (o['id'] as num).toInt()));
+                                }
+                              }),
+                      child: Text(selected.length == outstanding.length &&
+                              outstanding.isNotEmpty
+                          ? 'إلغاء تحديد الكل'
+                          : 'تحديد الكل'),
+                    ),
+                  ]),
+                  if (outstanding.isEmpty)
+                    const Card(
+                        child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Center(child: Text('الحساب مسدد بالكامل')))),
+                  for (final o in outstanding)
+                    CheckboxListTile(
+                      value: selected.contains((o['id'] as num).toInt()),
+                      onChanged: (v) => setState(() {
+                        final id = (o['id'] as num).toInt();
+                        v == true ? selected.add(id) : selected.remove(id);
+                      }),
                       title: Text(
                           '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}'),
-                      subtitle: Text(
-                          '${date(o['created_at'])}\nتم قبض: ${number(o['settled_amount']).toStringAsFixed(2)}'),
-                      trailing: Text(
-                        number(o['carrier_receivable_balance']) <= 0
-                            ? 'مسددة'
-                            : 'باقي ${number(o['carrier_receivable_balance']).toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: number(o['carrier_receivable_balance']) <= 0
-                              ? Colors.green
-                              : Colors.red,
+                      subtitle: Text('تاريخ الطلبية: ${date(o['created_at'])}'),
+                      secondary: Text(
+                          number(o['carrier_receivable_balance'])
+                              .toStringAsFixed(2),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.red)),
+                    ),
+                ],
+                if (section == 1) ...[
+                  const SizedBox(height: 20),
+                  const Text('سجل طلبيات الشركة',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  for (final o in orders)
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(13),
+                          side: const BorderSide(color: _border)),
+                      child: ListTile(
+                        title: Text(
+                            '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}'),
+                        subtitle: Text(
+                            '${date(o['created_at'])}\nتم قبض: ${number(o['settled_amount']).toStringAsFixed(2)}'),
+                        trailing: Text(
+                          number(o['carrier_receivable_balance']) <= 0
+                              ? 'مسددة'
+                              : 'باقي ${number(o['carrier_receivable_balance']).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: number(o['carrier_receivable_balance']) <= 0
+                                ? Colors.green
+                                : Colors.red,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                const SizedBox(height: 20),
-                const Text('سجل التسويات الجماعية',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                if (batches.isEmpty)
-                  const Card(
-                      child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Center(child: Text('لا توجد تسويات مسجلة')))),
-                for (final b in batches) batchCard(b),
+                ],
+                if (section == 2) ...[
+                  const SizedBox(height: 20),
+                  const Text('سجل التسويات الجماعية',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (batches.isEmpty)
+                    const Card(
+                        child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child:
+                                Center(child: Text('لا توجد تسويات مسجلة')))),
+                  for (final b in batches) batchCard(b),
+                ],
                 const SizedBox(height: 90),
               ]),
             ),
+    );
+  }
+
+  Widget _sectionChip(int value, String label, int count) {
+    final active = section == value;
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 7, top: 6),
+      child: ChoiceChip(
+        selected: active,
+        showCheckmark: false,
+        selectedColor: _navy,
+        side: const BorderSide(color: _border),
+        labelStyle: TextStyle(
+            color: active ? Colors.white : _navy, fontWeight: FontWeight.w700),
+        label: Text('$label ($count)'),
+        onSelected: (_) => setState(() => section = value),
+      ),
     );
   }
 
@@ -281,24 +448,28 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
     final raw = b['allocations'];
     final allocations = raw is List ? raw.whereType<Map>().toList() : <Map>[];
     return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(13),
+            side: const BorderSide(color: _border)),
         child: ExpansionTile(
-      title: Text('تسوية بقيمة ${number(b['amount']).toStringAsFixed(2)}'),
-      subtitle: Text(
-          '${date(b['created_at'])} — ${b['created_by'] ?? '-'}\nالصندوق: ${b['box_name'] ?? 'صندوق الطلبيات اليومي'}'),
-      children: [
-        for (final a in allocations)
-          ListTile(
-              dense: true,
-              title: Text('${a['serial_number'] ?? '#${a['order_id']}'}'),
-              trailing: Text(number(a['amount']).toStringAsFixed(2))),
-        if ('${b['notes'] ?? ''}'.trim().isNotEmpty)
-          Padding(
-              padding: const EdgeInsets.all(12),
-              child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text('ملاحظات: ${b['notes']}'))),
-      ],
-    ));
+          title: Text('تسوية بقيمة ${number(b['amount']).toStringAsFixed(2)}'),
+          subtitle: Text(
+              '${date(b['created_at'])} — ${b['created_by'] ?? '-'}\nالصندوق: ${b['box_name'] ?? 'صندوق الطلبيات اليومي'}'),
+          children: [
+            for (final a in allocations)
+              ListTile(
+                  dense: true,
+                  title: Text('${a['serial_number'] ?? '#${a['order_id']}'}'),
+                  trailing: Text(number(a['amount']).toStringAsFixed(2))),
+            if ('${b['notes'] ?? ''}'.trim().isNotEmpty)
+              Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text('ملاحظات: ${b['notes']}'))),
+          ],
+        ));
   }
 
   Future<void> settle() async {
@@ -354,6 +525,16 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
       allocations[(o['id'] as num).toInt()] = TextEditingController(
           text: number(o['carrier_receivable_balance']).toStringAsFixed(2));
     }
+  }
+
+  @override
+  void dispose() {
+    total.dispose();
+    notes.dispose();
+    for (final controller in allocations.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   void distribute() {
@@ -421,13 +602,45 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: Text('تسوية ${widget.companyName}'),
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+                color: _navy.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(11)),
+            child: const Icon(Icons.payments_outlined, color: _navy),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text('تسوية ${widget.companyName}')),
+        ]),
         content: SizedBox(
             width: 560,
             child: SingleChildScrollView(
                 child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                      color: _navy, borderRadius: BorderRadius.circular(14)),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('الرصيد المحدد للتسوية',
+                            style: TextStyle(color: Colors.white70)),
+                        Text('${maximum.toStringAsFixed(2)} ₪',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900)),
+                        Text('${widget.orders.length} طلبيات محددة',
+                            style: const TextStyle(color: Colors.white70)),
+                      ]),
+                ),
                 TextField(
                     controller: total,
                     keyboardType:
@@ -436,26 +649,49 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                         labelText: 'المبلغ المقبوض',
                         helperText:
                             'الحد الأعلى: ${maximum.toStringAsFixed(2)}',
+                        filled: true,
+                        fillColor: Colors.white,
+                        prefixIcon:
+                            const Icon(Icons.account_balance_wallet_outlined),
+                        suffixText: '₪',
                         border: const OutlineInputBorder())),
+                const SizedBox(height: 6),
                 Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: OutlinedButton.icon(
                         onPressed: distribute,
                         icon: const Icon(Icons.auto_fix_high_outlined),
                         label: const Text('توزيع على الأقدم أولاً'))),
-                const Divider(),
-                const Text('يمكن تعديل حصة كل طلبية يدوياً'),
+                const Divider(height: 24),
+                const Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text('توزيع المبلغ على الطلبيات',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, color: _navy))),
+                const Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text('يمكن تعديل حصة كل طلبية يدوياً',
+                        style: TextStyle(color: Colors.black54, fontSize: 12))),
                 const SizedBox(height: 8),
                 for (final o in widget.orders) ...[
-                  TextField(
-                      controller: allocations[(o['id'] as num).toInt()],
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                          labelText: '${o['serial_number'] ?? '#${o['id']}'}',
-                          helperText:
-                              'الرصيد: ${number(o['carrier_receivable_balance']).toStringAsFixed(2)}',
-                          border: const OutlineInputBorder())),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _border)),
+                    child: TextField(
+                        controller: allocations[(o['id'] as num).toInt()],
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: InputDecoration(
+                            labelText:
+                                '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}',
+                            helperText:
+                                'الرصيد: ${number(o['carrier_receivable_balance']).toStringAsFixed(2)} ₪',
+                            suffixText: '₪',
+                            border: InputBorder.none)),
+                  ),
                   const SizedBox(height: 10),
                 ],
                 TextField(
@@ -463,6 +699,8 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                     maxLines: 2,
                     decoration: const InputDecoration(
                         labelText: 'ملاحظات (اختياري)',
+                        filled: true,
+                        fillColor: Colors.white,
                         border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 const Text(
@@ -474,6 +712,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
               onPressed: saving ? null : () => Get.back(result: false),
               child: const Text('إلغاء')),
           FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: _navy),
               onPressed: saving ? null : submit,
               child: saving
                   ? const SizedBox(
