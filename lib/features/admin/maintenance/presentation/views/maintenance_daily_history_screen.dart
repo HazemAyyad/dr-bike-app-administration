@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -25,6 +27,7 @@ class _MaintenanceDailyHistoryScreenState
   final List<DailySessionSummaryModel> _history = [];
   bool _loading = true;
   bool _showHistory = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -34,23 +37,29 @@ class _MaintenanceDailyHistoryScreenState
 
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
-    await controller.loadMaintenanceDailySession();
+    _loadError = null;
     try {
+      await controller.loadMaintenanceDailySession().timeout(
+            const Duration(seconds: 15),
+          );
       final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final results = await Future.wait([
-        datasource.getDailySessionsHistory(fromDate: today, toDate: today),
-        datasource.getDailySessionsHistory(),
-      ]);
+      final history = await datasource
+          .getDailySessionsHistory()
+          .timeout(const Duration(seconds: 15));
       if (!mounted) return;
       _today
         ..clear()
-        ..addAll(results[0]);
+        ..addAll(history.where((item) => item.businessDate == today));
       _history
         ..clear()
-        ..addAll(results[1]);
+        ..addAll(history);
+    } on TimeoutException {
+      _loadError = 'استغرق تحميل الصناديق وقتاً طويلاً';
+    } catch (_) {
+      _loadError = 'تعذر تحميل صناديق الصيانة';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -69,33 +78,50 @@ class _MaintenanceDailyHistoryScreenState
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
-                children: [
-                  _activeCard(context),
-                  SizedBox(height: 7.h),
-                  _summaryStrip(),
-                  SizedBox(height: 7.h),
-                  _modeSelector(),
-                  SizedBox(height: 7.h),
-                  if ((_showHistory ? _history : _today).isEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: 24.h),
-                      child: const ShowNoData(),
-                    )
-                  else
-                    ...(_showHistory ? _history : _today).map(
-                      (item) => Padding(
-                        padding: EdgeInsets.only(bottom: 6.h),
-                        child: _sessionTile(context, item),
+          : _loadError != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 42),
+                      SizedBox(height: 10.h),
+                      Text(_loadError!),
+                      SizedBox(height: 10.h),
+                      FilledButton.icon(
+                        onPressed: _load,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('إعادة المحاولة'),
                       ),
-                    ),
-                ],
-              ),
-            ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
+                    children: [
+                      _activeCard(context),
+                      SizedBox(height: 7.h),
+                      _summaryStrip(),
+                      SizedBox(height: 7.h),
+                      _modeSelector(),
+                      SizedBox(height: 7.h),
+                      if ((_showHistory ? _history : _today).isEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 24.h),
+                          child: const ShowNoData(),
+                        )
+                      else
+                        ...(_showHistory ? _history : _today).map(
+                          (item) => Padding(
+                            padding: EdgeInsets.only(bottom: 6.h),
+                            child: _sessionTile(context, item),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
     );
   }
 

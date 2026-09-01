@@ -37,7 +37,10 @@ class _MaintenanceDeliveryDialogState
   @override
   void initState() {
     super.initState();
-    _cashCtrl.text = SalesAmountFormat.display(widget.controller.invoiceTotal);
+    final remaining = (widget.controller.invoiceTotal -
+            widget.controller.maintenancePaidAmount.value)
+        .clamp(0, double.infinity);
+    _cashCtrl.text = SalesAmountFormat.display(remaining);
     _cashCtrl.addListener(_refreshTotals);
   }
 
@@ -50,7 +53,8 @@ class _MaintenanceDeliveryDialogState
   void _refreshTotals() => setState(() {});
 
   double get _cashAmount => SalesAmountFormat.parse(_cashCtrl.text);
-  double get _paidTotal => _cashAmount;
+  double get _previousPaid => widget.controller.maintenancePaidAmount.value;
+  double get _paidTotal => _previousPaid + _cashAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -77,12 +81,40 @@ class _MaintenanceDeliveryDialogState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _totalRow('maintenancePartsTotal'.tr, widget.controller.partsTotal),
+            if (widget.controller.selectedServicesTotal > 0)
+              _totalRow('الخدمات', widget.controller.selectedServicesTotal),
             _totalRow('maintenanceLaborCost'.tr, widget.controller.laborCost),
+            if (widget.controller.additionalChargesTotal > 0)
+              _totalRow(
+                'إضافات أخرى',
+                widget.controller.additionalChargesTotal,
+              ),
             if (widget.controller.discount > 0)
               _totalRow('discount'.tr, -widget.controller.discount),
             Divider(height: 16.h),
             _totalRow('total'.tr, total, bold: true),
-            _totalRow('maintenancePaidNow'.tr, _paidTotal),
+            if (_previousPaid > 0)
+              _totalRow('العربون والدفعات السابقة', -_previousPaid),
+            if (widget.controller.maintenancePayments.isNotEmpty) ...[
+              SizedBox(height: 5.h),
+              ...widget.controller.maintenancePayments.map(
+                (payment) => Container(
+                  margin: EdgeInsets.only(bottom: 4.h),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(7.r),
+                  ),
+                  child: Text(
+                    '${payment['amount'] ?? 0} شيكل • استلمها ${payment['created_by_name'] ?? '-'} • ${payment['created_at'] ?? '-'}',
+                    style: TextStyle(fontSize: 10.5.sp),
+                  ),
+                ),
+              ),
+            ],
+            _totalRow('المتبقي قبل التسليم',
+                (total - _previousPaid).clamp(0, double.infinity)),
+            _totalRow('maintenancePaidNow'.tr, _cashAmount),
             _totalRow(
               '${'maintenanceDebtOn'.tr} $partnerType',
               remaining,
@@ -179,7 +211,7 @@ class _MaintenanceDeliveryDialogState
                 : () async {
                     final payments = _buildPayments();
                     final ok = await widget.controller.deliverMaintenance(
-                      paymentAmount: _paidTotal,
+                      paymentAmount: _cashAmount,
                       payments: payments,
                     );
                     if (ok && context.mounted) {

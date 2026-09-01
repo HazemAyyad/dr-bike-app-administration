@@ -246,17 +246,12 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
         onTap: readOnly
             ? null
             : () async {
-                if (item.status == 'ready') {
-                  await controller.deliverFromList(
-                    context,
-                    maintenanceId: item.id.toString(),
-                  );
-                  return;
-                }
-                controller.getMaintenancesDetails(
+                await controller.getMaintenancesDetails(
                   maintenanceId: item.id.toString(),
                 );
-                Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+                if (context.mounted) {
+                  Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+                }
               },
         onLongPress:
             readOnly ? null : () => _showMaintenanceActions(context, item),
@@ -307,6 +302,16 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                               ),
                             ),
                             if (!readOnly) ...[
+                              if (item.status == 'ready')
+                                _compactActionButton(
+                                  tooltip: 'تسليم الطلب',
+                                  icon: Icons.delivery_dining_outlined,
+                                  color: AppColors.customGreen1,
+                                  onTap: () => controller.deliverFromList(
+                                    context,
+                                    maintenanceId: item.id.toString(),
+                                  ),
+                                ),
                               SizedBox(width: 6.w),
                               _compactActionButton(
                                 tooltip: 'maintenanceInvoice'.tr,
