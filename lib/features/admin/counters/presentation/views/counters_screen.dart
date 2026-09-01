@@ -253,6 +253,9 @@ class _SummaryCard extends StatelessWidget {
     final increased = change >= 0;
     final favorable = key == 'expenses' ? change <= 0 : change >= 0;
     final meta = _summaryMeta(key);
+    final value = _number(item['value']);
+    final valueColor =
+        key == 'net_profit' && value < 0 ? const Color(0xffD65345) : meta.color;
     return _Surface(
       padding: EdgeInsets.all(12.r),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -260,9 +263,9 @@ class _SummaryCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(7.r),
             decoration: BoxDecoration(
-                color: meta.color.withValues(alpha: .12),
+                color: valueColor.withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(9.r)),
-            child: Icon(meta.icon, color: meta.color, size: 18.sp),
+            child: Icon(meta.icon, color: valueColor, size: 18.sp),
           ),
           SizedBox(width: 7.w),
           Expanded(
@@ -280,7 +283,7 @@ class _SummaryCard extends StatelessWidget {
             style: TextStyle(
                 fontSize: 19.sp,
                 fontWeight: FontWeight.w900,
-                color: meta.color)),
+                color: valueColor)),
         SizedBox(height: 5.h),
         Row(children: [
           Icon(increased ? Icons.trending_up : Icons.trending_down,
@@ -698,13 +701,51 @@ class _InventoryCard extends StatelessWidget {
         ]),
         SizedBox(height: 12.h),
         Row(children: [
-          _InventoryMetric('قيمة المخزون', _money(data['value']),
-              Icons.inventory_2_outlined),
+          _InventoryMetric(
+              'قيمة المخزون', _money(data['value']), Icons.inventory_2_outlined,
+              items: _maps(data['top_value'])),
           _InventoryMetric('إجمالي الكمية', _compact(_number(data['quantity'])),
               Icons.layers_outlined),
           _InventoryMetric('مخزون منخفض', '${data['low_stock_count'] ?? 0}',
-              Icons.warning_amber_rounded),
+              Icons.warning_amber_rounded,
+              items: _maps(data['low_stock'])),
         ]),
+        SizedBox(height: 10.h),
+        Row(children: [
+          _InventoryMetric(
+              'مخزون منتهي',
+              '${_maps(data['out_of_stock']).length}',
+              Icons.remove_shopping_cart_outlined,
+              items: _maps(data['out_of_stock'])),
+          _InventoryMetric(
+              'مخزون سالب',
+              '${_maps(data['negative_stock']).length}',
+              Icons.error_outline_rounded,
+              items: _maps(data['negative_stock'])),
+          _InventoryMetric(
+              'الأكثر مبيعاً',
+              '${_maps(data['best_sellers']).length}',
+              Icons.local_fire_department_outlined,
+              items: _maps(data['best_sellers']),
+              showSales: true),
+        ]),
+        SizedBox(height: 10.h),
+        InkWell(
+          borderRadius: BorderRadius.circular(8.r),
+          onTap: () => _openInventoryList(
+              'الأقل مبيعاً والتي لم تُبع', _maps(data['least_sellers']),
+              showSales: true),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 7.h),
+            child: Row(children: [
+              const Icon(Icons.trending_down_rounded,
+                  color: AppColors.primaryColor),
+              SizedBox(width: 7.w),
+              const Expanded(child: Text('الأقل مبيعاً والتي لم تُبع')),
+              const Icon(Icons.chevron_left_rounded),
+            ]),
+          ),
+        ),
         if (top.isNotEmpty) ...[
           SizedBox(height: 18.h),
           Text('الأعلى قيمة في المخزون',
@@ -732,29 +773,44 @@ class _InventoryCard extends StatelessWidget {
 }
 
 class _InventoryMetric extends StatelessWidget {
-  const _InventoryMetric(this.label, this.value, this.icon);
+  const _InventoryMetric(this.label, this.value, this.icon,
+      {this.items = const [], this.showSales = false});
   final String label;
   final String value;
   final IconData icon;
+  final List<Map<String, dynamic>> items;
+  final bool showSales;
   @override
   Widget build(BuildContext context) => Expanded(
-          child: Column(children: [
-        Icon(icon, color: AppColors.primaryColor, size: 21.sp),
-        SizedBox(height: 6.h),
-        Text(value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900)),
-        SizedBox(height: 2.h),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Flexible(
-              child: Text(label,
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(fontSize: 8.sp, color: Colors.grey.shade600))),
-          _InfoIcon(title: label, message: _explanationFor(label), size: 13),
-        ])
-      ]));
+      child: InkWell(
+          borderRadius: BorderRadius.circular(8.r),
+          onTap: items.isEmpty
+              ? null
+              : () => _openInventoryList(label, items, showSales: showSales),
+          child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 5.h),
+              child: Column(children: [
+                Icon(icon, color: AppColors.primaryColor, size: 21.sp),
+                SizedBox(height: 6.h),
+                Text(value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 12.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 2.h),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Flexible(
+                      child: Text(label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 8.sp, color: Colors.grey.shade600))),
+                  _InfoIcon(
+                      title: label, message: _explanationFor(label), size: 13),
+                ]),
+                if (items.isNotEmpty)
+                  Icon(Icons.open_in_new_rounded,
+                      size: 11.sp, color: Colors.grey.shade500),
+              ]))));
 }
 
 class _InfoIcon extends StatelessWidget {
@@ -789,6 +845,44 @@ class _InfoIcon extends StatelessWidget {
           ),
         ),
       );
+}
+
+void _openInventoryList(String title, List<Map<String, dynamic>> items,
+    {bool showSales = false}) {
+  Get.to(() => Scaffold(
+        appBar: AppBar(title: Text(title), centerTitle: true),
+        body: items.isEmpty
+            ? const Center(child: Text('لا توجد عناصر'))
+            : ListView.separated(
+                padding: EdgeInsets.all(12.r),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => SizedBox(height: 7.h),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            AppColors.primaryColor.withValues(alpha: .12),
+                        child: Text('${index + 1}',
+                            style:
+                                const TextStyle(color: AppColors.primaryColor)),
+                      ),
+                      title: Text(item['label']?.toString() ?? '-'),
+                      subtitle: Text(showSales
+                          ? 'المباع خلال الفترة: ${_compact(_number(item['sold_quantity']))}'
+                          : 'الكمية الحالية: ${_compact(_number(item['quantity']))}'),
+                      trailing: showSales
+                          ? null
+                          : Text(_money(item['value']),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryColor)),
+                    ),
+                  );
+                },
+              ),
+      ));
 }
 
 class _Surface extends StatelessWidget {
@@ -923,7 +1017,7 @@ _SummaryMeta _summaryMeta(String key) {
         'صافي المبيعات',
         Icons.point_of_sale_rounded,
         AppColors.primaryColor,
-        'إجمالي الفواتير الفورية والمبيعات الربحية الفعالة بعد طرح الخصومات، من دون الفواتير الملغاة.');
+        'إجمالي الفواتير الفورية والمبيعات الربحية الفعالة بعد طرح الخصومات، من دون الفواتير الملغاة. الطلبيات المُرحلة مالياً داخلة من خلال فاتورة البيع المرتبطة بها ولا تُحسب مرتين.');
   }
   if (key == 'net_profit') {
     return const _SummaryMeta(
@@ -955,13 +1049,21 @@ String _explanationFor(String title) {
     'طرق الدفع':
         'توزيع قيمة المبيعات حسب الدفع النقدي، البيع على الدين، أو الدفع المختلط.',
     'الديون الحالية':
-        'إجمالي الديون غير المسددة لنا مقابل الديون غير المسددة علينا حتى الآن، وليست محصورة بتاريخ الفترة.',
+        'نفس الأرصدة الفعالة في قسم الديون: مجموع أرصدة العملاء والموردين بالشيكل. الرصيد الموجب ديون لنا والسالب ديون علينا، وليست محصورة بتاريخ الفترة.',
     'الشيكات': 'قيمة الشيكات الواردة والصادرة غير المصروفة حتى الآن.',
     'إنجاز المهام':
         'عدد المهام المنجزة وغير المنجزة التي أُنشئت خلال الفترة المختارة.',
-    'قيمة المخزون': 'الكمية الحالية لكل منتج مضروبة في آخر تكلفة شراء متوفرة.',
+    'قيمة المخزون':
+        'الكمية الحالية لكل منتج مضروبة في آخر تكلفة شراء متوفرة، والأعلى قيمة مرتب حسب أكبر ناتج لهذه المعادلة.',
     'إجمالي الكمية': 'مجموع كميات جميع المنتجات الموجودة حالياً في المخزون.',
     'مخزون منخفض': 'عدد المنتجات التي كميتها الحالية 3 قطع أو أقل.',
+    'مخزون منتهي': 'المنتجات التي وصلت كميتها الحالية إلى صفر.',
+    'مخزون سالب':
+        'المنتجات التي أصبحت كميتها أقل من صفر وتحتاج مراجعة حركات المخزون.',
+    'الأكثر مبيعاً':
+        'ترتيب المنتجات حسب مجموع الكمية المباعة خلال الفترة المختارة.',
+    'الأقل مبيعاً والتي لم تُبع':
+        'المنتجات مرتبة من أقل كمية مباعة خلال الفترة، وتبدأ بالمنتجات التي لم تُبع نهائياً.',
   };
   return explanations[title] ??
       'مؤشر محسوب من بيانات النظام ضمن الفترة والفلاتر المختارة.';
