@@ -43,6 +43,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    String? updateScope,
     void Function(int sent, int total)? onSendProgress,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -72,6 +73,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         recurrenceConfig: recurrenceConfig,
         templateId: templateId,
         occurrenceId: occurrenceId,
+        updateScope: updateScope,
         onSendProgress: onSendProgress,
       );
       if (result['status'] == 'success') {

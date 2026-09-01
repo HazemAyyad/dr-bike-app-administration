@@ -28,6 +28,7 @@ abstract class CreateEmployeeTasksRepository {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    String? updateScope,
     void Function(int sent, int total)? onSendProgress,
   });
 

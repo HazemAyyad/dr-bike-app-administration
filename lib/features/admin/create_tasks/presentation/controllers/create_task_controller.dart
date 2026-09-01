@@ -688,15 +688,53 @@ class CreateTaskController extends GetxController {
   final RxString recordedPath = ''.obs;
 
   // دالة لإنشاء المهمة
-  void createTask(BuildContext context, {int employeeTaskId = 0}) async {
+  void createTask(
+    BuildContext context, {
+    int employeeTaskId = 0,
+    String? updateScope,
+  }) async {
+    final editDetails = isEdit ? employeeTaskService.taskDetails.value : null;
+    if (isEdit &&
+        editDetails?.templateId != null &&
+        editDetails!.taskRecurrence != 'noRepeat' &&
+        editDetails.taskRecurrence != 'oneTimePersistent' &&
+        updateScope == null) {
+      final selectedScope = await Get.dialog<String>(
+        AlertDialog(
+          title: const Text('تطبيق تعديل المهمة المتكررة'),
+          content: const Text(
+            'اختر إذا كان التعديل لهذا اليوم فقط، أو للمهام الحالية والقادمة. لن تتغير المهام السابقة أو التي بدأ تنفيذها.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: 'occurrence_only'),
+              child: const Text('هذا اليوم فقط'),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.back(result: 'current_and_future'),
+              child: const Text('الحالية والقادمة'),
+            ),
+          ],
+        ),
+        barrierDismissible: true,
+      );
+      if (selectedScope == null || !context.mounted) return;
+      createTask(
+        context,
+        employeeTaskId: employeeTaskId,
+        updateScope: selectedScope,
+      );
+      return;
+    }
     if (isEdit) {
-      final details = employeeTaskService.taskDetails.value;
+      final details = editDetails;
       debugPrint(
         '[EmployeeTaskEdit] SUBMIT_START | employeeTaskId=$employeeTaskId | '
         'detailsTaskId=${details?.taskId ?? '-'} | '
         'templateId=${details?.templateId ?? '-'} | '
         'occurrenceId=${details?.occurrenceId ?? '-'} | '
-        'assigneeIds=$employeeIdsForApi | subtasks=${subTasks.length}',
+        'assigneeIds=$employeeIdsForApi | subtasks=${subTasks.length} | '
+        'updateScope=${updateScope ?? '-'}',
       );
     }
     if (formKey.currentState!.validate()) {
@@ -736,6 +774,7 @@ class CreateTaskController extends GetxController {
           employeeTaskId: isEdit ? employeeTaskId : 0,
           templateId: templateId,
           occurrenceId: occurrenceId,
+          updateScope: updateScope,
           name: taskNameController.text,
           description: taskDescriptionController.text,
           notes: taskNotesController.text,

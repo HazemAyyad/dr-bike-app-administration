@@ -159,6 +159,7 @@ class CreateEmployeeTasksDatasource {
     Map<String, dynamic>? recurrenceConfig,
     int? templateId,
     int? occurrenceId,
+    String? updateScope,
     void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
@@ -246,6 +247,7 @@ class CreateEmployeeTasksDatasource {
         if (templateId != null && templateId > 0) 'template_id': templateId,
         if (occurrenceId != null && occurrenceId > 0)
           'occurrence_id': occurrenceId,
+        if (isEdit && updateScope != null) 'update_scope': updateScope,
         'name': name,
         'description': description,
         'notes': notes,
