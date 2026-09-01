@@ -1661,8 +1661,7 @@ class MaintenanceController extends GetxController {
   int get readyCount => _groupedCount(readyMaintenancesSearch);
   int get deliveredCount => _groupedCount(deliveredMaintenancesSearch);
   int get archivedCount => _groupedCount(archiveMaintenancesSearch);
-  int get totalFilteredCount =>
-      newCount + ongoingCount + readyCount + archivedCount;
+  int get totalFilteredCount => newCount + ongoingCount + readyCount;
 
   int get visibleFilteredCount {
     switch (maintenanceViewFilter.value) {
@@ -1697,7 +1696,6 @@ class MaintenanceController extends GetxController {
       maintenanceViewFilter.value == maintenanceFilterDelivered;
 
   bool get showArchivedMaintenanceSection =>
-      maintenanceViewFilter.value == maintenanceFilterAll ||
       maintenanceViewFilter.value == maintenanceFilterArchived;
 
   int _groupedCount(Map<String, List<MaintenanceDataModel>> grouped) {
