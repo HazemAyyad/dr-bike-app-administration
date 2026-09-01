@@ -576,7 +576,7 @@ class _PoliciesTab extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               subtitle: Text(
-                '${item['category'] ?? ''} · ${_priorityLabel(policy['priority'])} · ${sound?['name'] ?? 'افتراضي'}',
+                '${_categoryLabel(item['category']?.toString())} · ${_priorityLabel(policy['priority'])} · ${sound?['name'] ?? 'افتراضي'}',
               ),
               trailing: Switch(
                 value: enabled,
@@ -1184,6 +1184,7 @@ IconData _categoryIcon(String? category) {
       return Icons.task_alt;
     case 'sales':
     case 'store':
+    case 'sales_orders':
       return Icons.shopping_cart_outlined;
     case 'checks':
       return Icons.receipt_long_outlined;
@@ -1195,5 +1196,40 @@ IconData _categoryIcon(String? category) {
       return Icons.inventory_2_outlined;
     default:
       return Icons.notifications_outlined;
+  }
+}
+
+String _categoryLabel(String? category) {
+  switch (category) {
+    case 'attendance':
+      return 'الحضور';
+    case 'tasks':
+      return 'المهام';
+    case 'sales':
+      return 'المبيعات';
+    case 'store':
+      return 'المتجر';
+    case 'sales_orders':
+      return 'الطلبيات';
+    case 'checks':
+      return 'الشيكات';
+    case 'security':
+      return 'الأمان';
+    case 'messages':
+      return 'الرسائل';
+    case 'stock':
+      return 'المخزون';
+    case 'employees':
+      return 'الموظفون';
+    case 'goals':
+      return 'الأهداف';
+    case 'maintenance':
+      return 'الصيانة';
+    case 'notes':
+      return 'الملاحظات';
+    case 'development':
+      return 'التطوير';
+    default:
+      return category?.isNotEmpty == true ? category! : 'عام';
   }
 }

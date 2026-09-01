@@ -328,7 +328,9 @@ bool isShiplyDeliveredNotificationType(String? type) =>
     type != null && kShiplyDeliveredNotificationTypes.contains(type);
 
 bool isSalesOrderStatusNotificationType(String? type) =>
-    type != null && kSalesOrderStatusNotificationTypes.contains(type);
+    type != null &&
+    (kSalesOrderStatusNotificationTypes.contains(type) ||
+        type.startsWith('sales_order_status_'));
 
 bool isEmployeeNotificationType(String? type) =>
     type != null &&

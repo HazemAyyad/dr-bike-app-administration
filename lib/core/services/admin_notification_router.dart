@@ -24,6 +24,10 @@ class AdminNotificationRouter {
     }
 
     try {
+      if (type.startsWith('sales_order_status_') && _openSalesOrder(raw)) {
+        return;
+      }
+
       switch (type) {
         case 'employee_task_completed':
         case 'employee_task_submitted':
