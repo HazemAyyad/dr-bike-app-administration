@@ -166,6 +166,7 @@ class _InstantSaleProductPickerScreenState
                       Expanded(
                         child: TextField(
                           controller: _searchController,
+                          autofocus: _maintenanceFlow,
                           decoration: InputDecoration(
                             hintText: 'instantSaleSearchProductsAndPackages'.tr,
                             prefixIcon: const Icon(Icons.search),

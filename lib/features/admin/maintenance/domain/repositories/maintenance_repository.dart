@@ -36,6 +36,8 @@ abstract class MaintenanceRepository {
     double? laborCost,
     double? discount,
     String? editReason,
+    List<Map<String, dynamic>> serviceLines = const [],
+    List<Map<String, dynamic>> additionalCharges = const [],
   });
 
   Future<Either<Failure, Map<String, dynamic>>> deliverMaintenance({
@@ -45,6 +47,12 @@ abstract class MaintenanceRepository {
     double? paymentAmount,
     int? paymentBoxId,
     List<Map<String, dynamic>> payments = const [],
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> addMaintenancePayment({
+    required String maintenanceId,
+    required double amount,
+    String? note,
   });
 
   Future<Either<Failure, Map<String, dynamic>>> getDailySessionCurrent();

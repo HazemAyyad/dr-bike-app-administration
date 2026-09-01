@@ -156,6 +156,8 @@ class MaintenanceDatasource {
     double? laborCost,
     double? discount,
     String? editReason,
+    List<Map<String, dynamic>> serviceLines = const [],
+    List<Map<String, dynamic>> additionalCharges = const [],
   }) async {
     try {
       final response = await api.post(
@@ -167,6 +169,8 @@ class MaintenanceDatasource {
           if (editReason != null && editReason.trim().isNotEmpty)
             'edit_reason': editReason.trim(),
           'products': products.map((e) => e.toApiJson()).toList(),
+          'service_lines': serviceLines,
+          'additional_charges': additionalCharges,
         },
       );
       return response.data;
@@ -200,6 +204,33 @@ class MaintenanceDatasource {
           if (paymentAmount != null) 'payment_amount': paymentAmount,
           if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
           if (payments.isNotEmpty) 'payments': payments,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> addMaintenancePayment({
+    required String maintenanceId,
+    required double amount,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenancePayment,
+        data: {
+          'maintenance_id': maintenanceId,
+          'amount': amount,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
         },
       );
       return response.data;

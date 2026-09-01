@@ -75,6 +75,11 @@ class MaintenanceProductsSection extends StatelessWidget {
                 _ServicesTable(controller: controller),
               ],
               SizedBox(height: 8.h),
+              _AdditionalChargesRepeater(
+                controller: controller,
+                isLocked: isLocked,
+              ),
+              SizedBox(height: 8.h),
               _amountField(
                 label: 'maintenanceLaborCost'.tr,
                 controller: controller.laborCostController,
@@ -393,11 +398,24 @@ class _ProductsTable extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _dataCell('${item.quantity}', 34, center: true),
-                  _dataCell(
-                    SalesAmountFormat.display(item.unitPrice),
-                    58,
-                    center: true,
+                  _editableNumberCell(
+                    initialValue: '${item.quantity}',
+                    width: 34,
+                    enabled: !isLocked,
+                    onChanged: (value) => controller.updateProductLine(
+                      index,
+                      quantity: int.tryParse(value),
+                    ),
+                  ),
+                  _editableNumberCell(
+                    initialValue: SalesAmountFormat.display(item.unitPrice),
+                    width: 58,
+                    enabled: !isLocked,
+                    decimal: true,
+                    onChanged: (value) => controller.updateProductLine(
+                      index,
+                      unitPrice: SalesAmountFormat.parse(value),
+                    ),
                   ),
                   _dataCell(
                     SalesAmountFormat.display(item.lineTotal),
@@ -457,6 +475,31 @@ class _ProductsTable extends StatelessWidget {
           fontWeight: FontWeight.w800,
           color: AppColors.primaryColor,
         ),
+      ),
+    );
+  }
+
+  Widget _editableNumberCell({
+    required String initialValue,
+    required double width,
+    required bool enabled,
+    required ValueChanged<String> onChanged,
+    bool decimal = false,
+  }) {
+    return SizedBox(
+      width: width.w,
+      child: TextFormField(
+        initialValue: initialValue,
+        enabled: enabled,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+        style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700),
+        decoration: const InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
+        ),
+        onChanged: onChanged,
       ),
     );
   }
@@ -569,11 +612,17 @@ class _ServicesTable extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _dataCell(
-                      SalesAmountFormat.display(item.price),
-                      72,
-                      center: true,
-                      bold: true,
+                    _editablePriceCell(
+                      initialValue: SalesAmountFormat.display(
+                        controller.maintenanceServicePrices[item.id] ??
+                            item.price,
+                      ),
+                      enabled: !isLocked,
+                      onChanged: (value) =>
+                          controller.updateMaintenanceServicePrice(
+                        index,
+                        SalesAmountFormat.parse(value),
+                      ),
                     ),
                     if (!isLocked)
                       SizedBox(
@@ -633,25 +682,125 @@ class _ServicesTable extends StatelessWidget {
     );
   }
 
-  Widget _dataCell(
-    String value,
-    double width, {
-    bool center = false,
-    bool bold = false,
+  Widget _editablePriceCell({
+    required String initialValue,
+    required bool enabled,
+    required ValueChanged<String> onChanged,
   }) {
     return SizedBox(
-      width: width.w,
-      child: Text(
-        value,
-        textAlign: center ? TextAlign.center : TextAlign.start,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      width: 72.w,
+      child: TextFormField(
+        initialValue: initialValue,
+        enabled: enabled,
+        textAlign: TextAlign.center,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         style: TextStyle(
           fontSize: 10.sp,
-          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-          color: bold ? AppColors.primaryColor : Colors.grey.shade800,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primaryColor,
         ),
+        decoration: const InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
+        ),
+        onChanged: onChanged,
       ),
+    );
+  }
+}
+
+class _AdditionalChargesRepeater extends StatelessWidget {
+  const _AdditionalChargesRepeater({
+    required this.controller,
+    required this.isLocked,
+  });
+
+  final MaintenanceController controller;
+  final bool isLocked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'إضافات مالية',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+            if (!isLocked)
+              TextButton.icon(
+                onPressed: controller.addAdditionalCharge,
+                icon: Icon(Icons.add_circle_outline, size: 17.sp),
+                label: Text('إضافة بند', style: TextStyle(fontSize: 11.sp)),
+              ),
+          ],
+        ),
+        ...List.generate(controller.additionalCharges.length, (index) {
+          final line = controller.additionalCharges[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: 6.h),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    initialValue: '${line['label'] ?? ''}',
+                    enabled: !isLocked,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'اسم الإضافة',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => controller.updateAdditionalCharge(
+                      index,
+                      label: value,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 6.w),
+                SizedBox(
+                  width: 92.w,
+                  child: TextFormField(
+                    initialValue: '${line['amount'] ?? ''}',
+                    enabled: !isLocked,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'القيمة',
+                      suffixText: '₪',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => controller.updateAdditionalCharge(
+                      index,
+                      amount: SalesAmountFormat.parse(value),
+                    ),
+                  ),
+                ),
+                if (!isLocked)
+                  IconButton(
+                    tooltip: 'حذف البند',
+                    onPressed: () => controller.removeAdditionalCharge(index),
+                    icon: const Icon(Icons.close, color: Colors.red),
+                  ),
+              ],
+            ),
+          );
+        }),
+        if (controller.additionalCharges.isNotEmpty)
+          Text(
+            'مجموع الإضافات: ${SalesAmountFormat.display(controller.additionalChargesTotal)} شيكل',
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryColor,
+            ),
+          ),
+      ],
     );
   }
 }

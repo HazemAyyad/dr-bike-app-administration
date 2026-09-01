@@ -84,6 +84,8 @@ class MaintenanceBillingModel {
   final double discount;
   final double invoiceTotal;
   final double paidAmount;
+  final List<Map<String, dynamic>> serviceLines;
+  final List<Map<String, dynamic>> additionalCharges;
   final int? instantSaleId;
   final String? serialNumber;
 
@@ -94,6 +96,8 @@ class MaintenanceBillingModel {
     this.discount = 0,
     this.invoiceTotal = 0,
     this.paidAmount = 0,
+    this.serviceLines = const [],
+    this.additionalCharges = const [],
     this.instantSaleId,
     this.serialNumber,
   });
@@ -116,6 +120,14 @@ class MaintenanceBillingModel {
       discount: asDouble(j['discount']),
       invoiceTotal: asDouble(j['invoice_total']),
       paidAmount: asDouble(j['paid_amount']),
+      serviceLines: ((j['service_lines'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+      additionalCharges: ((j['additional_charges'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
       instantSaleId:
           j['instant_sale_id'] == null ? null : asInt(j['instant_sale_id']),
       serialNumber: asNullableString(j['serial_number']),

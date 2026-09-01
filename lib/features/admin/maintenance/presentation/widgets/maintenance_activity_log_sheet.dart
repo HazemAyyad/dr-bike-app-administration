@@ -98,9 +98,7 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
                           if (log.description.trim().isNotEmpty) ...[
                             SizedBox(height: 4.h),
                             Text(
-                              log.description,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
+                              _arabicText(log.description),
                               style: TextStyle(fontSize: 11.sp),
                             ),
                           ],
@@ -134,7 +132,7 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
                                   log.newStatus != null)
                                 _chip(
                                   Icons.compare_arrows,
-                                  '${_statusLabel(log.oldStatus)} > ${_statusLabel(log.newStatus)}',
+                                  '${_statusLabel(log.oldStatus)} ← ${_statusLabel(log.newStatus)}',
                                 ),
                             ],
                           ),
@@ -184,8 +182,6 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 10.5.sp,
               height: 1.25,
@@ -211,10 +207,9 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
             if (value is! Map) return '';
             final oldValue = _displayValue(value['old']);
             final newValue = _displayValue(value['new']);
-            return '${_fieldLabel(entry.key.toString())}: $oldValue > $newValue';
+            return '${_fieldLabel(entry.key.toString())}: $oldValue ← $newValue';
           })
           .where((line) => line.trim().isNotEmpty)
-          .take(6)
           .toList();
     }
 
@@ -222,14 +217,12 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
     final after = log.metadata['after'];
     if (before is Map && after is Map) {
       return [
-        'عدد القطع: ${_itemsCount(before)} > ${_itemsCount(after)}',
-        'إجمالي القطع: ${_displayValue(before['parts_total'])} > ${_displayValue(after['parts_total'])}',
-        'أجرة الصيانة: ${_displayValue(before['labor_cost'])} > ${_displayValue(after['labor_cost'])}',
-        'الخصم: ${_displayValue(before['discount'])} > ${_displayValue(after['discount'])}',
-        'الإجمالي: ${_displayValue(before['invoice_total'])} > ${_displayValue(after['invoice_total'])}',
-      ]
-          .where((line) => !line.endsWith('> -') && line.trim().isNotEmpty)
-          .toList();
+        'عدد القطع: ${_itemsCount(before)} ← ${_itemsCount(after)}',
+        'إجمالي القطع: ${_displayValue(before['parts_total'])} ← ${_displayValue(after['parts_total'])}',
+        'أجرة الصيانة: ${_displayValue(before['labor_cost'])} ← ${_displayValue(after['labor_cost'])}',
+        'الخصم: ${_displayValue(before['discount'])} ← ${_displayValue(after['discount'])}',
+        'الإجمالي: ${_displayValue(before['invoice_total'])} ← ${_displayValue(after['invoice_total'])}',
+      ].where((line) => line.trim().isNotEmpty).toList();
     }
 
     return const [];
@@ -244,7 +237,9 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
     if (value == null) return '-';
     if (value is num) return value.toStringAsFixed(2);
     if (value is List) return '${value.length}';
-    return value.toString().trim().isEmpty ? '-' : value.toString();
+    return value.toString().trim().isEmpty
+        ? '-'
+        : _arabicText(value.toString());
   }
 
   String _fieldLabel(String field) {
@@ -267,8 +262,16 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
         return 'الخصم';
       case 'files':
         return 'الملفات';
+      case 'paid_amount':
+        return 'المبلغ المدفوع';
+      case 'remaining_amount':
+        return 'المبلغ المتبقي';
+      case 'invoice_total':
+        return 'إجمالي الطلب';
+      case 'items_count':
+        return 'عدد القطع';
       default:
-        return field;
+        return 'بيانات إضافية';
     }
   }
 
@@ -286,7 +289,26 @@ class _MaintenanceActivityLogSheet extends StatelessWidget {
       case '':
         return '-';
       default:
-        return status ?? '-';
+        return 'حالة غير معروفة';
     }
+  }
+
+  String _arabicText(String value) {
+    var text = value;
+    const replacements = <String, String>{
+      'delivered': 'تم التسليم',
+      'ongoing': 'قيد العمل',
+      'ready': 'جاهزة للتسليم',
+      'new': 'جديدة',
+      'cash': 'نقدي',
+      'customer': 'زبون',
+      'seller': 'تاجر',
+      'true': 'نعم',
+      'false': 'لا',
+    };
+    replacements.forEach((from, to) {
+      text = text.replaceAll(RegExp('\\b$from\\b', caseSensitive: false), to);
+    });
+    return text;
   }
 }

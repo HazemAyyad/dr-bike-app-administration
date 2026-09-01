@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
-import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -27,6 +26,7 @@ import '../../data/models/maintenances_model.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
 import '../../domain/usecases/delete_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
+import '../../domain/usecases/add_maintenance_payment_usecase.dart';
 import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
 import '../../domain/usecases/get_maintenance_daily_session_usecase.dart';
 import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
@@ -55,6 +55,7 @@ class MaintenanceController extends GetxController {
   final GetMaintenancesDetailsUsecase getMaintenancesDetailsUsecase;
   final SyncMaintenanceProductsUsecase syncMaintenanceProductsUsecase;
   final DeliverMaintenanceUsecase deliverMaintenanceUsecase;
+  final AddMaintenancePaymentUsecase addMaintenancePaymentUsecase;
   final GetMaintenanceActivityLogUsecase getMaintenanceActivityLogUsecase;
   final GetMaintenanceInvoiceUsecase getMaintenanceInvoiceUsecase;
   final GetMaintenanceDailySessionUsecase getMaintenanceDailySessionUsecase;
@@ -71,6 +72,7 @@ class MaintenanceController extends GetxController {
     required this.getMaintenancesDetailsUsecase,
     required this.syncMaintenanceProductsUsecase,
     required this.deliverMaintenanceUsecase,
+    required this.addMaintenancePaymentUsecase,
     required this.getMaintenanceActivityLogUsecase,
     required this.getMaintenanceInvoiceUsecase,
     required this.getMaintenanceDailySessionUsecase,
@@ -112,9 +114,15 @@ class MaintenanceController extends GetxController {
       <MaintenanceServiceModel>[].obs;
   final RxList<MaintenanceServiceModel> selectedMaintenanceServices =
       <MaintenanceServiceModel>[].obs;
+  final RxMap<int, double> maintenanceServicePrices = <int, double>{}.obs;
+  final RxList<Map<String, dynamic>> additionalCharges =
+      <Map<String, dynamic>>[].obs;
   final RxList<MaintenanceServiceModel> serviceSuggestions =
       <MaintenanceServiceModel>[].obs;
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
+  final RxDouble maintenancePaidAmount = 0.0.obs;
+  final RxList<Map<String, dynamic>> maintenancePayments =
+      <Map<String, dynamic>>[].obs;
   final RxBool isServicesLoading = false.obs;
 
   String? maintenanceId;
@@ -145,10 +153,15 @@ class MaintenanceController extends GetxController {
       );
   double get selectedServicesTotal => selectedMaintenanceServices.fold(
         0.0,
-        (sum, item) => sum + item.price,
+        (sum, item) => sum + (maintenanceServicePrices[item.id] ?? item.price),
+      );
+  double get additionalChargesTotal => additionalCharges.fold(
+        0.0,
+        (sum, item) => sum + SalesAmountFormat.parse('${item['amount'] ?? 0}'),
       );
   double get invoiceTotal =>
-      (partsTotal + laborCost - discount).clamp(0, double.infinity);
+      (partsTotal + laborCost + additionalChargesTotal - discount)
+          .clamp(0, double.infinity);
 
   Map<String, dynamic>? get dailyBoxSession {
     final session = dailyBoxPayload['session'];
@@ -615,6 +628,17 @@ class MaintenanceController extends GetxController {
     await showMaintenanceDeliveryDialog(this);
   }
 
+  Future<void> deliverFromList(
+    BuildContext context, {
+    required String maintenanceId,
+  }) async {
+    await getMaintenancesDetails(maintenanceId: maintenanceId);
+    if (!context.mounted || this.maintenanceId != maintenanceId) return;
+    await syncProductsIfPossible();
+    if (!context.mounted) return;
+    await showMaintenanceDeliveryDialog(this);
+  }
+
   void prevStep() {
     if (selectedStep.value <= 1) return;
     selectedStep.value -= 1;
@@ -683,10 +707,31 @@ class MaintenanceController extends GetxController {
   }
 
   Future<void> pickDeliveryDate(BuildContext context) async {
-    final picked = await ScrollDatePickerSheet.show(
-      context,
-      initial: deliveryDate.value,
-      title: 'deliveryDate',
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: deliveryDate.value,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      helpText: 'اختر موعد التسليم',
+      cancelText: 'إلغاء',
+      confirmText: 'اختيار',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: AppColors.primaryColor,
+                secondary: AppColors.operationalPurple,
+              ),
+          datePickerTheme: DatePickerThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
+        child: Directionality(
+          textDirection: Directionality.of(context),
+          child: child!,
+        ),
+      ),
     );
     if (picked == null) return;
     deliveryDate.value = DateTime(
@@ -794,6 +839,7 @@ class MaintenanceController extends GetxController {
     );
     if (!alreadySelected) {
       selectedMaintenanceServices.add(service);
+      maintenanceServicePrices[service.id] = service.price;
     }
 
     final line =
@@ -822,7 +868,9 @@ class MaintenanceController extends GetxController {
   void removeMaintenanceService(int index) {
     if (index < 0 || index >= selectedMaintenanceServices.length) return;
     final service = selectedMaintenanceServices.removeAt(index);
-    final nextLabor = (laborCost - service.price).clamp(0, double.infinity);
+    final servicePrice =
+        maintenanceServicePrices.remove(service.id) ?? service.price;
+    final nextLabor = (laborCost - servicePrice).clamp(0, double.infinity);
     laborCostController.text =
         nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
 
@@ -835,6 +883,43 @@ class MaintenanceController extends GetxController {
     descriptionController.text = lines.join('\n');
 
     recalculateTotals();
+    syncProductsIfPossible();
+    scheduleAutoSave();
+    update();
+  }
+
+  void updateMaintenanceServicePrice(int index, double price) {
+    if (index < 0 || index >= selectedMaintenanceServices.length) return;
+    final service = selectedMaintenanceServices[index];
+    maintenanceServicePrices[service.id] = price.clamp(0, double.infinity);
+    laborCostController.text = selectedServicesTotal == 0
+        ? ''
+        : SalesAmountFormat.display(selectedServicesTotal);
+    syncProductsIfPossible();
+    scheduleAutoSave();
+    update();
+  }
+
+  void addAdditionalCharge() {
+    additionalCharges.add({'label': '', 'amount': 0.0});
+    update();
+  }
+
+  void updateAdditionalCharge(int index, {String? label, double? amount}) {
+    if (index < 0 || index >= additionalCharges.length) return;
+    final line = Map<String, dynamic>.from(additionalCharges[index]);
+    if (label != null) line['label'] = label;
+    if (amount != null) line['amount'] = amount.clamp(0, double.infinity);
+    additionalCharges[index] = line;
+    additionalCharges.refresh();
+    syncProductsIfPossible();
+    scheduleAutoSave();
+    update();
+  }
+
+  void removeAdditionalCharge(int index) {
+    if (index < 0 || index >= additionalCharges.length) return;
+    additionalCharges.removeAt(index);
     syncProductsIfPossible();
     scheduleAutoSave();
     update();
@@ -918,6 +1003,22 @@ class MaintenanceController extends GetxController {
     update();
   }
 
+  void updateProductLine(
+    int index, {
+    int? quantity,
+    double? unitPrice,
+  }) {
+    if (index < 0 || index >= maintenanceProducts.length) return;
+    maintenanceProducts[index] = maintenanceProducts[index].copyWith(
+      quantity: quantity,
+      unitPrice: unitPrice,
+    );
+    maintenanceProducts.refresh();
+    syncProductsIfPossible();
+    scheduleAutoSave();
+    update();
+  }
+
   Future<void> syncProductsIfPossible({String? editReason}) async {
     if (maintenanceId == null || maintenanceId!.isEmpty) return;
     if (isDelivered.value &&
@@ -931,6 +1032,14 @@ class MaintenanceController extends GetxController {
       laborCost: laborCost,
       discount: discount,
       editReason: editReason,
+      serviceLines: selectedMaintenanceServices
+          .map((service) => {
+                'service_id': service.id,
+                'name': service.name,
+                'price': maintenanceServicePrices[service.id] ?? service.price,
+              })
+          .toList(),
+      additionalCharges: additionalCharges.toList(),
     );
   }
 
@@ -1007,6 +1116,72 @@ class MaintenanceController extends GetxController {
       },
     );
 
+    isLoading(false);
+    update();
+    return ok;
+  }
+
+  Future<bool> addMaintenancePayment({
+    required double amount,
+    String? note,
+  }) async {
+    if (maintenanceId == null || maintenanceId!.isEmpty) return false;
+    if (!isMaintenanceDailyBoxOpen) {
+      await loadMaintenanceDailySession();
+      if (!isMaintenanceDailyBoxOpen) {
+        Get.snackbar(
+          'error'.tr,
+          'يجب فتح صندوق الصيانة اليومي قبل إضافة العربون',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    }
+
+    isLoading(true);
+    update();
+    final result = await addMaintenancePaymentUsecase.call(
+      maintenanceId: maintenanceId!,
+      amount: amount,
+      note: note,
+    );
+    var ok = false;
+    await result.fold(
+      (failure) async {
+        Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      },
+      (success) async {
+        ok = true;
+        final billing = success['billing'];
+        if (billing is Map) {
+          maintenancePaidAmount.value =
+              SalesAmountFormat.parse('${billing['paid_amount']}');
+          final payments = billing['payments'];
+          maintenancePayments.assignAll(
+            payments is List
+                ? payments
+                    .whereType<Map>()
+                    .map((item) => Map<String, dynamic>.from(item))
+                : const <Map<String, dynamic>>[],
+          );
+        }
+        await loadMaintenanceDailySession();
+        await getMaintenancesData();
+        Get.snackbar(
+          'success'.tr,
+          success['message']?.toString() ?? 'تم تثبيت العربون',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+    );
     isLoading(false);
     update();
     return ok;
@@ -1136,7 +1311,7 @@ class MaintenanceController extends GetxController {
     update();
   }
 
-  void getMaintenancesDetails({required String maintenanceId}) async {
+  Future<void> getMaintenancesDetails({required String maintenanceId}) async {
     isEdit(true);
     isEditLoading(true);
     _isHydratingMaintenanceForm = true;
@@ -1209,11 +1384,29 @@ class MaintenanceController extends GetxController {
             : null,
       );
       maintenanceProducts.assignAll(billing.items);
+      maintenancePaidAmount.value = billing.paidAmount;
+      final rawPayments = maintenances['billing'] is Map
+          ? (maintenances['billing']['payments'] as List?)
+          : null;
+      maintenancePayments.assignAll(
+        (rawPayments ?? const [])
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item)),
+      );
       laborCostController.text =
           billing.laborCost > 0 ? billing.laborCost.toString() : '';
       discountController.text =
           billing.discount > 0 ? billing.discount.toString() : '';
       await _hydrateSelectedServicesFromDescription();
+      maintenanceServicePrices.clear();
+      for (final line in billing.serviceLines) {
+        final serviceId = int.tryParse('${line['service_id'] ?? ''}');
+        if (serviceId != null) {
+          maintenanceServicePrices[serviceId] =
+              SalesAmountFormat.parse('${line['price'] ?? 0}');
+        }
+      }
+      additionalCharges.assignAll(billing.additionalCharges);
 
       final files = maintenances['files'];
       if (files is List) {
@@ -1274,7 +1467,11 @@ class MaintenanceController extends GetxController {
     laborCostController.clear();
     discountController.clear();
     maintenanceProducts.clear();
+    maintenancePaidAmount.value = 0;
+    maintenancePayments.clear();
     selectedMaintenanceServices.clear();
+    maintenanceServicePrices.clear();
+    additionalCharges.clear();
     deliveryDate.value = DateTime.now();
     deliveryTime.value = TimeOfDay.now();
     showDeliverySchedule(false);
@@ -1465,7 +1662,7 @@ class MaintenanceController extends GetxController {
   int get deliveredCount => _groupedCount(deliveredMaintenancesSearch);
   int get archivedCount => _groupedCount(archiveMaintenancesSearch);
   int get totalFilteredCount =>
-      newCount + ongoingCount + readyCount + deliveredCount + archivedCount;
+      newCount + ongoingCount + readyCount + archivedCount;
 
   int get visibleFilteredCount {
     switch (maintenanceViewFilter.value) {
@@ -1497,7 +1694,6 @@ class MaintenanceController extends GetxController {
       maintenanceViewFilter.value == maintenanceFilterReady;
 
   bool get showDeliveredMaintenanceSection =>
-      maintenanceViewFilter.value == maintenanceFilterAll ||
       maintenanceViewFilter.value == maintenanceFilterDelivered;
 
   bool get showArchivedMaintenanceSection =>

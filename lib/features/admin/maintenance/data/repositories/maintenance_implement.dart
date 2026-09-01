@@ -156,6 +156,8 @@ class MaintenanceImplement implements MaintenanceRepository {
     double? laborCost,
     double? discount,
     String? editReason,
+    List<Map<String, dynamic>> serviceLines = const [],
+    List<Map<String, dynamic>> additionalCharges = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -167,6 +169,8 @@ class MaintenanceImplement implements MaintenanceRepository {
         laborCost: laborCost,
         discount: discount,
         editReason: editReason,
+        serviceLines: serviceLines,
+        additionalCharges: additionalCharges,
       );
       if (result['status'] == 'success') {
         return Right(
@@ -218,6 +222,36 @@ class MaintenanceImplement implements MaintenanceRepository {
       );
     } on DioException catch (e) {
       return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> addMaintenancePayment({
+    required String maintenanceId,
+    required double amount,
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.addMaintenancePayment(
+        maintenanceId: maintenanceId,
+        amount: amount,
+        note: note,
+      );
+      if (result['status'] != 'success') {
+        return Left(ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ));
+      }
+      return Right(Map<String, dynamic>.from(result));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(
+        e.errorModel.errorMessage,
+        e.errorModel.data,
+      ));
     }
   }
 

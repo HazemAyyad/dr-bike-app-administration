@@ -15,6 +15,8 @@ class SyncMaintenanceProductsUsecase {
     double? laborCost,
     double? discount,
     String? editReason,
+    List<Map<String, dynamic>> serviceLines = const [],
+    List<Map<String, dynamic>> additionalCharges = const [],
   }) {
     return maintenanceRepository.syncMaintenanceProducts(
       maintenanceId: maintenanceId,
@@ -22,6 +24,8 @@ class SyncMaintenanceProductsUsecase {
       laborCost: laborCost,
       discount: discount,
       editReason: editReason,
+      serviceLines: serviceLines,
+      additionalCharges: additionalCharges,
     );
   }
 }

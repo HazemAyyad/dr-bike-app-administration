@@ -245,7 +245,14 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
       child: InkWell(
         onTap: readOnly
             ? null
-            : () {
+            : () async {
+                if (item.status == 'ready') {
+                  await controller.deliverFromList(
+                    context,
+                    maintenanceId: item.id.toString(),
+                  );
+                  return;
+                }
                 controller.getMaintenancesDetails(
                   maintenanceId: item.id.toString(),
                 );

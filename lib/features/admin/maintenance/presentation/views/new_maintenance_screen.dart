@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/show_image_or_video.dart';
 import '../../../../../core/helpers/showtime.dart';
@@ -54,41 +53,6 @@ class NewMaintenanceScreen extends StatelessWidget {
                     ],
                     _MaintenanceStageTitle(controller: controller),
                     SizedBox(height: 12.h),
-                    Obx(
-                      () => Row(
-                        children: [
-                          Expanded(
-                            child: CustomCheckBox(
-                              title: 'seller'.tr,
-                              value: RxBool(controller.selectedSellers.value),
-                              onChanged: (val) {
-                                controller.getAllCustomersAndSellers();
-                                if (!controller.isEdit.value) {
-                                  controller.selectedSellers.value = true;
-                                  controller.partnerIdController.clear();
-                                }
-                                controller.scheduleAutoSave();
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: CustomCheckBox(
-                              title: 'customer'.tr,
-                              value: RxBool(!controller.selectedSellers.value),
-                              onChanged: (val) {
-                                controller.getAllCustomersAndSellers();
-                                if (!controller.isEdit.value) {
-                                  controller.selectedSellers.value = false;
-                                  controller.partnerIdController.clear();
-                                }
-                                controller.scheduleAutoSave();
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
                     _MaintenancePartnerSearch(controller: controller),
                     SizedBox(height: 10.h),
                     _MaintenanceDeliveryDateTimeFields(controller: controller),
@@ -110,6 +74,10 @@ class NewMaintenanceScreen extends StatelessWidget {
                     _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
                     MaintenanceProductsSection(controller: controller),
+                    if (controller.isEdit.value) ...[
+                      SizedBox(height: 10.h),
+                      _MaintenancePaymentsSection(controller: controller),
+                    ],
                     SizedBox(height: 10.h),
                     _MaintenanceMediaPicker(controller: controller),
                     SizedBox(height: 20.h),
@@ -159,6 +127,133 @@ class NewMaintenanceScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _MaintenancePaymentsSection extends StatelessWidget {
+  const _MaintenancePaymentsSection({required this.controller});
+
+  final MaintenanceController controller;
+
+  Future<void> _showAddPayment(BuildContext context) async {
+    final amountController = TextEditingController();
+    final noteController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إضافة عربون'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountController,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'قيمة العربون',
+                suffixText: 'شيكل',
+              ),
+            ),
+            TextField(
+              controller: noteController,
+              decoration: const InputDecoration(labelText: 'ملاحظة اختيارية'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تثبيت العربون'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final amount = double.tryParse(amountController.text.trim()) ?? 0;
+    if (amount <= 0) {
+      Get.snackbar('خطأ', 'أدخل قيمة عربون صحيحة');
+      return;
+    }
+    await controller.addMaintenancePayment(
+      amount: amount,
+      note: noteController.text,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final remaining =
+          (controller.invoiceTotal - controller.maintenancePaidAmount.value)
+              .clamp(0, double.infinity);
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withValues(alpha: 0.035),
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(color: AppColors.operationalCardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.payments_outlined,
+                    color: AppColors.primaryColor, size: 20.sp),
+                SizedBox(width: 7.w),
+                const Expanded(
+                  child: Text(
+                    'العربون والدفعات',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                if (!controller.isDelivered.value && remaining > 0)
+                  TextButton.icon(
+                    onPressed: () => _showAddPayment(context),
+                    icon: const Icon(Icons.add_card_outlined),
+                    label: const Text('إضافة عربون'),
+                  ),
+              ],
+            ),
+            Text(
+              'المدفوع: ${controller.maintenancePaidAmount.value.toStringAsFixed(2)} شيكل  •  المتبقي: ${remaining.toStringAsFixed(2)} شيكل',
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryColor,
+              ),
+            ),
+            if (controller.maintenancePayments.isNotEmpty) ...[
+              SizedBox(height: 7.h),
+              ...controller.maintenancePayments.map(
+                (payment) => Padding(
+                  padding: EdgeInsets.only(bottom: 5.h),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline_rounded,
+                          size: 16, color: Colors.green),
+                      SizedBox(width: 6.w),
+                      Expanded(
+                        child: Text(
+                          '${payment['amount'] ?? 0} شيكل • استلمها ${payment['created_by_name'] ?? '-'} • ${payment['created_at'] ?? '-'}',
+                          style: TextStyle(fontSize: 10.5.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -278,7 +373,6 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _showResults = false;
-  bool? _lastSelectedSellers;
 
   MaintenanceController get controller => widget.controller;
 
@@ -316,14 +410,20 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
     );
   }
 
-  List<dynamic> _filteredPartners() {
-    final list = controller.selectedSellers.value
-        ? controller.allSellersList
-        : controller.allCustomersList;
+  List<Map<String, dynamic>> _filteredPartners() {
+    final list = <Map<String, dynamic>>[
+      ...controller.allCustomersList.map(
+        (item) => {'item': item, 'isSeller': false},
+      ),
+      ...controller.allSellersList.map(
+        (item) => {'item': item, 'isSeller': true},
+      ),
+    ];
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return list.take(8).toList();
     return list
-        .where((item) {
+        .where((entry) {
+          final item = entry['item'];
           final haystack = '${item.name} ${item.phone}'.toLowerCase();
           return haystack.contains(query);
         })
@@ -332,15 +432,34 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
   }
 
   Future<void> _addPartner() async {
-    if (controller.isEdit.value) return;
+    final isSeller = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_add_alt_1_outlined),
+              title: const Text('إضافة زبون'),
+              onTap: () => Navigator.pop(context, false),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_business_outlined),
+              title: const Text('إضافة تاجر'),
+              onTap: () => Navigator.pop(context, true),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (isSeller == null) return;
     await Get.toNamed(
       AppRoutes.ADDNEWCUSTOMERSCREEN,
       arguments: {
         'sellerId': '',
         'employeeId': '',
         'popOnceOnSuccess': true,
-        'employeeType':
-            controller.selectedSellers.value ? 'seller' : 'customer',
+        'employeeType': isSeller ? 'seller' : 'customer',
       },
     );
     controller.getAllCustomersAndSellers();
@@ -349,7 +468,8 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
     _focusNode.requestFocus();
   }
 
-  void _selectPartner(dynamic item) {
+  void _selectPartner(dynamic item, bool isSeller) {
+    controller.selectedSellers.value = isSeller;
     controller.partnerIdController.text = item.id.toString();
     _searchController.text = item.name;
     controller.scheduleAutoSave();
@@ -360,14 +480,9 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (_lastSelectedSellers != controller.selectedSellers.value) {
-        _lastSelectedSellers = controller.selectedSellers.value;
-        _searchController.clear();
-        _showResults = false;
-      }
       _syncSelectedText();
       final items = _filteredPartners();
-      final enabled = !controller.isEdit.value;
+      const enabled = true;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,12 +593,14 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
                         color: Colors.grey.shade200,
                       ),
                       itemBuilder: (_, index) {
-                        final item = items[index];
+                        final entry = items[index];
+                        final item = entry['item'];
+                        final isSeller = entry['isSeller'] == true;
                         return ListTile(
                           dense: true,
                           minLeadingWidth: 24.w,
                           leading: Icon(
-                            controller.selectedSellers.value
+                            isSeller
                                 ? Icons.storefront_outlined
                                 : Icons.person_outline_rounded,
                             size: 20.sp,
@@ -498,15 +615,35 @@ class _MaintenancePartnerSearchState extends State<_MaintenancePartnerSearch> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          subtitle: item.phone.toString().isEmpty
-                              ? null
-                              : Text(
-                                  item.phone,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 11.sp),
-                                ),
-                          onTap: () => _selectPartner(item),
+                          subtitle: Text(
+                            [
+                              isSeller ? 'تاجر' : 'زبون',
+                              if (item.phone.toString().isNotEmpty) item.phone,
+                            ].join(' • '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11.sp),
+                          ),
+                          trailing: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7.w,
+                              vertical: 3.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor
+                                  .withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            child: Text(
+                              isSeller ? 'تاجر' : 'زبون',
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+                          onTap: () => _selectPartner(item, isSeller),
                         );
                       },
                     ),
@@ -796,6 +933,7 @@ class _MaintenanceMediaPicker extends StatelessWidget {
     if (!controller.selectedMedia.any((item) => item.path == file.path)) {
       controller.selectedMedia.add(file);
       controller.update();
+      controller.scheduleAutoSave();
     }
   }
 
@@ -885,6 +1023,7 @@ class _MaintenanceMediaPicker extends StatelessWidget {
                   onTap: () {
                     controller.selectedMedia.removeAt(index);
                     controller.update();
+                    controller.scheduleAutoSave();
                   },
                   child: Icon(
                     Icons.cancel,
