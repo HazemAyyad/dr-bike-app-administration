@@ -159,9 +159,12 @@ class MaintenanceController extends GetxController {
         0.0,
         (sum, item) => sum + SalesAmountFormat.parse('${item['amount'] ?? 0}'),
       );
-  double get invoiceTotal =>
-      (partsTotal + laborCost + additionalChargesTotal - discount)
-          .clamp(0, double.infinity);
+  double get invoiceTotal => (partsTotal +
+          selectedServicesTotal +
+          laborCost +
+          additionalChargesTotal -
+          discount)
+      .clamp(0, double.infinity);
 
   Map<String, dynamic>? get dailyBoxSession {
     final session = dailyBoxPayload['session'];
@@ -852,11 +855,6 @@ class MaintenanceController extends GetxController {
       descriptionController.text = current.isEmpty ? line : '$current\n$line';
     }
 
-    if (!alreadySelected) {
-      final nextLabor = laborCost + service.price;
-      laborCostController.text =
-          nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
-    }
     serviceSuggestions.clear();
     recalculateTotals();
     syncProductsIfPossible();
@@ -868,11 +866,7 @@ class MaintenanceController extends GetxController {
   void removeMaintenanceService(int index) {
     if (index < 0 || index >= selectedMaintenanceServices.length) return;
     final service = selectedMaintenanceServices.removeAt(index);
-    final servicePrice =
-        maintenanceServicePrices.remove(service.id) ?? service.price;
-    final nextLabor = (laborCost - servicePrice).clamp(0, double.infinity);
-    laborCostController.text =
-        nextLabor == 0 ? '' : SalesAmountFormat.display(nextLabor);
+    maintenanceServicePrices.remove(service.id);
 
     final line =
         '${service.name} - ${SalesAmountFormat.display(service.price)}';
@@ -892,9 +886,6 @@ class MaintenanceController extends GetxController {
     if (index < 0 || index >= selectedMaintenanceServices.length) return;
     final service = selectedMaintenanceServices[index];
     maintenanceServicePrices[service.id] = price.clamp(0, double.infinity);
-    laborCostController.text = selectedServicesTotal == 0
-        ? ''
-        : SalesAmountFormat.display(selectedServicesTotal);
     syncProductsIfPossible();
     scheduleAutoSave();
     update();
@@ -1566,7 +1557,9 @@ class MaintenanceController extends GetxController {
             isEdit(true);
           }
           await syncProductsIfPossible(editReason: deliveredEditReason);
-          getMaintenancesData();
+          if (!silent) {
+            getMaintenancesData();
+          }
           if (isSave) Get.back();
           if (!silent) {
             Get.snackbar(
