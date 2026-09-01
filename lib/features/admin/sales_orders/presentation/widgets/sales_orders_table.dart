@@ -17,7 +17,9 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final groups = _groupByDate(controller.orders);
+      final groups = controller.statusFilter.value == 'all'
+          ? _groupOperationally(controller.orders)
+          : _groupByDate(controller.orders);
       if (groups.isEmpty) return const SizedBox.shrink();
       final bulk =
           controller.bulkMode.value && controller.canBulkSelectCurrentTab;
@@ -25,7 +27,13 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final group in groups) ...[
-            _DateHeader(label: group.label, count: group.orders.length),
+            _DateHeader(
+              label: group.label,
+              count: group.orders.length,
+              color: group.color,
+              icon: group.icon,
+              formatAsDate: group.formatAsDate,
+            ),
             ...group.orders.map(
               (order) => _OrderCard(
                 order: order,
@@ -69,25 +77,109 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
       grouped.putIfAbsent(key, () => []).add(order);
     }
     final keys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    return keys.map((key) => _OrderGroup(key, grouped[key]!)).toList();
+    return keys
+        .map((key) => _OrderGroup(
+              key,
+              grouped[key]!,
+              color: AppColors.primaryColor,
+              icon: Icons.calendar_today_outlined,
+              formatAsDate: true,
+            ))
+        .toList();
+  }
+
+  List<_OrderGroup> _groupOperationally(
+    List<SalesOrderListItemModel> orders,
+  ) {
+    const definitions = <_OperationalGroupDefinition>[
+      _OperationalGroupDefinition(
+          'طلبات جديدة', ['unconfirmed'], Colors.blue, Icons.fiber_new_rounded),
+      _OperationalGroupDefinition('قيد التجهيز', ['confirmed', 'ready'],
+          Colors.orange, Icons.inventory_2_outlined),
+      _OperationalGroupDefinition('مع التوصيل', ['with_delivery'],
+          Color(0xFFD97706), Icons.local_shipping_outlined),
+      _OperationalGroupDefinition(
+          'متابعة وإرجاع',
+          [
+            'review',
+            'partial_delivered',
+            'partial_return',
+            'alternative_return',
+            'returned',
+            'stuck'
+          ],
+          Colors.deepPurple,
+          Icons.sync_problem_outlined),
+      _OperationalGroupDefinition('تم التسليم', ['delivered'], Colors.green,
+          Icons.check_circle_outline_rounded),
+      _OperationalGroupDefinition(
+          'ملغاة', ['canceled'], Colors.red, Icons.cancel_outlined),
+      _OperationalGroupDefinition(
+          'مؤجلة سابقاً', ['postponed'], Colors.grey, Icons.schedule_outlined),
+    ];
+    return definitions
+        .map((definition) {
+          final rows = orders
+              .where((order) => definition.statuses.contains(order.status))
+              .toList();
+          return _OrderGroup(
+            definition.label,
+            rows,
+            color: definition.color,
+            icon: definition.icon,
+          );
+        })
+        .where((group) => group.orders.isNotEmpty)
+        .toList();
   }
 }
 
+class _OperationalGroupDefinition {
+  const _OperationalGroupDefinition(
+    this.label,
+    this.statuses,
+    this.color,
+    this.icon,
+  );
+  final String label;
+  final List<String> statuses;
+  final Color color;
+  final IconData icon;
+}
+
 class _OrderGroup {
-  const _OrderGroup(this.label, this.orders);
+  const _OrderGroup(
+    this.label,
+    this.orders, {
+    required this.color,
+    required this.icon,
+    this.formatAsDate = false,
+  });
   final String label;
   final List<SalesOrderListItemModel> orders;
+  final Color color;
+  final IconData icon;
+  final bool formatAsDate;
 }
 
 class _DateHeader extends StatelessWidget {
-  const _DateHeader({required this.label, required this.count});
+  const _DateHeader({
+    required this.label,
+    required this.count,
+    required this.color,
+    required this.icon,
+    required this.formatAsDate,
+  });
   final String label;
   final int count;
+  final Color color;
+  final IconData icon;
+  final bool formatAsDate;
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.tryParse(label);
-    final text = date == null
+    final date = formatAsDate ? DateTime.tryParse(label) : null;
+    final text = !formatAsDate || date == null
         ? label
         : DateFormat('EEEE d MMMM', Get.locale?.languageCode ?? 'ar')
             .format(date);
@@ -99,11 +191,13 @@ class _DateHeader extends StatelessWidget {
             width: 4.w,
             height: 18.h,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor,
+              color: color,
               borderRadius: BorderRadius.circular(8.r),
             ),
           ),
           SizedBox(width: 7.w),
+          Icon(icon, size: 17.sp, color: color),
+          SizedBox(width: 5.w),
           Expanded(
             child: Text(
               text,
@@ -113,7 +207,7 @@ class _DateHeader extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20.r),
             ),
             child: Text('$count', style: TextStyle(fontSize: 10.sp)),

@@ -234,7 +234,6 @@ class SalesOrdersController extends GetxController {
     'delivered',
     'partial_return',
     'returned',
-    'postponed',
     'stuck',
     'canceled',
     'archived',

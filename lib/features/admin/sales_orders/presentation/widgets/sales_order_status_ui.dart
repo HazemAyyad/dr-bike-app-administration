@@ -251,7 +251,6 @@ class SalesOrderActions {
       'confirmed',
       'ready',
       'with_delivery',
-      'postponed',
     }.contains(status);
   }
 
@@ -295,10 +294,6 @@ class SalesOrderActions {
             labelKey: 'salesOrderUploadMedia',
           ),
           SalesOrderActionDef(
-            id: SalesOrderActionId.postpone,
-            labelKey: 'salesOrderPostpone',
-          ),
-          SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),
@@ -320,10 +315,6 @@ class SalesOrderActions {
             labelKey: 'salesOrderUploadMedia',
           ),
           SalesOrderActionDef(
-            id: SalesOrderActionId.postpone,
-            labelKey: 'salesOrderPostpone',
-          ),
-          SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),
@@ -343,10 +334,6 @@ class SalesOrderActions {
           SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
             labelKey: 'salesOrderUploadMedia',
-          ),
-          SalesOrderActionDef(
-            id: SalesOrderActionId.postpone,
-            labelKey: 'salesOrderPostpone',
           ),
           SalesOrderActionDef(
             id: SalesOrderActionId.share,

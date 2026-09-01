@@ -153,7 +153,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         child: _mediaRequirementsCard(order),
                       ),
                     ],
-                    if (order.media.isNotEmpty) ...[
+                    if (_unassignedMedia(order).isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       KeyedSubtree(
                         key: order.mediaRequirements.isEmpty ? _mediaKey : null,
@@ -174,13 +174,6 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ],
                     SizedBox(height: 12.h),
                     _nextStepCard(order),
-                    if (order.statusLogs.isNotEmpty) ...[
-                      SizedBox(height: 12.h),
-                      KeyedSubtree(
-                        key: _historyKey,
-                        child: _statusHistoryCard(order),
-                      ),
-                    ],
                     if (order.childOrders.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       _childOrdersCard(order),
@@ -260,6 +253,26 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         Icon(Icons.expand_more_rounded, size: 18.sp),
                       ],
                     ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Icon(Icons.person_outline,
+                  size: 18.sp, color: SalesOrdersController.textSecondary),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  order.customerName ?? 'زبون غير محدد',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -374,7 +387,15 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               (item) => Tooltip(
                 message: item.label,
                 child: InkWell(
-                  onTap: item.enabled ? () => _scrollTo(item.key) : null,
+                  onTap: item.enabled
+                      ? () {
+                          if (item.label == 'السجل') {
+                            _showStatusHistoryModal(order);
+                          } else {
+                            _scrollTo(item.key);
+                          }
+                        }
+                      : null,
                   borderRadius: BorderRadius.circular(10.r),
                   child: Padding(
                     padding:
@@ -1000,6 +1021,46 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           fontSize: 11.sp,
           fontWeight: FontWeight.w600,
           color: const Color(0xFFE65100),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showStatusHistoryModal(SalesOrderDetailModel order) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.78,
+        minChildSize: 0.45,
+        maxChildSize: 0.94,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: SalesOrdersController.surfaceGray,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 42.w,
+                height: 4.h,
+                margin: EdgeInsets.symmetric(vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 20.h),
+                  children: [_statusHistoryCard(order)],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1643,89 +1704,109 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                 : req.optional
                     ? SalesOrdersController.textSecondary
                     : const Color(0xFFDC2626);
+            final uploaded = order.media
+                .where((media) => media.category == req.category)
+                .toList();
             return Obx(() {
               final busy = controller.isSubmitting.value;
-              return Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: !req.satisfied && !busy
-                        ? () => controller.pickAndUploadMedia(
-                              order.id,
-                              presetCategory: req.category,
-                            )
-                        : null,
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4.h),
-                      child: Row(
-                        children: [
-                          Icon(
-                            req.satisfied
-                                ? Icons.check_circle
-                                : req.optional
-                                    ? Icons.radio_button_unchecked
-                                    : Icons.error_outline,
-                            color: color,
-                            size: 20.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                color: SalesOrdersController.textPrimary,
-                                fontSize: 13.sp,
-                              ),
+              return Container(
+                margin: EdgeInsets.only(bottom: 7.h),
+                padding: EdgeInsets.all(9.r),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.055),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          req.satisfied
+                              ? Icons.check_circle
+                              : Icons.photo_camera_outlined,
+                          color: color,
+                          size: 19.sp,
+                        ),
+                        SizedBox(width: 6.w),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          if (req.optional)
-                            Text(
-                              'salesOrderMediaOptional'.tr,
-                              style: TextStyle(
-                                color: SalesOrdersController.textSecondary,
-                                fontSize: 10.sp,
-                              ),
-                            ),
-                          if (!req.satisfied) ...[
-                            SizedBox(width: 6.w),
-                            Icon(
-                              Icons.upload_outlined,
-                              size: 18.sp,
-                              color: busy
-                                  ? SalesOrdersController.textSecondary
-                                  : color,
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                        Text(
+                          uploaded.isEmpty
+                              ? (req.optional ? 'اختياري' : 'مطلوب')
+                              : '${uploaded.length} مرفوعة',
+                          style: TextStyle(fontSize: 9.sp, color: color),
+                        ),
+                        SizedBox(width: 5.w),
+                        InkWell(
+                          onTap: busy
+                              ? null
+                              : () => controller.pickAndUploadMedia(
+                                    order.id,
+                                    presetCategory: req.category,
+                                  ),
+                          child: Icon(Icons.add_a_photo_outlined,
+                              size: 19.sp, color: color),
+                        ),
+                      ],
                     ),
-                  ),
+                    if (uploaded.isEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        'اضغط على أيقونة الكاميرا لرفع صورة لهذا المتطلب',
+                        style: TextStyle(
+                          fontSize: 9.sp,
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                      ),
+                    ] else ...[
+                      SizedBox(height: 7.h),
+                      SizedBox(
+                        height: 54.w,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: uploaded.length,
+                          separatorBuilder: (_, __) => SizedBox(width: 5.w),
+                          itemBuilder: (_, index) {
+                            final media = uploaded[index];
+                            final url = media.url;
+                            if (url == null) return const SizedBox.shrink();
+                            return InkWell(
+                              onTap: () => _showImageZoom(url),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(7.r),
+                                child: CachedNetworkImage(
+                                  imageUrl: url,
+                                  width: 54.w,
+                                  height: 54.w,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               );
             });
           }),
-          SizedBox(height: 4.h),
-          Obx(
-            () => OutlinedButton.icon(
-              onPressed: controller.isSubmitting.value
-                  ? null
-                  : () => controller.pickAndUploadMedia(order.id),
-              icon: const Icon(Icons.photo_camera_outlined, size: 18),
-              label: Text('salesOrderUploadMedia'.tr),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: SalesOrdersController.textPrimary,
-                side: const BorderSide(color: SalesOrdersController.borderGray),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _mediaCard(SalesOrderDetailModel order) {
+    final mediaRows = _unassignedMedia(order);
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
@@ -1748,7 +1829,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           Wrap(
             spacing: 8.w,
             runSpacing: 8.h,
-            children: order.media.map((m) {
+            children: mediaRows.map((m) {
               if (m.url == null) return const SizedBox.shrink();
               final url = m.url!;
               if (m.type == 'video') {
@@ -1792,6 +1873,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  List<SalesOrderMediaModel> _unassignedMedia(SalesOrderDetailModel order) {
+    if (order.mediaRequirements.isEmpty) return order.media;
+    final categories = order.mediaRequirements.keys.toSet();
+    return order.media
+        .where((media) => !categories.contains(media.category))
+        .toList();
   }
 
   Future<void> _showWorkflowDialog(SalesOrderDetailModel order) async {
