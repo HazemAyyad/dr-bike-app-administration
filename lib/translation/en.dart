@@ -3003,7 +3003,7 @@ const Map<String, String> en = {
   'salesDailyRequestRejected': 'Rejected',
   'salesDailyRequestPending': 'Pending review',
   'salesDailyCurrencyCol': 'Currency',
-  'salesDailyHistoryTitle': 'Daily sales boxes',
+  'salesDailyHistoryTitle': 'Daily sessions',
   'salesDailyTodayTab': 'Today',
   'salesDailyHistoryTab': 'History',
   'salesDailySessionDetail': 'Day details',

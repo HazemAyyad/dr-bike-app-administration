@@ -46,7 +46,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-        title: 'صناديق المبيعات والطلبيات اليومية',
+        title: 'الجلسات اليومية',
         action: false,
       ),
       body: Obx(() {

@@ -18,6 +18,7 @@ import '../widgets/sales_location_filter_fab.dart';
 import '../widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
+import '../../../sales_orders/presentation/widgets/sales_order_partner_selector.dart';
 
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
@@ -143,7 +144,8 @@ class _InstantSaleProductPickerScreenState
                   ? 'adjustmentSalePickProducts'
                   : 'instantSalePickProducts',
             ),
-            if (!_maintenanceFlow) const InstantSalePickerPartnerIcon(),
+            if (!_maintenanceFlow && !_salesOrderFlow)
+              const InstantSalePickerPartnerIcon(),
             IconButton(
               tooltip: 'instantSalePasteProductList'.tr,
               onPressed: _openPasteProductListDialog,
@@ -158,6 +160,11 @@ class _InstantSaleProductPickerScreenState
           children: [
             Column(
               children: [
+                if (_salesOrderFlow)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                    child: const SalesOrderPartnerSelector(compact: true),
+                  ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: Row(

@@ -18,9 +18,9 @@ import '../../../sales/presentation/widgets/new_instant_sale/add_new_instant_sal
 import '../../../sales/presentation/widgets/new_instant_sale/discount_widget.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_payment_section.dart';
-import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_checkout_totals.dart';
+import '../widgets/sales_order_partner_selector.dart';
 
 /// مراجعة الطلبية قبل الحفظ — نفس تدفق البيع الفوري.
 class SalesOrderCheckoutScreen extends StatefulWidget {
@@ -194,45 +194,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showNotes: false,
                   showHints: false,
                 ),
-                _SalesOrderPartnerCard(
-                  onEdit: () async {
-                    await showInstantSalePickerPartnerSheet(context);
-                    final partner = sales.pickerSelectedPartner.value;
-                    if (partner != null && partner.id > 0) {
-                      orders.customerNameController.text = partner.name;
-                      orders.customerPhoneController.text = partner.phone;
-                      await orders.loadPartnerAddresses(
-                        partnerId: partner.id,
-                        isCustomer: sales.pickerPartnerIsCustomer.value,
-                      );
-                    }
-                  },
-                ),
-                Obx(() {
-                  if (orders.partnerAddresses.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: EdgeInsets.only(top: 10.h),
-                    child: Wrap(
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: orders.partnerAddresses.map((address) {
-                        final selected =
-                            orders.selectedPartnerAddressId.value == address.id;
-                        return ChoiceChip(
-                          selected: selected,
-                          label: Text(
-                            '${address.label}: ${address.streetAddress}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onSelected: (_) =>
-                              orders.selectPartnerAddress(address),
-                        );
-                      }).toList(),
-                    ),
-                  );
-                }),
+                const SalesOrderPartnerSelector(),
                 SizedBox(height: 16.h),
                 // Notes are not needed for sales orders at the moment.
                 Divider(color: Colors.grey.shade300, height: 1),
@@ -295,90 +257,5 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
         ),
       ),
     );
-  }
-}
-
-class _SalesOrderPartnerCard extends StatelessWidget {
-  const _SalesOrderPartnerCard({
-    required this.onEdit,
-  });
-
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final sales = Get.find<SalesController>();
-    final orders = Get.find<SalesOrdersController>();
-
-    return Obx(() {
-      final partner = sales.pickerSelectedPartner.value;
-      final name = (partner?.name ?? '').trim().isNotEmpty
-          ? partner!.name
-          : (orders.customerNameController.text.trim().isNotEmpty
-              ? orders.customerNameController.text.trim()
-              : '-');
-      final phone = (partner?.phone ?? '').trim().isNotEmpty
-          ? partner!.phone
-          : (orders.customerPhoneController.text.trim().isNotEmpty
-              ? orders.customerPhoneController.text.trim()
-              : '');
-
-      return Container(
-        padding: EdgeInsets.all(12.w),
-        decoration: BoxDecoration(
-          color: SalesOrdersController.cardGray,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: SalesOrdersController.borderGray),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.person_outline,
-                color: SalesOrdersController.textSecondary, size: 20.sp),
-            SizedBox(width: 10.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                      color: SalesOrdersController.textPrimary,
-                    ),
-                  ),
-                  if (phone.isNotEmpty) ...[
-                    SizedBox(height: 2.h),
-                    Text(
-                      phone,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: SalesOrdersController.textSecondary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            TextButton.icon(
-              onPressed: onEdit,
-              icon: Icon(Icons.edit_outlined, size: 18.sp),
-              label: Text('edit'.tr),
-              style: TextButton.styleFrom(
-                foregroundColor: SalesOrdersController.textPrimary,
-                backgroundColor: Colors.grey.shade200,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
   }
 }

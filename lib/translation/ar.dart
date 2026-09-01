@@ -2970,7 +2970,7 @@ const Map<String, String> ar = {
   'salesDailyRequestRejected': 'مرفوض',
   'salesDailyRequestPending': 'قيد المراجعة',
   'salesDailyCurrencyCol': 'عملة',
-  'salesDailyHistoryTitle': 'صناديق المبيعات اليومية',
+  'salesDailyHistoryTitle': 'الجلسات اليومية',
   'salesDailyTodayTab': 'اليوم',
   'salesDailyHistoryTab': 'السجل',
   'salesDailySessionDetail': 'تفاصيل اليوم',

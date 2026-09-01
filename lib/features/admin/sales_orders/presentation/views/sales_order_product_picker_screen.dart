@@ -12,11 +12,11 @@ import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/widgets/sales_location_filter_fab.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
-import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_product_detail_sheet.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
+import '../widgets/sales_order_partner_selector.dart';
 
 /// Sales-order creation using the exact InstantSale product picker UI.
 class SalesOrderProductPickerScreen extends StatefulWidget {
@@ -94,7 +94,6 @@ class _SalesOrderProductPickerScreenState
               route: AppRoutes.NEWSALESORDERSCREEN,
               title: 'instantSalePickProducts',
             ),
-            const InstantSalePickerPartnerIcon(),
             _CartAppBarButton(
               onTap: () => showInstantSaleCartSheet(context),
             ),
@@ -104,6 +103,10 @@ class _SalesOrderProductPickerScreenState
           children: [
             Column(
               children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                  child: const SalesOrderPartnerSelector(compact: true),
+                ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: TextField(
