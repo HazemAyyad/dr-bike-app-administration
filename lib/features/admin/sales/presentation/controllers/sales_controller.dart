@@ -1301,6 +1301,7 @@ class SalesController extends GetxController
   void _scheduleAutoSuspendLargeInstantSale() {
     _autoSuspendDebounce?.cancel();
 
+    if (maintenancePickerFlow.value) return;
     if (_instantSaleSubmitInFlight) return;
     if (activeEditInstantSaleId.value != null) return;
     if (!canContinueFromPicker) return;
@@ -1375,6 +1376,7 @@ class SalesController extends GetxController
 
   void _scheduleLocalInstantSaleDraftSave() {
     _localDraftDebounce?.cancel();
+    if (maintenancePickerFlow.value) return;
     if (_isRestoringLocalInstantSaleDraft) return;
 
     if (!_shouldKeepLocalInstantSaleDraft) {

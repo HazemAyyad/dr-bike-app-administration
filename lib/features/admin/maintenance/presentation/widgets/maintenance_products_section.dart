@@ -100,30 +100,76 @@ class MaintenanceProductsSection extends StatelessWidget {
                 },
               ),
               SizedBox(height: 8.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'total'.tr,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withValues(alpha: 0.14),
                   ),
-                  Text(
-                    SalesAmountFormat.display(controller.invoiceTotal),
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryColor,
+                ),
+                child: Column(
+                  children: [
+                    _summaryRow('تكلفة القطع', controller.partsTotal),
+                    _summaryRow('الخدمات', controller.selectedServicesTotal),
+                    _summaryRow('أجرة الصيانة', controller.laborCost),
+                    if (controller.additionalChargesTotal > 0)
+                      _summaryRow(
+                        'إضافات أخرى',
+                        controller.additionalChargesTotal,
+                      ),
+                    if (controller.discount > 0)
+                      _summaryRow(
+                        'الخصم',
+                        -controller.discount,
+                        valueColor: Colors.red.shade700,
+                      ),
+                    Divider(height: 18.h),
+                    _summaryRow(
+                      'الإجمالي',
+                      controller.invoiceTotal,
+                      emphasized: true,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _summaryRow(
+    String label,
+    double value, {
+    bool emphasized = false,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 3.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: emphasized ? 14.sp : 12.sp,
+              fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+          Text(
+            '${SalesAmountFormat.display(value)} شيكل',
+            style: TextStyle(
+              fontSize: emphasized ? 15.sp : 12.sp,
+              fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700,
+              color: valueColor ??
+                  (emphasized ? AppColors.primaryColor : Colors.grey.shade800),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -87,7 +87,9 @@ class _InstantSaleProductPickerScreenState
       controller.loadDailySession();
     }
     controller.ensurePickerStoreSectionsLoaded();
-    controller.ensurePickerPartnersLoaded();
+    if (!maintenanceFlow) {
+      controller.ensurePickerPartnersLoaded();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (Get.isRegistered<SalesOrdersController>() ||
           Get.isPrepared<SalesOrdersController>()) {
@@ -142,7 +144,7 @@ class _InstantSaleProductPickerScreenState
                   ? 'adjustmentSalePickProducts'
                   : 'instantSalePickProducts',
             ),
-            const InstantSalePickerPartnerIcon(),
+            if (!_maintenanceFlow) const InstantSalePickerPartnerIcon(),
             IconButton(
               tooltip: 'instantSalePasteProductList'.tr,
               onPressed: _openPasteProductListDialog,

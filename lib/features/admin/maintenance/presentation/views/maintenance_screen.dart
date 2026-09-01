@@ -143,10 +143,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         ],
       ),
       floatingActionButton: AddFloatingActionButton(
-        onPressed: () {
-          controller.clearControllers();
-          Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
-        },
+        onPressed: () => controller.startNewMaintenanceFlow(context),
       ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat

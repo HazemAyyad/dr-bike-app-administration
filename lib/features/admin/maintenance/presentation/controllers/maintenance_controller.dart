@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -41,6 +43,7 @@ import '../widgets/maintenance_delivery_dialog.dart';
 import '../widgets/maintenance_invoice_sheet.dart';
 
 class MaintenanceController extends GetxController {
+  static const _localDraftKey = 'maintenance_local_draft_v1';
   static const maintenanceFilterAll = 'all';
   static const maintenanceFilterNew = 'new';
   static const maintenanceFilterOngoing = 'ongoing';
@@ -127,6 +130,8 @@ class MaintenanceController extends GetxController {
 
   String? maintenanceId;
   Timer? _autoSaveDebounce;
+  Timer? _localDraftDebounce;
+  bool _restoringLocalDraft = false;
   bool _isHydratingMaintenanceForm = false;
   bool _autoSaveQueued = false;
   int? _queuedAutoSaveStep;
@@ -586,6 +591,7 @@ class MaintenanceController extends GetxController {
   @override
   void onClose() {
     _autoSaveDebounce?.cancel();
+    _localDraftDebounce?.cancel();
     searchController.dispose();
     partnerIdController.dispose();
     descriptionController.dispose();
@@ -596,6 +602,21 @@ class MaintenanceController extends GetxController {
 
   void nextStep() async {
     if (!formKey.currentState!.validate()) return;
+
+    if (maintenanceId == null || maintenanceId!.isEmpty) {
+      if (selectedStep.value < timeLineSteps.length) {
+        selectedStep.value += 1;
+        scheduleAutoSave(step: selectedStep.value);
+        update();
+      } else {
+        Get.snackbar(
+          'تنبيه',
+          'احفظ طلب الصيانة أولاً قبل التسليم',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return;
+    }
 
     if (selectedStep.value >= timeLineSteps.length) {
       await _handleDeliver();
@@ -645,15 +666,21 @@ class MaintenanceController extends GetxController {
   void prevStep() {
     if (selectedStep.value <= 1) return;
     selectedStep.value -= 1;
+    if (maintenanceId == null || maintenanceId!.isEmpty) {
+      scheduleAutoSave(step: selectedStep.value);
+      update();
+      return;
+    }
     createMaintenance(step: selectedStep.value, maintenanceId: maintenanceId);
   }
 
   void scheduleAutoSave({int? step}) {
-    if (!isEdit.value ||
-        _isHydratingMaintenanceForm ||
-        isDelivered.value ||
-        maintenanceId == null ||
-        maintenanceId!.isEmpty) {
+    if (_isHydratingMaintenanceForm) return;
+    if (!isEdit.value) {
+      _scheduleLocalDraftSave();
+      return;
+    }
+    if (isDelivered.value || maintenanceId == null || maintenanceId!.isEmpty) {
       return;
     }
     _autoSaveDebounce?.cancel();
@@ -661,6 +688,77 @@ class MaintenanceController extends GetxController {
       const Duration(milliseconds: 650),
       () => autoSaveMaintenance(step: step),
     );
+  }
+
+  void _scheduleLocalDraftSave() {
+    if (_restoringLocalDraft || maintenanceId != null) return;
+    _localDraftDebounce?.cancel();
+    _localDraftDebounce = Timer(
+      const Duration(milliseconds: 500),
+      saveLocalMaintenanceDraft,
+    );
+  }
+
+  Future<void> saveLocalMaintenanceDraft() async {
+    if (_restoringLocalDraft || maintenanceId != null) return;
+    final hasContent = partnerIdController.text.trim().isNotEmpty ||
+        descriptionController.text.trim().isNotEmpty ||
+        maintenanceProducts.isNotEmpty ||
+        selectedMaintenanceServices.isNotEmpty ||
+        additionalCharges.isNotEmpty ||
+        laborCost > 0 ||
+        discount > 0;
+    if (!hasContent) return;
+    await GetStorage().write(
+      _localDraftKey,
+      jsonEncode({
+        'saved_at': DateTime.now().toIso8601String(),
+        'partner_id': partnerIdController.text,
+        'is_seller': selectedSellers.value,
+        'description': descriptionController.text,
+        'labor_cost': laborCostController.text,
+        'discount': discountController.text,
+        'selected_step': selectedStep.value,
+        'show_delivery_schedule': showDeliverySchedule.value,
+        'delivery_date': deliveryDate.value.toIso8601String(),
+        'delivery_hour': deliveryTime.value.hour,
+        'delivery_minute': deliveryTime.value.minute,
+        'products': maintenanceProducts
+            .map((item) => {
+                  ...item.toApiJson(),
+                  'product_name': item.productName,
+                  'image_url': item.imageUrl,
+                  'line_total': item.lineTotal,
+                })
+            .toList(),
+        'services': selectedMaintenanceServices
+            .map((service) => {
+                  'id': service.id,
+                  'name': service.name,
+                  'description': service.description,
+                  'price': service.price,
+                  'is_active': service.isActive,
+                  'media': service.media
+                      .map((media) => {
+                            'id': media.id,
+                            'url': media.url,
+                            'file_type': media.fileType,
+                          })
+                      .toList(),
+                })
+            .toList(),
+        'service_prices': maintenanceServicePrices.map(
+          (key, value) => MapEntry(key.toString(), value),
+        ),
+        'additional_charges': additionalCharges.toList(),
+        'selected_media': selectedMedia.map((file) => file.path).toList(),
+      }),
+    );
+  }
+
+  Future<void> clearLocalMaintenanceDraft() async {
+    _localDraftDebounce?.cancel();
+    await GetStorage().remove(_localDraftKey);
   }
 
   Future<void> autoSaveMaintenance({int? step}) async {
@@ -774,8 +872,8 @@ class MaintenanceController extends GetxController {
 
     final sales = Get.find<SalesController>();
     sales.resetInstantSaleForm();
-    _hydrateSalesCart(sales);
     sales.setMaintenancePickerFlow(true);
+    _hydrateSalesCart(sales);
     sales.enablePickerReservedStock();
     if (sales.products.isEmpty) {
       sales.getAllProducts();
@@ -893,6 +991,7 @@ class MaintenanceController extends GetxController {
 
   void addAdditionalCharge() {
     additionalCharges.add({'label': '', 'amount': 0.0});
+    scheduleAutoSave();
     update();
   }
 
@@ -1472,6 +1571,96 @@ class MaintenanceController extends GetxController {
     update();
   }
 
+  Future<void> startNewMaintenanceFlow(BuildContext context) async {
+    clearControllers();
+    final raw = GetStorage().read(_localDraftKey);
+    if (raw is String && raw.trim().isNotEmpty) {
+      final restore = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('يوجد طلب صيانة سابق'),
+          content: const Text('هل تريد استرجاع الطلب السابق غير المحفوظ؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('بدء طلب جديد'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('استرجاع'),
+            ),
+          ],
+        ),
+      );
+      if (restore == true) {
+        _restoreLocalMaintenanceDraft(raw);
+      } else {
+        await clearLocalMaintenanceDraft();
+      }
+    }
+    if (context.mounted) {
+      await Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+    }
+  }
+
+  void _restoreLocalMaintenanceDraft(String raw) {
+    _restoringLocalDraft = true;
+    try {
+      final draft = jsonDecode(raw);
+      if (draft is! Map) return;
+      partnerIdController.text = '${draft['partner_id'] ?? ''}';
+      selectedSellers.value = draft['is_seller'] == true;
+      descriptionController.text = '${draft['description'] ?? ''}';
+      laborCostController.text = '${draft['labor_cost'] ?? ''}';
+      discountController.text = '${draft['discount'] ?? ''}';
+      selectedStep.value = int.tryParse('${draft['selected_step']}') ?? 1;
+      showDeliverySchedule.value = draft['show_delivery_schedule'] == true;
+      deliveryDate.value =
+          DateTime.tryParse('${draft['delivery_date']}') ?? DateTime.now();
+      deliveryTime.value = TimeOfDay(
+        hour: int.tryParse('${draft['delivery_hour']}') ?? 0,
+        minute: int.tryParse('${draft['delivery_minute']}') ?? 0,
+      );
+      maintenanceProducts.assignAll(
+        ((draft['products'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) => MaintenanceProductModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                )),
+      );
+      selectedMaintenanceServices.assignAll(
+        ((draft['services'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) => MaintenanceServiceModel.fromJson(
+                  Map<String, dynamic>.from(item),
+                )),
+      );
+      maintenanceServicePrices.clear();
+      final prices = draft['service_prices'];
+      if (prices is Map) {
+        for (final entry in prices.entries) {
+          final id = int.tryParse('${entry.key}');
+          final price = double.tryParse('${entry.value}');
+          if (id != null && price != null) {
+            maintenanceServicePrices[id] = price;
+          }
+        }
+      }
+      additionalCharges.assignAll(
+        ((draft['additional_charges'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item)),
+      );
+      selectedMedia = ((draft['selected_media'] as List?) ?? const [])
+          .map((path) => File('$path'))
+          .where((file) => file.existsSync())
+          .toList();
+      update();
+    } finally {
+      _restoringLocalDraft = false;
+    }
+  }
+
   final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
 
@@ -1555,6 +1744,7 @@ class MaintenanceController extends GetxController {
           if (newId != null && newId.isNotEmpty) {
             this.maintenanceId = newId;
             isEdit(true);
+            await clearLocalMaintenanceDraft();
           }
           await syncProductsIfPossible(editReason: deliveredEditReason);
           if (!silent) {
