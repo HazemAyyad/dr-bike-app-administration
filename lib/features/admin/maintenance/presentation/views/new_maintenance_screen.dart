@@ -30,13 +30,10 @@ class NewMaintenanceScreen extends StatelessWidget {
               controller.isEdit.value ? 'editMaintenance' : 'createMaintenance',
           action: false,
         ),
-        bottomNavigationBar: _MaintenanceBottomActions(
-          controller: controller,
-        ),
         body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: Builder(
-            builder: (context) {
+          child: GetBuilder<MaintenanceController>(
+            builder: (controller) {
               if (controller.isEditLoading.value) {
                 return Center(
                   child: Padding(
@@ -53,45 +50,26 @@ class NewMaintenanceScreen extends StatelessWidget {
                     if (controller.isEdit.value) ...[
                       _MaintenanceAutoSaveStatus(controller: controller),
                       SizedBox(height: 8.h),
-                    ] else ...[
-                      const _MaintenanceLocalDraftStatus(),
-                      SizedBox(height: 8.h),
                     ],
                     _MaintenanceStageTitle(controller: controller),
-                    SizedBox(height: 8.h),
-                    Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withValues(alpha: 0.025),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: AppColors.operationalCardBorder,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _MaintenancePartnerSearch(controller: controller),
-                          SizedBox(height: 8.h),
-                          _MaintenanceDeliveryDateTimeFields(
-                            controller: controller,
-                          ),
-                          SizedBox(height: 8.h),
-                          CustomTextField(
-                            validator: (value) => null,
-                            label: 'details',
-                            hintText: 'detailsExample',
-                            controller: controller.descriptionController,
-                            minLines: 2,
-                            maxLines: 3,
-                            keyboardType: TextInputType.multiline,
-                            textInputAction: TextInputAction.newline,
-                            onChanged: (value) {
-                              controller.scheduleAutoSave();
-                              controller.searchServiceSuggestions(value);
-                            },
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: 12.h),
+                    _MaintenancePartnerSearch(controller: controller),
+                    SizedBox(height: 10.h),
+                    _MaintenanceDeliveryDateTimeFields(controller: controller),
+                    SizedBox(height: 10.h),
+                    CustomTextField(
+                      validator: (value) => null,
+                      label: 'details',
+                      hintText: 'detailsExample',
+                      controller: controller.descriptionController,
+                      minLines: 2,
+                      maxLines: 4,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      onChanged: (value) {
+                        controller.scheduleAutoSave();
+                        controller.searchServiceSuggestions(value);
+                      },
                     ),
                     _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
@@ -101,133 +79,54 @@ class NewMaintenanceScreen extends StatelessWidget {
                           _MaintenancePaymentsSection(controller: controller),
                     ),
                     SizedBox(height: 10.h),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.operationalCardBorder,
-                        ),
-                        borderRadius: BorderRadius.circular(12.r),
+                    _MaintenanceMediaPicker(controller: controller),
+                    SizedBox(height: 20.h),
+                    if (controller.isDelivered.value && controller.isEdit.value)
+                      AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'save',
+                        onPressed: () {
+                          controller.createMaintenance(
+                            step: controller.selectedStep.value,
+                            maintenanceId: controller.maintenanceId,
+                            isSave: true,
+                          );
+                        },
                       ),
-                      child: ExpansionTile(
-                        initiallyExpanded: controller.selectedMedia.isNotEmpty,
-                        tilePadding: EdgeInsets.symmetric(horizontal: 10.w),
-                        title: const Text(
-                          'الصور والمرفقات',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        subtitle: Text(
-                          controller.selectedMedia.isEmpty
-                              ? 'اضغط لإضافة صور'
-                              : '${controller.selectedMedia.length} مرفق',
-                        ),
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
-                            child: _MaintenanceMediaPicker(
-                              controller: controller,
-                            ),
-                          ),
-                        ],
+                    if (!controller.isDelivered.value &&
+                        (controller.maintenanceId?.isNotEmpty ?? false))
+                      NextBackButton(
+                        isLoading: controller.isLoading,
+                        endTitle: 'delivered',
+                        totalSteps: controller.timeLineSteps.length.obs,
+                        selectedStep: controller.selectedStep,
+                        onPressedBack: controller.prevStep,
+                        onPressedNext: controller.nextStep,
                       ),
-                    ),
-                    SizedBox(height: 90.h),
+                    if (!controller.isDelivered.value &&
+                        !controller.isEdit.value &&
+                        (controller.maintenanceId == null ||
+                            controller.maintenanceId!.isEmpty)) ...[
+                      SizedBox(height: 10.h),
+                      AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'save',
+                        onPressed: () {
+                          controller.createMaintenance(
+                            step: controller.selectedStep.value,
+                            maintenanceId: controller.maintenanceId,
+                            allowCreate: true,
+                          );
+                        },
+                      ),
+                    ],
+                    SizedBox(height: 16.h),
                   ],
                 ),
               );
             },
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MaintenanceBottomActions extends StatelessWidget {
-  const _MaintenanceBottomActions({required this.controller});
-
-  final MaintenanceController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller.isEditLoading.value) return const SizedBox.shrink();
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 10.h),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          border: const Border(
-            top: BorderSide(color: AppColors.operationalCardBorder),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: controller.isDelivered.value && controller.isEdit.value
-            ? AppButton(
-                isLoading: controller.isLoading,
-                text: 'save',
-                onPressed: () => controller.createMaintenance(
-                  step: controller.selectedStep.value,
-                  maintenanceId: controller.maintenanceId,
-                  isSave: true,
-                ),
-              )
-            : (controller.maintenanceId?.isNotEmpty ?? false)
-                ? NextBackButton(
-                    isLoading: controller.isLoading,
-                    endTitle: 'delivered',
-                    totalSteps: controller.timeLineSteps.length.obs,
-                    selectedStep: controller.selectedStep,
-                    onPressedBack: controller.prevStep,
-                    onPressedNext: controller.nextStep,
-                  )
-                : AppButton(
-                    isLoading: controller.isLoading,
-                    text: 'save',
-                    onPressed: () => controller.createMaintenance(
-                      step: controller.selectedStep.value,
-                      maintenanceId: controller.maintenanceId,
-                      allowCreate: true,
-                    ),
-                  ),
-      ),
-    );
-  }
-}
-
-class _MaintenanceLocalDraftStatus extends StatelessWidget {
-  const _MaintenanceLocalDraftStatus();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.30)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.edit_note_rounded, color: Colors.orange.shade800),
-          SizedBox(width: 7.w),
-          Expanded(
-            child: Text(
-              'مسودة محلية — لم يتم حفظ الطلب في النظام بعد',
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w700,
-                color: Colors.orange.shade900,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

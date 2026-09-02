@@ -73,20 +73,10 @@ class MaintenanceProductsSection extends StatelessWidget {
                   ),
                 )
               else
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: 220.h),
-                  child: SingleChildScrollView(
-                    child: _ProductsTable(controller: controller),
-                  ),
-                ),
+                _ProductsTable(controller: controller),
               if (controller.selectedMaintenanceServices.isNotEmpty) ...[
                 SizedBox(height: 8.h),
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: 180.h),
-                  child: SingleChildScrollView(
-                    child: _ServicesTable(controller: controller),
-                  ),
-                ),
+                _ServicesTable(controller: controller),
               ],
               SizedBox(height: 8.h),
               _AdditionalChargesRepeater(

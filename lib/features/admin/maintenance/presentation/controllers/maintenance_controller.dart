@@ -1687,7 +1687,10 @@ class MaintenanceController extends GetxController {
     update();
   }
 
-  Future<void> startNewMaintenanceFlow(BuildContext context) async {
+  Future<void> startNewMaintenanceFlow(
+    BuildContext context, {
+    required Future<void> Function() openCreateScreen,
+  }) async {
     clearControllers();
     final raw = GetStorage().read(_localDraftKey);
     if (raw is String && raw.trim().isNotEmpty) {
@@ -1715,7 +1718,7 @@ class MaintenanceController extends GetxController {
       }
     }
     if (context.mounted) {
-      await Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+      await openCreateScreen();
     }
   }
 

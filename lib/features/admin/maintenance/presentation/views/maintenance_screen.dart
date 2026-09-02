@@ -11,6 +11,7 @@ import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
 import '../widgets/maintenance_data_widget.dart';
 import 'maintenance_qr_scanner_screen.dart';
+import 'new_maintenance_screen.dart';
 
 class MaintenanceScreen extends GetView<MaintenanceController> {
   const MaintenanceScreen({Key? key}) : super(key: key);
@@ -177,7 +178,17 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         ],
       ),
       floatingActionButton: AddFloatingActionButton(
-        onPressed: () => controller.startNewMaintenanceFlow(context),
+        onPressed: () => controller.startNewMaintenanceFlow(
+          context,
+          openCreateScreen: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const NewMaintenanceScreen(),
+              settings: const RouteSettings(
+                name: AppRoutes.NEWMAINTENANCESCREEN,
+              ),
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
