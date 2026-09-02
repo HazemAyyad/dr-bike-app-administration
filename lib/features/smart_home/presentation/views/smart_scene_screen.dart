@@ -8,18 +8,23 @@ import '../controllers/smart_home_controller.dart';
 import '../smart_home_theme.dart';
 
 class SmartScenesSection extends StatelessWidget {
-  const SmartScenesSection({Key? key, required this.controller})
-      : super(key: key);
+  const SmartScenesSection({
+    Key? key,
+    required this.controller,
+    this.showAll = false,
+  }) : super(key: key);
 
   final SmartHomeController controller;
+  final bool showAll;
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final scenes = controller.visibleScenes;
       final totalScenes = controller.scenes.length;
-      if (totalScenes == 0) return const SizedBox.shrink();
-      final featured = scenes.take(2).toList(growable: false);
+      if (totalScenes == 0 && !showAll) return const SizedBox.shrink();
+      final featured =
+          showAll ? scenes : scenes.take(2).toList(growable: false);
       return Container(
         padding: EdgeInsets.all(11.w),
         decoration: BoxDecoration(
@@ -48,14 +53,14 @@ class SmartScenesSection extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
-                    'المشاهد الرئيسية',
+                    showAll ? 'المشاهد' : 'المشاهد الرئيسية',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: smartHomeInk,
                           fontWeight: FontWeight.w900,
                         ),
                   ),
                 ),
-                if (totalScenes > featured.length)
+                if (!showAll && totalScenes > featured.length)
                   TextButton(
                     onPressed: () => Get.to<void>(
                       () => _AllScenesScreen(controller: controller),
@@ -73,20 +78,51 @@ class SmartScenesSection extends StatelessWidget {
               ],
             ),
             SizedBox(height: 8.h),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: featured.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8.w,
-                childAspectRatio: .98,
+            if (featured.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 28.h),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_outlined,
+                      size: 42.r,
+                      color: smartHomeMuted,
+                    ),
+                    SizedBox(height: 8.h),
+                    const Text('لا توجد مشاهد في هذا النطاق'),
+                    SizedBox(height: 10.h),
+                    FilledButton.icon(
+                      onPressed: () => Get.to<void>(
+                        () => SmartSceneEditorScreen(controller: controller),
+                      ),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('إنشاء أول مشهد'),
+                    ),
+                  ],
+                ),
+              )
+            else if (showAll)
+              ...featured.map(
+                (scene) => Padding(
+                  padding: EdgeInsets.only(bottom: 8.h),
+                  child: _SceneCard(controller: controller, scene: scene),
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: featured.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8.w,
+                  childAspectRatio: .98,
+                ),
+                itemBuilder: (context, index) => _FeaturedSceneCard(
+                  controller: controller,
+                  scene: featured[index],
+                ),
               ),
-              itemBuilder: (context, index) => _FeaturedSceneCard(
-                controller: controller,
-                scene: featured[index],
-              ),
-            ),
           ],
         ),
       );
@@ -580,14 +616,48 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
         body: ListView(
           padding: EdgeInsets.all(18.w),
           children: [
-            TextField(
-              controller: nameController,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'اسم المشهد',
-                hintText: 'مثال: إطفاء كل إضاءة المكتب',
-                prefixIcon: Icon(Icons.auto_awesome_rounded),
-                border: OutlineInputBorder(),
+            Container(
+              padding: EdgeInsets.all(14.w),
+              decoration: BoxDecoration(
+                color: smartHomeAccent.withOpacity(.07),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: smartHomeAccent.withOpacity(.15)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44.r,
+                    height: 44.r,
+                    decoration: const BoxDecoration(
+                      color: smartHomeAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 11.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.existing == null
+                              ? 'ابنِ خطوات المشهد'
+                              : nameController.text,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                        ),
+                        const Text(
+                          'اختر طريقة التشغيل ثم أضف أمرًا أو أكثر. سيُطلب الاسم عند الحفظ.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 18.h),
@@ -732,11 +802,9 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
   }
 
   Future<void> _addAction() async {
-    final selected = await _pickBoolTargets(
+    final selected = await _pickSceneActionTargets(
       context,
       controller: widget.controller,
-      title: 'أضف أوامر للمشهد',
-      condition: false,
     );
     if (selected.isEmpty) return;
     setState(() {
@@ -756,10 +824,6 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
   }
 
   Future<void> _save() async {
-    if (nameController.text.trim().isEmpty) {
-      Get.snackbar('اسم المشهد', 'اكتب اسمًا للمشهد');
-      return;
-    }
     if (actions.isEmpty) {
       Get.snackbar('أوامر المشهد', 'أضف أمرًا واحدًا على الأقل');
       return;
@@ -768,6 +832,11 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
       Get.snackbar('شروط المشهد', 'أضف شرط تشغيل واحدًا على الأقل');
       return;
     }
+    final name = await Get.dialog<String>(
+      _SceneNameDialog(initialValue: nameController.text),
+    );
+    if (name == null || !mounted) return;
+    nameController.text = name;
     setState(() => saving = true);
     final ok = await widget.controller.saveScene(
       existing: widget.existing,
@@ -788,6 +857,346 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
     } else {
       Get.snackbar('تعذر الحفظ', widget.controller.errorMessage.value);
     }
+  }
+}
+
+class _SceneNameDialog extends StatefulWidget {
+  const _SceneNameDialog({required this.initialValue});
+
+  final String initialValue;
+
+  @override
+  State<_SceneNameDialog> createState() => _SceneNameDialogState();
+}
+
+class _SceneNameDialogState extends State<_SceneNameDialog> {
+  late final TextEditingController controller;
+  String error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.initialValue);
+  }
+
+  void _submit() {
+    final name = controller.text.trim();
+    if (name.isEmpty) {
+      setState(() => error = 'اكتب اسمًا واضحًا للمشهد');
+      return;
+    }
+    Navigator.of(context).pop(name);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      icon: const Icon(Icons.auto_awesome_rounded, color: smartHomeAccent),
+      title: const Text('اسم المشهد'),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        maxLength: 191,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          hintText: 'مثال: إطفاء إضاءة المعرض',
+          errorText: error.isEmpty ? null : error,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton.icon(
+          onPressed: _submit,
+          icon: const Icon(Icons.save_rounded),
+          label: const Text('حفظ المشهد'),
+        ),
+      ],
+    );
+  }
+}
+
+Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
+  BuildContext context, {
+  required SmartHomeController controller,
+}) async {
+  final targets = <_SceneBoolTarget>[];
+  for (final device in controller.devices) {
+    for (final function in DeviceCapabilityResolver.writableFunctions(device)) {
+      targets.add(_SceneBoolTarget(device: device, function: function));
+    }
+  }
+  if (targets.isEmpty) {
+    Get.snackbar('أوامر المشهد', 'لا توجد قدرات قابلة للتحكم');
+    return const [];
+  }
+
+  final capabilities = <String, _SceneBoolTarget>{};
+  for (final target in targets) {
+    capabilities.putIfAbsent(target.function.code, () => target);
+  }
+  final selectedCode = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'اختر القدرة المراد تنفيذها',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 14),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * .62,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: capabilities.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, index) {
+                  final target = capabilities.values.elementAt(index);
+                  final count = targets
+                      .where(
+                          (item) => item.function.code == target.function.code)
+                      .length;
+                  return ListTile(
+                    leading: Icon(target.function.isBool
+                        ? Icons.power_settings_new_rounded
+                        : target.function.isEnum
+                            ? Icons.tune_rounded
+                            : Icons.settings_remote_rounded),
+                    title: Text(
+                      _sceneFunctionLabel(target.device, target.function),
+                      softWrap: true,
+                    ),
+                    subtitle: Text('متاحة على $count جهاز'),
+                    trailing: const Icon(Icons.chevron_left_rounded),
+                    onTap: () =>
+                        Navigator.of(sheetContext).pop(target.function.code),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (selectedCode == null || !context.mounted) return const [];
+
+  final compatible = targets
+      .where((target) => target.function.code == selectedCode)
+      .toList(growable: false);
+  final value = await _pickSceneFunctionValue(
+    context,
+    compatible.first.function,
+  );
+  if (identical(value, _sceneValueCancelled) || !context.mounted) {
+    return const [];
+  }
+
+  final selectedIds = <int>{};
+  final accepted = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('اختر جهازًا أو عدة أجهزة'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: compatible.length + 1,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, index) {
+              if (index == 0) {
+                final all = selectedIds.length == compatible.length;
+                return CheckboxListTile(
+                  value: all,
+                  title: const Text('تحديد الكل'),
+                  onChanged: (_) => setState(() {
+                    if (all) {
+                      selectedIds.clear();
+                    } else {
+                      selectedIds.addAll(
+                        compatible.map((target) => target.device.id),
+                      );
+                    }
+                  }),
+                );
+              }
+              final target = compatible[index - 1];
+              final selected = selectedIds.contains(target.device.id);
+              return CheckboxListTile(
+                value: selected,
+                title: Text(target.device.name, softWrap: true),
+                subtitle: Text(
+                  [
+                    if (target.device.roomName.isNotEmpty)
+                      target.device.roomName,
+                    target.device.online ? 'متصل' : 'غير متصل',
+                  ].join(' • '),
+                ),
+                onChanged: (checked) => setState(() {
+                  checked == true
+                      ? selectedIds.add(target.device.id)
+                      : selectedIds.remove(target.device.id);
+                }),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: selectedIds.isEmpty
+                ? null
+                : () => Navigator.of(dialogContext).pop(true),
+            child: Text('إضافة المحدد (${selectedIds.length})'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (accepted != true) return const [];
+
+  return compatible
+      .where((target) => selectedIds.contains(target.device.id))
+      .where((target) =>
+          DeviceCapabilityResolver.validate(target.function, value).valid)
+      .map((target) => <String, dynamic>{
+            'device_id': target.device.id,
+            'dp_id': target.function.dpId,
+            'value': value,
+            'device_name': target.device.name,
+            'function_name':
+                _sceneFunctionLabel(target.device, target.function),
+          })
+      .toList(growable: false);
+}
+
+const _sceneValueCancelled = _SceneValueCancelled();
+
+class _SceneValueCancelled {
+  const _SceneValueCancelled();
+}
+
+Future<dynamic> _pickSceneFunctionValue(
+  BuildContext context,
+  TuyaDeviceFunction function,
+) async {
+  if (function.isBool) {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('اختر الأمر'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const ListTile(
+              leading: Icon(Icons.power_settings_new_rounded),
+              title: Text('تشغيل'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const ListTile(
+              leading: Icon(Icons.power_off_rounded),
+              title: Text('إغلاق'),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? _sceneValueCancelled;
+  }
+
+  if (function.isEnum) {
+    final range = function.values['range'];
+    final options = range is List ? range : const [];
+    if (options.isEmpty) return _sceneValueCancelled;
+    final result = await showDialog<dynamic>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('اختر قيمة الأمر'),
+        children: options
+            .map((option) => SimpleDialogOption(
+                  onPressed: () => Navigator.of(dialogContext).pop(option),
+                  child: Text(_friendlySceneEnumValue(option.toString())),
+                ))
+            .toList(growable: false),
+      ),
+    );
+    return result ?? _sceneValueCancelled;
+  }
+
+  final textController = TextEditingController();
+  final result = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('قيمة الأمر'),
+      content: TextField(
+        controller: textController,
+        autofocus: true,
+        keyboardType:
+            function.isValue ? TextInputType.number : TextInputType.text,
+        decoration: const InputDecoration(border: OutlineInputBorder()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(textController.text.trim()),
+          child: const Text('تأكيد'),
+        ),
+      ],
+    ),
+  );
+  textController.dispose();
+  if (result == null || result.isEmpty) return _sceneValueCancelled;
+  if (!function.isValue) return result;
+  return num.tryParse(result) ?? _sceneValueCancelled;
+}
+
+String _friendlySceneEnumValue(String value) {
+  switch (value.toLowerCase()) {
+    case 'open':
+      return 'فتح';
+    case 'close':
+      return 'إغلاق';
+    case 'stop':
+      return 'إيقاف';
+    case 'continue':
+      return 'متابعة';
+    case 'on':
+      return 'تشغيل';
+    case 'off':
+      return 'إطفاء';
+    default:
+      return value;
   }
 }
 
@@ -856,6 +1265,12 @@ class _ConditionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheduled = condition['type'] == 'schedule';
     final days = (condition['repeat_days'] as List?)?.length ?? 0;
+    final repeatType = condition['repeat_type']?.toString() ??
+        (days == 0
+            ? 'once'
+            : days == 7
+                ? 'daily'
+                : 'weekly');
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(scheduled ? Icons.schedule_rounded : Icons.sensors_rounded),
@@ -863,7 +1278,11 @@ class _ConditionTile extends StatelessWidget {
           ? 'الساعة ${condition['time']}'
           : '${_sceneTargetDeviceName(controller, condition)} • ${_sceneTargetFunctionName(controller, condition)}'),
       subtitle: Text(scheduled
-          ? (days == 0 ? 'مرة واحدة' : 'يتكرر في $days أيام')
+          ? (repeatType == 'once'
+              ? 'مرة واحدة'
+              : repeatType == 'daily'
+                  ? 'يتكرر يوميًا'
+                  : 'يتكرر في $days أيام')
           : (condition['value'] == true ? 'عند التشغيل' : 'عند الإطفاء')),
       trailing: IconButton(
         onPressed: onDelete,
@@ -885,17 +1304,25 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rawValue = action['value'];
+    final valueLabel = rawValue is bool
+        ? rawValue
+            ? 'تشغيل'
+            : 'إطفاء'
+        : _friendlySceneEnumValue(rawValue?.toString() ?? '');
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(
-        action['value'] == true
+        rawValue == true
             ? Icons.lightbulb_rounded
-            : Icons.lightbulb_outline_rounded,
+            : rawValue == false
+                ? Icons.lightbulb_outline_rounded
+                : Icons.tune_rounded,
       ),
       title: Text(
         '${_sceneTargetDeviceName(controller, action)} • ${_sceneTargetFunctionName(controller, action)}',
       ),
-      subtitle: Text(action['value'] == true ? 'تشغيل' : 'إطفاء'),
+      subtitle: Text(valueLabel),
       trailing: IconButton(
         onPressed: onDelete,
         icon: const Icon(Icons.close_rounded),
@@ -912,6 +1339,7 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
   );
   if (time == null || !context.mounted) return null;
   final selectedDays = <String>{};
+  var repeatType = 'once';
   final accepted = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -926,20 +1354,71 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
           'sat': 'السبت',
         };
         return AlertDialog(
-          title: const Text('التكرار'),
-          content: Wrap(
-            spacing: 7,
-            children: days.entries
-                .map((day) => FilterChip(
-                      label: Text(day.value),
-                      selected: selectedDays.contains(day.key),
-                      onSelected: (selected) => setState(() {
-                        selected
-                            ? selectedDays.add(day.key)
-                            : selectedDays.remove(day.key);
-                      }),
-                    ))
-                .toList(),
+          title: const Text('تكرار المؤقت'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: smartHomeAccent.withOpacity(.07),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded,
+                          color: smartHomeAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        time.format(context),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'once', label: Text('مرة')),
+                    ButtonSegment(value: 'daily', label: Text('يومي')),
+                    ButtonSegment(value: 'weekly', label: Text('أسبوعي')),
+                  ],
+                  selected: {repeatType},
+                  onSelectionChanged: (selection) => setState(() {
+                    repeatType = selection.first;
+                    if (repeatType != 'weekly') selectedDays.clear();
+                  }),
+                ),
+                if (repeatType == 'weekly') ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'اختر أيام التكرار',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: days.entries
+                        .map((day) => FilterChip(
+                              label: Text(day.value),
+                              selected: selectedDays.contains(day.key),
+                              onSelected: (selected) => setState(() {
+                                selected
+                                    ? selectedDays.add(day.key)
+                                    : selectedDays.remove(day.key);
+                              }),
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -947,7 +1426,9 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
               child: const Text('إلغاء'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: repeatType == 'weekly' && selectedDays.isEmpty
+                  ? null
+                  : () => Navigator.pop(context, true),
               child: const Text('تأكيد'),
             ),
           ],
@@ -956,6 +1437,17 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
     ),
   );
   if (accepted != true) return null;
+  if (repeatType == 'daily') {
+    selectedDays.addAll(const [
+      'sun',
+      'mon',
+      'tue',
+      'wed',
+      'thu',
+      'fri',
+      'sat',
+    ]);
+  }
   var date = DateTime(now.year, now.month, now.day, time.hour, time.minute);
   if (!date.isAfter(now)) date = date.add(const Duration(days: 1));
   String two(int value) => value.toString().padLeft(2, '0');
@@ -964,6 +1456,7 @@ Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
     'time': '${two(time.hour)}:${two(time.minute)}',
     'date': '${date.year}-${two(date.month)}-${two(date.day)}',
     'repeat_days': selectedDays.toList(growable: false),
+    'repeat_type': repeatType,
     'timezone': 'Asia/Jerusalem',
   };
 }

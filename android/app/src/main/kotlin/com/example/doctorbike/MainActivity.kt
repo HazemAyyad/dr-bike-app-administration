@@ -573,18 +573,31 @@ class MainActivity : FlutterFragmentActivity() {
         val aliasName = call.argument<String>("aliasName") ?: taskName
         val dpId = call.argument<String>("dpId") ?: ""
         val value = call.argument<Any>("value")
+        val rawCommands = call.argument<List<Map<Any?, Any?>>>("commands") ?: emptyList()
         val time = call.argument<String>("time") ?: ""
         val loops = call.argument<String>("loops") ?: "0000000"
         val enabled = call.argument<Boolean>("enabled") ?: true
         val replace = call.argument<Boolean>("replace") ?: false
-        if (devId.isBlank() || taskName.isBlank() || dpId.isBlank() || time.isBlank() || value == null) {
+        val dps = JSONObject()
+        if (rawCommands.isNotEmpty()) {
+            rawCommands.forEach { command ->
+                val commandDpId = command["dpId"]?.toString().orEmpty()
+                val commandValue = command["value"]
+                if (commandDpId.isNotBlank() && commandValue != null) {
+                    dps.put(commandDpId, commandValue)
+                }
+            }
+        } else if (dpId.isNotBlank() && value != null) {
+            dps.put(dpId, value)
+        }
+        if (devId.isBlank() || taskName.isBlank() || dps.length() == 0 || time.isBlank()) {
             result.success(mapOf("success" to false, "code" to "missing_schedule_arguments", "message" to "Missing Tuya schedule arguments"))
             return
         }
 
         fun addTimer() {
             val actions = JSONObject()
-                .put("dps", JSONObject().put(dpId, value))
+                .put("dps", dps)
                 .put("time", time)
                 .toString()
             val builder = ThingTimerBuilder.Builder()

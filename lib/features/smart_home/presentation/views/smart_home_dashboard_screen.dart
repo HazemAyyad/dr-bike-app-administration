@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/services/theme_service.dart';
+import '../../../../core/services/app_home_widget_service.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../../core/widgets/skeleton_loading.dart';
 import '../../data/smart_home_api_service.dart';
@@ -21,83 +23,96 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
   Widget build(BuildContext context) {
     return Theme(
       data: smartHomeTheme(context),
-      child: Scaffold(
-        appBar: AppBar(
-          scrolledUnderElevation: 0,
-          title: Text(
-            'smartHome'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w800,
-                  color: smartHomeInk,
-                ),
-          ),
-          actions: [
-            PopupMenuButton<String>(
-              tooltip: 'إضافة',
-              icon: const Icon(Icons.add_rounded),
-              onSelected: (value) {
-                if (value == 'scene') {
-                  Get.to<void>(
-                    () => SmartSceneEditorScreen(controller: controller),
-                  );
-                } else if (value == 'device') {
-                  _showAddDeviceDialog();
-                } else if (value == 'location') {
-                  _showLocationDialog(controller: controller);
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'scene',
-                  child: ListTile(
-                    leading: Icon(Icons.auto_awesome_rounded),
-                    title: Text('إضافة مشهد'),
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            scrolledUnderElevation: 0,
+            title: Text(
+              'smartHome'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w800,
+                    color: smartHomeInk,
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'device',
-                  child: ListTile(
-                    leading: Icon(Icons.add_to_home_screen_rounded),
-                    title: Text('إضافة جهاز'),
+            ),
+            actions: [
+              PopupMenuButton<String>(
+                tooltip: 'إضافة',
+                icon: const Icon(Icons.add_rounded),
+                onSelected: (value) {
+                  if (value == 'scene') {
+                    Get.to<void>(
+                      () => SmartSceneEditorScreen(controller: controller),
+                    );
+                  } else if (value == 'device') {
+                    _showAddDeviceDialog();
+                  } else if (value == 'location') {
+                    _showLocationDialog(controller: controller);
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'scene',
+                    child: ListTile(
+                      leading: Icon(Icons.auto_awesome_rounded),
+                      title: Text('إضافة مشهد'),
+                    ),
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'location',
-                  child: ListTile(
-                    leading: Icon(Icons.home_work_outlined),
-                    title: Text('إضافة مكان'),
+                  PopupMenuItem(
+                    value: 'device',
+                    child: ListTile(
+                      leading: Icon(Icons.add_to_home_screen_rounded),
+                      title: Text('إضافة جهاز'),
+                    ),
                   ),
-                ),
+                  PopupMenuItem(
+                    value: 'location',
+                    child: ListTile(
+                      leading: Icon(Icons.home_work_outlined),
+                      title: Text('إضافة مكان'),
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                tooltip: 'smartHomeFilters'.tr,
+                onPressed: _showFilters,
+                icon: const Icon(Icons.tune_rounded),
+              ),
+            ],
+            bottom: const TabBar(
+              tabs: [
+                Tab(icon: Icon(Icons.devices_other_rounded), text: 'الأجهزة'),
+                Tab(icon: Icon(Icons.auto_awesome_rounded), text: 'المشاهد'),
               ],
             ),
-            IconButton(
-              tooltip: 'smartHomeFilters'.tr,
-              onPressed: _showFilters,
-              icon: const Icon(Icons.tune_rounded),
-            ),
-          ],
-        ),
-        body: Obx(() {
-          final showInitialSkeleton =
-              controller.isLoading.value && controller.homes.isEmpty;
-          final showDeviceSkeleton =
-              controller.isRefreshing.value && !showInitialSkeleton;
+          ),
+          body: Obx(() {
+            final showInitialSkeleton =
+                controller.isLoading.value && controller.homes.isEmpty;
+            final showDeviceSkeleton =
+                controller.isRefreshing.value && !showInitialSkeleton;
+            if (showInitialSkeleton) {
+              return const Padding(
+                padding: EdgeInsets.all(12),
+                child: _SmartHomeDashboardSkeleton(),
+              );
+            }
 
-          return RefreshIndicator(
-            onRefresh: controller.refreshData,
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
-              children: showInitialSkeleton
-                  ? const [_SmartHomeDashboardSkeleton()]
-                  : [
+            return TabBarView(
+              children: [
+                RefreshIndicator(
+                  onRefresh: controller.refreshData,
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
+                    children: [
                       if (controller.errorMessage.value.isNotEmpty)
                         _ErrorBanner(message: controller.errorMessage.value),
-                      if (!controller.isUnassignedSelected) ...[
+                      if (!controller.isUnassignedSelected)
                         _RoomsStrip(controller: controller),
-                        SizedBox(height: 14.h),
-                        SmartScenesSection(controller: controller),
-                      ],
+                      SizedBox(height: 12.h),
+                      _BulkDeviceActions(controller: controller),
                       SizedBox(height: 14.h),
                       _SectionHeader(
                         title: 'devices'.tr,
@@ -110,9 +125,29 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                       else
                         _DevicesList(controller: controller),
                     ],
-            ),
-          );
-        }),
+                  ),
+                ),
+                RefreshIndicator(
+                  onRefresh: controller.refreshData,
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
+                    children: [
+                      if (controller.errorMessage.value.isNotEmpty)
+                        _ErrorBanner(message: controller.errorMessage.value),
+                      if (!controller.isUnassignedSelected)
+                        _RoomsStrip(controller: controller),
+                      SizedBox(height: 14.h),
+                      SmartScenesSection(
+                        controller: controller,
+                        showAll: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }
@@ -280,7 +315,7 @@ class _SmartHomeDeviceCardSkeleton extends StatelessWidget {
   }
 }
 
-enum _AddDeviceStage { search, manualReset, wifi, connecting, failed }
+enum _AddDeviceStage { search, manualReset, wifi, connecting, success, failed }
 
 class _ResetInstruction {
   const _ResetInstruction({required this.icon, required this.title});
@@ -408,7 +443,12 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
 
     if (!mounted) return;
     if (success) {
-      Get.back<void>();
+      await widget.controller.refreshData();
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() => stage = _AddDeviceStage.success);
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      if (mounted) Navigator.of(context).pop(true);
       return;
     }
 
@@ -419,7 +459,10 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
       (device) => !existingDeviceIds.contains(device.id),
     );
     if (addedDevice) {
-      Get.back<void>();
+      HapticFeedback.mediumImpact();
+      setState(() => stage = _AddDeviceStage.success);
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      if (mounted) Navigator.of(context).pop(true);
       return;
     }
     if (failedMessage.isNotEmpty) {
@@ -467,6 +510,8 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
         return _buildWifi(context);
       case _AddDeviceStage.connecting:
         return _buildConnecting(context);
+      case _AddDeviceStage.success:
+        return _buildSuccess(context);
       case _AddDeviceStage.failed:
         return _buildFailed(context);
     }
@@ -871,6 +916,44 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
             child: Text('smartHomeReportIssue'.tr),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildSuccess(BuildContext context) {
+    return Column(
+      key: const ValueKey('success'),
+      children: [
+        const Spacer(),
+        Container(
+          width: 104.r,
+          height: 104.r,
+          decoration: BoxDecoration(
+            color: const Color(0xFF20966F).withOpacity(.12),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF20966F),
+            size: 72,
+          ),
+        ),
+        SizedBox(height: 24.h),
+        Text(
+          'تم ربط الجهاز بنجاح',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        SizedBox(height: 8.h),
+        const Text(
+          'تم تحديث الأجهزة، سيتم الرجوع إلى الرئيسية الآن.',
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 28.h),
+        const CircularProgressIndicator(strokeWidth: 2),
+        const Spacer(),
       ],
     );
   }
@@ -1691,6 +1774,253 @@ Future<void> _confirmDeleteRoom({
   }
 }
 
+class _BulkDeviceActions extends StatefulWidget {
+  const _BulkDeviceActions({required this.controller});
+
+  final SmartHomeController controller;
+
+  @override
+  State<_BulkDeviceActions> createState() => _BulkDeviceActionsState();
+}
+
+class _BulkDeviceActionsState extends State<_BulkDeviceActions> {
+  bool busy = false;
+
+  Future<void> _run(bool powerOn) async {
+    if (busy) return;
+    final devices = widget.controller.visibleDevices;
+    final switches =
+        devices.expand(DeviceCapabilityResolver.boolSwitches).length;
+    if (switches == 0) {
+      Get.snackbar('التحكم الجماعي', 'لا توجد مفاتيح قابلة للتحكم');
+      return;
+    }
+    final offline = devices.where((device) => !device.online).length;
+    final includeOffline = await Get.bottomSheet<bool>(
+      _BulkControlConfirmationSheet(
+        powerOn: powerOn,
+        switchesCount: switches,
+        offlineDevicesCount: offline,
+      ),
+      isScrollControlled: true,
+    );
+    if (includeOffline == null || !mounted) return;
+
+    setState(() => busy = true);
+    final result = await widget.controller.setVisibleDevicesPower(
+      powerOn: powerOn,
+      includeOffline: includeOffline,
+    );
+    if (!mounted) return;
+    setState(() => busy = false);
+    await _showBulkControlResult(result, powerOn: powerOn);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final roomId = widget.controller.selectedRoomId.value;
+    final roomName = roomId == null
+        ? 'كل الأجهزة'
+        : widget.controller.rooms
+                .firstWhereOrNull((room) => room.id == roomId)
+                ?.name ??
+            'الغرفة المحددة';
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: smartHomeAccent.withOpacity(.06),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: smartHomeAccent.withOpacity(.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.offline_bolt_rounded, color: smartHomeAccent),
+              SizedBox(width: 7.w),
+              Expanded(
+                child: Text(
+                  'تحكم سريع • $roomName',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: smartHomeInk,
+                      ),
+                ),
+              ),
+              if (busy)
+                SizedBox.square(
+                  dimension: 18.r,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          SizedBox(height: 9.h),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: busy ? null : () => _run(true),
+                  icon: const Icon(Icons.power_settings_new_rounded),
+                  label: const Text('تشغيل الكل'),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: busy ? null : () => _run(false),
+                  icon: const Icon(Icons.power_off_rounded),
+                  label: const Text('إغلاق الكل'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BulkControlConfirmationSheet extends StatefulWidget {
+  const _BulkControlConfirmationSheet({
+    required this.powerOn,
+    required this.switchesCount,
+    required this.offlineDevicesCount,
+  });
+
+  final bool powerOn;
+  final int switchesCount;
+  final int offlineDevicesCount;
+
+  @override
+  State<_BulkControlConfirmationSheet> createState() =>
+      _BulkControlConfirmationSheetState();
+}
+
+class _BulkControlConfirmationSheetState
+    extends State<_BulkControlConfirmationSheet> {
+  bool includeOffline = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return _BottomSheetPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            widget.powerOn
+                ? Icons.lightbulb_rounded
+                : Icons.lightbulb_outline_rounded,
+            size: 42.r,
+            color: smartHomeAccent,
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            widget.powerOn
+                ? 'تشغيل الأجهزة المحددة؟'
+                : 'إغلاق الأجهزة المحددة؟',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'سيتم إرسال الأمر إلى ${widget.switchesCount} مفتاحًا.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: smartHomeMuted,
+                ),
+          ),
+          if (widget.offlineDevicesCount > 0)
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: includeOffline,
+              onChanged: (value) =>
+                  setState(() => includeOffline = value == true),
+              title: Text(
+                  'محاولة الأجهزة غير المتصلة (${widget.offlineDevicesCount})'),
+              subtitle: const Text('قد تستغرق وقتًا أطول أو لا تستجيب'),
+            ),
+          SizedBox(height: 10.h),
+          FilledButton(
+            onPressed: () => Get.back(result: includeOffline),
+            child: const Text('تأكيد التنفيذ'),
+          ),
+          TextButton(
+            onPressed: () => Get.back<bool>(),
+            child: Text('cancel'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _showBulkControlResult(
+  SmartHomeBulkControlResult result, {
+  required bool powerOn,
+}) async {
+  final success = result.isSuccess;
+  final partial = result.isPartial;
+  await Get.dialog<void>(
+    AlertDialog(
+      icon: Icon(
+        success
+            ? Icons.check_circle_rounded
+            : partial
+                ? Icons.warning_amber_rounded
+                : Icons.error_outline_rounded,
+        size: 44,
+        color: success
+            ? const Color(0xFF20966F)
+            : partial
+                ? const Color(0xFFC77A00)
+                : const Color(0xFFB42318),
+      ),
+      title: Text(success
+          ? 'تم التنفيذ بنجاح'
+          : partial
+              ? 'تم التنفيذ جزئيًا'
+              : 'تعذر التنفيذ'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${result.succeeded} من ${result.total} مفتاحًا ${powerOn ? 'تم تشغيلها' : 'تم إغلاقها'}',
+            textAlign: TextAlign.center,
+          ),
+          if (result.failures.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 210),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: result.failures.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, index) {
+                  final failure = result.failures[index];
+                  return ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(failure.deviceName),
+                    subtitle: Text(failure.message, maxLines: 2),
+                    leading: const Icon(Icons.error_outline_rounded),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: Get.back, child: const Text('حسنًا')),
+      ],
+    ),
+  );
+}
+
 class _DevicesList extends StatelessWidget {
   const _DevicesList({required this.controller});
 
@@ -1704,31 +2034,61 @@ class _DevicesList extends StatelessWidget {
         if (visibleDevices.isEmpty) {
           return _EmptyState(text: 'noDevicesYet'.tr);
         }
-        return LayoutBuilder(
-          builder: (context, constraints) => GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: visibleDevices.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10.w,
-              mainAxisSpacing: 10.h,
-              childAspectRatio: constraints.maxWidth < 350 ? .82 : .90,
+        return ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: true,
+          itemCount: visibleDevices.length,
+          onReorderStart: (_) => HapticFeedback.mediumImpact(),
+          onReorder: (oldIndex, newIndex) {
+            if (newIndex > oldIndex) newIndex--;
+            if (oldIndex == newIndex) return;
+            final reordered = visibleDevices.toList(growable: true);
+            final moved = reordered.removeAt(oldIndex);
+            reordered.insert(newIndex, moved);
+            HapticFeedback.selectionClick();
+            controller
+                .reorderVisibleDevices(
+              reordered.map((device) => device.id).toList(growable: false),
+            )
+                .then((saved) {
+              if (!saved) {
+                Get.snackbar('ترتيب الأجهزة', 'تعذر حفظ الترتيب');
+              }
+            });
+          },
+          proxyDecorator: (child, _, animation) => AnimatedBuilder(
+            animation: animation,
+            child: child,
+            builder: (context, child) => Material(
+              color: Colors.transparent,
+              elevation: 8 * animation.value,
+              borderRadius: BorderRadius.circular(16.r),
+              child: child,
             ),
-            itemBuilder: (context, index) {
-              final device = visibleDevices[index];
-              return _SmartDeviceCard(
-                controller: controller,
-                device: device,
-                onOpen: () => Get.to<void>(
-                  () => _DeviceDetailsScreen(
-                    controller: controller,
-                    initialDevice: device,
+          ),
+          itemBuilder: (context, index) {
+            final device = visibleDevices[index];
+            return Padding(
+              key: ValueKey('smart-device-${device.id}'),
+              padding: EdgeInsets.only(bottom: 9.h),
+              child: Obx(
+                () => _SmartDeviceCard(
+                  controller: controller,
+                  device: controller.devices.firstWhereOrNull(
+                        (item) => item.id == device.id,
+                      ) ??
+                      device,
+                  onOpen: () => Get.to<void>(
+                    () => _DeviceDetailsScreen(
+                      controller: controller,
+                      initialDevice: device,
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1770,6 +2130,70 @@ Future<bool> _showRenameFunctionDialog({
     ),
   );
   return result == true;
+}
+
+Future<void> _showPinDeviceWidgetSheet({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  final confirmed = await Get.bottomSheet<bool>(
+    _BottomSheetPanel(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(
+            Icons.widgets_rounded,
+            size: 44,
+            color: smartHomeAccent,
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'إضافة الجهاز إلى شاشة الجوال',
+            textAlign: TextAlign.center,
+            style: Get.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            device.name,
+            textAlign: TextAlign.center,
+            style: Get.textTheme.titleMedium,
+          ),
+          SizedBox(height: 6.h),
+          const Text(
+            'سيظهر اسم الجهاز وحالته. الضغط على البطاقة يفتح قسم المنزل الذكي للتحكم الآمن.',
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16.h),
+          FilledButton.icon(
+            onPressed: () => Get.back(result: true),
+            icon: const Icon(Icons.add_to_home_screen_rounded),
+            label: const Text('إضافة إلى الشاشة الرئيسية'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+        ],
+      ),
+    ),
+    isScrollControlled: true,
+  );
+  if (confirmed != true) return;
+  final pinned = await AppHomeWidgetService.instance.pinSmartDeviceWidget(
+    deviceId: device.id,
+    deviceName: device.name,
+    roomName: device.roomName,
+    online: device.online,
+  );
+  Get.snackbar(
+    'تطبيق مصغر للجهاز',
+    pinned
+        ? 'تم إرسال طلب إضافة الجهاز إلى الشاشة الرئيسية'
+        : 'تعذر إضافة التطبيق المصغر على هذا الجهاز',
+  );
 }
 
 Future<bool> _showFunctionOptions({
@@ -2004,7 +2428,12 @@ Future<bool> _showDeleteDeviceDialog({
                       final ok = await controller.deleteSmartDevice(
                         device: device,
                       );
-                      if (Get.isDialogOpen == true) Get.back(result: ok);
+                      if (!context.mounted) return;
+                      if (ok) {
+                        Navigator.of(context, rootNavigator: true).pop(true);
+                      } else {
+                        setState(() => deleting = false);
+                      }
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFADDDD),
@@ -2333,8 +2762,7 @@ class _SmartDeviceCard extends StatelessWidget {
     final busy = controller.deviceControlBusyIds.contains(device.id);
     final unavailable = controller.unavailableDeviceIds.contains(device.id);
     final functions = _visiblePrimarySwitches(device);
-    final visibleFunctions = functions.take(4).toList(growable: false);
-    final hiddenFunctions = functions.length - visibleFunctions.length;
+    final visibleFunctions = functions;
     final curtainCommand = _dashboardCurtainCommand(device);
     final hasSchema = DeviceCapabilityResolver.functions(device).isNotEmpty;
     final powerFunction = DeviceCapabilityResolver.resolvePower(device);
@@ -2350,6 +2778,11 @@ class _SmartDeviceCard extends StatelessWidget {
             ? AppColors.customGreyColor
             : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: unavailable
+              ? const Color(0xFFB42318).withOpacity(.18)
+              : smartHomeBorder,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.035),
@@ -2382,8 +2815,7 @@ class _SmartDeviceCard extends StatelessWidget {
                         children: [
                           Text(
                             device.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -2462,6 +2894,16 @@ class _SmartDeviceCard extends StatelessWidget {
                             controller: controller,
                             device: device,
                           );
+                        } else if (value == 'schedule') {
+                          Get.to<void>(() => _DeviceSchedulesScreen(
+                                controller: controller,
+                                device: device,
+                              ));
+                        } else if (value == 'widget') {
+                          _showPinDeviceWidgetSheet(
+                            controller: controller,
+                            device: device,
+                          );
                         } else if (value == 'delete') {
                           _showDeleteDeviceDialog(
                             controller: controller,
@@ -2482,6 +2924,14 @@ class _SmartDeviceCard extends StatelessWidget {
                           value: 'channels',
                           child: Text('smartHomeManageChannels'.tr),
                         ),
+                        const PopupMenuItem(
+                          value: 'schedule',
+                          child: Text('إضافة جدولة'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'widget',
+                          child: Text('إضافة إلى شاشة الجوال'),
+                        ),
                         PopupMenuItem(
                           value: 'delete',
                           child: Text('smartHomeDeleteDevice'.tr),
@@ -2491,7 +2941,7 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Spacer(),
+                SizedBox(height: 12.h),
                 if (curtainCommand != null) ...[
                   _CurtainMiniControls(
                     enabled: !busy,
@@ -2506,30 +2956,23 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ),
                 ] else if (visibleFunctions.isNotEmpty) ...[
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: visibleFunctions.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 5.w,
-                      mainAxisSpacing: 5.h,
-                      childAspectRatio: 2.35,
-                    ),
-                    itemBuilder: (context, index) {
-                      final function = visibleFunctions[index];
-                      final value = DeviceCapabilityResolver.statusValue(
-                        device,
-                        function,
-                      );
-                      return _CompactSwitchButton(
+                  ...visibleFunctions.asMap().entries.map((entry) {
+                    final function = entry.value;
+                    final value = DeviceCapabilityResolver.statusValue(
+                      device,
+                      function,
+                    );
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom:
+                            entry.key == visibleFunctions.length - 1 ? 0 : 6.h,
+                      ),
+                      child: _CompactSwitchButton(
                         label: _functionLabelForDevice(device, function),
                         active: value == true,
-                        busy: busy,
-                        onLongPress: () => _showRenameFunctionDialog(
-                          controller: controller,
-                          device: device,
-                          function: function,
+                        busy: controller.isDeviceCommandBusy(
+                          device.id,
+                          function.code,
                         ),
                         onTap: function.isBool
                             ? () => controller.setDeviceDps(
@@ -2538,22 +2981,9 @@ class _SmartDeviceCard extends StatelessWidget {
                                   value: value != true,
                                 )
                             : null,
-                      );
-                    },
-                  ),
-                  if (hiddenFunctions > 0)
-                    Padding(
-                      padding: EdgeInsets.only(top: 4.h),
-                      child: Text(
-                        '+$hiddenFunctions مفاتيح أخرى',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: smartHomeAccent,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
                       ),
-                    ),
+                    );
+                  }),
                 ] else if (showHeaderPowerButton) ...[
                   _CompactSwitchButton(
                     label: powerActive
@@ -2561,7 +2991,6 @@ class _SmartDeviceCard extends StatelessWidget {
                         : 'smartHomeAllOn'.tr,
                     active: powerActive,
                     busy: busy,
-                    onLongPress: onOpen,
                     onTap: () => controller.setDevicePower(
                       device: device,
                       powerOn: !powerActive,
@@ -3039,14 +3468,12 @@ class _CompactSwitchButton extends StatelessWidget {
     required this.active,
     required this.busy,
     required this.onTap,
-    required this.onLongPress,
   });
 
   final String label;
   final bool active;
   final bool busy;
   final VoidCallback? onTap;
-  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -3064,10 +3491,9 @@ class _CompactSwitchButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
         child: InkWell(
           onTap: enabled ? onTap : null,
-          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(8.r),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
             child: Row(
               children: [
                 if (busy)
@@ -3085,8 +3511,7 @@ class _CompactSwitchButton extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color:
                               active ? activeColor : AppColors.customGreyColor5,
@@ -3536,7 +3961,17 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
                       separatorBuilder: (_, __) => SizedBox(height: 10.h),
                       itemBuilder: (context, index) {
                         final schedule = schedules[index];
-                        final value = schedule.commandValue['value'] == true;
+                        final commands = schedule.commands.isEmpty
+                            ? <Map<String, dynamic>>[
+                                {
+                                  'command_code': schedule.commandCode,
+                                  'command_value': schedule.commandValue,
+                                },
+                              ]
+                            : schedule.commands;
+                        final value = (commands.first['command_value']
+                                as Map?)?['value'] ==
+                            true;
                         final completed = schedule.repeatType == 'once' &&
                             !schedule.scheduledAt.isAfter(DateTime.now());
                         final nextRun = schedule.repeatType == 'once'
@@ -3593,7 +4028,9 @@ class _DeviceSchedulesScreenState extends State<_DeviceSchedulesScreen> {
                                         ),
                                         SizedBox(height: 6.h),
                                         Text(
-                                          '${_scheduleCommandLabel(widget.device, schedule.commandCode)} • ${value ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr}',
+                                          commands.length == 1
+                                              ? '${_scheduleCommandLabel(widget.device, schedule.commandCode)} • ${value ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr}'
+                                              : '${commands.length} مفاتيح ضمن هذه الجدولة',
                                         ),
                                         SizedBox(height: 4.h),
                                         Text(
@@ -3753,8 +4190,7 @@ class _DeviceScheduleDialog extends StatefulWidget {
 class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
   static const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   late final TextEditingController nameController;
-  late String commandCode;
-  late bool commandValue;
+  late Map<String, bool> commandValues;
   late DateTime scheduledAt;
   late String repeatType;
   late Set<String> repeatDays;
@@ -3773,8 +4209,20 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
     nameController = TextEditingController(
       text: schedule?.name ?? 'smartHomeSchedule'.tr,
     );
-    commandCode = schedule?.commandCode ?? fallbackCode;
-    commandValue = schedule?.commandValue['value'] == true;
+    commandValues = <String, bool>{};
+    for (final command in schedule?.commands ?? const []) {
+      final code = command['command_code']?.toString() ?? '';
+      final rawValue = command['command_value'];
+      if (code.isNotEmpty && rawValue is Map) {
+        commandValues[code] = rawValue['value'] == true;
+      }
+    }
+    if (commandValues.isEmpty && schedule != null) {
+      commandValues[schedule.commandCode] =
+          schedule.commandValue['value'] == true;
+    } else if (commandValues.isEmpty && fallbackCode.isNotEmpty) {
+      commandValues[fallbackCode] = true;
+    }
     scheduledAt =
         schedule?.scheduledAt ?? DateTime.now().add(const Duration(hours: 1));
     repeatType = schedule?.repeatType ?? 'once';
@@ -3805,7 +4253,7 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
   }
 
   Future<void> _save() async {
-    if (saving || commandCode.isEmpty) return;
+    if (saving || commandValues.isEmpty) return;
     if (repeatType == 'weekly' && repeatDays.isEmpty) {
       Get.snackbar('smartHomeSchedules'.tr, 'selectWeekdays'.tr);
       return;
@@ -3823,31 +4271,54 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
       final scheduleName = nameController.text.trim().isEmpty
           ? 'smartHomeSchedule'.tr
           : nameController.text.trim();
+      final commands = commandValues.entries
+          .map((entry) => <String, dynamic>{
+                'command_code': entry.key,
+                'command_value': {'value': entry.value},
+              })
+          .toList(growable: false);
+      final firstCommand = commandValues.entries.first;
       final saved = await widget.controller.apiService.saveDeviceSchedule(
         deviceId: widget.device.id,
         scheduleId: widget.schedule?.id,
         name: scheduleName,
-        commandCode: commandCode,
-        commandValue: commandValue,
+        commandCode: firstCommand.key,
+        commandValue: firstCommand.value,
+        commands: commands,
         scheduledAt: nextOccurrence,
         repeatType: repeatType,
         repeatDays: repeatDays.toList(growable: false),
         enabled: enabled,
         userId: widget.controller.selectedOwnerId.value,
       );
-      final function = switches.firstWhereOrNull(
-        (item) => item.code == commandCode,
-      );
-      if (function == null) {
+      final nativeCommands = commandValues.entries
+          .map((entry) {
+            final function = switches.firstWhereOrNull(
+              (item) => item.code == entry.key,
+            );
+            return function == null
+                ? null
+                : <String, dynamic>{
+                    'dpId': function.dpId,
+                    'value': entry.value,
+                  };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList(growable: false);
+      if (nativeCommands.length != commandValues.length) {
         throw StateError('smartHomeSwitchMetadataMissing'.tr);
       }
+      final firstFunction = switches.firstWhere(
+        (item) => item.code == firstCommand.key,
+      );
       final loops = _scheduleLoops(repeatType, repeatDays);
       final native = await widget.controller.nativeService.saveDeviceSchedule(
         tuyaDeviceId: widget.device.tuyaDeviceId,
         taskName: 'doctorbike_schedule_${saved.id}',
         aliasName: saved.name,
-        dpId: function.dpId,
-        value: commandValue,
+        dpId: firstFunction.dpId,
+        value: firstCommand.value,
+        commands: nativeCommands,
         time:
             '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}',
         loops: loops,
@@ -3897,22 +4368,48 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
         name: previous.name,
         commandCode: previous.commandCode,
         commandValue: previous.commandValue['value'] == true,
+        commands: previous.commands,
         scheduledAt: previous.scheduledAt,
         repeatType: previous.repeatType,
         repeatDays: previous.repeatDays,
         enabled: previous.enabled,
         userId: widget.controller.selectedOwnerId.value,
       );
+      final previousCommands = previous.commands.isEmpty
+          ? <Map<String, dynamic>>[
+              {
+                'command_code': previous.commandCode,
+                'command_value': previous.commandValue,
+              },
+            ]
+          : previous.commands;
+      final nativeCommands = previousCommands
+          .map((command) {
+            final code = command['command_code']?.toString() ?? '';
+            final function = switches.firstWhereOrNull(
+              (item) => item.code == code,
+            );
+            final value = command['command_value'];
+            return function == null || value is! Map
+                ? null
+                : <String, dynamic>{
+                    'dpId': function.dpId,
+                    'value': value['value'],
+                  };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList(growable: false);
       final previousFunction = switches.firstWhereOrNull(
         (item) => item.code == previous.commandCode,
       );
-      if (previousFunction != null) {
+      if (previousFunction != null && nativeCommands.isNotEmpty) {
         await widget.controller.nativeService.saveDeviceSchedule(
           tuyaDeviceId: widget.device.tuyaDeviceId,
           taskName: 'doctorbike_schedule_${previous.id}',
           aliasName: previous.name,
           dpId: previousFunction.dpId,
           value: previous.commandValue['value'] == true,
+          commands: nativeCommands,
           time:
               '${previous.scheduledAt.hour.toString().padLeft(2, '0')}:${previous.scheduledAt.minute.toString().padLeft(2, '0')}',
           loops: _scheduleLoops(
@@ -3937,6 +4434,7 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 20.h),
       title: Text(widget.schedule == null
           ? 'smartHomeAddSchedule'.tr
           : 'smartHomeEditSchedule'.tr),
@@ -3958,26 +4456,75 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
                   InputDecoration(labelText: 'smartHomeScheduleName'.tr),
             ),
             SizedBox(height: 12.h),
-            DropdownButtonFormField<String>(
-              initialValue: commandCode.isEmpty ? null : commandCode,
-              decoration:
-                  InputDecoration(labelText: 'smartHomeScheduleSwitch'.tr),
-              items: switches
-                  .map((item) => DropdownMenuItem(
-                        value: item.code,
-                        child:
-                            Text(_functionLabelForDevice(widget.device, item)),
-                      ))
-                  .toList(growable: false),
-              onChanged: (value) => setState(() => commandCode = value ?? ''),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'اختر مفتاحًا أو أكثر',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: switches.isEmpty
+                      ? null
+                      : () => setState(() {
+                            if (commandValues.length == switches.length) {
+                              commandValues.clear();
+                            } else {
+                              for (final item in switches) {
+                                commandValues.putIfAbsent(
+                                    item.code, () => true);
+                              }
+                            }
+                          }),
+                  child: Text(commandValues.length == switches.length
+                      ? 'إلغاء تحديد الكل'
+                      : 'تحديد الكل'),
+                ),
+              ],
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                  commandValue ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr),
-              value: commandValue,
-              onChanged: (value) => setState(() => commandValue = value),
-            ),
+            ...switches.map((item) {
+              final selected = commandValues.containsKey(item.code);
+              final value = commandValues[item.code] ?? true;
+              return Container(
+                margin: EdgeInsets.only(bottom: 7.h),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? smartHomeAccent.withOpacity(.07)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: selected ? smartHomeAccent : smartHomeBorder,
+                  ),
+                ),
+                child: CheckboxListTile(
+                  value: selected,
+                  onChanged: (checked) => setState(() {
+                    if (checked == true) {
+                      commandValues[item.code] = value;
+                    } else {
+                      commandValues.remove(item.code);
+                    }
+                  }),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(
+                    _functionLabelForDevice(widget.device, item),
+                    softWrap: true,
+                  ),
+                  subtitle: Text(
+                      value ? 'smartHomeTurnOn'.tr : 'smartHomeTurnOff'.tr),
+                  secondary: Switch.adaptive(
+                    value: value,
+                    onChanged: !selected
+                        ? null
+                        : (next) =>
+                            setState(() => commandValues[item.code] = next),
+                  ),
+                ),
+              );
+            }),
             Row(children: [
               Expanded(
                 child: OutlinedButton.icon(
@@ -3996,17 +4543,25 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
               ),
             ],
             SizedBox(height: 12.h),
-            DropdownButtonFormField<String>(
-              initialValue: repeatType,
-              decoration: InputDecoration(labelText: 'smartHomeRepeat'.tr),
-              items: const ['once', 'daily', 'weekly']
-                  .map((item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(('repeat_$item').tr),
-                      ))
-                  .toList(growable: false),
-              onChanged: (value) => setState(() {
-                repeatType = value ?? 'once';
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'smartHomeRepeat'.tr,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            ),
+            SizedBox(height: 7.h),
+            SegmentedButton<String>(
+              segments: [
+                ButtonSegment(value: 'once', label: Text('repeat_once'.tr)),
+                ButtonSegment(value: 'daily', label: Text('repeat_daily'.tr)),
+                ButtonSegment(value: 'weekly', label: Text('repeat_weekly'.tr)),
+              ],
+              selected: {repeatType},
+              onSelectionChanged: (selection) => setState(() {
+                repeatType = selection.first;
                 scheduledAt = _nextScheduleOccurrence(
                   scheduledAt,
                   repeatType,
@@ -4044,7 +4599,9 @@ class _DeviceScheduleDialogState extends State<_DeviceScheduleDialog> {
           child: Text('cancel'.tr),
         ),
         ElevatedButton(
-          onPressed: saving || switches.isEmpty ? null : _save,
+          onPressed: saving || switches.isEmpty || commandValues.isEmpty
+              ? null
+              : _save,
           child: saving
               ? const SizedBox.square(
                   dimension: 18,

@@ -3,4 +3,6 @@
   <string name="widget_add_special_task_label">إضافة مهمة خاصة</string>
   <string name="widget_add_special_task_subtitle">اضغط لفتح التطبيق</string>
   <string name="widget_add_special_task_description">اختصار سريع لإنشاء مهمة خاصة</string>
+  <string name="widget_smart_device_label">جهاز ذكي</string>
+  <string name="widget_smart_device_description">فتح جهاز محفوظ في المنزل الذكي</string>
 </resources>

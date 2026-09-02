@@ -3,4 +3,6 @@
   <string name="widget_add_special_task_label">Add special task</string>
   <string name="widget_add_special_task_subtitle">Tap to open the app</string>
   <string name="widget_add_special_task_description">Quick shortcut to create a private task</string>
+  <string name="widget_smart_device_label">Smart device</string>
+  <string name="widget_smart_device_description">Open a saved smart device</string>
 </resources>

@@ -22,6 +22,45 @@ class SmartHomeWifiCredentials {
   final String password;
 }
 
+class SmartHomeBulkFailure {
+  const SmartHomeBulkFailure({
+    required this.deviceName,
+    required this.commandName,
+    required this.message,
+  });
+
+  final String deviceName;
+  final String commandName;
+  final String message;
+}
+
+class SmartHomeBulkControlResult {
+  const SmartHomeBulkControlResult({
+    required this.total,
+    required this.succeeded,
+    required this.failures,
+  });
+
+  final int total;
+  final int succeeded;
+  final List<SmartHomeBulkFailure> failures;
+
+  bool get isSuccess => total > 0 && succeeded == total;
+  bool get isPartial => succeeded > 0 && failures.isNotEmpty;
+}
+
+class _QueuedSmartHomeCommand {
+  const _QueuedSmartHomeCommand({
+    required this.device,
+    required this.commandCode,
+    required this.value,
+  });
+
+  final SmartDeviceModel device;
+  final String commandCode;
+  final dynamic value;
+}
+
 class SmartHomeController extends GetxController {
   SmartHomeController({
     required this.apiService,
@@ -64,6 +103,7 @@ class SmartHomeController extends GetxController {
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
   final Map<int, DateTime> _lastStatusPersistedAt = {};
   final Map<int, DateTime> _deviceStatusRetryAfter = {};
+  final Map<String, _QueuedSmartHomeCommand> _queuedDeviceCommands = {};
   String _activeNativeTuyaUid = '';
   DateTime? _lastTuyaLoginAttemptAt;
   Timer? _statusRefreshTimer;
@@ -1256,6 +1296,48 @@ class SmartHomeController extends GetxController {
     }
   }
 
+  Future<bool> reorderVisibleDevices(List<int> orderedDeviceIds) async {
+    if (orderedDeviceIds.length < 2) return true;
+    final previous = devices.toList(growable: false);
+    final positions = <int, int>{
+      for (var index = 0; index < orderedDeviceIds.length; index++)
+        orderedDeviceIds[index]: index,
+    };
+    devices.assignAll(devices.map((device) {
+      final position = positions[device.id];
+      return position == null
+          ? device
+          : device.copyWith(displayOrder: position);
+    }).toList()
+      ..sort((a, b) {
+        final byOrder = a.displayOrder.compareTo(b.displayOrder);
+        return byOrder != 0 ? byOrder : a.name.compareTo(b.name);
+      }));
+
+    try {
+      final scope = isUnassignedSelected
+          ? 'unassigned'
+          : selectedRoomId.value == null
+              ? 'home'
+              : 'room';
+      final saved = await apiService.reorderDevices(
+        scope: scope,
+        deviceIds: orderedDeviceIds,
+        smartHomeId: selectedHome?.id,
+        smartRoomId: selectedRoomId.value,
+        userId: selectedOwnerId.value,
+      );
+      for (final device in saved) {
+        _upsertDevice(_mergeDevicePreservingRuntimeData(device, device));
+      }
+      return true;
+    } catch (error) {
+      devices.assignAll(previous);
+      errorMessage(error.toString());
+      return false;
+    }
+  }
+
   Future<bool> deleteSmartDevice({
     required SmartDeviceModel device,
   }) async {
@@ -1342,7 +1424,14 @@ class SmartHomeController extends GetxController {
     }
 
     final busyKey = deviceCommandBusyKey(device.id, commandCode);
-    if (deviceControlBusyKeys.contains(busyKey)) return false;
+    if (deviceControlBusyKeys.contains(busyKey)) {
+      _queuedDeviceCommands[busyKey] = _QueuedSmartHomeCommand(
+        device: device,
+        commandCode: commandCode,
+        value: value,
+      );
+      return true;
+    }
     deviceControlBusyKeys.add(busyKey);
     errorMessage('');
     try {
@@ -1477,6 +1566,16 @@ class SmartHomeController extends GetxController {
       return false;
     } finally {
       deviceControlBusyKeys.remove(busyKey);
+      final queued = _queuedDeviceCommands.remove(busyKey);
+      if (queued != null && queued.value != value) {
+        Future<void>.delayed(const Duration(milliseconds: 180), () {
+          setDeviceDps(
+            device: queued.device,
+            commandCode: queued.commandCode,
+            value: queued.value,
+          );
+        });
+      }
     }
   }
 
@@ -1513,6 +1612,57 @@ class SmartHomeController extends GetxController {
       device: controlDevice,
       commandCode: function.code,
       value: powerOn,
+    );
+  }
+
+  Future<SmartHomeBulkControlResult> setVisibleDevicesPower({
+    required bool powerOn,
+    bool includeOffline = false,
+  }) async {
+    final failures = <SmartHomeBulkFailure>[];
+    var total = 0;
+    var succeeded = 0;
+
+    for (final device in visibleDevices) {
+      final functions = DeviceCapabilityResolver.boolSwitches(device);
+      if (functions.isEmpty) continue;
+
+      for (final function in functions) {
+        total++;
+        if ((!device.online || unavailableDeviceIds.contains(device.id)) &&
+            !includeOffline) {
+          failures.add(SmartHomeBulkFailure(
+            deviceName: device.name,
+            commandName: function.code,
+            message: 'الجهاز غير متصل',
+          ));
+          continue;
+        }
+
+        final ok = await setDeviceDps(
+          device: device,
+          commandCode: function.code,
+          value: powerOn,
+        );
+        if (ok) {
+          succeeded++;
+        } else {
+          failures.add(SmartHomeBulkFailure(
+            deviceName: device.name,
+            commandName: function.code,
+            message: errorMessage.value.isEmpty
+                ? 'لم يستجب الجهاز'
+                : errorMessage.value,
+          ));
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+      }
+    }
+
+    return SmartHomeBulkControlResult(
+      total: total,
+      succeeded: succeeded,
+      failures: failures,
     );
   }
 

@@ -198,6 +198,7 @@ class SmartDeviceModel {
   final int id;
   final int? smartHomeId;
   final int? smartRoomId;
+  final int displayOrder;
   final String roomName;
   final String tuyaDeviceId;
   final String tuyaProductId;
@@ -220,6 +221,7 @@ class SmartDeviceModel {
     required this.id,
     required this.smartHomeId,
     required this.smartRoomId,
+    required this.displayOrder,
     required this.roomName,
     required this.tuyaDeviceId,
     required this.tuyaProductId,
@@ -244,6 +246,7 @@ class SmartDeviceModel {
   SmartDeviceModel copyWith({
     Object? smartHomeId = _noValue,
     Object? smartRoomId = _noValue,
+    int? displayOrder,
     String? name,
     bool? online,
     Object? powerOn = _noValue,
@@ -258,6 +261,7 @@ class SmartDeviceModel {
             smartHomeId == _noValue ? this.smartHomeId : smartHomeId as int?,
         smartRoomId:
             smartRoomId == _noValue ? this.smartRoomId : smartRoomId as int?,
+        displayOrder: displayOrder ?? this.displayOrder,
         roomName: smartRoomId == _noValue
             ? roomName
             : (smartRoomId == null ? '' : roomName),
@@ -290,6 +294,7 @@ class SmartDeviceModel {
       smartHomeId:
           rawHomeId == null ? null : int.tryParse(rawHomeId.toString()),
       smartRoomId: int.tryParse(json['smart_room_id']?.toString() ?? ''),
+      displayOrder: int.tryParse(json['display_order']?.toString() ?? '') ?? 0,
       roomName: rawRoom is Map ? rawRoom['name']?.toString() ?? '' : '',
       tuyaDeviceId: json['tuya_device_id']?.toString() ?? '',
       tuyaProductId: json['tuya_product_id']?.toString() ?? '',
@@ -326,6 +331,7 @@ class SmartDeviceScheduleModel {
     required this.name,
     required this.commandCode,
     required this.commandValue,
+    required this.commands,
     required this.scheduledAt,
     required this.repeatType,
     required this.repeatDays,
@@ -339,6 +345,7 @@ class SmartDeviceScheduleModel {
   final String name;
   final String commandCode;
   final Map<String, dynamic> commandValue;
+  final List<Map<String, dynamic>> commands;
   final DateTime scheduledAt;
   final String repeatType;
   final List<String> repeatDays;
@@ -354,6 +361,7 @@ class SmartDeviceScheduleModel {
         name: json['name']?.toString() ?? '',
         commandCode: json['command_code']?.toString() ?? '',
         commandValue: _mapFromDynamic(json['command_value']),
+        commands: _listOfMaps(json['commands']),
         scheduledAt: DateTime.tryParse(json['scheduled_at']?.toString() ?? '')
                 ?.toLocal() ??
             DateTime.now(),
@@ -794,6 +802,7 @@ class SmartHomeApiService {
     required String name,
     required String commandCode,
     required dynamic commandValue,
+    List<Map<String, dynamic>>? commands,
     required DateTime scheduledAt,
     required String repeatType,
     required List<String> repeatDays,
@@ -804,6 +813,13 @@ class SmartHomeApiService {
       'name': name,
       'command_code': commandCode,
       'command_value': {'value': commandValue},
+      'commands': commands ??
+          [
+            {
+              'command_code': commandCode,
+              'command_value': {'value': commandValue},
+            },
+          ],
       'scheduled_at': scheduledAt.toUtc().toIso8601String(),
       'repeat_type': repeatType,
       'repeat_days': repeatDays,
@@ -926,6 +942,33 @@ class SmartHomeApiService {
     return SmartDeviceModel.fromJson(
       Map<String, dynamic>.from(response.data['device'] as Map),
     );
+  }
+
+  Future<List<SmartDeviceModel>> reorderDevices({
+    required String scope,
+    required List<int> deviceIds,
+    int? smartHomeId,
+    int? smartRoomId,
+    int? userId,
+  }) async {
+    final response = await _api.put(
+      EndPoints.smartDevicesReorder,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+      },
+      data: {
+        'scope': scope,
+        'smart_home_id': smartHomeId,
+        'smart_room_id': smartRoomId,
+        'device_ids': deviceIds,
+      },
+    );
+    return _extractList(response.data, const ['devices'])
+        .whereType<Map>()
+        .map((item) =>
+            SmartDeviceModel.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.id > 0)
+        .toList(growable: false);
   }
 
   Future<void> deleteDevice({

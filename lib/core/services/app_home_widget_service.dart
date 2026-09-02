@@ -6,6 +6,7 @@ import 'package:home_widget/home_widget.dart';
 import 'app_shortcut_service.dart';
 import 'final_classes.dart';
 import 'languague_service.dart';
+import '../../routes/app_routes.dart';
 
 /// Home screen widget (Android/iOS) for quick "add special task" access.
 class AppHomeWidgetService {
@@ -16,6 +17,7 @@ class AppHomeWidgetService {
   static const appGroupId = 'group.com.nofal.doctorbike';
   static const androidWidgetName = 'AddSpecialTaskWidget';
   static const iosWidgetName = 'AddSpecialTaskWidget';
+  static const androidSmartDeviceWidgetName = 'SmartDeviceWidget';
   static const widgetLaunchUri =
       'doctorbike://add_special_task?homeWidget=true';
 
@@ -64,9 +66,56 @@ class AppHomeWidgetService {
     }
   }
 
+  Future<bool> pinSmartDeviceWidget({
+    required int deviceId,
+    required String deviceName,
+    required String roomName,
+    required bool online,
+  }) async {
+    if (kIsWeb ||
+        _isDesktopPlatform ||
+        defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    try {
+      await HomeWidget.setAppGroupId(appGroupId);
+      await HomeWidget.saveWidgetData<int>('smart_device_widget_id', deviceId);
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_name',
+        deviceName,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_room',
+        roomName,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_status',
+        online ? 'متصل' : 'غير متصل',
+      );
+      await HomeWidget.updateWidget(androidName: androidSmartDeviceWidgetName);
+      await HomeWidget.requestPinWidget(
+        androidName: androidSmartDeviceWidgetName,
+      );
+      return true;
+    } catch (e, st) {
+      debugPrint('[AppHomeWidget] device widget pin failed: $e\n$st');
+      return false;
+    }
+  }
+
   void _onWidgetUri(Uri? uri) {
     debugPrint('[HomeWidgetFlow] widget uri=$uri route=${Get.currentRoute}');
-    if (uri == null || !_isAddSpecialTaskUri(uri)) {
+    if (uri == null) {
+      debugPrint('[HomeWidgetFlow] ignored uri=$uri');
+      return;
+    }
+    if (_isSmartDeviceUri(uri)) {
+      if (Get.currentRoute != AppRoutes.SMARTHOMESCREEN) {
+        Get.toNamed(AppRoutes.SMARTHOMESCREEN);
+      }
+      return;
+    }
+    if (!_isAddSpecialTaskUri(uri)) {
       debugPrint('[HomeWidgetFlow] ignored uri=$uri');
       return;
     }
@@ -82,6 +131,9 @@ class AppHomeWidgetService {
         path.contains('add_special_task') ||
         uri.toString().contains('add_special_task');
   }
+
+  bool _isSmartDeviceUri(Uri uri) =>
+      uri.host == 'smart_device' || uri.path.contains('smart_device');
 
   String _currentLangCode() {
     try {

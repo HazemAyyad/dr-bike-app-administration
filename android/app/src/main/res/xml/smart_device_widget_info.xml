@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_smart_device_description"
+    android:initialLayout="@layout/smart_device_widget"
+    android:label="@string/widget_smart_device_label"
+    android:minWidth="220dp"
+    android:minHeight="72dp"
+    android:previewLayout="@layout/smart_device_widget"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />
