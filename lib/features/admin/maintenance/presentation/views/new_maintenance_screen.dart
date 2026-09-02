@@ -35,8 +35,8 @@ class NewMaintenanceScreen extends StatelessWidget {
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: GetBuilder<MaintenanceController>(
-            builder: (controller) {
+          child: Builder(
+            builder: (context) {
               if (controller.isEditLoading.value) {
                 return Center(
                   child: Padding(

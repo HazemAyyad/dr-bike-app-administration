@@ -964,7 +964,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.NEWMAINTENANCESCREEN,
       page: () => const NewMaintenanceScreen(),
-      binding: MaintenanceBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
