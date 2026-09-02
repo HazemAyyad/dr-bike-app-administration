@@ -12,10 +12,14 @@ import '../controllers/maintenance_controller.dart';
 import 'maintenance_service_media.dart';
 
 class MaintenanceProductsSection extends StatelessWidget {
-  const MaintenanceProductsSection({Key? key, required this.controller})
-      : super(key: key);
+  const MaintenanceProductsSection({
+    Key? key,
+    required this.controller,
+    this.paymentsSection,
+  }) : super(key: key);
 
   final MaintenanceController controller;
+  final Widget? paymentsSection;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +112,10 @@ class MaintenanceProductsSection extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 8.h),
+              if (paymentsSection != null) ...[
+                paymentsSection!,
+                SizedBox(height: 8.h),
+              ],
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
@@ -138,6 +146,24 @@ class MaintenanceProductsSection extends StatelessWidget {
                       'الإجمالي',
                       controller.invoiceTotal,
                       emphasized: true,
+                    ),
+                    if (controller.maintenancePaidAmount.value > 0) ...[
+                      SizedBox(height: 4.h),
+                      _summaryRow(
+                        'المدفوع (العربون والدفعات)',
+                        controller.maintenancePaidAmount.value,
+                        valueColor: Colors.green.shade700,
+                      ),
+                    ],
+                    SizedBox(height: 4.h),
+                    _summaryRow(
+                      'المتبقي',
+                      (controller.invoiceTotal -
+                              controller.maintenancePaidAmount.value)
+                          .clamp(0, double.infinity)
+                          .toDouble(),
+                      emphasized: true,
+                      valueColor: Colors.orange.shade800,
                     ),
                   ],
                 ),

@@ -73,9 +73,11 @@ class NewMaintenanceScreen extends StatelessWidget {
                     ),
                     _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
-                    MaintenanceProductsSection(controller: controller),
-                    SizedBox(height: 10.h),
-                    _MaintenancePaymentsSection(controller: controller),
+                    MaintenanceProductsSection(
+                      controller: controller,
+                      paymentsSection:
+                          _MaintenancePaymentsSection(controller: controller),
+                    ),
                     SizedBox(height: 10.h),
                     _MaintenanceMediaPicker(controller: controller),
                     SizedBox(height: 20.h),
