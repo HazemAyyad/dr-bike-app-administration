@@ -147,6 +147,7 @@ class _InstantSaleProductPickerScreenState
             if (!_maintenanceFlow && !_salesOrderFlow)
               const InstantSalePickerPartnerIcon(),
             if (_salesOrderFlow) const SalesOrderPartnerSelectorIcon(),
+            const SalesLocationFilterButton(),
             IconButton(
               tooltip: 'instantSalePasteProductList'.tr,
               onPressed: _openPasteProductListDialog,
@@ -523,11 +524,6 @@ class _InstantSaleProductPickerScreenState
                   }),
                 ),
               ],
-            ),
-            Positioned(
-              right: 16.w,
-              bottom: 12.h,
-              child: const SalesLocationFilterFab(),
             ),
           ],
         ),

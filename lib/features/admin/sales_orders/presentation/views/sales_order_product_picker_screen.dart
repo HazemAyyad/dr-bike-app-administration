@@ -95,6 +95,7 @@ class _SalesOrderProductPickerScreenState
               title: 'instantSalePickProducts',
             ),
             const SalesOrderPartnerSelectorIcon(),
+            const SalesLocationFilterButton(),
             _CartAppBarButton(
               onTap: () => showInstantSaleCartSheet(context),
             ),
@@ -239,11 +240,6 @@ class _SalesOrderProductPickerScreenState
                   }),
                 ),
               ],
-            ),
-            Positioned(
-              right: 16.w,
-              bottom: 12.h,
-              child: const SalesLocationFilterFab(),
             ),
           ],
         ),

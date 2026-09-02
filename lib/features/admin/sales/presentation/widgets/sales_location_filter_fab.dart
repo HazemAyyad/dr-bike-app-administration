@@ -8,17 +8,17 @@ import '../../../stock/data/models/store_section_model.dart';
 import '../../../stock/domain/product_location_utils.dart';
 import '../controllers/sales_controller.dart';
 
-/// Shared sales picker location filter: tap/long-press opens a multi-select grid.
-class SalesLocationFilterFab extends StatefulWidget {
-  const SalesLocationFilterFab({Key? key}) : super(key: key);
+/// Shared top-bar location filter for all product pickers.
+class SalesLocationFilterButton extends StatefulWidget {
+  const SalesLocationFilterButton({Key? key}) : super(key: key);
 
   @override
-  State<SalesLocationFilterFab> createState() => _SalesLocationFilterFabState();
+  State<SalesLocationFilterButton> createState() =>
+      _SalesLocationFilterButtonState();
 }
 
-class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
+class _SalesLocationFilterButtonState extends State<SalesLocationFilterButton> {
   final SalesController _sales = Get.find<SalesController>();
-  final GlobalKey _fabKey = GlobalKey();
 
   OverlayEntry? _overlay;
   bool _loading = false;
@@ -149,20 +149,21 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
     return Obx(() {
       final hasFilter = _sales.pickerLocationSectionId.value != null &&
           _sales.pickerLocationSectionId.value!.isNotEmpty;
-      return GestureDetector(
-        onLongPressStart: _overlay == null ? (_) => _openGrid() : null,
-        child: FloatingActionButton(
-          key: _fabKey,
-          heroTag: 'sales_location_filter_fab',
+      return Tooltip(
+        message: 'فلترة حسب موقع المنتج',
+        child: IconButton(
           onPressed: _overlay != null ? null : _openGrid,
-          backgroundColor:
-              hasFilter ? AppColors.primaryColor : AppColors.secondaryColor,
-          elevation: 4.0,
-          shape: const CircleBorder(),
-          child: Icon(
+          style: IconButton.styleFrom(
+            backgroundColor: hasFilter
+                ? AppColors.primaryColor
+                : AppColors.secondaryColor.withValues(alpha: 0.12),
+            foregroundColor:
+                hasFilter ? AppColors.whiteColor : AppColors.secondaryColor,
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(
             hasFilter ? Icons.filter_alt : Icons.filter_alt_outlined,
-            color: AppColors.whiteColor,
-            size: 26.sp,
+            size: 23.sp,
           ),
         ),
       );
