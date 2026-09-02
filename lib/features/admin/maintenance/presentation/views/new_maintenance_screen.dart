@@ -93,7 +93,8 @@ class NewMaintenanceScreen extends StatelessWidget {
                           );
                         },
                       ),
-                    if (!controller.isDelivered.value)
+                    if (!controller.isDelivered.value &&
+                        (controller.maintenanceId?.isNotEmpty ?? false))
                       NextBackButton(
                         isLoading: controller.isLoading,
                         endTitle: 'delivered',
@@ -114,6 +115,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                           controller.createMaintenance(
                             step: controller.selectedStep.value,
                             maintenanceId: controller.maintenanceId,
+                            allowCreate: true,
                           );
                         },
                       ),

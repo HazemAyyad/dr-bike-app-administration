@@ -122,6 +122,7 @@ class MaintenanceController extends GetxController {
   final RxMap<int, double> maintenanceServicePrices = <int, double>{}.obs;
   final RxList<Map<String, dynamic>> additionalCharges =
       <Map<String, dynamic>>[].obs;
+  int _additionalChargeSequence = 0;
   final RxList<MaintenanceServiceModel> serviceSuggestions =
       <MaintenanceServiceModel>[].obs;
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
@@ -805,7 +806,7 @@ class MaintenanceController extends GetxController {
         'service_prices': maintenanceServicePrices.map(
           (key, value) => MapEntry(key.toString(), value),
         ),
-        'additional_charges': additionalCharges.toList(),
+        'additional_charges': additionalCharges.map(_chargeForStorage).toList(),
         'selected_media': selectedMedia.map((file) => file.path).toList(),
       }),
     );
@@ -913,12 +914,6 @@ class MaintenanceController extends GetxController {
   Future<void> openProductPicker(BuildContext context) async {
     if (!formKey.currentState!.validate()) return;
 
-    if (maintenanceId == null || maintenanceId!.isEmpty) {
-      await createMaintenance(
-          step: selectedStep.value, maintenanceId: maintenanceId);
-      if (maintenanceId == null || maintenanceId!.isEmpty) return;
-    }
-
     AppDependencyRegistry.ensureSales();
     if (!Get.isRegistered<SalesController>() &&
         !Get.isPrepared<SalesController>()) {
@@ -998,16 +993,6 @@ class MaintenanceController extends GetxController {
       maintenanceServicePrices[service.id] = service.price;
     }
 
-    final line =
-        '${service.name} - ${SalesAmountFormat.display(service.price)}';
-    final current = descriptionController.text.trimRight();
-    final hasServiceLine = current.split('\n').any(
-          (candidate) => candidate.trim() == line.trim(),
-        );
-    if (!hasServiceLine) {
-      descriptionController.text = current.isEmpty ? line : '$current\n$line';
-    }
-
     serviceSuggestions.clear();
     recalculateTotals();
     syncProductsIfPossible();
@@ -1045,7 +1030,7 @@ class MaintenanceController extends GetxController {
   }
 
   void addAdditionalCharge() {
-    additionalCharges.add({'label': '', 'amount': 0.0});
+    additionalCharges.add(_chargeWithUiKey({'label': '', 'amount': 0.0}));
     scheduleAutoSave();
     update();
   }
@@ -1069,6 +1054,16 @@ class MaintenanceController extends GetxController {
     scheduleAutoSave();
     update();
   }
+
+  Map<String, dynamic> _chargeWithUiKey(Map<String, dynamic> charge) => {
+        ...charge,
+        '_ui_key': ++_additionalChargeSequence,
+      };
+
+  Map<String, dynamic> _chargeForStorage(Map<String, dynamic> charge) => {
+        'label': '${charge['label'] ?? ''}',
+        'amount': SalesAmountFormat.parse('${charge['amount'] ?? 0}'),
+      };
 
   void _hydrateSalesCart(SalesController sales) {
     sales.clearCartLines(deferDispose: false);
@@ -1184,7 +1179,7 @@ class MaintenanceController extends GetxController {
                 'price': maintenanceServicePrices[service.id] ?? service.price,
               })
           .toList(),
-      additionalCharges: additionalCharges.toList(),
+      additionalCharges: additionalCharges.map(_chargeForStorage).toList(),
     );
   }
 
@@ -1613,7 +1608,11 @@ class MaintenanceController extends GetxController {
               SalesAmountFormat.parse('${line['price'] ?? 0}');
         }
       }
-      additionalCharges.assignAll(billing.additionalCharges);
+      additionalCharges.assignAll(
+        billing.additionalCharges.map(
+          (item) => _chargeWithUiKey(Map<String, dynamic>.from(item)),
+        ),
+      );
 
       final files = maintenances['files'];
       if (files is List) {
@@ -1700,7 +1699,7 @@ class MaintenanceController extends GetxController {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('بدء طلب جديد'),
+              child: const Text('حذف المسودة'),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
@@ -1766,7 +1765,9 @@ class MaintenanceController extends GetxController {
       additionalCharges.assignAll(
         ((draft['additional_charges'] as List?) ?? const [])
             .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item)),
+            .map(
+              (item) => _chargeWithUiKey(Map<String, dynamic>.from(item)),
+            ),
       );
       selectedMedia = ((draft['selected_media'] as List?) ?? const [])
           .map((path) => File('$path'))
@@ -1795,9 +1796,16 @@ class MaintenanceController extends GetxController {
     String? maintenanceId,
     bool isSave = false,
     bool silent = false,
+    bool allowCreate = false,
     String? editReason,
   }) async {
     if (!formKey.currentState!.validate()) return false;
+
+    final targetId = this.maintenanceId ?? maintenanceId;
+    if ((targetId == null || targetId.isEmpty) && !allowCreate) {
+      await saveLocalMaintenanceDraft();
+      return false;
+    }
 
     final deliveredEditReason =
         editReason ?? await _resolveDeliveredEditReason(silent);

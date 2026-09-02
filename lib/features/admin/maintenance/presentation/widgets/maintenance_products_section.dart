@@ -80,24 +80,32 @@ class MaintenanceProductsSection extends StatelessWidget {
                 isLocked: isLocked,
               ),
               SizedBox(height: 8.h),
-              _amountField(
-                label: 'maintenanceLaborCost'.tr,
-                controller: controller.laborCostController,
-                enabled: !isLocked,
-                onChanged: () {
-                  controller.recalculateTotals();
-                  controller.scheduleAutoSave();
-                },
-              ),
-              SizedBox(height: 6.h),
-              _amountField(
-                label: 'discount'.tr,
-                controller: controller.discountController,
-                enabled: !isLocked,
-                onChanged: () {
-                  controller.recalculateTotals();
-                  controller.scheduleAutoSave();
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: _amountField(
+                      label: 'maintenanceLaborCost'.tr,
+                      controller: controller.laborCostController,
+                      enabled: !isLocked,
+                      onChanged: () {
+                        controller.recalculateTotals();
+                        controller.scheduleAutoSave();
+                      },
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: _amountField(
+                      label: 'discount'.tr,
+                      controller: controller.discountController,
+                      enabled: !isLocked,
+                      onChanged: () {
+                        controller.recalculateTotals();
+                        controller.scheduleAutoSave();
+                      },
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 8.h),
               Container(
@@ -194,30 +202,18 @@ class MaintenanceProductsSection extends StatelessWidget {
     required bool enabled,
     required VoidCallback onChanged,
   }) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(label, style: TextStyle(fontSize: 12.sp)),
-        ),
-        Expanded(
-          flex: 3,
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: TextStyle(fontSize: 13.sp),
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(6.r)),
-            ),
-            onChanged: (_) => onChanged(),
-          ),
-        ),
-      ],
+    return TextField(
+      controller: controller,
+      enabled: enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+      decoration: InputDecoration(
+        isDense: true,
+        labelText: label,
+        contentPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.r)),
+      ),
+      onChanged: (_) => onChanged(),
     );
   }
 }
@@ -540,10 +536,15 @@ class _ProductsTable extends StatelessWidget {
         textAlign: TextAlign.center,
         keyboardType: TextInputType.numberWithOptions(decimal: decimal),
         style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           isDense: true,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          filled: enabled,
+          fillColor: const Color(0xFFF8FAFC),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5.r),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 2.w),
         ),
         onChanged: onChanged,
       ),
@@ -745,10 +746,15 @@ class _ServicesTable extends StatelessWidget {
           fontWeight: FontWeight.w800,
           color: AppColors.primaryColor,
         ),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           isDense: true,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          filled: enabled,
+          fillColor: const Color(0xFFF8FAFC),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(5.r),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 3.w),
         ),
         onChanged: onChanged,
       ),
@@ -810,17 +816,12 @@ class _AdditionalChargesRepeater extends StatelessWidget {
                 SizedBox(width: 6.w),
                 SizedBox(
                   width: 92.w,
-                  child: TextFormField(
-                    initialValue: '${line['amount'] ?? ''}',
-                    enabled: !isLocked,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      hintText: 'القيمة',
-                      suffixText: '₪',
-                      border: OutlineInputBorder(),
+                  child: _AdditionalChargeAmountField(
+                    key: ValueKey(line['_ui_key']),
+                    initialValue: SalesAmountFormat.display(
+                      SalesAmountFormat.parse('${line['amount'] ?? 0}'),
                     ),
+                    enabled: !isLocked,
                     onChanged: (value) => controller.updateAdditionalCharge(
                       index,
                       amount: SalesAmountFormat.parse(value),
@@ -847,6 +848,62 @@ class _AdditionalChargesRepeater extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _AdditionalChargeAmountField extends StatefulWidget {
+  const _AdditionalChargeAmountField({
+    Key? key,
+    required this.initialValue,
+    required this.enabled,
+    required this.onChanged,
+  }) : super(key: key);
+
+  final String initialValue;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_AdditionalChargeAmountField> createState() =>
+      _AdditionalChargeAmountFieldState();
+}
+
+class _AdditionalChargeAmountFieldState
+    extends State<_AdditionalChargeAmountField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialValue.isEmpty ? '0' : widget.initialValue,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      enabled: widget.enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onTap: () => _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      ),
+      decoration: const InputDecoration(
+        isDense: true,
+        hintText: 'القيمة',
+        suffixText: '₪',
+        border: OutlineInputBorder(),
+      ),
+      onChanged: widget.onChanged,
     );
   }
 }
