@@ -38,28 +38,36 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
             if (deliveryFee > 0) _line('salesOrderDeliveryFee'.tr, deliveryFee),
             _line('salesOrderCalculatedTotal'.tr, calculatedTotal),
             Divider(height: 14.h, color: SalesOrdersController.borderGray),
-            TextField(
-              controller: orders.deliveryFeeController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              onChanged: (_) => orders.onDeliveryFeeChanged(),
-              decoration: InputDecoration(
-                labelText: 'salesOrderDeliveryFeeInput'.tr,
-                suffixText: '₪',
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 8.h),
-            TextField(
-              controller: orders.totalController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              onChanged: orders.onTotalChanged,
-              decoration: InputDecoration(
-                labelText: 'salesOrderEditableTotal'.tr,
-                suffixText: '₪',
-                border: const OutlineInputBorder(),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: orders.deliveryFeeController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => orders.onDeliveryFeeChanged(),
+                    decoration: InputDecoration(
+                      labelText: 'salesOrderDeliveryFeeInput'.tr,
+                      suffixText: '₪',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: TextField(
+                    controller: orders.totalController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: orders.onTotalChanged,
+                    decoration: InputDecoration(
+                      labelText: 'salesOrderEditableTotal'.tr,
+                      suffixText: '₪',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 8.h),
             CheckboxListTile(

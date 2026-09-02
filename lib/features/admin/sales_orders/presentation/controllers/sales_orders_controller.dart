@@ -1242,6 +1242,9 @@ class SalesOrdersController extends GetxController {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
     final editId = activeEditSalesOrderId.value;
+    final reserveStock = await _confirmStockReservationChoice();
+    if (reserveStock == null) return false;
+    body['reserve_stock'] = reserveStock;
 
     final stockCheck = await repository.checkStock(
       items: items,
@@ -1297,6 +1300,39 @@ class SalesOrdersController extends GetxController {
         }
         return true;
       },
+    );
+  }
+
+  Future<bool?> _confirmStockReservationChoice() async {
+    final context = Get.overlayContext ?? Get.context;
+    if (context == null) return null;
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        title: const Text('حجز كمية الطلبية؟'),
+        content: const Text(
+          'اختر حجز الكمية لمنع استخدامها في طلبية أخرى، أو احفظ الطلبية بدون حجز. ستظهر عليها علامة واضحة حتى يتم تأكيدها.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('cancel'.tr),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            icon: const Icon(Icons.inventory_2_outlined),
+            label: const Text('حفظ بدون حجز'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.inventory_rounded),
+            label: const Text('حجز الكمية'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1416,6 +1452,7 @@ class SalesOrdersController extends GetxController {
       'price_includes_delivery': priceIncludesDelivery.value,
       'total': total,
       'notes': notesController.text.trim(),
+      'reserve_stock': true,
       'items': items,
     };
   }

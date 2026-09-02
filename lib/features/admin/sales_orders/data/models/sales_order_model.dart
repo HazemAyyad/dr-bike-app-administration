@@ -24,6 +24,7 @@ class SalesOrderListItemModel {
   final int? deliveryCompanyId;
   final String? deliveryCompanyName;
   final String? deliveryCompanyCode;
+  final bool reservesStock;
 
   SalesOrderListItemModel({
     required this.id,
@@ -41,6 +42,7 @@ class SalesOrderListItemModel {
     this.deliveryCompanyId,
     this.deliveryCompanyName,
     this.deliveryCompanyCode,
+    this.reservesStock = true,
   });
 
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,9 @@ class SalesOrderListItemModel {
       deliveryCompanyId: (json['delivery_company_id'] as num?)?.toInt(),
       deliveryCompanyName: json['delivery_company_name'] as String?,
       deliveryCompanyCode: json['delivery_company_code'] as String?,
+      reservesStock: json['reserves_stock'] == null ||
+          json['reserves_stock'] == true ||
+          json['reserves_stock'] == 1,
     );
   }
 }

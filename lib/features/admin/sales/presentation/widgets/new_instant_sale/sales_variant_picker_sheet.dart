@@ -219,10 +219,6 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
         return;
       }
       if (draft.quantity > draft.variant.stock && !_isAdjustmentSale) {
-        if (_sales.salesOrderStockMode.value) {
-          Get.snackbar('error'.tr, 'out_of_stock_products'.tr);
-          return;
-        }
         final ok = await _sales.confirmInstantSaleNegativeStockIfNeeded(
           context: context,
           productName:

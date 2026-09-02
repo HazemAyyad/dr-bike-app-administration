@@ -86,17 +86,15 @@ class InstantSaleProductCard extends StatelessWidget {
       final pastedLabel = controller.pastedRequestLabelForProduct(product);
       final pastedSelected = controller.pastedRequestSelectedProduct(product);
       final usePastedAction = pastedLabel != null;
-      final tapAction = blockedOutOfStock
-          ? null
-          : () => usePastedAction
-              ? controller.addProductFromPastedSuggestion(
-                  product,
-                  context: context,
-                )
-              : controller.toggleProductInCart(
-                  product,
-                  context: context,
-                );
+      final tapAction = () => usePastedAction
+          ? controller.addProductFromPastedSuggestion(
+              product,
+              context: context,
+            )
+          : controller.toggleProductInCart(
+              product,
+              context: context,
+            );
 
       return Material(
         color: Colors.white,

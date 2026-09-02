@@ -15,9 +15,8 @@ import '../../../payment_method/domain/usecases/add_payment_usecase.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/add_new_instant_sale.dart';
-import '../../../sales/presentation/widgets/new_instant_sale/discount_widget.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_sheet.dart';
-import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_payment_section.dart';
+import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_checkout_totals.dart';
 import '../widgets/sales_order_partner_selector.dart';
@@ -192,28 +191,11 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   height: 1,
                 ),
                 SizedBox(height: 10.h),
-                const DiscountWidget(
-                  showNotes: false,
-                  showHints: false,
-                ),
+                _financialFieldsRow(),
                 SizedBox(height: 16.h),
                 // Notes are not needed for sales orders at the moment.
                 Divider(color: Colors.grey.shade300, height: 1),
                 SizedBox(height: 12.h),
-                Obx(() {
-                  final _ = sales.cartRevision.value;
-                  return InstantSalePaymentSection(
-                    paymentTag: kSalesOrderPaymentTag,
-                    showHeader: false,
-                    showPartner: false,
-                    showDailyBoxInfo: false,
-                    extraTotal: (orders.manualTotal.value ??
-                            sales.totalCost.value +
-                                orders.selectedCityDeliveryFee) -
-                        sales.totalCost.value,
-                  );
-                }),
-                SizedBox(height: 16.h),
                 const SalesOrderCheckoutTotals(),
                 SizedBox(height: 16.h),
                 Obx(() {
@@ -258,5 +240,57 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
         ),
       ),
     );
+  }
+
+  Widget _financialFieldsRow() {
+    final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
+    return Obx(() {
+      final _ = sales.cartRevision.value;
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: sales.discountController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => sales.calculateGrandTotal(),
+              decoration: const InputDecoration(
+                labelText: 'الخصم',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'إجمالي الفاتورة',
+                border: OutlineInputBorder(),
+              ),
+              child: Text(
+                '${SalesAmountFormat.display(sales.totalCost.value)} ₪',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: TextField(
+              controller: payment.cashValueController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => sales.refreshInstantSalePaymentSummaryForTag(
+                  kSalesOrderPaymentTag),
+              decoration: const InputDecoration(
+                labelText: 'المبلغ النقدي',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 }

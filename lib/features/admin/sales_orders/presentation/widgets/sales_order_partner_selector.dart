@@ -297,7 +297,7 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
                     child: Text(
                       selectedAddress == null
                           ? 'العنوان اختياري — اضغط للاختيار'
-                          : '${selectedAddress.label} • ${selectedAddress.streetAddress}',
+                          : _addressText(selectedAddress),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -331,6 +331,19 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
         ]),
       );
     });
+  }
+
+  String _addressText(PartnerAddressModel address) {
+    final parts = <String>[
+      if ((address.shiplyVillageName ?? '').trim().isNotEmpty)
+        address.shiplyVillageName!.trim(),
+      if ((address.shiplyCityName ?? '').trim().isNotEmpty)
+        address.shiplyCityName!.trim(),
+      if (address.streetAddress.trim().isNotEmpty &&
+          address.streetAddress.trim() != '----')
+        address.streetAddress.trim(),
+    ];
+    return parts.isEmpty ? address.label : parts.join('، ');
   }
 }
 

@@ -730,6 +730,24 @@ class _OrderCard extends StatelessWidget {
                         ],
                       ),
                     ],
+                    if (!order.reservesStock) ...[
+                      SizedBox(height: 3.h),
+                      Row(
+                        children: [
+                          Icon(Icons.inventory_2_outlined,
+                              size: 13.sp, color: Colors.orange.shade800),
+                          SizedBox(width: 3.w),
+                          Text(
+                            'الكمية غير محجوزة',
+                            style: TextStyle(
+                              fontSize: 9.sp,
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     SizedBox(height: 3.h),
                     Row(
                       children: [
