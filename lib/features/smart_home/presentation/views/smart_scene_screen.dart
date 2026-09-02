@@ -12,10 +12,12 @@ class SmartScenesSection extends StatelessWidget {
     Key? key,
     required this.controller,
     this.showAll = false,
+    this.showHeader = true,
   }) : super(key: key);
 
   final SmartHomeController controller;
   final bool showAll;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -35,49 +37,51 @@ class SmartScenesSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 34.r,
-                  height: 34.r,
-                  decoration: BoxDecoration(
-                    color: smartHomeAccentSoft,
-                    borderRadius: BorderRadius.circular(9.r),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: smartHomeAccent,
-                    size: 19,
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    showAll ? 'المشاهد' : 'المشاهد الرئيسية',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: smartHomeInk,
-                          fontWeight: FontWeight.w900,
-                        ),
-                  ),
-                ),
-                if (!showAll && totalScenes > featured.length)
-                  TextButton(
-                    onPressed: () => Get.to<void>(
-                      () => _AllScenesScreen(controller: controller),
+            if (showHeader) ...[
+              Row(
+                children: [
+                  Container(
+                    width: 34.r,
+                    height: 34.r,
+                    decoration: BoxDecoration(
+                      color: smartHomeAccentSoft,
+                      borderRadius: BorderRadius.circular(9.r),
                     ),
-                    child: Text('عرض الكل ($totalScenes)'),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: smartHomeAccent,
+                      size: 19,
+                    ),
                   ),
-                IconButton(
-                  tooltip: 'إضافة مشهد',
-                  onPressed: () => Get.to<void>(
-                    () => SmartSceneEditorScreen(controller: controller),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      showAll ? 'المشاهد' : 'المشاهد الرئيسية',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: smartHomeInk,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
                   ),
-                  icon: const Icon(Icons.add_circle_outline_rounded),
-                  color: smartHomeAccent,
-                ),
-              ],
-            ),
-            SizedBox(height: 8.h),
+                  if (!showAll && totalScenes > featured.length)
+                    TextButton(
+                      onPressed: () => Get.to<void>(
+                        () => _AllScenesScreen(controller: controller),
+                      ),
+                      child: Text('عرض الكل ($totalScenes)'),
+                    ),
+                  IconButton(
+                    tooltip: 'إضافة مشهد',
+                    onPressed: () => Get.to<void>(
+                      () => SmartSceneEditorScreen(controller: controller),
+                    ),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    color: smartHomeAccent,
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+            ],
             if (featured.isEmpty)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 28.h),

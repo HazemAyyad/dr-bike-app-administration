@@ -28,10 +28,11 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
         child: Scaffold(
           appBar: AppBar(
             scrolledUnderElevation: 0,
+            toolbarHeight: 48.h,
             title: Text(
               'smartHome'.tr,
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 20.sp,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                     color: smartHomeInk,
                   ),
@@ -81,11 +82,37 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 icon: const Icon(Icons.tune_rounded),
               ),
             ],
-            bottom: const TabBar(
-              tabs: [
-                Tab(icon: Icon(Icons.devices_other_rounded), text: 'الأجهزة'),
-                Tab(icon: Icon(Icons.auto_awesome_rounded), text: 'المشاهد'),
-              ],
+            bottom: PreferredSize(
+              preferredSize: Size.fromHeight(36.h),
+              child: TabBar(
+                indicatorWeight: 2,
+                dividerHeight: 0,
+                labelPadding: EdgeInsets.zero,
+                labelStyle: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: [
+                  Tab(
+                    height: 34.h,
+                    child: const _CompactTabLabel(
+                      icon: Icons.devices_other_rounded,
+                      label: 'الأجهزة',
+                    ),
+                  ),
+                  Tab(
+                    height: 34.h,
+                    child: const _CompactTabLabel(
+                      icon: Icons.auto_awesome_rounded,
+                      label: 'المشاهد',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           body: Obx(() {
@@ -94,9 +121,10 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
             final showDeviceSkeleton =
                 controller.isRefreshing.value && !showInitialSkeleton;
             if (showInitialSkeleton) {
-              return const Padding(
-                padding: EdgeInsets.all(12),
-                child: _SmartHomeDashboardSkeleton(),
+              return ListView(
+                padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [_SmartHomeDashboardSkeleton()],
               );
             }
 
@@ -105,21 +133,22 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 RefreshIndicator(
                   onRefresh: controller.refreshData,
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
+                    padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
                     children: [
                       if (controller.errorMessage.value.isNotEmpty)
                         _ErrorBanner(message: controller.errorMessage.value),
                       if (!controller.isUnassignedSelected)
-                        _RoomsStrip(controller: controller),
-                      SizedBox(height: 12.h),
-                      _BulkDeviceActions(controller: controller),
-                      SizedBox(height: 14.h),
+                        _RoomsStrip(
+                          controller: controller,
+                          showQuickControl: true,
+                        ),
+                      SizedBox(height: 8.h),
                       _SectionHeader(
                         title: 'devices'.tr,
                         actionLabel: 'addDevice'.tr,
                         onAction: _showAddDeviceDialog,
                       ),
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 5.h),
                       if (showDeviceSkeleton)
                         const _SmartHomeDeviceListSkeleton()
                       else
@@ -130,16 +159,14 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                 RefreshIndicator(
                   onRefresh: controller.refreshData,
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 24.h),
+                    padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
                     children: [
                       if (controller.errorMessage.value.isNotEmpty)
                         _ErrorBanner(message: controller.errorMessage.value),
-                      if (!controller.isUnassignedSelected)
-                        _RoomsStrip(controller: controller),
-                      SizedBox(height: 14.h),
                       SmartScenesSection(
                         controller: controller,
                         showAll: true,
+                        showHeader: false,
                       ),
                     ],
                   ),
@@ -193,6 +220,25 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
         }),
       ),
       isScrollControlled: true,
+    );
+  }
+}
+
+class _CompactTabLabel extends StatelessWidget {
+  const _CompactTabLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16.r),
+        SizedBox(width: 5.w),
+        Text(label),
+      ],
     );
   }
 }
@@ -1503,15 +1549,19 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 16.sp,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w800,
                 ),
           ),
         ),
         TextButton.icon(
           onPressed: onAction,
-          icon: const Icon(Icons.add_rounded),
-          label: Text(actionLabel),
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+          ),
+          icon: Icon(Icons.add_rounded, size: 18.r),
+          label: Text(actionLabel, style: TextStyle(fontSize: 12.sp)),
         ),
       ],
     );
@@ -1519,9 +1569,13 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _RoomsStrip extends StatelessWidget {
-  const _RoomsStrip({required this.controller});
+  const _RoomsStrip({
+    required this.controller,
+    this.showQuickControl = false,
+  });
 
   final SmartHomeController controller;
+  final bool showQuickControl;
 
   @override
   Widget build(BuildContext context) {
@@ -1552,12 +1606,22 @@ class _RoomsStrip extends StatelessWidget {
           ),
         ];
         return SizedBox(
-          height: 42.h,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: chips.length,
-            separatorBuilder: (_, __) => SizedBox(width: 8.w),
-            itemBuilder: (context, index) => chips[index],
+          height: 36.h,
+          child: Row(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: chips.length,
+                  separatorBuilder: (_, __) => SizedBox(width: 6.w),
+                  itemBuilder: (context, index) => chips[index],
+                ),
+              ),
+              if (showQuickControl) ...[
+                SizedBox(width: 6.w),
+                _QuickControlButtons(controller: controller),
+              ],
+            ],
           ),
         );
       },
@@ -1593,14 +1657,15 @@ class _RoomChip extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(8.r),
         child: Container(
-          constraints: BoxConstraints(minWidth: 58.w),
-          padding: EdgeInsets.symmetric(horizontal: 13.w),
+          constraints: BoxConstraints(minWidth: 52.w),
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
           alignment: Alignment.center,
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  fontSize: 11.sp,
                   color: selected ? Colors.white : null,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1618,10 +1683,15 @@ class _RoomAddChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      tooltip: 'addRoom'.tr,
-      onPressed: onTap,
-      icon: const Icon(Icons.add_rounded),
+    return SizedBox.square(
+      dimension: 36.h,
+      child: IconButton.filledTonal(
+        tooltip: 'addRoom'.tr,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        onPressed: onTap,
+        icon: Icon(Icons.add_rounded, size: 19.r),
+      ),
     );
   }
 }
@@ -1774,16 +1844,16 @@ Future<void> _confirmDeleteRoom({
   }
 }
 
-class _BulkDeviceActions extends StatefulWidget {
-  const _BulkDeviceActions({required this.controller});
+class _QuickControlButtons extends StatefulWidget {
+  const _QuickControlButtons({required this.controller});
 
   final SmartHomeController controller;
 
   @override
-  State<_BulkDeviceActions> createState() => _BulkDeviceActionsState();
+  State<_QuickControlButtons> createState() => _QuickControlButtonsState();
 }
 
-class _BulkDeviceActionsState extends State<_BulkDeviceActions> {
+class _QuickControlButtonsState extends State<_QuickControlButtons> {
   bool busy = false;
 
   Future<void> _run(bool powerOn) async {
@@ -1818,64 +1888,66 @@ class _BulkDeviceActionsState extends State<_BulkDeviceActions> {
 
   @override
   Widget build(BuildContext context) {
-    final roomId = widget.controller.selectedRoomId.value;
-    final roomName = roomId == null
-        ? 'كل الأجهزة'
-        : widget.controller.rooms
-                .firstWhereOrNull((room) => room.id == roomId)
-                ?.name ??
-            'الغرفة المحددة';
-    return Container(
-      padding: EdgeInsets.all(10.w),
-      decoration: BoxDecoration(
-        color: smartHomeAccent.withOpacity(.06),
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: smartHomeAccent.withOpacity(.14)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.offline_bolt_rounded, color: smartHomeAccent),
-              SizedBox(width: 7.w),
-              Expanded(
-                child: Text(
-                  'تحكم سريع • $roomName',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: smartHomeInk,
-                      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QuickPowerIconButton(
+          tooltip: 'تشغيل الكل',
+          icon: Icons.power_settings_new_rounded,
+          color: const Color(0xFF169B73),
+          busy: busy,
+          onPressed: () => _run(true),
+        ),
+        SizedBox(width: 5.w),
+        _QuickPowerIconButton(
+          tooltip: 'إغلاق الكل',
+          icon: Icons.power_off_rounded,
+          color: const Color(0xFFB42318),
+          busy: busy,
+          onPressed: () => _run(false),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickPowerIconButton extends StatelessWidget {
+  const _QuickPowerIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 36.h,
+      child: IconButton(
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        style: IconButton.styleFrom(
+          backgroundColor: color.withOpacity(.11),
+          foregroundColor: color,
+        ),
+        onPressed: busy ? null : onPressed,
+        icon: busy
+            ? SizedBox.square(
+                dimension: 15.r,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
                 ),
-              ),
-              if (busy)
-                SizedBox.square(
-                  dimension: 18.r,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          SizedBox(height: 9.h),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: busy ? null : () => _run(true),
-                  icon: const Icon(Icons.power_settings_new_rounded),
-                  label: const Text('تشغيل الكل'),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: busy ? null : () => _run(false),
-                  icon: const Icon(Icons.power_off_rounded),
-                  label: const Text('إغلاق الكل'),
-                ),
-              ),
-            ],
-          ),
-        ],
+              )
+            : Icon(icon, size: 18.r),
       ),
     );
   }
@@ -2034,63 +2106,146 @@ class _DevicesList extends StatelessWidget {
         if (visibleDevices.isEmpty) {
           return _EmptyState(text: 'noDevicesYet'.tr);
         }
-        return ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          buildDefaultDragHandles: true,
-          itemCount: visibleDevices.length,
-          onReorderStart: (_) => HapticFeedback.mediumImpact(),
-          onReorder: (oldIndex, newIndex) {
-            if (newIndex > oldIndex) newIndex--;
-            if (oldIndex == newIndex) return;
-            final reordered = visibleDevices.toList(growable: true);
-            final moved = reordered.removeAt(oldIndex);
-            reordered.insert(newIndex, moved);
-            HapticFeedback.selectionClick();
-            controller
-                .reorderVisibleDevices(
-              reordered.map((device) => device.id).toList(growable: false),
-            )
-                .then((saved) {
-              if (!saved) {
-                Get.snackbar('ترتيب الأجهزة', 'تعذر حفظ الترتيب');
-              }
-            });
-          },
-          proxyDecorator: (child, _, animation) => AnimatedBuilder(
-            animation: animation,
-            child: child,
-            builder: (context, child) => Material(
-              color: Colors.transparent,
-              elevation: 8 * animation.value,
-              borderRadius: BorderRadius.circular(16.r),
-              child: child,
-            ),
-          ),
-          itemBuilder: (context, index) {
-            final device = visibleDevices[index];
-            return Padding(
-              key: ValueKey('smart-device-${device.id}'),
-              padding: EdgeInsets.only(bottom: 9.h),
-              child: Obx(
-                () => _SmartDeviceCard(
-                  controller: controller,
-                  device: controller.devices.firstWhereOrNull(
-                        (item) => item.id == device.id,
-                      ) ??
-                      device,
-                  onOpen: () => Get.to<void>(
-                    () => _DeviceDetailsScreen(
-                      controller: controller,
-                      initialDevice: device,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+        return _ReorderableDeviceGrid(
+          controller: controller,
+          devices: visibleDevices,
         );
       },
+    );
+  }
+}
+
+class _ReorderableDeviceGrid extends StatelessWidget {
+  const _ReorderableDeviceGrid({
+    required this.controller,
+    required this.devices,
+  });
+
+  final SmartHomeController controller;
+  final List<SmartDeviceModel> devices;
+
+  Future<void> _move(int draggedId, int targetId) async {
+    if (draggedId == targetId) return;
+    final reordered = devices.toList(growable: true);
+    final oldIndex = reordered.indexWhere((device) => device.id == draggedId);
+    final newIndex = reordered.indexWhere((device) => device.id == targetId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+    await HapticFeedback.selectionClick();
+    final saved = await controller.reorderVisibleDevices(
+      reordered.map((device) => device.id).toList(growable: false),
+    );
+    if (!saved) {
+      Get.snackbar('ترتيب الأجهزة', 'تعذر حفظ الترتيب');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstColumn = <Widget>[];
+    final secondColumn = <Widget>[];
+    for (var index = 0; index < devices.length; index++) {
+      final device = devices[index];
+      final tile = Padding(
+        key: ValueKey('smart-device-grid-${device.id}'),
+        padding: EdgeInsets.only(bottom: 10.h),
+        child: _DraggableDeviceCard(
+          controller: controller,
+          device: device,
+          onAccept: (draggedId) => _move(draggedId, device.id),
+        ),
+      );
+      (index.isEven ? firstColumn : secondColumn).add(tile);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: Column(children: firstColumn)),
+        SizedBox(width: 9.w),
+        Expanded(child: Column(children: secondColumn)),
+      ],
+    );
+  }
+}
+
+class _DraggableDeviceCard extends StatelessWidget {
+  const _DraggableDeviceCard({
+    required this.controller,
+    required this.device,
+    required this.onAccept,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+  final ValueChanged<int> onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = _SmartDeviceCard(
+      controller: controller,
+      device: controller.devices.firstWhereOrNull(
+            (item) => item.id == device.id,
+          ) ??
+          device,
+      onOpen: () => Get.to<void>(
+        () => _DeviceDetailsScreen(
+          controller: controller,
+          initialDevice: device,
+        ),
+      ),
+    );
+
+    return DragTarget<int>(
+      onWillAcceptWithDetails: (details) => details.data != device.id,
+      onAcceptWithDetails: (details) => onAccept(details.data),
+      builder: (context, candidates, rejected) => AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          border: candidates.isEmpty
+              ? null
+              : Border.all(color: smartHomeAccent, width: 2),
+        ),
+        child: LongPressDraggable<int>(
+          data: device.id,
+          delay: const Duration(milliseconds: 360),
+          onDragStarted: HapticFeedback.mediumImpact,
+          feedback: Material(
+            color: Colors.transparent,
+            elevation: 10,
+            borderRadius: BorderRadius.circular(16.r),
+            child: Container(
+              width: MediaQuery.of(context).size.width * .43,
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: smartHomeAccent),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.drag_indicator_rounded,
+                      color: smartHomeAccent),
+                  SizedBox(width: 6.w),
+                  Expanded(
+                    child: Text(
+                      device.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: .28, child: card),
+          child: card,
+        ),
+      ),
     );
   }
 }
@@ -2136,6 +2291,15 @@ Future<void> _showPinDeviceWidgetSheet({
   required SmartHomeController controller,
   required SmartDeviceModel device,
 }) async {
+  final switches = _visiblePrimarySwitches(device).take(4).toList();
+  final uidLogin = controller.tuyaUser.value?.uidLogin;
+  if (switches.isEmpty) {
+    Get.snackbar(
+      'تطبيق مصغر للجهاز',
+      'هذا الجهاز لا يحتوي مفاتيح تشغيل قابلة للتحكم من التطبيق المصغر',
+    );
+    return;
+  }
   final confirmed = await Get.bottomSheet<bool>(
     _BottomSheetPanel(
       child: Column(
@@ -2163,7 +2327,7 @@ Future<void> _showPinDeviceWidgetSheet({
           ),
           SizedBox(height: 6.h),
           const Text(
-            'سيظهر اسم الجهاز وحالته. الضغط على البطاقة يفتح قسم المنزل الذكي للتحكم الآمن.',
+            'سيظهر اسم الجهاز ومفاتيحه، ويمكن تشغيل كل مفتاح وإطفاؤه مباشرة من شاشة الجوال.',
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 16.h),
@@ -2187,6 +2351,21 @@ Future<void> _showPinDeviceWidgetSheet({
     deviceName: device.name,
     roomName: device.roomName,
     online: device.online,
+    tuyaDeviceId: device.tuyaDeviceId,
+    tuyaCountryCode: uidLogin?.countryCode ?? '',
+    tuyaUid: uidLogin?.uid ?? '',
+    tuyaPassword: uidLogin?.password ?? '',
+    switches: switches
+        .map(
+          (function) => <String, dynamic>{
+            'dp_id': function.dpId,
+            'code': function.code,
+            'label': _functionLabelForDevice(device, function),
+            'active':
+                DeviceCapabilityResolver.statusValue(device, function) == true,
+          },
+        )
+        .toList(growable: false),
   );
   Get.snackbar(
     'تطبيق مصغر للجهاز',
@@ -2956,34 +3135,42 @@ class _SmartDeviceCard extends StatelessWidget {
                     ),
                   ),
                 ] else if (visibleFunctions.isNotEmpty) ...[
-                  ...visibleFunctions.asMap().entries.map((entry) {
-                    final function = entry.value;
-                    final value = DeviceCapabilityResolver.statusValue(
-                      device,
-                      function,
-                    );
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom:
-                            entry.key == visibleFunctions.length - 1 ? 0 : 6.h,
-                      ),
-                      child: _CompactSwitchButton(
-                        label: _functionLabelForDevice(device, function),
-                        active: value == true,
-                        busy: controller.isDeviceCommandBusy(
-                          device.id,
-                          function.code,
-                        ),
-                        onTap: function.isBool
-                            ? () => controller.setDeviceDps(
-                                  device: device,
-                                  commandCode: function.code,
-                                  value: value != true,
-                                )
-                            : null,
-                      ),
-                    );
-                  }),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = visibleFunctions.length == 1 ? 1 : 2;
+                      final itemWidth = columns == 1
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - 6.w) / 2;
+                      return Wrap(
+                        spacing: 6.w,
+                        runSpacing: 6.h,
+                        children: visibleFunctions.map((function) {
+                          final value = DeviceCapabilityResolver.statusValue(
+                            device,
+                            function,
+                          );
+                          return SizedBox(
+                            width: itemWidth,
+                            child: _CompactSwitchButton(
+                              label: _functionLabelForDevice(device, function),
+                              active: value == true,
+                              busy: controller.isDeviceCommandBusy(
+                                device.id,
+                                function.code,
+                              ),
+                              onTap: function.isBool
+                                  ? () => controller.setDeviceDps(
+                                        device: device,
+                                        commandCode: function.code,
+                                        value: value != true,
+                                      )
+                                  : null,
+                            ),
+                          );
+                        }).toList(growable: false),
+                      );
+                    },
+                  ),
                 ] else if (showHeaderPowerButton) ...[
                   _CompactSwitchButton(
                     label: powerActive
@@ -3441,8 +3628,8 @@ class _DashboardDeviceImage extends StatelessWidget {
           size: 25.r,
         );
     return Container(
-      width: 48.r,
-      height: 48.r,
+      width: 42.r,
+      height: 42.r,
       decoration: BoxDecoration(
         color: smartHomeAccent.withOpacity(.08),
         borderRadius: BorderRadius.circular(11.r),
@@ -3484,43 +3671,50 @@ class _CompactSwitchButton extends StatelessWidget {
       enabled: enabled,
       toggled: active,
       label: label,
-      child: Material(
-        color: active
-            ? activeColor.withOpacity(.12)
-            : AppColors.customGreyColor5.withOpacity(.07),
-        borderRadius: BorderRadius.circular(8.r),
-        child: InkWell(
-          onTap: enabled ? onTap : null,
+      child: SizedBox(
+        height: 44.h,
+        child: Material(
+          color: active
+              ? activeColor.withOpacity(.12)
+              : AppColors.customGreyColor5.withOpacity(.07),
           borderRadius: BorderRadius.circular(8.r),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-            child: Row(
-              children: [
-                if (busy)
-                  SizedBox.square(
-                    dimension: 14.r,
-                    child: const CircularProgressIndicator(strokeWidth: 1.8),
-                  )
-                else
-                  Icon(
-                    Icons.power_settings_new_rounded,
-                    size: 15.r,
-                    color: active ? activeColor : AppColors.customGreyColor5,
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(8.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
+              child: Row(
+                children: [
+                  if (busy)
+                    SizedBox.square(
+                      dimension: 14.r,
+                      child: const CircularProgressIndicator(strokeWidth: 1.8),
+                    )
+                  else
+                    Icon(
+                      Icons.power_settings_new_rounded,
+                      size: 15.r,
+                      color: active ? activeColor : AppColors.customGreyColor5,
+                    ),
+                  SizedBox(width: 4.w),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: active
+                                ? activeColor
+                                : AppColors.customGreyColor5,
+                            fontSize: 9.sp,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
                   ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: Text(
-                    label,
-                    softWrap: true,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color:
-                              active ? activeColor : AppColors.customGreyColor5,
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

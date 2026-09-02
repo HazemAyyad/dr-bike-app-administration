@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:get/get.dart';
@@ -71,6 +73,11 @@ class AppHomeWidgetService {
     required String deviceName,
     required String roomName,
     required bool online,
+    required String tuyaDeviceId,
+    required String tuyaCountryCode,
+    required String tuyaUid,
+    required String tuyaPassword,
+    required List<Map<String, dynamic>> switches,
   }) async {
     if (kIsWeb ||
         _isDesktopPlatform ||
@@ -91,6 +98,26 @@ class AppHomeWidgetService {
       await HomeWidget.saveWidgetData<String>(
         'smart_device_widget_status',
         online ? 'متصل' : 'غير متصل',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_tuya_id',
+        tuyaDeviceId,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_tuya_country_code',
+        tuyaCountryCode,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_tuya_uid',
+        tuyaUid,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_tuya_password',
+        tuyaPassword,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        'smart_device_widget_switches',
+        jsonEncode(switches.take(4).toList(growable: false)),
       );
       await HomeWidget.updateWidget(androidName: androidSmartDeviceWidgetName);
       await HomeWidget.requestPinWidget(

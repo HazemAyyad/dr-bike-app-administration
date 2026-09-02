@@ -4,7 +4,7 @@
     android:initialLayout="@layout/smart_device_widget"
     android:label="@string/widget_smart_device_label"
     android:minWidth="220dp"
-    android:minHeight="72dp"
+    android:minHeight="140dp"
     android:previewLayout="@layout/smart_device_widget"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
