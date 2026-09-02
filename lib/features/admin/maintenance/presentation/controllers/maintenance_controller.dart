@@ -194,8 +194,9 @@ class MaintenanceController extends GetxController {
       dailyBoxPayload['can_request_open'] == 1;
 
   bool get canRequestMaintenanceDailyClosing =>
-      dailyBoxSession?['can_request_closing'] == true ||
-      dailyBoxSession?['can_request_closing'] == 1;
+      !isMaintenanceDailyBlockedByOther &&
+      (dailyBoxSession?['can_request_closing'] == true ||
+          dailyBoxSession?['can_request_closing'] == 1);
 
   bool get canFinalizeMaintenanceDailyClosing =>
       dailyBoxPayload['can_finalize_closing'] == true ||
@@ -207,6 +208,9 @@ class MaintenanceController extends GetxController {
 
   String? get maintenanceDailyBlockedByEmployeeName =>
       dailyBoxPayload['blocked_by_employee_name']?.toString();
+
+  String? get maintenanceDailyEmployeeName =>
+      dailyBoxSession?['employee_name']?.toString();
 
   double get maintenanceDailyOpeningBalance =>
       _numFrom(dailyBoxSession?['opening_balance']);

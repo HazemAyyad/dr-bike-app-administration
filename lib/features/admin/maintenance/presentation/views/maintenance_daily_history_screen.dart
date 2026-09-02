@@ -155,6 +155,9 @@ class _MaintenanceDailyHistoryScreenState
             .firstWhereOrNull((row) => row.currency == 'شيكل')
             ?.systemBalance ??
         controller.maintenanceDailyExpectedClosingBalance;
+    final employeeName = active?.employeeName ??
+        controller.maintenanceDailyEmployeeName ??
+        controller.maintenanceDailyBlockedByEmployeeName;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -209,6 +212,17 @@ class _MaintenanceDailyHistoryScreenState
                       status,
                       style: TextStyle(color: Colors.white70, fontSize: 11.sp),
                     ),
+                    if ((open || closing) &&
+                        employeeName != null &&
+                        employeeName.trim().isNotEmpty)
+                      Text(
+                        'المسؤول: $employeeName',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                   ],
                 ),
               ),

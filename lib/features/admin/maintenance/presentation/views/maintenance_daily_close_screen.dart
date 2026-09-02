@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../controllers/maintenance_controller.dart';
 
@@ -168,12 +170,14 @@ class _MaintenanceDailyCloseScreenState
           : Form(
               key: _formKey,
               child: ListView(
-                padding: EdgeInsets.fromLTRB(24.w, 14.h, 24.w, 28.h),
+                padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 24.h),
                 children: [
                   _introCard(),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 8.h),
+                  _closingStepsCard(),
+                  SizedBox(height: 8.h),
                   _statsRow(),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 10.h),
                   Text(
                     'الصندوق اليومي',
                     style: TextStyle(
@@ -184,7 +188,7 @@ class _MaintenanceDailyCloseScreenState
                   ),
                   SizedBox(height: 8.h),
                   _boxCard(),
-                  SizedBox(height: 22.h),
+                  SizedBox(height: 24.h),
                   if (_isReview)
                     OutlinedButton(
                       onPressed: _submitting ? null : _reject,
@@ -194,33 +198,11 @@ class _MaintenanceDailyCloseScreenState
                       child: const Text('رفض الطلب'),
                     ),
                   if (_isReview) SizedBox(height: 10.h),
-                  ElevatedButton(
+                  AppButton(
+                    text: _isAdminFlow ? 'إغلاق وترحيل' : 'إرسال طلب الإغلاق',
                     onPressed: _submitting ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size.fromHeight(52.h),
-                      backgroundColor: AppColors.operationalNavy,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    child: _submitting
-                        ? SizedBox(
-                            width: 20.w,
-                            height: 20.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            _isAdminFlow ? 'إغلاق وترحيل' : 'إرسال طلب الإغلاق',
-                            style: TextStyle(
-                              fontSize: 17.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
                   ),
+                  SizedBox(height: 16.h),
                 ],
               ),
             ),
@@ -249,7 +231,7 @@ class _MaintenanceDailyCloseScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _employeeName,
+                      'المسؤول: $_employeeName',
                       style: TextStyle(
                         fontSize: 17.sp,
                         fontWeight: FontWeight.w900,
@@ -269,6 +251,23 @@ class _MaintenanceDailyCloseScreenState
           SizedBox(height: 12.h),
           Divider(height: 1, color: _borderColor),
           SizedBox(height: 12.h),
+          if (_sessionId != null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Get.toNamed(
+                  AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+                  arguments: {
+                    'session_id': _sessionId,
+                    'maintenance': true,
+                  },
+                ),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('عرض الحركات وتفاصيل الصندوق'),
+              ),
+            ),
+            SizedBox(height: 8.h),
+          ],
           Text(
             _isAdminFlow
                 ? 'راجع العد الفعلي وحدد فكة الغد وصندوق الترحيل لإغلاق صندوق الصيانة.'
@@ -279,6 +278,53 @@ class _MaintenanceDailyCloseScreenState
               color: _isDark ? Colors.white70 : AppColors.operationalNavy,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _closingStepsCard() {
+    const icons = [
+      Icons.calculate_outlined,
+      Icons.payments_outlined,
+      Icons.compare_arrows_rounded,
+    ];
+    const labels = ['راجع المتوقع', 'أدخل الموجود', 'راجع الفرق والعهدة'];
+    return _surfaceCard(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      child: Row(
+        children: [
+          for (var index = 0; index < labels.length; index++) ...[
+            Expanded(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 14.r,
+                    backgroundColor:
+                        AppColors.primaryColor.withValues(alpha: 0.1),
+                    child: Icon(
+                      icons[index],
+                      size: 15.sp,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    labels[index],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: _titleColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (index < labels.length - 1)
+              Icon(Icons.chevron_left_rounded, color: _mutedColor, size: 18.sp),
+          ],
         ],
       ),
     );
