@@ -285,6 +285,15 @@ class SalesDailySessionTile extends StatelessWidget {
   }
 
   String _subtitle() {
+    if (item.sessionType == 'maintenance') {
+      return [
+        'صندوق الصيانة',
+        if (showEmployee && (item.employeeName?.isNotEmpty ?? false))
+          item.businessDate,
+        'طلبات الصيانة:${item.instantSalesCount}',
+        if (item.closedOnNextDay) 'salesDailyClosedOnNextDayShort'.tr,
+      ].join('  •  ');
+    }
     final parts = <String>[
       item.sessionType == 'sales_orders' ? 'صندوق الطلبيات' : 'صندوق المبيعات',
       if (showEmployee && (item.employeeName?.isNotEmpty ?? false))
@@ -494,8 +503,8 @@ class SalesDailyDetailHeader extends StatelessWidget {
               _meta(Icons.calendar_today_outlined, session.businessDate),
               _meta(Icons.receipt_long_outlined,
                   '${'instant_sales'.tr}: $instantCount'),
-              _meta(Icons.payments_outlined,
-                  '${'cashProfit'.tr}: $profitCount'),
+              _meta(
+                  Icons.payments_outlined, '${'cashProfit'.tr}: $profitCount'),
               if (session.openedAt != null)
                 _meta(Icons.login, _shortTime(session.openedAt!)),
               if (session.closedAt != null)
@@ -574,7 +583,8 @@ class SalesDailyClosingTile extends StatelessWidget {
               if (request.requestedAt != null)
                 Text(
                   _shortTime(request.requestedAt!),
-                  style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade600),
+                  style:
+                      TextStyle(fontSize: 10.sp, color: Colors.grey.shade600),
                 ),
             ],
           ),
@@ -648,7 +658,8 @@ class SalesDailyClosingTile extends StatelessWidget {
 }
 
 class SalesDailySectionTitle extends StatelessWidget {
-  const SalesDailySectionTitle({Key? key, required this.title}) : super(key: key);
+  const SalesDailySectionTitle({Key? key, required this.title})
+      : super(key: key);
 
   final String title;
 

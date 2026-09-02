@@ -9,6 +9,7 @@ import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../sales/data/models/daily_session_model.dart';
+import '../../../sales/presentation/widgets/sales_daily_ui_widgets.dart';
 import '../../data/repositories/maintenance_implement.dart';
 import '../controllers/maintenance_controller.dart';
 
@@ -247,176 +248,172 @@ class _MaintenanceDailyHistoryScreenState
               color: Colors.white,
               fontSize: 22.sp,
               fontWeight: FontWeight.w900,
+              height: 1,
             ),
           ),
-          SizedBox(height: 7.h),
-          Wrap(
-            spacing: 7.w,
-            runSpacing: 5.h,
-            children: [
-              if (controller.canRequestMaintenanceDailyOpen)
-                _whiteAction(
-                  icon: Icons.lock_open_rounded,
-                  label: 'فتح الصندوق',
-                  onTap: () => _openDrawer(context),
-                ),
-              if (controller.canRequestMaintenanceDailyClosing)
-                _whiteAction(
-                  icon: Icons.lock_clock_outlined,
-                  label: 'إغلاق اليوم',
-                  onTap: () async {
-                    await Get.toNamed(AppRoutes.MAINTENANCEDAILYCLOSESCREEN);
-                    await _load();
-                  },
-                ),
-              if (userType == 'admin')
-                _whiteAction(
-                  icon: Icons.pending_actions_outlined,
-                  label: 'طلبات الإغلاق',
-                  onTap: () async {
-                    await Get.toNamed(AppRoutes.MAINTENANCEDAILYADMINSCREEN);
-                    await _load();
-                  },
-                ),
-            ],
+          SizedBox(height: 2.h),
+          Text(
+            'الرصيد الحالي',
+            style: TextStyle(color: Colors.white70, fontSize: 11.sp),
           ),
+          SizedBox(height: 7.h),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.person_outline, color: Colors.white70),
+                SizedBox(width: 5.w),
+                Expanded(
+                  child: Text(
+                    'فتحه: ${employeeName ?? '—'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white, fontSize: 11.sp),
+                  ),
+                ),
+                const Icon(Icons.schedule_outlined, color: Colors.white70),
+                SizedBox(width: 4.w),
+                Text(
+                  _time(active?.openedAt),
+                  style: TextStyle(color: Colors.white, fontSize: 11.sp),
+                ),
+              ],
+            ),
+          ),
+          if (controller.canRequestMaintenanceDailyClosing) ...[
+            SizedBox(height: 7.h),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: color,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () async {
+                  await Get.toNamed(AppRoutes.MAINTENANCEDAILYCLOSESCREEN);
+                  await _load();
+                },
+                icon: const Icon(Icons.lock_clock_outlined),
+                label: const Text('تقديم طلب إغلاق الصندوق'),
+              ),
+            ),
+          ] else if (closing) ...[
+            SizedBox(height: 7.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: Colors.white54),
+              ),
+              child: const Text(
+                'طلب الإغلاق قيد مراجعة الإدارة',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ] else if (controller.canRequestMaintenanceDailyOpen) ...[
+            SizedBox(height: 7.h),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: color,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () => _openDrawer(context),
+                icon: const Icon(Icons.lock_open_rounded),
+                label: const Text('فتح صندوق الصيانة اليومي'),
+              ),
+            ),
+          ],
+          if (userType == 'admin') ...[
+            SizedBox(height: 7.h),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white70),
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () async {
+                  await Get.toNamed(AppRoutes.MAINTENANCEDAILYADMINSCREEN);
+                  await _load();
+                },
+                icon: const Icon(Icons.pending_actions_outlined),
+                label: const Text('طلبات إغلاق الصيانة'),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _whiteAction({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(9.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(9.r),
-          border: Border.all(color: Colors.white38),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 16.sp),
-            SizedBox(width: 5.w),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _time(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '—';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    final hour = parsed.hour % 12 == 0 ? 12 : parsed.hour % 12;
+    final minute = parsed.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${parsed.hour >= 12 ? 'م' : 'ص'}';
   }
 
   Widget _summaryStrip() {
     final all = _history;
-    return Row(
-      children: [
-        _summaryItem('مفتوح', all.where((e) => e.isOpen).length, Colors.green),
-        SizedBox(width: 6.w),
-        _summaryItem(
-          'بانتظار الإغلاق',
-          all.where((e) => e.isClosingRequested).length,
-          Colors.orange,
-        ),
-        SizedBox(width: 6.w),
-        _summaryItem(
-          'مغلق',
-          all.where((e) => e.status == 'closed').length,
-          Colors.blueGrey,
-        ),
-      ],
-    );
-  }
-
-  Widget _summaryItem(String label, int value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.h),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Column(
-          children: [
-            Text('$value',
-                style: TextStyle(
-                    color: color,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w900)),
-            Text(label, style: TextStyle(fontSize: 9.5.sp)),
-          ],
-        ),
-      ),
+    return SalesDailySummaryStrip(
+      openCount: all.where((e) => e.isOpen).length,
+      pendingCount: all.where((e) => e.isClosingRequested).length,
+      closedCount: all.where((e) => e.status == 'closed').length,
     );
   }
 
   Widget _modeSelector() {
     return SegmentedButton<bool>(
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        padding: WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+        ),
+      ),
       segments: const [
         ButtonSegment(
-            value: false, label: Text('اليوم'), icon: Icon(Icons.today)),
+          value: false,
+          icon: Icon(Icons.today_outlined),
+          label: Text('صناديق اليوم'),
+        ),
         ButtonSegment(
-            value: true, label: Text('السجل'), icon: Icon(Icons.history)),
+          value: true,
+          icon: Icon(Icons.history_rounded),
+          label: Text('السجل السابق'),
+        ),
       ],
       selected: {_showHistory},
       onSelectionChanged: (value) => setState(() => _showHistory = value.first),
+      showSelectedIcon: false,
     );
   }
 
   Widget _sessionTile(BuildContext context, DailySessionSummaryModel item) {
-    final color = item.isClosingRequested
-        ? Colors.orange
-        : item.isOpen
-            ? Colors.green
-            : Colors.blueGrey;
-    final balance = item.currencies
-            .firstWhereOrNull((row) => row.currency == 'شيكل')
-            ?.systemBalance ??
-        0;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.r),
-        side: BorderSide(color: color.withValues(alpha: 0.25)),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.10),
-          child: Icon(Icons.build_outlined, color: color),
-        ),
-        title: Text(
-          item.employeeName ?? 'صندوق صيانة',
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-        subtitle: Text(
-          '${item.businessDate} • ${_statusLabel(item.status)}\n'
-          '${item.instantSalesCount} طلب صيانة',
-        ),
-        isThreeLine: true,
-        trailing: Text(
-          '${balance.toStringAsFixed(2)} ₪',
-          style: TextStyle(color: color, fontWeight: FontWeight.w900),
-        ),
-        onTap: () => Get.toNamed(
-          AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
-          arguments: {
-            'session_id': item.id,
-            'maintenance': true,
-          },
-        ),
+    return SalesDailySessionTile(
+      item: item,
+      onTap: () => Get.toNamed(
+        AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+        arguments: {
+          'session_id': item.id,
+          'maintenance': true,
+        },
       ),
     );
   }
@@ -455,12 +452,5 @@ class _MaintenanceDailyHistoryScreenState
     if (amount == null) return;
     await controller.openMaintenanceDailySession(openingBalance: amount);
     await _load();
-  }
-
-  String _statusLabel(String value) {
-    if (value == 'open') return 'مفتوح';
-    if (value == 'closing_requested') return 'بانتظار الإغلاق';
-    if (value == 'closed') return 'مغلق';
-    return value;
   }
 }
