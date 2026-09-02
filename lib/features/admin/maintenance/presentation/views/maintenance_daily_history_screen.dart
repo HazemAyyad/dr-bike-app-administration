@@ -13,7 +13,10 @@ import '../../data/repositories/maintenance_implement.dart';
 import '../controllers/maintenance_controller.dart';
 
 class MaintenanceDailyHistoryScreen extends StatefulWidget {
-  const MaintenanceDailyHistoryScreen({Key? key}) : super(key: key);
+  const MaintenanceDailyHistoryScreen({Key? key, this.embedded = false})
+      : super(key: key);
+
+  final bool embedded;
 
   @override
   State<MaintenanceDailyHistoryScreen> createState() =>
@@ -32,7 +35,14 @@ class _MaintenanceDailyHistoryScreenState
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _load();
+      final args = Get.arguments;
+      final shouldOpen = args is Map && args['openDrawer'] == true;
+      if (mounted && shouldOpen && controller.canRequestMaintenanceDailyOpen) {
+        await _openDrawer(context);
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -82,57 +92,59 @@ class _MaintenanceDailyHistoryScreenState
 
   @override
   Widget build(BuildContext context) {
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _loadError != null
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 42),
+                    SizedBox(height: 10.h),
+                    Text(_loadError!),
+                    SizedBox(height: 10.h),
+                    FilledButton.icon(
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
+                  children: [
+                    _activeCard(context),
+                    SizedBox(height: 7.h),
+                    _summaryStrip(),
+                    SizedBox(height: 7.h),
+                    _modeSelector(),
+                    SizedBox(height: 7.h),
+                    if ((_showHistory ? _history : _today).isEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top: 24.h),
+                        child: const ShowNoData(),
+                      )
+                    else
+                      ...(_showHistory ? _history : _today).map(
+                        (item) => Padding(
+                          padding: EdgeInsets.only(bottom: 6.h),
+                          child: _sessionTile(context, item),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+    if (widget.embedded) return body;
     return Scaffold(
       appBar: const CustomAppBar(
         title: 'صناديق الصيانة اليومية',
         action: false,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _loadError != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 42),
-                      SizedBox(height: 10.h),
-                      Text(_loadError!),
-                      SizedBox(height: 10.h),
-                      FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('إعادة المحاولة'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 18.h),
-                    children: [
-                      _activeCard(context),
-                      SizedBox(height: 7.h),
-                      _summaryStrip(),
-                      SizedBox(height: 7.h),
-                      _modeSelector(),
-                      SizedBox(height: 7.h),
-                      if ((_showHistory ? _history : _today).isEmpty)
-                        Padding(
-                          padding: EdgeInsets.only(top: 24.h),
-                          child: const ShowNoData(),
-                        )
-                      else
-                        ...(_showHistory ? _history : _today).map(
-                          (item) => Padding(
-                            padding: EdgeInsets.only(bottom: 6.h),
-                            child: _sessionTile(context, item),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+      body: body,
     );
   }
 

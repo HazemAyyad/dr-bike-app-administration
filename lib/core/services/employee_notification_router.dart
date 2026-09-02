@@ -64,6 +64,14 @@ class EmployeeNotificationRouter {
           infoMessage: 'salesDailyClosingRejected'.tr,
         );
         return;
+      case 'maintenance_daily_closing_approved':
+      case 'maintenance_daily_closing_rejected':
+      case 'maintenance_daily_previous_day_open':
+        Get.toNamed(
+          AppRoutes.SALESDAILYHISTORYSCREEN,
+          arguments: {'sessionType': 'maintenance'},
+        );
+        return;
     }
 
     if (type == 'employee_daily_tasks' ||

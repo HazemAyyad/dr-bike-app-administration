@@ -87,6 +87,13 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'maintenance_daily_closing_request':
+        case 'maintenance_daily_previous_day_open':
+          Get.toNamed(
+            AppRoutes.SALESDAILYHISTORYSCREEN,
+            arguments: {'sessionType': 'maintenance'},
+          );
+          return;
         default:
           break;
       }

@@ -138,6 +138,40 @@ class _MaintenancePaymentsSection extends StatelessWidget {
   final MaintenanceController controller;
 
   Future<void> _showAddPayment(BuildContext context) async {
+    await controller.loadMaintenanceDailySession();
+    if (!controller.isMaintenanceDailyBoxOpen) {
+      if (!context.mounted) return;
+      final openSession = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('صندوق الصيانة مغلق'),
+          content: const Text(
+            'يجب فتح جلسة صندوق الصيانة قبل تسجيل العربون على الطلب.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.lock_open_rounded),
+              label: const Text('فتح الجلسات اليومية'),
+            ),
+          ],
+        ),
+      );
+      if (openSession == true) {
+        await Get.toNamed(
+          AppRoutes.SALESDAILYHISTORYSCREEN,
+          arguments: {'sessionType': 'maintenance', 'openDrawer': true},
+        );
+        await controller.loadMaintenanceDailySession();
+      }
+      if (!controller.isMaintenanceDailyBoxOpen) return;
+    }
+    if (!context.mounted) return;
+
     final amountController = TextEditingController();
     final noteController = TextEditingController();
     final confirmed = await showDialog<bool>(

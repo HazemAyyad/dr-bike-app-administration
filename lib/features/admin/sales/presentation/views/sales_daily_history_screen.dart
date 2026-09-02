@@ -4,7 +4,11 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../maintenance/presentation/binding/maintenance_binding.dart';
+import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
+import '../../../maintenance/presentation/views/maintenance_daily_history_screen.dart';
 import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
 import '../controllers/sales_daily_history_controller.dart';
@@ -38,12 +42,42 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
     super.initState();
     final args = Get.arguments;
     final requested = args is Map ? '${args['sessionType'] ?? ''}' : '';
-    selectedType =
-        requested == 'sales_orders' ? 'sales_orders' : 'instant_sales';
+    selectedType = requested == 'maintenance'
+        ? 'maintenance'
+        : requested == 'sales_orders'
+            ? 'sales_orders'
+            : 'instant_sales';
+    AppDependencyRegistry.ensureChecks();
+    AppDependencyRegistry.ensureBoxes();
+    AppDependencyRegistry.ensureMaintenance();
+    if (!Get.isRegistered<MaintenanceController>() &&
+        !Get.isPrepared<MaintenanceController>()) {
+      MaintenanceBinding().dependencies();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (selectedType == 'maintenance') {
+      return Scaffold(
+        appBar: const CustomAppBar(title: 'الجلسات اليومية', action: false),
+        body: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 0),
+              child: _DrawerTypeSelector(
+                selectedType: selectedType,
+                onChanged: (value) => setState(() => selectedType = value),
+              ),
+            ),
+            SizedBox(height: 4.h),
+            const Expanded(
+              child: MaintenanceDailyHistoryScreen(embedded: true),
+            ),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       appBar: const CustomAppBar(
         title: 'الجلسات اليومية',
@@ -640,6 +674,15 @@ class _DrawerTypeSelector extends StatelessWidget {
             icon: Icons.local_shipping_outlined,
             selected: selectedType == 'sales_orders',
             onTap: () => onChanged('sales_orders'),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: _TypeButton(
+            label: 'صندوق الصيانة',
+            icon: Icons.build_circle_outlined,
+            selected: selectedType == 'maintenance',
+            onTap: () => onChanged('maintenance'),
           ),
         ),
       ],

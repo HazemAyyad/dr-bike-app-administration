@@ -61,7 +61,10 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               tooltip: 'إدارة إغلاق صناديق الصيانة اليومية',
               icon: const Icon(Icons.pending_actions_outlined),
               onPressed: () async {
-                await Get.toNamed(AppRoutes.MAINTENANCEDAILYADMINSCREEN);
+                await Get.toNamed(
+                  AppRoutes.SALESDAILYHISTORYSCREEN,
+                  arguments: {'sessionType': 'maintenance'},
+                );
                 await controller.loadMaintenanceDailySession();
               },
             ),
@@ -398,7 +401,10 @@ class _MaintenanceDailyBoxButton extends StatelessWidget {
           padding: EdgeInsets.all(2.w),
           visualDensity: VisualDensity.compact,
           onPressed: () async {
-            await Get.toNamed(AppRoutes.MAINTENANCEDAILYHISTORYSCREEN);
+            await Get.toNamed(
+              AppRoutes.SALESDAILYHISTORYSCREEN,
+              arguments: {'sessionType': 'maintenance'},
+            );
             await controller.loadMaintenanceDailySession();
           },
           icon: Badge(
