@@ -1306,32 +1306,185 @@ class SalesOrdersController extends GetxController {
   Future<bool?> _confirmStockReservationChoice() async {
     final context = Get.overlayContext ?? Get.context;
     if (context == null) return null;
-    return showDialog<bool>(
+    return showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        title: const Text('حجز كمية الطلبية؟'),
-        content: const Text(
-          'اختر حجز الكمية لمنع استخدامها في طلبية أخرى، أو احفظ الطلبية بدون حجز. ستظهر عليها علامة واضحة حتى يتم تأكيدها.',
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD1D5DB),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6D4DB5).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: Color(0xFF6D4DB5),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'حجز كمية الطلبية',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'حدد طريقة التعامل مع المخزون قبل الحفظ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'إلغاء',
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _stockReservationChoice(
+                  icon: Icons.inventory_rounded,
+                  title: 'حجز الكمية',
+                  description:
+                      'تُحجز المنتجات لهذه الطلبية ولا تظهر كمتاحة لطلبية أخرى.',
+                  color: const Color(0xFF6D4DB5),
+                  filled: true,
+                  onTap: () => Navigator.pop(sheetContext, true),
+                ),
+                const SizedBox(height: 9),
+                _stockReservationChoice(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'حفظ بدون حجز',
+                  description:
+                      'تبقى الكمية متاحة، وتظهر علامة «غير محجوزة» على الطلبية.',
+                  color: const Color(0xFFB45309),
+                  filled: false,
+                  onTap: () => Navigator.pop(sheetContext, false),
+                ),
+              ],
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('cancel'.tr),
+      ),
+    );
+  }
+
+  Widget _stockReservationChoice({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+    required bool filled,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: filled ? color : color.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: filled ? color : color.withValues(alpha: 0.35),
+            ),
           ),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            icon: const Icon(Icons.inventory_2_outlined),
-            label: const Text('حفظ بدون حجز'),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: filled
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: filled ? Colors.white : color),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: filled ? Colors.white : const Color(0xFF111827),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        height: 1.35,
+                        color: filled
+                            ? Colors.white.withValues(alpha: 0.82)
+                            : const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_left_rounded,
+                color: filled ? Colors.white : color,
+              ),
+            ],
           ),
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            icon: const Icon(Icons.inventory_rounded),
-            label: const Text('حجز الكمية'),
-          ),
-        ],
+        ),
       ),
     );
   }
