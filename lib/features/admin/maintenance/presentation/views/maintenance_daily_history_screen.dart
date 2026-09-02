@@ -519,17 +519,22 @@ class _MaintenanceDailyHistoryScreenState
   }
 
   Future<void> _openDrawer(BuildContext context) async {
-    final input = TextEditingController();
+    var openingBalance = '0';
     final amount = await showDialog<double>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('فتح صندوق الصيانة اليومي'),
         content: TextField(
-          controller: input,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) => openingBalance = value,
+          onSubmitted: (value) => Navigator.pop(
+            dialogContext,
+            double.tryParse(value.trim()) ?? 0,
+          ),
           decoration: const InputDecoration(
             labelText: 'رصيد الافتتاح',
+            hintText: '0',
             suffixText: 'شيكل',
           ),
         ),
@@ -541,14 +546,13 @@ class _MaintenanceDailyHistoryScreenState
           FilledButton(
             onPressed: () => Navigator.pop(
               dialogContext,
-              double.tryParse(input.text.trim()) ?? 0,
+              double.tryParse(openingBalance.trim()) ?? 0,
             ),
             child: const Text('فتح الصندوق'),
           ),
         ],
       ),
     );
-    input.dispose();
     if (amount == null) return;
     await controller.openMaintenanceDailySession(openingBalance: amount);
     await _load();
