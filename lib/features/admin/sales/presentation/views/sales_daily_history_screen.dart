@@ -61,20 +61,12 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
     if (selectedType == 'maintenance') {
       return Scaffold(
         appBar: const CustomAppBar(title: 'الجلسات اليومية', action: false),
-        body: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 0),
-              child: _DrawerTypeSelector(
-                selectedType: selectedType,
-                onChanged: (value) => setState(() => selectedType = value),
-              ),
-            ),
-            SizedBox(height: 4.h),
-            const Expanded(
-              child: MaintenanceDailyHistoryScreen(embedded: true),
-            ),
-          ],
+        body: MaintenanceDailyHistoryScreen(
+          embedded: true,
+          drawerSelector: _DrawerTypeSelector(
+            selectedType: selectedType,
+            onChanged: (value) => setState(() => selectedType = value),
+          ),
         ),
       );
     }

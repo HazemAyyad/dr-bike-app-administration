@@ -14,10 +14,14 @@ import '../../data/repositories/maintenance_implement.dart';
 import '../controllers/maintenance_controller.dart';
 
 class MaintenanceDailyHistoryScreen extends StatefulWidget {
-  const MaintenanceDailyHistoryScreen({Key? key, this.embedded = false})
-      : super(key: key);
+  const MaintenanceDailyHistoryScreen({
+    Key? key,
+    this.embedded = false,
+    this.drawerSelector,
+  }) : super(key: key);
 
   final bool embedded;
+  final Widget? drawerSelector;
 
   @override
   State<MaintenanceDailyHistoryScreen> createState() =>
@@ -68,6 +72,9 @@ class _MaintenanceDailyHistoryScreenState
       _history
         ..clear()
         ..addAll(history);
+      if (userType == 'admin') {
+        await controller.loadMaintenanceDailyClosingRequests();
+      }
     } on TimeoutException {
       _loadError = 'استغرق تحميل الصناديق وقتاً طويلاً';
     } catch (_) {
@@ -120,7 +127,16 @@ class _MaintenanceDailyHistoryScreenState
                   children: [
                     _activeCard(context),
                     SizedBox(height: 7.h),
+                    if (widget.drawerSelector != null) ...[
+                      widget.drawerSelector!,
+                      SizedBox(height: 7.h),
+                    ],
                     _summaryStrip(),
+                    if (userType == 'admin' &&
+                        controller.dailyClosingRequests.isNotEmpty) ...[
+                      SizedBox(height: 7.h),
+                      _inlineClosingRequests(),
+                    ],
                     SizedBox(height: 7.h),
                     _modeSelector(),
                     SizedBox(height: 7.h),
@@ -225,17 +241,6 @@ class _MaintenanceDailyHistoryScreenState
                       status,
                       style: TextStyle(color: Colors.white70, fontSize: 11.sp),
                     ),
-                    if ((open || closing) &&
-                        employeeName != null &&
-                        employeeName.trim().isNotEmpty)
-                      Text(
-                        'المسؤول: $employeeName',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -337,25 +342,6 @@ class _MaintenanceDailyHistoryScreenState
               ),
             ),
           ],
-          if (userType == 'admin') ...[
-            SizedBox(height: 7.h),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white70),
-                  visualDensity: VisualDensity.compact,
-                ),
-                onPressed: () async {
-                  await Get.toNamed(AppRoutes.MAINTENANCEDAILYADMINSCREEN);
-                  await _load();
-                },
-                icon: const Icon(Icons.pending_actions_outlined),
-                label: const Text('طلبات إغلاق الصيانة'),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -376,6 +362,120 @@ class _MaintenanceDailyHistoryScreenState
       openCount: all.where((e) => e.isOpen).length,
       pendingCount: all.where((e) => e.isClosingRequested).length,
       closedCount: all.where((e) => e.status == 'closed').length,
+    );
+  }
+
+  Widget _inlineClosingRequests() {
+    final requests = controller.dailyClosingRequests;
+    return Container(
+      padding: EdgeInsets.all(9.w),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pending_actions_outlined, color: Colors.orange),
+              SizedBox(width: 7.w),
+              Text(
+                'طلبات إغلاق صندوق الصيانة (${requests.length})',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          ...requests.map((request) {
+            final requestId = int.tryParse('${request['id'] ?? ''}');
+            return Container(
+              width: double.infinity,
+              margin: EdgeInsets.only(top: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${request['employee_name'] ?? '—'}',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'تاريخ الصندوق: ${request['business_date'] ?? '—'}\n'
+                    'طلبات الصيانة: ${request['maintenances_count'] ?? 0}',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Wrap(
+                    spacing: 6.w,
+                    runSpacing: 4.h,
+                    children: [
+                      TextButton.icon(
+                        onPressed: requestId == null
+                            ? null
+                            : () async {
+                                await controller.rejectMaintenanceDailyClosing(
+                                  requestId,
+                                );
+                                await _load();
+                              },
+                        icon:
+                            const Icon(Icons.close_rounded, color: Colors.red),
+                        label: const Text(
+                          'رفض',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: requestId == null
+                            ? null
+                            : () async {
+                                await Get.toNamed(
+                                  AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+                                  arguments: {
+                                    'mode': 'review',
+                                    'request': request,
+                                  },
+                                );
+                                await _load();
+                              },
+                        icon: const Icon(Icons.check_rounded),
+                        label: const Text('موافقة'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () async {
+                          await Get.toNamed(
+                            AppRoutes.MAINTENANCEDAILYCLOSESCREEN,
+                            arguments: {
+                              'mode': 'review',
+                              'request': request,
+                            },
+                          );
+                          await _load();
+                        },
+                        icon: const Icon(Icons.tune_rounded),
+                        label: const Text('التفاصيل والترحيل'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
