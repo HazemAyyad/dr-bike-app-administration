@@ -47,27 +47,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               );
             },
           ),
-          if (canManageMaintenanceServicesSettings)
-            IconButton(
-              tooltip: 'إعدادات قسم الصيانة',
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => Get.toNamed(
-                AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
-              ),
-            ),
           _MaintenanceDailyBoxButton(controller: controller),
-          if (userType == 'admin')
-            IconButton(
-              tooltip: 'إدارة إغلاق صناديق الصيانة اليومية',
-              icon: const Icon(Icons.pending_actions_outlined),
-              onPressed: () async {
-                await Get.toNamed(
-                  AppRoutes.SALESDAILYHISTORYSCREEN,
-                  arguments: {'sessionType': 'maintenance'},
-                );
-                await controller.loadMaintenanceDailySession();
-              },
-            ),
           Obx(
             () => IconButton(
               tooltip: 'search'.tr,
@@ -82,6 +62,14 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
+          if (canManageMaintenanceServicesSettings)
+            IconButton(
+              tooltip: 'إعدادات قسم الصيانة',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Get.toNamed(
+                AppRoutes.MAINTENANCESERVICESSETTINGSSCREEN,
+              ),
+            ),
           SizedBox(width: 10.w),
         ],
       ),

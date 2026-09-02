@@ -74,10 +74,8 @@ class NewMaintenanceScreen extends StatelessWidget {
                     _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
                     MaintenanceProductsSection(controller: controller),
-                    if (controller.isEdit.value) ...[
-                      SizedBox(height: 10.h),
-                      _MaintenancePaymentsSection(controller: controller),
-                    ],
+                    SizedBox(height: 10.h),
+                    _MaintenancePaymentsSection(controller: controller),
                     SizedBox(height: 10.h),
                     _MaintenanceMediaPicker(controller: controller),
                     SizedBox(height: 20.h),
@@ -138,6 +136,14 @@ class _MaintenancePaymentsSection extends StatelessWidget {
   final MaintenanceController controller;
 
   Future<void> _showAddPayment(BuildContext context) async {
+    if (controller.maintenanceId == null || controller.maintenanceId!.isEmpty) {
+      Get.snackbar(
+        'احفظ الطلب أولاً',
+        'بعد حفظ طلب الصيانة يمكنك إضافة العربون وتثبيته عليه.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
     await controller.loadMaintenanceDailySession();
     if (!controller.isMaintenanceDailyBoxOpen) {
       if (!context.mounted) return;
@@ -249,7 +255,7 @@ class _MaintenancePaymentsSection extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
-                if (!controller.isDelivered.value && remaining > 0)
+                if (!controller.isDelivered.value)
                   TextButton.icon(
                     onPressed: () => _showAddPayment(context),
                     icon: const Icon(Icons.add_card_outlined),
