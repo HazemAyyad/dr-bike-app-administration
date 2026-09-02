@@ -88,7 +88,11 @@ class AdminDashboardController extends GetxController
     // {'id': '10', 'title': 'partnersDepartment', 'route': ''},
     {'id': '16', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
     {'id': '11', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
-    {'id': '48', 'title': 'dailyBoxes', 'route': AppRoutes.DAILYBOXESSCREEN},
+    {
+      'id': '48',
+      'title': 'dailyBoxes',
+      'route': AppRoutes.SALESDAILYHISTORYSCREEN,
+    },
     {
       'id': '12',
       'title': 'purchasesandReturns',
