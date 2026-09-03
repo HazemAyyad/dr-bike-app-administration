@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../checks/data/models/check_model.dart';
 import '../../../../payment_method/presentation/controllers/payment_controller.dart';
+import '../../../../widgets/unified_partner_selector.dart';
 import '../../controllers/sales_controller.dart';
 import 'instant_sale_payment_summary.dart';
 
@@ -58,61 +58,23 @@ class InstantSalePaymentSection extends StatelessWidget {
         ],
         if (showPartner) ...[
           Obx(
-            () {
-              final isCustomer = controller.selectedCustomersSellers.value;
-              return Row(
-                children: [
-                  Expanded(
-                    child: _PartnerTabCheckbox(
-                      title: 'seller'.tr,
-                      selected: !isCustomer,
-                      onTap: () => controller.setPartnerTab(isCustomer: false),
-                    ),
-                  ),
-                  Expanded(
-                    child: _PartnerTabCheckbox(
-                      title: 'customer'.tr,
-                      selected: isCustomer,
-                      onTap: () => controller.setPartnerTab(isCustomer: true),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          SizedBox(height: 10.h),
-          Obx(
-            () => Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomDropdownFieldWithSearch(
-                    tital: controller.partnerDropdownTitle,
-                    hint: controller.partnerDropdownHint,
-                    isRequired: false,
-                    items: controller.selectedCustomersSellers.value
-                        ? controller.allCustomersList
-                        : controller.allSellersList,
-                    value: controller.selectedPartner.value,
-                    onChanged: (value) {
-                      controller.onPartnerSelected(
-                        value is SellerModel ? value : null,
-                      );
-                    },
-                    validator: (_) => null,
-                    itemAsString: (item) => item.name,
-                    compareFn: (a, b) => a.id == b.id,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => controller.openAddPartnerScreen(),
-                  icon: Icon(
-                    Icons.add_circle_sharp,
-                    color: AppColors.primaryColor,
-                    size: 32.sp,
-                  ),
-                ),
-              ],
+            () => UnifiedPartnerSelector<SellerModel>(
+              customers: controller.allCustomersList,
+              sellers: controller.allSellersList,
+              selected: controller.selectedPartner.value,
+              selectedIsSeller: !controller.selectedCustomersSellers.value,
+              idOf: (item) => item.id,
+              nameOf: (item) => item.name,
+              phoneOf: (item) => item.phone,
+              onSelected: (item, isSeller) {
+                controller.selectedCustomersSellers.value = !isSeller;
+                controller.onPartnerSelected(item);
+              },
+              onCleared: () => controller.onPartnerSelected(null),
+              onAddRequested: (isSeller) async {
+                controller.setPartnerTab(isCustomer: !isSeller);
+                await controller.openAddPartnerScreen();
+              },
             ),
           ),
           SizedBox(height: 12.h),
@@ -190,43 +152,6 @@ class _MissingDailySalesBoxNotice extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: Colors.red.shade700,
         ),
-      ),
-    );
-  }
-}
-
-class _PartnerTabCheckbox extends StatelessWidget {
-  const _PartnerTabCheckbox({
-    required this.title,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8.r),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Checkbox(
-            value: selected,
-            onChanged: (_) => onTap(),
-            activeColor: AppColors.primaryColor,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          Flexible(
-            child: Text(
-              title.tr,
-              style: TextStyle(fontSize: 14.sp),
-            ),
-          ),
-        ],
       ),
     );
   }

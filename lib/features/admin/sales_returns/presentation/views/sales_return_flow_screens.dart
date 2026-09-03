@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../widgets/unified_partner_selector.dart';
 import '../../data/sales_return_models.dart';
 import '../controllers/sales_returns_controller.dart';
 
@@ -16,89 +17,48 @@ class SalesReturnPersonScreen extends GetView<SalesReturnsController> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: const CustomAppBar(title: 'فاتورة مرتجع مبيعات', action: false),
-        body: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              onChanged: controller.updateSearch,
-              decoration: InputDecoration(
-                hintText: 'ابحث بالاسم أو رقم الهاتف',
-                prefixIcon: const Icon(Icons.search_rounded),
-                filled: true,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none),
-              ),
-            ),
-          ),
-          Obx(() => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                        value: 'customer',
-                        label: Text('الزبائن'),
-                        icon: Icon(Icons.people_outline)),
-                    ButtonSegment(
-                        value: 'seller',
-                        label: Text('التجار / الموردون'),
-                        icon: Icon(Icons.storefront_outlined)),
-                  ],
-                  selected: {controller.personType.value},
-                  onSelectionChanged: (value) =>
-                      controller.personType.value = value.first,
-                ),
-              )),
-          Expanded(child: Obx(() {
-            if (controller.isLoading.value && controller.people.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final rows = controller.visiblePeople;
-            if (rows.isEmpty) {
-              return const _EmptyState(
-                  icon: Icons.person_search_outlined,
-                  text: 'لا يوجد أشخاص لديهم مشتريات قابلة للإرجاع');
-            }
-            return RefreshIndicator(
-              onRefresh: controller.loadPeople,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: rows.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, index) {
-                  final person = rows[index];
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(
-                          color: AppColors.operationalCardBorder),
-                    ),
-                    child: ListTile(
-                      onTap: () => controller.choosePerson(person),
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            AppColors.primaryColor.withValues(alpha: .12),
-                        child: Icon(
-                            person.isCustomer
-                                ? Icons.person_outline
-                                : Icons.storefront_outlined,
-                            color: AppColors.primaryColor),
-                      ),
-                      title: Text(person.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text(
-                          '${person.typeLabel}${person.phone.isEmpty ? '' : ' • ${person.phone}'}'),
-                      trailing: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 18),
-                    ),
-                  );
-                },
-              ),
+        body: Obx(() {
+          if (controller.isLoading.value && controller.people.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.people.isEmpty) {
+            return const _EmptyState(
+              icon: Icons.person_search_outlined,
+              text: 'لا يوجد أشخاص لديهم مشتريات قابلة للإرجاع',
             );
-          })),
-        ]),
+          }
+          return RefreshIndicator(
+            onRefresh: controller.loadPeople,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                UnifiedPartnerSelector<SalesReturnPerson>(
+                  customers: controller.people
+                      .where((person) => person.isCustomer)
+                      .toList(),
+                  sellers: controller.people
+                      .where((person) => !person.isCustomer)
+                      .toList(),
+                  selected: controller.person.value,
+                  selectedIsSeller:
+                      controller.person.value?.isCustomer == false,
+                  idOf: (person) => person.id,
+                  nameOf: (person) => person.name,
+                  phoneOf: (person) => person.phone,
+                  requiredSelection: true,
+                  title: 'اختر صاحب الفاتورة المرتجعة',
+                  onSelected: (person, _) => controller.choosePerson(person),
+                  onCleared: () => controller.person.value = null,
+                ),
+                const SizedBox(height: 18),
+                const _EmptyState(
+                  icon: Icons.assignment_return_outlined,
+                  text: 'اختر الزبون أو المورد لعرض المنتجات التي اشتراها',
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -123,6 +83,54 @@ class _SalesReturnProductPickerScreenState
     super.dispose();
   }
 
+  Future<void> _changePerson() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: SingleChildScrollView(
+              child: Obx(() => UnifiedPartnerSelector<SalesReturnPerson>(
+                    customers: controller.people
+                        .where((person) => person.isCustomer)
+                        .toList(),
+                    sellers: controller.people
+                        .where((person) => !person.isCustomer)
+                        .toList(),
+                    selected: controller.person.value,
+                    selectedIsSeller:
+                        controller.person.value?.isCustomer == false,
+                    idOf: (person) => person.id,
+                    nameOf: (person) => person.name,
+                    phoneOf: (person) => person.phone,
+                    requiredSelection: true,
+                    title: 'تغيير المشتري',
+                    onSelected: (person, _) async {
+                      final loaded = await controller.changePerson(person);
+                      if (loaded && sheetContext.mounted) {
+                        search.clear();
+                        Navigator.pop(sheetContext);
+                        setState(() {});
+                      }
+                    },
+                    onCleared: () {},
+                  )),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -144,15 +152,47 @@ class _SalesReturnProductPickerScreenState
           ],
         ),
         body: Column(children: [
-          Obx(() => Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withValues(alpha: .08),
-                    borderRadius: BorderRadius.circular(14)),
-                child: Text('المشتري: ${controller.person.value?.name ?? '-'}',
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+          Obx(() => Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+                child: Material(
+                  color: AppColors.primaryColor.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: _changePerson,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 9),
+                      child: Row(children: [
+                        const Icon(Icons.person_outline,
+                            color: AppColors.primaryColor),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('المشتري',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.black54)),
+                              Text(controller.person.value?.name ?? '-',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                        const Text('تعديل',
+                            style: TextStyle(
+                                color: AppColors.primaryColor,
+                                fontWeight: FontWeight.w700)),
+                        const SizedBox(width: 3),
+                        const Icon(Icons.edit_outlined,
+                            size: 18, color: AppColors.primaryColor),
+                      ]),
+                    ),
+                  ),
+                ),
               )),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -160,7 +200,7 @@ class _SalesReturnProductPickerScreenState
               controller: search,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'ابحث بالمنتج أو رقم الفاتورة',
+                hintText: 'ابحث برقم الفاتورة أو المنتج',
                 prefixIcon: const Icon(Icons.search),
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -168,29 +208,30 @@ class _SalesReturnProductPickerScreenState
             ),
           ),
           Expanded(child: Obx(() {
-            final rows = controller.filteredItems(search.text);
-            if (rows.isEmpty) {
+            final invoices = controller.filteredInvoices(search.text);
+            if (invoices.isEmpty) {
               return const _EmptyState(
                   icon: Icons.inventory_2_outlined,
-                  text: 'لا توجد منتجات متبقية قابلة للإرجاع');
+                  text: 'لا توجد فواتير فيها منتجات قابلة للإرجاع');
             }
             final width = MediaQuery.sizeOf(context).width;
-            final count = width >= 1100
-                ? 4
-                : width >= 700
-                    ? 3
-                    : 2;
             return GridView.builder(
               padding: const EdgeInsets.all(14),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: count,
+                crossAxisCount: 3,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: width < 500 ? .72 : .9,
+                childAspectRatio: width < 500
+                    ? .62
+                    : width < 900
+                        ? .82
+                        : 1.05,
               ),
-              itemCount: rows.length,
-              itemBuilder: (_, index) =>
-                  _ReturnProductCard(item: rows[index], controller: controller),
+              itemCount: invoices.length,
+              itemBuilder: (_, index) => _ReturnInvoiceCard(
+                invoice: invoices[index],
+                controller: controller,
+              ),
             );
           })),
           SafeArea(
@@ -216,8 +257,200 @@ class _SalesReturnProductPickerScreenState
   }
 }
 
-class _ReturnProductCard extends StatelessWidget {
-  const _ReturnProductCard({required this.item, required this.controller});
+class _ReturnInvoiceCard extends StatelessWidget {
+  const _ReturnInvoiceCard({required this.invoice, required this.controller});
+
+  final SalesReturnInvoiceGroup invoice;
+  final SalesReturnsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final selectedCount = invoice.items
+          .where((item) => controller.selected.containsKey(item.key))
+          .length;
+      return Material(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showInvoiceProducts(context),
+          child: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: selectedCount > 0
+                      ? AppColors.primaryColor
+                      : AppColors.operationalCardBorder,
+                  width: selectedCount > 0 ? 2 : 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(invoice.sourceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.grey.shade700, fontSize: 10)),
+                  ),
+                  if (selectedCount > 0)
+                    CircleAvatar(
+                      radius: 9,
+                      backgroundColor: AppColors.primaryColor,
+                      child: Text('$selectedCount',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                ]),
+                const SizedBox(height: 7),
+                Text(invoice.invoiceSerial,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13)),
+                const SizedBox(height: 5),
+                Text(_formatInvoiceDate(invoice.invoiceDate),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        TextStyle(fontSize: 10.5, color: Colors.grey.shade700)),
+                const Spacer(),
+                Text('${invoice.items.length} أصناف',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text('${invoice.availablePieces} قطعة متاحة',
+                    style:
+                        TextStyle(fontSize: 10.5, color: Colors.grey.shade700)),
+                const SizedBox(height: 4),
+                Text('${invoice.availableValue.toStringAsFixed(2)} ₪',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: AppColors.primaryColor,
+                        fontWeight: FontWeight.w900)),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  height: 34,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showInvoiceProducts(context),
+                    icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                    label:
+                        const Text('المنتجات', style: TextStyle(fontSize: 10)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> _showInvoiceProducts(BuildContext context) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => _InvoiceProductsSheet(
+          invoice: invoice,
+          controller: controller,
+        ),
+      );
+
+  String _formatInvoiceDate(String raw) {
+    final date = DateTime.tryParse(raw);
+    if (date == null) return raw;
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+class _InvoiceProductsSheet extends StatelessWidget {
+  const _InvoiceProductsSheet({
+    required this.invoice,
+    required this.controller,
+  });
+
+  final SalesReturnInvoiceGroup invoice;
+  final SalesReturnsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: SafeArea(
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .78,
+          maxChildSize: .94,
+          minChildSize: .45,
+          builder: (_, scrollController) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                child: Row(children: [
+                  const Icon(Icons.receipt_long_outlined,
+                      color: AppColors.primaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('فاتورة ${invoice.invoiceSerial}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w900, fontSize: 16)),
+                        Text('${invoice.items.length} أصناف قابلة للإرجاع',
+                            style: const TextStyle(
+                                color: Colors.black54, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ]),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: invoice.items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, index) => _ReturnProductRow(
+                    item: invoice.items[index],
+                    controller: controller,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.check),
+                    label: const Text('تم اختيار المنتجات'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReturnProductRow extends StatelessWidget {
+  const _ReturnProductRow({required this.item, required this.controller});
+
   final SalesReturnAvailableItem item;
   final SalesReturnsController controller;
 
@@ -226,68 +459,70 @@ class _ReturnProductCard extends StatelessWidget {
     return Obx(() {
       final selected = controller.selected.containsKey(item.key);
       return Material(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        color: selected
+            ? AppColors.primaryColor.withValues(alpha: .06)
+            : Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: () => controller.toggle(item),
           child: Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: selected
-                      ? AppColors.primaryColor
-                      : AppColors.operationalCardBorder,
-                  width: selected ? 2 : 1),
+                color: selected
+                    ? AppColors.primaryColor
+                    : AppColors.operationalCardBorder,
+              ),
             ),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Checkbox(
-                    value: selected, onChanged: (_) => controller.toggle(item)),
-                Expanded(
-                    child: Text('فاتورة ${item.invoiceSerial}',
+            child: Row(children: [
+              Checkbox(
+                  value: selected, onChanged: (_) => controller.toggle(item)),
+              _ProductImage(path: item.image, size: 52),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.productName,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    if (item.sizeLabel.isNotEmpty || item.colorLabel.isNotEmpty)
+                      Text(
+                        [item.sizeLabel, item.colorLabel]
+                            .where((value) => value.isNotEmpty)
+                            .join(' • '),
                         style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600))),
-              ]),
-              Expanded(child: Center(child: _ProductImage(path: item.image))),
-              Text(item.productName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800)),
-              if (item.sizeLabel.isNotEmpty || item.colorLabel.isNotEmpty)
-                Text(
-                    [item.sizeLabel, item.colorLabel]
-                        .where((e) => e.isNotEmpty)
-                        .join(' • '),
-                    style:
-                        TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-              const SizedBox(height: 4),
-              Text('${item.originalUnitPrice.toStringAsFixed(2)} ₪',
-                  style: const TextStyle(
-                      color: AppColors.primaryColor,
-                      fontWeight: FontWeight.w800)),
-              Text('المتاح: ${item.availableQuantity}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
-              if (selected) ...[
-                const SizedBox(height: 6),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            color: Colors.black54, fontSize: 11),
+                      ),
+                    Text(
+                      '${item.originalUnitPrice.toStringAsFixed(2)} ₪ • المتاح ${item.availableQuantity}',
+                      style: const TextStyle(
+                          color: AppColors.primaryColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Row(mainAxisSize: MainAxisSize.min, children: [
                   _QtyButton(
                       icon: Icons.remove,
                       onTap: () =>
                           controller.changeQuantity(item, item.quantity - 1)),
                   Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('${item.quantity}',
-                          style: const TextStyle(fontWeight: FontWeight.w800))),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('${item.quantity}',
+                        style: const TextStyle(fontWeight: FontWeight.w900)),
+                  ),
                   _QtyButton(
                       icon: Icons.add,
                       onTap: () =>
                           controller.changeQuantity(item, item.quantity + 1)),
                 ]),
-              ],
             ]),
           ),
         ),
@@ -346,13 +581,13 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
           final total = controller.total;
           final credit = (total - cashValue).clamp(0, total).toDouble();
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             children: [
               _SummaryHeader(
                   person: controller.person.value,
                   items: rows.length,
                   total: total),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               ...rows.map((item) => _CheckoutLine(
                     item: item,
                     price: prices[item.key]!,
@@ -360,62 +595,74 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
                     controller: controller,
                     onChanged: () => setState(() {}),
                   )),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     side: const BorderSide(
                         color: AppColors.operationalCardBorder)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text('تسوية قيمة المرتجع',
                             style: TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 17)),
-                        const SizedBox(height: 6),
-                        const Text(
-                            'اكتب ما سيتم رده نقدًا من صندوق المبيعات، والباقي يسجل رصيدًا للطرف.'),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: cash,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          onChanged: (_) => setState(() {}),
-                          decoration: const InputDecoration(
-                              labelText: 'المبلغ النقدي المسترد',
-                              suffixText: '₪',
-                              border: OutlineInputBorder()),
-                        ),
-                        const SizedBox(height: 12),
+                                fontWeight: FontWeight.w800, fontSize: 15)),
+                        const SizedBox(height: 3),
+                        const Text('النقدي من الصندوق، والباقي يسجل رصيدًا.',
+                            style: TextStyle(fontSize: 11)),
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(
+                            child: TextField(
+                              controller: cash,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                              onChanged: (_) => setState(() {}),
+                              decoration: const InputDecoration(
+                                labelText: 'النقدي المسترد',
+                                suffixText: '₪',
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: note,
+                              maxLines: 1,
+                              decoration: const InputDecoration(
+                                labelText: 'سبب المرتجع / ملاحظة',
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 8),
                         Row(children: [
                           Expanded(
                               child: _AmountTile(
                                   label: 'نقدي من الصندوق',
                                   value: cashValue,
                                   color: Colors.red.shade700)),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Expanded(
                               child: _AmountTile(
                                   label: 'رصيد في دفتر الديون',
                                   value: credit,
                                   color: Colors.blue.shade700)),
                         ]),
-                        const SizedBox(height: 12),
-                        TextField(
-                            controller: note,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                                labelText: 'سبب المرتجع / ملاحظات',
-                                border: OutlineInputBorder())),
                       ]),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               SizedBox(
-                height: 52,
+                height: 46,
                 child: FilledButton.icon(
                   onPressed: controller.isSubmitting.value
                       ? null
@@ -433,7 +680,7 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
                       : 'إتمام فاتورة المرتجع'),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
             ],
           );
         }),
@@ -459,74 +706,80 @@ class _CheckoutLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 7),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: AppColors.operationalCardBorder)),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(9),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            _ProductImage(path: item.image, size: 58),
-            const SizedBox(width: 10),
+            _ProductImage(path: item.image, size: 44),
+            const SizedBox(width: 8),
             Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(item.productName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w800)),
                   Text(
                       'فاتورة ${item.invoiceSerial} • السعر الأصلي ${item.originalUnitPrice.toStringAsFixed(2)} ₪',
                       style:
-                          TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          TextStyle(color: Colors.grey.shade600, fontSize: 10)),
                 ])),
+            Text('${item.lineTotal.toStringAsFixed(2)} ₪',
+                style: const TextStyle(
+                    color: AppColors.primaryColor,
+                    fontWeight: FontWeight.w900)),
           ]),
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
           Row(children: [
-            const Text('الكمية'),
-            const Spacer(),
             _QtyButton(
                 icon: Icons.remove,
                 onTap: () =>
                     controller.changeQuantity(item, item.quantity - 1)),
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text('${item.quantity}',
                     style: const TextStyle(fontWeight: FontWeight.w800))),
             _QtyButton(
                 icon: Icons.add,
                 onTap: () =>
                     controller.changeQuantity(item, item.quantity + 1)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: price,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'سعر الوحدة',
+                  suffixText: '₪',
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  item.unitPrice =
+                      double.tryParse(value.replaceAll(',', '')) ?? 0;
+                  controller.selected.refresh();
+                  onChanged();
+                },
+              ),
+            ),
           ]),
-          const SizedBox(height: 10),
-          TextField(
-            controller: price,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-                labelText: 'سعر الوحدة المسترد',
-                suffixText: '₪',
-                border: OutlineInputBorder()),
-            onChanged: (value) {
-              item.unitPrice = double.tryParse(value.replaceAll(',', '')) ?? 0;
-              controller.selected.refresh();
-              onChanged();
-            },
-          ),
           if (item.priceWasChanged) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             TextField(
               controller: reason,
               decoration: const InputDecoration(
                   labelText: 'سبب تعديل السعر (إلزامي)',
+                  isDense: true,
                   border: OutlineInputBorder()),
               onChanged: (value) => item.priceOverrideReason = value,
             ),
           ],
-          const SizedBox(height: 8),
-          Align(
-              alignment: Alignment.centerLeft,
-              child: Text('الإجمالي: ${item.lineTotal.toStringAsFixed(2)} ₪',
-                  style: const TextStyle(fontWeight: FontWeight.w800))),
         ]),
       ),
     );
@@ -541,16 +794,17 @@ class _SummaryHeader extends StatelessWidget {
   final double total;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
             color: AppColors.secondaryColor,
-            borderRadius: BorderRadius.circular(18)),
+            borderRadius: BorderRadius.circular(12)),
         child: Row(children: [
           const CircleAvatar(
+              radius: 18,
               backgroundColor: Colors.white24,
               child:
                   Icon(Icons.assignment_return_outlined, color: Colors.white)),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           Expanded(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,15 +813,16 @@ class _SummaryHeader extends StatelessWidget {
                     style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: 17)),
+                        fontSize: 15)),
                 Text('$items أصناف محددة',
-                    style: const TextStyle(color: Colors.white70)),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 11)),
               ])),
           Text('${total.toStringAsFixed(2)} ₪',
               style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 18)),
+                  fontSize: 16)),
         ]),
       );
 }
@@ -580,13 +835,13 @@ class _AmountTile extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
         decoration: BoxDecoration(
             color: color.withValues(alpha: .08),
-            borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(9)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label, style: TextStyle(color: color, fontSize: 12)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text('${value.toStringAsFixed(2)} ₪',
               style: TextStyle(color: color, fontWeight: FontWeight.w900)),
         ]),

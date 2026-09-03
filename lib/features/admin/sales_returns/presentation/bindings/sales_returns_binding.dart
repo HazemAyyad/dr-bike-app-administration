@@ -6,9 +6,15 @@ import '../controllers/sales_returns_controller.dart';
 class SalesReturnsBinding extends Bindings {
   @override
   void dependencies() {
+    if (Get.isRegistered<SalesReturnsController>() ||
+        Get.isPrepared<SalesReturnsController>()) {
+      return;
+    }
     Get.lazyPut(
-        () => SalesReturnsController(
-            SalesReturnsApiService(Get.find<DioConsumer>())),
-        fenix: true);
+      () => SalesReturnsController(
+        SalesReturnsApiService(Get.find<DioConsumer>()),
+      ),
+      fenix: true,
+    );
   }
 }

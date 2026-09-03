@@ -92,6 +92,140 @@ class SalesReturnAvailableItem {
       };
 }
 
+class SalesReturnInvoiceGroup {
+  const SalesReturnInvoiceGroup({
+    required this.sourceType,
+    required this.invoiceId,
+    required this.invoiceSerial,
+    required this.invoiceDate,
+    required this.items,
+  });
+
+  final String sourceType;
+  final int invoiceId;
+  final String invoiceSerial;
+  final String invoiceDate;
+  final List<SalesReturnAvailableItem> items;
+
+  String get key => '$sourceType:$invoiceId';
+  String get sourceLabel =>
+      sourceType == 'sales_order' ? 'طلبية مبيعات' : 'بيع فوري';
+  int get availablePieces => items.fold<int>(
+        0,
+        (total, item) => total + item.availableQuantity,
+      );
+  double get availableValue => items.fold<double>(
+        0,
+        (total, item) =>
+            total + item.availableQuantity * item.originalUnitPrice,
+      );
+}
+
+class SalesReturnRecord {
+  const SalesReturnRecord({
+    required this.id,
+    required this.serialNumber,
+    required this.status,
+    required this.totalAmount,
+    required this.cashRefundAmount,
+    required this.creditAmount,
+    required this.currency,
+    required this.partnerName,
+    required this.partnerPhone,
+    required this.partnerType,
+    required this.itemsCount,
+    required this.returnedQuantity,
+    required this.completedAt,
+    required this.note,
+    required this.refundBoxName,
+    required this.items,
+  });
+
+  final int id;
+  final String serialNumber;
+  final String status;
+  final double totalAmount;
+  final double cashRefundAmount;
+  final double creditAmount;
+  final String currency;
+  final String partnerName;
+  final String partnerPhone;
+  final String partnerType;
+  final int itemsCount;
+  final int returnedQuantity;
+  final String completedAt;
+  final String note;
+  final String refundBoxName;
+  final List<SalesReturnRecordItem> items;
+
+  bool get isSeller => partnerType == 'seller';
+
+  factory SalesReturnRecord.fromJson(Map<String, dynamic> json) {
+    final customer = json['customer'] is Map
+        ? Map<String, dynamic>.from(json['customer'] as Map)
+        : null;
+    final seller = json['seller'] is Map
+        ? Map<String, dynamic>.from(json['seller'] as Map)
+        : null;
+    final partner = seller ?? customer ?? const <String, dynamic>{};
+    final refundBox = json['refund_box'] is Map
+        ? Map<String, dynamic>.from(json['refund_box'] as Map)
+        : const <String, dynamic>{};
+    final lines = (json['items'] as List? ?? const [])
+        .whereType<Map>()
+        .map((line) =>
+            SalesReturnRecordItem.fromJson(Map<String, dynamic>.from(line)))
+        .toList();
+    return SalesReturnRecord(
+      id: _asInt(json['id']),
+      serialNumber: '${json['serial_number'] ?? '-'}',
+      status: '${json['status'] ?? 'completed'}',
+      totalAmount: _asDouble(json['total_amount']),
+      cashRefundAmount: _asDouble(json['cash_refund_amount']),
+      creditAmount: _asDouble(json['credit_amount']),
+      currency: '${json['currency'] ?? 'شيكل'}',
+      partnerName: '${partner['name'] ?? '-'}',
+      partnerPhone: '${partner['phone'] ?? ''}',
+      partnerType: seller != null ? 'seller' : 'customer',
+      itemsCount: _asInt(json['items_count'] ?? lines.length),
+      returnedQuantity: _asInt(json['returned_quantity'] ??
+          lines.fold<int>(0, (sum, line) => sum + line.quantity)),
+      completedAt: '${json['completed_at'] ?? json['created_at'] ?? ''}',
+      note: '${json['note'] ?? ''}',
+      refundBoxName: '${refundBox['name'] ?? ''}',
+      items: lines,
+    );
+  }
+}
+
+class SalesReturnRecordItem {
+  const SalesReturnRecordItem({
+    required this.productName,
+    required this.quantity,
+    required this.unitPrice,
+    required this.originalUnitPrice,
+    required this.lineTotal,
+    required this.priceOverrideReason,
+  });
+
+  final String productName;
+  final int quantity;
+  final double unitPrice;
+  final double originalUnitPrice;
+  final double lineTotal;
+  final String priceOverrideReason;
+
+  factory SalesReturnRecordItem.fromJson(Map<String, dynamic> json) =>
+      SalesReturnRecordItem(
+        productName: '${json['product_name'] ?? '-'}',
+        quantity: _asInt(json['quantity']),
+        unitPrice: _asDouble(json['unit_price']),
+        originalUnitPrice: _asDouble(json['original_unit_price']),
+        lineTotal: _asDouble(json['line_total']),
+        priceOverrideReason: '${json['price_override_reason'] ?? ''}',
+      );
+}
+
 int _asInt(dynamic value) =>
     value is num ? value.toInt() : int.tryParse('$value') ?? 0;
 double _asDouble(dynamic value) =>

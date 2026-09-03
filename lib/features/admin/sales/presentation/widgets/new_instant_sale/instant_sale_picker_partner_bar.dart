@@ -2,47 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../widgets/unified_partner_selector.dart';
 import '../../../../checks/data/models/check_model.dart';
 import '../../controllers/sales_controller.dart';
 
-/// App bar icon — opens partner selection sheet.
 class InstantSalePickerPartnerIcon extends StatelessWidget {
   const InstantSalePickerPartnerIcon({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SalesController>();
-
     return Obx(() {
       final hasPartner = controller.hasPickerPartner;
-      final isCustomer = controller.pickerPartnerIsCustomer.value;
-
       return IconButton(
-        tooltip: 'instantSaleSelectPartner'.tr,
+        tooltip: 'اختيار الزبون أو المورد',
         onPressed: () => showInstantSalePickerPartnerSheet(context),
         icon: Stack(
           clipBehavior: Clip.none,
           children: [
             Icon(
-              hasPartner ? Icons.person : Icons.person_outline,
+              hasPartner ? Icons.person_pin_circle : Icons.person_add_alt_1,
               color: AppColors.primaryColor,
               size: 26.sp,
             ),
             if (hasPartner)
               Positioned(
-                right: -1,
-                top: -1,
+                left: -2,
+                top: -2,
                 child: Container(
-                  width: 8.w,
-                  height: 8.w,
+                  width: 9.w,
+                  height: 9.w,
                   decoration: BoxDecoration(
-                    color: isCustomer
-                        ? AppColors.primaryColor
+                    color: controller.pickerPartnerIsCustomer.value
+                        ? Colors.green
                         : const Color(0xFFE65100),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1),
+                    border: Border.all(color: Colors.white),
                   ),
                 ),
               ),
@@ -57,12 +53,11 @@ Future<void> showInstantSalePickerPartnerSheet(BuildContext context) async {
   final controller = Get.find<SalesController>();
   await controller.ensurePickerPartnersLoaded();
   if (!context.mounted) return;
-
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => const _PickerPartnerSheet(),
+    builder: (_) => const _PickerPartnerSheet(),
   );
 }
 
@@ -72,309 +67,34 @@ class _PickerPartnerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SalesController>();
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Padding(
-        padding: EdgeInsets.only(bottom: bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Container(
           margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
-          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14.r),
+            borderRadius: BorderRadius.circular(16.r),
           ),
-          child: Obx(() {
-            final isCustomer = controller.pickerPartnerIsCustomer.value;
-            final items = isCustomer
-                ? controller.pickerCustomersList
-                : controller.pickerSellersList;
-            final selected = controller.pickerSelectedPartner.value;
-            final hasPartner = controller.hasPickerPartner;
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'instantSaleSelectPartner'.tr,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'instantSalePickerPartnerHint'.tr,
-                  style:
-                      TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
-                ),
-                SizedBox(height: 12.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _PartnerChip(
-                        label: 'customer'.tr,
-                        selected: isCustomer,
-                        onTap: () =>
-                            controller.setPickerPartnerTab(isCustomer: true),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: _PartnerChip(
-                        label: 'seller'.tr,
-                        selected: !isCustomer,
-                        onTap: () =>
-                            controller.setPickerPartnerTab(isCustomer: false),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                CustomDropdownFieldWithSearch(
-                  tital: isCustomer ? 'customer'.tr : 'seller'.tr,
-                  hint:
-                      isCustomer ? 'customerNameExample'.tr : 'sellerName1'.tr,
-                  isRequired: false,
-                  items: items,
-                  value: selected,
-                  onChanged: (value) => controller.onPickerPartnerSelected(
-                    value is SellerModel ? value : null,
-                  ),
-                  validator: (_) => null,
-                  itemAsString: (item) => item.name,
-                  compareFn: (a, b) => a.id == b.id,
-                ),
-                SizedBox(height: 6.h),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => _showQuickAddPartnerDialog(
-                      context,
-                      isCustomer: isCustomer,
-                    ),
-                    icon: Icon(Icons.person_add_alt_1, size: 18.sp),
-                    label: Text(
-                      isCustomer ? 'quickAddCustomer'.tr : 'quickAddSeller'.tr,
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      padding: EdgeInsets.symmetric(horizontal: 6.w),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ),
-                if (selected != null) ...[
-                  SizedBox(height: 8.h),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      selected.name,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-                SizedBox(height: 14.h),
-                Row(
-                  children: [
-                    if (hasPartner)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await controller.clearPickerPartner();
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          child: Text('clear'.tr),
-                        ),
-                      ),
-                    if (hasPartner) SizedBox(width: 8.w),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text('confirm'.tr),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-/// نافذة إضافة سريعة لزبون/تاجر — اسم (إلزامي) ورقم هاتف (اختياري).
-Future<void> _showQuickAddPartnerDialog(
-  BuildContext context, {
-  required bool isCustomer,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => _QuickAddPartnerDialog(isCustomer: isCustomer),
-  );
-}
-
-class _QuickAddPartnerDialog extends StatefulWidget {
-  const _QuickAddPartnerDialog({required this.isCustomer});
-
-  final bool isCustomer;
-
-  @override
-  State<_QuickAddPartnerDialog> createState() => _QuickAddPartnerDialogState();
-}
-
-class _QuickAddPartnerDialogState extends State<_QuickAddPartnerDialog> {
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<SalesController>();
-    final isCustomer = widget.isCustomer;
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14.r),
-        ),
-        title: Text(
-          isCustomer ? 'quickAddCustomer'.tr : 'quickAddSeller'.tr,
-          style: TextStyle(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryColor,
-          ),
-        ),
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: isCustomer ? 'customerName'.tr : 'sellerName1'.tr,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-                validator: (value) => (value == null || value.trim().isEmpty)
-                    ? 'requiredField'.tr
-                    : null,
-              ),
-              SizedBox(height: 12.h),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: '${'customerPhoneNumber'.tr} (${'optional'.tr})',
-                  hintText: 'phoneNumberExample'.tr,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('cancel'.tr),
-          ),
-          Obx(
-            () => ElevatedButton(
-              onPressed: controller.pickerQuickAddLoading.value
-                  ? null
-                  : () async {
-                      if (!(_formKey.currentState?.validate() ?? false)) {
-                        return;
-                      }
-                      final ok = await controller.quickAddPartner(
-                        name: _nameController.text,
-                        phone: _phoneController.text,
-                        isCustomer: isCustomer,
-                      );
-                      if (ok && context.mounted) Navigator.pop(context);
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
-                foregroundColor: Colors.white,
-              ),
-              child: controller.pickerQuickAddLoading.value
-                  ? SizedBox(
-                      width: 18.w,
-                      height: 18.w,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text('add'.tr),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PartnerChip extends StatelessWidget {
-  const _PartnerChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected
-          ? AppColors.primaryColor.withValues(alpha: 0.12)
-          : Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(8.r),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8.r),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 10.h),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? AppColors.primaryColor : Colors.grey.shade700,
-            ),
+          child: SingleChildScrollView(
+            child: Obx(() => UnifiedPartnerSelector<SellerModel>(
+                  customers: controller.pickerCustomersList,
+                  sellers: controller.pickerSellersList,
+                  selected: controller.pickerSelectedPartner.value,
+                  selectedIsSeller: !controller.pickerPartnerIsCustomer.value,
+                  idOf: (item) => item.id,
+                  nameOf: (item) => item.name,
+                  phoneOf: (item) => item.phone,
+                  onSelected: (item, isSeller) async {
+                    controller.pickerPartnerIsCustomer.value = !isSeller;
+                    await controller.onPickerPartnerSelected(item);
+                  },
+                  onCleared: controller.clearPickerPartner,
+                  onAddRequested: controller.openAddPickerPartner,
+                )),
           ),
         ),
       ),

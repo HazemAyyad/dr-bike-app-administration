@@ -43,6 +43,34 @@ class SalesReturnsApiService {
     return map;
   }
 
+  Future<List<SalesReturnRecord>> list() async {
+    final Response response = await _api.get(
+      EndPoints.salesReturns,
+      queryParameters: {'per_page': 100},
+    );
+    final map = _map(response.data);
+    _ensureSuccess(map);
+    final payload = map['sales_returns'];
+    final rows = payload is Map ? payload['data'] : payload;
+    return (rows as List? ?? const [])
+        .whereType<Map>()
+        .map(
+            (row) => SalesReturnRecord.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
+
+  Future<SalesReturnRecord> show(int id) async {
+    final Response response = await _api.get(
+      EndPoints.salesReturn,
+      queryParameters: {'sales_return_id': id},
+    );
+    final map = _map(response.data);
+    _ensureSuccess(map);
+    return SalesReturnRecord.fromJson(
+      Map<String, dynamic>.from(map['sales_return'] as Map),
+    );
+  }
+
   Map<String, dynamic> _map(dynamic value) =>
       value is Map ? Map<String, dynamic>.from(value) : {};
   void _ensureSuccess(Map<String, dynamic> map) {

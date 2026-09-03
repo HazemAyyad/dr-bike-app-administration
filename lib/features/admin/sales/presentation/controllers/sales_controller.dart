@@ -586,7 +586,12 @@ class SalesController extends GetxController
   final salesListRevision = 0.obs;
   final isSalesSearchVisible = false.obs;
 
-  List<String> tabs = ['spotSale', 'cashProfit', 'salesOrders'];
+  List<String> tabs = [
+    'spotSale',
+    'cashProfit',
+    'salesOrders',
+    'salesReturns',
+  ];
 
   /// 0 = all, 1 = package only, 2 = mixed, 3 = regular products.
   final instantSalesPackageFilter = 0.obs;
@@ -607,7 +612,8 @@ class SalesController extends GetxController
       clearInstantSalesSearch();
     } else if (currentTab.value == 1) {
       clearProfitSalesSearch();
-    } else if (Get.isRegistered<SalesOrdersController>()) {
+    } else if (currentTab.value == 2 &&
+        Get.isRegistered<SalesOrdersController>()) {
       Get.find<SalesOrdersController>().clearSearch();
     }
   }
@@ -3517,6 +3523,36 @@ class SalesController extends GetxController
     bumpCartRevision();
   }
 
+  Future<void> openAddPickerPartner(bool isSeller) async {
+    final isCustomer = !isSeller;
+    final currentIds = (isCustomer ? pickerCustomersList : pickerSellersList)
+        .map((item) => item.id)
+        .toSet();
+    await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'popOnceOnSuccess': true,
+        'employeeType': isCustomer ? 'customer' : 'seller',
+      },
+    );
+    final refreshed = await allCustomersSellersUsecase.call(
+      endPoint: isCustomer ? EndPoints.all_customers : EndPoints.all_sellers,
+    );
+    if (isCustomer) {
+      pickerCustomersList.assignAll(refreshed);
+    } else {
+      pickerSellersList.assignAll(refreshed);
+    }
+    final added = refreshed.where((item) => !currentIds.contains(item.id));
+    if (added.isEmpty) return;
+    pickerPartnerIsCustomer.value = isCustomer;
+    await onPickerPartnerSelected(
+      added.reduce((first, second) => first.id > second.id ? first : second),
+    );
+  }
+
   final RxBool pickerQuickAddLoading = false.obs;
 
   /// إضافة سريعة لزبون/تاجر من شاشة اختيار الطرف، ثم اختياره مباشرة.
@@ -5811,6 +5847,13 @@ class SalesController extends GetxController
   void onInit() {
     super.onInit();
     _controllerDisposed = false;
+    final routeArguments = Get.arguments;
+    if (routeArguments is Map) {
+      final requestedTab = int.tryParse('${routeArguments['salesTab'] ?? ''}');
+      if (requestedTab != null && requestedTab >= 0 && requestedTab <= 3) {
+        currentTab.value = requestedTab;
+      }
+    }
     loadDailySession();
     loadSuspendedInvoicesCount();
     getInstantSales();

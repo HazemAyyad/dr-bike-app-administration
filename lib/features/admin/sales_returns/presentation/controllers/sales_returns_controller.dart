@@ -11,9 +11,12 @@ class SalesReturnsController extends GetxController {
   final people = <SalesReturnPerson>[].obs;
   final items = <SalesReturnAvailableItem>[].obs;
   final selected = <String, SalesReturnAvailableItem>{}.obs;
+  final returns = <SalesReturnRecord>[].obs;
   final person = Rxn<SalesReturnPerson>();
   final isLoading = false.obs;
   final isSubmitting = false.obs;
+  final isReturnsLoading = false.obs;
+  final returnsSearch = ''.obs;
   final personType = 'customer'.obs;
   final search = ''.obs;
   Timer? _debounce;
@@ -40,6 +43,52 @@ class SalesReturnsController extends GetxController {
         .toList();
   }
 
+  List<SalesReturnInvoiceGroup> filteredInvoices(String query) {
+    final value = query.trim().toLowerCase();
+    final grouped = <String, List<SalesReturnAvailableItem>>{};
+    for (final item in items) {
+      final key = '${item.sourceType}:${item.invoiceId}';
+      grouped.putIfAbsent(key, () => []).add(item);
+    }
+    final invoices = grouped.values.map((lines) {
+      final first = lines.first;
+      return SalesReturnInvoiceGroup(
+        sourceType: first.sourceType,
+        invoiceId: first.invoiceId,
+        invoiceSerial: first.invoiceSerial,
+        invoiceDate: first.invoiceDate,
+        items: lines,
+      );
+    }).where((invoice) {
+      if (value.isEmpty) return true;
+      return invoice.invoiceSerial.toLowerCase().contains(value) ||
+          invoice.sourceLabel.toLowerCase().contains(value) ||
+          invoice.items.any((item) =>
+              item.productName.toLowerCase().contains(value) ||
+              item.productCode.toLowerCase().contains(value));
+    }).toList();
+    invoices.sort((first, second) {
+      final firstDate = DateTime.tryParse(first.invoiceDate);
+      final secondDate = DateTime.tryParse(second.invoiceDate);
+      if (firstDate != null && secondDate != null) {
+        return secondDate.compareTo(firstDate);
+      }
+      return second.invoiceId.compareTo(first.invoiceId);
+    });
+    return invoices;
+  }
+
+  List<SalesReturnRecord> get visibleReturns {
+    final query = returnsSearch.value.trim().toLowerCase();
+    if (query.isEmpty) return returns;
+    return returns
+        .where((row) =>
+            row.serialNumber.toLowerCase().contains(query) ||
+            row.partnerName.toLowerCase().contains(query) ||
+            row.partnerPhone.contains(query))
+        .toList();
+  }
+
   double get total =>
       selected.values.fold(0, (sum, row) => sum + row.lineTotal);
 
@@ -47,6 +96,27 @@ class SalesReturnsController extends GetxController {
   void onInit() {
     super.onInit();
     loadPeople();
+    loadReturns();
+  }
+
+  Future<void> loadReturns() async {
+    isReturnsLoading.value = true;
+    try {
+      returns.assignAll(await api.list());
+    } catch (error) {
+      _error(error);
+    } finally {
+      isReturnsLoading.value = false;
+    }
+  }
+
+  Future<SalesReturnRecord?> loadReturnDetails(int id) async {
+    try {
+      return await api.show(id);
+    } catch (error) {
+      _error(error);
+      return null;
+    }
   }
 
   Future<void> loadPeople() async {
@@ -73,14 +143,23 @@ class SalesReturnsController extends GetxController {
   }
 
   Future<void> choosePerson(SalesReturnPerson value) async {
-    person.value = value;
-    selected.clear();
+    final loaded = await changePerson(value);
+    if (loaded) {
+      Get.toNamed(AppRoutes.SALESRETURNPRODUCTPICKER);
+    }
+  }
+
+  Future<bool> changePerson(SalesReturnPerson value) async {
     isLoading.value = true;
     try {
-      items.assignAll(await api.availableItems(value));
-      Get.toNamed(AppRoutes.SALESRETURNPRODUCTPICKER);
+      final loadedItems = await api.availableItems(value);
+      person.value = value;
+      selected.clear();
+      items.assignAll(loadedItems);
+      return true;
     } catch (error) {
       _error(error);
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -135,7 +214,10 @@ class SalesReturnsController extends GetxController {
       });
       final returnData = result['sales_return'] as Map?;
       final serial = returnData?['serial_number'] ?? '';
-      Get.offAllNamed(AppRoutes.SALESSCREEN);
+      Get.offAllNamed(
+        AppRoutes.SALESSCREEN,
+        arguments: {'salesTab': 3},
+      );
       Get.snackbar(
           'تم إنشاء المرتجع',
           serial.toString().isEmpty

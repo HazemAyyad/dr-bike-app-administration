@@ -3,6 +3,8 @@ import 'package:doctorbike/features/admin/sales/domain/usecases/add_profit_sale.
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sales_usecase.dart';
 import 'package:doctorbike/features/admin/sales_orders/data/repositories/sales_orders_implement.dart';
 import 'package:doctorbike/features/admin/sales_orders/presentation/controllers/sales_orders_controller.dart';
+import 'package:doctorbike/features/admin/sales_returns/data/sales_returns_api_service.dart';
+import 'package:doctorbike/features/admin/sales_returns/presentation/controllers/sales_returns_controller.dart';
 import 'package:get/get.dart';
 
 import '../../data/repositories/sales_implement.dart';
@@ -16,6 +18,7 @@ import '../../domain/usecases/update_product_retail_price_usecase.dart';
 import '../../domain/usecases/invoice_model_usecase.dart';
 import '../controllers/sales_controller.dart';
 import '../controllers/sales_service.dart';
+import '../../../../../core/databases/api/dio_consumer.dart';
 
 class SalesBinding extends Bindings {
   @override
@@ -29,6 +32,16 @@ class SalesBinding extends Bindings {
       Get.lazyPut(
         () => SalesOrdersController(
           repository: Get.find<SalesOrdersImplement>(),
+        ),
+        fenix: true,
+      );
+    }
+
+    if (!Get.isRegistered<SalesReturnsController>() &&
+        !Get.isPrepared<SalesReturnsController>()) {
+      Get.lazyPut(
+        () => SalesReturnsController(
+          SalesReturnsApiService(Get.find<DioConsumer>()),
         ),
         fenix: true,
       );

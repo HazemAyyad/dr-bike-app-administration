@@ -20,6 +20,8 @@ import '../widgets/sales_skeleton_widgets.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../sales_orders/presentation/widgets/sales_orders_table.dart';
 import '../../../sales_orders/presentation/widgets/sales_orders_toolbar.dart';
+import '../../../sales_returns/presentation/controllers/sales_returns_controller.dart';
+import '../../../sales_returns/presentation/widgets/sales_returns_list.dart';
 
 class SalesScreen extends GetView<SalesController> {
   const SalesScreen({Key? key}) : super(key: key);
@@ -55,6 +57,10 @@ class SalesScreen extends GetView<SalesController> {
         children: [
           AppPullToRefresh(
             onRefresh: () async {
+              if (controller.currentTab.value == 3) {
+                await Get.find<SalesReturnsController>().loadReturns();
+                return;
+              }
               if (controller.currentTab.value == 2) {
                 if (Get.isRegistered<SalesOrdersController>()) {
                   await Get.find<SalesOrdersController>().loadOrders();
@@ -106,6 +112,11 @@ class SalesScreen extends GetView<SalesController> {
                         }
                         return const SliverToBoxAdapter(
                           child: SalesOrdersTable(),
+                        );
+                      }
+                      if (tab == 3) {
+                        return const SliverToBoxAdapter(
+                          child: SalesReturnsList(),
                         );
                       }
 
@@ -192,6 +203,7 @@ class _SalesAppBarTabs extends StatelessWidget {
       final ordersController = Get.isRegistered<SalesOrdersController>()
           ? Get.find<SalesOrdersController>()
           : null;
+      final returnsController = Get.find<SalesReturnsController>();
       final items = [
         _SalesSectionTabData(
           label: 'spotSale'.tr,
@@ -208,6 +220,12 @@ class _SalesAppBarTabs extends StatelessWidget {
           icon: Icons.local_shipping_outlined,
           count: ordersController?.totalOrdersCount ?? 0,
         ),
+        _SalesSectionTabData(
+          label: 'مرتجعات المبيعات',
+          icon: Icons.assignment_return_outlined,
+          count: returnsController.returns.length,
+          color: salesReturnColor,
+        ),
       ];
 
       return Row(
@@ -215,6 +233,7 @@ class _SalesAppBarTabs extends StatelessWidget {
         children: List.generate(items.length, (index) {
           final item = items[index];
           final selected = controller.currentTab.value == index;
+          final color = item.color ?? AppColors.secondaryColor;
           return Tooltip(
             message: item.label,
             child: IconButton(
@@ -229,15 +248,13 @@ class _SalesAppBarTabs extends StatelessWidget {
                   width: 34.w,
                   height: 34.w,
                   decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.secondaryColor
-                        : Colors.transparent,
+                    color: selected ? color : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     item.icon,
                     size: 19.sp,
-                    color: selected ? Colors.white : AppColors.secondaryColor,
+                    color: selected ? Colors.white : color,
                   ),
                 ),
               ),
@@ -259,6 +276,30 @@ class _SalesSearchBar extends GetView<SalesController> {
         return const SizedBox.shrink();
       }
       final tab = controller.currentTab.value;
+      if (tab == 3) {
+        final returnsController = Get.find<SalesReturnsController>();
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+          child: SearchBar(
+            shadowColor: WidgetStateProperty.all(Colors.transparent),
+            leading: const Icon(Icons.search),
+            trailing: [
+              IconButton(
+                tooltip: 'cancel'.tr,
+                onPressed: () {
+                  returnsController.returnsSearch.value = '';
+                  controller.closeSalesSearch();
+                },
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+            hintText: 'ابحث برقم المرتجع أو اسم الطرف أو الهاتف',
+            backgroundColor:
+                WidgetStateProperty.all(AppColors.customGreyColor7),
+            onChanged: (value) => returnsController.returnsSearch.value = value,
+          ),
+        );
+      }
       if (tab == 2) {
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
@@ -322,11 +363,13 @@ class _SalesSectionTabData {
     required this.label,
     required this.icon,
     required this.count,
+    this.color,
   });
 
   final String label;
   final IconData icon;
   final int count;
+  final Color? color;
 }
 
 class _SalesTopActions extends StatelessWidget {
@@ -341,7 +384,7 @@ class _SalesTopActions extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (controller.currentTab.value != 2)
+          if (controller.currentTab.value < 2)
             _SmallSalesAction(
               tooltip: (controller.currentTab.value == 0
                       ? controller.instantSalesSortDescending.value
