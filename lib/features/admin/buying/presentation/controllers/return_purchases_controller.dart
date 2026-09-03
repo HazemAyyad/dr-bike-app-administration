@@ -63,6 +63,17 @@ class ReturnPurchasesController extends GetxController {
   final pendingAttachments = <PlatformFile>[].obs;
   final returnDetails = <String, dynamic>{}.obs;
   final detailsLoading = false.obs;
+  final returnableBillsLoading = false.obs;
+  final directOptionsLoading = false.obs;
+  final returnableBillsError = ''.obs;
+  final directOptionsError = ''.obs;
+  bool _returnableBillsLoaded = false;
+  bool _directOptionsLoaded = false;
+
+  bool get returnableBillsLoaded => _returnableBillsLoaded;
+  bool get directOptionsLoaded => _directOptionsLoaded;
+  List<PurchaseReturnDraftLine> get selectedDirectItems =>
+      directItems.where((line) => line.quantity > 0).toList(growable: false);
 
   // Kept for the existing list widget while the new five-state tabs use one source.
   final returnPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
@@ -94,15 +105,22 @@ class ReturnPurchasesController extends GetxController {
     }
   }
 
-  Future<void> loadReturnableBills() async {
-    isLoading.value = true;
+  Future<void> loadReturnableBills({bool force = false}) async {
+    if (returnableBillsLoading.value || (_returnableBillsLoaded && !force)) {
+      return;
+    }
+    returnableBillsLoading.value = true;
+    returnableBillsError.value = '';
     update();
     try {
       final response =
           asMap(await purchaseWorkflowUsecase.returnablePurchaseBills());
       returnableBills.assignAll(mapList(response['bills'], (m) => m));
+      _returnableBillsLoaded = true;
+    } catch (error) {
+      returnableBillsError.value = error.toString();
     } finally {
-      isLoading.value = false;
+      returnableBillsLoading.value = false;
       update();
     }
   }
@@ -136,30 +154,71 @@ class ReturnPurchasesController extends GetxController {
     update();
   }
 
-  Future<void> loadDirectOptions({String? search}) async {
-    isLoading.value = true;
+  Future<void> loadDirectOptions({String? search, bool force = false}) async {
+    final hasSearch = search?.trim().isNotEmpty == true;
+    if (directOptionsLoading.value ||
+        (_directOptionsLoaded && !force && !hasSearch)) {
+      return;
+    }
+    directOptionsLoading.value = true;
+    directOptionsError.value = '';
     update();
     try {
       final response = asMap(await purchaseWorkflowUsecase
           .directPurchaseReturnOptions(search: search));
-      for (final line in directItems) {
-        line.dispose();
-      }
+      final previous = <String, PurchaseReturnDraftLine>{
+        for (final line in directItems) line.selectionKey: line,
+      };
       final loaded = <PurchaseReturnDraftLine>[];
       for (final product in asMapList(response['products'])) {
         final variants = asMapList(product['variants']);
         if (variants.isEmpty) {
-          loaded.add(PurchaseReturnDraftLine.fromDirect(product));
+          loaded.add(_preserveDirectSelection(
+              PurchaseReturnDraftLine.fromDirect(product), previous));
         } else {
-          loaded.addAll(variants.map((variant) =>
-              PurchaseReturnDraftLine.fromDirect({...product, ...variant})));
+          loaded.addAll(variants.map((variant) => _preserveDirectSelection(
+              PurchaseReturnDraftLine.fromDirect({...product, ...variant}),
+              previous)));
         }
       }
+      loaded.addAll(previous.values.where((line) => line.quantity > 0));
+      for (final line in previous.values.where((line) => line.quantity <= 0)) {
+        line.dispose();
+      }
       directItems.assignAll(loaded);
+      _directOptionsLoaded = true;
+    } catch (error) {
+      directOptionsError.value = error.toString();
     } finally {
-      isLoading.value = false;
+      directOptionsLoading.value = false;
       update();
     }
+  }
+
+  PurchaseReturnDraftLine _preserveDirectSelection(
+    PurchaseReturnDraftLine fresh,
+    Map<String, PurchaseReturnDraftLine> previous,
+  ) {
+    final existing = previous.remove(fresh.selectionKey);
+    if (existing == null) return fresh;
+    final preservedQuantity =
+        existing.quantity.clamp(0, fresh.available).toDouble();
+    fresh.quantityController.text =
+        preservedQuantity == preservedQuantity.roundToDouble()
+            ? preservedQuantity.toInt().toString()
+            : preservedQuantity.toStringAsFixed(2);
+    fresh.priceController.text = existing.priceController.text;
+    existing.dispose();
+    return fresh;
+  }
+
+  void changeDirectQuantity(PurchaseReturnDraftLine line, double quantity) {
+    final safe = quantity.clamp(0, line.available).toDouble();
+    line.quantityController.text = safe == safe.roundToDouble()
+        ? safe.toInt().toString()
+        : safe.toStringAsFixed(2);
+    directItems.refresh();
+    update();
   }
 
   Future<bool> saveDraft(BuildContext context, {bool confirm = false}) async {
@@ -598,6 +657,7 @@ class PurchaseReturnDraftLine {
   double get effectiveUnitPrice =>
       double.tryParse(priceController.text) ?? unitPrice;
   double get total => quantity * effectiveUnitPrice;
+  String get selectionKey => '$productId:${sizeId ?? 0}:${sizeColorId ?? 0}';
   factory PurchaseReturnDraftLine.fromJson(Map<String, dynamic> json) =>
       PurchaseReturnDraftLine(
         billItemId: asInt(json['bill_item_id']),

@@ -11,15 +11,31 @@ import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../controllers/bills_controller.dart';
+import 'purchase_return_product_picker_screen.dart';
 
-class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
+class CreatePurchaseReturnScreen extends StatefulWidget {
   const CreatePurchaseReturnScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  State<CreatePurchaseReturnScreen> createState() =>
+      _CreatePurchaseReturnScreenState();
+}
+
+class _CreatePurchaseReturnScreenState
+    extends State<CreatePurchaseReturnScreen> {
+  ReturnPurchasesController get controller =>
+      Get.find<ReturnPurchasesController>();
+
+  @override
+  void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.returnableBills.isEmpty) controller.loadReturnableBills();
+      controller.loadReturnableBills(force: true);
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('إنشاء مرتجع شراء'),
@@ -56,26 +72,40 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
               _SectionCard(
                 title: 'المنتجات',
                 icon: Icons.inventory_2_outlined,
-                child: Column(children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'ابحث باسم المنتج أو رقمه',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await Get.to(
+                              () => const PurchaseReturnProductPickerScreen());
+                          controller.update();
+                        },
+                        icon: const Icon(Icons.grid_view_rounded),
+                        label: Text(controller.selectedDirectItems.isEmpty
+                            ? 'اختيار المنتجات'
+                            : 'تعديل المنتجات المختارة (${controller.selectedDirectItems.length})'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.fromHeight(50.h),
+                          foregroundColor: AppColors.primaryColor,
+                          side: const BorderSide(color: AppColors.primaryColor),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r)),
+                        ),
+                      ),
                     ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (value) =>
-                        controller.loadDirectOptions(search: value),
-                  ),
-                  SizedBox(height: 10.h),
-                  if (controller.directItems.isEmpty)
-                    const Padding(
+                    SizedBox(height: 10.h),
+                    if (controller.selectedDirectItems.isEmpty)
+                      const Padding(
                         padding: EdgeInsets.all(20),
-                        child: Text('لا توجد منتجات'))
-                  else
-                    ...controller.directItems
-                        .map((line) => _ReturnLineTile(line: line)),
-                ]),
+                        child: Text('لم يتم اختيار منتجات للراجع'),
+                      )
+                    else
+                      ...controller.selectedDirectItems
+                          .map((line) => _ReturnLineTile(line: line)),
+                  ],
+                ),
               ),
             ] else ...[
               _SectionCard(
@@ -100,6 +130,31 @@ class CreatePurchaseReturnScreen extends GetView<ReturnPurchasesController> {
                   onChanged: controller.selectBill,
                 ),
               ),
+              if (controller.returnableBillsLoading.value)
+                Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: const LinearProgressIndicator(),
+                ),
+              if (controller.returnableBillsError.value.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'تعذر تحميل الفواتير القابلة للإرجاع',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () =>
+                            controller.loadReturnableBills(force: true),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('إعادة المحاولة'),
+                      ),
+                    ],
+                  ),
+                ),
               SizedBox(height: 12.h),
               if (controller.selectedBill.value != null)
                 _SectionCard(
