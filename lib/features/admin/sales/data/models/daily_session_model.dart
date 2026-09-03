@@ -493,6 +493,7 @@ class DailySessionSummaryModel {
   final bool closedOnNextDay;
   final int instantSalesCount;
   final int profitSalesCount;
+  final int salesOrdersCount;
   final List<DailyCurrencyRow> currencies;
   final List<DailyExpectedOpeningCount> expectedOpeningCounts;
   final bool canClose;
@@ -511,6 +512,7 @@ class DailySessionSummaryModel {
     this.closedOnNextDay = false,
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
+    this.salesOrdersCount = 0,
     this.currencies = const [],
     this.expectedOpeningCounts = const [],
     this.canClose = false,
@@ -537,6 +539,7 @@ class DailySessionSummaryModel {
           json['closed_on_next_day'] == true || json['closed_on_next_day'] == 1,
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
+      salesOrdersCount: asInt(json['sales_orders_count']),
       currencies: mapList(
         json['currencies'],
         (Map<String, dynamic> m) => DailyCurrencyRow.fromJson(m),
@@ -808,6 +811,10 @@ class DailySessionOrderLogRow {
   final double total;
   final String paymentType;
   final double paymentAmount;
+  final double remainingAmount;
+  final int productsCount;
+  final List<DailySessionSaleProductRow> products;
+  final String? createdByName;
   final int? instantSaleId;
   final bool deliveredToday;
   final String? createdAt;
@@ -821,6 +828,10 @@ class DailySessionOrderLogRow {
     this.total = 0,
     this.paymentType = 'cash',
     this.paymentAmount = 0,
+    this.remainingAmount = 0,
+    this.productsCount = 0,
+    this.products = const [],
+    this.createdByName,
     this.instantSaleId,
     this.deliveredToday = false,
     this.createdAt,
@@ -836,6 +847,14 @@ class DailySessionOrderLogRow {
       total: asDouble(json['total']),
       paymentType: asString(json['payment_type'], 'cash'),
       paymentAmount: asDouble(json['payment_amount']),
+      remainingAmount: asDouble(json['remaining_amount']),
+      productsCount: asInt(json['products_count']),
+      products: mapList(
+        json['products'],
+        (Map<String, dynamic> item) =>
+            DailySessionSaleProductRow.fromJson(item),
+      ),
+      createdByName: asNullableString(json['created_by_name']),
       instantSaleId: json['instant_sale_id'] as int?,
       deliveredToday:
           json['delivered_today'] == true || json['delivered_today'] == 1,
