@@ -7,8 +7,10 @@ import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../maintenance/data/repositories/maintenance_implement.dart';
 import '../../../notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../../sales/data/datasources/sales_datasources.dart';
+import '../../../sales/data/models/daily_session_model.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
@@ -669,28 +671,60 @@ class AdminDashboardController extends GetxController
     }
     _checkingClosingRequests = true;
     try {
-      AppDependencyRegistry.ensureSales();
-      final requests =
-          await Get.find<SalesDatasource>().getPendingDailyClosing();
-      if (requests.isEmpty || Get.isDialogOpen == true) return;
+      var salesRequests = <DailyClosingRequestModel>[];
+      var maintenanceRequests = <Map<String, dynamic>>[];
+      try {
+        AppDependencyRegistry.ensureSales();
+        salesRequests =
+            await Get.find<SalesDatasource>().getPendingDailyClosing();
+      } catch (_) {
+        // A failure in one drawer must not hide requests from other drawers.
+      }
+      try {
+        AppDependencyRegistry.ensureMaintenance();
+        final response = await Get.find<MaintenanceImplement>()
+            .maintenanceDatasource
+            .getPendingDailyClosing();
+        final rows = response is Map ? response['closing_requests'] : null;
+        maintenanceRequests = rows is List
+            ? rows
+                .whereType<Map>()
+                .map((row) => Map<String, dynamic>.from(row))
+                .toList()
+            : <Map<String, dynamic>>[];
+      } catch (_) {
+        // Keep showing sales/order requests if maintenance is unavailable.
+      }
+      if ((salesRequests.isEmpty && maintenanceRequests.isEmpty) ||
+          Get.isDialogOpen == true) {
+        return;
+      }
       _closingPromptShownForCurrentResume = true;
-      final names = requests
-          .map((item) => item.employeeName?.trim())
+      final names = <String?>[
+        ...salesRequests.map((item) => item.employeeName?.trim()),
+        ...maintenanceRequests.map(
+          (item) => (item['employee_name'] ?? item['requested_by_name'])
+              ?.toString()
+              .trim(),
+        ),
+      ]
           .whereType<String>()
           .where((name) => name.isNotEmpty)
           .toSet()
           .take(3)
           .join('، ');
-      final salesCount = requests
+      final salesCount = salesRequests
           .where((request) => request.sessionType != 'sales_orders')
           .length;
-      final ordersCount = requests
+      final ordersCount = salesRequests
           .where((request) => request.sessionType == 'sales_orders')
           .length;
+      final maintenanceCount = maintenanceRequests.length;
       final typesText = [
         if (salesCount > 0) '$salesCount صندوق مبيعات',
         if (ordersCount > 0) '$ordersCount صندوق طلبيات',
-      ].join(' و');
+        if (maintenanceCount > 0) '$maintenanceCount صندوق صيانة',
+      ].join('، ');
       final goToRequests = await Get.dialog<bool>(
         AlertDialog(
           title: const Text('طلبات إغلاق صناديق بانتظارك'),
@@ -713,11 +747,11 @@ class AdminDashboardController extends GetxController
         barrierDismissible: false,
       );
       if (goToRequests == true) {
-        final first = requests.first;
-        final type = first.cashCounts.isEmpty &&
-                first.salesOrdersCashCounts.isNotEmpty
-            ? 'sales_orders'
-            : 'instant_sales';
+        final type = salesRequests.isEmpty
+            ? 'maintenance'
+            : salesRequests.first.sessionType == 'sales_orders'
+                ? 'sales_orders'
+                : 'instant_sales';
         Get.toNamed(
           AppRoutes.SALESDAILYHISTORYSCREEN,
           arguments: {'sessionType': type},

@@ -94,6 +94,19 @@ class AdminNotificationRouter {
             arguments: {'sessionType': 'maintenance'},
           );
           return;
+        case 'sales_daily_closing_request':
+        case 'sales_daily_previous_day_open':
+        case 'sales_daily_reopen_request':
+          final sessionType = raw['session_type']?.toString();
+          Get.toNamed(
+            AppRoutes.SALESDAILYHISTORYSCREEN,
+            arguments: {
+              'sessionType': sessionType == 'sales_orders'
+                  ? 'sales_orders'
+                  : 'instant_sales',
+            },
+          );
+          return;
         default:
           break;
       }
