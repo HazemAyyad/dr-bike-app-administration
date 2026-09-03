@@ -180,13 +180,24 @@ class _MaintenanceDailyHistoryScreenState
         : open
             ? 'مفتوح الآن'
             : 'لا يوجد صندوق مفتوح';
-    final balance = active?.currencies
-            .firstWhereOrNull((row) => row.currency == 'شيكل')
-            ?.systemBalance ??
-        controller.maintenanceDailyExpectedClosingBalance;
-    final employeeName = active?.employeeName ??
-        controller.maintenanceDailyEmployeeName ??
-        controller.maintenanceDailyBlockedByEmployeeName;
+    final hasActiveSession = open || closing;
+    final expectedOpening = _expectedOpeningForShekel();
+    final expectedAmount = double.tryParse(
+          '${expectedOpening?['expected_amount'] ?? 0}',
+        ) ??
+        0;
+    final balance = hasActiveSession
+        ? (active?.currencies
+                .firstWhereOrNull((row) => row.currency == 'شيكل')
+                ?.systemBalance ??
+            controller.maintenanceDailyExpectedClosingBalance)
+        : expectedAmount;
+    final employeeName = hasActiveSession
+        ? (active?.employeeName ?? controller.maintenanceDailyEmployeeName)
+        : expectedOpening?['previous_employee_name']?.toString();
+    final balanceLabel = hasActiveSession
+        ? 'الرصيد المتوقع الحالي'
+        : 'الموجود في الصندوق قبل فتح الجلسة';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -258,7 +269,7 @@ class _MaintenanceDailyHistoryScreenState
           ),
           SizedBox(height: 2.h),
           Text(
-            'الرصيد الحالي',
+            balanceLabel,
             style: TextStyle(color: Colors.white70, fontSize: 11.sp),
           ),
           SizedBox(height: 7.h),
@@ -274,7 +285,9 @@ class _MaintenanceDailyHistoryScreenState
                 SizedBox(width: 5.w),
                 Expanded(
                   child: Text(
-                    'فتحه: ${employeeName ?? '—'}',
+                    hasActiveSession
+                        ? 'فتحه: ${employeeName ?? '—'}'
+                        : 'آخر إغلاق: ${employeeName ?? '—'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.white, fontSize: 11.sp),
@@ -283,7 +296,11 @@ class _MaintenanceDailyHistoryScreenState
                 const Icon(Icons.schedule_outlined, color: Colors.white70),
                 SizedBox(width: 4.w),
                 Text(
-                  _time(active?.openedAt),
+                  hasActiveSession
+                      ? _time(active?.openedAt)
+                      : (expectedOpening?['previous_business_date']
+                              ?.toString() ??
+                          '—'),
                   style: TextStyle(color: Colors.white, fontSize: 11.sp),
                 ),
               ],
@@ -345,6 +362,17 @@ class _MaintenanceDailyHistoryScreenState
         ],
       ),
     );
+  }
+
+  Map<String, dynamic>? _expectedOpeningForShekel() {
+    final raw = controller.dailyBoxPayload['expected_opening_counts'];
+    if (raw is! List) return null;
+    for (final item in raw) {
+      if (item is Map && item['currency']?.toString() == 'شيكل') {
+        return Map<String, dynamic>.from(item);
+      }
+    }
+    return null;
   }
 
   String _time(String? raw) {

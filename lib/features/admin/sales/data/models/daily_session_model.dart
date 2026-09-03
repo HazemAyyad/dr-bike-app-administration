@@ -257,6 +257,11 @@ class DailyCurrencyRow {
   final double openingFloat;
   final double salesCollected;
   final double systemBalance;
+  final bool hasClosingSnapshot;
+  final double closingPhysicalCount;
+  final double closingFloatToKeep;
+  final double closingAmountToTransfer;
+  final double closingVariance;
 
   const DailyCurrencyRow({
     required this.currency,
@@ -266,6 +271,11 @@ class DailyCurrencyRow {
     this.openingFloat = 0,
     this.salesCollected = 0,
     this.systemBalance = 0,
+    this.hasClosingSnapshot = false,
+    this.closingPhysicalCount = 0,
+    this.closingFloatToKeep = 0,
+    this.closingAmountToTransfer = 0,
+    this.closingVariance = 0,
   });
 
   factory DailyCurrencyRow.fromJson(Map<String, dynamic> json) {
@@ -277,6 +287,12 @@ class DailyCurrencyRow {
       openingFloat: asDouble(json['opening_float']),
       salesCollected: asDouble(json['sales_collected']),
       systemBalance: asDouble(json['system_balance']),
+      hasClosingSnapshot: json['has_closing_snapshot'] == true ||
+          json['has_closing_snapshot'] == 1,
+      closingPhysicalCount: asDouble(json['closing_physical_count']),
+      closingFloatToKeep: asDouble(json['closing_float_to_keep']),
+      closingAmountToTransfer: asDouble(json['closing_amount_to_transfer']),
+      closingVariance: asDouble(json['closing_variance']),
     );
   }
 }

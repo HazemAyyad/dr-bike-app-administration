@@ -303,16 +303,18 @@ class _SessionMetrics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = detail.session.sessionType == 'sales_orders';
-    final balance = detail.currencies
-        .fold<double>(0, (sum, row) => sum + row.systemBalance);
-    final sales = detail.currencies
-        .fold<double>(0, (sum, row) => sum + row.salesCollected);
+    final primaryCurrency =
+        detail.currencies.firstWhereOrNull((row) => row.currency == 'شيكل') ??
+            (detail.currencies.isEmpty ? null : detail.currencies.first);
+    final balance = primaryCurrency?.systemBalance ?? 0;
+    final currency = primaryCurrency?.currency ?? 'شيكل';
+    final sales = primaryCurrency?.salesCollected ?? 0;
     return Row(children: [
-      _metric(
-          'الرصيد', '${balance.toStringAsFixed(2)} ₪', Icons.wallet_outlined),
+      _metric('الرصيد المتوقع', '${balance.toStringAsFixed(2)} $currency',
+          Icons.wallet_outlined),
       SizedBox(width: 7.w),
-      _metric(
-          'المقبوض', '${sales.toStringAsFixed(2)} ₪', Icons.payments_outlined),
+      _metric('المقبوض', '${sales.toStringAsFixed(2)} $currency',
+          Icons.payments_outlined),
       SizedBox(width: 7.w),
       _metric(
         maintenanceMode

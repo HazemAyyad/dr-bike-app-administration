@@ -92,6 +92,9 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
               (session) => session.isOpen || session.isClosingRequested,
             ) ??
             (today.isEmpty ? null : today.first);
+        final payload = selectedType == 'sales_orders'
+            ? sales?.salesOrdersDailySessionPayload.value
+            : sales?.dailySessionPayload.value;
         final list = showHistory ? history : today;
         if (_shouldAutoOpen() && _shouldOfferOpening()) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,6 +110,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
             children: [
               _ActiveDrawerBanner(
                 session: active,
+                payload: payload,
                 type: selectedType,
                 canOpen: _shouldOfferOpening(),
                 onOpen: () => _openSelectedDrawer(context),
@@ -434,12 +438,14 @@ class _InlineCancellationRequests extends StatelessWidget {
 class _ActiveDrawerBanner extends StatelessWidget {
   const _ActiveDrawerBanner({
     required this.session,
+    required this.payload,
     required this.type,
     required this.canOpen,
     required this.onOpen,
   });
 
   final DailySessionSummaryModel? session;
+  final DailySessionPayload? payload;
   final String type;
   final bool canOpen;
   final VoidCallback onOpen;
@@ -459,9 +465,23 @@ class _ActiveDrawerBanner extends StatelessWidget {
         : open
             ? 'مفتوح الآن'
             : 'لا يوجد صندوق مفتوح';
+    final hasActiveSession = open || closing;
     final shekel = session?.currencies
         .firstWhereOrNull((currency) => currency.currency == 'شيكل');
-    final balance = shekel?.systemBalance ?? 0;
+    final expectedRows = orders
+        ? payload?.expectedSalesOrdersOpeningCounts
+        : payload?.expectedOpeningCounts;
+    final expected = expectedRows
+        ?.firstWhereOrNull((currency) => currency.currency == 'شيكل');
+    final balance = hasActiveSession
+        ? (shekel?.systemBalance ?? 0)
+        : (expected?.expectedAmount ?? shekel?.closingFloatToKeep ?? 0);
+    final balanceLabel = hasActiveSession
+        ? 'الرصيد المتوقع الحالي'
+        : 'الموجود في الصندوق قبل فتح الجلسة';
+    final employeeName = hasActiveSession
+        ? session?.employeeName
+        : expected?.previousEmployeeName;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -536,7 +556,7 @@ class _ActiveDrawerBanner extends StatelessWidget {
             ),
           ),
           SizedBox(height: 2.h),
-          Text('الرصيد الحالي',
+          Text(balanceLabel,
               style: TextStyle(color: Colors.white70, fontSize: 11.sp)),
           SizedBox(height: 7.h),
           Container(
@@ -551,7 +571,9 @@ class _ActiveDrawerBanner extends StatelessWidget {
                 SizedBox(width: 5.w),
                 Expanded(
                   child: Text(
-                    'فتحه: ${session?.employeeName ?? '—'}',
+                    hasActiveSession
+                        ? 'فتحه: ${employeeName ?? '—'}'
+                        : 'آخر إغلاق: ${employeeName ?? '—'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.white, fontSize: 11.sp),
@@ -560,7 +582,9 @@ class _ActiveDrawerBanner extends StatelessWidget {
                 const Icon(Icons.schedule_outlined, color: Colors.white70),
                 SizedBox(width: 4.w),
                 Text(
-                  _time(session?.openedAt),
+                  hasActiveSession
+                      ? _time(session?.openedAt)
+                      : (expected?.previousBusinessDate ?? '—'),
                   style: TextStyle(color: Colors.white, fontSize: 11.sp),
                 ),
               ],

@@ -319,7 +319,9 @@ class SalesDailySessionTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(6.r),
           ),
           child: Text(
-            '${c.currency} ${c.boxBalance.toStringAsFixed(0)}',
+            c.hasClosingSnapshot
+                ? '${c.currency} — المعدود ${c.closingPhysicalCount.toStringAsFixed(0)} • الفكة ${c.closingFloatToKeep.toStringAsFixed(0)}'
+                : '${c.currency} ${c.boxBalance.toStringAsFixed(0)}',
             style: TextStyle(
               fontSize: 9.sp,
               fontWeight: FontWeight.w600,
@@ -346,100 +348,79 @@ class SalesDailyCurrencyTable extends StatelessWidget {
       return Text('noData'.tr, style: TextStyle(fontSize: 12.sp));
     }
 
-    final isDark = ThemeService.isDark.value;
-    final headerBg = isDark
-        ? AppColors.primaryColor.withValues(alpha: 0.15)
-        : AppColors.primaryColor.withValues(alpha: 0.08);
+    return Column(
+      children:
+          currencies.map((row) => _SessionCurrencySummary(row: row)).toList(),
+    );
+  }
+}
 
+class _SessionCurrencySummary extends StatelessWidget {
+  const _SessionCurrencySummary({required this.row});
+
+  final DailyCurrencyRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = <MapEntry<String, double>>[
+      MapEntry('فكة البداية', row.openingFloat),
+      MapEntry('المقبوض', row.salesCollected),
+      MapEntry('الرصيد المتوقع', row.systemBalance),
+      if (row.hasClosingSnapshot) ...[
+        MapEntry('المعدود عند الإغلاق', row.closingPhysicalCount),
+        MapEntry('الفكة المتروكة', row.closingFloatToKeep),
+        MapEntry('المحوّل', row.closingAmountToTransfer),
+        MapEntry('فرق الجرد', row.closingVariance),
+      ] else
+        MapEntry('الرصيد الحالي', row.boxBalance),
+    ];
     return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : Colors.white,
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: Colors.grey.shade300),
       ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            color: headerBg,
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'salesDailyCurrencyCol'.tr,
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryColor,
+          Text(row.currency,
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: values
+                .map(
+                  (value) => SizedBox(
+                    width: 92.w,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(value.key,
+                            style: TextStyle(
+                                fontSize: 9.sp, color: Colors.grey.shade600)),
+                        Text(
+                          value.value.toStringAsFixed(2),
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w900,
+                            color: value.key == 'الفكة المتروكة'
+                                ? AppColors.primaryColor
+                                : null,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Expanded(child: _head('salesDailyOpeningFloat'.tr)),
-                Expanded(child: _head('salesDailySalesCollected'.tr)),
-                Expanded(child: _head('salesDailySystemBalance'.tr)),
-                Expanded(child: _head('salesDailyBoxBalance'.tr)),
-              ],
-            ),
+                )
+                .toList(),
           ),
-          ...currencies.asMap().entries.map((entry) {
-            final row = entry.value;
-            final last = entry.key == currencies.length - 1;
-            return Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-              decoration: BoxDecoration(
-                border: last
-                    ? null
-                    : Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      row.currency,
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Expanded(child: _val(row.openingFloat)),
-                  Expanded(child: _val(row.salesCollected)),
-                  Expanded(child: _val(row.systemBalance, bold: true)),
-                  Expanded(child: _val(row.boxBalance)),
-                ],
-              ),
-            );
-          }),
         ],
-      ),
-    );
-  }
-
-  Widget _head(String text) {
-    return Text(
-      text,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 8.sp,
-        fontWeight: FontWeight.w600,
-        color: Colors.grey.shade700,
-        height: 1.1,
-      ),
-    );
-  }
-
-  Widget _val(double value, {bool bold = false}) {
-    return Text(
-      value.toStringAsFixed(0),
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 10.sp,
-        fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
       ),
     );
   }

@@ -193,19 +193,27 @@ class SalesDailyStatusBar extends GetView<SalesController> {
         .indexWhere((item) => item.currency == 'شيكل');
     final ordersRow =
         ordersIndex >= 0 ? payload.salesOrdersCurrencies[ordersIndex] : null;
-    if (row == null && ordersRow == null) return const SizedBox.shrink();
+    final expectedRows = salesOrders
+        ? payload.expectedSalesOrdersOpeningCounts
+        : payload.expectedOpeningCounts;
+    final expected =
+        expectedRows.firstWhereOrNull((item) => item.currency == 'شيكل');
+    final activeRow = salesOrders ? ordersRow : row;
+    if (activeRow == null && expected == null) return const SizedBox.shrink();
+    final amount = activeRow?.systemBalance ?? expected?.expectedAmount ?? 0;
+    final currency = activeRow?.currency ?? expected?.currency ?? 'شيكل';
+    final beforeOpening = activeRow == null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!salesOrders && row != null)
+        Text(
+          '${beforeOpening ? 'الموجود قبل فتح الجلسة' : 'الرصيد المتوقع'}: ${amount.toStringAsFixed(0)} $currency',
+          style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+        ),
+        if (beforeOpening && expected?.previousEmployeeName != null)
           Text(
-            'الرصيد: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
-            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
-          ),
-        if (salesOrders && ordersRow != null)
-          Text(
-            'الرصيد: ${ordersRow.systemBalance.toStringAsFixed(0)} ${ordersRow.currency}',
-            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+            'آخر إغلاق: ${expected!.previousEmployeeName}${expected.previousBusinessDate == null ? '' : ' — ${expected.previousBusinessDate}'}',
+            style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
           ),
       ],
     );

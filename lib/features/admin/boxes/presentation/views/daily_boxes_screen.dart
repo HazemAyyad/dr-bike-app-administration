@@ -1169,10 +1169,28 @@ class _SalesSessionDetailSheet extends StatelessWidget {
                       label: 'salesDailySystemBalance'.tr,
                       value: amount(row.systemBalance),
                     ),
-                    _DetailLine(
-                      label: 'salesDailyBoxBalance'.tr,
-                      value: amount(row.boxBalance),
-                    ),
+                    if (row.hasClosingSnapshot) ...[
+                      _DetailLine(
+                        label: 'المعدود عند الإغلاق',
+                        value: amount(row.closingPhysicalCount),
+                      ),
+                      _DetailLine(
+                        label: 'الفكة المتروكة',
+                        value: amount(row.closingFloatToKeep),
+                      ),
+                      _DetailLine(
+                        label: 'المحوّل',
+                        value: amount(row.closingAmountToTransfer),
+                      ),
+                      _DetailLine(
+                        label: 'فرق الجرد',
+                        value: amount(row.closingVariance),
+                      ),
+                    ] else
+                      _DetailLine(
+                        label: 'salesDailyBoxBalance'.tr,
+                        value: amount(row.boxBalance),
+                      ),
                   ],
                 ),
               ),
