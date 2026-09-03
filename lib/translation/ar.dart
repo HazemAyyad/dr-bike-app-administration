@@ -1223,6 +1223,8 @@ const Map<String, String> ar = {
   'personalIdImage': 'صور شخصية',
   'uploadPersonalIdImage': 'تحميل الصورة',
   'completeTask': 'إنهاء المهمة',
+  'completeTaskAndSubtasksConfirm':
+      'سيتم إنهاء المهمة وجميع مهامها الفرعية المفتوحة. هل أنت متأكد؟',
   'employeeImageRequired': 'يجب رفع صورة أو فيديو قبل إنهاء المهمة',
   'uploadTaskProof': 'رفع صورة/فيديو لإثبات إنجاز المهمة',
   'openTaskToUploadImage': 'افتح تفاصيل المهمة لرفع الصورة أو التصوير',

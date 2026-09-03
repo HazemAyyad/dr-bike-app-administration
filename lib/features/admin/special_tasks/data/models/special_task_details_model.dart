@@ -17,6 +17,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
     required DateTime startTime,
     required DateTime endTime,
     required String audio,
+    required String status,
   }) : super(
           taskId: taskId,
           taskName: taskName,
@@ -29,6 +30,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
           startTime: startTime,
           endTime: endTime,
           audio: audio,
+          status: status,
         );
 
   factory SpecialTaskDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
       notes: asString(j['notes']),
       adminImg: mapAdminImg(j['admin_img']),
       audio: parseAudioFromApi(asNullableString(j['audio'])) ?? '',
+      status: asString(j['status']),
       taskRecurrence: asString(j['task_recurrence']),
       taskRecurrenceTime: mapRecurrenceTimes(j['task_recurrence_time']),
       subTasks: mapList(

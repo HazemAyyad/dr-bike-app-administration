@@ -301,8 +301,12 @@ class SpecialTasksController extends GetxController {
   }
 
   // complete special Tasks
-  void completedSpecialTasks(BuildContext context, String specialTaskId) async {
-    // isLoading(true);
+  Future<void> completedSpecialTasks(
+    BuildContext context,
+    String specialTaskId, {
+    bool fromDetails = false,
+  }) async {
+    isLoading(true);
     final result =
         await completedSpecialTasksUsecase.call(specialTaskId: specialTaskId);
 
@@ -314,11 +318,16 @@ class SpecialTasksController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(milliseconds: 1000),
         );
-        checkedMap[specialTaskId]!.value = false;
+        checkedMap[specialTaskId]?.value = false;
       },
       (success) async {
         Get.back();
         await getSpecialTasks(scrollToTodayb: false);
+
+        if (fromDetails) {
+          specialTasksService.specialTaskDetails.value = null;
+          AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
+        }
 
         Get.snackbar(
           'success'.tr,
@@ -330,7 +339,7 @@ class SpecialTasksController extends GetxController {
     );
 
     isLoading(false);
-    update();
+    update(['specialTaskCompletion']);
   }
 
   // cancel special Tasks

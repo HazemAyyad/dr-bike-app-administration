@@ -1234,6 +1234,8 @@ const Map<String, String> en = {
   'personalIdImage': 'Personal ID Image',
   'uploadPersonalIdImage': 'Upload Image',
   'completeTask': 'Complete Task',
+  'completeTaskAndSubtasksConfirm':
+      'This will complete the task and all of its open subtasks. Are you sure?',
   'employeeImageRequired':
       'Please upload a photo or video before completing the task',
   'uploadTaskProof': 'Upload photo/video as task proof',

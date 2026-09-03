@@ -10,6 +10,7 @@ class SpecialTaskDetailsEntities {
   final DateTime startTime;
   final DateTime endTime;
   final String audio;
+  final String status;
 
   SpecialTaskDetailsEntities({
     required this.taskId,
@@ -23,6 +24,7 @@ class SpecialTaskDetailsEntities {
     required this.startTime,
     required this.endTime,
     required this.audio,
+    required this.status,
   });
 }
 

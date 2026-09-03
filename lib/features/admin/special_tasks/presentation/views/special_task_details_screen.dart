@@ -111,6 +111,76 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
           );
         },
       ),
+      bottomNavigationBar: Obx(() {
+        final data = controller.specialTasksService.specialTaskDetails.value;
+        if (data == null || data.status == 'completed') {
+          return const SizedBox.shrink();
+        }
+
+        return SafeArea(
+          minimum: EdgeInsets.fromLTRB(12.w, 6.h, 12.w, 10.h),
+          child: SizedBox(
+            height: 46.h,
+            child: ElevatedButton.icon(
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => _confirmCompleteTask(context, data),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.operationalPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+              ),
+              icon: controller.isLoading.value
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.task_alt_rounded),
+              label: Text(
+                'completeTask'.tr,
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  void _confirmCompleteTask(
+    BuildContext context,
+    SpecialTaskDetailsEntities data,
+  ) {
+    final hasOpenSubtasks = data.subTasks.any(
+      (sub) => !['completed', 'canceled', 'rejected'].contains(sub.status),
+    );
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('completeTask'.tr),
+        content: Text(
+          hasOpenSubtasks
+              ? 'completeTaskAndSubtasksConfirm'.tr
+              : 'areYouSure'.tr,
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: Text('cancel'.tr)),
+          ElevatedButton(
+            onPressed: () => controller.completedSpecialTasks(
+              context,
+              data.taskId.toString(),
+              fromDetails: true,
+            ),
+            child: Text('yes'.tr),
+          ),
+        ],
+      ),
     );
   }
 
