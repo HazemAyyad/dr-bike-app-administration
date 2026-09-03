@@ -593,6 +593,7 @@ class EndPoints {
       'sales/returns/available-items';
   static const String salesReturns = 'sales/returns';
   static const String salesReturn = 'sales/return';
+  static const String salesReturnCancel = 'sales/return/cancel';
 
   static const String suspendedInstantSales = 'suspended/instant/sales';
   static const String suspendedInstantSalesCount =

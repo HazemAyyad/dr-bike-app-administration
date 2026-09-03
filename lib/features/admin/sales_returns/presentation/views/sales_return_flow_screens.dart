@@ -540,14 +540,21 @@ class SalesReturnCheckoutScreen extends StatefulWidget {
 
 class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
   SalesReturnsController get controller => Get.find();
-  final cash = TextEditingController(text: '0');
-  final note = TextEditingController();
+  late final TextEditingController cash;
+  late final TextEditingController note;
+  final editReason = TextEditingController();
   final Map<String, TextEditingController> prices = {};
   final Map<String, TextEditingController> reasons = {};
 
   @override
   void initState() {
     super.initState();
+    cash = TextEditingController(
+      text: controller.editingReturnId.value == null
+          ? '0'
+          : controller.editCashRefund.value.toStringAsFixed(2),
+    );
+    note = TextEditingController(text: controller.editNote.value);
     for (final item in controller.selected.values) {
       prices[item.key] =
           TextEditingController(text: item.unitPrice.toStringAsFixed(2));
@@ -559,6 +566,7 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
   void dispose() {
     cash.dispose();
     note.dispose();
+    editReason.dispose();
     for (final value in prices.values) {
       value.dispose();
     }
@@ -643,6 +651,17 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
                             ),
                           ),
                         ]),
+                        if (controller.editingReturnId.value != null) ...[
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: editReason,
+                            decoration: const InputDecoration(
+                              labelText: 'سبب تعديل المرتجع (إلزامي)',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Row(children: [
                           Expanded(
@@ -667,7 +686,9 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
                   onPressed: controller.isSubmitting.value
                       ? null
                       : () => controller.submit(
-                          cashRefund: cashValue, note: note.text),
+                          cashRefund: cashValue,
+                          note: note.text,
+                          editReason: editReason.text),
                   icon: controller.isSubmitting.value
                       ? const SizedBox(
                           width: 20,
@@ -677,7 +698,9 @@ class _SalesReturnCheckoutScreenState extends State<SalesReturnCheckoutScreen> {
                       : const Icon(Icons.check_circle_outline),
                   label: Text(controller.isSubmitting.value
                       ? 'جارٍ إتمام المرتجع...'
-                      : 'إتمام فاتورة المرتجع'),
+                      : controller.editingReturnId.value == null
+                          ? 'إتمام فاتورة المرتجع'
+                          : 'حفظ تعديل المرتجع'),
                 ),
               ),
               const SizedBox(height: 12),

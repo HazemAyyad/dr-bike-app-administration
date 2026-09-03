@@ -52,8 +52,8 @@ class SalesReturnAvailableItem {
   final String sizeLabel;
   final String colorLabel;
   final int soldQuantity;
-  final int returnedQuantity;
-  final int availableQuantity;
+  int returnedQuantity;
+  int availableQuantity;
   final double originalUnitPrice;
   int quantity;
   double unitPrice;
@@ -139,6 +139,13 @@ class SalesReturnRecord {
     required this.note,
     required this.refundBoxName,
     required this.items,
+    required this.sourceInvoices,
+    required this.accounting,
+    required this.partnerId,
+    required this.cancelledAt,
+    required this.cancellationReason,
+    required this.replacementSalesReturnId,
+    required this.replacesSalesReturnId,
   });
 
   final int id;
@@ -157,8 +164,16 @@ class SalesReturnRecord {
   final String note;
   final String refundBoxName;
   final List<SalesReturnRecordItem> items;
+  final List<SalesReturnSourceInvoice> sourceInvoices;
+  final SalesReturnAccounting accounting;
+  final int partnerId;
+  final String cancelledAt;
+  final String cancellationReason;
+  final int replacementSalesReturnId;
+  final int replacesSalesReturnId;
 
   bool get isSeller => partnerType == 'seller';
+  bool get isCancelled => status == 'cancelled';
 
   factory SalesReturnRecord.fromJson(Map<String, dynamic> json) {
     final customer = json['customer'] is Map
@@ -194,6 +209,21 @@ class SalesReturnRecord {
       note: '${json['note'] ?? ''}',
       refundBoxName: '${refundBox['name'] ?? ''}',
       items: lines,
+      sourceInvoices: (json['source_invoices'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) =>
+              SalesReturnSourceInvoice.fromJson(Map<String, dynamic>.from(row)))
+          .toList(),
+      accounting: SalesReturnAccounting.fromJson(
+        json['accounting'] is Map
+            ? Map<String, dynamic>.from(json['accounting'] as Map)
+            : const {},
+      ),
+      partnerId: _asInt(partner['id']),
+      cancelledAt: '${json['cancelled_at'] ?? ''}',
+      cancellationReason: '${json['cancellation_reason'] ?? ''}',
+      replacementSalesReturnId: _asInt(json['replacement_sales_return_id']),
+      replacesSalesReturnId: _asInt(json['replaces_sales_return_id']),
     );
   }
 }
@@ -206,6 +236,18 @@ class SalesReturnRecordItem {
     required this.originalUnitPrice,
     required this.lineTotal,
     required this.priceOverrideReason,
+    required this.productId,
+    required this.productCode,
+    required this.productImage,
+    required this.productImages,
+    required this.sizeLabel,
+    required this.colorLabel,
+    required this.inventoryUnitCost,
+    required this.inventoryTotalCost,
+    required this.saleInvoice,
+    required this.purchaseSources,
+    required this.instantSaleId,
+    required this.salesOrderItemId,
   });
 
   final String productName;
@@ -214,6 +256,22 @@ class SalesReturnRecordItem {
   final double originalUnitPrice;
   final double lineTotal;
   final String priceOverrideReason;
+  final int productId;
+  final String productCode;
+  final String productImage;
+  final List<String> productImages;
+  final String sizeLabel;
+  final String colorLabel;
+  final double inventoryUnitCost;
+  final double inventoryTotalCost;
+  final SalesReturnSourceInvoice? saleInvoice;
+  final List<SalesReturnPurchaseSource> purchaseSources;
+  final int instantSaleId;
+  final int salesOrderItemId;
+  String get sourceType =>
+      salesOrderItemId > 0 ? 'sales_order' : 'instant_sale';
+  int get sourceItemId =>
+      salesOrderItemId > 0 ? salesOrderItemId : instantSaleId;
 
   factory SalesReturnRecordItem.fromJson(Map<String, dynamic> json) =>
       SalesReturnRecordItem(
@@ -223,6 +281,126 @@ class SalesReturnRecordItem {
         originalUnitPrice: _asDouble(json['original_unit_price']),
         lineTotal: _asDouble(json['line_total']),
         priceOverrideReason: '${json['price_override_reason'] ?? ''}',
+        productId: _asInt(json['product_id']),
+        productCode: '${json['product_code'] ?? ''}',
+        productImage: '${json['product_image'] ?? ''}',
+        productImages: (json['product_images'] as List? ?? const [])
+            .map((value) => '$value')
+            .where((value) => value.trim().isNotEmpty)
+            .toList(),
+        sizeLabel: '${json['size_label'] ?? ''}',
+        colorLabel: '${json['color_label'] ?? ''}',
+        inventoryUnitCost: _asDouble(json['inventory_unit_cost']),
+        inventoryTotalCost: _asDouble(json['inventory_total_cost']),
+        saleInvoice: json['sale_invoice'] is Map
+            ? SalesReturnSourceInvoice.fromJson(
+                Map<String, dynamic>.from(json['sale_invoice'] as Map))
+            : null,
+        purchaseSources: (json['purchase_sources'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => SalesReturnPurchaseSource.fromJson(
+                Map<String, dynamic>.from(row)))
+            .toList(),
+        instantSaleId: _asInt(json['instant_sale_id']),
+        salesOrderItemId: _asInt(json['sales_order_item_id']),
+      );
+}
+
+class SalesReturnSourceInvoice {
+  const SalesReturnSourceInvoice({
+    required this.type,
+    required this.id,
+    required this.serial,
+    required this.date,
+    required this.soldQuantity,
+    required this.soldUnitPrice,
+  });
+
+  final String type;
+  final int id;
+  final String serial;
+  final String date;
+  final int soldQuantity;
+  final double soldUnitPrice;
+  bool get isSalesOrder => type == 'sales_order';
+  String get typeLabel => isSalesOrder ? 'طلبية مبيعات' : 'فاتورة بيع فوري';
+
+  factory SalesReturnSourceInvoice.fromJson(Map<String, dynamic> json) =>
+      SalesReturnSourceInvoice(
+        type: '${json['type'] ?? ''}',
+        id: _asInt(json['id']),
+        serial: '${json['serial'] ?? '-'}',
+        date: '${json['date'] ?? ''}',
+        soldQuantity: _asInt(json['sold_quantity']),
+        soldUnitPrice: _asDouble(json['sold_unit_price']),
+      );
+}
+
+class SalesReturnPurchaseSource {
+  const SalesReturnPurchaseSource({
+    required this.billId,
+    required this.billDate,
+    required this.invoiceQuantity,
+    required this.orderedQuantity,
+    required this.receivedQuantity,
+    required this.allocatedToSaleQuantity,
+    required this.unitCost,
+    required this.allocatedTotalCost,
+    required this.currency,
+  });
+
+  final int billId;
+  final String billDate;
+  final double invoiceQuantity;
+  final double orderedQuantity;
+  final double receivedQuantity;
+  final double allocatedToSaleQuantity;
+  final double unitCost;
+  final double allocatedTotalCost;
+  final String currency;
+
+  factory SalesReturnPurchaseSource.fromJson(Map<String, dynamic> json) =>
+      SalesReturnPurchaseSource(
+        billId: _asInt(json['bill_id']),
+        billDate: '${json['bill_date'] ?? ''}',
+        invoiceQuantity: _asDouble(json['invoice_quantity']),
+        orderedQuantity: _asDouble(json['ordered_quantity']),
+        receivedQuantity: _asDouble(json['received_quantity']),
+        allocatedToSaleQuantity: _asDouble(json['allocated_to_sale_quantity']),
+        unitCost: _asDouble(json['unit_cost']),
+        allocatedTotalCost: _asDouble(json['allocated_total_cost']),
+        currency: '${json['currency'] ?? 'شيكل'}',
+      );
+}
+
+class SalesReturnAccounting {
+  const SalesReturnAccounting({
+    required this.grossReturn,
+    required this.cashRefund,
+    required this.creditRefund,
+    required this.inventoryCostRestored,
+    required this.marginReversed,
+    required this.debtTransactionId,
+    required this.refundBoxId,
+  });
+
+  final double grossReturn;
+  final double cashRefund;
+  final double creditRefund;
+  final double inventoryCostRestored;
+  final double marginReversed;
+  final int debtTransactionId;
+  final int refundBoxId;
+
+  factory SalesReturnAccounting.fromJson(Map<String, dynamic> json) =>
+      SalesReturnAccounting(
+        grossReturn: _asDouble(json['gross_return']),
+        cashRefund: _asDouble(json['cash_refund']),
+        creditRefund: _asDouble(json['credit_refund']),
+        inventoryCostRestored: _asDouble(json['inventory_cost_restored']),
+        marginReversed: _asDouble(json['margin_reversed']),
+        debtTransactionId: _asInt(json['debt_transaction_id']),
+        refundBoxId: _asInt(json['refund_box_id']),
       );
 }
 

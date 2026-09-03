@@ -43,6 +43,22 @@ class SalesReturnsApiService {
     return map;
   }
 
+  Future<Map<String, dynamic>> update(Map<String, dynamic> payload) async {
+    final Response response =
+        await _api.put(EndPoints.salesReturn, data: payload);
+    final map = _map(response.data);
+    _ensureSuccess(map);
+    return map;
+  }
+
+  Future<void> cancel({required int id, required String reason}) async {
+    final Response response = await _api.post(
+      EndPoints.salesReturnCancel,
+      data: {'sales_return_id': id, 'reason': reason},
+    );
+    _ensureSuccess(_map(response.data));
+  }
+
   Future<List<SalesReturnRecord>> list() async {
     final Response response = await _api.get(
       EndPoints.salesReturns,

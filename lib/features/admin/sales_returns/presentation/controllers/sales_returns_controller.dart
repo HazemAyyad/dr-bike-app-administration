@@ -19,6 +19,9 @@ class SalesReturnsController extends GetxController {
   final returnsSearch = ''.obs;
   final personType = 'customer'.obs;
   final search = ''.obs;
+  final editingReturnId = RxnInt();
+  final editCashRefund = 0.0.obs;
+  final editNote = ''.obs;
   Timer? _debounce;
 
   List<SalesReturnPerson> get visiblePeople {
@@ -143,6 +146,7 @@ class SalesReturnsController extends GetxController {
   }
 
   Future<void> choosePerson(SalesReturnPerson value) async {
+    clearEdit();
     final loaded = await changePerson(value);
     if (loaded) {
       Get.toNamed(AppRoutes.SALESRETURNPRODUCTPICKER);
@@ -191,7 +195,9 @@ class SalesReturnsController extends GetxController {
   }
 
   Future<void> submit(
-      {required double cashRefund, required String note}) async {
+      {required double cashRefund,
+      required String note,
+      String editReason = ''}) async {
     final currentPerson = person.value;
     if (currentPerson == null || isSubmitting.value) return;
     if (cashRefund < 0 || cashRefund > total + 0.001) {
@@ -205,21 +211,34 @@ class SalesReturnsController extends GetxController {
     }
     isSubmitting.value = true;
     try {
-      final result = await api.create({
+      final payload = <String, dynamic>{
         'person_type': currentPerson.type,
         'person_id': currentPerson.id,
         'cash_refund_amount': cashRefund,
         'note': note.trim(),
         'items': selected.values.map((row) => row.toRequest()).toList(),
-      });
+      };
+      final currentEditId = editingReturnId.value;
+      if (currentEditId != null) {
+        if (editReason.trim().length < 3) {
+          Get.snackbar('تنبيه', 'اكتب سبب تعديل المرتجع.');
+          return;
+        }
+        payload['sales_return_id'] = currentEditId;
+        payload['edit_reason'] = editReason.trim();
+      }
+      final result = currentEditId == null
+          ? await api.create(payload)
+          : await api.update(payload);
       final returnData = result['sales_return'] as Map?;
       final serial = returnData?['serial_number'] ?? '';
+      clearEdit();
       Get.offAllNamed(
         AppRoutes.SALESSCREEN,
         arguments: {'salesTab': 3},
       );
       Get.snackbar(
-          'تم إنشاء المرتجع',
+          currentEditId == null ? 'تم إنشاء المرتجع' : 'تم تعديل المرتجع',
           serial.toString().isEmpty
               ? 'تمت إعادة المخزون وتسجيل التسوية بنجاح.'
               : 'تم إنشاء الفاتورة $serial وإتمام التسوية.',
@@ -230,6 +249,98 @@ class SalesReturnsController extends GetxController {
     } finally {
       isSubmitting.value = false;
     }
+  }
+
+  Future<void> startEdit(SalesReturnRecord record) async {
+    if (record.isCancelled || isLoading.value) return;
+    isLoading.value = true;
+    try {
+      final selectedPerson = SalesReturnPerson(
+        id: record.partnerId,
+        type: record.partnerType,
+        name: record.partnerName,
+        phone: record.partnerPhone,
+      );
+      final available = await api.availableItems(selectedPerson);
+      final byKey = {for (final item in available) item.key: item};
+      selected.clear();
+      for (final oldItem in record.items) {
+        final key = '${oldItem.sourceType}:${oldItem.sourceItemId}';
+        var item = byKey[key];
+        if (item == null) {
+          final invoice = oldItem.saleInvoice;
+          item = SalesReturnAvailableItem(
+            sourceType: oldItem.sourceType,
+            sourceItemId: oldItem.sourceItemId,
+            invoiceId: invoice?.id ?? 0,
+            invoiceSerial: invoice?.serial ?? '-',
+            invoiceDate: invoice?.date ?? '',
+            productId: oldItem.productId,
+            productCode: oldItem.productCode,
+            productName: oldItem.productName,
+            image: oldItem.productImage,
+            sizeLabel: oldItem.sizeLabel,
+            colorLabel: oldItem.colorLabel,
+            soldQuantity: invoice?.soldQuantity ?? oldItem.quantity,
+            returnedQuantity:
+                ((invoice?.soldQuantity ?? oldItem.quantity) - oldItem.quantity)
+                    .clamp(0, 1 << 30),
+            availableQuantity: oldItem.quantity,
+            originalUnitPrice: oldItem.originalUnitPrice,
+          );
+          available.add(item);
+          byKey[key] = item;
+        } else {
+          item.availableQuantity += oldItem.quantity;
+          item.returnedQuantity =
+              (item.returnedQuantity - oldItem.quantity).clamp(0, 1 << 30);
+        }
+        item.quantity = oldItem.quantity;
+        item.unitPrice = oldItem.unitPrice;
+        item.priceOverrideReason = oldItem.priceOverrideReason;
+        selected[key] = item;
+      }
+      person.value = selectedPerson;
+      personType.value = selectedPerson.type;
+      items.assignAll(available);
+      selected.refresh();
+      editingReturnId.value = record.id;
+      editCashRefund.value = record.cashRefundAmount;
+      editNote.value = record.note;
+      Get.back();
+      await Get.toNamed(AppRoutes.SALESRETURNPRODUCTPICKER);
+    } catch (error) {
+      _error(error);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> cancelReturn(int id, String reason) async {
+    if (isSubmitting.value) return false;
+    isSubmitting.value = true;
+    try {
+      await api.cancel(id: id, reason: reason);
+      await loadReturns();
+      Get.snackbar(
+        'تم إلغاء المرتجع',
+        'تم عكس المخزون والنقد ورصيد الطرف بنجاح.',
+        backgroundColor: Colors.green.shade700,
+        colorText: Colors.white,
+      );
+      return true;
+    } catch (error) {
+      _error(error);
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  void clearEdit() {
+    editingReturnId.value = null;
+    editCashRefund.value = 0;
+    editNote.value = '';
   }
 
   void _error(Object error) => Get.snackbar(
