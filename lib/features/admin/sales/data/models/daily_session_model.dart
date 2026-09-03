@@ -680,6 +680,8 @@ class DailySessionSaleLogRow {
   final double paidAmount;
   final double remainingAmount;
   final double quantity;
+  final int productsCount;
+  final List<DailySessionSaleProductRow> products;
   final String status;
   final String? createdAt;
   final String? buyerName;
@@ -703,6 +705,8 @@ class DailySessionSaleLogRow {
     this.paidAmount = 0,
     this.remainingAmount = 0,
     this.quantity = 0,
+    this.productsCount = 0,
+    this.products = const [],
     this.status = 'active',
     this.createdAt,
     this.buyerName,
@@ -751,6 +755,12 @@ class DailySessionSaleLogRow {
       paidAmount: asDouble(json['paid_amount']),
       remainingAmount: asDouble(json['remaining_amount']),
       quantity: asDouble(json['quantity']),
+      productsCount: asInt(json['products_count']),
+      products: mapList(
+        json['products'],
+        (Map<String, dynamic> item) =>
+            DailySessionSaleProductRow.fromJson(item),
+      ),
       status: asString(json['status'], 'active'),
       createdAt: asNullableString(json['created_at']),
       buyerName: asNullableString(json['buyer_name']),
@@ -763,6 +773,29 @@ class DailySessionSaleLogRow {
           json['is_from_sales_order'] == 1,
       salesOrderId: json['sales_order_id'] as int?,
       salesOrderSerial: asNullableString(json['sales_order_serial']),
+    );
+  }
+}
+
+class DailySessionSaleProductRow {
+  final String name;
+  final double quantity;
+  final double unitPrice;
+  final double subtotal;
+
+  const DailySessionSaleProductRow({
+    required this.name,
+    this.quantity = 0,
+    this.unitPrice = 0,
+    this.subtotal = 0,
+  });
+
+  factory DailySessionSaleProductRow.fromJson(Map<String, dynamic> json) {
+    return DailySessionSaleProductRow(
+      name: asString(json['name'], '-'),
+      quantity: asDouble(json['quantity']),
+      unitPrice: asDouble(json['unit_price']),
+      subtotal: asDouble(json['subtotal']),
     );
   }
 }

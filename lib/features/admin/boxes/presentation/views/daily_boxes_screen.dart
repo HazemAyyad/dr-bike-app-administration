@@ -1207,40 +1207,17 @@ class _SalesSessionDetailSheet extends StatelessWidget {
           Text('noData'.tr)
         else
           ...sales.map(
-            (sale) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                sale.isCancelled
-                    ? Icons.cancel_outlined
-                    : Icons.receipt_long_outlined,
-                color: sale.isCancelled
-                    ? AppColors.redColor
-                    : AppColors.primaryColor,
-              ),
-              title: Text(
-                '${sale.displayInvoiceNumber} - ${sale.label}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                [
-                  if (sale.createdByName != null)
-                    '${'salesDailyMovementBy'.tr}: ${sale.createdByName}',
-                  if (sale.buyerName != null) sale.buyerName!,
-                  dateText(sale.createdAt),
-                ].join('\n'),
-              ),
-              trailing: Text(
-                amount(sale.paidAmount),
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  color: sale.isCancelled
-                      ? AppColors.redColor
-                      : AppColors.secondaryColor,
-                ),
-              ),
-            ),
+            (sale) => _isMaintenance || !sale.isInstant
+                ? _DailySessionSimpleSaleTile(
+                    sale: sale,
+                    amount: amount,
+                    dateText: dateText,
+                  )
+                : _DailySessionInvoiceSummaryTile(
+                    sale: sale,
+                    amount: amount,
+                    dateText: dateText,
+                  ),
           ),
         if (detail.closingRequests.isNotEmpty) ...[
           SizedBox(height: 14.h),
@@ -1281,6 +1258,407 @@ class _SalesSessionDetailSheet extends StatelessWidget {
       ],
     );
   }
+}
+
+class _DailySessionSimpleSaleTile extends StatelessWidget {
+  const _DailySessionSimpleSaleTile({
+    required this.sale,
+    required this.amount,
+    required this.dateText,
+  });
+
+  final DailySessionSaleLogRow sale;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(
+          sale.isCancelled
+              ? Icons.cancel_outlined
+              : Icons.receipt_long_outlined,
+          color: sale.isCancelled ? AppColors.redColor : AppColors.primaryColor,
+        ),
+        title: Text(
+          sale.isInstant
+              ? sale.displayInvoiceNumber
+              : '${sale.displayInvoiceNumber} - ${sale.label}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          [
+            if (sale.createdByName != null)
+              '${'salesDailyMovementBy'.tr}: ${sale.createdByName}',
+            if (sale.buyerName != null) sale.buyerName!,
+            dateText(sale.createdAt),
+          ].join('\n'),
+        ),
+        trailing: Text(
+          amount(sale.paidAmount),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: sale.isCancelled
+                ? AppColors.redColor
+                : AppColors.secondaryColor,
+          ),
+        ),
+      );
+}
+
+class _DailySessionInvoiceSummaryTile extends StatelessWidget {
+  const _DailySessionInvoiceSummaryTile({
+    required this.sale,
+    required this.amount,
+    required this.dateText,
+  });
+
+  final DailySessionSaleLogRow sale;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+
+  int get _productsCount =>
+      sale.products.isNotEmpty ? sale.products.length : sale.productsCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        sale.isCancelled ? AppColors.redColor : AppColors.primaryColor;
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(11.w),
+      decoration: BoxDecoration(
+        color: sale.isCancelled
+            ? AppColors.redColor.withValues(alpha: .04)
+            : ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: color.withValues(alpha: .22)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(9.r),
+                ),
+                child: Icon(Icons.receipt_long_outlined,
+                    color: color, size: 19.sp),
+              ),
+              SizedBox(width: 9.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sale.displayInvoiceNumber,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                        color: color,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      [
+                        if (sale.createdByName?.trim().isNotEmpty == true)
+                          'أضافها ${sale.createdByName}',
+                        dateText(sale.createdAt),
+                      ].join(' • '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.greyColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (sale.isCancelled)
+                Text(
+                  'cancelled'.tr,
+                  style: TextStyle(
+                    color: AppColors.redColor,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            children: [
+              Expanded(
+                child: _DailyInvoiceAmount(
+                  label: 'الإجمالي',
+                  value: amount(sale.totalCost),
+                ),
+              ),
+              Expanded(
+                child: _DailyInvoiceAmount(
+                  label: 'المقبوض',
+                  value: amount(sale.paidAmount),
+                  color: AppColors.customGreen1,
+                ),
+              ),
+              Expanded(
+                child: _DailyInvoiceAmount(
+                  label: 'المتبقي',
+                  value: amount(sale.remainingAmount),
+                  color: sale.remainingAmount > 0
+                      ? Colors.orange.shade800
+                      : AppColors.greyColor,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 9.h),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: InkWell(
+              onTap:
+                  sale.products.isEmpty ? null : () => _showProducts(context),
+              borderRadius: BorderRadius.circular(20.r),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inventory_2_outlined, color: color, size: 15.sp),
+                    SizedBox(width: 5.w),
+                    Text(
+                      '$_productsCount ${_productsCount == 1 ? 'منتج' : 'منتجات'}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (sale.products.isNotEmpty) ...[
+                      SizedBox(width: 3.w),
+                      Icon(Icons.keyboard_arrow_left_rounded,
+                          color: color, size: 16.sp),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showProducts(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Directionality(
+        textDirection: Directionality.of(context),
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .58,
+          minChildSize: .38,
+          maxChildSize: .88,
+          builder: (context, controller) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+            ),
+            child: Column(
+              children: [
+                SizedBox(height: 9.h),
+                Container(
+                  width: 42.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 13.h, 16.w, 10.h),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.receipt_long_outlined,
+                          color: AppColors.primaryColor),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'منتجات الفاتورة',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              sale.displayInvoiceNumber,
+                              style: TextStyle(
+                                color: AppColors.greyColor,
+                                fontSize: 11.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    controller: controller,
+                    padding: EdgeInsets.all(16.w),
+                    itemCount: sale.products.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                    itemBuilder: (context, index) {
+                      final product = sale.products[index];
+                      return _DailyInvoiceProductTile(
+                        index: index + 1,
+                        product: product,
+                        amount: amount,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyInvoiceAmount extends StatelessWidget {
+  const _DailyInvoiceAmount({
+    required this.label,
+    required this.value,
+    this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Text(label,
+              style: TextStyle(color: AppColors.greyColor, fontSize: 9.sp)),
+          SizedBox(height: 3.h),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      );
+}
+
+class _DailyInvoiceProductTile extends StatelessWidget {
+  const _DailyInvoiceProductTile({
+    required this.index,
+    required this.product,
+    required this.amount,
+  });
+
+  final int index;
+  final DailySessionSaleProductRow product;
+  final String Function(double value) amount;
+
+  String _quantity(double value) =>
+      value == value.roundToDouble() ? value.toInt().toString() : '$value';
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.all(11.w),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(color: AppColors.operationalCardBorder),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16.r,
+              backgroundColor: AppColors.primaryColor.withValues(alpha: .1),
+              child: Text(
+                '$index',
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            SizedBox(width: 9.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'الكمية: ${_quantity(product.quantity)} • السعر: ${amount(product.unitPrice)}',
+                    style: TextStyle(
+                      color: AppColors.greyColor,
+                      fontSize: 10.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              amount(product.subtotal),
+              style: TextStyle(
+                color: AppColors.primaryColor,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _DetailLine extends StatelessWidget {
