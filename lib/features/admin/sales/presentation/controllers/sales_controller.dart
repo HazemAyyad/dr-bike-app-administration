@@ -4539,8 +4539,12 @@ class SalesController extends GetxController
   late AnimationController animController;
   late Animation<double> opacityAnimation;
   late Animation<double> sizeAnimation;
+  Worker? _addMenuAnimationWorker;
+  Worker? _itemsTotalWorker;
+  bool _controllerDisposed = false;
 
   void toggleAddMenu() {
+    if (_controllerDisposed) return;
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
 
@@ -5806,6 +5810,7 @@ class SalesController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    _controllerDisposed = false;
     loadDailySession();
     loadSuspendedInvoicesCount();
     getInstantSales();
@@ -5823,19 +5828,26 @@ class SalesController extends GetxController
       CurvedAnimation(parent: animController, curve: Curves.fastOutSlowIn),
     );
 
-    ever(isAddMenuOpen, (bool open) {
+    _addMenuAnimationWorker = ever(isAddMenuOpen, (bool open) {
+      if (_controllerDisposed) return;
       if (open) {
         animController.forward();
       } else {
         animController.reverse();
       }
     });
-    ever(items, (_) => calculateGrandTotal());
+    _itemsTotalWorker = ever(items, (_) {
+      if (!_controllerDisposed) calculateGrandTotal();
+    });
     discountController.addListener(_scheduleLocalInstantSaleDraftSave);
   }
 
   @override
   void onClose() {
+    _controllerDisposed = true;
+    _addMenuAnimationWorker?.dispose();
+    _itemsTotalWorker?.dispose();
+    discountController.removeListener(_scheduleLocalInstantSaleDraftSave);
     animController.dispose();
     discountController.dispose();
     totalController.dispose();
