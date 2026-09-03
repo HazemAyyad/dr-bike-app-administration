@@ -12,6 +12,7 @@ import 'package:printing/printing.dart';
 
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
@@ -20,11 +21,9 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../maintenance/data/repositories/maintenance_implement.dart';
 import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
-import '../../../../employee/my_orders/widgets/row_text.dart';
 import '../../data/models/invoice_model.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/invoice_package_expandable_line.dart';
-import '../widgets/proudact_details_widget.dart';
 
 class BillDetailsScreen extends GetView<SalesController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
@@ -57,144 +56,69 @@ class BillDetailsScreen extends GetView<SalesController> {
           final invoice = controller.invoiceModel!;
           final fmt = NumberFormat('#,###.##');
 
-          return CustomScrollView(
-            slivers: [
-              if (invoice.salesOrderId != null)
-                SliverToBoxAdapter(
-                  child: _SalesOrderLinkCard(
-                    orderId: invoice.salesOrderId!,
-                    serial: invoice.salesOrderSerial,
-                  ),
-                ),
-              if (invoice.maintenanceId != null)
-                SliverToBoxAdapter(
-                  child: _MaintenanceInvoiceLinkCard(
-                    maintenanceId: invoice.maintenanceId!,
-                    invoiceNumber: invoice.maintenanceInvoiceNumber,
-                  ),
-                ),
-              SliverToBoxAdapter(
-                child: _InvoicePrintActions(invoice: invoice),
-              ),
-              SliverToBoxAdapter(
-                child: _InvoiceHeaderCard(
-                  invoiceNumber: _dash(invoice.invoiceNumber),
-                  invoiceDate: _dash(invoice.invoiceDate),
-                  saleKindLabel: invoice.displaySaleKindLabel,
-                  isAdjustmentSale: invoice.isAdjustmentSale,
-                  buyerTypeLabel: invoice.displayBuyerTypeLabel,
-                  buyerName: _dash(invoice.buyerName),
-                  phone: _dash(invoice.buyerPhone ?? invoice.phone),
-                  address: _dash(invoice.buyerAddress ?? invoice.address),
-                  paymentMethod: _dash(invoice.paymentMethod),
-                  paymentBoxName: invoice.displayPaymentBox,
-                  saleStatus: invoice.displaySaleStatus,
-                  notes: _dash(invoice.notes),
-                  additionalNotes: invoice.additionalNotes,
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 12.h)),
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 24.w),
-                  height: 32.h,
-                  decoration: BoxDecoration(
-                    color: ThemeService.isDark.value
-                        ? AppColors.secondaryColor
-                        : AppColors.primaryColor,
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      SizedBox.shrink(),
-                      Flexible(child: RowText(title: 'productName')),
-                      Flexible(child: RowText(title: 'quantity')),
-                      Flexible(child: RowText(title: 'price')),
-                      Flexible(child: RowText(title: 'total')),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-              if (invoice.isPackageSale &&
-                  invoice.packageComponentLines.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: InvoicePackageExpandableLine(invoice: invoice),
-                )
-              else if (invoice.isPackageSale)
-                SliverToBoxAdapter(
-                  child: ProudactDetailsWidget(
-                    image: invoice.productImage,
-                    cost: invoice.cost.toString(),
-                    product: invoice.displayProductTitle,
-                    quantity: invoice.quantity.toString(),
-                    subtotal: invoice.subtotal,
-                  ),
-                )
-              else
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index == 0) {
-                        return ProudactDetailsWidget(
-                          image: invoice.productImage,
-                          cost: invoice.cost.toString(),
-                          product: invoice.displayProductTitle,
-                          quantity: invoice.quantity.toString(),
-                          subtotal: invoice.subtotal,
-                        );
-                      }
-                      final sub = invoice.subProducts[index - 1];
-                      return ProudactDetailsWidget(
-                        image: sub.productImage,
-                        cost: sub.cost.toString(),
-                        product: sub.displayProductName,
-                        quantity: sub.quantity.toString(),
-                        subtotal: sub.subtotal,
-                      );
-                    },
-                    childCount: 1 + invoice.subProducts.length,
-                  ),
-                ),
-              if (invoice.isPackageSale &&
-                  invoice.additionalProductLines.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 6.h),
-                    child: Text(
-                      'instantSaleAdditionalProducts'.tr,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryColor,
-                            fontSize: 14.sp,
-                          ),
-                    ),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final sub = invoice.additionalProductLines[index];
-                      return ProudactDetailsWidget(
-                        image: sub.productImage,
-                        cost: sub.cost,
-                        product: sub.displayProductName,
-                        quantity: sub.quantity,
-                        subtotal: sub.subtotal,
-                      );
-                    },
-                    childCount: invoice.additionalProductLines.length,
-                  ),
-                ),
-              ],
-              SliverToBoxAdapter(
-                child: _InvoiceAdditionalNotesSection(
-                  notes: invoice.additionalNotes,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _InvoiceTotalsSection(
+          return ColoredBox(
+            color: const Color(0xFFF7F8FC),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 28.h),
+              children: [
+                _SalesInvoiceHero(invoice: invoice),
+                if (invoice.salesOrderId != null) ...[
+                  SizedBox(height: 10.h),
+                  _SalesOrderLinkCard(
+                      orderId: invoice.salesOrderId!,
+                      serial: invoice.salesOrderSerial),
+                ],
+                if (invoice.maintenanceId != null) ...[
+                  SizedBox(height: 10.h),
+                  _MaintenanceInvoiceLinkCard(
+                      maintenanceId: invoice.maintenanceId!,
+                      invoiceNumber: invoice.maintenanceInvoiceNumber),
+                ],
+                SizedBox(height: 12.h),
+                _SalesInfoGrid(invoice: invoice, dash: _dash),
+                SizedBox(height: 18.h),
+                const _SalesSectionTitle(
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'المنتجات المباعة'),
+                SizedBox(height: 9.h),
+                if (invoice.isPackageSale &&
+                    invoice.packageComponentLines.isNotEmpty)
+                  InvoicePackageExpandableLine(invoice: invoice)
+                else
+                  _SalesProductCard(
+                      image: invoice.productImage,
+                      name: invoice.displayProductTitle,
+                      quantity: invoice.quantity.toString(),
+                      price: invoice.cost.toString(),
+                      total: invoice.subtotal),
+                if (!invoice.isPackageSale)
+                  ...invoice.subProducts.map((sub) => Padding(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: _SalesProductCard(
+                            image: sub.productImage,
+                            name: sub.displayProductName,
+                            quantity: sub.quantity,
+                            price: sub.cost,
+                            total: sub.subtotal),
+                      )),
+                if (invoice.additionalProductLines.isNotEmpty) ...[
+                  SizedBox(height: 14.h),
+                  const _SalesSectionTitle(
+                      icon: Icons.add_box_outlined, title: 'منتجات إضافية'),
+                  SizedBox(height: 8.h),
+                  ...invoice.additionalProductLines.map((sub) => Padding(
+                        padding: EdgeInsets.only(bottom: 8.h),
+                        child: _SalesProductCard(
+                            image: sub.productImage,
+                            name: sub.displayProductName,
+                            quantity: sub.quantity,
+                            price: sub.cost,
+                            total: sub.subtotal),
+                      )),
+                ],
+                _InvoiceAdditionalNotesSection(notes: invoice.additionalNotes),
+                SizedBox(height: 12.h),
+                _InvoiceTotalsSection(
                   subtotal: fmt.format(double.tryParse(invoice.subtotal) ?? 0),
                   discount: fmt.format(double.tryParse(invoice.discount) ?? 0),
                   notesTotal: fmt.format(
@@ -206,14 +130,365 @@ class BillDetailsScreen extends GetView<SalesController> {
                       fmt.format(double.tryParse(invoice.remainingAmount) ?? 0),
                   total: fmt.format(double.tryParse(invoice.totalCost) ?? 0),
                 ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 24.h)),
-            ],
+              ],
+            ),
           );
         },
       ),
     );
   }
+}
+
+class _SalesInvoiceHero extends StatelessWidget {
+  const _SalesInvoiceHero({required this.invoice});
+
+  final InvoiceModel invoice;
+
+  @override
+  Widget build(BuildContext context) {
+    final cancelled = invoice.displaySaleStatus == 'ملغى';
+    return Container(
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF161B3D), Color(0xFF6B65BD)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryColor.withValues(alpha: .22),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46.w,
+                height: 46.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .14),
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+                child: const Icon(Icons.receipt_long_outlined,
+                    color: Colors.white),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('فاتورة بيع',
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 12.sp)),
+                    Text(invoice.invoiceNumber,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21.sp,
+                            fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ),
+              _InvoicePrintActions(invoice: invoice),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              const Icon(Icons.schedule_rounded,
+                  size: 18, color: Colors.white70),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  _formatInvoiceDate(invoice.invoiceDate),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                decoration: BoxDecoration(
+                  color:
+                      (cancelled ? Colors.redAccent : const Color(0xFF33C481))
+                          .withValues(alpha: .18),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                    color:
+                        cancelled ? Colors.redAccent : const Color(0xFF55D99B),
+                  ),
+                ),
+                child: Text(
+                  invoice.displaySaleStatus,
+                  style: TextStyle(
+                    color: cancelled
+                        ? Colors.red.shade100
+                        : const Color(0xFFBDF5D8),
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 18.h),
+          Row(
+            children: [
+              Expanded(
+                  child:
+                      _HeroValue(label: 'الإجمالي', value: invoice.totalCost)),
+              Container(width: 1, height: 38.h, color: Colors.white24),
+              Expanded(
+                  child:
+                      _HeroValue(label: 'المدفوع', value: invoice.paidAmount)),
+              Container(width: 1, height: 38.h, color: Colors.white24),
+              Expanded(
+                  child: _HeroValue(
+                      label: 'المتبقي',
+                      value: invoice.remainingAmount,
+                      warning:
+                          (double.tryParse(invoice.remainingAmount) ?? 0) > 0)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroValue extends StatelessWidget {
+  const _HeroValue(
+      {required this.label, required this.value, this.warning = false});
+  final String label;
+  final String value;
+  final bool warning;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        Text(label, style: TextStyle(color: Colors.white60, fontSize: 10.sp)),
+        SizedBox(height: 4.h),
+        Text(value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: warning ? const Color(0xFFFFD166) : Colors.white,
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w900)),
+      ]);
+}
+
+class _SalesInfoGrid extends StatelessWidget {
+  const _SalesInfoGrid({required this.invoice, required this.dash});
+  final InvoiceModel invoice;
+  final String Function(String?) dash;
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        _SalesInfoCard(
+          icon: Icons.person_outline_rounded,
+          title: 'بيانات المشتري',
+          items: [
+            MapEntry('الاسم', dash(invoice.buyerName)),
+            MapEntry('الصفة', invoice.displayBuyerTypeLabel),
+            MapEntry('الهاتف', dash(invoice.buyerPhone ?? invoice.phone)),
+            if (dash(invoice.buyerAddress ?? invoice.address) != '-')
+              MapEntry(
+                  'العنوان', dash(invoice.buyerAddress ?? invoice.address)),
+          ],
+        ),
+        SizedBox(height: 10.h),
+        _SalesInfoCard(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'بيانات الدفع',
+          items: [
+            MapEntry('نوع البيع', invoice.displaySaleKindLabel),
+            MapEntry('طريقة الدفع', dash(invoice.paymentMethod)),
+            if (invoice.displayPaymentBox != '-')
+              MapEntry('الصندوق', invoice.displayPaymentBox),
+          ],
+        ),
+      ]);
+}
+
+class _SalesInfoCard extends StatelessWidget {
+  const _SalesInfoCard(
+      {required this.icon, required this.title, required this.items});
+  final IconData icon;
+  final String title;
+  final List<MapEntry<String, String>> items;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: const Color(0xFFE8EAF2))),
+        child: Column(children: [
+          _SalesTileTitle(icon: icon, title: title),
+          SizedBox(height: 10.h),
+          ...items.map((item) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 4.h),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                          width: 92.w,
+                          child: Text(item.key,
+                              style: TextStyle(
+                                  color: const Color(0xFF7A8092),
+                                  fontSize: 11.sp))),
+                      Expanded(
+                          child: Text(item.value,
+                              style: TextStyle(
+                                  color: const Color(0xFF20243D),
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700))),
+                    ]),
+              ))
+        ]),
+      );
+}
+
+class _SalesTileTitle extends StatelessWidget {
+  const _SalesTileTitle({required this.icon, required this.title});
+  final IconData icon;
+  final String title;
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Container(
+            width: 34.w,
+            height: 34.w,
+            decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(10.r)),
+            child: Icon(icon, color: AppColors.primaryColor, size: 19.sp)),
+        SizedBox(width: 9.w),
+        Text(title,
+            style: TextStyle(
+                color: const Color(0xFF20243D),
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w900)),
+      ]);
+}
+
+class _SalesSectionTitle extends StatelessWidget {
+  const _SalesSectionTitle({required this.icon, required this.title});
+  final IconData icon;
+  final String title;
+  @override
+  Widget build(BuildContext context) =>
+      _SalesTileTitle(icon: icon, title: title);
+}
+
+class _SalesProductCard extends StatelessWidget {
+  const _SalesProductCard(
+      {required this.image,
+      required this.name,
+      required this.quantity,
+      required this.price,
+      required this.total});
+  final String image;
+  final String name;
+  final String quantity;
+  final String price;
+  final String total;
+
+  void _openImage(BuildContext context) {
+    final original = ShowNetImage.getPhoto(image);
+    if (image.trim().isEmpty || image == 'no image') return;
+
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'إغلاق الصورة',
+      barrierColor: Colors.black.withValues(alpha: .82),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (_, __, ___) => FullScreenZoomImage(imageUrl: original),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15.r),
+            border: Border.all(color: const Color(0xFFE8EAF2))),
+        child: Row(children: [
+          GestureDetector(
+            onTap: () => _openImage(context),
+            child: ClipRRect(
+                borderRadius: BorderRadius.circular(11.r),
+                child: Image.network(ShowNetImage.getThumbnailPhoto(image),
+                    width: 68.w,
+                    height: 68.w,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                        width: 68.w,
+                        height: 68.w,
+                        color: const Color(0xFFF0F1F6),
+                        child: const Icon(Icons.image_not_supported_outlined,
+                            color: Colors.grey)))),
+          ),
+          SizedBox(width: 11.w),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: const Color(0xFF20243D),
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800)),
+                SizedBox(height: 8.h),
+                Wrap(spacing: 6.w, runSpacing: 5.h, children: [
+                  _ProductPill(label: 'الكمية', value: quantity),
+                  _ProductPill(label: 'السعر', value: price),
+                ]),
+              ])),
+          SizedBox(width: 8.w),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('المجموع',
+                style:
+                    TextStyle(color: const Color(0xFF8A90A2), fontSize: 9.sp)),
+            SizedBox(height: 4.h),
+            Text(total,
+                style: TextStyle(
+                    color: AppColors.primaryColor,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900)),
+          ]),
+        ]),
+      );
+}
+
+class _ProductPill extends StatelessWidget {
+  const _ProductPill({required this.label, required this.value});
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+        decoration: BoxDecoration(
+            color: const Color(0xFFF3F2FA),
+            borderRadius: BorderRadius.circular(7.r)),
+        child: Text('$label: $value',
+            style: TextStyle(
+                color: const Color(0xFF555B70),
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w600)),
+      );
 }
 
 class _InvoicePrintActions extends StatelessWidget {
@@ -274,44 +549,68 @@ class _InvoicePrintActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : AppColors.whiteColor2,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              invoice.invoiceNumber,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryColor,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'pdf'.tr,
-            onPressed: () => _sharePdf(context),
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-          ),
-          IconButton(
-            tooltip: 'print'.tr,
-            onPressed: () => _printPdf(context),
-            icon: const Icon(Icons.print_outlined),
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _InvoiceHeroAction(
+          tooltip: 'pdf'.tr,
+          onPressed: () => _sharePdf(context),
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+        ),
+        SizedBox(width: 6.w),
+        _InvoiceHeroAction(
+          tooltip: 'print'.tr,
+          onPressed: () => _printPdf(context),
+          icon: const Icon(Icons.print_outlined),
+        ),
+      ],
     );
   }
 }
 
+class _InvoiceHeroAction extends StatelessWidget {
+  const _InvoiceHeroAction({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.white.withValues(alpha: .14),
+          borderRadius: BorderRadius.circular(11.r),
+          child: IconButton(
+            constraints: BoxConstraints.tightFor(width: 38.w, height: 38.w),
+            padding: EdgeInsets.zero,
+            onPressed: onPressed,
+            color: Colors.white,
+            iconSize: 19.sp,
+            icon: icon,
+          ),
+        ),
+      );
+}
+
+String _formatInvoiceDate(String raw) {
+  final value = raw.trim();
+  final date = DateTime.tryParse(value);
+  if (date == null) return value.isEmpty ? '-' : value;
+
+  final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+  final period = date.hour < 12 ? 'صباحًا' : 'مساءً';
+  String twoDigits(int number) => number.toString().padLeft(2, '0');
+
+  return '${twoDigits(date.day)}/${twoDigits(date.month)}/${date.year}'
+      ' • $hour:${twoDigits(date.minute)} $period';
+}
+
+// ignore: unused_element
 class _InvoiceHeaderCard extends StatelessWidget {
   const _InvoiceHeaderCard({
     required this.invoiceNumber,
