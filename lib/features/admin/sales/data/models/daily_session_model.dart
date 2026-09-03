@@ -620,6 +620,16 @@ class DailyClosingHistoryModel {
         }
       }
     }
+    final cashCounts = <DailyCashCountRow>[
+      ...mapList(
+        json['cash_counts'],
+        (Map<String, dynamic> m) => DailyCashCountRow.fromJson(m),
+      ),
+      ...mapList(
+        json['sales_orders_cash_counts'],
+        (Map<String, dynamic> m) => DailyCashCountRow.fromJson(m),
+      ),
+    ];
 
     return DailyClosingHistoryModel(
       id: asInt(json['id']),
@@ -634,10 +644,7 @@ class DailyClosingHistoryModel {
       businessDate: asNullableString(json['business_date']),
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
-      cashCounts: mapList(
-        json['cash_counts'],
-        (Map<String, dynamic> m) => DailyCashCountRow.fromJson(m),
-      ),
+      cashCounts: cashCounts,
       transfers: transfers,
       isLateClose: json['is_late_close'] == true || json['is_late_close'] == 1,
       lateCloseReason: asNullableString(json['late_close_reason']),

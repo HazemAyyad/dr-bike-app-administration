@@ -627,23 +627,9 @@ class SalesDailyClosingTile extends StatelessWidget {
             ),
           ],
           if (request.cashCounts.isNotEmpty) ...[
-            SizedBox(height: 6.h),
-            Wrap(
-              spacing: 6.w,
-              runSpacing: 4.h,
-              children: request.cashCounts.map((row) {
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Text(
-                    '${row.currency} ${row.physicalCount.toStringAsFixed(0)} → ${row.amountToTransfer.toStringAsFixed(0)}',
-                    style: TextStyle(fontSize: 9.sp),
-                  ),
-                );
-              }).toList(),
+            SizedBox(height: 8.h),
+            ...request.cashCounts.map(
+              (row) => _ClosingCashCountSummary(row: row),
             ),
           ],
         ],
@@ -654,6 +640,114 @@ class SalesDailyClosingTile extends StatelessWidget {
   String _shortTime(String raw) {
     if (raw.length >= 16) return raw.substring(0, 16);
     return raw;
+  }
+}
+
+class _ClosingCashCountSummary extends StatelessWidget {
+  const _ClosingCashCountSummary({required this.row});
+
+  final DailyCashCountRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasVariance = row.variance.abs() > .001;
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.all(9.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F5FC),
+        borderRadius: BorderRadius.circular(9.r),
+        border:
+            Border.all(color: AppColors.primaryColor.withValues(alpha: .16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            row.currency,
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
+          ),
+          SizedBox(height: 6.h),
+          Row(
+            children: [
+              Expanded(
+                child: _ClosingAmount(
+                  label: 'المعدود',
+                  value: row.physicalCount,
+                ),
+              ),
+              Expanded(
+                child: _ClosingAmount(
+                  label: 'الفكة المتروكة',
+                  value: row.floatToKeep,
+                  color: AppColors.primaryColor,
+                ),
+              ),
+              Expanded(
+                child: _ClosingAmount(
+                  label: 'المحوّل',
+                  value: row.amountToTransfer,
+                ),
+              ),
+            ],
+          ),
+          if (hasVariance || row.employeeNote.trim().isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            if (hasVariance)
+              Text(
+                'فرق الجرد: ${row.variance.toStringAsFixed(2)} ${row.currency}',
+                style: TextStyle(
+                  color: row.variance < 0
+                      ? Colors.red.shade700
+                      : Colors.green.shade700,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            if (row.employeeNote.trim().isNotEmpty)
+              Text(
+                'ملاحظة الموظف: ${row.employeeNote}',
+                style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ClosingAmount extends StatelessWidget {
+  const _ClosingAmount({
+    required this.label,
+    required this.value,
+    this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          value.toStringAsFixed(2),
+          style: TextStyle(
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
+      ],
+    );
   }
 }
 
