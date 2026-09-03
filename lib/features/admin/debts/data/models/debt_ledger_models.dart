@@ -547,12 +547,14 @@ class LedgerReportData {
   final String? fileName;
   final double balance;
   final String? periodLabel;
+  final Map<String, dynamic> payload;
 
   LedgerReportData({
     this.pdfUrl,
     this.fileName,
     required this.balance,
     this.periodLabel,
+    this.payload = const {},
   });
 
   factory LedgerReportData.fromJson(Map<String, dynamic> json) {
@@ -562,6 +564,7 @@ class LedgerReportData {
       fileName: report['file_name']?.toString(),
       balance: double.tryParse(report['balance']?.toString() ?? '0') ?? 0,
       periodLabel: report['period_label']?.toString(),
+      payload: Map<String, dynamic>.from(report),
     );
   }
 }

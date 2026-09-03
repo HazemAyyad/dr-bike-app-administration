@@ -34,7 +34,17 @@ class BillDetailsScreen extends GetView<SalesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'billDetails', action: false),
+      appBar: CustomAppBar(
+        title: 'billDetails',
+        action: false,
+        actions: [
+          IconButton(
+            tooltip: 'edit'.tr,
+            onPressed: () => controller.openEditInstantSaleFromInvoice(context),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
       body: GetBuilder<SalesController>(
         builder: (controller) {
           if (controller.isLoading.value) {

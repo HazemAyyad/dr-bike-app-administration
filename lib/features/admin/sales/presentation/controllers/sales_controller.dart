@@ -3247,8 +3247,6 @@ class SalesController extends GetxController
       return;
     }
     setInstantSaleAdjustmentMode(sale.isAdjustmentSale);
-    if (!sale.isAdjustmentSale && showSalesBlockedMessage()) return;
-
     isLoading(true);
     try {
       clearActiveSuspendedSale();
@@ -3282,6 +3280,43 @@ class SalesController extends GetxController
       await hydrateFromInvoice(invoice);
       setInstantSaleAdjustmentMode(invoice.isAdjustmentSale);
 
+      isLoading(false);
+      await Get.toNamed(invoice.isAdjustmentSale
+          ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+          : AppRoutes.INSTANTSALEPRODUCTPICKER);
+    } catch (e) {
+      clearActiveEditInstantSale();
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> openEditInstantSaleFromInvoice(BuildContext context) async {
+    final invoice = invoiceModel;
+    if (invoice == null) return;
+    if ((invoice.status ?? '').toLowerCase() == 'cancelled') {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'instantSaleAlreadyCancelled'.tr,
+      );
+      return;
+    }
+
+    isLoading(true);
+    try {
+      clearActiveSuspendedSale();
+      clearActiveEditInstantSale();
+      resetInstantSaleForm();
+      setInstantSaleAdjustmentMode(invoice.isAdjustmentSale);
+      if (products.isEmpty) getAllProducts();
+      await loadOfferPackagesForSale();
+      if (!await _prepareClosedDayEditDecision(invoice)) return;
+
+      activeEditInstantSaleId.value = int.tryParse(invoice.id.toString());
+      if (activeEditInstantSaleId.value == null) return;
+      await hydrateFromInvoice(invoice);
       isLoading(false);
       await Get.toNamed(invoice.isAdjustmentSale
           ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER

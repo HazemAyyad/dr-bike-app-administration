@@ -20,6 +20,7 @@ import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../buying/presentation/binding/buying_binding.dart';
 import '../../../buying/presentation/controllers/bills_controller.dart';
 import '../ledger/edit_transaction_sheet.dart';
+import '../ledger/debt_ledger_pdf.dart';
 import '../ledger/person_detail_screen.dart';
 import '../ledger/transaction_detail_screen.dart';
 import '../ledger/archive_transactions_sheet.dart';
@@ -1205,7 +1206,7 @@ class DebtLedgerController extends GetxController {
     LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
   }) async {
     if (selectedPerson == null) return null;
-    final result = await repository.downloadReport(
+    final result = await repository.generateReportJson(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
       period: selectedPeriod.value,
@@ -1219,7 +1220,8 @@ class DebtLedgerController extends GetxController {
         Get.snackbar('error'.tr, 'ledgerReportFailed'.tr);
         return null;
       },
-      (bytes) async {
+      (report) async {
+        final bytes = await DebtLedgerPdf.build(report.payload);
         final dir = await getApplicationDocumentsDirectory();
         final file = File(
           '${dir.path}/debt_ledger_${selectedPerson!.id}_${DateTime.now().millisecondsSinceEpoch}.pdf',
