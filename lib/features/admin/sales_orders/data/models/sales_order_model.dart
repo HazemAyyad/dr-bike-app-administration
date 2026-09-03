@@ -339,6 +339,8 @@ class SalesOrderDetailModel {
   final String? shiplyVillageName;
   final String? shiplyAddressLabel;
   final String? customerAddress;
+  final int? partnerAddressId;
+  final Map<String, dynamic> addressSnapshot;
   final bool isShiplyDelivery;
   final List<SalesOrderItemModel> items;
   final List<SalesOrderMediaModel> media;
@@ -393,6 +395,8 @@ class SalesOrderDetailModel {
     this.shiplyVillageName,
     this.shiplyAddressLabel,
     this.customerAddress,
+    this.partnerAddressId,
+    this.addressSnapshot = const {},
     this.isShiplyDelivery = false,
     required this.items,
     required this.media,
@@ -481,6 +485,10 @@ class SalesOrderDetailModel {
       shiplyVillageName: json['shiply_village_name'] as String?,
       shiplyAddressLabel: json['shiply_address_label'] as String?,
       customerAddress: json['customer_address'] as String?,
+      partnerAddressId: int.tryParse('${json['partner_address_id'] ?? ''}'),
+      addressSnapshot: json['address_snapshot'] is Map
+          ? Map<String, dynamic>.from(json['address_snapshot'] as Map)
+          : const {},
       isShiplyDelivery: json['is_shiply_delivery'] == true,
       items: itemsJson
           .map((e) => SalesOrderItemModel.fromJson(e as Map<String, dynamic>))

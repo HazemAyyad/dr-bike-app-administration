@@ -128,16 +128,14 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
 
   Future<void> _select(_PartnerEntry entry) async {
     sales.pickerPartnerIsCustomer.value = entry.isCustomer;
-    await sales.onPickerPartnerSelected(entry.partner);
+    // Refresh product prices in the background so address selection opens
+    // immediately instead of waiting for the products request.
+    sales.onPickerPartnerSelected(entry.partner).catchError((_) {});
     orders.customerNameController.text = entry.partner.name;
     orders.customerPhoneController.text = entry.partner.phone;
     search.text = entry.partner.name;
     focus.unfocus();
     if (mounted) setState(() => showResults = false);
-    await orders.loadPartnerAddresses(
-      partnerId: entry.partner.id,
-      isCustomer: entry.isCustomer,
-    );
     if (!mounted) return;
     await _chooseAddress(entry);
   }

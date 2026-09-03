@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/video_view.dart';
 import 'package:doctorbike/core/services/app_dependency_registry.dart';
+import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -59,6 +60,24 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         _requestedLoad = false;
       }
     });
+  }
+
+  String _orderAddress(SalesOrderDetailModel order) {
+    final snapshot = order.addressSnapshot;
+    final parts = <String>[];
+
+    void addPart(dynamic raw) {
+      final value = '${raw ?? ''}'.trim();
+      if (value.isEmpty || value == '----' || parts.contains(value)) return;
+      parts.add(value);
+    }
+
+    addPart(snapshot['shiply_village_name'] ?? order.shiplyVillageName);
+    addPart(snapshot['shiply_city_name'] ?? order.shiplyCityName);
+    addPart(snapshot['street_address'] ?? order.customerAddress);
+
+    if (parts.isEmpty) addPart(order.shiplyAddressLabel);
+    return parts.join('، ');
   }
 
   @override
@@ -272,6 +291,28 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     color: SalesOrdersController.textSecondary,
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_orderAddress(order).isNotEmpty) ...[
+            SizedBox(height: 5.h),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: 16.sp, color: AppColors.primaryColor),
+                SizedBox(width: 6.w),
+                Expanded(
+                  child: Text(
+                    _orderAddress(order),
+                    style: TextStyle(
+                      color: SalesOrdersController.textSecondary,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
                   ),
                 ),
               ],
