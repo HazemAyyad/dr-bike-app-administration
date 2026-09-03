@@ -123,6 +123,7 @@ class SalesOrdersController extends GetxController {
   final selectedDeliveryCompanyId = RxnInt();
   final hasSuspendedDraft = false.obs;
   final activeEditSalesOrderId = RxnInt();
+  final activeEditReservesStock = RxnBool();
   final productStockAvailability =
       <String, ProductStockAvailabilityModel>{}.obs;
   final stockAvailabilityVersion = 0.obs;
@@ -428,6 +429,7 @@ class SalesOrdersController extends GetxController {
     selectedPaymentType.value = 'cash';
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
+    activeEditReservesStock.value = null;
   }
 
   Future<void> loadPartnerAddresses({
@@ -502,6 +504,7 @@ class SalesOrdersController extends GetxController {
 
   void clearActiveEditSalesOrder() {
     activeEditSalesOrderId.value = null;
+    activeEditReservesStock.value = null;
   }
 
   static bool canRevertStatus(String status) {
@@ -542,6 +545,7 @@ class SalesOrdersController extends GetxController {
     final sales = Get.find<SalesController>();
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = order.id;
+    activeEditReservesStock.value = order.reservesStock;
 
     customerNameController.text = order.customerName ?? '';
     customerPhoneController.text = order.customerPhone ?? '';
@@ -1242,9 +1246,13 @@ class SalesOrdersController extends GetxController {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
     final editId = activeEditSalesOrderId.value;
-    final reserveStock = await _confirmStockReservationChoice();
-    if (reserveStock == null) return false;
-    body['reserve_stock'] = reserveStock;
+    if (editId == null) {
+      final reserveStock = await _confirmStockReservationChoice();
+      if (reserveStock == null) return false;
+      body['reserve_stock'] = reserveStock;
+    } else {
+      body['reserve_stock'] = activeEditReservesStock.value ?? true;
+    }
 
     final stockCheck = await repository.checkStock(
       items: items,
@@ -1287,6 +1295,7 @@ class SalesOrdersController extends GetxController {
         );
         hasSuspendedDraft.value = false;
         activeEditSalesOrderId.value = null;
+        activeEditReservesStock.value = null;
         resetCreateForm();
         sales.resetInstantSaleForm();
         if (editId != null) {
@@ -1605,7 +1614,6 @@ class SalesOrdersController extends GetxController {
       'price_includes_delivery': priceIncludesDelivery.value,
       'total': total,
       'notes': notesController.text.trim(),
-      'reserve_stock': true,
       'items': items,
     };
   }

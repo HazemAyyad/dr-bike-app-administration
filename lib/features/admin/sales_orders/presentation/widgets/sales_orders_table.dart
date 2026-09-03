@@ -730,7 +730,8 @@ class _OrderCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    if (!order.reservesStock) ...[
+                    if (order.status == 'unconfirmed' &&
+                        !order.reservesStock) ...[
                       SizedBox(height: 3.h),
                       Row(
                         children: [

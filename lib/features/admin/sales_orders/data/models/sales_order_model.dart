@@ -341,6 +341,7 @@ class SalesOrderDetailModel {
   final String? customerAddress;
   final int? partnerAddressId;
   final Map<String, dynamic> addressSnapshot;
+  final bool reservesStock;
   final bool isShiplyDelivery;
   final List<SalesOrderItemModel> items;
   final List<SalesOrderMediaModel> media;
@@ -397,6 +398,7 @@ class SalesOrderDetailModel {
     this.customerAddress,
     this.partnerAddressId,
     this.addressSnapshot = const {},
+    this.reservesStock = true,
     this.isShiplyDelivery = false,
     required this.items,
     required this.media,
@@ -489,6 +491,9 @@ class SalesOrderDetailModel {
       addressSnapshot: json['address_snapshot'] is Map
           ? Map<String, dynamic>.from(json['address_snapshot'] as Map)
           : const {},
+      reservesStock: json['reserves_stock'] == null ||
+          json['reserves_stock'] == true ||
+          json['reserves_stock'] == 1,
       isShiplyDelivery: json['is_shiply_delivery'] == true,
       items: itemsJson
           .map((e) => SalesOrderItemModel.fromJson(e as Map<String, dynamic>))
