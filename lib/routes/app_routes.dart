@@ -95,6 +95,9 @@ class AppRoutes {
   static const NEWADJUSTMENTSALESCREEN = '/NewAdjustmentSaleScreen';
   static const NEWCASHPROFITSCREEN = '/NewCashProfitScreen';
   static const SUSPENDEDINVOICESSCREEN = '/SuspendedInvoicesScreen';
+  static const SALESRETURNPERSON = '/SalesReturnPerson';
+  static const SALESRETURNPRODUCTPICKER = '/SalesReturnProductPicker';
+  static const SALESRETURNCHECKOUT = '/SalesReturnCheckout';
 
   // Checks
   static const CHECKSSCREEN = '/ChecksScreen';

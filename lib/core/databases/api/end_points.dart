@@ -588,6 +588,11 @@ class EndPoints {
   static const String allInstantSales = 'all/instant/sales';
   static const String instantSaleCustomerProductPrices =
       'instant/sale/customer-product-prices';
+  static const String salesReturnPeople = 'sales/returns/people';
+  static const String salesReturnAvailableItems =
+      'sales/returns/available-items';
+  static const String salesReturns = 'sales/returns';
+  static const String salesReturn = 'sales/return';
 
   static const String suspendedInstantSales = 'suspended/instant/sales';
   static const String suspendedInstantSalesCount =

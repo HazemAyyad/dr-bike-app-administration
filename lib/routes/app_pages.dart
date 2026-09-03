@@ -165,6 +165,8 @@ import '../features/admin/sales/presentation/views/sales_daily_session_detail_sc
 import '../features/admin/sales/presentation/controllers/sales_daily_admin_controller.dart';
 import '../features/admin/sales/presentation/controllers/sales_daily_history_controller.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
+import '../features/admin/sales_returns/presentation/bindings/sales_returns_binding.dart';
+import '../features/admin/sales_returns/presentation/views/sales_return_flow_screens.dart';
 import '../features/admin/sales/presentation/views/sales_settings_screen.dart';
 import '../features/admin/sales/presentation/views/delivery_company_accounts_screen.dart';
 import '../features/admin/sales_orders/presentation/binding/sales_orders_binding.dart';
@@ -790,6 +792,24 @@ class AppPages {
       name: AppRoutes.SALESSCREEN,
       page: () => const SalesScreen(),
       binding: SalesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESRETURNPERSON,
+      page: () => const SalesReturnPersonScreen(),
+      binding: SalesReturnsBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESRETURNPRODUCTPICKER,
+      page: () => const SalesReturnProductPickerScreen(),
+      binding: SalesReturnsBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESRETURNCHECKOUT,
+      page: () => const SalesReturnCheckoutScreen(),
+      binding: SalesReturnsBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

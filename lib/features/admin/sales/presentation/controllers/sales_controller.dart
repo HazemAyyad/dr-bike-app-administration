@@ -840,6 +840,9 @@ class SalesController extends GetxController
   }
 
   Future<bool> prepareCreateNavigation(Map<String, String> item) async {
+    if (item['salesReturn'] == 'true') {
+      return true;
+    }
     final salesOrders = item['freshSalesOrder'] == 'true';
     await loadDailySession();
     final payload = salesOrders
@@ -4547,6 +4550,12 @@ class SalesController extends GetxController
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.INSTANTSALEPRODUCTPICKER,
       'freshInstantSale': 'true',
+    },
+    {
+      'title': 'فاتورة مرتجع مبيعات',
+      'icon': AssetsManager.invoiceIcon,
+      'route': AppRoutes.SALESRETURNPERSON,
+      'salesReturn': 'true',
     },
     {
       'title': 'adjustmentSale',
