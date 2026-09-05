@@ -12,6 +12,7 @@ import 'package:printing/printing.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/helpers/product_image_utils.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
@@ -485,16 +486,19 @@ class ReturnPurchasesController extends GetxController {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
                 initialValue: type,
+                isExpanded: true,
                 decoration: const InputDecoration(
                     labelText: 'طريقة التسوية', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(
-                      value: 'cash_refund', child: Text('استرداد نقدي')),
+                      value: 'cash_refund',
+                      child: Text('استلمنا المبلغ نقدًا')),
                   DropdownMenuItem(
-                      value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                      value: 'bill_allocation',
+                      child: Text('خصم من فاتورة شراء مفتوحة')),
                   DropdownMenuItem(
                       value: 'debt_credit',
-                      child: Text('تركه دينًا على المورد')),
+                      child: Text('إبقاؤه رصيدًا لنا على المورد')),
                 ],
                 onChanged: (value) => setState(() => type = value!),
               ),
@@ -508,12 +512,14 @@ class ReturnPurchasesController extends GetxController {
                     border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 10),
-              if (type == 'debt_credit')
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: Text(
-                      'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.'),
-                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(type == 'cash_refund'
+                    ? 'اختر الصندوق الذي دخل إليه المبلغ المسترد من المورد.'
+                    : type == 'bill_allocation'
+                        ? 'ستنخفض مديونية فاتورة شراء مفتوحة بنفس قيمة التسوية.'
+                        : 'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.'),
+              ),
               if (type == 'cash_refund')
                 Obx(() => DropdownButtonFormField<dynamic>(
                       initialValue: box,
@@ -640,6 +646,7 @@ class PurchaseReturnDraftLine {
       required this.available,
       required this.unitPrice,
       required this.productImage,
+      this.productImageUrls = const [],
       bool editablePrice = false})
       : priceController = TextEditingController(text: unitPrice.toString());
   final int billItemId;
@@ -651,12 +658,22 @@ class PurchaseReturnDraftLine {
   final double available;
   final double unitPrice;
   final String productImage;
+  final List<String> productImageUrls;
   final TextEditingController priceController;
   final quantityController = TextEditingController(text: '0');
   double get quantity => double.tryParse(quantityController.text) ?? 0;
   double get effectiveUnitPrice =>
       double.tryParse(priceController.text) ?? unitPrice;
   double get total => quantity * effectiveUnitPrice;
+  List<String> get allImageUrlsInPriority {
+    final urls = ProductImageUtils.allValidUrlsFromList(productImageUrls);
+    if (ProductImageUtils.isValidUrl(productImage) &&
+        !urls.contains(productImage.trim())) {
+      urls.insert(0, productImage.trim());
+    }
+    return urls;
+  }
+
   String get selectionKey => '$productId:${sizeId ?? 0}:${sizeColorId ?? 0}';
   factory PurchaseReturnDraftLine.fromJson(Map<String, dynamic> json) =>
       PurchaseReturnDraftLine(
@@ -669,6 +686,9 @@ class PurchaseReturnDraftLine {
         unitPrice: asDouble(json['unit_price']),
         productImage:
             ShowNetImage.getPhoto(asNullableString(json['product_image'])),
+        productImageUrls: ProductImageUtils.allValidUrlsFromList(
+          json['product_images'],
+        ).map(ShowNetImage.getPhoto).toList(growable: false),
       );
   factory PurchaseReturnDraftLine.fromDirect(Map<String, dynamic> json) =>
       PurchaseReturnDraftLine(
@@ -685,6 +705,9 @@ class PurchaseReturnDraftLine {
         unitPrice: asDouble(json['unit_price']),
         productImage:
             ShowNetImage.getPhoto(asNullableString(json['product_image'])),
+        productImageUrls: ProductImageUtils.allValidUrlsFromList(
+          json['product_images'],
+        ).map(ShowNetImage.getPhoto).toList(growable: false),
         editablePrice: true,
       );
   bool get isDirect => billItemId == 0;

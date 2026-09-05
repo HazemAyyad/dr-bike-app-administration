@@ -226,8 +226,8 @@ class _ReturnProductGroup {
       lines.fold(0, (total, line) => total + line.available);
   bool get hasVariants => lines.length > 1 || primary.variant.isNotEmpty;
   List<String> get imageUrls => lines
-      .map((line) => line.productImage.trim())
-      .where((url) => url.isNotEmpty)
+      .expand((line) => line.allImageUrlsInPriority)
+      .where((url) => url.trim().isNotEmpty)
       .toSet()
       .toList(growable: false);
 

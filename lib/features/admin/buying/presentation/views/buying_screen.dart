@@ -161,9 +161,9 @@ class _BuyingPrimaryTabs extends StatelessWidget {
         dividerColor: Colors.transparent,
         labelColor: AppColors.secondaryColor,
         unselectedLabelColor: Colors.black87,
-        labelStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800),
+        labelStyle: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
         unselectedLabelStyle:
-            TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+            TextStyle(fontSize: 10.5.sp, fontWeight: FontWeight.w600),
         indicator: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(999),
@@ -177,8 +177,8 @@ class _BuyingPrimaryTabs extends StatelessWidget {
         ),
         tabs: const [
           Tab(text: 'فواتير الشراء'),
-          Tab(text: 'طلبات الشراء'),
-          Tab(text: 'الراجع'),
+          Tab(text: 'الاستلام والمتابعة'),
+          Tab(text: 'مرتجعات الموردين'),
         ],
       ),
     );
@@ -275,15 +275,25 @@ class _PurchaseOrderIconTabs extends StatelessWidget {
           ),
           child: Row(
             children: [
-              for (var i = 0; i < _items.length; i++)
-                Expanded(
-                  child: _PurchaseOrderIconTab(
-                    item: _items[i],
-                    selected: selected == i,
-                    onTap: () => controller.changeTab(i),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < _items.length; i++)
+                        SizedBox(
+                          width: 105.w,
+                          child: _PurchaseOrderIconTab(
+                            item: _items[i],
+                            selected: selected == i,
+                            onTap: () => controller.changeTab(i),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              SizedBox(width: 6.w),
+              ),
+              SizedBox(width: 4.w),
               IconButton(
                 tooltip: 'search'.tr,
                 visualDensity: VisualDensity.compact,
@@ -339,21 +349,19 @@ class _PurchaseOrderIconTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(item.icon, color: fg, size: 18.sp),
-              if (selected) ...[
-                SizedBox(width: 4.w),
-                Flexible(
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
+              SizedBox(width: 4.w),
+              Flexible(
+                child: Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -604,15 +612,25 @@ class _PurchaseReturnIconTabs extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(children: [
-          for (var i = 0; i < _items.length; i++)
-            Expanded(
-              child: _PurchaseOrderIconTab(
-                item: _items[i],
-                selected: selected == i,
-                onTap: () => controller.changeTab(i),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var i = 0; i < _items.length; i++)
+                    SizedBox(
+                      width: 105.w,
+                      child: _PurchaseOrderIconTab(
+                        item: _items[i],
+                        selected: selected == i,
+                        onTap: () => controller.changeTab(i),
+                      ),
+                    ),
+                ],
               ),
             ),
-          SizedBox(width: 6.w),
+          ),
+          SizedBox(width: 4.w),
           IconButton(
             tooltip: 'search'.tr,
             visualDensity: VisualDensity.compact,

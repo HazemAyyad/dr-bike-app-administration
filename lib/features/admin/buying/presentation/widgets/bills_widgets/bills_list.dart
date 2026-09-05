@@ -76,62 +76,27 @@ class PurchaseBillsTableHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       child: Container(
-        clipBehavior: Clip.antiAlias,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor4
-              : Colors.white,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: Colors.grey.shade300),
+          color: AppColors.primaryColor.withValues(alpha: .06),
+          borderRadius: BorderRadius.circular(10.r),
+          border:
+              Border.all(color: AppColors.primaryColor.withValues(alpha: .18)),
         ),
-        child: const _PurchaseTableHeader(),
-      ),
-    );
-  }
-}
-
-class _PurchaseTableHeader extends StatelessWidget {
-  const _PurchaseTableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 42.h,
-      color: AppColors.primaryColor.withValues(alpha: 0.09),
-      padding: EdgeInsets.symmetric(horizontal: 7.w),
-      child: const Row(
-        children: [
-          _HeaderCell('فاتورة', flex: 19),
-          _HeaderCell('الإجمالي', flex: 27),
-          _HeaderCell('القطع', flex: 11),
-          _HeaderCell('الطرف', flex: 31),
-          _HeaderCell('الحالة', flex: 22),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderCell extends StatelessWidget {
-  const _HeaderCell(this.text, {required this.flex});
-
-  final String text;
-  final int flex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              color: AppColors.primaryColor,
-              fontWeight: FontWeight.w800,
-              fontSize: 11.sp,
+        child: Row(children: [
+          Icon(Icons.touch_app_outlined,
+              color: AppColors.primaryColor, size: 21.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              'اضغط على الفاتورة لعرض الأصناف والاستلام والدفعات',
+              style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700),
             ),
+          ),
+        ]),
       ),
     );
   }
@@ -192,56 +157,101 @@ class _PurchaseBillCard extends GetView<BillsController> {
         Get.toNamed(AppRoutes.BILLDETAILSSCREEN, arguments: page);
       },
       child: Container(
-        constraints: BoxConstraints(minHeight: 78.h),
-        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 7.h),
+        constraints: BoxConstraints(minHeight: 116.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
         decoration: BoxDecoration(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor4
               : Colors.white,
           border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
         ),
-        child: Row(
-          children: [
+        child: Column(children: [
+          Row(children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor,
+                borderRadius: BorderRadius.circular(7.r),
+              ),
+              child: Text('PUR-${bill.id}',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w900)),
+            ),
+            SizedBox(width: 8.w),
             Expanded(
-              flex: 19,
-              child: _InvoiceCell(
-                billId: bill.id,
-                status: _invoiceStatusLabel(bill.status),
+              child: Text(dateText,
+                  style:
+                      TextStyle(fontSize: 11.sp, color: Colors.grey.shade700)),
+            ),
+            _PurchaseStatusPill(
+              label: _workflowLabel(bill.workflowStatus),
+              color: AppColors.primaryColor,
+            ),
+          ]),
+          SizedBox(height: 9.h),
+          Row(children: [
+            CircleAvatar(
+              radius: 17.r,
+              backgroundColor: AppColors.primaryColor.withValues(alpha: .08),
+              child: const Icon(Icons.storefront_outlined,
+                  color: AppColors.primaryColor, size: 18),
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      bill.seller.trim().isEmpty
+                          ? 'مصدر غير محدد'
+                          : bill.seller,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 13.sp, fontWeight: FontWeight.w900)),
+                  Text('${_sourceTypeLabel(bill)}  •  ${bill.itemsCount} أصناف',
+                      style: TextStyle(
+                          fontSize: 10.5.sp, color: Colors.grey.shade600)),
+                ],
               ),
             ),
-            Expanded(
-              flex: 27,
-              child: _AmountCell(
-                total: totalText,
-                remaining: _formatMoney(bill.remainingAmount),
-                showRemaining: (double.tryParse(bill.remainingAmount) ?? 0) > 0,
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(totalText,
+                  style:
+                      TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
+              Text(_paymentLabel(bill.paymentStatus),
+                  style: TextStyle(
+                      fontSize: 10.sp,
+                      color: _paymentColor(bill.paymentStatus),
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ]),
+          if ((double.tryParse(bill.remainingAmount) ?? 0) > 0 ||
+              _issueSummaryText() != null) ...[
+            SizedBox(height: 8.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(8.r),
               ),
-            ),
-            Expanded(
-              flex: 11,
-              child: _CompactTextCell(
-                text: bill.itemsCount.toString(),
-                weight: FontWeight.w800,
-              ),
-            ),
-            Expanded(
-              flex: 31,
-              child: _PartyCell(
-                name: bill.seller,
-                typeLabel: _sourceTypeLabel(bill),
-              ),
-            ),
-            Expanded(
-              flex: 22,
-              child: _StatusColumn(
-                workflow: _workflowLabel(bill.workflowStatus),
-                payment: _paymentLabel(bill.paymentStatus),
-                paymentColor: _paymentColor(bill.paymentStatus),
-                issueText: _issueSummaryText(),
+              child: Text(
+                [
+                  if ((double.tryParse(bill.remainingAmount) ?? 0) > 0)
+                    'المتبقي: ${_formatMoney(bill.remainingAmount)}',
+                  if (_issueSummaryText() != null) _issueSummaryText()!,
+                ].join('  •  '),
+                style: TextStyle(
+                    color: Colors.orange.shade900,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w700),
               ),
             ),
           ],
-        ),
+        ]),
       ),
     );
   }
@@ -298,19 +308,6 @@ class _PurchaseBillCard extends GetView<BillsController> {
     }
   }
 
-  String _invoiceStatusLabel(String status) {
-    switch (status) {
-      case 'finished':
-        return 'منتهية';
-      case 'unfinished':
-        return 'غير مكتملة';
-      case 'cancelled':
-        return 'ملغية';
-      default:
-        return status;
-    }
-  }
-
   String _paymentLabel(String status) {
     switch (status) {
       case 'paid':
@@ -340,241 +337,21 @@ class _PurchaseBillCard extends GetView<BillsController> {
   }
 }
 
-class _InvoiceCell extends StatelessWidget {
-  const _InvoiceCell({
-    required this.billId,
-    required this.status,
-  });
+class _PurchaseStatusPill extends StatelessWidget {
+  const _PurchaseStatusPill({required this.label, required this.color});
 
-  final int billId;
-  final String status;
+  final String label;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(5.r),
-          ),
-          child: Text(
-            status,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 9.sp,
-                ),
-          ),
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(999),
         ),
-        SizedBox(height: 3.h),
-        Text(
-          'PUR-$billId',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                color: AppColors.primaryColor,
-                fontWeight: FontWeight.w700,
-                decoration: TextDecoration.underline,
-                fontSize: 9.sp,
-              ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CompactTextCell extends StatelessWidget {
-  const _CompactTextCell({
-    required this.text,
-    this.weight = FontWeight.w600,
-  });
-
-  final String text;
-  final FontWeight weight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontSize: 11.sp,
-            fontWeight: weight,
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor6
-                : Colors.black87,
-          ),
-    );
-  }
-}
-
-class _AmountCell extends StatelessWidget {
-  const _AmountCell({
-    required this.total,
-    required this.remaining,
-    required this.showRemaining,
-  });
-
-  final String total;
-  final String remaining;
-  final bool showRemaining;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            total,
-            maxLines: 1,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                ),
-          ),
-        ),
-        if (showRemaining) ...[
-          SizedBox(height: 2.h),
-          Text(
-            'المتبقي:',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  fontSize: 9.sp,
-                  height: 1,
-                  color: Colors.deepOrange.shade700,
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          Text(
-            remaining,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  fontSize: 10.sp,
-                  height: 1,
-                  color: Colors.deepOrange.shade700,
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _PartyCell extends StatelessWidget {
-  const _PartyCell({required this.name, required this.typeLabel});
-
-  final String name;
-  final String typeLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final display =
-        name.trim().isEmpty || name == 'no seller' ? 'غير محدد' : name.trim();
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          display,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 12.sp,
-                height: 1.15,
-                fontWeight: FontWeight.w800,
-                color: Colors.black87,
-              ),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          typeLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                fontSize: 9.sp,
-                height: 1,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryColor,
-              ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusColumn extends StatelessWidget {
-  const _StatusColumn({
-    required this.workflow,
-    required this.payment,
-    required this.paymentColor,
-    required this.issueText,
-  });
-
-  final String workflow;
-  final String payment;
-  final Color paymentColor;
-  final String? issueText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          workflow,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryColor,
-              ),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          payment,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w800,
-                color: paymentColor,
-              ),
-        ),
-        if (issueText != null) ...[
-          SizedBox(height: 2.h),
-          Text(
-            issueText!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  fontSize: 8.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.red.shade700,
-                ),
-          ),
-        ],
-      ],
-    );
-  }
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 9.5.sp, fontWeight: FontWeight.w900)),
+      );
 }

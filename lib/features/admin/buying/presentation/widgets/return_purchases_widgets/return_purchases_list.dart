@@ -48,43 +48,28 @@ class PurchaseReturnsTableHeader extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
         child: Container(
-          clipBehavior: Clip.antiAlias,
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(color: Colors.grey.shade300),
+            color: AppColors.primaryColor.withValues(alpha: .06),
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(
+                color: AppColors.primaryColor.withValues(alpha: .18)),
           ),
-          child: Container(
-            height: 42.h,
-            color: AppColors.primaryColor.withValues(alpha: 0.09),
-            padding: EdgeInsets.symmetric(horizontal: 7.w),
-            child: const Row(children: [
-              _ReturnHeaderCell('مرتجع', flex: 19),
-              _ReturnHeaderCell('الإجمالي', flex: 27),
-              _ReturnHeaderCell('القطع', flex: 11),
-              _ReturnHeaderCell('الطرف', flex: 31),
-              _ReturnHeaderCell('الحالة', flex: 22),
-            ]),
-          ),
+          child: Row(children: [
+            Icon(Icons.swipe_right_alt_rounded,
+                color: AppColors.primaryColor, size: 23.sp),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                'اسحب بطاقة المرتجع من اليسار إلى اليمين لإظهار الخيارات',
+                style: TextStyle(
+                    color: AppColors.primaryColor,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+          ]),
         ),
-      );
-}
-
-class _ReturnHeaderCell extends StatelessWidget {
-  const _ReturnHeaderCell(this.text, {required this.flex});
-  final String text;
-  final int flex;
-  @override
-  Widget build(BuildContext context) => Expanded(
-        flex: flex,
-        child: Text(text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: AppColors.primaryColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 11.sp)),
       );
 }
 
@@ -120,112 +105,107 @@ class _ReturnPurchaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = double.tryParse(bill.total.toString()) ?? 0;
-    return InkWell(
-      onTap: () => Get.toNamed(
-        AppRoutes.PURCHASERETURNDETAILSSCREEN,
-        arguments: bill,
-      ),
-      onLongPress: () => _showReturnActions(context, bill),
-      child: Container(
-        constraints: BoxConstraints(minHeight: 78.h),
-        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 7.h),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor4
-              : Colors.white,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 19,
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
+    final itemsCount =
+        bill.itemsCount > 0 ? bill.itemsCount : bill.items.length;
+    final sourceLabel = bill.billId.toString().trim().isEmpty
+        ? 'مرتجع مباشر'
+        : 'من فاتورة شراء #${bill.billId}';
+    final date = DateFormat('yyyy/MM/dd').format(bill.createdAt);
+    return _SwipeReturnCard(
+      onOptions: () => _showReturnActions(context, bill),
+      child: Material(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : Colors.white,
+        child: InkWell(
+          onTap: () => Get.toNamed(
+            AppRoutes.PURCHASERETURNDETAILSSCREEN,
+            arguments: bill,
+          ),
+          child: Container(
+            constraints: BoxConstraints(minHeight: 112.h),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Column(children: [
+              Row(children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill.number,
+                        style: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text('$date  •  $sourceLabel',
+                          style: TextStyle(
+                              fontSize: 10.5.sp, color: Colors.grey.shade700)),
+                    ],
+                  ),
+                ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryColor,
-                    borderRadius: BorderRadius.circular(5.r),
+                    color: _statusColor(bill.status).withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(_statusLabel(bill.status),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 9.sp)),
+                          color: _statusColor(bill.status),
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w900)),
                 ),
-                SizedBox(height: 3.h),
-                Text(bill.number,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: AppColors.primaryColor,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                        fontSize: 9.sp)),
               ]),
-            ),
-            Expanded(
-              flex: 27,
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    '${NumberFormat('#,##0.##').format(total)} ${bill.currency}',
-                    style:
-                        TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+              SizedBox(height: 10.h),
+              Row(children: [
+                CircleAvatar(
+                  radius: 17.r,
+                  backgroundColor:
+                      AppColors.primaryColor.withValues(alpha: .08),
+                  child: const Icon(Icons.storefront_outlined,
+                      color: AppColors.primaryColor, size: 18),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill.seller.name.trim().isEmpty
+                            ? 'مورد غير محدد'
+                            : bill.seller.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 13.sp, fontWeight: FontWeight.w800),
+                      ),
+                      Text('$itemsCount أصناف',
+                          style: TextStyle(
+                              fontSize: 10.5.sp, color: Colors.grey.shade600)),
+                    ],
                   ),
                 ),
-                if ((double.tryParse(bill.settledAmount) ?? 0) > 0)
-                  Text('المسوّى: ${bill.settledAmount}',
-                      maxLines: 1,
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Text(
+                      '${NumberFormat('#,##0.##').format(total)} ${bill.currency}',
                       style: TextStyle(
-                          fontSize: 9.sp,
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w800)),
+                          fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                  if ((double.tryParse(bill.settledAmount) ?? 0) > 0)
+                    Text('تمت تسوية ${bill.settledAmount} ${bill.currency}',
+                        style: TextStyle(
+                            fontSize: 9.5.sp,
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w700)),
+                ]),
               ]),
-            ),
-            Expanded(
-              flex: 11,
-              child: Text(
-                '${bill.itemsCount > 0 ? bill.itemsCount : bill.items.length}',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
-              ),
-            ),
-            Expanded(
-              flex: 31,
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(
-                    bill.seller.name.trim().isEmpty
-                        ? 'غير محدد'
-                        : bill.seller.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 12.sp, fontWeight: FontWeight.w800)),
-                SizedBox(height: 2.h),
-                Text('فاتورة #${bill.billId}',
-                    maxLines: 1,
-                    style: TextStyle(
-                        fontSize: 9.sp,
-                        color: AppColors.primaryColor,
-                        fontWeight: FontWeight.w800)),
-              ]),
-            ),
-            Expanded(
-              flex: 22,
-              child: Text(_statusLabel(bill.status),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w800,
-                      color: _statusColor(bill.status))),
-            ),
-          ],
+            ]),
+          ),
         ),
       ),
     );
@@ -281,7 +261,9 @@ class _ReturnPurchaseCard extends StatelessWidget {
                 Text(row.number,
                     style: TextStyle(
                         fontWeight: FontWeight.w900, fontSize: 18.sp)),
-                Text('${row.seller.name} • فاتورة #${row.billId}'),
+                Text(row.billId.toString().trim().isEmpty
+                    ? '${row.seller.name} • مرتجع مباشر'
+                    : '${row.seller.name} • فاتورة #${row.billId}'),
                 SizedBox(height: 8.h),
                 Container(
                   width: double.infinity,
@@ -379,16 +361,19 @@ class _ReturnPurchaseCard extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
                 initialValue: type,
+                isExpanded: true,
                 decoration: const InputDecoration(
                     labelText: 'طريقة التسوية', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(
-                      value: 'cash_refund', child: Text('استرداد نقدي')),
+                      value: 'cash_refund',
+                      child: Text('استلمنا المبلغ نقدًا')),
                   DropdownMenuItem(
-                      value: 'bill_allocation', child: Text('خصم من فاتورة')),
+                      value: 'bill_allocation',
+                      child: Text('خصم من فاتورة شراء مفتوحة')),
                   DropdownMenuItem(
                       value: 'debt_credit',
-                      child: Text('تركه دينًا على المورد')),
+                      child: Text('إبقاؤه رصيدًا لنا على المورد')),
                 ],
                 onChanged: (value) => setState(() => type = value!),
               ),
@@ -401,12 +386,18 @@ class _ReturnPurchaseCard extends StatelessWidget {
                       labelText: 'المبلغ (${row.currency})',
                       border: const OutlineInputBorder())),
               SizedBox(height: 10.h),
-              if (type == 'debt_credit')
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 10),
-                  child: Text(
-                      'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.'),
+              Padding(
+                padding: EdgeInsets.only(bottom: 10.h),
+                child: Text(
+                  type == 'cash_refund'
+                      ? 'اختر الصندوق الذي دخل إليه المبلغ المسترد من المورد.'
+                      : type == 'bill_allocation'
+                          ? 'ستنخفض مديونية فاتورة شراء مفتوحة بنفس قيمة التسوية.'
+                          : 'سيُغلق المرتجع وتبقى قيمته رصيدًا لنا على المورد في دفتر الديون، بدون حركة صندوق.',
+                  style:
+                      TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
                 ),
+              ),
               if (type == 'cash_refund')
                 Obx(() => DropdownButtonFormField<dynamic>(
                       initialValue: box,
@@ -457,4 +448,80 @@ class _ReturnPurchaseCard extends StatelessWidget {
       billId.dispose();
     });
   }
+}
+
+class _SwipeReturnCard extends StatefulWidget {
+  const _SwipeReturnCard({required this.child, required this.onOptions});
+
+  final Widget child;
+  final VoidCallback onOptions;
+
+  @override
+  State<_SwipeReturnCard> createState() => _SwipeReturnCardState();
+}
+
+class _SwipeReturnCardState extends State<_SwipeReturnCard> {
+  double offset = 0;
+  static const double revealWidth = 76;
+
+  void _update(DragUpdateDetails details) {
+    setState(() => offset = (offset + details.delta.dx).clamp(0, revealWidth));
+  }
+
+  void _finish(DragEndDetails details) {
+    final shouldOpen =
+        offset > revealWidth * .34 || (details.primaryVelocity ?? 0) > 350;
+    setState(() => offset = shouldOpen ? revealWidth : 0);
+  }
+
+  @override
+  Widget build(BuildContext context) => ClipRect(
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            Positioned(
+              left: 5.w,
+              child: Material(
+                color: AppColors.primaryColor,
+                borderRadius: BorderRadius.circular(11.r),
+                child: InkWell(
+                  onTap: () {
+                    setState(() => offset = 0);
+                    widget.onOptions();
+                  },
+                  borderRadius: BorderRadius.circular(11.r),
+                  child: SizedBox(
+                    width: 66.w,
+                    height: 66.h,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.more_horiz_rounded,
+                            color: Colors.white, size: 21.sp),
+                        SizedBox(height: 3.h),
+                        Text('الخيارات',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              transform: Matrix4.translationValues(offset, 0, 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: _update,
+                onHorizontalDragEnd: _finish,
+                child: widget.child,
+              ),
+            ),
+          ],
+        ),
+      );
 }
