@@ -40,6 +40,8 @@ import '../ledger/transaction_entry_screen.dart';
 import '../ledger/ledger_pick_person_sheet.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/databases/api/api_consumer.dart';
+import '../../../../../core/databases/api/end_points.dart';
 
 enum LedgerReportDetailLevel {
   summary,
@@ -105,6 +107,8 @@ class DebtLedgerController extends GetxController {
 
   static const List<String> ledgerCurrencies = ['شيكل', 'دولار', 'دينار'];
   final RxString selectedCurrency = 'شيكل'.obs;
+  final RxString takenLabel = 'أخذت'.obs;
+  final RxString givenLabel = 'أعطيت'.obs;
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -279,8 +283,62 @@ class DebtLedgerController extends GetxController {
 
   Future<void> loadMainData() async {
     isLoading(true);
-    await Future.wait([fetchSummary(), fetchPeople(), fetchCategories()]);
+    await Future.wait([
+      fetchSummary(),
+      fetchPeople(),
+      fetchCategories(),
+      loadDebtLabels(),
+    ]);
     isLoading(false);
+  }
+
+  String labelForType(String type) =>
+      type == 'taken' ? takenLabel.value : givenLabel.value;
+
+  Future<void> loadDebtLabels() async {
+    try {
+      final response = await Get.find<ApiConsumer>().get(
+        EndPoints.adminUiPreferences,
+      );
+      final data = response.data['data'] as Map? ?? const {};
+      final labels = data['debt_ledger'] as Map? ?? const {};
+      takenLabel.value =
+          labels['taken_label']?.toString().trim().isNotEmpty == true
+              ? labels['taken_label'].toString().trim()
+              : 'أخذت';
+      givenLabel.value =
+          labels['given_label']?.toString().trim().isNotEmpty == true
+              ? labels['given_label'].toString().trim()
+              : 'أعطيت';
+    } catch (_) {
+      takenLabel.value = 'أخذت';
+      givenLabel.value = 'أعطيت';
+    }
+  }
+
+  Future<bool> saveDebtLabels(String taken, String given) async {
+    final nextTaken = taken.trim().isEmpty ? 'أخذت' : taken.trim();
+    final nextGiven = given.trim().isEmpty ? 'أعطيت' : given.trim();
+    try {
+      final response = await Get.find<ApiConsumer>().put(
+        EndPoints.adminUiPreferences,
+        data: {
+          'debt_ledger': {
+            'taken_label': nextTaken,
+            'given_label': nextGiven,
+          },
+        },
+      );
+      final data = response.data['data'] as Map? ?? const {};
+      final labels = data['debt_ledger'] as Map? ?? const {};
+      takenLabel.value = labels['taken_label']?.toString() ?? nextTaken;
+      givenLabel.value = labels['given_label']?.toString() ?? nextGiven;
+      await loadMainData();
+      return true;
+    } catch (_) {
+      Get.snackbar('error'.tr, 'لم يتم حفظ مسميات الديون');
+      return false;
+    }
   }
 
   Future<void> pullToRefresh() async {
@@ -1206,6 +1264,25 @@ class DebtLedgerController extends GetxController {
     LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
   }) async {
     if (selectedPerson == null) return null;
+    if (detailLevel == LedgerReportDetailLevel.summary) {
+      final result = await repository.downloadReport(
+        customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
+        sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
+        period: selectedPeriod.value,
+        startDate: _formatDate(customStartDate.value),
+        endDate: _formatDate(customEndDate.value),
+        currency: selectedCurrency.value,
+        reportDetailLevel: detailLevel.apiValue,
+      );
+      return result.fold(
+        (failure) {
+          Get.snackbar('error'.tr, 'ledgerReportFailed'.tr);
+          return null;
+        },
+        (bytes) => _savePersonReport(bytes),
+      );
+    }
+
     final result = await repository.generateReportJson(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
@@ -1222,14 +1299,18 @@ class DebtLedgerController extends GetxController {
       },
       (report) async {
         final bytes = await DebtLedgerPdf.build(report.payload);
-        final dir = await getApplicationDocumentsDirectory();
-        final file = File(
-          '${dir.path}/debt_ledger_${selectedPerson!.id}_${DateTime.now().millisecondsSinceEpoch}.pdf',
-        );
-        await file.writeAsBytes(bytes);
-        return file;
+        return _savePersonReport(bytes);
       },
     );
+  }
+
+  Future<File> _savePersonReport(List<int> bytes) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${dir.path}/debt_ledger_${selectedPerson!.id}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await file.writeAsBytes(bytes);
+    return file;
   }
 
   Future<void> collectDebtVia(String channel) async {

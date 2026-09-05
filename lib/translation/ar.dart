@@ -1407,8 +1407,8 @@ const Map<String, String> ar = {
   'seller': 'تاجر',
 
   // قسم الديون
-  'gave': 'مستحق علينا',
-  'took': 'مستحق لنا',
+  'gave': 'أعطيت',
+  'took': 'أخذت',
   'debtBook': 'دفتر الديون',
   'ledgerCustomers': 'العملاء',
   'ledgerSuppliers': 'الموردين',

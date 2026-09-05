@@ -47,6 +47,14 @@ class DebtLedgerPdf {
         (report['transactions'] as List? ?? const []).whereType<Map>().toList();
     final person = Map<String, dynamic>.from(report['person'] as Map? ?? {});
     final currency = _currency(report['period_label']?.toString() ?? '');
+    final takenLabel =
+        report['taken_label']?.toString().trim().isNotEmpty == true
+            ? report['taken_label'].toString().trim()
+            : 'أخذت';
+    final givenLabel =
+        report['given_label']?.toString().trim().isNotEmpty == true
+            ? report['given_label'].toString().trim()
+            : 'أعطيت';
     final document =
         pw.Document(theme: pw.ThemeData.withFont(base: regular, bold: bold));
     document.addPage(pw.MultiPage(
@@ -76,9 +84,9 @@ class DebtLedgerPdf {
           child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
-                _stat('مبالغ مستحقة لنا', report['total_taken'], currency,
+                _stat('إجمالي $takenLabel', report['total_taken'], currency,
                     PdfColors.green700, bold),
-                _stat('مبالغ مستحقة علينا', report['total_given'], currency,
+                _stat('إجمالي $givenLabel', report['total_given'], currency,
                     PdfColors.red700, bold),
                 _stat(
                     'صافي الرصيد', report['balance'], currency, _purple, bold),
@@ -90,7 +98,8 @@ class DebtLedgerPdf {
           final id = tx['id']?.toString() ?? '';
           final taken = tx['type'] == 'taken';
           final widgets = <pw.Widget>[
-            _transaction(entry.key + 1, tx, taken, currency, bold)
+            _transaction(entry.key + 1, tx, taken, currency, bold, takenLabel,
+                givenLabel)
           ];
           final detail = details[id];
           if (detail is Map) {
@@ -146,8 +155,8 @@ class DebtLedgerPdf {
             style: pw.TextStyle(font: bold, fontSize: 12, color: color)),
       ]);
 
-  static pw.Widget _transaction(
-          int index, Map tx, bool taken, String currency, pw.Font bold) =>
+  static pw.Widget _transaction(int index, Map tx, bool taken, String currency,
+          pw.Font bold, String takenLabel, String givenLabel) =>
       pw.Container(
         padding: const pw.EdgeInsets.all(9),
         decoration: pw.BoxDecoration(
@@ -162,7 +171,7 @@ class DebtLedgerPdf {
                     pw.Text('$index. ${tx['transaction_date'] ?? '—'}',
                         style: pw.TextStyle(font: bold, color: _ink)),
                     pw.Text(
-                        '${taken ? 'مستحق لنا' : 'مستحق علينا'}  ${_money(tx['amount'])} $currency',
+                        '${taken ? takenLabel : givenLabel}  ${_money(tx['amount'])} $currency',
                         style: pw.TextStyle(
                             font: bold,
                             color:

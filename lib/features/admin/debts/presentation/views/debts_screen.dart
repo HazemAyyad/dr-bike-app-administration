@@ -13,6 +13,7 @@ import '../ledger/ledger_colors.dart';
 import '../ledger/ledger_currency_tab_bar.dart';
 import '../ledger/ledger_format.dart';
 import '../ledger/period_filter_sheet.dart';
+import '../ledger/debt_labels_settings_sheet.dart';
 
 class DebtsScreen extends GetView<DebtLedgerController> {
   const DebtsScreen({Key? key}) : super(key: key);
@@ -27,6 +28,17 @@ class DebtsScreen extends GetView<DebtLedgerController> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'إعدادات مسميات الديون',
+            onPressed: () => Get.bottomSheet(
+              const DebtLabelsSettingsSheet(),
+              isScrollControlled: true,
+              backgroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -129,7 +141,7 @@ class _SummaryCard extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryItem(
-                label: 'took'.tr,
+                label: controller.takenLabel.value,
                 amount: taken,
                 currency: currency,
                 color: LedgerColors.takenGreen,
@@ -138,7 +150,7 @@ class _SummaryCard extends StatelessWidget {
             Container(width: 1, height: 40.h, color: Colors.grey.shade300),
             Expanded(
               child: _SummaryItem(
-                label: 'gave'.tr,
+                label: controller.givenLabel.value,
                 amount: given,
                 currency: currency,
                 color: LedgerColors.givenRed,

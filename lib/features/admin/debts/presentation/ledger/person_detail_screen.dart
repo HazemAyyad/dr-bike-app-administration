@@ -353,7 +353,7 @@ class _BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: 'took'.tr,
+                  label: Get.find<DebtLedgerController>().takenLabel.value,
                   amount: totalTaken,
                   currency: currency,
                   color: LedgerColors.takenGreen,
@@ -366,7 +366,7 @@ class _BalanceCard extends StatelessWidget {
               ),
               Expanded(
                 child: _StatColumn(
-                  label: 'gave'.tr,
+                  label: Get.find<DebtLedgerController>().givenLabel.value,
                   amount: totalGiven,
                   currency: currency,
                   color: LedgerColors.givenRed,
@@ -556,7 +556,8 @@ class _TransactionCard extends StatelessWidget {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        transaction.typeLabel,
+                                        Get.find<DebtLedgerController>()
+                                            .labelForType(transaction.type),
                                         style: TextStyle(
                                           fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
@@ -703,7 +704,7 @@ class _BottomActions extends StatelessWidget {
           children: [
             Expanded(
               child: _LedgerActionButton(
-                label: 'gave'.tr,
+                label: controller.givenLabel.value,
                 color: LedgerColors.givenRed,
                 onPressed: () => controller.openTransactionEntry(type: 'given'),
               ),
@@ -711,7 +712,7 @@ class _BottomActions extends StatelessWidget {
             SizedBox(width: 12.w),
             Expanded(
               child: _LedgerActionButton(
-                label: 'took'.tr,
+                label: controller.takenLabel.value,
                 color: LedgerColors.takenGreen,
                 onPressed: () => controller.openTransactionEntry(type: 'taken'),
               ),

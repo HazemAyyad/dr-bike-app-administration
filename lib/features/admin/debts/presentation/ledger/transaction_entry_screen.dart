@@ -131,7 +131,9 @@ class TransactionEntryScreen extends StatelessWidget {
                     children: [
                       Obx(
                         () => ChoiceChip(
-                          label: Text('took'.tr),
+                          label: Text(Get.find<DebtLedgerController>()
+                              .takenLabel
+                              .value),
                           selected: calc.transactionType.value == 'taken',
                           selectedColor:
                               LedgerColors.takenGreen.withValues(alpha: 0.2),
@@ -142,7 +144,9 @@ class TransactionEntryScreen extends StatelessWidget {
                       SizedBox(width: 8.w),
                       Obx(
                         () => ChoiceChip(
-                          label: Text('gave'.tr),
+                          label: Text(Get.find<DebtLedgerController>()
+                              .givenLabel
+                              .value),
                           selected: calc.transactionType.value == 'given',
                           selectedColor:
                               LedgerColors.givenRed.withValues(alpha: 0.2),
