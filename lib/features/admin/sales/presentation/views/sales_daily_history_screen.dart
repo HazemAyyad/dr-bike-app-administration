@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../maintenance/presentation/binding/maintenance_binding.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
@@ -35,29 +36,59 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
       Get.isRegistered<SalesController>() ? Get.find<SalesController>() : null;
 
   late String selectedType;
+  late final List<String> allowedTypes;
   bool showHistory = false;
 
   @override
   void initState() {
     super.initState();
+    allowedTypes = [
+      if (_canAccessSales) ...['instant_sales', 'sales_orders'],
+      if (_canAccessMaintenance) 'maintenance',
+    ];
     final args = Get.arguments;
     final requested = args is Map ? '${args['sessionType'] ?? ''}' : '';
-    selectedType = requested == 'maintenance'
+    final requestedType = requested == 'maintenance'
         ? 'maintenance'
         : requested == 'sales_orders'
             ? 'sales_orders'
             : 'instant_sales';
+    selectedType = allowedTypes.contains(requestedType)
+        ? requestedType
+        : allowedTypes.isEmpty
+            ? ''
+            : allowedTypes.first;
     AppDependencyRegistry.ensureChecks();
     AppDependencyRegistry.ensureBoxes();
-    AppDependencyRegistry.ensureMaintenance();
-    if (!Get.isRegistered<MaintenanceController>() &&
-        !Get.isPrepared<MaintenanceController>()) {
-      MaintenanceBinding().dependencies();
+    if (_canAccessMaintenance) {
+      AppDependencyRegistry.ensureMaintenance();
+      if (!Get.isRegistered<MaintenanceController>() &&
+          !Get.isPrepared<MaintenanceController>()) {
+        MaintenanceBinding().dependencies();
+      }
     }
   }
 
+  bool get _canAccessSales =>
+      userType == 'admin' ||
+      employeePermissionNames.contains('Sales') ||
+      employeePermissions.contains(8);
+
+  bool get _canAccessMaintenance =>
+      userType == 'admin' ||
+      employeePermissionNames.contains('Maintenance') ||
+      employeePermissions.contains(15);
+
   @override
   Widget build(BuildContext context) {
+    if (allowedTypes.isEmpty) {
+      return const Scaffold(
+        appBar: CustomAppBar(title: 'الجلسات اليومية', action: false),
+        body: Center(
+          child: Text('لا تملك صلاحية الوصول إلى جلسات الأقسام'),
+        ),
+      );
+    }
     if (selectedType == 'maintenance') {
       return Scaffold(
         appBar: const CustomAppBar(title: 'الجلسات اليومية', action: false),
@@ -65,6 +96,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
           embedded: true,
           drawerSelector: _DrawerTypeSelector(
             selectedType: selectedType,
+            allowedTypes: allowedTypes,
             onChanged: (value) => setState(() => selectedType = value),
           ),
         ),
@@ -118,6 +150,7 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
               SizedBox(height: 7.h),
               _DrawerTypeSelector(
                 selectedType: selectedType,
+                allowedTypes: allowedTypes,
                 onChanged: (value) => setState(() => selectedType = value),
               ),
               SizedBox(height: 7.h),
@@ -665,42 +698,49 @@ class _ActiveDrawerBanner extends StatelessWidget {
 class _DrawerTypeSelector extends StatelessWidget {
   const _DrawerTypeSelector({
     required this.selectedType,
+    required this.allowedTypes,
     required this.onChanged,
   });
 
   final String selectedType;
+  final List<String> allowedTypes;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final items = <Map<String, dynamic>>[
+      if (allowedTypes.contains('instant_sales'))
+        {
+          'type': 'instant_sales',
+          'label': 'صندوق المبيعات',
+          'icon': Icons.point_of_sale_outlined,
+        },
+      if (allowedTypes.contains('sales_orders'))
+        {
+          'type': 'sales_orders',
+          'label': 'صندوق الطلبيات',
+          'icon': Icons.local_shipping_outlined,
+        },
+      if (allowedTypes.contains('maintenance'))
+        {
+          'type': 'maintenance',
+          'label': 'صندوق الصيانة',
+          'icon': Icons.build_circle_outlined,
+        },
+    ];
     return Row(
       children: [
-        Expanded(
-          child: _TypeButton(
-            label: 'صندوق المبيعات',
-            icon: Icons.point_of_sale_outlined,
-            selected: selectedType == 'instant_sales',
-            onTap: () => onChanged('instant_sales'),
+        for (var index = 0; index < items.length; index++) ...[
+          Expanded(
+            child: _TypeButton(
+              label: items[index]['label'] as String,
+              icon: items[index]['icon'] as IconData,
+              selected: selectedType == items[index]['type'],
+              onTap: () => onChanged(items[index]['type'] as String),
+            ),
           ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: _TypeButton(
-            label: 'صندوق الطلبيات',
-            icon: Icons.local_shipping_outlined,
-            selected: selectedType == 'sales_orders',
-            onTap: () => onChanged('sales_orders'),
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: _TypeButton(
-            label: 'صندوق الصيانة',
-            icon: Icons.build_circle_outlined,
-            selected: selectedType == 'maintenance',
-            onTap: () => onChanged('maintenance'),
-          ),
-        ),
+          if (index != items.length - 1) SizedBox(width: 8.w),
+        ],
       ],
     );
   }
