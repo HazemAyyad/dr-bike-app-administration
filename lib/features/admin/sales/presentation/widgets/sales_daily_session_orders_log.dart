@@ -102,6 +102,25 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                             ),
                           ),
                         ],
+                        SizedBox(height: 2.h),
+                        Text(
+                          'عدد المنتجات: ${order.productsCount}',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (order.createdByName?.isNotEmpty ?? false) ...[
+                          SizedBox(height: 2.h),
+                          Text(
+                            'أضافها: ${order.createdByName}',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
                         SizedBox(height: 4.h),
                         Container(
                           padding: EdgeInsets.symmetric(
@@ -113,8 +132,9 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                                 .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8.r),
                             border: Border.all(
-                              color: SalesOrderStatusUi.statusColor(order.status)
-                                  .withValues(alpha: 0.35),
+                              color:
+                                  SalesOrderStatusUi.statusColor(order.status)
+                                      .withValues(alpha: 0.35),
                             ),
                           ),
                           child: Text(
@@ -122,7 +142,8 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 9.sp,
                               fontWeight: FontWeight.w600,
-                              color: SalesOrderStatusUi.statusColor(order.status),
+                              color:
+                                  SalesOrderStatusUi.statusColor(order.status),
                             ),
                           ),
                         ),
@@ -140,13 +161,18 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${order.total.toStringAsFixed(0)} ₪',
+                    '${order.total.toStringAsFixed(2)} ₪',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  Icon(Icons.chevron_left, size: 18.sp, color: Colors.grey.shade400),
+                  SizedBox(width: 4.w),
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    size: 18.sp,
+                    color: Colors.grey.shade400,
+                  ),
                 ],
               ),
             ),

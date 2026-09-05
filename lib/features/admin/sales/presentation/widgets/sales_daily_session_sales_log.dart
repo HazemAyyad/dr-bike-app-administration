@@ -7,6 +7,9 @@ import 'package:intl/intl.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../maintenance/data/repositories/maintenance_implement.dart';
+import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
+import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../data/models/daily_session_model.dart';
 import '../binding/sales_binding.dart';
 import '../controllers/sales_controller.dart';
@@ -110,6 +113,24 @@ class _SalesList extends StatelessWidget {
       await Get.toNamed(
         AppRoutes.SALESORDERDETAILSCREEN,
         arguments: sale.salesOrderId,
+      );
+      return;
+    }
+
+    if (sale.isFromMaintenance && sale.maintenanceId != null) {
+      AppDependencyRegistry.ensureMaintenance();
+      final result = await GetMaintenanceInvoiceUsecase(
+        maintenanceRepository: Get.find<MaintenanceImplement>(),
+      ).call(maintenanceId: sale.maintenanceId.toString());
+      result.fold(
+        (failure) => Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        ),
+        (invoice) => showMaintenanceInvoiceSheet(context, invoice),
       );
       return;
     }
@@ -266,7 +287,7 @@ class _SaleRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4.r),
                             ),
                             child: Text(
-                              sale.maintenanceInvoiceNumber ?? 'maintenance'.tr,
+                              'maintenance'.tr,
                               style: TextStyle(
                                 fontSize: 8.sp,
                                 color: const Color(0xFFB45309),
@@ -290,8 +311,12 @@ class _SaleRow extends StatelessWidget {
                     ),
                     SizedBox(height: 3.h),
                     Text(
-                      sale.label,
-                      maxLines: 2,
+                      sale.productsCount > 0
+                          ? 'عدد المنتجات: ${sale.productsCount}'
+                          : sale.isInstant
+                              ? 'فاتورة مبيعات'
+                              : 'بيع ربحي',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12.sp,
@@ -342,27 +367,27 @@ class _SaleRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    sale.totalCost.toStringAsFixed(0),
+                    '${sale.totalCost.toStringAsFixed(2)} ₪',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
                       color: cancelled ? Colors.red.shade700 : null,
                     ),
                   ),
-                  if (sale.isInstant && sale.quantity > 0)
+                  if (sale.paidAmount > 0)
                     Text(
-                      'x${sale.quantity.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 10.sp),
-                    ),
-                  if (sale.paidAmount > 0 && sale.remainingAmount > 0.01)
-                    Text(
-                      '${'paidAmount'.tr}: ${sale.paidAmount.toStringAsFixed(0)}',
+                      'المدفوع: ${sale.paidAmount.toStringAsFixed(2)}',
                       style: TextStyle(fontSize: 9.sp, color: Colors.green),
+                    ),
+                  if (sale.remainingAmount > 0.01)
+                    Text(
+                      'المتبقي: ${sale.remainingAmount.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 9.sp, color: Colors.orange),
                     ),
                 ],
               ),
               SizedBox(width: 4.w),
-              Icon(Icons.chevron_left,
+              Icon(Icons.receipt_long_outlined,
                   size: 18.sp, color: Colors.grey.shade400),
             ],
           ),

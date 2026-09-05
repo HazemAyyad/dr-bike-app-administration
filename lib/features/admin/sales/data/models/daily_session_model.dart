@@ -168,6 +168,8 @@ class DailySessionInfo {
   final String? previousDayBusinessDate;
   final bool closedOnNextDay;
   final String? employeeName;
+  final int? openedByUserId;
+  final String? openedByName;
   final String? openedAt;
   final String? closedAt;
   final bool hasPendingReopen;
@@ -186,6 +188,8 @@ class DailySessionInfo {
     this.previousDayBusinessDate,
     this.closedOnNextDay = false,
     this.employeeName,
+    this.openedByUserId,
+    this.openedByName,
     this.openedAt,
     this.closedAt,
     this.hasPendingReopen = false,
@@ -212,6 +216,10 @@ class DailySessionInfo {
       closedOnNextDay:
           json['closed_on_next_day'] == true || json['closed_on_next_day'] == 1,
       employeeName: asNullableString(json['employee_name']),
+      openedByUserId: json['opened_by_user_id'] == null
+          ? null
+          : int.tryParse('${json['opened_by_user_id']}'),
+      openedByName: asNullableString(json['opened_by_name']),
       openedAt: asNullableString(json['opened_at']),
       closedAt: asNullableString(json['closed_at']),
       hasPendingReopen:
@@ -486,6 +494,8 @@ class DailySessionSummaryModel {
   final int userId;
   final int? employeeId;
   final String? employeeName;
+  final int? openedByUserId;
+  final String? openedByName;
   final String businessDate;
   final String status;
   final String? openedAt;
@@ -505,6 +515,8 @@ class DailySessionSummaryModel {
     required this.userId,
     this.employeeId,
     this.employeeName,
+    this.openedByUserId,
+    this.openedByName,
     required this.businessDate,
     required this.status,
     this.openedAt,
@@ -531,6 +543,10 @@ class DailySessionSummaryModel {
           ? null
           : int.tryParse('${json['employee_id']}'),
       employeeName: asNullableString(json['employee_name']),
+      openedByUserId: json['opened_by_user_id'] == null
+          ? null
+          : int.tryParse('${json['opened_by_user_id']}'),
+      openedByName: asNullableString(json['opened_by_name']),
       businessDate: asString(json['business_date']),
       status: asString(json['status']),
       openedAt: asNullableString(json['opened_at']),
@@ -733,6 +749,12 @@ class DailySessionSaleLogRow {
   String get displayInvoiceNumber {
     if (isSalesOrderDelivery) {
       return salesOrderSerial ?? '#${salesOrderId ?? id}';
+    }
+    final maintenanceInvoice = maintenanceInvoiceNumber?.trim();
+    if (isFromMaintenance &&
+        maintenanceInvoice != null &&
+        maintenanceInvoice.isNotEmpty) {
+      return maintenanceInvoice;
     }
     final invoice = invoiceNumber?.trim();
     if (invoice != null && invoice.isNotEmpty) return invoice;

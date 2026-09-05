@@ -181,11 +181,14 @@ class _MaintenanceDailyHistoryScreenState
             ? 'مفتوح الآن'
             : 'لا يوجد صندوق مفتوح';
     final hasActiveSession = open || closing;
-    final expectedOpening = _expectedOpeningForShekel();
-    final expectedAmount = double.tryParse(
-          '${expectedOpening?['expected_amount'] ?? 0}',
-        ) ??
-        0;
+    final activeExpectedOpening = active?.expectedOpeningCounts
+        .firstWhereOrNull((row) => row.currency == 'شيكل');
+    final payloadExpectedOpening = _expectedOpeningForShekel();
+    final expectedAmount = activeExpectedOpening?.expectedAmount ??
+        (double.tryParse(
+              '${payloadExpectedOpening?['expected_amount'] ?? 0}',
+            ) ??
+            0);
     final balance = hasActiveSession
         ? (active?.currencies
                 .firstWhereOrNull((row) => row.currency == 'شيكل')
@@ -193,8 +196,11 @@ class _MaintenanceDailyHistoryScreenState
             controller.maintenanceDailyExpectedClosingBalance)
         : expectedAmount;
     final employeeName = hasActiveSession
-        ? (active?.employeeName ?? controller.maintenanceDailyEmployeeName)
-        : expectedOpening?['previous_employee_name']?.toString();
+        ? (active?.openedByName ??
+            active?.employeeName ??
+            controller.maintenanceDailyEmployeeName)
+        : (activeExpectedOpening?.previousEmployeeName ??
+            payloadExpectedOpening?['previous_employee_name']?.toString());
     final balanceLabel = hasActiveSession
         ? 'الرصيد المتوقع الحالي'
         : 'الموجود في الصندوق قبل فتح الجلسة';
@@ -298,7 +304,8 @@ class _MaintenanceDailyHistoryScreenState
                 Text(
                   hasActiveSession
                       ? _time(active?.openedAt)
-                      : (expectedOpening?['previous_business_date']
+                      : (activeExpectedOpening?.previousBusinessDate ??
+                          payloadExpectedOpening?['previous_business_date']
                               ?.toString() ??
                           '—'),
                   style: TextStyle(color: Colors.white, fontSize: 11.sp),

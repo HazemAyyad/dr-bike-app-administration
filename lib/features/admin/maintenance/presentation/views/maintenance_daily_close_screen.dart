@@ -655,7 +655,24 @@ class _MaintenanceDailyCloseScreenState
     }
     if (!mounted) return;
     setState(() => _submitting = false);
-    if (ok) Get.back(result: true);
+    if (ok) {
+      final message = _isReview
+          ? 'تم اعتماد إغلاق صندوق الصيانة بنجاح'
+          : _isDirect
+              ? 'تم إغلاق صندوق الصيانة بنجاح'
+              : 'تم إرسال طلب إغلاق صندوق الصيانة بنجاح';
+      Get.back(result: true);
+      Future<void>.delayed(const Duration(milliseconds: 150), () {
+        Get.snackbar(
+          'تمت العملية',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+        );
+      });
+    }
   }
 
   Future<void> _reject() async {
@@ -668,7 +685,19 @@ class _MaintenanceDailyCloseScreenState
     );
     if (!mounted) return;
     setState(() => _submitting = false);
-    if (ok) Get.back(result: true);
+    if (ok) {
+      Get.back(result: true);
+      Future<void>.delayed(const Duration(milliseconds: 150), () {
+        Get.snackbar(
+          'تمت العملية',
+          'تم رفض طلب إغلاق صندوق الصيانة',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+        );
+      });
+    }
   }
 }
 

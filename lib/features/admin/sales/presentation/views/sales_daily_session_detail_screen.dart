@@ -270,7 +270,10 @@ class _SessionHero extends StatelessWidget {
         ]),
         SizedBox(height: 14.h),
         Wrap(spacing: 14.w, runSpacing: 8.h, children: [
-          _meta(Icons.person_outline, session.employeeName ?? 'غير محدد'),
+          _meta(Icons.person_outline,
+              'صاحب الجلسة: ${session.employeeName ?? 'غير محدد'}'),
+          _meta(Icons.person_pin_outlined,
+              'فتحها: ${session.openedByName ?? session.employeeName ?? 'غير محدد'}'),
           _meta(Icons.calendar_today_outlined, session.businessDate),
           if ((session.openedAt ?? '').isNotEmpty)
             _meta(Icons.login_rounded, 'فتحت ${_dateTime(session.openedAt!)}'),
