@@ -1,8 +1,7 @@
-import 'dart:io';
+import 'dart:async';
 
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../data/whatsapp_models.dart';
@@ -23,24 +22,45 @@ class WhatsAppAudioBubble extends StatefulWidget {
 }
 
 class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
-  final AudioPlayer _player = AudioPlayer();
+  final PlayerController _player = PlayerController();
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
   bool _loading = true;
+  bool _playing = false;
   double _speed = 1;
+  int _durationMs = 0;
+  int _positionMs = 0;
   Object? _error;
 
   @override
   void initState() {
     super.initState();
+    _subscriptions.add(_player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _playing = state == PlayerState.playing);
+    }));
+    _subscriptions.add(_player.onCurrentDurationChanged.listen((value) {
+      if (mounted) setState(() => _positionMs = value);
+    }));
+    _subscriptions.add(_player.onCompletion.listen((_) {
+      if (mounted) {
+        setState(() {
+          _playing = false;
+          _positionMs = 0;
+        });
+      }
+    }));
     _prepare();
   }
 
   Future<void> _prepare() async {
     try {
-      final bytes = await widget.controller.getMediaBytes(widget.message);
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/whatsapp-${widget.message.id}.m4a');
-      await file.writeAsBytes(bytes, flush: true);
-      await _player.setFilePath(file.path);
+      final file = await widget.controller.getMediaFile(widget.message);
+      const waveStyle = PlayerWaveStyle(spacing: 4, waveThickness: 2.2);
+      await _player.preparePlayer(
+        path: file.path,
+        shouldExtractWaveform: true,
+        noOfSamples: waveStyle.getSamplesForWidth(160),
+      );
+      _durationMs = await _player.getDuration(DurationType.max);
     } catch (e) {
       _error = e;
     }
@@ -49,6 +69,9 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
 
   @override
   void dispose() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     _player.dispose();
     super.dispose();
   }
@@ -66,6 +89,7 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
     return SizedBox(
       width: 280,
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           Stack(
             clipBehavior: Clip.none,
@@ -89,79 +113,72 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
               ),
             ],
           ),
-          const SizedBox(width: 4),
-          StreamBuilder<PlayerState>(
-            stream: _player.playerStateStream,
-            builder: (_, snapshot) {
-              final state = snapshot.data;
-              final playing = state?.playing == true;
-              final completed =
-                  state?.processingState == ProcessingState.completed;
-              return IconButton.filled(
-                style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A884),
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () async {
-                  if (completed) await _player.seek(Duration.zero);
-                  playing ? await _player.pause() : await _player.play();
-                },
-                icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-              );
-            },
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            onPressed: () =>
+                _playing ? _player.pausePlayer() : _player.startPlayer(),
+            icon: Icon(
+              _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: const Color(0xFF667781),
+              size: 38,
+            ),
           ),
           Expanded(
-            child: StreamBuilder<Duration>(
-              stream: _player.positionStream,
-              builder: (_, snapshot) {
-                final duration = _player.duration ?? Duration.zero;
-                final position = snapshot.data ?? Duration.zero;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _WaveformProgress(
-                      position: position,
-                      duration: duration,
-                      onSeek: _player.seek,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AudioFileWaveforms(
+                  size: const Size(double.infinity, 34),
+                  playerController: _player,
+                  waveformType: WaveformType.fitWidth,
+                  enableSeekGesture: true,
+                  playerWaveStyle: const PlayerWaveStyle(
+                    fixedWaveColor: Color(0xFF9AA9A5),
+                    liveWaveColor: Color(0xFF00A884),
+                    waveThickness: 2.2,
+                    spacing: 4,
+                    showSeekLine: false,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+                Row(children: [
+                  Text(
+                    _formatDuration(Duration(
+                      milliseconds: _playing ? _positionMs : _durationMs,
+                    )),
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF667781),
                     ),
-                    Row(children: [
-                      Text(
-                        _formatDuration(duration),
-                        textDirection: TextDirection.ltr,
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: () async {
+                      _speed = _speed == 1
+                          ? 1.5
+                          : _speed == 1.5
+                              ? 2
+                              : 1;
+                      await _player.setRate(_speed);
+                      if (mounted) setState(() {});
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Text(
+                        '${_speed.toStringAsFixed(_speed == 1 ? 0 : 1)}x',
                         style: const TextStyle(
+                          color: Color(0xFF008069),
                           fontSize: 10,
-                          color: Color(0xFF667781),
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const Spacer(),
-                      InkWell(
-                        onTap: () async {
-                          _speed = _speed == 1
-                              ? 1.5
-                              : _speed == 1.5
-                                  ? 2
-                                  : 1;
-                          await _player.setSpeed(_speed);
-                          if (mounted) setState(() {});
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          child: Text(
-                            '${_speed.toStringAsFixed(_speed == 1 ? 0 : 1)}x',
-                            style: const TextStyle(
-                              color: Color(0xFF008069),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ]),
-                  ],
-                );
-              },
+                    ),
+                  ),
+                ]),
+              ],
             ),
           ),
         ],
@@ -174,91 +191,6 @@ String _formatDuration(Duration value) {
   final minutes = value.inMinutes.toString().padLeft(2, '0');
   final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
   return '$minutes:$seconds';
-}
-
-class _WaveformProgress extends StatelessWidget {
-  const _WaveformProgress({
-    required this.position,
-    required this.duration,
-    required this.onSeek,
-  });
-
-  final Duration position;
-  final Duration duration;
-  final ValueChanged<Duration> onSeek;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = duration.inMilliseconds == 0
-        ? 0.0
-        : (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
-    const heights = <double>[
-      12,
-      22,
-      15,
-      30,
-      18,
-      25,
-      34,
-      16,
-      28,
-      20,
-      32,
-      14,
-      24,
-      35,
-      19,
-      27,
-      13,
-      31,
-      21,
-      26,
-      16,
-      33,
-      18,
-      29,
-      12,
-      25,
-      35,
-      17,
-      28,
-      20,
-      31,
-      14,
-      24,
-      18,
-    ];
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (details) {
-        final box = context.findRenderObject() as RenderBox?;
-        if (box == null || duration == Duration.zero) return;
-        final ratio =
-            (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
-        onSeek(
-            Duration(milliseconds: (duration.inMilliseconds * ratio).round()));
-      },
-      child: SizedBox(
-        height: 42,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(heights.length, (index) {
-            final played = index / heights.length <= progress;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: 2.5,
-              height: heights[index],
-              decoration: BoxDecoration(
-                color:
-                    played ? const Color(0xFF00A884) : const Color(0xFF9AA9A5),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
 }
 
 class WhatsAppVideoBubble extends StatefulWidget {
@@ -287,10 +219,7 @@ class _WhatsAppVideoBubbleState extends State<WhatsAppVideoBubble> {
 
   Future<void> _prepare() async {
     try {
-      final bytes = await widget.controller.getMediaBytes(widget.message);
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/whatsapp-${widget.message.id}.mp4');
-      await file.writeAsBytes(bytes, flush: true);
+      final file = await widget.controller.getMediaFile(widget.message);
       final video = VideoPlayerController.file(file);
       await video.initialize();
       video.addListener(_refresh);

@@ -850,6 +850,8 @@ class _ComposerState extends State<_Composer> {
   double? _recordStartX;
   double? _recordStartY;
   bool _cancelBySlide = false;
+  double _lockSlideProgress = 0;
+  Future<void>? _heldRecordingStart;
   final FocusNode _messageFocus = FocusNode();
 
   WhatsAppConversationController get controller => widget.controller;
@@ -1154,12 +1156,21 @@ class _ComposerState extends State<_Composer> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: () async {
+        setState(() => _emojiVisible = false);
+        await controller.startRecording();
+        if (controller.recording.value) {
+          controller.lockRecording();
+        }
+      },
       onLongPressStart: (details) async {
         setState(() => _emojiVisible = false);
         _recordStartX = details.globalPosition.dx;
         _recordStartY = details.globalPosition.dy;
         _cancelBySlide = false;
-        await controller.startRecording();
+        _lockSlideProgress = 0;
+        _heldRecordingStart = controller.startRecording();
+        await _heldRecordingStart;
       },
       onLongPressMoveUpdate: (details) {
         if (!controller.recording.value || controller.recordingLocked.value) {
@@ -1168,7 +1179,12 @@ class _ComposerState extends State<_Composer> {
         final startX = _recordStartX;
         final startY = _recordStartY;
         if (startX == null || startY == null) return;
-        if (startY - details.globalPosition.dy >= 75) {
+        final upwardDistance = startY - details.globalPosition.dy;
+        final lockProgress = (upwardDistance / 75).clamp(0.0, 1.0);
+        if ((lockProgress - _lockSlideProgress).abs() > .02) {
+          setState(() => _lockSlideProgress = lockProgress);
+        }
+        if (upwardDistance >= 75) {
           controller.lockRecording();
           return;
         }
@@ -1178,7 +1194,10 @@ class _ComposerState extends State<_Composer> {
         }
       },
       onLongPressEnd: (_) async {
+        await _heldRecordingStart;
+        _heldRecordingStart = null;
         if (!controller.recording.value || controller.recordingLocked.value) {
+          _resetRecordingGesture();
           return;
         }
         if (_cancelBySlide) {
@@ -1186,13 +1205,7 @@ class _ComposerState extends State<_Composer> {
         } else {
           await controller.stopAndSendRecording();
         }
-        if (mounted) {
-          setState(() {
-            _recordStartX = null;
-            _recordStartY = null;
-            _cancelBySlide = false;
-          });
-        }
+        _resetRecordingGesture();
       },
       child: Stack(
         clipBehavior: Clip.none,
@@ -1201,23 +1214,41 @@ class _ComposerState extends State<_Composer> {
           if (controller.recording.value && !controller.recordingLocked.value)
             Positioned(
               bottom: 58,
-              child: Container(
-                width: 48,
-                height: 105,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x33000000), blurRadius: 8),
-                  ],
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 90),
+                transform: Matrix4.translationValues(
+                  0,
+                  -12 * _lockSlideProgress,
+                  0,
                 ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.lock_outline, color: Color(0xFF667781)),
-                    SizedBox(height: 6),
-                    Icon(Icons.keyboard_arrow_up, color: Color(0xFF667781)),
-                  ],
+                child: Container(
+                  width: 48,
+                  height: 105,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x33000000), blurRadius: 8),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedScale(
+                        duration: const Duration(milliseconds: 90),
+                        scale: 1 + (.18 * _lockSlideProgress),
+                        child: const Icon(
+                          Icons.lock_outline,
+                          color: Color(0xFF667781),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Icon(
+                        Icons.keyboard_arrow_up,
+                        color: Color(0xFF667781),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1228,6 +1259,16 @@ class _ComposerState extends State<_Composer> {
         ],
       ),
     );
+  }
+
+  void _resetRecordingGesture() {
+    if (!mounted) return;
+    setState(() {
+      _recordStartX = null;
+      _recordStartY = null;
+      _cancelBySlide = false;
+      _lockSlideProgress = 0;
+    });
   }
 
   Widget _circle(

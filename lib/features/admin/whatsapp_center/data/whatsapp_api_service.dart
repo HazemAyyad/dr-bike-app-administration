@@ -107,13 +107,15 @@ class WhatsAppApiService {
       {String? caption,
       String? mediaKind,
       String channel = 'whatsapp',
-      int? durationSeconds}) async {
+      int? durationSeconds,
+      bool voiceNote = false}) async {
     final form = FormData.fromMap({
       'file': await MultipartFile.fromFile(path, filename: name),
       if (caption != null && caption.isNotEmpty) 'caption': caption,
       if (mediaKind != null) 'media_kind': mediaKind,
       if (durationSeconds != null && durationSeconds > 0)
         'duration_seconds': durationSeconds,
+      if (voiceNote) 'voice_note': 1,
     });
     final Response response = await _api
         .post('$_socialBase/conversations/$channel/$id/send-media', data: form);

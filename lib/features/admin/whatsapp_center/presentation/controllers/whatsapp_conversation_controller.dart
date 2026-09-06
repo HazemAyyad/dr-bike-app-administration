@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
@@ -11,11 +10,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
 
 class WhatsAppConversationController extends GetxController {
+  static const _platformChannel = MethodChannel('dr_bike/platform_info');
+  static final Map<String, Future<File>> _mediaFileRequests = {};
+  static final Map<String, File> _resolvedMediaFiles = {};
   final WhatsAppApiService api;
   WhatsAppConversationController(this.api);
   final conversation = Rxn<WhatsAppConversation>();
@@ -53,6 +57,7 @@ class WhatsAppConversationController extends GetxController {
   Timer? _typingDebounce;
   DateTime? _lastTypingSentAt;
   String? _recordingPath;
+  bool _recordingIsVoiceNote = false;
   bool _openedAtLatestMessage = false;
   late int id;
   late String channel;
@@ -115,11 +120,14 @@ class WhatsAppConversationController extends GetxController {
       final data = block is Map && block['data'] is List
           ? block['data'] as List
           : const [];
-      messages.assignAll(data
+      final parsedMessages = data
           .whereType<Map>()
           .map((e) => WhatsAppMessage.fromJson(Map<String, dynamic>.from(e)))
           .toList()
-          .reversed);
+          .reversed
+          .toList();
+      messages.assignAll(parsedMessages);
+      _prefetchConversationMedia(parsedMessages);
       if (serviceWindow is! Map) {
         final inboundDates = messages
             .where((message) =>
@@ -376,9 +384,21 @@ class WhatsAppConversationController extends GetxController {
           'صلاحية مطلوبة', 'يجب السماح باستخدام الميكروفون لتسجيل رسالة صوتية');
       return;
     }
+    final useNativeVoiceNote = await _supportsNativeVoiceNote();
+    recorder
+      ..androidEncoder =
+          useNativeVoiceNote ? AndroidEncoder.opus : AndroidEncoder.aac
+      ..androidOutputFormat = useNativeVoiceNote
+          ? AndroidOutputFormat.ogg
+          : AndroidOutputFormat.mpeg4
+      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      ..sampleRate = 48000
+      ..bitRate = useNativeVoiceNote ? 48000 : 128000;
+    _recordingIsVoiceNote = useNativeVoiceNote;
     final directory = await getTemporaryDirectory();
+    final extension = useNativeVoiceNote ? 'ogg' : 'm4a';
     _recordingPath =
-        '${directory.path}/${channel}_voice_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        '${directory.path}/${channel}_voice_${DateTime.now().millisecondsSinceEpoch}.$extension';
     try {
       await recorder.record(path: _recordingPath!);
       recordingDuration.value = Duration.zero;
@@ -395,6 +415,7 @@ class WhatsAppConversationController extends GetxController {
         },
       );
     } catch (e) {
+      _recordingIsVoiceNote = false;
       Get.snackbar('خطأ', 'تعذر بدء التسجيل: $e');
     }
   }
@@ -414,6 +435,7 @@ class WhatsAppConversationController extends GetxController {
     recordingLocked.value = false;
     recordingDuration.value = Duration.zero;
     _recordingPath = null;
+    _recordingIsVoiceNote = false;
   }
 
   void lockRecording() {
@@ -447,6 +469,7 @@ class WhatsAppConversationController extends GetxController {
         path.split(Platform.pathSeparator).last,
         mediaKind: 'audio',
         durationSeconds: recordingDuration.value.inSeconds,
+        voiceNote: _recordingIsVoiceNote,
       );
     } catch (e) {
       recording.value = false;
@@ -456,18 +479,20 @@ class WhatsAppConversationController extends GetxController {
       recordingPaused.value = false;
       recordingLocked.value = false;
       _recordingPath = null;
+      _recordingIsVoiceNote = false;
     }
   }
 
   Future<void> _sendMediaPath(String path, String name,
-      {String? mediaKind, int? durationSeconds}) async {
+      {String? mediaKind, int? durationSeconds, bool voiceNote = false}) async {
     if (sending.value) return;
     sending.value = true;
     try {
       await api.sendWhatsAppMedia(id, path, name,
           mediaKind: mediaKind,
           channel: channel,
-          durationSeconds: durationSeconds);
+          durationSeconds: durationSeconds,
+          voiceNote: voiceNote);
       await load(silent: true);
     } catch (e) {
       Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
@@ -542,17 +567,108 @@ class WhatsAppConversationController extends GetxController {
     }
   }
 
+  Future<File> getMediaFile(WhatsAppMessage message) {
+    final key = '${message.channel}-${message.id}';
+    final resolved = _resolvedMediaFiles[key];
+    if (resolved != null && resolved.existsSync()) {
+      return Future<File>.value(resolved);
+    }
+    _resolvedMediaFiles.remove(key);
+    return _mediaFileRequests.putIfAbsent(key, () async {
+      try {
+        final cached = await DefaultCacheManager().getFileFromCache(key);
+        if (cached != null && await cached.file.exists()) {
+          _resolvedMediaFiles[key] = cached.file;
+          return cached.file;
+        }
+
+        final bytes = await _downloadMediaBytes(message);
+        final file = await DefaultCacheManager().putFile(
+          'https://media-cache.doctorbike.local/$key',
+          bytes,
+          key: key,
+          fileExtension: _mediaExtension(message),
+          maxAge: const Duration(days: 30),
+        );
+        _resolvedMediaFiles[key] = file;
+        return file;
+      } finally {
+        _mediaFileRequests.remove(key);
+      }
+    });
+  }
+
   Future<Uint8List> getMediaBytes(WhatsAppMessage message) async {
     final cached = _mediaCache[message.id];
     if (cached != null) return cached;
+    final file = await getMediaFile(message);
+    final bytes = await file.readAsBytes();
+    _mediaCache[message.id] = bytes;
+    return bytes;
+  }
+
+  String _mediaExtension(WhatsAppMessage message) {
+    final mime = message.media?.mimeType?.toLowerCase() ?? '';
+    final filename = message.media?.filename?.toLowerCase() ?? '';
+    if (mime.contains('ogg') ||
+        mime.contains('opus') ||
+        filename.endsWith('.ogg')) {
+      return 'ogg';
+    }
+    if (mime.contains('mpeg') || filename.endsWith('.mp3')) return 'mp3';
+    if (mime.contains('wav') || filename.endsWith('.wav')) return 'wav';
+    if (mime.contains('mp4') || filename.endsWith('.m4a')) return 'm4a';
+    if (message.type == 'image') {
+      if (mime.contains('png')) return 'png';
+      if (mime.contains('webp')) return 'webp';
+      return 'jpg';
+    }
+    if (message.type == 'video') return 'mp4';
+    return message.type == 'audio' ? 'm4a' : 'bin';
+  }
+
+  Future<bool> _supportsNativeVoiceNote() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final sdk = await _platformChannel.invokeMethod<int>('androidSdkInt');
+      return (sdk ?? 0) >= 29;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<Uint8List> _downloadMediaBytes(WhatsAppMessage message) async {
     final remoteUrl = message.mediaUrl;
-    final bytes = Uint8List.fromList(
+    return Uint8List.fromList(
       message.channel == 'whatsapp' || remoteUrl == null
           ? await api.getMedia(message.id)
           : await api.getRemoteMedia(remoteUrl),
     );
-    _mediaCache[message.id] = bytes;
-    return bytes;
+  }
+
+  Future<void> _prefetchConversationMedia(
+      List<WhatsAppMessage> conversationMessages) async {
+    final pending = conversationMessages
+        .where((message) =>
+            message.mediaUrl != null &&
+            ['image', 'audio', 'video'].contains(message.type))
+        .toList()
+        .reversed
+        .toList();
+    const batchSize = 3;
+    for (var index = 0; index < pending.length; index += batchSize) {
+      final candidateEnd = index + batchSize;
+      final end = candidateEnd < pending.length ? candidateEnd : pending.length;
+      await Future.wait(
+        pending.sublist(index, end).map((message) async {
+          try {
+            await getMediaFile(message);
+          } catch (_) {
+            // Individual media stays retryable from its bubble.
+          }
+        }),
+      );
+    }
   }
 
   Future<SocialLinkPreview?> getLinkPreview(String url) =>

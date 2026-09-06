@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -65,6 +66,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val wifiPresenceChannelName = "dr_bike/employee_wifi_presence"
     private val smartHomeChannelName = "dr_bike/smart_home"
     private val appLauncherChannelName = "dr_bike/app_launcher"
+    private val platformInfoChannelName = "dr_bike/platform_info"
     private val strong = BiometricManager.Authenticators.BIOMETRIC_STRONG
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -168,6 +170,13 @@ class MainActivity : FlutterFragmentActivity() {
                         call.argument<String>("phone") ?: "",
                         result,
                     )
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, platformInfoChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "androidSdkInt" -> result.success(Build.VERSION.SDK_INT)
                     else -> result.notImplemented()
                 }
             }
