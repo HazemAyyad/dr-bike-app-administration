@@ -2580,6 +2580,8 @@ const Map<String, String> ar = {
   'pointsManualType': 'نوع يدوي',
   'pointsManualTypeLabel': 'اسم النوع',
   'pointsManualTypeHint': 'مثال: تعاون إضافي أو مخالفة',
+  'pointsEvidenceTakePhoto': 'التقاط صورة إثبات بالكاميرا',
+  'pointsEvidenceUploading': 'جارٍ رفع الصورة...',
   'addPointsDialogTitle': 'إضافة نقاط',
   'deductPointsDialogTitle': 'خصم نقاط',
   'pointsCategory': 'الفئة',

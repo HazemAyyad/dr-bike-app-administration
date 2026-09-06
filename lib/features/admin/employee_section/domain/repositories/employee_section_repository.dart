@@ -144,6 +144,7 @@ abstract class EmployeeRepository {
     String? reason,
     String? notes,
     String? pointsDate,
+    String? imagePath,
   });
 
   Future<EmployeePointsLogsPage> getEmployeePointsLogs({

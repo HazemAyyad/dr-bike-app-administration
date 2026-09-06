@@ -148,6 +148,7 @@ class EmployeePointsController extends GetxController {
     String? reason,
     String? notes,
     DateTime? pointsDate,
+    String? imagePath,
   }) async {
     final targetEmployeeId = employeeId ?? currentEmployeeId.value;
     if (targetEmployeeId <= 0) return false;
@@ -167,6 +168,7 @@ class EmployeePointsController extends GetxController {
         reason: reason,
         notes: notes,
         pointsDate: formattedDate,
+        imagePath: imagePath,
       );
       return result.fold(
         (failure) {

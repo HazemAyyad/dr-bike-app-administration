@@ -13,6 +13,7 @@ class EmployeePointsLogModel {
     required this.source,
     this.reason,
     this.notes,
+    this.imageUrl,
     this.pointsDate,
     this.createdById,
     this.createdByName,
@@ -30,6 +31,7 @@ class EmployeePointsLogModel {
   final String source;
   final String? reason;
   final String? notes;
+  final String? imageUrl;
   final String? pointsDate;
   final int? createdById;
   final String? createdByName;
@@ -53,6 +55,7 @@ class EmployeePointsLogModel {
       source: asString(j['source'], 'manual'),
       reason: asNullableString(j['reason']),
       notes: asNullableString(j['notes']),
+      imageUrl: asNullableString(j['image_url']),
       pointsDate: asNullableString(j['points_date']),
       createdById: j['created_by'] == null ? null : asInt(j['created_by']),
       createdByName: asNullableString(j['created_by_name']),
@@ -120,7 +123,8 @@ class EmployeePointsMonthlySummaryModel {
   double get rewardAmountDouble =>
       double.tryParse(rewardAmount.toString()) ?? 0.0;
 
-  factory EmployeePointsMonthlySummaryModel.fromJson(Map<String, dynamic> json) {
+  factory EmployeePointsMonthlySummaryModel.fromJson(
+      Map<String, dynamic> json) {
     final j = asMap(json);
     final s = asMap(j['summary']);
     return EmployeePointsMonthlySummaryModel(

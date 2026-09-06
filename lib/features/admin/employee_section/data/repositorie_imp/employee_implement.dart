@@ -579,6 +579,7 @@ class EmployeeImplement implements EmployeeRepository {
     String? reason,
     String? notes,
     String? pointsDate,
+    String? imagePath,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -593,6 +594,7 @@ class EmployeeImplement implements EmployeeRepository {
         reason: reason,
         notes: notes,
         pointsDate: pointsDate,
+        imagePath: imagePath,
       );
       if (result['status'] == 'success') {
         final logRaw = result['log'];

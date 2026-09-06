@@ -2527,6 +2527,8 @@ const Map<String, String> en = {
   'pointsManualType': 'Manual type',
   'pointsManualTypeLabel': 'Type name',
   'pointsManualTypeHint': 'Example: Extra support or violation',
+  'pointsEvidenceTakePhoto': 'Take an evidence photo',
+  'pointsEvidenceUploading': 'Uploading image...',
   'addPointsDialogTitle': 'Add points',
   'deductPointsDialogTitle': 'Deduct points',
   'pointsCategory': 'Category',

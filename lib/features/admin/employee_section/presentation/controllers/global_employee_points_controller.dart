@@ -98,6 +98,7 @@ class GlobalEmployeePointsController extends GetxController {
     String? reason,
     String? notes,
     DateTime? pointsDate,
+    String? imagePath,
   }) async {
     isMutating.value = true;
     try {
@@ -115,6 +116,7 @@ class GlobalEmployeePointsController extends GetxController {
         reason: reason,
         notes: notes,
         pointsDate: formattedDate,
+        imagePath: imagePath,
       );
       return result.fold(
         (failure) {

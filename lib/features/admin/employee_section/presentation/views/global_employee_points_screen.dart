@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,6 +12,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/global_employee_points_controller.dart';
+import '../widgets/employee_points_tab.dart';
 import 'employee_points_logs_dialog.dart';
 
 /// Global "نقاط الموظفين" admin screen. Lists every employee with current
@@ -579,7 +582,13 @@ class _GlobalPointsMutationDialogState
   final TextEditingController _manualCategoryCtrl = TextEditingController();
   EmployeePointCategoryModel? _selectedCategory;
   DateTime? _selectedDate;
+  File? _evidenceImage;
   bool _manualMode = false;
+
+  Future<void> _captureEvidence() async {
+    final image = await captureEmployeePointsEvidence();
+    if (image != null && mounted) setState(() => _evidenceImage = image);
+  }
 
   @override
   void dispose() {
@@ -738,6 +747,15 @@ class _GlobalPointsMutationDialogState
                   decoration: _decoration('pointsNotesOptional'.tr),
                 ),
                 SizedBox(height: 10.h),
+                Obx(
+                  () => EmployeePointsEvidenceCameraField(
+                    image: _evidenceImage,
+                    isUploading: widget.controller.isMutating.value,
+                    onCapture: _captureEvidence,
+                    onRemove: () => setState(() => _evidenceImage = null),
+                  ),
+                ),
+                SizedBox(height: 10.h),
                 InkWell(
                   borderRadius: BorderRadius.circular(10.r),
                   onTap: () async {
@@ -830,6 +848,7 @@ class _GlobalPointsMutationDialogState
       reason: _reasonCtrl.text.trim(),
       notes: _notesCtrl.text.trim(),
       pointsDate: _selectedDate,
+      imagePath: _evidenceImage?.path,
     );
     if (ok && mounted) Navigator.of(context).pop(true);
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 import '../../data/repositorie_imp/employee_implement.dart';
@@ -28,8 +29,7 @@ class EmployeePointsLogsDialog extends StatefulWidget {
       _EmployeePointsLogsDialogState();
 }
 
-class _EmployeePointsLogsDialogState
-    extends State<EmployeePointsLogsDialog> {
+class _EmployeePointsLogsDialogState extends State<EmployeePointsLogsDialog> {
   final List<EmployeePointsLogModel> _logs = [];
   bool _loading = true;
   String? _error;
@@ -68,8 +68,7 @@ class _EmployeePointsLogsDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       insetPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 24.h),
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -125,8 +124,7 @@ class _EmployeePointsLogsDialogState
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _logs.length,
-                    separatorBuilder: (_, __) =>
-                        SizedBox(height: 6.h),
+                    separatorBuilder: (_, __) => SizedBox(height: 6.h),
                     itemBuilder: (_, i) => _LogTile(log: _logs[i]),
                   ),
                 ),
@@ -195,6 +193,26 @@ class _LogTile extends StatelessWidget {
                 if (log.reason != null && log.reason!.isNotEmpty)
                   Text(log.reason!,
                       style: const TextStyle(color: Color(0xFF6B7280))),
+                if ((log.imageUrl ?? '').isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: Image.network(
+                      ShowNetImage.getPhoto(log.imageUrl),
+                      height: 90.h,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (_, child, progress) => progress == null
+                          ? child
+                          : SizedBox(
+                              height: 90.h,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
                 if (log.pointsDate != null)
                   Text(log.pointsDate!,
                       style: TextStyle(

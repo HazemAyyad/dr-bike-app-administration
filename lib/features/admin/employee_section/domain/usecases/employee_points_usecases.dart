@@ -19,6 +19,7 @@ class MutateEmployeePointsUsecase {
     String? reason,
     String? notes,
     String? pointsDate,
+    String? imagePath,
   }) {
     return employeeRepository.mutateEmployeePoints(
       employeeId: employeeId,
@@ -29,6 +30,7 @@ class MutateEmployeePointsUsecase {
       reason: reason,
       notes: notes,
       pointsDate: pointsDate,
+      imagePath: imagePath,
     );
   }
 }

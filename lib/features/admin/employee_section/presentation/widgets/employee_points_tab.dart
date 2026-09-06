@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -5,10 +7,12 @@ import 'package:get/get.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../data/models/employee_point_rule_model.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/employee_points_controller.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 
 /// Points & Rewards tab body: monthly summary card, filters, logs, action buttons.
 class EmployeePointsTab extends StatelessWidget {
@@ -816,6 +820,26 @@ class _LogTile extends StatelessWidget {
                       ),
                     ),
                   ),
+                if ((item.imageUrl ?? '').isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10.r),
+                    child: Image.network(
+                      ShowNetImage.getPhoto(item.imageUrl),
+                      height: 100.h,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (_, child, progress) => progress == null
+                          ? child
+                          : SizedBox(
+                              height: 100.h,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
                 Wrap(
                   spacing: 8.w,
                   runSpacing: 4.h,
@@ -881,6 +905,107 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
+Future<File?> captureEmployeePointsEvidence() async {
+  final capture = await Get.to<WhatsAppCapture>(
+    () => const WhatsAppCameraScreen(allowVideo: false),
+    fullscreenDialog: true,
+  );
+  return capture == null ? null : File(capture.path);
+}
+
+class EmployeePointsEvidenceCameraField extends StatelessWidget {
+  const EmployeePointsEvidenceCameraField({
+    Key? key,
+    required this.image,
+    required this.onCapture,
+    required this.onRemove,
+    this.isUploading = false,
+  }) : super(key: key);
+
+  final File? image;
+  final VoidCallback onCapture;
+  final VoidCallback onRemove;
+  final bool isUploading;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final border = isDark ? Colors.white24 : const Color(0xFFD1D5DB);
+    if (image == null) {
+      return InkWell(
+        onTap: isUploading ? null : onCapture,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          height: 92.h,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: border),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.camera_alt_rounded,
+                  color: AppColors.primaryColor, size: 28.sp),
+              SizedBox(height: 6.h),
+              Text(
+                'pointsEvidenceTakePhoto'.tr,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF374151),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 150.h,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.r),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(image!, fit: BoxFit.cover),
+            PositionedDirectional(
+              top: 7.h,
+              end: 7.w,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.58),
+                shape: const CircleBorder(),
+                child: IconButton(
+                  tooltip: 'remove'.tr,
+                  onPressed: isUploading ? null : onRemove,
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                ),
+              ),
+            ),
+            if (isUploading)
+              Container(
+                color: Colors.black.withValues(alpha: 0.48),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 8.h),
+                    Text(
+                      'pointsEvidenceUploading'.tr,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 Future<bool?> showEmployeePointsMutationDialog(
   BuildContext context, {
   required EmployeePointsController controller,
@@ -932,6 +1057,7 @@ class _EmployeePointsMutationDialogState
 
   EmployeePointCategoryModel? _selectedConfigurableCategory;
   DateTime? _selectedDate;
+  File? _evidenceImage;
   late bool _isAdd;
   bool _manualMode = false;
 
@@ -957,6 +1083,11 @@ class _EmployeePointsMutationDialogState
       _selectedConfigurableCategory = null;
       _pointsCtrl.clear();
     });
+  }
+
+  Future<void> _captureEvidence() async {
+    final image = await captureEmployeePointsEvidence();
+    if (image != null && mounted) setState(() => _evidenceImage = image);
   }
 
   @override
@@ -1190,6 +1321,15 @@ class _EmployeePointsMutationDialogState
                   decoration: _decoration('pointsNotesOptional'.tr),
                 ),
                 SizedBox(height: 12.h),
+                Obx(
+                  () => EmployeePointsEvidenceCameraField(
+                    image: _evidenceImage,
+                    isUploading: widget.controller.isMutating.value,
+                    onCapture: _captureEvidence,
+                    onRemove: () => setState(() => _evidenceImage = null),
+                  ),
+                ),
+                SizedBox(height: 12.h),
                 InkWell(
                   borderRadius: BorderRadius.circular(10.r),
                   onTap: () async {
@@ -1282,6 +1422,7 @@ class _EmployeePointsMutationDialogState
         reason: _reasonCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         pointsDate: _selectedDate,
+        imagePath: _evidenceImage?.path,
       );
     } else {
       ok = await widget.controller.mutatePoints(
@@ -1292,6 +1433,7 @@ class _EmployeePointsMutationDialogState
         reason: _reasonCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         pointsDate: _selectedDate,
+        imagePath: _evidenceImage?.path,
       );
     }
     if (ok && mounted) {

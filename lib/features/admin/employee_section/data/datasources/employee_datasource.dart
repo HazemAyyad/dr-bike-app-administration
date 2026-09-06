@@ -1278,21 +1278,30 @@ class EmployeeDatasource {
     String? reason,
     String? notes,
     String? pointsDate,
+    String? imagePath,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        if (points != null) 'points': points,
+        if (category != null && category.isNotEmpty) 'category': category,
+        if (categoryId != null) 'category_id': categoryId,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (pointsDate != null && pointsDate.isNotEmpty)
+          'points_date': pointsDate,
+        if (imagePath != null && imagePath.isNotEmpty)
+          'image': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split(Platform.pathSeparator).last,
+          ),
+      };
       final response = await api.post(
         isAdd
             ? EndPoints.employeePointsAdd(employeeId)
             : EndPoints.employeePointsDeduct(employeeId),
-        data: {
-          if (points != null) 'points': points,
-          if (category != null && category.isNotEmpty) 'category': category,
-          if (categoryId != null) 'category_id': categoryId,
-          if (reason != null && reason.isNotEmpty) 'reason': reason,
-          if (notes != null && notes.isNotEmpty) 'notes': notes,
-          if (pointsDate != null && pointsDate.isNotEmpty)
-            'points_date': pointsDate,
-        },
+        data: imagePath != null && imagePath.isNotEmpty
+            ? FormData.fromMap(payload)
+            : payload,
       );
       final data = response.data;
       return data is Map<String, dynamic>
