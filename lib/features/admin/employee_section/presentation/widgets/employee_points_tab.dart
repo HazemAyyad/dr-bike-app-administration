@@ -442,12 +442,10 @@ class _ActionButtons extends StatelessWidget {
     BuildContext context, {
     required bool isAdd,
   }) async {
-    await showDialog<bool>(
-      context: context,
-      builder: (ctx) => _PointsMutationDialog(
-        controller: controller,
-        isAdd: isAdd,
-      ),
+    await showEmployeePointsMutationDialog(
+      context,
+      controller: controller,
+      initialIsAdd: isAdd,
     );
   }
 }
@@ -883,42 +881,87 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-class _PointsMutationDialog extends StatefulWidget {
-  const _PointsMutationDialog({
-    required this.controller,
-    required this.isAdd,
-  });
-
-  final EmployeePointsController controller;
-  final bool isAdd;
-
-  @override
-  State<_PointsMutationDialog> createState() => _PointsMutationDialogState();
+Future<bool?> showEmployeePointsMutationDialog(
+  BuildContext context, {
+  required EmployeePointsController controller,
+  required bool initialIsAdd,
+  int? employeeId,
+  String? employeeName,
+  bool allowOperationChange = false,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (_) => EmployeePointsMutationDialog(
+      controller: controller,
+      initialIsAdd: initialIsAdd,
+      employeeId: employeeId,
+      employeeName: employeeName,
+      allowOperationChange: allowOperationChange,
+    ),
+  );
 }
 
-class _PointsMutationDialogState extends State<_PointsMutationDialog> {
+class EmployeePointsMutationDialog extends StatefulWidget {
+  const EmployeePointsMutationDialog({
+    Key? key,
+    required this.controller,
+    required this.initialIsAdd,
+    this.employeeId,
+    this.employeeName,
+    this.allowOperationChange = false,
+  }) : super(key: key);
+
+  final EmployeePointsController controller;
+  final bool initialIsAdd;
+  final int? employeeId;
+  final String? employeeName;
+  final bool allowOperationChange;
+
+  @override
+  State<EmployeePointsMutationDialog> createState() =>
+      _EmployeePointsMutationDialogState();
+}
+
+class _EmployeePointsMutationDialogState
+    extends State<EmployeePointsMutationDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _pointsCtrl = TextEditingController();
   final TextEditingController _reasonCtrl = TextEditingController();
   final TextEditingController _notesCtrl = TextEditingController();
+  final TextEditingController _manualCategoryCtrl = TextEditingController();
 
-  /// Legacy free-text category code (used when no configurable category is selected).
-  String? _selectedLegacyCategory;
   EmployeePointCategoryModel? _selectedConfigurableCategory;
   DateTime? _selectedDate;
+  late bool _isAdd;
+  bool _manualMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isAdd = widget.initialIsAdd;
+  }
 
   @override
   void dispose() {
     _pointsCtrl.dispose();
     _reasonCtrl.dispose();
     _notesCtrl.dispose();
+    _manualCategoryCtrl.dispose();
     super.dispose();
+  }
+
+  void _changeOperation(bool isAdd) {
+    if (_isAdd == isAdd) return;
+    setState(() {
+      _isAdd = isAdd;
+      _selectedConfigurableCategory = null;
+      _pointsCtrl.clear();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final accent =
-        widget.isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final accent = _isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final isDark = ThemeService.isDark.value;
     final dialogBg = isDark ? const Color(0xFF1F1F23) : Colors.white;
 
@@ -935,48 +978,118 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      widget.isAdd
-                          ? Icons.add_circle_outline
-                          : Icons.remove_circle_outline,
-                      color: accent,
-                      size: 22.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        widget.isAdd
-                            ? 'addPointsDialogTitle'.tr
-                            : 'deductPointsDialogTitle'.tr,
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF111827),
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isAdd
+                            ? Icons.add_circle_outline
+                            : Icons.remove_circle_outline,
+                        color: accent,
+                        size: 22.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isAdd
+                                  ? 'addPointsDialogTitle'.tr
+                                  : 'deductPointsDialogTitle'.tr,
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF111827),
+                              ),
+                            ),
+                            if ((widget.employeeName ?? '').isNotEmpty)
+                              Text(
+                                widget.employeeName!,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : const Color(0xFF6B7280),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 SizedBox(height: 14.h),
+                if (widget.allowOperationChange) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          selected: _isAdd,
+                          avatar: const Icon(Icons.add_rounded, size: 17),
+                          label: Text('addPointsAction'.tr),
+                          onSelected: (_) => _changeOperation(true),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: ChoiceChip(
+                          selected: !_isAdd,
+                          avatar: const Icon(Icons.remove_rounded, size: 17),
+                          label: Text('deductPointsAction'.tr),
+                          onSelected: (_) => _changeOperation(false),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                ],
                 Obx(() {
                   final all = widget.controller.categories.value;
                   final configurable = (all?.configurable ?? const [])
-                      .where((c) =>
-                          c.isActive && (widget.isAdd ? c.isAdd : c.isDeduct))
+                      .where(
+                          (c) => c.isActive && (_isAdd ? c.isAdd : c.isDeduct))
                       .toList();
-                  final legacy = widget.isAdd
-                      ? (all?.positive ?? const <String>[])
-                      : (all?.negative ?? const <String>[]);
 
-                  // Prefer configurable categories. If admin hasn't defined any,
-                  // gracefully fall back to the legacy free-text dropdown.
-                  if (configurable.isNotEmpty) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                  final useManual = _manualMode || configurable.isEmpty;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (configurable.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ChoiceChip(
+                                selected: !useManual,
+                                label: Text('pointsConfiguredType'.tr),
+                                onSelected: (_) =>
+                                    setState(() => _manualMode = false),
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: ChoiceChip(
+                                selected: useManual,
+                                label: Text('pointsManualType'.tr),
+                                onSelected: (_) => setState(() {
+                                  _manualMode = true;
+                                  _selectedConfigurableCategory = null;
+                                  _pointsCtrl.clear();
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10.h),
+                      ],
+                      if (!useManual)
                         DropdownButtonFormField<int>(
                           initialValue: _selectedConfigurableCategory?.id,
                           isExpanded: true,
@@ -1002,41 +1115,33 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                               _pointsCtrl.text = cat.defaultPoints.toString();
                             });
                           },
+                        )
+                      else
+                        TextFormField(
+                          controller: _manualCategoryCtrl,
+                          decoration: _decoration(
+                            'pointsManualTypeLabel'.tr,
+                            hint: 'pointsManualTypeHint'.tr,
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                                  ? 'pointsCategoryRequired'.tr
+                                  : null,
                         ),
-                        if (_selectedConfigurableCategory != null)
-                          Padding(
-                            padding: EdgeInsets.only(top: 6.h),
-                            child: Text(
-                              '${widget.isAdd ? '+' : '-'} '
-                              '${_selectedConfigurableCategory!.defaultPoints} '
-                              '· ${'pointsCategoryAutoFill'.tr}',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                color: const Color(0xFF6B7280),
-                              ),
+                      if (!useManual && _selectedConfigurableCategory != null)
+                        Padding(
+                          padding: EdgeInsets.only(top: 6.h),
+                          child: Text(
+                            '${_isAdd ? '+' : '-'} '
+                            '${_selectedConfigurableCategory!.defaultPoints} '
+                            '· ${'pointsCategoryAutoFill'.tr}',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: const Color(0xFF6B7280),
                             ),
                           ),
-                      ],
-                    );
-                  }
-
-                  // Legacy fallback (older installs without configured categories)
-                  return DropdownButtonFormField<String>(
-                    initialValue: _selectedLegacyCategory,
-                    isExpanded: true,
-                    decoration: _decoration('pointsCategory'.tr,
-                        hint: 'pointsCategoryHint'.tr),
-                    items: legacy
-                        .map((c) => DropdownMenuItem<String>(
-                              value: c,
-                              child: Text(_categoryLabel(c)),
-                            ))
-                        .toList(),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? 'pointsCategoryRequired'.tr
-                        : null,
-                    onChanged: (v) =>
-                        setState(() => _selectedLegacyCategory = v),
+                        ),
+                    ],
                   );
                 }),
                 SizedBox(height: 12.h),
@@ -1169,7 +1274,8 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
     if (_selectedConfigurableCategory != null) {
       // Category drives the points value; admin cannot override here.
       ok = await widget.controller.mutatePoints(
-        isAdd: widget.isAdd,
+        isAdd: _isAdd,
+        employeeId: widget.employeeId,
         categoryId: _selectedConfigurableCategory!.id,
         category: _selectedConfigurableCategory!.code,
         points: null,
@@ -1179,9 +1285,10 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
       );
     } else {
       ok = await widget.controller.mutatePoints(
-        isAdd: widget.isAdd,
+        isAdd: _isAdd,
+        employeeId: widget.employeeId,
         points: overridePoints,
-        category: _selectedLegacyCategory,
+        category: _manualCategoryCtrl.text.trim(),
         reason: _reasonCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         pointsDate: _selectedDate,

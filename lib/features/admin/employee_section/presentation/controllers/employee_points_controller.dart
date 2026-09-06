@@ -121,7 +121,8 @@ class EmployeePointsController extends GetxController {
   }
 
   void updateFilters({String? category, String? operationType}) {
-    selectedCategory.value = (category != null && category.isEmpty) ? null : category;
+    selectedCategory.value =
+        (category != null && category.isEmpty) ? null : category;
     selectedOperationType.value =
         (operationType != null && operationType.isEmpty) ? null : operationType;
     loadLogs(reset: true);
@@ -140,6 +141,7 @@ class EmployeePointsController extends GetxController {
   /// become optional overrides.
   Future<bool> mutatePoints({
     required bool isAdd,
+    int? employeeId,
     int? points,
     String? category,
     int? categoryId,
@@ -147,7 +149,8 @@ class EmployeePointsController extends GetxController {
     String? notes,
     DateTime? pointsDate,
   }) async {
-    if (!hasEmployee) return false;
+    final targetEmployeeId = employeeId ?? currentEmployeeId.value;
+    if (targetEmployeeId <= 0) return false;
     isMutating.value = true;
     try {
       String? formattedDate;
@@ -156,7 +159,7 @@ class EmployeePointsController extends GetxController {
             '${pointsDate.year.toString().padLeft(4, '0')}-${pointsDate.month.toString().padLeft(2, '0')}-${pointsDate.day.toString().padLeft(2, '0')}';
       }
       final result = await mutateUsecase.call(
-        employeeId: currentEmployeeId.value,
+        employeeId: targetEmployeeId,
         isAdd: isAdd,
         points: points,
         category: category,
@@ -172,10 +175,12 @@ class EmployeePointsController extends GetxController {
           return false;
         },
         (log) async {
-          await Future.wait([
-            loadMonthlySummary(),
-            loadLogs(reset: true),
-          ]);
+          if (targetEmployeeId == currentEmployeeId.value) {
+            await Future.wait([
+              loadMonthlySummary(),
+              loadLogs(reset: true),
+            ]);
+          }
           Get.snackbar(
             'success'.tr,
             'pointsUpdatedMessage'.tr,

@@ -16,10 +16,12 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../domain/entities/employee_entity.dart';
 import '../../../domain/entities/working_times_entity.dart';
+import '../../controllers/employee_points_controller.dart';
 import '../../controllers/employee_section_controller.dart';
 import '../employee_advances_bottom_sheet.dart';
 import '../employee_card_swipe.dart';
 import '../employee_financial_details.dart';
+import '../employee_points_tab.dart';
 
 enum _ShiftStatus {
   beforeShift,
@@ -242,6 +244,12 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                 _openAdvances(context);
               }
             : null,
+        onPoints: canManageEmployeesPoints
+            ? () {
+                Navigator.of(ctx).pop();
+                _openPointsDialog(context);
+              }
+            : null,
         onWhatsApp: () async {
           Navigator.of(ctx).pop();
           await _openWhatsApp(context);
@@ -289,6 +297,23 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
       employeeId: widget.employee.id,
       employeeName: widget.employee.employeeName,
     );
+  }
+
+  Future<void> _openPointsDialog(BuildContext context) async {
+    final pointsController = Get.find<EmployeePointsController>();
+    if (pointsController.categories.value == null) {
+      await pointsController.loadCategories();
+    }
+    if (!context.mounted) return;
+    final saved = await showEmployeePointsMutationDialog(
+      context,
+      controller: pointsController,
+      initialIsAdd: true,
+      employeeId: widget.employee.id,
+      employeeName: widget.employee.employeeName,
+      allowOperationChange: true,
+    );
+    if (saved == true) controller.getEmployee();
   }
 
   void _openAttendanceHistory() {
@@ -1074,6 +1099,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
     required this.onChangePassword,
     this.onFinancialDetails,
     this.onAdvances,
+    this.onPoints,
   });
 
   final EmployeeEntity employee;
@@ -1085,6 +1111,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
   final VoidCallback onChangePassword;
   final VoidCallback? onFinancialDetails;
   final VoidCallback? onAdvances;
+  final VoidCallback? onPoints;
 
   @override
   Widget build(BuildContext context) {
@@ -1184,6 +1211,13 @@ class _EmployeeActionsSheet extends StatelessWidget {
                 label: 'advances'.tr,
                 color: AppColors.primaryColor,
                 onTap: onAdvances!,
+              ),
+            if (onPoints != null)
+              _ActionTile(
+                icon: Icons.stars_rounded,
+                label: 'manageEmployeePointsAction'.tr,
+                color: const Color(0xFF7C3AED),
+                onTap: onPoints!,
               ),
             if (canManageEmployeesPasswords)
               _ActionTile(

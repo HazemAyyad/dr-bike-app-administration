@@ -576,14 +576,17 @@ class _GlobalPointsMutationDialogState
   final TextEditingController _pointsCtrl = TextEditingController();
   final TextEditingController _reasonCtrl = TextEditingController();
   final TextEditingController _notesCtrl = TextEditingController();
+  final TextEditingController _manualCategoryCtrl = TextEditingController();
   EmployeePointCategoryModel? _selectedCategory;
   DateTime? _selectedDate;
+  bool _manualMode = false;
 
   @override
   void dispose() {
     _pointsCtrl.dispose();
     _reasonCtrl.dispose();
     _notesCtrl.dispose();
+    _manualCategoryCtrl.dispose();
     super.dispose();
   }
 
@@ -594,6 +597,7 @@ class _GlobalPointsMutationDialogState
     final categories = widget.controller.categories
         .where((c) => widget.isAdd ? c.isAdd : c.isDeduct)
         .toList();
+    final useManual = _manualMode || categories.isEmpty;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
@@ -629,18 +633,34 @@ class _GlobalPointsMutationDialogState
                   ],
                 ),
                 SizedBox(height: 14.h),
-                if (categories.isEmpty)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      'pointCategoriesEmpty'.tr,
-                      style: TextStyle(
-                        color: const Color(0xFF6B7280),
-                        fontSize: 12.sp,
+                if (categories.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          selected: !useManual,
+                          label: Text('pointsConfiguredType'.tr),
+                          onSelected: (_) =>
+                              setState(() => _manualMode = false),
+                        ),
                       ),
-                    ),
-                  )
-                else
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: ChoiceChip(
+                          selected: useManual,
+                          label: Text('pointsManualType'.tr),
+                          onSelected: (_) => setState(() {
+                            _manualMode = true;
+                            _selectedCategory = null;
+                            _pointsCtrl.clear();
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
+                ],
+                if (!useManual)
                   DropdownButtonFormField<int>(
                     initialValue: _selectedCategory?.id,
                     isExpanded: true,
@@ -662,22 +682,33 @@ class _GlobalPointsMutationDialogState
                         _pointsCtrl.text = cat.defaultPoints.toString();
                       });
                     },
+                  )
+                else
+                  TextFormField(
+                    controller: _manualCategoryCtrl,
+                    decoration: _decoration(
+                      'pointsManualTypeLabel'.tr,
+                      hint: 'pointsManualTypeHint'.tr,
+                    ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'pointsCategoryRequired'.tr
+                        : null,
                   ),
                 SizedBox(height: 10.h),
                 TextFormField(
                   controller: _pointsCtrl,
                   keyboardType: TextInputType.number,
-                  readOnly: _selectedCategory != null,
-                  enabled: _selectedCategory == null,
+                  readOnly: !useManual && _selectedCategory != null,
+                  enabled: useManual || _selectedCategory == null,
                   decoration: _decoration('pointsValue'.tr).copyWith(
-                    suffixIcon: _selectedCategory != null
+                    suffixIcon: !useManual && _selectedCategory != null
                         ? Icon(
                             Icons.lock_outline_rounded,
                             size: 18.sp,
                             color: const Color(0xFF9CA3AF),
                           )
                         : null,
-                    helperText: _selectedCategory != null
+                    helperText: !useManual && _selectedCategory != null
                         ? 'pointsCategoryAutoFill'.tr
                         : null,
                     helperStyle: TextStyle(
@@ -686,7 +717,7 @@ class _GlobalPointsMutationDialogState
                     ),
                   ),
                   validator: (v) {
-                    if (_selectedCategory != null) return null;
+                    if (!useManual && _selectedCategory != null) return null;
                     if (v == null || v.isEmpty) {
                       return 'pointsValueRequired'.tr;
                     }
@@ -791,8 +822,10 @@ class _GlobalPointsMutationDialogState
     final ok = await widget.controller.mutatePoints(
       employeeId: widget.row.employeeId,
       isAdd: widget.isAdd,
-      categoryId: _selectedCategory?.id,
-      category: _selectedCategory?.code,
+      categoryId: _manualMode ? null : _selectedCategory?.id,
+      category: _manualMode || _selectedCategory == null
+          ? _manualCategoryCtrl.text.trim()
+          : _selectedCategory?.code,
       points: overridePoints,
       reason: _reasonCtrl.text.trim(),
       notes: _notesCtrl.text.trim(),
