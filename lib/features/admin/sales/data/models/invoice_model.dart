@@ -65,6 +65,9 @@ class InvoiceModel {
   final String? salesDailyBusinessDate;
   final String? salesDailySessionStatus;
   final bool isSalesDailySessionClosed;
+  final String? createdByName;
+  final String? updatedByName;
+  final List<InvoiceHistoryEntry> history;
 
   InvoiceModel({
     required this.id,
@@ -126,6 +129,9 @@ class InvoiceModel {
     this.salesDailyBusinessDate,
     this.salesDailySessionStatus,
     this.isSalesDailySessionClosed = false,
+    this.createdByName,
+    this.updatedByName,
+    this.history = const [],
   });
 
   bool get isAdjustmentSale => saleKind == 'adjustment';
@@ -287,6 +293,12 @@ class InvoiceModel {
       isSalesDailySessionClosed:
           json['is_sales_daily_session_closed'] == true ||
               json['is_sales_daily_session_closed'] == 1,
+      createdByName: asNullableString(json['created_by_name']),
+      updatedByName: asNullableString(json['updated_by_name']),
+      history: mapList(
+        json['history'],
+        (Map<String, dynamic> m) => InvoiceHistoryEntry.fromJson(m),
+      ),
     );
   }
 
@@ -392,6 +404,56 @@ class InvoiceModel {
       'maintenance_invoice_number': maintenanceInvoiceNumber,
       'product_code': productCode,
     };
+  }
+}
+
+class InvoiceHistoryEntry {
+  const InvoiceHistoryEntry({
+    required this.id,
+    required this.action,
+    required this.title,
+    this.description,
+    this.actorName,
+    this.createdByName,
+    this.occurredAt,
+    this.before,
+    this.after,
+    this.amount,
+    this.source,
+  });
+
+  final String id;
+  final String action;
+  final String title;
+  final String? description;
+  final String? actorName;
+  final String? createdByName;
+  final String? occurredAt;
+  final Map<String, dynamic>? before;
+  final Map<String, dynamic>? after;
+  final String? amount;
+  final String? source;
+
+  factory InvoiceHistoryEntry.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? mapValue(dynamic value) {
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return Map<String, dynamic>.from(value);
+      return null;
+    }
+
+    return InvoiceHistoryEntry(
+      id: asString(json['id']),
+      action: asString(json['action'], 'activity'),
+      title: asString(json['title'], 'حركة على الفاتورة'),
+      description: asNullableString(json['description']),
+      actorName: asNullableString(json['actor_name']),
+      createdByName: asNullableString(json['created_by_name']),
+      occurredAt: asNullableString(json['occurred_at']),
+      before: mapValue(json['before']),
+      after: mapValue(json['after']),
+      amount: asNullableString(json['amount']),
+      source: asNullableString(json['source']),
+    );
   }
 }
 

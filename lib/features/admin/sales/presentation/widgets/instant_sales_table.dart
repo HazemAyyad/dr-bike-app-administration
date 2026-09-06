@@ -36,7 +36,12 @@ class InstantSalesTable extends GetView<SalesController> {
               (sale) => _InstantSaleTableRow(
                 sale: sale,
                 onInvoiceTap: () => showInstantSaleLinesModal(context, sale),
-                onLongPress: () =>
+                onViewInvoice: () =>
+                    controller.openInstantSaleBillDetails(sale.id.toString()),
+                onEdit: () => controller.openEditInstantSaleFlow(context, sale),
+                onCancel: () =>
+                    controller.confirmCancelInstantSale(context, sale),
+                onOptions: () =>
                     controller.showInstantSaleActionsSheet(context, sale),
               ),
             ),
@@ -103,12 +108,18 @@ class _HeaderCell extends StatelessWidget {
 class _InstantSaleTableRow extends StatelessWidget {
   final InstantSalesModel sale;
   final VoidCallback onInvoiceTap;
-  final VoidCallback onLongPress;
+  final VoidCallback onViewInvoice;
+  final VoidCallback onEdit;
+  final VoidCallback onCancel;
+  final VoidCallback onOptions;
 
   const _InstantSaleTableRow({
     required this.sale,
     required this.onInvoiceTap,
-    required this.onLongPress,
+    required this.onViewInvoice,
+    required this.onEdit,
+    required this.onCancel,
+    required this.onOptions,
   });
 
   @override
@@ -125,11 +136,34 @@ class _InstantSaleTableRow extends StatelessWidget {
                 ? (isDark ? const Color(0xFF3B2A11) : const Color(0xFFFFF7E6))
                 : (isDark ? AppColors.customGreyColor4 : Colors.white);
 
-    return Material(
+    final actions = <_SwipeSaleActionData>[
+      _SwipeSaleActionData(
+        icon: Icons.receipt_long_outlined,
+        label: 'التفاصيل',
+        color: AppColors.secondaryColor,
+        onTap: onViewInvoice,
+      ),
+      if (!cancelled)
+        _SwipeSaleActionData(
+          icon: Icons.edit_outlined,
+          label: 'تعديل',
+          color: AppColors.primaryColor,
+          onTap: onEdit,
+        ),
+      if (!cancelled)
+        _SwipeSaleActionData(
+          icon: Icons.more_horiz_rounded,
+          label: 'الخيارات',
+          color: const Color(0xFF475569),
+          onTap: onOptions,
+        ),
+    ];
+
+    final row = Material(
       color: bg,
       child: InkWell(
         onTap: onInvoiceTap,
-        onLongPress: onLongPress,
+        onLongPress: onOptions,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 11.h),
           decoration: BoxDecoration(
@@ -310,6 +344,142 @@ class _InstantSaleTableRow extends StatelessWidget {
                       _OperationInfoButton(sale: sale),
                     ],
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return _SwipeInstantSaleRow(actions: actions, child: row);
+  }
+}
+
+class _SwipeSaleActionData {
+  const _SwipeSaleActionData({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _SwipeInstantSaleRow extends StatefulWidget {
+  const _SwipeInstantSaleRow({required this.actions, required this.child});
+
+  final List<_SwipeSaleActionData> actions;
+  final Widget child;
+
+  @override
+  State<_SwipeInstantSaleRow> createState() => _SwipeInstantSaleRowState();
+}
+
+class _SwipeInstantSaleRowState extends State<_SwipeInstantSaleRow> {
+  double offset = 0;
+
+  double get revealWidth => widget.actions.length * 66.0;
+
+  void _update(DragUpdateDetails details) {
+    setState(() {
+      offset = (offset + details.delta.dx).clamp(-revealWidth, revealWidth);
+    });
+  }
+
+  void _finish(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final open = offset.abs() > revealWidth * .25 || velocity.abs() > 350;
+    setState(() {
+      if (!open) {
+        offset = 0;
+      } else {
+        final direction = velocity.abs() > 350 ? velocity.sign : offset.sign;
+        offset = direction * revealWidth;
+      }
+    });
+  }
+
+  void _run(VoidCallback action) {
+    setState(() => offset = 0);
+    action();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final openingRight = offset >= 0;
+
+    return ClipRect(
+      child: Stack(
+        alignment: openingRight ? Alignment.centerLeft : Alignment.centerRight,
+        children: [
+          Positioned.fill(
+            child: Align(
+              alignment:
+                  openingRight ? Alignment.centerLeft : Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: widget.actions
+                    .map(
+                      (action) => _InstantSaleSwipeAction(
+                        action: action,
+                        onTap: () => _run(action.onTap),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 170),
+            curve: Curves.easeOut,
+            transform: Matrix4.translationValues(offset, 0, 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: _update,
+              onHorizontalDragEnd: _finish,
+              child: widget.child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InstantSaleSwipeAction extends StatelessWidget {
+  const _InstantSaleSwipeAction({
+    required this.action,
+    required this.onTap,
+  });
+
+  final _SwipeSaleActionData action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: action.color,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 66,
+          height: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(action.icon, color: Colors.white, size: 20.sp),
+              SizedBox(height: 3.h),
+              Text(
+                action.label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

@@ -76,6 +76,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                 ],
                 SizedBox(height: 12.h),
                 _SalesInfoGrid(invoice: invoice, dash: _dash),
+                SizedBox(height: 14.h),
+                _InvoiceHistorySection(invoice: invoice),
                 SizedBox(height: 18.h),
                 const _SalesSectionTitle(
                     icon: Icons.shopping_bag_outlined,
@@ -137,6 +139,224 @@ class BillDetailsScreen extends GetView<SalesController> {
       ),
     );
   }
+}
+
+class _InvoiceHistorySection extends StatefulWidget {
+  const _InvoiceHistorySection({required this.invoice});
+
+  final InvoiceModel invoice;
+
+  @override
+  State<_InvoiceHistorySection> createState() => _InvoiceHistorySectionState();
+}
+
+class _InvoiceHistorySectionState extends State<_InvoiceHistorySection> {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final history = widget.invoice.history;
+    final visible =
+        expanded || history.length <= 3 ? history : history.take(3).toList();
+
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFE8EAF2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SalesTileTitle(
+            icon: Icons.history_rounded,
+            title: 'سجل الفاتورة',
+          ),
+          SizedBox(height: 10.h),
+          if (history.isEmpty)
+            Text(
+              'لا توجد حركات محفوظة لهذه الفاتورة',
+              style: TextStyle(
+                color: const Color(0xFF7A8092),
+                fontSize: 11.sp,
+              ),
+            )
+          else
+            ...visible.map((entry) => _InvoiceHistoryTile(entry)),
+          if (history.length > 3)
+            TextButton.icon(
+              onPressed: () => setState(() => expanded = !expanded),
+              icon: Icon(
+                expanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.more_horiz_rounded,
+              ),
+              label: Text(expanded ? 'عرض أقل' : 'عرض كل السجل'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvoiceHistoryTile extends StatelessWidget {
+  const _InvoiceHistoryTile(this.entry);
+
+  final InvoiceHistoryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _historyColor(entry.action);
+    final details = _historyDetails(entry);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34.w,
+            height: 34.w,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .11),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(_historyIcon(entry.action), color: color, size: 18.sp),
+          ),
+          SizedBox(width: 9.w),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(10.w),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FC),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.title,
+                    style: TextStyle(
+                      color: const Color(0xFF20243D),
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 3.h),
+                  Text(
+                    [
+                      if (entry.actorName?.trim().isNotEmpty == true)
+                        entry.actorName!.trim(),
+                      if (entry.occurredAt?.trim().isNotEmpty == true)
+                        _formatInvoiceDate(entry.occurredAt!),
+                    ].join(' • '),
+                    style: TextStyle(
+                      color: const Color(0xFF7A8092),
+                      fontSize: 10.sp,
+                    ),
+                  ),
+                  if (entry.createdByName?.trim().isNotEmpty == true) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      'أضافها أولًا: ${entry.createdByName}',
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                  if (entry.description?.trim().isNotEmpty == true) ...[
+                    SizedBox(height: 5.h),
+                    Text(entry.description!, style: TextStyle(fontSize: 10.sp)),
+                  ],
+                  if (details.isNotEmpty) ...[
+                    SizedBox(height: 7.h),
+                    ...details.map(
+                      (line) => Padding(
+                        padding: EdgeInsets.only(bottom: 3.h),
+                        child: Text(
+                          line,
+                          style: TextStyle(
+                            color: const Color(0xFF4B5166),
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+List<String> _historyDetails(InvoiceHistoryEntry entry) {
+  final before = entry.before;
+  final after = entry.after;
+  final result = <String>[];
+
+  String value(Map<String, dynamic>? map, String key) => '${map?[key] ?? ''}';
+  void addChange(String label, String key) {
+    final oldValue = value(before, key);
+    final newValue = value(after, key);
+    if (before != null && after != null && oldValue != newValue) {
+      result.add('$label: $oldValue ← $newValue');
+    }
+  }
+
+  addChange('الإجمالي', 'total_cost');
+  addChange('المدفوع', 'paid_amount');
+  addChange('المشتري', 'buyer_name');
+  addChange('الصندوق', 'payment_box_name');
+  addChange('الملاحظات', 'notes');
+
+  final oldLines = _historyLineSummary(before?['lines']);
+  final newLines = _historyLineSummary(after?['lines']);
+  if (before != null && after != null && oldLines != newLines) {
+    if (oldLines.isNotEmpty) result.add('قبل: $oldLines');
+    if (newLines.isNotEmpty) result.add('بعد: $newLines');
+  } else if (before == null && newLines.isNotEmpty) {
+    result.add('المنتجات: $newLines');
+  }
+
+  if (result.isEmpty && entry.amount?.trim().isNotEmpty == true) {
+    result.add('القيمة: ${entry.amount}');
+  }
+  return result;
+}
+
+String _historyLineSummary(dynamic raw) {
+  if (raw is! List) return '';
+  return raw.whereType<Map>().map((line) {
+    final name = '${line['name'] ?? '-'}';
+    final quantity = '${line['quantity'] ?? 0}';
+    final price = '${line['unit_price'] ?? 0}';
+    return '$name ×$quantity ($price)';
+  }).join('، ');
+}
+
+Color _historyColor(String action) {
+  if (action.contains('cancel')) return const Color(0xFFDC2626);
+  if (action.contains('update') || action.contains('edit')) {
+    return const Color(0xFFF59E0B);
+  }
+  return const Color(0xFF16865B);
+}
+
+IconData _historyIcon(String action) {
+  if (action.contains('cancel')) return Icons.cancel_outlined;
+  if (action.contains('update') || action.contains('edit')) {
+    return Icons.edit_outlined;
+  }
+  if (action.contains('suspended')) return Icons.playlist_add_check_rounded;
+  return Icons.add_circle_outline_rounded;
 }
 
 class _SalesInvoiceHero extends StatelessWidget {
