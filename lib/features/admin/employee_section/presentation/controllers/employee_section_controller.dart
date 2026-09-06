@@ -141,6 +141,11 @@ class EmployeeSectionController extends GetxController
     }
   }
 
+  void resetToFirstTab() {
+    actionTab.value = -1;
+    currentTab.value = 0;
+  }
+
   void openLoansTab() {
     actionTab.value = loansTab;
   }

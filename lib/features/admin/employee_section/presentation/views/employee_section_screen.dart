@@ -24,8 +24,22 @@ import '../widgets/employee_sections_list/admin_list.dart';
 import '../widgets/attendance_overtime_request_card.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
-class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
+class EmployeeSectionScreen extends StatefulWidget {
   const EmployeeSectionScreen({Key? key}) : super(key: key);
+
+  @override
+  State<EmployeeSectionScreen> createState() => _EmployeeSectionScreenState();
+}
+
+class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
+  final EmployeeSectionController controller =
+      Get.find<EmployeeSectionController>();
+
+  @override
+  void initState() {
+    super.initState();
+    controller.resetToFirstTab();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +69,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
               () => _AppBarBadgeIconButton(
                 tooltip: 'loans'.tr,
                 badgeCount: controller.pendingLoanRequestsCount,
-                icon: Icons.payments_outlined,
+                icon: Icons.account_balance_wallet_rounded,
                 onPressed: controller.openLoansTab,
               ),
             ),
@@ -69,24 +83,15 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                 onPressed: controller.openSuspendedEmployeesTab,
               ),
             ),
-          Obx(() {
-            final tab = controller.activeTab;
-            final canShowAttendanceReport =
-                tab == EmployeeSectionController.workHoursTab ||
-                    (tab == EmployeeSectionController.employeeListTab &&
-                        controller.isEmployeeListMergedWithWorkHours);
-            if (!canShowAttendanceReport || !canViewEmployeesAttendance) {
-              return const SizedBox.shrink();
-            }
-            return _AppBarCompactIconButton(
+          if (canViewEmployeesAttendance)
+            _AppBarCompactIconButton(
               tooltip: 'attendanceReportAction'.tr,
               icon: Icons.assessment_outlined,
               onPressed: () => showAttendanceReportFilterDialog(
                 context,
                 employees: controller.employeeService.workingTimesList.toList(),
               ),
-            );
-          }),
+            ),
         ],
       ),
       body: AppPullToRefresh(

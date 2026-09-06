@@ -19,10 +19,12 @@ class EmployeeCardSwipe extends StatefulWidget {
   const EmployeeCardSwipe({
     Key? key,
     required this.actions,
+    required this.backgroundColor,
     required this.child,
   }) : super(key: key);
 
   final List<EmployeeCardSwipeAction> actions;
+  final Color backgroundColor;
   final Widget child;
 
   @override
@@ -80,6 +82,7 @@ class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
+            color: widget.backgroundColor,
             transform: Matrix4.translationValues(_offset, 0, 0),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,

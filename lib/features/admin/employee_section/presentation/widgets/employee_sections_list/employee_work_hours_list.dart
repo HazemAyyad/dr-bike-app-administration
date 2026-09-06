@@ -717,6 +717,9 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
 
     return EmployeeCardSwipe(
       actions: swipeActions,
+      backgroundColor: ThemeService.isDark.value
+          ? AppColors.customGreyColor4
+          : AppColors.whiteColor2,
       child: InkWell(
         onTap: _openDetails,
         child: Padding(
