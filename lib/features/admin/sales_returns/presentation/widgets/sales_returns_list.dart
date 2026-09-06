@@ -63,8 +63,7 @@ class _ReturnsTableHeader extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          _ReturnHeaderCell('الفاتورة', flex: 4),
-          _ReturnHeaderCell('فاتورة البيع', flex: 3),
+          _ReturnHeaderCell('الفاتورة', flex: 7),
           _ReturnHeaderCell('الإجمالي', flex: 2),
           _ReturnHeaderCell('القطع', flex: 2),
           _ReturnHeaderCell('الطرف', flex: 3),
@@ -124,35 +123,38 @@ class _SalesReturnRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                flex: 4,
-                child: Text(
-                  record.serialNumber,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w800,
-                    color: salesReturnColor,
-                    decoration: TextDecoration.underline,
-                    decorationColor: salesReturnColor,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  record.sourceInvoiceNumbers.isEmpty
-                      ? '—'
-                      : record.sourceInvoiceNumbers.join('\n'),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryColor,
-                  ),
+                flex: 7,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      record.serialNumber,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w800,
+                        color: salesReturnColor,
+                        decoration: TextDecoration.underline,
+                        decorationColor: salesReturnColor,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      record.sourceInvoiceNumbers.isEmpty
+                          ? '—'
+                          : record.sourceInvoiceNumbers.join(' • '),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
