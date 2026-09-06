@@ -59,6 +59,30 @@ class SmartHomeUidLoginCredentials {
       );
 }
 
+class SmartHomeBootstrapModel {
+  const SmartHomeBootstrapModel({
+    required this.selectedOwnerId,
+    required this.selectedHomeId,
+    required this.unassigned,
+    required this.owners,
+    required this.tuyaUser,
+    required this.homes,
+    required this.rooms,
+    required this.devices,
+    required this.scenes,
+  });
+
+  final int? selectedOwnerId;
+  final int? selectedHomeId;
+  final bool unassigned;
+  final List<SmartHomeOwnerModel> owners;
+  final SmartHomeTuyaUserModel tuyaUser;
+  final List<SmartHomeModel> homes;
+  final List<SmartRoomModel> rooms;
+  final List<SmartDeviceModel> devices;
+  final List<SmartSceneModel> scenes;
+}
+
 class SmartHomeOwnerModel {
   final int id;
   final String name;
@@ -474,6 +498,44 @@ const _noValue = _NoValue();
 
 class SmartHomeApiService {
   DioConsumer get _api => Get.find<DioConsumer>();
+
+  Future<SmartHomeBootstrapModel> getBootstrap({
+    int? userId,
+    int? homeId,
+    bool unassigned = false,
+  }) async {
+    final response = await _api.get(
+      EndPoints.smartHomeBootstrap,
+      queryParameters: {
+        if (userId != null) 'user_id': userId,
+        if (unassigned)
+          'home_id': 'unassigned'
+        else if (homeId != null)
+          'home_id': homeId,
+      },
+    );
+    final data = Map<String, dynamic>.from(response.data as Map);
+    List<T> models<T>(String key, T Function(Map<String, dynamic>) fromJson) =>
+        _extractList(data, [key])
+            .whereType<Map>()
+            .map((item) => fromJson(Map<String, dynamic>.from(item)))
+            .toList(growable: false);
+
+    return SmartHomeBootstrapModel(
+      selectedOwnerId:
+          int.tryParse(data['selected_owner_id']?.toString() ?? ''),
+      selectedHomeId: int.tryParse(data['selected_home_id']?.toString() ?? ''),
+      unassigned: data['unassigned'] == true,
+      owners: models('owners', (json) => SmartHomeOwnerModel.fromJson(json)),
+      tuyaUser: SmartHomeTuyaUserModel.fromJson(
+        Map<String, dynamic>.from(data['tuya_user'] as Map),
+      ),
+      homes: models('homes', (json) => SmartHomeModel.fromJson(json)),
+      rooms: models('rooms', (json) => SmartRoomModel.fromJson(json)),
+      devices: models('devices', (json) => SmartDeviceModel.fromJson(json)),
+      scenes: models('scenes', (json) => SmartSceneModel.fromJson(json)),
+    );
+  }
 
   Future<void> storeEventLog({
     int? smartHomeId,

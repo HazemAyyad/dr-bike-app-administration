@@ -101,7 +101,6 @@ class SmartHomeController extends GetxController {
   final unavailableDeviceIds = <int>{}.obs;
   final sceneExecutionLogs = <String, SmartHomeNativeSceneLog>{}.obs;
   final Map<int, Map<String, dynamic>> _deviceRefreshFailures = {};
-  final Map<int, DateTime> _lastStatusPersistedAt = {};
   final Map<int, DateTime> _deviceStatusRetryAfter = {};
   final Map<String, _QueuedSmartHomeCommand> _queuedDeviceCommands = {};
   String _activeNativeTuyaUid = '';
@@ -110,6 +109,8 @@ class SmartHomeController extends GetxController {
   bool _statusRefreshRunning = false;
   bool _sceneLogRefreshRunning = false;
   DateTime? _lastSceneLogRefreshAt;
+  bool _dashboardVisible = true;
+  bool _deviceTabActive = true;
 
   SmartHomeModel? get selectedHome {
     final key = selectedLocationKey.value;
@@ -175,7 +176,7 @@ class SmartHomeController extends GetxController {
     super.onInit();
     load();
     _statusRefreshTimer = Timer.periodic(
-      const Duration(seconds: 1),
+      const Duration(seconds: 8),
       (_) => _refreshLoadedDeviceStatusesInBackground(),
     );
   }
@@ -184,6 +185,18 @@ class SmartHomeController extends GetxController {
   void onClose() {
     _statusRefreshTimer?.cancel();
     super.onClose();
+  }
+
+  void setDashboardVisible(bool visible) {
+    _dashboardVisible = visible;
+    if (visible) _refreshLoadedDeviceStatusesInBackground();
+  }
+
+  void setDeviceTabActive(bool active) {
+    _deviceTabActive = active;
+    if (active && _dashboardVisible) {
+      _refreshLoadedDeviceStatusesInBackground();
+    }
   }
 
   String deviceCommandBusyKey(int deviceId, String commandCode) =>
@@ -202,41 +215,20 @@ class SmartHomeController extends GetxController {
     errorMessage('');
     try {
       nativeStatus.value = await nativeService.getStatus();
-      if (canViewSmartHomeOwners) {
-        final loadedOwners = await apiService.getOwners();
-        owners.assignAll(loadedOwners);
-        final selectedStillExists =
-            loadedOwners.any((owner) => owner.id == selectedOwnerId.value);
-        if (loadedOwners.isEmpty) {
-          selectedOwnerId.value = null;
-        } else if (selectedOwnerId.value == null || !selectedStillExists) {
-          selectedOwnerId.value = loadedOwners.first.id;
-        }
-      } else {
-        owners.clear();
-        selectedOwnerId.value = null;
-      }
-
-      tuyaUser.value = await apiService.getTuyaUser(
-        userId: selectedOwnerId.value,
-      );
+      final bootstrapped = await _loadBootstrapOrLegacy();
       await ensureTuyaUserLinked();
-
-      final loadedHomes =
-          await apiService.getHomes(userId: selectedOwnerId.value);
-      if (loadedHomes.isEmpty) {
+      if (homes.isEmpty) {
         if (selectedOwnerId.value == null) {
           final created =
               await apiService.createHome('smartHomeDefaultName'.tr);
           homes.assignAll([created]);
+          _ensureSelectedLocation();
+          await _loadSelectedHomeData();
         } else {
           homes.clear();
         }
-      } else {
-        homes.assignAll(loadedHomes);
       }
-      _ensureSelectedLocation();
-      await _loadSelectedHomeData();
+      if (bootstrapped) await refreshSceneExecutionLogs();
       await refreshLoadedDeviceStatuses();
     } catch (e) {
       errorMessage(e.toString());
@@ -255,17 +247,75 @@ class SmartHomeController extends GetxController {
         return;
       }
 
-      final loadedHomes =
-          await apiService.getHomes(userId: selectedOwnerId.value);
-      homes.assignAll(loadedHomes);
-      _ensureSelectedLocation();
-      await _loadSelectedHomeData();
+      await _loadBootstrapOrLegacy();
       await refreshLoadedDeviceStatuses(force: true);
     } catch (e) {
       errorMessage(e.toString());
     } finally {
       isRefreshing(false);
     }
+  }
+
+  Future<bool> _loadBootstrapOrLegacy({bool loadOwners = true}) async {
+    try {
+      final requestedHomeId = selectedLocationKey.value.startsWith('home:')
+          ? int.tryParse(selectedLocationKey.value.substring(5))
+          : null;
+      final bootstrap = await apiService.getBootstrap(
+        userId: selectedOwnerId.value,
+        homeId: requestedHomeId,
+        unassigned: isUnassignedSelected,
+      );
+      if (canViewSmartHomeOwners && loadOwners) {
+        owners.assignAll(bootstrap.owners);
+      } else if (!canViewSmartHomeOwners) {
+        owners.clear();
+      }
+      selectedOwnerId.value =
+          canViewSmartHomeOwners ? bootstrap.selectedOwnerId : null;
+      tuyaUser.value = bootstrap.tuyaUser;
+      homes.assignAll(bootstrap.homes);
+      if (bootstrap.unassigned) {
+        selectedLocationKey.value = smartHomeUnassignedLocationKey;
+      } else if (bootstrap.selectedHomeId != null) {
+        selectedLocationKey.value = 'home:${bootstrap.selectedHomeId}';
+      } else {
+        _ensureSelectedLocation();
+      }
+      rooms.assignAll(bootstrap.rooms);
+      devices.assignAll(bootstrap.devices);
+      scenes.assignAll(bootstrap.scenes);
+      return true;
+    } catch (_) {
+      await _loadLegacyData(loadOwners: loadOwners);
+      return false;
+    }
+  }
+
+  Future<void> _loadLegacyData({required bool loadOwners}) async {
+    if (canViewSmartHomeOwners && loadOwners) {
+      final loadedOwners = await apiService.getOwners();
+      owners.assignAll(loadedOwners);
+      final selectedStillExists =
+          loadedOwners.any((owner) => owner.id == selectedOwnerId.value);
+      if (loadedOwners.isEmpty) {
+        selectedOwnerId.value = null;
+      } else if (selectedOwnerId.value == null || !selectedStillExists) {
+        selectedOwnerId.value = loadedOwners.first.id;
+      }
+    } else if (!canViewSmartHomeOwners) {
+      owners.clear();
+      selectedOwnerId.value = null;
+    }
+
+    tuyaUser.value = await apiService.getTuyaUser(
+      userId: selectedOwnerId.value,
+    );
+    final loadedHomes =
+        await apiService.getHomes(userId: selectedOwnerId.value);
+    homes.assignAll(loadedHomes);
+    _ensureSelectedLocation();
+    await _loadSelectedHomeData();
   }
 
   Future<void> selectOwner(int? ownerId) async {
@@ -285,7 +335,7 @@ class SmartHomeController extends GetxController {
         selectedLocationKey.value = key;
         selectedRoomId.value = null;
       }
-      await _loadSelectedHomeData();
+      await _loadBootstrapOrLegacy(loadOwners: false);
       _refreshLoadedDeviceStatusesInBackground();
     } finally {
       isRefreshing(false);
@@ -707,15 +757,17 @@ class SmartHomeController extends GetxController {
       }
       _activeNativeTuyaUid =
           result.uid.isNotEmpty ? result.uid : credentials.uid;
-      tuyaUser.value = await apiService.updateTuyaUser(
-        tuyaUid: result.uid.isNotEmpty ? result.uid : credentials.uid,
-        region: tuyaUser.value?.region,
-        userId: selectedOwnerId.value,
-        rawMetadata: {
-          'login_type': 'uid',
-          'native_message': result.message,
-        },
-      );
+      if (tuyaUser.value?.tuyaUid != _activeNativeTuyaUid) {
+        tuyaUser.value = await apiService.updateTuyaUser(
+          tuyaUid: _activeNativeTuyaUid,
+          region: tuyaUser.value?.region,
+          userId: selectedOwnerId.value,
+          rawMetadata: {
+            'login_type': 'uid',
+            'native_message': result.message,
+          },
+        );
+      }
     } catch (e) {
       errorMessage(e.toString());
     } finally {
@@ -1390,7 +1442,6 @@ class SmartHomeController extends GetxController {
       devices.removeWhere((item) => item.id == device.id);
       unavailableDeviceIds.remove(device.id);
       _deviceStatusRetryAfter.remove(device.id);
-      _lastStatusPersistedAt.remove(device.id);
       _deviceRefreshFailures.remove(device.id);
       Get.snackbar('smartHomeDeleteDevice'.tr, 'smartHomeDeviceDeleted'.tr);
       return true;
@@ -1675,6 +1726,7 @@ class SmartHomeController extends GetxController {
 
   Future<void> refreshLoadedDeviceStatuses({bool force = false}) async {
     if (_statusRefreshRunning ||
+        (!force && (!_dashboardVisible || !_deviceTabActive)) ||
         !nativeStatus.value.initialized ||
         !isTuyaUserLinked) {
       return;
@@ -1710,12 +1762,7 @@ class SmartHomeController extends GetxController {
               _deviceStatusRetryAfter[device.id] =
                   DateTime.now().add(const Duration(minutes: 1));
               _upsertDevice(device.copyWith(online: false));
-              final now = DateTime.now();
-              final lastPersisted = _lastStatusPersistedAt[device.id];
-              if (newlyUnavailable ||
-                  lastPersisted == null ||
-                  now.difference(lastPersisted) >= const Duration(minutes: 5)) {
-                _lastStatusPersistedAt[device.id] = now;
+              if (newlyUnavailable) {
                 try {
                   final saved = await apiService.updateDeviceStatus(
                     id: device.id,
@@ -1737,13 +1784,9 @@ class SmartHomeController extends GetxController {
               native.dps.isNotEmpty ? native.dps : device.lastStatus;
           final nextMetadata =
               native.device.isNotEmpty ? native.device : device.rawMetadata;
-          final now = DateTime.now();
-          final lastPersisted = _lastStatusPersistedAt[device.id];
           final statusChanged = native.online != device.online ||
               !_sameStatus(nextStatus, device.lastStatus);
-          final shouldPersist = statusChanged ||
-              (lastPersisted != null &&
-                  now.difference(lastPersisted) >= const Duration(minutes: 1));
+          final shouldPersist = statusChanged;
           final saved = shouldPersist
               ? await apiService.updateDeviceStatus(
                   id: device.id,
@@ -1757,7 +1800,6 @@ class SmartHomeController extends GetxController {
                   lastStatus: nextStatus,
                   rawMetadata: nextMetadata,
                 );
-          if (shouldPersist) _lastStatusPersistedAt[device.id] = now;
           _upsertDevice(saved.copyWith(
             online: native.online,
             lastStatus:
@@ -1826,6 +1868,7 @@ class SmartHomeController extends GetxController {
   }
 
   void _refreshLoadedDeviceStatusesInBackground() {
+    if (!_dashboardVisible) return;
     refreshLoadedDeviceStatuses().catchError((_) {
       // Native status refresh is best-effort and must not block UI updates.
     });

@@ -736,6 +736,7 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
               title: 'إذن',
               subtitle: 'الأجهزة والمفاتيح التي سيتم التحكم بها',
               onAdd: _addAction,
+              addItemLabel: 'إضافة مهمة',
               children: actions
                   .asMap()
                   .entries
@@ -934,10 +935,107 @@ Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
   BuildContext context, {
   required SmartHomeController controller,
 }) async {
+  final taskType = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 22.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'إضافة مهمة',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            SizedBox(height: 16.h),
+            _SceneTaskTypeTile(
+              icon: Icons.lightbulb_rounded,
+              iconColor: const Color(0xFFF2B84B),
+              title: 'الجهاز',
+              subtitle: 'تشغيل أو إطفاء مفتاح، فتح أو إغلاق بوابة وستارة',
+              onTap: () => Navigator.pop(sheetContext, 'device'),
+            ),
+            _SceneTaskTypeTile(
+              icon: Icons.check_box_rounded,
+              iconColor: const Color(0xFF55B7E8),
+              title: 'حدد المشاهد الذكية',
+              subtitle: 'تشغيل مشهد آخر بعد تحقق الشرط',
+              enabled: false,
+            ),
+            _SceneTaskTypeTile(
+              icon: Icons.timer_outlined,
+              iconColor: const Color(0xFFF2B84B),
+              title: 'تأخير الإجراء',
+              subtitle: 'تنفيذ المهمة التالية بعد مدة محددة',
+              enabled: false,
+            ),
+            _SceneTaskTypeTile(
+              icon: Icons.notifications_none_rounded,
+              iconColor: const Color(0xFF8ED8A5),
+              title: 'إرسال إشعار',
+              subtitle: 'غير متاح حاليًا',
+              enabled: false,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (taskType != 'device' || !context.mounted) return const [];
+
+  final multiple = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 24.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'الجهاز',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            SizedBox(height: 18.h),
+            _SceneDeviceModeTile(
+              title: 'اختيار عدة أجهزة',
+              icon: Icons.devices_other_rounded,
+              onTap: () => Navigator.pop(sheetContext, true),
+            ),
+            SizedBox(height: 10.h),
+            _SceneDeviceModeTile(
+              title: 'اختيار جهاز واحد',
+              icon: Icons.smart_button_rounded,
+              onTap: () => Navigator.pop(sheetContext, false),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (multiple == null || !context.mounted) return const [];
+
   final targets = <_SceneBoolTarget>[];
   for (final device in controller.devices) {
-    for (final function in DeviceCapabilityResolver.writableFunctions(device)) {
-      targets.add(_SceneBoolTarget(device: device, function: function));
+    final functions = <TuyaDeviceFunction>[
+      ...DeviceCapabilityResolver.boolSwitches(device),
+      ...DeviceCapabilityResolver.writableFunctions(device)
+          .where((function) => function.isEnum),
+    ];
+    for (final function in functions) {
+      if (_semanticSceneValue(function, turnOn: true) != null &&
+          _semanticSceneValue(function, turnOn: false) != null) {
+        targets.add(_SceneBoolTarget(device: device, function: function));
+      }
     }
   }
   if (targets.isEmpty) {
@@ -945,244 +1043,287 @@ Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
     return const [];
   }
 
-  final capabilities = <String, _SceneBoolTarget>{};
-  for (final target in targets) {
-    capabilities.putIfAbsent(target.function.code, () => target);
-  }
-  final selectedCode = await showModalBottomSheet<String>(
+  final selectedKeys = <String>{};
+  var turnOn = true;
+  final accepted = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'اختر القدرة المراد تنفيذها',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 14),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * .62,
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: capabilities.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (_, index) {
-                  final target = capabilities.values.elementAt(index);
-                  final count = targets
-                      .where(
-                          (item) => item.function.code == target.function.code)
-                      .length;
-                  return ListTile(
-                    leading: Icon(target.function.isBool
-                        ? Icons.power_settings_new_rounded
-                        : target.function.isEnum
-                            ? Icons.tune_rounded
-                            : Icons.settings_remote_rounded),
-                    title: Text(
-                      _sceneFunctionLabel(target.device, target.function),
-                      softWrap: true,
-                    ),
-                    subtitle: Text('متاحة على $count جهاز'),
-                    trailing: const Icon(Icons.chevron_left_rounded),
-                    onTap: () =>
-                        Navigator.of(sheetContext).pop(target.function.code),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-  if (selectedCode == null || !context.mounted) return const [];
-
-  final compatible = targets
-      .where((target) => target.function.code == selectedCode)
-      .toList(growable: false);
-  final value = await _pickSceneFunctionValue(
-    context,
-    compatible.first.function,
-  );
-  if (identical(value, _sceneValueCancelled) || !context.mounted) {
-    return const [];
-  }
-
-  final selectedIds = <int>{};
-  final accepted = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('اختر جهازًا أو عدة أجهزة'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: compatible.length + 1,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, index) {
-              if (index == 0) {
-                final all = selectedIds.length == compatible.length;
-                return CheckboxListTile(
-                  value: all,
-                  title: const Text('تحديد الكل'),
-                  onChanged: (_) => setState(() {
-                    if (all) {
-                      selectedIds.clear();
-                    } else {
-                      selectedIds.addAll(
-                        compatible.map((target) => target.device.id),
-                      );
-                    }
-                  }),
-                );
-              }
-              final target = compatible[index - 1];
-              final selected = selectedIds.contains(target.device.id);
-              return CheckboxListTile(
-                value: selected,
-                title: Text(target.device.name, softWrap: true),
-                subtitle: Text(
-                  [
-                    if (target.device.roomName.isNotEmpty)
-                      target.device.roomName,
-                    target.device.online ? 'متصل' : 'غير متصل',
-                  ].join(' • '),
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, setSheetState) => FractionallySizedBox(
+        heightFactor: .92,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 14.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'اختر الأمر والأجهزة',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
-                onChanged: (checked) => setState(() {
-                  checked == true
-                      ? selectedIds.add(target.device.id)
-                      : selectedIds.remove(target.device.id);
-                }),
-              );
-            },
+                SizedBox(height: 14.h),
+                Container(
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15.r),
+                    border: Border.all(color: smartHomeBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'الأمر المطلوب',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      SizedBox(height: 8.h),
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                            value: true,
+                            icon: Icon(Icons.power_settings_new_rounded),
+                            label: Text('تشغيل / فتح'),
+                          ),
+                          ButtonSegment(
+                            value: false,
+                            icon: Icon(Icons.power_off_rounded),
+                            label: Text('إطفاء / إغلاق'),
+                          ),
+                        ],
+                        selected: {turnOn},
+                        onSelectionChanged: (selection) =>
+                            setSheetState(() => turnOn = selection.first),
+                      ),
+                      SizedBox(height: 7.h),
+                      const Text(
+                        'كل جهاز سيحوّل الأمر تلقائيًا حسب نوعه وقدراته.',
+                        style: TextStyle(color: smartHomeMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                if (multiple)
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => setSheetState(() {
+                          if (selectedKeys.length == targets.length) {
+                            selectedKeys.clear();
+                          } else {
+                            selectedKeys
+                              ..clear()
+                              ..addAll(targets.map(_sceneTargetKey));
+                          }
+                        }),
+                        icon: const Icon(Icons.select_all_rounded),
+                        label: Text(selectedKeys.length == targets.length
+                            ? 'إلغاء تحديد الكل'
+                            : 'تحديد الكل'),
+                      ),
+                      const Spacer(),
+                      Text('${selectedKeys.length} محدد'),
+                    ],
+                  ),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: targets.length,
+                    separatorBuilder: (_, __) => SizedBox(height: 7.h),
+                    itemBuilder: (_, index) {
+                      final target = targets[index];
+                      final key = _sceneTargetKey(target);
+                      final selected = selectedKeys.contains(key);
+                      final mappedValue = _semanticSceneValue(
+                        target.function,
+                        turnOn: turnOn,
+                      );
+                      final subtitle = [
+                        _sceneFunctionLabel(target.device, target.function),
+                        _friendlySceneEnumValue(mappedValue.toString()),
+                        if (target.device.roomName.isNotEmpty)
+                          target.device.roomName,
+                        target.device.online ? 'متصل' : 'غير متصل',
+                      ].join(' • ');
+                      return Material(
+                        color: selected
+                            ? smartHomeAccent.withOpacity(.08)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(13.r),
+                        child: CheckboxListTile(
+                          value: selected,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13.r),
+                            side: BorderSide(
+                              color:
+                                  selected ? smartHomeAccent : smartHomeBorder,
+                            ),
+                          ),
+                          secondary: Icon(
+                            target.function.isBool
+                                ? Icons.lightbulb_outline_rounded
+                                : Icons.curtains_rounded,
+                            color: smartHomeAccent,
+                          ),
+                          title: Text(
+                            target.device.name,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          subtitle: Text(subtitle),
+                          onChanged: (_) => setSheetState(() {
+                            if (multiple) {
+                              selected
+                                  ? selectedKeys.remove(key)
+                                  : selectedKeys.add(key);
+                            } else {
+                              selectedKeys
+                                ..clear()
+                                ..add(key);
+                            }
+                          }),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                FilledButton(
+                  onPressed: selectedKeys.isEmpty
+                      ? null
+                      : () => Navigator.pop(sheetContext, true),
+                  child: Text('إضافة المحدد (${selectedKeys.length})'),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: selectedIds.isEmpty
-                ? null
-                : () => Navigator.of(dialogContext).pop(true),
-            child: Text('إضافة المحدد (${selectedIds.length})'),
-          ),
-        ],
       ),
     ),
   );
   if (accepted != true) return const [];
 
-  return compatible
-      .where((target) => selectedIds.contains(target.device.id))
-      .where((target) =>
-          DeviceCapabilityResolver.validate(target.function, value).valid)
-      .map((target) => <String, dynamic>{
-            'device_id': target.device.id,
-            'dp_id': target.function.dpId,
-            'value': value,
-            'device_name': target.device.name,
-            'function_name':
-                _sceneFunctionLabel(target.device, target.function),
-          })
-      .toList(growable: false);
+  return targets
+      .where((target) => selectedKeys.contains(_sceneTargetKey(target)))
+      .map((target) {
+    final value = _semanticSceneValue(target.function, turnOn: turnOn);
+    return <String, dynamic>{
+      'device_id': target.device.id,
+      'dp_id': target.function.dpId,
+      'value': value,
+      'device_name': target.device.name,
+      'function_name': _sceneFunctionLabel(target.device, target.function),
+    };
+  }).toList(growable: false);
 }
 
-const _sceneValueCancelled = _SceneValueCancelled();
+class _SceneTaskTypeTile extends StatelessWidget {
+  const _SceneTaskTypeTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.enabled = true,
+  });
 
-class _SceneValueCancelled {
-  const _SceneValueCancelled();
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : .42,
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
+        leading: Container(
+          width: 42.r,
+          height: 42.r,
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(.14),
+            borderRadius: BorderRadius.circular(11.r),
+          ),
+          child: Icon(icon, color: iconColor),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(subtitle),
+        trailing: enabled ? const Icon(Icons.chevron_left_rounded) : null,
+        onTap: enabled ? onTap : null,
+      ),
+    );
+  }
 }
 
-Future<dynamic> _pickSceneFunctionValue(
-  BuildContext context,
-  TuyaDeviceFunction function,
-) async {
-  if (function.isBool) {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('اختر الأمر'),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const ListTile(
-              leading: Icon(Icons.power_settings_new_rounded),
-              title: Text('تشغيل'),
-            ),
+class _SceneDeviceModeTile extends StatelessWidget {
+  const _SceneDeviceModeTile({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: smartHomeAccent.withOpacity(.055),
+      borderRadius: BorderRadius.circular(15.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 22.h),
+          child: Row(
+            children: [
+              Icon(icon, color: smartHomeAccent),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              const Icon(Icons.chevron_left_rounded),
+            ],
           ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const ListTile(
-              leading: Icon(Icons.power_off_rounded),
-              title: Text('إغلاق'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
-    return result ?? _sceneValueCancelled;
   }
+}
 
-  if (function.isEnum) {
-    final range = function.values['range'];
-    final options = range is List ? range : const [];
-    if (options.isEmpty) return _sceneValueCancelled;
-    final result = await showDialog<dynamic>(
-      context: context,
-      builder: (dialogContext) => SimpleDialog(
-        title: const Text('اختر قيمة الأمر'),
-        children: options
-            .map((option) => SimpleDialogOption(
-                  onPressed: () => Navigator.of(dialogContext).pop(option),
-                  child: Text(_friendlySceneEnumValue(option.toString())),
-                ))
-            .toList(growable: false),
-      ),
-    );
-    return result ?? _sceneValueCancelled;
+String _sceneTargetKey(_SceneBoolTarget target) =>
+    '${target.device.id}:${target.function.dpId}';
+
+dynamic _semanticSceneValue(
+  TuyaDeviceFunction function, {
+  required bool turnOn,
+}) {
+  if (function.isBool) return turnOn;
+  if (!function.isEnum) return null;
+  final rawRange = function.values['range'];
+  final options = rawRange is List
+      ? rawRange.map((item) => item.toString()).toList(growable: false)
+      : const <String>[];
+  final preferred = turnOn
+      ? const ['open', 'continue', 'on', 'start']
+      : const ['close', 'off', 'stop', 'end'];
+  for (final wanted in preferred) {
+    for (final option in options) {
+      if (option.toLowerCase() == wanted) return option;
+    }
   }
-
-  final textController = TextEditingController();
-  final result = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('قيمة الأمر'),
-      content: TextField(
-        controller: textController,
-        autofocus: true,
-        keyboardType:
-            function.isValue ? TextInputType.number : TextInputType.text,
-        decoration: const InputDecoration(border: OutlineInputBorder()),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('إلغاء'),
-        ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.of(dialogContext).pop(textController.text.trim()),
-          child: const Text('تأكيد'),
-        ),
-      ],
-    ),
-  );
-  textController.dispose();
-  if (result == null || result.isEmpty) return _sceneValueCancelled;
-  if (!function.isValue) return result;
-  return num.tryParse(result) ?? _sceneValueCancelled;
+  return null;
 }
 
 String _friendlySceneEnumValue(String value) {
@@ -1210,12 +1351,14 @@ class _EditorSection extends StatelessWidget {
     required this.subtitle,
     required this.onAdd,
     required this.children,
+    this.addItemLabel,
   });
 
   final String title;
   final String subtitle;
   final VoidCallback onAdd;
   final List<Widget> children;
+  final String? addItemLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1248,6 +1391,48 @@ class _EditorSection extends StatelessWidget {
               ],
             ),
             ...children,
+            if (addItemLabel != null) ...[
+              if (children.isNotEmpty) SizedBox(height: 6.h),
+              Material(
+                color: smartHomeAccent.withOpacity(.06),
+                borderRadius: BorderRadius.circular(12.r),
+                child: InkWell(
+                  onTap: onAdd,
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 13.h),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34.r,
+                          height: 34.r,
+                          decoration: BoxDecoration(
+                            color: smartHomeAccent.withOpacity(.13),
+                            borderRadius: BorderRadius.circular(9.r),
+                          ),
+                          child: const Icon(
+                            Icons.add_task_rounded,
+                            color: smartHomeAccent,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Text(
+                            addItemLabel!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_left_rounded),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

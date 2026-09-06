@@ -115,65 +115,68 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
               ),
             ),
           ),
-          body: Obx(() {
-            final showInitialSkeleton =
-                controller.isLoading.value && controller.homes.isEmpty;
-            final showDeviceSkeleton =
-                controller.isRefreshing.value && !showInitialSkeleton;
-            if (showInitialSkeleton) {
-              return ListView(
-                padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [_SmartHomeDashboardSkeleton()],
-              );
-            }
+          body: _DashboardActivityTracker(
+            controller: controller,
+            child: Obx(() {
+              final showInitialSkeleton =
+                  controller.isLoading.value && controller.homes.isEmpty;
+              final showDeviceSkeleton =
+                  controller.isRefreshing.value && !showInitialSkeleton;
+              if (showInitialSkeleton) {
+                return ListView(
+                  padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [_SmartHomeDashboardSkeleton()],
+                );
+              }
 
-            return TabBarView(
-              children: [
-                RefreshIndicator(
-                  onRefresh: controller.refreshData,
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
-                    children: [
-                      if (controller.errorMessage.value.isNotEmpty)
-                        _ErrorBanner(message: controller.errorMessage.value),
-                      if (!controller.isUnassignedSelected)
-                        _RoomsStrip(
-                          controller: controller,
-                          showQuickControl: true,
+              return TabBarView(
+                children: [
+                  RefreshIndicator(
+                    onRefresh: controller.refreshData,
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
+                      children: [
+                        if (controller.errorMessage.value.isNotEmpty)
+                          _ErrorBanner(message: controller.errorMessage.value),
+                        if (!controller.isUnassignedSelected)
+                          _RoomsStrip(
+                            controller: controller,
+                            showQuickControl: true,
+                          ),
+                        SizedBox(height: 8.h),
+                        _SectionHeader(
+                          title: 'devices'.tr,
+                          actionLabel: 'addDevice'.tr,
+                          onAction: _showAddDeviceDialog,
                         ),
-                      SizedBox(height: 8.h),
-                      _SectionHeader(
-                        title: 'devices'.tr,
-                        actionLabel: 'addDevice'.tr,
-                        onAction: _showAddDeviceDialog,
-                      ),
-                      SizedBox(height: 5.h),
-                      if (showDeviceSkeleton)
-                        const _SmartHomeDeviceListSkeleton()
-                      else
-                        _DevicesList(controller: controller),
-                    ],
+                        SizedBox(height: 5.h),
+                        if (showDeviceSkeleton)
+                          const _SmartHomeDeviceListSkeleton()
+                        else
+                          _DevicesList(controller: controller),
+                      ],
+                    ),
                   ),
-                ),
-                RefreshIndicator(
-                  onRefresh: controller.refreshData,
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
-                    children: [
-                      if (controller.errorMessage.value.isNotEmpty)
-                        _ErrorBanner(message: controller.errorMessage.value),
-                      SmartScenesSection(
-                        controller: controller,
-                        showAll: true,
-                        showHeader: false,
-                      ),
-                    ],
+                  RefreshIndicator(
+                    onRefresh: controller.refreshData,
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
+                      children: [
+                        if (controller.errorMessage.value.isNotEmpty)
+                          _ErrorBanner(message: controller.errorMessage.value),
+                        SmartScenesSection(
+                          controller: controller,
+                          showAll: true,
+                          showHeader: false,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          }),
+                ],
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -222,6 +225,64 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
       isScrollControlled: true,
     );
   }
+}
+
+class _DashboardActivityTracker extends StatefulWidget {
+  const _DashboardActivityTracker({
+    required this.controller,
+    required this.child,
+  });
+
+  final SmartHomeController controller;
+  final Widget child;
+
+  @override
+  State<_DashboardActivityTracker> createState() =>
+      _DashboardActivityTrackerState();
+}
+
+class _DashboardActivityTrackerState extends State<_DashboardActivityTracker>
+    with WidgetsBindingObserver {
+  TabController? tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller.setDashboardVisible(true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = DefaultTabController.of(context);
+    if (tabController == next) return;
+    tabController?.removeListener(_syncTab);
+    tabController = next..addListener(_syncTab);
+    _syncTab();
+  }
+
+  void _syncTab() {
+    final tab = tabController;
+    if (tab == null || tab.indexIsChanging) return;
+    widget.controller.setDeviceTabActive(tab.index == 0);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    widget.controller.setDashboardVisible(state == AppLifecycleState.resumed);
+  }
+
+  @override
+  void dispose() {
+    tabController?.removeListener(_syncTab);
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller.setDashboardVisible(false);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _CompactTabLabel extends StatelessWidget {

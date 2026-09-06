@@ -162,6 +162,7 @@ class EndPoints {
   static String noteAttachments(int id) => 'notes/$id/attachments';
 
   static const String smartTuyaUser = 'smart-home/tuya-user';
+  static const String smartHomeBootstrap = 'smart-home/bootstrap';
   static const String smartHomeOwners = 'smart-home/owners';
   static const String smartHomes = 'smart-home/homes';
   static String smartHome(int id) => 'smart-home/homes/$id';
