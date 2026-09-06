@@ -4,6 +4,8 @@ import android.app.KeyguardManager
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -62,6 +64,7 @@ class MainActivity : FlutterFragmentActivity() {
     private val channelName = "dr_bike/biometric"
     private val wifiPresenceChannelName = "dr_bike/employee_wifi_presence"
     private val smartHomeChannelName = "dr_bike/smart_home"
+    private val appLauncherChannelName = "dr_bike/app_launcher"
     private val strong = BiometricManager.Authenticators.BIOMETRIC_STRONG
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -158,6 +161,16 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appLauncherChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "openWhatsApp" -> openPreferredWhatsApp(
+                        call.argument<String>("phone") ?: "",
+                        result,
+                    )
+                    else -> result.notImplemented()
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, smartHomeChannelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -191,6 +204,33 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun openPreferredWhatsApp(phone: String, result: MethodChannel.Result) {
+        val digits = phone.filter(Char::isDigit)
+        if (digits.isBlank()) {
+            result.success(false)
+            return
+        }
+
+        val uri = Uri.parse("https://wa.me/$digits")
+        val packages = listOf("com.whatsapp", "com.whatsapp.w4b")
+        for (packageName in packages) {
+            try {
+                startActivity(
+                    Intent(Intent.ACTION_VIEW, uri).apply {
+                        setPackage(packageName)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+                result.success(true)
+                return
+            } catch (_: ActivityNotFoundException) {
+                // Try WhatsApp Business only when regular WhatsApp is absent.
+            }
+        }
+
+        result.success(false)
     }
 
     private fun loginTuyaWithUid(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {

@@ -111,7 +111,6 @@ class EmployeeSectionController extends GetxController
   RxInt currentTab = 0.obs;
   static const int employeeListTab = 0;
   static const int workHoursTab = 1;
-  static const int entitlementsTab = 2;
   static const int loansTab = 3;
   static const int overtimeTab = 4;
   static const int adminsTab = 5;
@@ -146,10 +145,6 @@ class EmployeeSectionController extends GetxController
     actionTab.value = loansTab;
   }
 
-  void openEntitlementsTab() {
-    actionTab.value = entitlementsTab;
-  }
-
   void openSuspendedEmployeesTab() {
     actionTab.value = suspendedEmployeesTab;
     getSuspendedEmployees();
@@ -165,6 +160,25 @@ class EmployeeSectionController extends GetxController
 
     final index = currentTab.value.clamp(0, visibleTabIndexes.length - 1);
     return visibleTabIndexes[index];
+  }
+
+  String get activeTabLabel {
+    switch (activeTab) {
+      case employeeListTab:
+        return 'employeeList';
+      case workHoursTab:
+        return 'workHours';
+      case loansTab:
+        return 'loans';
+      case overtimeTab:
+        return 'overtime';
+      case adminsTab:
+        return 'admins';
+      case suspendedEmployeesTab:
+        return 'suspendedEmployees';
+      default:
+        return 'employeeList';
+    }
   }
 
   void syncVisibleTabs() {
@@ -191,9 +205,6 @@ class EmployeeSectionController extends GetxController
     tabs.assignAll(nextTabs);
     visibleTabIndexes.assignAll(nextIndexes);
     if (actionTab.value == loansTab && !canManageEmployeesOrders) {
-      actionTab.value = -1;
-    }
-    if (actionTab.value == entitlementsTab && !canViewEmployeesFinancial) {
       actionTab.value = -1;
     }
     if (currentTab.value >= tabs.length) {
@@ -727,9 +738,6 @@ class EmployeeSectionController extends GetxController
     if (canViewEmployeesAttendance) {
       getWorkingTimes();
     }
-    if (canViewEmployeesFinancial) {
-      getFinancialDues();
-    }
   }
 
   Future<bool> changeEmployeePassword(String employeeId) async {
@@ -1257,9 +1265,6 @@ class EmployeeSectionController extends GetxController
     if (canViewEmployeesAttendance) {
       getWorkingTimes();
     }
-    if (canViewEmployeesFinancial) {
-      getFinancialDues();
-    }
     if (canManageEmployeesOrders) {
       getOvertimeAndLoan();
     }
@@ -1287,9 +1292,6 @@ class EmployeeSectionController extends GetxController
     }
     if (canViewEmployeesAttendance) {
       getWorkingTimes();
-    }
-    if (canViewEmployeesFinancial) {
-      getFinancialDues();
     }
     if (canManageEmployeesOrders) {
       getOvertimeAndLoan();

@@ -3,8 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../data/models/employee_reward_rule_model.dart';
 import '../controllers/employee_point_categories_controller.dart';
@@ -38,7 +40,18 @@ class PointsRewardsGuideScreen extends StatelessWidget {
         title: 'pointsGuideTitle',
         action: false,
         backgroundColor: pageBg,
-        actions: const [],
+        actions: [
+          if (userType == 'admin')
+            Tooltip(
+              message: 'pointsSettings'.tr,
+              child: IconButton(
+                onPressed: () =>
+                    Get.toNamed(AppRoutes.EMPLOYEEPOINTSSETTINGSSCREEN),
+                icon: const Icon(Icons.settings_outlined),
+                color: AppColors.primaryColor,
+              ),
+            ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: refresh,

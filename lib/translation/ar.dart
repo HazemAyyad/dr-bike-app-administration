@@ -2758,6 +2758,9 @@ const Map<String, String> ar = {
 
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'دليل النقاط والمكافآت',
+  'pointsSettings': 'إعدادات النقاط والمكافآت',
+  'employeeCardSwipeHint':
+      'اسحب بطاقة الموظف من اليسار إلى اليمين للتواصل وسجل الدوام وباقي الخيارات',
   'pointsGuideEmpty': 'لا توجد بيانات لعرضها بعد',
   'pointsGuidePositive': 'تصنيفات الإضافة',
   'pointsGuideNegative': 'تصنيفات الخصم',

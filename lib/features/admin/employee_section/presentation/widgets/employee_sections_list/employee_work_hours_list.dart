@@ -6,9 +6,9 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/helpers/whatsapp_launcher.dart';
 import '../../../../../../core/services/impersonation_service.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
@@ -17,6 +17,9 @@ import '../../../../../../routes/app_routes.dart';
 import '../../../domain/entities/employee_entity.dart';
 import '../../../domain/entities/working_times_entity.dart';
 import '../../controllers/employee_section_controller.dart';
+import '../employee_advances_bottom_sheet.dart';
+import '../employee_card_swipe.dart';
+import '../employee_financial_details.dart';
 
 enum _ShiftStatus {
   beforeShift,
@@ -227,6 +230,18 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
           Navigator.of(ctx).pop();
           _openDetails();
         },
+        onFinancialDetails: canViewEmployeesFinancial
+            ? () {
+                Navigator.of(ctx).pop();
+                _openFinancialDetails();
+              }
+            : null,
+        onAdvances: canViewEmployeesFinancial || canManageEmployeesOrders
+            ? () {
+                Navigator.of(ctx).pop();
+                _openAdvances(context);
+              }
+            : null,
         onWhatsApp: () async {
           Navigator.of(ctx).pop();
           await _openWhatsApp(context);
@@ -262,6 +277,32 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
     );
   }
 
+  void _openFinancialDetails() {
+    controller.openFinancialDetails(widget.employee.id.toString());
+    Get.dialog(EmployeeFinancialDetails(controller: controller));
+  }
+
+  void _openAdvances(BuildContext context) {
+    showEmployeeAdvancesBottomSheet(
+      context,
+      controller: controller,
+      employeeId: widget.employee.id,
+      employeeName: widget.employee.employeeName,
+    );
+  }
+
+  void _openAttendanceHistory() {
+    final employeeId = _work?.id ?? widget.employee.id;
+    final employeeName = _work?.employeeName ?? widget.employee.employeeName;
+    Get.toNamed(
+      AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+      arguments: {
+        'employeeId': employeeId.toString(),
+        'employeeName': employeeName,
+      },
+    );
+  }
+
   Future<void> _openWhatsApp(BuildContext context) async {
     await controller.getEmployeeDetails(widget.employee.id.toString());
     final details = controller.employeeService.employeeDetails.value;
@@ -285,10 +326,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
       return;
     }
 
-    final opened = await launchUrl(
-      Uri.https('wa.me', '/$digits'),
-      mode: LaunchMode.externalApplication,
-    );
+    final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
@@ -647,212 +685,175 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     final work = _work;
-    return InkWell(
-      onTap: _openDetails,
-      onLongPress: () => _showActionsSheet(context),
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 72.w),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: GestureDetector(
-                    onTap: () => _openImageViewer(context),
-                    child: SizedBox(
-                      height: 58.h,
-                      width: 58.w,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned.fill(
-                            child: Container(
-                              decoration:
-                                  const BoxDecoration(shape: BoxShape.circle),
-                              clipBehavior: Clip.antiAlias,
-                              child: CachedNetworkImage(
-                                cacheManager: CacheManager(
-                                  Config(
-                                    'imagesCache',
-                                    stalePeriod: const Duration(days: 7),
-                                    maxNrOfCacheObjects: 100,
-                                  ),
-                                ),
-                                imageUrl: widget.employee.employeeImg,
-                                fit: BoxFit.cover,
-                                fadeInDuration:
-                                    const Duration(milliseconds: 200),
-                                fadeOutDuration:
-                                    const Duration(milliseconds: 200),
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
-                              ),
-                            ),
-                          ),
-                          PositionedDirectional(
-                            end: -1.w,
-                            bottom: 1.h,
-                            child: _WifiStatusDot(
-                              employee: widget.employee,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              widget.employee.employeeName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textStyle.copyWith(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.customGreyColor5,
-                              ),
-                            ),
-                          ),
-                          if (work?.isCameOnTime ??
-                              widget.employee.isCameOnTime)
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 4.w),
-                              child: Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                                size: 18.sp,
-                              ),
-                            ),
-                        ],
-                      ),
-                      Wrap(
-                        spacing: 6.w,
-                        runSpacing: 3.h,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          _InlineChip(
-                            label: _pointsLabel(),
-                            color: _pointsColor(),
-                            icon: Icons.stars_rounded,
-                          ),
-                          if (_rewardStatusLabel() != null)
-                            _IconChip(
-                              tooltip: _rewardStatusLabel()!,
-                              color: _pointsColor(),
-                              icon: Icons.redeem_rounded,
-                            ),
-                          if (work != null)
-                            _IconChip(
-                              tooltip: _employeeStatusText,
-                              color: _employeeStatusColor,
-                              icon: _employeeStatusIcon,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (ImpersonationService.canImpersonateEmployees)
-                  Obx(() {
-                    if (!controller.canShowImpersonateFor(widget.employee.id)) {
-                      return const SizedBox.shrink();
-                    }
-                    final busy = controller.impersonatingEmployeeId.value ==
-                        widget.employee.id;
-                    return Padding(
-                      padding: EdgeInsets.only(top: 24.h),
-                      child: Tooltip(
-                        message: 'impersonateEmployee'.tr,
-                        child: InkResponse(
-                          onTap:
-                              busy ? null : () => _confirmImpersonate(context),
-                          radius: 15.r,
-                          child: SizedBox(
-                            width: 28.w,
-                            height: 28.h,
-                            child: Center(
-                              child: busy
-                                  ? SizedBox(
-                                      width: 16.sp,
-                                      height: 16.sp,
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.switch_account_rounded,
-                                      color: AppColors.operationalPurple,
-                                      size: 17.sp,
+    final swipeActions = <EmployeeCardSwipeAction>[
+      EmployeeCardSwipeAction(
+        icon: Icons.chat_rounded,
+        label: 'تواصل واتساب',
+        color: const Color(0xFF25D366),
+        onTap: () => _openWhatsApp(context),
+      ),
+      if (work != null && canViewEmployeesAttendance)
+        EmployeeCardSwipeAction(
+          icon: Icons.history_rounded,
+          label: 'employeeAttendanceHistory'.tr,
+          color: const Color(0xFF0F766E),
+          onTap: _openAttendanceHistory,
+        ),
+      if (ImpersonationService.canImpersonateEmployees &&
+          controller.canShowImpersonateFor(widget.employee.id))
+        EmployeeCardSwipeAction(
+          icon: Icons.switch_account_rounded,
+          label: 'impersonateEmployee'.tr,
+          color: AppColors.operationalPurple,
+          onTap: () => _confirmImpersonate(context),
+        ),
+      EmployeeCardSwipeAction(
+        icon: Icons.more_horiz_rounded,
+        label: 'options'.tr,
+        color: AppColors.primaryColor,
+        onTap: () => _showActionsSheet(context),
+      ),
+    ];
+
+    return EmployeeCardSwipe(
+      actions: swipeActions,
+      child: InkWell(
+        onTap: _openDetails,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 72.w),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: GestureDetector(
+                      onTap: () => _openImageViewer(context),
+                      child: SizedBox(
+                        height: 58.h,
+                        width: 58.w,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned.fill(
+                              child: Container(
+                                decoration:
+                                    const BoxDecoration(shape: BoxShape.circle),
+                                clipBehavior: Clip.antiAlias,
+                                child: CachedNetworkImage(
+                                  cacheManager: CacheManager(
+                                    Config(
+                                      'imagesCache',
+                                      stalePeriod: const Duration(days: 7),
+                                      maxNrOfCacheObjects: 100,
                                     ),
+                                  ),
+                                  imageUrl: widget.employee.employeeImg,
+                                  fit: BoxFit.cover,
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 200),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 200),
+                                  placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              ),
                             ),
-                          ),
+                            PositionedDirectional(
+                              end: -1.w,
+                              bottom: 1.h,
+                              child: _WifiStatusDot(
+                                employee: widget.employee,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }),
-              ],
-            ),
-            if (work != null) ...[
-              PositionedDirectional(
-                top: 0,
-                end: 0,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .scaffoldBackgroundColor
-                        .withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: AppColors.primaryColor.withValues(alpha: 0.16),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _MiniActionButton(
-                        icon: Icons.history,
-                        tooltip: 'employeeAttendanceHistory'.tr,
-                        onTap: () => Get.toNamed(
-                          AppRoutes.EMPLOYEEATTENDANCEHISTORY,
-                          arguments: {
-                            'employeeId': work.id.toString(),
-                            'employeeName': work.employeeName,
-                          },
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.employee.employeeName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textStyle.copyWith(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.customGreyColor5,
+                                ),
+                              ),
+                            ),
+                            if (work?.isCameOnTime ??
+                                widget.employee.isCameOnTime)
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                                child: Icon(
+                                  Icons.star,
+                                  color: Colors.amber,
+                                  size: 18.sp,
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Wrap(
+                          spacing: 6.w,
+                          runSpacing: 3.h,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _InlineChip(
+                              label: _pointsLabel(),
+                              color: _pointsColor(),
+                              icon: Icons.stars_rounded,
+                            ),
+                            if (_rewardStatusLabel() != null)
+                              _IconChip(
+                                tooltip: _rewardStatusLabel()!,
+                                color: _pointsColor(),
+                                icon: Icons.redeem_rounded,
+                              ),
+                            if (work != null)
+                              _IconChip(
+                                tooltip: _employeeStatusText,
+                                color: _employeeStatusColor,
+                                icon: _employeeStatusIcon,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (work != null) ...[
+                PositionedDirectional(
+                  top: 0,
+                  bottom: 0,
+                  end: -72.w,
+                  child: _ShiftTimerBox(
+                    boxColor: _boxColor,
+                    timerColor: _timerColor,
+                    statusLabel: _statusLabel,
+                    showTimer: _showTimer,
+                    timerText: _formatDuration(_timerDuration),
+                    timerLabel: _timerLabel,
+                    status: _status,
                   ),
                 ),
-              ),
-              PositionedDirectional(
-                top: 0,
-                bottom: 0,
-                end: -72.w,
-                child: _ShiftTimerBox(
-                  boxColor: _boxColor,
-                  timerColor: _timerColor,
-                  statusLabel: _statusLabel,
-                  showTimer: _showTimer,
-                  timerText: _formatDuration(_timerDuration),
-                  timerLabel: _timerLabel,
-                  status: _status,
-                ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1068,6 +1069,8 @@ class _EmployeeActionsSheet extends StatelessWidget {
     required this.onSuspend,
     required this.onRestore,
     required this.onChangePassword,
+    this.onFinancialDetails,
+    this.onAdvances,
   });
 
   final EmployeeEntity employee;
@@ -1077,6 +1080,8 @@ class _EmployeeActionsSheet extends StatelessWidget {
   final VoidCallback onSuspend;
   final VoidCallback onRestore;
   final VoidCallback onChangePassword;
+  final VoidCallback? onFinancialDetails;
+  final VoidCallback? onAdvances;
 
   @override
   Widget build(BuildContext context) {
@@ -1163,6 +1168,20 @@ class _EmployeeActionsSheet extends StatelessWidget {
               color: const Color(0xFF25D366),
               onTap: onWhatsApp,
             ),
+            if (onFinancialDetails != null)
+              _ActionTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'financialDetails'.tr,
+                color: AppColors.operationalPurple,
+                onTap: onFinancialDetails!,
+              ),
+            if (onAdvances != null)
+              _ActionTile(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'advances'.tr,
+                color: AppColors.primaryColor,
+                onTap: onAdvances!,
+              ),
             if (canManageEmployeesPasswords)
               _ActionTile(
                 icon: Icons.lock_reset_rounded,
@@ -1235,38 +1254,6 @@ class _ActionTile extends StatelessWidget {
       trailing: Icon(
         Icons.chevron_right_rounded,
         color: color.withValues(alpha: 0.6),
-      ),
-    );
-  }
-}
-
-class _MiniActionButton extends StatelessWidget {
-  const _MiniActionButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 16.r,
-        child: SizedBox(
-          width: 26.w,
-          height: 28.h,
-          child: Icon(
-            icon,
-            color: AppColors.primaryColor,
-            size: 16.sp,
-          ),
-        ),
       ),
     );
   }

@@ -52,6 +52,32 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
         actions: [
           const ImpersonationExitButton(),
           if (userType == 'employee') ...[
+            Tooltip(
+              message: 'pointsGuideTitle'.tr,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(start: 3.w),
+                child: ClipOval(
+                  child: Material(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    child: InkWell(
+                      onTap: () => Get.toNamed(AppRoutes.POINTSTABLE),
+                      customBorder: const CircleBorder(),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.redeem_rounded,
+                          color: AppColors.primaryColor,
+                          size: 23.sp,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             const EmployeeAttendanceAppBarButton(),
             Obx(() {
               final c = Get.isRegistered<EmployeeNotificationBadgeController>()

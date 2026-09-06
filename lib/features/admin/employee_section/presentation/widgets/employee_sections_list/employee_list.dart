@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/helpers/whatsapp_launcher.dart';
 import '../../../../../../core/services/impersonation_service.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
@@ -13,6 +13,9 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../domain/entities/employee_entity.dart';
 import '../../controllers/employee_section_controller.dart';
+import '../employee_advances_bottom_sheet.dart';
+import '../employee_card_swipe.dart';
+import '../employee_financial_details.dart';
 
 class EmployeeList extends GetView<EmployeeSectionController> {
   const EmployeeList({Key? key, required this.employee}) : super(key: key);
@@ -50,6 +53,18 @@ class EmployeeList extends GetView<EmployeeSectionController> {
           Navigator.of(ctx).pop();
           _openDetails();
         },
+        onFinancialDetails: canViewEmployeesFinancial
+            ? () {
+                Navigator.of(ctx).pop();
+                _openFinancialDetails();
+              }
+            : null,
+        onAdvances: canViewEmployeesFinancial || canManageEmployeesOrders
+            ? () {
+                Navigator.of(ctx).pop();
+                _openAdvances(context);
+              }
+            : null,
         onWhatsApp: () async {
           Navigator.of(ctx).pop();
           await _openWhatsApp(context);
@@ -83,6 +98,30 @@ class EmployeeList extends GetView<EmployeeSectionController> {
     );
   }
 
+  void _openFinancialDetails() {
+    controller.openFinancialDetails(employee.id.toString());
+    Get.dialog(EmployeeFinancialDetails(controller: controller));
+  }
+
+  void _openAdvances(BuildContext context) {
+    showEmployeeAdvancesBottomSheet(
+      context,
+      controller: controller,
+      employeeId: employee.id,
+      employeeName: employee.employeeName,
+    );
+  }
+
+  void _openAttendanceHistory() {
+    Get.toNamed(
+      AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+      arguments: {
+        'employeeId': employee.id.toString(),
+        'employeeName': employee.employeeName,
+      },
+    );
+  }
+
   Future<void> _openWhatsApp(BuildContext context) async {
     await controller.getEmployeeDetails(employee.id.toString());
     final details = controller.employeeService.employeeDetails.value;
@@ -106,10 +145,7 @@ class EmployeeList extends GetView<EmployeeSectionController> {
       return;
     }
 
-    final opened = await launchUrl(
-      Uri.https('wa.me', '/$digits'),
-      mode: LaunchMode.externalApplication,
-    );
+    final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
@@ -382,125 +418,134 @@ class EmployeeList extends GetView<EmployeeSectionController> {
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
-    return InkWell(
-      onTap: _openDetails,
-      onLongPress: () => _showActionsSheet(context),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: GestureDetector(
-                      onTap: () => _openImageViewer(context),
-                      child: SizedBox(
-                        height: 80.h,
-                        width: 80.w,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Positioned.fill(
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: CachedNetworkImage(
-                                  cacheManager: CacheManager(
-                                    Config(
-                                      'imagesCache',
-                                      stalePeriod: const Duration(days: 7),
-                                      maxNrOfCacheObjects: 100,
+    final swipeActions = <EmployeeCardSwipeAction>[
+      EmployeeCardSwipeAction(
+        icon: Icons.chat_rounded,
+        label: 'تواصل واتساب',
+        color: const Color(0xFF25D366),
+        onTap: () => _openWhatsApp(context),
+      ),
+      if (canViewEmployeesAttendance)
+        EmployeeCardSwipeAction(
+          icon: Icons.history_rounded,
+          label: 'employeeAttendanceHistory'.tr,
+          color: const Color(0xFF0F766E),
+          onTap: _openAttendanceHistory,
+        ),
+      if (ImpersonationService.canImpersonateEmployees &&
+          controller.canShowImpersonateFor(employee.id))
+        EmployeeCardSwipeAction(
+          icon: Icons.switch_account_rounded,
+          label: 'impersonateEmployee'.tr,
+          color: AppColors.operationalPurple,
+          onTap: () => _confirmImpersonate(context),
+        ),
+      EmployeeCardSwipeAction(
+        icon: Icons.more_horiz_rounded,
+        label: 'options'.tr,
+        color: AppColors.primaryColor,
+        onTap: () => _showActionsSheet(context),
+      ),
+    ];
+
+    return EmployeeCardSwipe(
+      actions: swipeActions,
+      child: InkWell(
+        onTap: _openDetails,
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: GestureDetector(
+                        onTap: () => _openImageViewer(context),
+                        child: SizedBox(
+                          height: 80.h,
+                          width: 80.w,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: CachedNetworkImage(
+                                    cacheManager: CacheManager(
+                                      Config(
+                                        'imagesCache',
+                                        stalePeriod: const Duration(days: 7),
+                                        maxNrOfCacheObjects: 100,
+                                      ),
                                     ),
+                                    imageUrl: employee.employeeImg,
+                                    fit: BoxFit.cover,
+                                    fadeInDuration:
+                                        const Duration(milliseconds: 200),
+                                    fadeOutDuration:
+                                        const Duration(milliseconds: 200),
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
                                   ),
-                                  imageUrl: employee.employeeImg,
-                                  fit: BoxFit.cover,
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 200),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 200),
-                                  placeholder: (context, url) => const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
                                 ),
                               ),
-                            ),
-                            PositionedDirectional(
-                              end: 3.w,
-                              bottom: 5.h,
-                              child: _WifiStatusDot(employee: employee),
-                            ),
-                          ],
+                              PositionedDirectional(
+                                end: 3.w,
+                                bottom: 5.h,
+                                child: _WifiStatusDot(employee: employee),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 8.w),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              employee.employeeName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textStyle.copyWith(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.customGreyColor5,
+                  SizedBox(width: 8.w),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                employee.employeeName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textStyle.copyWith(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.customGreyColor5,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        '${'hourlyRate'.tr} : ${employee.hourWorkPrice} ${'currency'.tr}',
-                        style: textStyle.copyWith(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey.withValues(alpha: 0.7),
+                          ],
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${'hourlyRate'.tr} : ${employee.hourWorkPrice} ${'currency'.tr}',
+                          style: textStyle.copyWith(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          if (ImpersonationService.canImpersonateEmployees)
-            Obx(() {
-              if (!controller.canShowImpersonateFor(employee.id)) {
-                return const SizedBox.shrink();
-              }
-              final busy =
-                  controller.impersonatingEmployeeId.value == employee.id;
-              return IconButton(
-                tooltip: 'impersonateEmployee'.tr,
-                onPressed: busy ? null : () => _confirmImpersonate(context),
-                icon: busy
-                    ? SizedBox(
-                        width: 22.sp,
-                        height: 22.sp,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        Icons.switch_account_rounded,
-                        color: AppColors.operationalPurple,
-                        size: 22.sp,
-                      ),
-              );
-            }),
-          _PointsBadge(employee: employee),
-        ],
+            _PointsBadge(employee: employee),
+          ],
+        ),
       ),
     );
   }
@@ -563,6 +608,8 @@ class _EmployeeActionsSheet extends StatelessWidget {
     required this.onSuspend,
     required this.onRestore,
     required this.onChangePassword,
+    this.onFinancialDetails,
+    this.onAdvances,
   });
 
   final EmployeeEntity employee;
@@ -572,6 +619,8 @@ class _EmployeeActionsSheet extends StatelessWidget {
   final VoidCallback onSuspend;
   final VoidCallback onRestore;
   final VoidCallback onChangePassword;
+  final VoidCallback? onFinancialDetails;
+  final VoidCallback? onAdvances;
 
   @override
   Widget build(BuildContext context) {
@@ -661,6 +710,20 @@ class _EmployeeActionsSheet extends StatelessWidget {
               color: const Color(0xFF25D366),
               onTap: onWhatsApp,
             ),
+            if (onFinancialDetails != null)
+              _ActionTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'financialDetails'.tr,
+                color: AppColors.operationalPurple,
+                onTap: onFinancialDetails!,
+              ),
+            if (onAdvances != null)
+              _ActionTile(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'advances'.tr,
+                color: AppColors.primaryColor,
+                onTap: onAdvances!,
+              ),
             if (canManageEmployeesPasswords)
               _ActionTile(
                 icon: Icons.lock_reset_rounded,

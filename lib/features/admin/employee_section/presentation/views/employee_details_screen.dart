@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/whatsapp_launcher.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -247,10 +247,7 @@ class _EmployeeOverviewTab extends StatelessWidget {
       return;
     }
 
-    final opened = await launchUrl(
-      Uri.https('wa.me', '/$digits'),
-      mode: LaunchMode.externalApplication,
-    );
+    final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),

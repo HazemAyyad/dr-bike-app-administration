@@ -17,7 +17,6 @@ import '../widgets/create_qrcode.dart';
 import '../widgets/employee_sections_list/employee_list.dart';
 import '../widgets/employee_sections_list/employee_work_hours_list.dart';
 import '../widgets/employee_sections_list/employee_section.dart';
-import '../widgets/employee_sections_list/financial_dues_list.dart';
 import '../widgets/employee_sections_list/loans_list.dart';
 import '../widgets/attendance_report_filter_dialog.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
@@ -46,27 +45,11 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
           }
         },
         actions: [
-          IconButton(
+          _AppBarCompactIconButton(
             tooltip: 'pointsGuideTitle'.tr,
-            constraints: BoxConstraints.tightFor(width: 30.w, height: 32.h),
-            padding: EdgeInsets.zero,
-            icon: Icon(
-              Icons.redeem,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-              size: 19.sp,
-            ),
-            onPressed: canViewEmployeesPoints || canManageEmployeesRewardsRules
-                ? () => Get.toNamed(AppRoutes.POINTSTABLE)
-                : null,
+            icon: Icons.redeem_rounded,
+            onPressed: () => Get.toNamed(AppRoutes.POINTSTABLE),
           ),
-          if (canViewEmployeesFinancial)
-            _AppBarCompactIconButton(
-              tooltip: 'entitlements'.tr,
-              icon: Icons.account_balance_wallet_outlined,
-              onPressed: controller.openEntitlementsTab,
-            ),
           if (canManageEmployeesOrders)
             Obx(
               () => _AppBarBadgeIconButton(
@@ -95,17 +78,9 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             if (!canShowAttendanceReport || !canViewEmployeesAttendance) {
               return const SizedBox.shrink();
             }
-            return IconButton(
+            return _AppBarCompactIconButton(
               tooltip: 'attendanceReportAction'.tr,
-              constraints: BoxConstraints.tightFor(width: 30.w, height: 32.h),
-              padding: EdgeInsets.zero,
-              icon: Icon(
-                Icons.assessment_outlined,
-                size: 19.sp,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-              ),
+              icon: Icons.assessment_outlined,
               onPressed: () => showAttendanceReportFilterDialog(
                 context,
                 employees: controller.employeeService.workingTimesList.toList(),
@@ -131,6 +106,44 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                 tabHorizontalMargin: 3.w,
                 fontSize: 12.sp,
               ),
+            ),
+            SliverToBoxAdapter(
+              child: Obx(() {
+                final isEmployeeList = controller.activeTab ==
+                    EmployeeSectionController.employeeListTab;
+                final hasFinancialActions =
+                    canViewEmployeesFinancial || canManageEmployeesOrders;
+                return Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(16.w, 8.h, 16.w, 2.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        controller.activeTabLabel.tr,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: ThemeService.isDark.value
+                                      ? AppColors.primaryColor
+                                      : AppColors.secondaryColor,
+                                ),
+                      ),
+                      if (isEmployeeList && hasFinancialActions) ...[
+                        SizedBox(height: 3.h),
+                        Text(
+                          'employeeCardSwipeHint'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 10.sp,
+                                    color: Colors.grey.shade600,
+                                  ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
             ),
             Obx(
               () {
@@ -204,43 +217,6 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                             SizedBox(
                               height: index ==
                                       controller.filteredWorkingTimes.length - 1
-                                  ? 20.h
-                                  : 0.h,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }
-                if (tab == EmployeeSectionController.entitlementsTab) {
-                  return EmployeeSection(
-                    isLoading: controller.isLoading,
-                    onCount: () => controller.filteredFinancialDues.length,
-                    itemBuilder: (context, index) {
-                      final financialDues =
-                          controller.filteredFinancialDues[index];
-                      return Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24.w,
-                          vertical: 5.h,
-                        ),
-                        child: Column(
-                          children: [
-                            SizedBox(height: index == 0 ? 10.h : 0.h),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: ThemeService.isDark.value
-                                    ? AppColors.customGreyColor4
-                                    : AppColors.whiteColor2,
-                                borderRadius: BorderRadius.circular(4.r),
-                              ),
-                              child: FinancialDuesList(employee: financialDues),
-                            ),
-                            SizedBox(
-                              height: index ==
-                                      controller.filteredFinancialDues.length -
-                                          1
                                   ? 20.h
                                   : 0.h,
                             ),
@@ -560,22 +536,35 @@ class _AppBarBadgeIconButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: SizedBox(
-        width: 30.w,
-        height: 32.h,
+        width: 38.w,
+        height: 36.h,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            IconButton(
-              constraints: BoxConstraints.tightFor(width: 30.w, height: 32.h),
-              padding: EdgeInsets.zero,
-              icon: Icon(
-                icon,
-                size: 19.sp,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
+            Positioned.fill(
+              child: Container(
+                margin: EdgeInsetsDirectional.only(start: 3.w),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withValues(alpha: .2),
+                  ),
+                ),
+                child: IconButton(
+                  constraints:
+                      BoxConstraints.tightFor(width: 36.w, height: 36.h),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    icon,
+                    size: 19.sp,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                  ),
+                  onPressed: onPressed,
+                ),
               ),
-              onPressed: onPressed,
             ),
             if (badgeCount > 0)
               PositionedDirectional(
@@ -625,18 +614,32 @@ class _AppBarCompactIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: tooltip,
-      constraints: BoxConstraints.tightFor(width: 30.w, height: 32.h),
-      padding: EdgeInsets.zero,
-      icon: Icon(
-        icon,
-        size: 19.sp,
-        color: ThemeService.isDark.value
-            ? AppColors.primaryColor
-            : AppColors.secondaryColor,
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 36.w,
+        height: 36.h,
+        margin: EdgeInsetsDirectional.only(start: 3.w),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(
+            color: AppColors.primaryColor.withValues(alpha: .2),
+          ),
+        ),
+        child: IconButton(
+          constraints: BoxConstraints.tightFor(width: 36.w, height: 36.h),
+          padding: EdgeInsets.zero,
+          icon: Icon(
+            icon,
+            size: 19.sp,
+            color: ThemeService.isDark.value
+                ? AppColors.primaryColor
+                : AppColors.secondaryColor,
+          ),
+          onPressed: onPressed,
+        ),
       ),
-      onPressed: onPressed,
     );
   }
 }
