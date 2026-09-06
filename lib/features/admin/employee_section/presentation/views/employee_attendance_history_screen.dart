@@ -23,6 +23,31 @@ class _MonthNumberCalendarDelegate extends GregorianCalendarDelegate {
   }
 }
 
+Future<void> _pickAttendanceDateRange(
+  BuildContext context,
+  AttendanceHistoryController controller,
+) async {
+  final now = DateTime.now();
+  final initialRange = controller.isCustomRange
+      ? DateTimeRange(
+          start: controller.customFrom.value!,
+          end: controller.customTo.value!,
+        )
+      : null;
+  final picked = await showDateRangePicker(
+    context: context,
+    firstDate: DateTime(now.year - 5),
+    lastDate: DateTime(now.year + 1, 12, 31),
+    initialDateRange: initialRange,
+    helpText: 'filterByDateRange'.tr,
+    saveText: 'confirm'.tr,
+    calendarDelegate: const _MonthNumberCalendarDelegate(),
+  );
+  if (picked != null) {
+    controller.applyDateRange(picked.start, picked.end);
+  }
+}
+
 Future<void> _showEditDayDialog(
   BuildContext context,
   AttendanceHistoryController controller,
@@ -733,6 +758,35 @@ class EmployeeAttendanceHistoryScreen
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          Obx(() {
+            final active = controller.isCustomRange;
+            return IconButton(
+              tooltip: active ? 'تعديل فلتر الأيام' : 'filterByDateRange'.tr,
+              onPressed: () => _pickAttendanceDateRange(context, controller),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(
+                    Icons.filter_alt_outlined,
+                    color: AppColors.primaryColor,
+                  ),
+                  if (active)
+                    PositionedDirectional(
+                      top: -2,
+                      end: -3,
+                      child: Container(
+                        width: 7.w,
+                        height: 7.w,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
           if (!controller.reportMode)
             IconButton(
               tooltip: 'addAttendanceDay'.tr,
@@ -1005,49 +1059,6 @@ class _EmployeeAttendanceReportPreview extends StatelessWidget {
     final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
     final muted = isDark ? Colors.white70 : const Color(0xFF6B7280);
 
-    final rows = result.days.map((day) {
-      return DataRow(
-        cells: [
-          DataCell(Text(_dateWithDay(day.date))),
-          DataCell(Text(_dayWorkLabel(day))),
-          DataCell(
-              Text(day.workedHours ?? _hoursFromMinutes(day.workedMinutes))),
-          DataCell(Text(
-              day.requiredHours ?? _hoursFromMinutes(day.expectedWorkMinutes))),
-          DataCell(Text(_money(day.totalSalary))),
-        ],
-      );
-    }).toList()
-      ..add(
-        DataRow(
-          color: WidgetStateProperty.resolveWith(
-            (_) => AppColors.primaryColor.withValues(alpha: 0.08),
-          ),
-          cells: [
-            DataCell(Text(
-              'المجموع',
-              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-            )),
-            const DataCell(Text('-')),
-            DataCell(Text(
-              workedTotal,
-              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-            )),
-            DataCell(Text(
-              requiredTotal,
-              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-            )),
-            DataCell(Text(
-              salaryTotal,
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                color: AppColors.primaryColor,
-              ),
-            )),
-          ],
-        ),
-      );
-
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 24.h),
       child: Column(
@@ -1098,40 +1109,96 @@ class _EmployeeAttendanceReportPreview extends StatelessWidget {
             ),
           ),
           SizedBox(height: 12.h),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.sizeOf(context).width - 28.w,
+          ...result.days.map(
+            (day) => Container(
+              margin: EdgeInsets.only(bottom: 7.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: border),
               ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: border),
-                ),
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.resolveWith(
-                    (_) => AppColors.primaryColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _dateWithDay(day.date),
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.sp,
+                    ),
                   ),
-                  headingTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                  SizedBox(height: 3.h),
+                  Text(
+                    _dayWorkLabel(day),
+                    style: TextStyle(color: muted, fontSize: 10.5.sp),
                   ),
-                  dataTextStyle: TextStyle(color: textColor),
-                  dividerThickness: 0.8,
-                  columnSpacing: 18.w,
-                  horizontalMargin: 10.w,
-                  columns: const [
-                    DataColumn(label: Text('اليوم والتاريخ')),
-                    DataColumn(label: Text('الدوام')),
-                    DataColumn(label: Text('الصافي')),
-                    DataColumn(label: Text('المطلوب')),
-                    DataColumn(label: Text('الحساب')),
-                  ],
-                  rows: rows,
-                ),
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MetaChip(
+                          label: 'الصافي',
+                          value: day.workedHours ??
+                              _hoursFromMinutes(day.workedMinutes),
+                          color: muted,
+                        ),
+                      ),
+                      SizedBox(width: 5.w),
+                      Expanded(
+                        child: _MetaChip(
+                          label: 'المطلوب',
+                          value: day.requiredHours ??
+                              _hoursFromMinutes(day.expectedWorkMinutes),
+                          color: muted,
+                        ),
+                      ),
+                      SizedBox(width: 5.w),
+                      Expanded(
+                        child: _MetaChip(
+                          label: 'الحساب',
+                          value: _money(day.totalSalary),
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: border),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'المجموع',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$workedTotal / $requiredTotal ساعة',
+                  style: TextStyle(color: muted, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(width: 10.w),
+                Text(
+                  salaryTotal,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1227,31 +1294,44 @@ class _MonthYearPicker extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 8.h),
-            // ── فلتر مدى الأيام (من / إلى) ──
+            SizedBox(height: 6.h),
             Row(
               children: [
-                Expanded(
-                  child: _PickerButton(
-                    label: isCustom
-                        ? '${_fmtDate(controller.customFrom.value!)} → ${_fmtDate(controller.customTo.value!)}'
-                        : 'filterByDateRange'.tr,
-                    icon: Icons.filter_alt_outlined,
-                    onTap: () => _pickDateRange(context),
-                  ),
+                Icon(
+                  isCustom
+                      ? Icons.filter_alt_outlined
+                      : Icons.calendar_month_outlined,
+                  size: 15.sp,
+                  color: AppColors.primaryColor,
                 ),
-                if (isCustom) ...[
-                  SizedBox(width: 8.w),
-                  SizedBox(
-                    width: 42.w,
-                    child: IconButton(
-                      onPressed: controller.clearDateRange,
-                      icon: const Icon(Icons.clear),
-                      color: Colors.red.shade400,
-                      tooltip: 'clearDateFilter'.tr,
+                SizedBox(width: 6.w),
+                Expanded(
+                  child: Text(
+                    isCustom
+                        ? 'الفترة المعروضة: ${_fmtDate(controller.customFrom.value!)} ← ${_fmtDate(controller.customTo.value!)}'
+                        : 'الفترة المعروضة: $monthLabel $year',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5.sp,
+                      color: isDark ? Colors.white70 : Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
+                ),
+                if (isCustom)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.all(4.w),
+                    onPressed: controller.clearDateRange,
+                    icon: Icon(
+                      Icons.close,
+                      size: 16.sp,
+                      color: Colors.red.shade400,
+                    ),
+                    tooltip: 'clearDateFilter'.tr,
+                  ),
               ],
             ),
           ],
@@ -1264,28 +1344,6 @@ class _MonthYearPicker extends StatelessWidget {
     final monthNumber = d.month.toString().padLeft(2, '0');
     final monthName = AttendanceHistoryController.monthNames[d.month - 1];
     return '${d.day.toString().padLeft(2, '0')} $monthName $monthNumber ${d.year}';
-  }
-
-  Future<void> _pickDateRange(BuildContext context) async {
-    final now = DateTime.now();
-    final initialRange = controller.isCustomRange
-        ? DateTimeRange(
-            start: controller.customFrom.value!,
-            end: controller.customTo.value!,
-          )
-        : null;
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 1, 12, 31),
-      initialDateRange: initialRange,
-      helpText: 'filterByDateRange'.tr,
-      saveText: 'confirm'.tr,
-      calendarDelegate: const _MonthNumberCalendarDelegate(),
-    );
-    if (picked != null) {
-      controller.applyDateRange(picked.start, picked.end);
-    }
   }
 
   void _pickYear(BuildContext context) {

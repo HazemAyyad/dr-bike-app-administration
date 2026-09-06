@@ -120,8 +120,7 @@ class EmployeeAttendanceHistoryPdfHelper {
       return [
         _dateWithDay(day.date),
         _dayWorkLabel(day),
-        worked,
-        required,
+        '$worked / $required',
         salary,
       ];
     }).toList();
@@ -337,8 +336,7 @@ class EmployeeAttendanceHistoryPdfHelper {
     final headers = [
       'اليوم والتاريخ',
       'الدوام',
-      'الصافي',
-      'المطلوب',
+      'الصافي / المطلوب',
       'الحساب',
     ];
     final rows = [
@@ -346,8 +344,7 @@ class EmployeeAttendanceHistoryPdfHelper {
       [
         'المجموع',
         '-',
-        workedTotal,
-        requiredTotal,
+        '$workedTotal / $requiredTotal',
         _money(salaryTotal),
       ],
     ];
@@ -358,9 +355,9 @@ class EmployeeAttendanceHistoryPdfHelper {
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
+        pageFormat: PdfPageFormat.a4,
         textDirection: rtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
-        margin: const pw.EdgeInsets.all(24),
+        margin: const pw.EdgeInsets.all(20),
         build: (_) => [
           pw.Container(
             padding: const pw.EdgeInsets.only(bottom: 12),

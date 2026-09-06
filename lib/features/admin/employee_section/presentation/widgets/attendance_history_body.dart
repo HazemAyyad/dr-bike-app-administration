@@ -110,6 +110,14 @@ class AttendanceHistoryBody extends StatelessWidget {
             employee: employee,
             day: todayDay,
           ),
+        _EmployeeAdvancesInlineSection(
+          advances: advances,
+          loading: advancesLoading,
+          onAdd: onAddAdvance,
+          onEdit: onEditAdvance,
+          onCancel: onCancelAdvance,
+        ),
+        SizedBox(height: 12.h),
         if (_logDays.isNotEmpty) ...[
           Padding(
             padding: EdgeInsets.fromLTRB(4.w, 4.h, 4.w, 8.h),
@@ -122,18 +130,15 @@ class AttendanceHistoryBody extends StatelessWidget {
               ),
             ),
           ),
-          _AttendanceDaysTable(
-            days: _logDays,
-            showAdminEdit: showAdminEdit,
-            onEditDay: onEditDay,
-          ),
-          SizedBox(height: 14.h),
-          _EmployeeAdvancesInlineSection(
-            advances: advances,
-            loading: advancesLoading,
-            onAdd: onAddAdvance,
-            onEdit: onEditAdvance,
-            onCancel: onCancelAdvance,
+          ..._logDays.map(
+            (day) => _CompactAttendanceDayCard(
+              day: day,
+              showAdminEdit: showAdminEdit,
+              onEdit: onEditDay == null ? null : () => onEditDay!(day),
+              onShowAdjustments: day.adjustments.isEmpty
+                  ? null
+                  : () => _AttendanceDaysTable.showAdjustments(day),
+            ),
           ),
         ],
       ],
@@ -801,7 +806,7 @@ class _AttendanceDaysTable extends StatelessWidget {
     );
   }
 
-  void _showAdjustments(EmployeeAttendanceDay day) {
+  static void showAdjustments(EmployeeAttendanceDay day) {
     if (day.adjustments.isEmpty) return;
     Get.dialog<void>(
       AlertDialog(
@@ -1034,7 +1039,7 @@ class _AttendanceDaysTable extends StatelessWidget {
                 day.adjustments.isEmpty
                     ? const Text('-')
                     : TextButton.icon(
-                        onPressed: () => _showAdjustments(day),
+                        onPressed: () => showAdjustments(day),
                         icon: const Icon(Icons.history, size: 16),
                         label: Text('${day.adjustments.length}'),
                       ),
@@ -1672,11 +1677,13 @@ class _CompactAttendanceDayCard extends StatelessWidget {
     required this.day,
     required this.showAdminEdit,
     required this.onEdit,
+    required this.onShowAdjustments,
   });
 
   final EmployeeAttendanceDay day;
   final bool showAdminEdit;
   final VoidCallback? onEdit;
+  final VoidCallback? onShowAdjustments;
 
   @override
   Widget build(BuildContext context) {
@@ -1802,7 +1809,7 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                 children: [
                   _StatusChip(
                     label: AttendanceHistoryController.formatMinutes(
-                      day.workedMinutes,
+                      day.calculatedWorkedMinutes,
                     ),
                     color: AppColors.operationalNavy,
                     compact: true,
@@ -1821,12 +1828,22 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                       color: AppColors.customOrange3,
                       compact: true,
                     ),
-                  if (day.overtimeMinutes > 0)
+                  if ((day.contractOvertimeMinutes ?? day.overtimeMinutes) > 0)
                     _StatusChip(
                       label:
-                          '${'overtimeLabel'.tr} ${AttendanceHistoryController.formatMinutes(day.overtimeMinutes)}',
+                          '${'overtimeLabel'.tr} ${AttendanceHistoryController.formatMinutes(day.contractOvertimeMinutes ?? day.overtimeMinutes)}',
                       color: AppColors.customOrange3,
                       compact: true,
+                    ),
+                  if (onShowAdjustments != null)
+                    InkWell(
+                      onTap: onShowAdjustments,
+                      borderRadius: BorderRadius.circular(20.r),
+                      child: _StatusChip(
+                        label: 'تعديلات ${day.adjustments.length}',
+                        color: AppColors.primaryColor,
+                        compact: true,
+                      ),
                     ),
                   if (day.overtimeRequestStatus == 'pending' &&
                       day.overtimeRequestedMinutes > 0)
