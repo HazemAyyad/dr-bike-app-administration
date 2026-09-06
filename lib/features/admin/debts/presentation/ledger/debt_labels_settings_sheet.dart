@@ -39,93 +39,101 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
       textDirection: TextDirection.rtl,
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              20.w, 16.h, 20.w, MediaQuery.viewInsetsOf(context).bottom + 22.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.tune, color: LedgerColors.primaryBlue),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      'مسميات حركات الديون',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w800,
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 22.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.tune, color: LedgerColors.primaryBlue),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'مسميات حركات الديون',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => Get.back(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              Text(
-                'غيّر الكلمات التي تظهر في القسم والتقارير. يمكنك الرجوع للوضع الافتراضي في أي وقت.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
-              ),
-              SizedBox(height: 18.h),
-              TextField(
-                controller: takenController,
-                maxLength: 30,
-                decoration: const InputDecoration(
-                  labelText: 'بدل كلمة أخذت',
-                  prefixIcon: Icon(Icons.south_west_rounded),
-                  border: OutlineInputBorder(),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 10.h),
-              TextField(
-                controller: givenController,
-                maxLength: 30,
-                decoration: const InputDecoration(
-                  labelText: 'بدل كلمة أعطيت',
-                  prefixIcon: Icon(Icons.north_east_rounded),
-                  border: OutlineInputBorder(),
+                Text(
+                  'غيّر الكلمات التي تظهر في القسم والتقارير. يمكنك الرجوع للوضع الافتراضي في أي وقت.',
+                  style:
+                      TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
                 ),
-              ),
-              SizedBox(height: 8.h),
-              Obx(() => Row(
-                    children: [
-                      TextButton.icon(
-                        onPressed: ledger.isSavingDebtLabels.value
-                            ? null
-                            : () => setState(() {
-                                  takenController.text = 'أخذت';
-                                  givenController.text = 'أعطيت';
-                                }),
-                        icon: const Icon(Icons.restart_alt),
-                        label: const Text('الافتراضي'),
-                      ),
-                      const Spacer(),
-                      FilledButton.icon(
-                        onPressed:
-                            ledger.isSavingDebtLabels.value ? null : _save,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: LedgerColors.primaryBlue,
+                SizedBox(height: 18.h),
+                TextField(
+                  controller: takenController,
+                  maxLength: 30,
+                  decoration: const InputDecoration(
+                    labelText: 'بدل كلمة أخذت',
+                    prefixIcon: Icon(Icons.south_west_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                TextField(
+                  controller: givenController,
+                  maxLength: 30,
+                  decoration: const InputDecoration(
+                    labelText: 'بدل كلمة أعطيت',
+                    prefixIcon: Icon(Icons.north_east_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Obx(() => Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: ledger.isSavingDebtLabels.value
+                              ? null
+                              : () => setState(() {
+                                    takenController.text = 'أخذت';
+                                    givenController.text = 'أعطيت';
+                                  }),
+                          icon: const Icon(Icons.restart_alt),
+                          label: const Text('الافتراضي'),
                         ),
-                        icon: ledger.isSavingDebtLabels.value
-                            ? SizedBox(
-                                width: 16.w,
-                                height: 16.w,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Text(ledger.isSavingDebtLabels.value
-                            ? 'جاري الحفظ...'
-                            : 'حفظ'),
-                      ),
-                    ],
-                  )),
-            ],
+                        const Spacer(),
+                        FilledButton.icon(
+                          onPressed:
+                              ledger.isSavingDebtLabels.value ? null : _save,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: LedgerColors.primaryBlue,
+                          ),
+                          icon: ledger.isSavingDebtLabels.value
+                              ? SizedBox(
+                                  width: 16.w,
+                                  height: 16.w,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.save_outlined),
+                          label: Text(ledger.isSavingDebtLabels.value
+                              ? 'جاري الحفظ...'
+                              : 'حفظ'),
+                        ),
+                      ],
+                    )),
+              ],
+            ),
           ),
         ),
       ),
