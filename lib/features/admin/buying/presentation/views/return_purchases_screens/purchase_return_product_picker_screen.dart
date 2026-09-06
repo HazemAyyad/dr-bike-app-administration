@@ -364,7 +364,10 @@ class _ReturnProductCard extends StatelessWidget {
                             simpleLine.quantity < simpleLine.available,
                         onDecrement: () => _change(simpleLine, -1),
                         onIncrement: () => _change(simpleLine, 1),
-                        onQuantityTap: () => _openSelection(context),
+                        onQuantityTap: () => _promptQuantity(
+                          context,
+                          simpleLine,
+                        ),
                       )
                     else
                       SizedBox(
@@ -450,6 +453,10 @@ class _ReturnProductCard extends StatelessWidget {
                               _change(line, 1);
                               setSheetState(() {});
                             },
+                            onQuantityTap: () async {
+                              await _promptQuantity(context, line);
+                              setSheetState(() {});
+                            },
                           ),
                         ],
                       );
@@ -472,6 +479,66 @@ class _ReturnProductCard extends StatelessWidget {
         ),
       ),
     );
+    onChanged();
+  }
+
+  Future<void> _promptQuantity(
+    BuildContext context,
+    PurchaseReturnDraftLine line,
+  ) async {
+    if (line.available <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا توجد كمية متاحة من هذا المنتج في المخزون'),
+        ),
+      );
+      return;
+    }
+    final input = TextEditingController(text: _quantity(line.quantity));
+    final value = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تحديد الكمية'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('المتاح ${_quantity(line.available)}'),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: input,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(
+                labelText: 'الكمية',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) {
+                final parsed = double.tryParse(input.text.trim());
+                if (parsed != null) Navigator.pop(dialogContext, parsed);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final parsed = double.tryParse(input.text.trim());
+              if (parsed != null) Navigator.pop(dialogContext, parsed);
+            },
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (value == null) return;
+    controller.changeDirectQuantity(line, value);
     onChanged();
   }
 }
@@ -557,7 +624,7 @@ class _ReturnStockBadge extends StatelessWidget {
           children: [
             Icon(Icons.inventory_2_outlined, color: Colors.white, size: 8.sp),
             SizedBox(width: 2.w),
-            Text(quantity,
+            Text(quantity == '0' ? 'غير متوفر' : quantity,
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 7.5.sp,

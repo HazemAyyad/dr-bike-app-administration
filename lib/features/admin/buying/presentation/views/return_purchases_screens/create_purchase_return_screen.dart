@@ -715,7 +715,7 @@ class _DirectSourceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bills = Get.find<BillsController>();
     return _SectionCard(
-      title: 'الجهة والعملة',
+      title: 'الزبون أو المورد',
       icon: Icons.people_alt_outlined,
       child: Column(children: [
         UnifiedPartnerSelector<SellerModel>(
@@ -735,7 +735,7 @@ class _DirectSourceCard extends StatelessWidget {
               controller.selectDirectPartner(added, isSeller: isSeller);
             }
           },
-          title: 'الزبون أو المورد',
+          showTitle: false,
           hintText: 'ابحث بالاسم أو رقم الهاتف',
         ),
         SizedBox(height: 6.h),
@@ -745,18 +745,6 @@ class _DirectSourceCard extends StatelessWidget {
             'يمكنك اختيار المنتجات أولاً، وحدد الجهة قبل حفظ المرتجع.',
             style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
           ),
-        ),
-        SizedBox(height: 10.h),
-        DropdownButtonFormField<String>(
-          initialValue: controller.directCurrency.value,
-          decoration: const InputDecoration(
-              labelText: 'العملة', border: OutlineInputBorder()),
-          items: const ['شيكل', 'دينار', 'دولار']
-              .map((currency) =>
-                  DropdownMenuItem(value: currency, child: Text(currency)))
-              .toList(),
-          onChanged: (value) =>
-              controller.directCurrency.value = value ?? 'شيكل',
         ),
       ]),
     );

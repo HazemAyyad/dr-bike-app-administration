@@ -28,6 +28,7 @@ class UnifiedPartnerSelector<T> extends StatefulWidget {
     this.requiredSelection = false,
     this.enabled = true,
     this.compact = false,
+    this.showTitle = true,
     this.maxInitialResults = 8,
     this.maxSearchResults = 15,
     Key? key,
@@ -48,6 +49,7 @@ class UnifiedPartnerSelector<T> extends StatefulWidget {
   final bool requiredSelection;
   final bool enabled;
   final bool compact;
+  final bool showTitle;
   final int maxInitialResults;
   final int maxSearchResults;
 
@@ -67,7 +69,15 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
     _syncSelectedText();
     _focusNode.addListener(() {
       if (!mounted) return;
-      setState(() => _showResults = _focusNode.hasFocus);
+      if (_focusNode.hasFocus) {
+        setState(() => _showResults = true);
+        return;
+      }
+      Future<void>.delayed(const Duration(milliseconds: 120), () {
+        if (mounted && !_focusNode.hasFocus) {
+          setState(() => _showResults = false);
+        }
+      });
     });
   }
 
@@ -165,35 +175,38 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(Icons.people_alt_outlined,
-                size: 19.sp, color: AppColors.primaryColor),
-            SizedBox(width: 6.w),
-            Text(widget.title,
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
-            if (widget.requiredSelection)
-              Text(' *', style: TextStyle(color: Colors.red, fontSize: 13.sp)),
-            const Spacer(),
-            if (selected != null)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                child: Text(
-                  widget.selectedIsSeller ? 'مورد / تاجر' : 'زبون',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryColor,
+        if (widget.showTitle)
+          Row(
+            children: [
+              Icon(Icons.people_alt_outlined,
+                  size: 19.sp, color: AppColors.primaryColor),
+              SizedBox(width: 6.w),
+              Text(widget.title,
+                  style:
+                      TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+              if (widget.requiredSelection)
+                Text(' *',
+                    style: TextStyle(color: Colors.red, fontSize: 13.sp)),
+              const Spacer(),
+              if (selected != null)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Text(
+                    widget.selectedIsSeller ? 'مورد / تاجر' : 'زبون',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryColor,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-        SizedBox(height: 8.h),
+            ],
+          ),
+        if (widget.showTitle) SizedBox(height: 8.h),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -232,6 +245,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
                   if (selected != null) widget.onCleared?.call();
                   setState(() => _showResults = true);
                 },
+                onTapOutside: (_) => _focusNode.unfocus(),
               ),
             ),
             if (widget.onAddRequested != null) ...[
