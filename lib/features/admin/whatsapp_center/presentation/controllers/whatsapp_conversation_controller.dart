@@ -446,6 +446,7 @@ class WhatsAppConversationController extends GetxController {
         path,
         path.split(Platform.pathSeparator).last,
         mediaKind: 'audio',
+        durationSeconds: recordingDuration.value.inSeconds,
       );
     } catch (e) {
       recording.value = false;
@@ -459,12 +460,14 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> _sendMediaPath(String path, String name,
-      {String? mediaKind}) async {
+      {String? mediaKind, int? durationSeconds}) async {
     if (sending.value) return;
     sending.value = true;
     try {
       await api.sendWhatsAppMedia(id, path, name,
-          mediaKind: mediaKind, channel: channel);
+          mediaKind: mediaKind,
+          channel: channel,
+          durationSeconds: durationSeconds);
       await load(silent: true);
     } catch (e) {
       Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);

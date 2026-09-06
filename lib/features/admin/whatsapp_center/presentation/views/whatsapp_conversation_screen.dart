@@ -8,6 +8,7 @@ import 'package:audio_waveforms/audio_waveforms.dart';
 import '../../data/whatsapp_models.dart';
 import 'whatsapp_product_picker_screen.dart';
 import 'whatsapp_camera_screen.dart';
+import '../../../../../core/widgets/skeleton_loading.dart';
 
 class WhatsAppConversationScreen
     extends GetView<WhatsAppConversationController> {
@@ -200,7 +201,7 @@ class WhatsAppConversationScreen
                     }),
                     Expanded(child: Obx(() {
                       if (controller.loading.value) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const _ConversationMessagesSkeleton();
                       }
                       if (controller.error.value != null) {
                         return Center(
@@ -1488,6 +1489,40 @@ class _ChatPatternPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ConversationMessagesSkeleton extends StatelessWidget {
+  const _ConversationMessagesSkeleton();
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(12, 20, 12, 16),
+        children: const [
+          Align(
+              alignment: Alignment.center,
+              child: SkeletonBlock(width: 76, height: 27, radius: 8)),
+          SizedBox(height: 18),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: SkeletonBlock(width: 230, height: 62, radius: 10)),
+          SizedBox(height: 10),
+          Align(
+              alignment: Alignment.centerRight,
+              child: SkeletonBlock(width: 190, height: 55, radius: 10)),
+          SizedBox(height: 10),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: SkeletonBlock(width: 265, height: 185, radius: 10)),
+          SizedBox(height: 10),
+          Align(
+              alignment: Alignment.centerRight,
+              child: SkeletonBlock(width: 245, height: 58, radius: 10)),
+          SizedBox(height: 10),
+          Align(
+              alignment: Alignment.centerLeft,
+              child: SkeletonBlock(width: 215, height: 70, radius: 10)),
+        ],
+      );
 }
 
 class _DayDivider extends StatelessWidget {

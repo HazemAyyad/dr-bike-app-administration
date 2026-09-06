@@ -17,9 +17,11 @@ class WhatsAppApiService {
     String? channel,
     String? quickFilter,
     int page = 1,
+    int perPage = 20,
   }) =>
       _get('$_socialBase/conversations', query: {
         'page': page,
+        'per_page': perPage,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         if (status != null && status != 'all') 'status': status,
         if (channel != null && channel != 'all') 'channel': channel,
@@ -102,11 +104,16 @@ class WhatsAppApiService {
 
   Future<Map<String, dynamic>> sendWhatsAppMedia(
       int id, String path, String name,
-      {String? caption, String? mediaKind, String channel = 'whatsapp'}) async {
+      {String? caption,
+      String? mediaKind,
+      String channel = 'whatsapp',
+      int? durationSeconds}) async {
     final form = FormData.fromMap({
       'file': await MultipartFile.fromFile(path, filename: name),
       if (caption != null && caption.isNotEmpty) 'caption': caption,
       if (mediaKind != null) 'media_kind': mediaKind,
+      if (durationSeconds != null && durationSeconds > 0)
+        'duration_seconds': durationSeconds,
     });
     final Response response = await _api
         .post('$_socialBase/conversations/$channel/$id/send-media', data: form);

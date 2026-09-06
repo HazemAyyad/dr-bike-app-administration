@@ -146,6 +146,7 @@ class MetaAppStatus {
 
 class WhatsAppConversation {
   final int id, unreadCount, failedCount;
+  final int? lastMessageId;
   final String phone, status, channel;
   final String? lastMessage,
       lastMessageType,
@@ -153,6 +154,7 @@ class WhatsAppConversation {
       lastMessageStatus;
   final DateTime? lastMessageAt;
   final WhatsAppContact? contact;
+  final WhatsAppMessageMedia? lastMessageMedia;
   final bool needsReply;
   final ConversationAssignee? assignedEmployee;
   final List<ConversationTag> tags;
@@ -167,8 +169,10 @@ class WhatsAppConversation {
     required this.unreadCount,
     this.failedCount = 0,
     this.lastMessageType,
+    this.lastMessageId,
     this.lastMessageDirection,
     this.lastMessageStatus,
+    this.lastMessageMedia,
     this.contact,
     this.needsReply = false,
     this.assignedEmployee,
@@ -187,8 +191,13 @@ class WhatsAppConversation {
         unreadCount: _int(j['unread_count']),
         failedCount: _int(j['failed_count']),
         lastMessageType: j['last_message_type']?.toString(),
+        lastMessageId: int.tryParse(j['last_message_id']?.toString() ?? ''),
         lastMessageDirection: j['last_message_direction']?.toString(),
         lastMessageStatus: j['last_message_status']?.toString(),
+        lastMessageMedia: j['last_message_media'] is Map
+            ? WhatsAppMessageMedia.fromJson(
+                Map<String, dynamic>.from(j['last_message_media'] as Map))
+            : null,
         needsReply: j['needs_reply'] == true || j['needs_reply'] == 1,
         assignedEmployee: j['assigned_employee'] is Map
             ? ConversationAssignee.fromJson(

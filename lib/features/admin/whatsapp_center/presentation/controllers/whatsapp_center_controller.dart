@@ -8,7 +8,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'dart:io';
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter_svg/flutter_svg.dart' as svg;
@@ -21,12 +24,20 @@ class WhatsAppCenterController extends GetxController {
   final WhatsAppApiService api;
   WhatsAppCenterController(this.api);
 
-  final tabIndex = 1.obs;
+  final tabIndex = 0.obs;
   final loading = false.obs;
   final actionLoading = false.obs;
   final error = RxnString();
   final dashboard = Rxn<WhatsAppDashboard>();
   final conversations = <WhatsAppConversation>[].obs;
+  final conversationsScrollController = ScrollController();
+  final loadingMoreConversations = false.obs;
+  final hasMoreConversations = false.obs;
+  Timer? _conversationsRefreshTimer;
+  bool _refreshingConversations = false;
+  int _conversationPage = 1;
+  final Map<int, Future<Uint8List?>> _conversationThumbnails = {};
+  final Map<int, Future<Duration?>> _conversationAudioDurations = {};
   final templates = <WhatsAppTemplate>[].obs;
   final settings = Rxn<WhatsAppSettings>();
   final whatsAppEmployees = <WhatsAppEmployeeAccess>[].obs;
@@ -49,7 +60,12 @@ class WhatsAppCenterController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    conversationsScrollController.addListener(_onConversationsScroll);
     refreshCurrent();
+    _conversationsRefreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _refreshConversationsSilently(),
+    );
   }
 
   Future<void> selectTab(int index) async {
@@ -91,20 +107,155 @@ class WhatsAppCenterController extends GetxController {
             Map<String, dynamic>.from(result['dashboard'] as Map? ?? {}));
       });
 
-  Future<void> loadConversations() => _load(() async {
-        final result = await api.getWhatsAppConversations(
-          search: searchController.text,
-          status: selectedStatus.value,
-          channel: selectedChannel.value,
-          quickFilter: selectedQuickFilter.value,
+  Future<void> loadConversations({bool append = false}) async {
+    if (append) {
+      if (loadingMoreConversations.value || !hasMoreConversations.value) return;
+      loadingMoreConversations.value = true;
+    } else {
+      loading.value = true;
+      error.value = null;
+      _conversationPage = 1;
+      hasMoreConversations.value = false;
+      _conversationThumbnails.clear();
+      _conversationAudioDurations.clear();
+    }
+
+    try {
+      final page = append ? _conversationPage + 1 : 1;
+      final result = await api.getWhatsAppConversations(
+        search: searchController.text,
+        status: selectedStatus.value,
+        channel: selectedChannel.value,
+        quickFilter: selectedQuickFilter.value,
+        page: page,
+        perPage: 20,
+      );
+      final block = result['conversations'];
+      final data = block is Map && block['data'] is List
+          ? block['data'] as List
+          : const [];
+      final items = data
+          .whereType<Map>()
+          .map((item) =>
+              WhatsAppConversation.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+      append ? conversations.addAll(items) : conversations.assignAll(items);
+      _conversationPage = int.tryParse(
+              block is Map ? block['current_page']?.toString() ?? '1' : '1') ??
+          page;
+      final lastPage = int.tryParse(
+              block is Map ? block['last_page']?.toString() ?? '' : '') ??
+          _conversationPage;
+      hasMoreConversations.value =
+          selectedChannel.value == 'whatsapp' && _conversationPage < lastPage;
+    } catch (e) {
+      if (append) {
+        Get.snackbar('تعذر تحميل المزيد', _message(e),
+            snackPosition: SnackPosition.BOTTOM);
+      } else {
+        error.value = _message(e);
+      }
+    } finally {
+      append ? loadingMoreConversations.value = false : loading.value = false;
+    }
+  }
+
+  Future<void> _refreshConversationsSilently() async {
+    if (tabIndex.value != 1 ||
+        loading.value ||
+        loadingMoreConversations.value ||
+        _refreshingConversations) {
+      return;
+    }
+
+    _refreshingConversations = true;
+    try {
+      final result = await api.getWhatsAppConversations(
+        search: searchController.text,
+        status: selectedStatus.value,
+        channel: selectedChannel.value,
+        quickFilter: selectedQuickFilter.value,
+        page: 1,
+        perPage: 20,
+      );
+      final block = result['conversations'];
+      final data = block is Map && block['data'] is List
+          ? block['data'] as List
+          : const [];
+      final items = data
+          .whereType<Map>()
+          .map((item) =>
+              WhatsAppConversation.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+      conversations.assignAll(items);
+      _conversationPage = 1;
+      final lastPage = int.tryParse(
+              block is Map ? block['last_page']?.toString() ?? '' : '') ??
+          1;
+      hasMoreConversations.value =
+          selectedChannel.value == 'whatsapp' && lastPage > 1;
+      _conversationThumbnails.clear();
+      _conversationAudioDurations.clear();
+    } catch (_) {
+      // Periodic refresh stays silent; manual refresh still reports errors.
+    } finally {
+      _refreshingConversations = false;
+    }
+  }
+
+  void _onConversationsScroll() {
+    if (!conversationsScrollController.hasClients ||
+        conversationsScrollController.position.extentAfter > 320) {
+      return;
+    }
+    loadConversations(append: true);
+  }
+
+  Future<Uint8List?> conversationThumbnail(WhatsAppConversation item) {
+    final messageId = item.lastMessageId;
+    if (messageId == null) return Future<Uint8List?>.value();
+    return _conversationThumbnails.putIfAbsent(messageId, () async {
+      try {
+        final bytes = Uint8List.fromList(await api.getMedia(messageId));
+        if (item.lastMessageType == 'image') return bytes;
+        if (item.lastMessageType != 'video') return null;
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/whatsapp-list-$messageId.mp4');
+        await file.writeAsBytes(bytes, flush: true);
+        return VideoThumbnail.thumbnailData(
+          video: file.path,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 180,
+          quality: 68,
         );
-        final block = result['conversations'];
-        final data = block is Map && block['data'] is List
-            ? block['data'] as List
-            : const [];
-        conversations.assignAll(data.whereType<Map>().map((e) =>
-            WhatsAppConversation.fromJson(Map<String, dynamic>.from(e))));
-      });
+      } catch (_) {
+        return null;
+      }
+    });
+  }
+
+  Future<Duration?> conversationAudioDuration(WhatsAppConversation item) {
+    final messageId = item.lastMessageId;
+    if (messageId == null) return Future<Duration?>.value();
+    final knownSeconds = item.lastMessageMedia?.durationSeconds;
+    if (knownSeconds != null && knownSeconds > 0) {
+      return Future<Duration?>.value(Duration(seconds: knownSeconds));
+    }
+    return _conversationAudioDurations.putIfAbsent(messageId, () async {
+      final player = AudioPlayer();
+      try {
+        final bytes = await api.getMedia(messageId);
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/whatsapp-list-$messageId.m4a');
+        await file.writeAsBytes(bytes, flush: true);
+        return await player.setFilePath(file.path);
+      } catch (_) {
+        return null;
+      } finally {
+        await player.dispose();
+      }
+    });
+  }
 
   Future<void> selectStatus(String status) async {
     selectedStatus.value = status;
@@ -398,6 +549,9 @@ class WhatsAppCenterController extends GetxController {
 
   @override
   void onClose() {
+    _conversationsRefreshTimer?.cancel();
+    conversationsScrollController.removeListener(_onConversationsScroll);
+    conversationsScrollController.dispose();
     searchController.dispose();
     testPhoneController.dispose();
     testMessageController.dispose();

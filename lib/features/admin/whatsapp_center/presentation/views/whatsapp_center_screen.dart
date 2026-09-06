@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:typed_data';
 
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_center_controller.dart';
 
@@ -30,29 +32,46 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
           ),
           child: Scaffold(
             backgroundColor: Colors.white,
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              elevation: 0,
-              title: Obx(() => Text(
-                    controller.tabIndex.value == 1 &&
-                            controller.selectedChannel.value == 'whatsapp'
-                        ? 'WhatsApp'
-                        : 'مركز التواصل الاجتماعي',
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Obx(() {
+                final whatsAppInbox = controller.tabIndex.value == 1 &&
+                    controller.selectedChannel.value == 'whatsapp';
+                return AppBar(
+                  backgroundColor:
+                      whatsAppInbox ? Colors.white : const Color(0xFF075E54),
+                  foregroundColor:
+                      whatsAppInbox ? const Color(0xFF111B21) : Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: whatsAppInbox ? 0 : 1,
+                  title: Text(
+                    whatsAppInbox ? 'WhatsApp' : 'مركز التواصل الاجتماعي',
                     style: TextStyle(
-                      color: controller.tabIndex.value == 1 &&
-                              controller.selectedChannel.value == 'whatsapp'
+                      color: whatsAppInbox
                           ? const Color(0xFF00A884)
-                          : const Color(0xFF111B21),
+                          : Colors.white,
                       fontWeight: FontWeight.w800,
                     ),
-                  )),
+                  ),
+                  actions: whatsAppInbox
+                      ? [
+                          IconButton(
+                            tooltip: 'فلترة المحادثات',
+                            onPressed: () =>
+                                _showConversationFilters(context, controller),
+                            icon: const Icon(Icons.tune_rounded),
+                          ),
+                        ]
+                      : null,
+                );
+              }),
             ),
             body: Column(children: [
               _SocialChannelBar(controller: controller),
+              _SectionNavigationBar(controller: controller),
               Expanded(child: Obx(() {
                 if (controller.loading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                  return _CenterSkeleton(tabIndex: controller.tabIndex.value);
                 }
                 if (controller.error.value != null) {
                   return _StateMessage(
@@ -73,30 +92,6 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
                 );
               })),
             ]),
-            bottomNavigationBar: Obx(() => NavigationBar(
-                  selectedIndex: controller.tabIndex.value,
-                  backgroundColor: Colors.white,
-                  indicatorColor: const Color(0xFFD8FDD2),
-                  onDestinationSelected: controller.selectTab,
-                  destinations: const [
-                    NavigationDestination(
-                        icon: Icon(Icons.dashboard_outlined),
-                        selectedIcon: Icon(Icons.dashboard),
-                        label: 'الرئيسية'),
-                    NavigationDestination(
-                        icon: Icon(Icons.chat_bubble_outline),
-                        selectedIcon: Icon(Icons.chat),
-                        label: 'المحادثات'),
-                    NavigationDestination(
-                        icon: Icon(Icons.description_outlined),
-                        selectedIcon: Icon(Icons.description),
-                        label: 'القوالب'),
-                    NavigationDestination(
-                        icon: Icon(Icons.settings_outlined),
-                        selectedIcon: Icon(Icons.settings),
-                        label: 'الإعدادات'),
-                  ],
-                )),
             floatingActionButton: Obx(() => controller.tabIndex.value == 1
                 ? FloatingActionButton(
                     backgroundColor: const Color(0xFF00A884),
@@ -160,9 +155,142 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
   }
 }
 
+class _SectionNavigationBar extends StatelessWidget {
+  const _SectionNavigationBar({required this.controller});
+
+  final WhatsAppCenterController controller;
+
+  @override
+  Widget build(BuildContext context) => Obx(() => Container(
+        color: const Color(0xFFF7FAF9),
+        padding: const EdgeInsets.fromLTRB(10, 5, 10, 8),
+        child: Row(
+          children: const <Map<String, dynamic>>[
+            {'icon': Icons.dashboard_outlined, 'label': 'الرئيسية'},
+            {'icon': Icons.forum_outlined, 'label': 'المحادثات'},
+            {'icon': Icons.description_outlined, 'label': 'القوالب'},
+            {'icon': Icons.settings_outlined, 'label': 'الإعدادات'},
+          ].asMap().entries.map((entry) {
+            final selected = controller.tabIndex.value == entry.key;
+            return Expanded(
+              child: InkWell(
+                onTap: () => controller.selectTab(entry.key),
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: selected ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: selected
+                        ? const [
+                            BoxShadow(
+                                color: Color(0x16000000),
+                                blurRadius: 7,
+                                offset: Offset(0, 2)),
+                          ]
+                        : null,
+                  ),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(entry.value['icon'] as IconData,
+                        size: 19,
+                        color: selected
+                            ? const Color(0xFF008069)
+                            : const Color(0xFF667781)),
+                    const SizedBox(height: 2),
+                    Text(entry.value['label'] as String,
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                            color: selected
+                                ? const Color(0xFF008069)
+                                : const Color(0xFF667781))),
+                  ]),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ));
+}
+
+class _CenterSkeleton extends StatelessWidget {
+  const _CenterSkeleton({required this.tabIndex});
+
+  final int tabIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tabIndex == 1) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+        children: [
+          const SkeletonBlock(width: double.infinity, height: 48, radius: 24),
+          const SizedBox(height: 12),
+          const Row(children: [
+            SkeletonBlock(width: 58, height: 34, radius: 18),
+            SizedBox(width: 8),
+            SkeletonBlock(width: 92, height: 34, radius: 18),
+            SizedBox(width: 8),
+            SkeletonBlock(width: 82, height: 34, radius: 18),
+          ]),
+          const SizedBox(height: 12),
+          ...List.generate(7, (_) => const _ConversationSkeletonRow()),
+        ],
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: const [
+        SkeletonBlock(width: double.infinity, height: 145, radius: 22),
+        SizedBox(height: 14),
+        Row(children: [
+          Expanded(child: SkeletonBlock(width: 100, height: 84, radius: 14)),
+          SizedBox(width: 9),
+          Expanded(child: SkeletonBlock(width: 100, height: 84, radius: 14)),
+          SizedBox(width: 9),
+          Expanded(child: SkeletonBlock(width: 100, height: 84, radius: 14)),
+        ]),
+        SizedBox(height: 18),
+        SkeletonBlock(width: 130, height: 20),
+        SizedBox(height: 10),
+        SkeletonBlock(width: double.infinity, height: 150, radius: 16),
+      ],
+    );
+  }
+}
+
+class _ConversationSkeletonRow extends StatelessWidget {
+  const _ConversationSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 9),
+        child: Row(children: [
+          SkeletonCircle(size: 54),
+          SizedBox(width: 12),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SkeletonBlock(width: 150, height: 15),
+              SizedBox(height: 9),
+              SkeletonBlock(width: double.infinity, height: 12),
+            ]),
+          ),
+          SizedBox(width: 12),
+          SkeletonBlock(width: 42, height: 11),
+        ]),
+      );
+}
+
 class _DashboardTab extends StatelessWidget {
   final WhatsAppCenterController controller;
   const _DashboardTab({required this.controller});
+
   @override
   Widget build(BuildContext context) {
     final d = controller.dashboard.value;
@@ -170,118 +298,171 @@ class _DashboardTab extends StatelessWidget {
       return const _StateMessage(
           icon: Icons.analytics_outlined, text: 'لا توجد بيانات');
     }
-    final items = <Map<String, dynamic>>[
-      {
-        'label': 'إجمالي جهات الاتصال',
-        'value': d.totalContacts,
-        'icon': Icons.contacts_outlined
-      },
-      {
-        'label': 'إجمالي المحادثات',
-        'value': d.totalConversations,
-        'icon': Icons.forum_outlined
-      },
-      {
-        'label': 'المحادثات المفتوحة',
-        'value': d.openConversations,
-        'icon': Icons.mark_chat_unread_outlined
-      },
-      {
-        'label': 'محادثات غير مقروءة',
-        'value': d.unreadConversations,
-        'icon': Icons.notifications_active_outlined
-      },
-      {
-        'label': 'رسائل اليوم',
-        'value': d.messagesToday,
-        'icon': Icons.today_outlined
-      },
-      {
-        'label': 'رسائل فاشلة اليوم',
-        'value': d.failedMessagesToday,
-        'icon': Icons.error_outline
-      },
-    ];
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('نظرة عامة على مركز التواصل',
-          style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 12),
-      LayoutBuilder(builder: (context, constraints) {
-        final count = constraints.maxWidth >= 900 ? 3 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: count,
-              childAspectRatio: constraints.maxWidth < 520 ? 1.55 : 2.5,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8),
-          itemCount: items.length,
-          itemBuilder: (_, i) => Card(
-            elevation: 0,
-            color: const Color(0xFFF0F7F5),
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: Color(0xFFD5E8E2)),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF075E54), Color(0xFF128C7E)],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(children: [
-                CircleAvatar(
-                    backgroundColor: const Color(0xFFD9EEE8),
-                    child: Icon(items[i]['icon'] as IconData,
-                        color: const Color(0xFF075E54))),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                      Text(
-                        '${items[i]['value']}',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: const Color(0xFF102A25),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                      ),
-                      Text(
-                        items[i]['label'].toString(),
-                        maxLines: 2,
-                        style: const TextStyle(
-                          color: Color(0xFF425E58),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ])),
-              ]),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Row(children: [
+              CircleAvatar(
+                backgroundColor: Color(0x24FFFFFF),
+                foregroundColor: Colors.white,
+                child: Icon(Icons.all_inbox_rounded),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('صندوق التواصل الموحد',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800)),
+              ),
+            ]),
+            const SizedBox(height: 18),
+            Row(children: [
+              _HeroMetric(label: 'غير مقروءة', value: d.unreadConversations),
+              const _HeroDivider(),
+              _HeroMetric(label: 'مفتوحة', value: d.openConversations),
+              const _HeroDivider(),
+              _HeroMetric(label: 'كل المحادثات', value: d.totalConversations),
+            ]),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => controller.selectTab(1),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF075E54),
+              ),
+              icon: const Icon(Icons.forum_outlined),
+              label: const Text('فتح المحادثات'),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(
+            child: _CompactMetric(
+              icon: Icons.contacts_outlined,
+              label: 'جهات الاتصال',
+              value: d.totalContacts,
             ),
           ),
-        );
-      }),
-      if (d.channelStats.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        Text('أداء القنوات', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        LayoutBuilder(builder: (context, constraints) {
-          final count = constraints.maxWidth >= 900 ? 3 : 1;
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: count,
-              childAspectRatio: constraints.maxWidth < 520 ? 2.15 : 2.75,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+          const SizedBox(width: 9),
+          Expanded(
+            child: _CompactMetric(
+              icon: Icons.today_outlined,
+              label: 'رسائل اليوم',
+              value: d.messagesToday,
             ),
-            itemCount: d.channelStats.length,
-            itemBuilder: (_, i) => _ChannelStatsCard(stats: d.channelStats[i]),
-          );
-        }),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: _CompactMetric(
+              icon: Icons.error_outline,
+              label: 'فاشلة اليوم',
+              value: d.failedMessagesToday,
+              alert: d.failedMessagesToday > 0,
+            ),
+          ),
+        ]),
+        if (d.channelStats.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const Text('القنوات',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 9),
+          SizedBox(
+            height: 158,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: d.channelStats.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => SizedBox(
+                width: 270,
+                child: _ChannelStatsCard(stats: d.channelStats[i]),
+              ),
+            ),
+          ),
+        ],
       ],
-    ]);
+    );
   }
+}
+
+class _HeroMetric extends StatelessWidget {
+  const _HeroMetric({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Column(children: [
+          Text('$value',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800)),
+          Text(label,
+              maxLines: 1,
+              style: const TextStyle(color: Color(0xFFD9F3ED), fontSize: 10)),
+        ]),
+      );
+}
+
+class _HeroDivider extends StatelessWidget {
+  const _HeroDivider();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 38,
+        color: const Color(0x45FFFFFF),
+      );
+}
+
+class _CompactMetric extends StatelessWidget {
+  const _CompactMetric({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.alert = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final int value;
+  final bool alert;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 11),
+        decoration: BoxDecoration(
+          color: alert ? const Color(0xFFFFF1F0) : const Color(0xFFF5F8F7),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(children: [
+          Icon(icon,
+              color: alert ? Colors.red : const Color(0xFF008069), size: 21),
+          const SizedBox(height: 5),
+          Text('$value',
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF667781), fontSize: 9)),
+        ]),
+      );
 }
 
 class _ChannelStatsCard extends StatelessWidget {
@@ -509,30 +690,59 @@ class _ConversationsTab extends StatelessWidget {
   const _ConversationsTab({required this.controller});
 
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 88),
-        children: [
-          _ConversationSearch(controller: controller),
-          const SizedBox(height: 8),
-          _ConversationFilters(controller: controller),
-          const SizedBox(height: 8),
+  Widget build(BuildContext context) => CustomScrollView(
+        controller: controller.conversationsScrollController,
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.only(top: 8),
+            sliver: SliverToBoxAdapter(
+              child: _ConversationSearch(controller: controller),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+              child: _ConversationFilters(controller: controller)),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
           Obx(() {
             if (controller.conversations.isEmpty) {
-              return const SizedBox(
-                height: 350,
+              return const SliverFillRemaining(
+                hasScrollBody: false,
                 child: _StateMessage(
                   icon: Icons.chat_bubble_outline,
                   text: 'لا توجد محادثات تطابق الفلاتر الحالية',
                 ),
               );
             }
-            return Column(
-              children: controller.conversations
-                  .map((item) => _ConversationCard(
-                        item: item,
+            final extraRows = controller.loadingMoreConversations.value
+                ? 2
+                : controller.hasMoreConversations.value
+                    ? 1
+                    : 0;
+            return SliverPadding(
+              padding: const EdgeInsets.only(bottom: 88),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index < controller.conversations.length) {
+                      return _ConversationCard(
+                        item: controller.conversations[index],
                         controller: controller,
-                      ))
-                  .toList(),
+                      );
+                    }
+                    if (controller.loadingMoreConversations.value) {
+                      return const _ConversationSkeletonRow();
+                    }
+                    return const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('انزل لعرض محادثات إضافية',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Color(0xFF8696A0), fontSize: 11)),
+                    );
+                  },
+                  childCount: controller.conversations.length + extraRows,
+                ),
+              ),
             );
           }),
         ],
@@ -798,11 +1008,16 @@ class _ConversationCard extends StatelessWidget {
                               const SizedBox(width: 4),
                             ],
                             Expanded(
-                              child: Text(preview,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Color(0xFF667781), fontSize: 14)),
+                              child: item.channel == 'whatsapp' &&
+                                      item.lastMessageType == 'audio'
+                                  ? _ConversationAudioLabel(
+                                      item: item, controller: controller)
+                                  : Text(preview,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          color: Color(0xFF667781),
+                                          fontSize: 14)),
                             ),
                           ]),
                           if (item.assignedEmployee != null)
@@ -819,6 +1034,14 @@ class _ConversationCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (item.channel == 'whatsapp' &&
+                        item.lastMessageId != null &&
+                        (item.lastMessageType == 'image' ||
+                            item.lastMessageType == 'video')) ...[
+                      const SizedBox(width: 7),
+                      _ConversationMediaThumbnail(
+                          item: item, controller: controller),
+                    ],
                     const SizedBox(width: 8),
                     SizedBox(
                       width: 58,
@@ -868,6 +1091,81 @@ class _ConversationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ConversationMediaThumbnail extends StatelessWidget {
+  const _ConversationMediaThumbnail({
+    required this.item,
+    required this.controller,
+  });
+
+  final WhatsAppConversation item;
+  final WhatsAppCenterController controller;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: SizedBox.square(
+          dimension: 52,
+          child: FutureBuilder<Uint8List?>(
+            future: controller.conversationThumbnail(item),
+            builder: (_, snapshot) {
+              final bytes = snapshot.data;
+              return Stack(fit: StackFit.expand, children: [
+                if (bytes != null)
+                  Image.memory(bytes, fit: BoxFit.cover)
+                else
+                  const ColoredBox(
+                    color: Color(0xFFE9EDEF),
+                    child: Icon(Icons.photo_outlined, color: Color(0xFF8696A0)),
+                  ),
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const ColoredBox(
+                    color: Color(0x33000000),
+                    child: Center(
+                      child: SizedBox.square(
+                        dimension: 15,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                if (item.lastMessageType == 'video')
+                  const Center(
+                    child: CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 18),
+                    ),
+                  ),
+              ]);
+            },
+          ),
+        ),
+      );
+}
+
+class _ConversationAudioLabel extends StatelessWidget {
+  const _ConversationAudioLabel({required this.item, required this.controller});
+
+  final WhatsAppConversation item;
+  final WhatsAppCenterController controller;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<Duration?>(
+        future: controller.conversationAudioDuration(item),
+        builder: (_, snapshot) {
+          final duration = snapshot.data;
+          final label = duration == null
+              ? 'رسالة صوتية'
+              : 'رسالة صوتية (${_shortDuration(duration)})';
+          return Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF667781), fontSize: 14));
+        },
+      );
 }
 
 class _TinyBadge extends StatelessWidget {
@@ -1720,6 +2018,12 @@ String _shortDate(DateTime? date) {
   if (difference == 0) return time;
   if (difference == 1) return 'أمس';
   return '${local.day}/${local.month}/${local.year.toString().substring(2)}';
+}
+
+String _shortDuration(Duration duration) {
+  final minutes = duration.inMinutes.toString();
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }
 
 IconData _conversationStatusIcon(String? status) {
