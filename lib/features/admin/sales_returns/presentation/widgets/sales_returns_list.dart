@@ -385,52 +385,153 @@ class _ReturnDetails extends StatelessWidget {
       );
 
   Future<void> _cancelReturn(BuildContext context) async {
-    final reason = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final controller = Get.find<SalesReturnsController>();
+    final freshRecord = await controller.loadReturnDetails(record.id);
+    if (freshRecord == null || !context.mounted) return;
+
+    final reason = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('إلغاء فاتورة المرتجع'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'سيتم عكس المخزون والرد النقدي ورصيد الطرف. لا يمكن الإلغاء إذا تم بيع مخزون المرتجع مرة أخرى.',
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: reason,
-              autofocus: true,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'سبب الإلغاء (إلزامي)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+      builder: (_) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: _CancelSalesReturnDialog(
+          preview: freshRecord.cancellationPreview,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('تراجع'),
+      ),
+    );
+    if (reason == null || reason.trim().length < 3) return;
+    final cancelled = await controller.cancelReturn(record.id, reason.trim());
+    if (cancelled && context.mounted) Navigator.pop(context);
+  }
+}
+
+class _CancelSalesReturnDialog extends StatefulWidget {
+  const _CancelSalesReturnDialog({required this.preview});
+
+  final SalesReturnCancellationPreview preview;
+
+  @override
+  State<_CancelSalesReturnDialog> createState() =>
+      _CancelSalesReturnDialogState();
+}
+
+class _CancelSalesReturnDialogState extends State<_CancelSalesReturnDialog> {
+  final TextEditingController _reasonController = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = widget.preview;
+    final accent = preview.canCancel ? Colors.orange.shade800 : Colors.red;
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(
+            preview.canCancel
+                ? Icons.rule_folder_outlined
+                : Icons.block_outlined,
+            color: accent,
           ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(preview.title)),
+        ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                preview.summary,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              if (preview.steps.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('التسلسل المطلوب من الموظف:',
+                    style: TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                for (var index = 0; index < preview.steps.length; index++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 10,
+                          backgroundColor: accent.withValues(alpha: .12),
+                          child: Text('${index + 1}',
+                              style: TextStyle(fontSize: 10, color: accent)),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(preview.steps[index])),
+                      ],
+                    ),
+                  ),
+              ],
+              if (preview.warnings.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: .07),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: .25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('تنبيه',
+                          style: TextStyle(
+                              color: Colors.red, fontWeight: FontWeight.w900)),
+                      for (final warning in preview.warnings)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text('• $warning'),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              if (preview.canCancel) ...[
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _reasonController,
+                  autofocus: true,
+                  maxLines: 2,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'سبب الإلغاء (إلزامي)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(preview.canCancel ? 'تراجع' : 'فهمت'),
+        ),
+        if (preview.canCancel)
           FilledButton(
-            onPressed: () {
-              if (reason.text.trim().length < 3) return;
-              Navigator.pop(dialogContext, true);
-            },
+            onPressed: _reasonController.text.trim().length < 3
+                ? null
+                : () => Navigator.pop(context, _reasonController.text.trim()),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('إلغاء وعكس القيود'),
           ),
-        ],
-      ),
+      ],
     );
-    final value = reason.text.trim();
-    reason.dispose();
-    if (confirmed != true || value.length < 3) return;
-    final cancelled =
-        await Get.find<SalesReturnsController>().cancelReturn(record.id, value);
-    if (cancelled && context.mounted) Navigator.pop(context);
   }
 }
 

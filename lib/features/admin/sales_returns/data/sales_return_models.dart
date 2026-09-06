@@ -147,6 +147,7 @@ class SalesReturnRecord {
     required this.cancellationReason,
     required this.replacementSalesReturnId,
     required this.replacesSalesReturnId,
+    required this.cancellationPreview,
   });
 
   final int id;
@@ -173,6 +174,7 @@ class SalesReturnRecord {
   final String cancellationReason;
   final int replacementSalesReturnId;
   final int replacesSalesReturnId;
+  final SalesReturnCancellationPreview cancellationPreview;
 
   bool get isSeller => partnerType == 'seller';
   bool get isCancelled => status == 'cancelled';
@@ -231,6 +233,45 @@ class SalesReturnRecord {
       cancellationReason: '${json['cancellation_reason'] ?? ''}',
       replacementSalesReturnId: _asInt(json['replacement_sales_return_id']),
       replacesSalesReturnId: _asInt(json['replaces_sales_return_id']),
+      cancellationPreview: SalesReturnCancellationPreview.fromJson(
+        json['cancellation_preview'] is Map
+            ? Map<String, dynamic>.from(json['cancellation_preview'] as Map)
+            : const {},
+      ),
+    );
+  }
+}
+
+class SalesReturnCancellationPreview {
+  const SalesReturnCancellationPreview({
+    required this.canCancel,
+    required this.scenario,
+    required this.title,
+    required this.summary,
+    required this.steps,
+    required this.warnings,
+  });
+
+  final bool canCancel;
+  final String scenario;
+  final String title;
+  final String summary;
+  final List<String> steps;
+  final List<String> warnings;
+
+  factory SalesReturnCancellationPreview.fromJson(Map<String, dynamic> json) {
+    List<String> strings(dynamic value) => (value as List? ?? const [])
+        .map((item) => '$item')
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
+
+    return SalesReturnCancellationPreview(
+      canCancel: json['can_cancel'] == true,
+      scenario: '${json['scenario'] ?? ''}',
+      title: '${json['title'] ?? 'مراجعة إلغاء المرتجع'}',
+      summary: '${json['summary'] ?? ''}',
+      steps: strings(json['steps']),
+      warnings: strings(json['warnings']),
     );
   }
 }
