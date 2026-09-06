@@ -64,14 +64,11 @@ class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
             icon: Icons.redeem_rounded,
             onPressed: () => Get.toNamed(AppRoutes.POINTSTABLE),
           ),
-          if (canManageEmployeesOrders)
-            Obx(
-              () => _AppBarBadgeIconButton(
-                tooltip: 'loans'.tr,
-                badgeCount: controller.pendingLoanRequestsCount,
-                icon: Icons.account_balance_wallet_rounded,
-                onPressed: controller.openLoansTab,
-              ),
+          if (userType == 'admin')
+            _AppBarCompactIconButton(
+              tooltip: 'admins'.tr,
+              icon: Icons.admin_panel_settings_rounded,
+              onPressed: controller.openAdminsTab,
             ),
           if (canViewEmployees)
             Obx(

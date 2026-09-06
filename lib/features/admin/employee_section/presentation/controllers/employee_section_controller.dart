@@ -125,10 +125,6 @@ class EmployeeSectionController extends GetxController
   bool get isEmployeeListMergedWithWorkHours =>
       canViewEmployees && canViewEmployeesAttendance;
 
-  int get pendingLoanRequestsCount => employeeService.loanList
-      .where((request) => request.orderStatus == 'pending')
-      .length;
-
   List<DateTime>? dateTimeList;
   final Rx<DateTime> selectedFinancialMonth = DateTime.now().obs;
   final Rx<DateTime> selectedFinancialDate = DateTime.now().obs;
@@ -146,8 +142,9 @@ class EmployeeSectionController extends GetxController
     currentTab.value = 0;
   }
 
-  void openLoansTab() {
-    actionTab.value = loansTab;
+  void openAdminsTab() {
+    actionTab.value = adminsTab;
+    getAdminUsers();
   }
 
   void openSuspendedEmployeesTab() {
@@ -202,14 +199,14 @@ class EmployeeSectionController extends GetxController
       'workHours',
       canViewEmployeesAttendance && !isEmployeeListMergedWithWorkHours,
     );
+    add(loansTab, 'loans', canManageEmployeesOrders);
     add(overtimeTab, 'overtime',
         canManageEmployeesOrders || canViewEmployeesAttendance);
-    add(adminsTab, 'admins', userType == 'admin');
-    add(suspendedEmployeesTab, 'suspendedEmployees', canViewEmployees);
 
     tabs.assignAll(nextTabs);
     visibleTabIndexes.assignAll(nextIndexes);
-    if (actionTab.value == loansTab && !canManageEmployeesOrders) {
+    if ((actionTab.value == adminsTab && userType != 'admin') ||
+        (actionTab.value == suspendedEmployeesTab && !canViewEmployees)) {
       actionTab.value = -1;
     }
     if (currentTab.value >= tabs.length) {
