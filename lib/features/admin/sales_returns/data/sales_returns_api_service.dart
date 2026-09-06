@@ -59,10 +59,10 @@ class SalesReturnsApiService {
     _ensureSuccess(_map(response.data));
   }
 
-  Future<List<SalesReturnRecord>> list() async {
+  Future<List<SalesReturnRecord>> list({required String date}) async {
     final Response response = await _api.get(
       EndPoints.salesReturns,
-      queryParameters: {'per_page': 100},
+      queryParameters: {'date': date, 'per_page': 100},
     );
     final map = _map(response.data);
     _ensureSuccess(map);

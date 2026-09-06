@@ -4,8 +4,11 @@ import 'package:get/get.dart';
 import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/product_priority_image.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
+import '../../../sales/presentation/utils/instant_sale_display.dart';
 import '../../data/sales_return_models.dart';
 import '../controllers/sales_returns_controller.dart';
 import '../utils/sales_return_invoice_pdf.dart';
@@ -32,118 +35,268 @@ class SalesReturnsList extends GetView<SalesReturnsController> {
           child: Center(child: Text('لا توجد فواتير مرتجع مبيعات')),
         );
       }
+      final groups = <String, List<SalesReturnRecord>>{};
+      for (final row in rows) {
+        groups.putIfAbsent(_returnDateKey(row.completedAt), () => []).add(row);
+      }
       return Column(
-        children: rows
-            .map((row) => Padding(
-                  padding: EdgeInsets.only(bottom: 8.h),
-                  child: _SalesReturnCard(record: row),
-                ))
-            .toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _ReturnsTableHeader(),
+          for (var i = 0; i < groups.entries.length; i++) ...[
+            if (i > 0) SizedBox(height: 14.h),
+            _ReturnDateHeader(
+              dateKey: groups.entries.elementAt(i).key,
+              count: groups.entries.elementAt(i).value.length,
+            ),
+            ...groups.entries.elementAt(i).value.map(
+                  (row) => _SalesReturnRow(record: row),
+                ),
+          ],
+          SizedBox(height: 4.h),
+        ],
       );
     });
   }
 }
 
-class _SalesReturnCard extends StatelessWidget {
-  const _SalesReturnCard({required this.record});
+class _ReturnDateHeader extends StatelessWidget {
+  const _ReturnDateHeader({required this.dateKey, required this.count});
+
+  final String dateKey;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final formatted = formatInstantSalesDateHeader(
+      dateKey,
+      invoiceCount: count,
+    );
+    final separator = formatted.lastIndexOf(' · ');
+    final date = separator < 0 ? formatted : formatted.substring(0, separator);
+    final bg = ThemeService.isDark.value
+        ? salesReturnColor.withValues(alpha: .16)
+        : salesReturnColor.withValues(alpha: .07);
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(
+          left: BorderSide(color: Colors.grey.shade300),
+          right: BorderSide(color: Colors.grey.shade300),
+          bottom: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
+      child: Text(
+        '$date · $count ${count == 1 ? 'فاتورة مرتجع' : 'فواتير مرتجع'}',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: salesReturnColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 13.sp,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReturnsTableHeader extends StatelessWidget {
+  const _ReturnsTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = ThemeService.isDark.value
+        ? AppColors.customGreyColor
+        : const Color(0xFFEEF4FF);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: const Row(
+        children: [
+          _ReturnHeaderCell('الفاتورة', flex: 2),
+          _ReturnHeaderCell('التاريخ / الوقت', flex: 2),
+          _ReturnHeaderCell('الإجمالي', flex: 2),
+          _ReturnHeaderCell('القطع', flex: 2),
+          _ReturnHeaderCell('الطرف', flex: 2),
+          _ReturnHeaderCell('الحالة', flex: 3),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReturnHeaderCell extends StatelessWidget {
+  const _ReturnHeaderCell(this.label, {required this.flex});
+
+  final String label;
+  final int flex;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        flex: flex,
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryColor,
+          ),
+        ),
+      );
+}
+
+class _SalesReturnRow extends StatelessWidget {
+  const _SalesReturnRow({required this.record});
 
   final SalesReturnRecord record;
 
   @override
   Widget build(BuildContext context) {
+    final cancelled = record.isCancelled;
+    final isDark = ThemeService.isDark.value;
+    final background = cancelled
+        ? Colors.red.withValues(alpha: .06)
+        : (isDark ? AppColors.customGreyColor4 : Colors.white);
     return Material(
-      color: salesReturnSurface,
-      borderRadius: BorderRadius.circular(12.r),
+      color: background,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12.r),
         onTap: () => _showDetails(context),
         child: Container(
-          padding: EdgeInsets.all(12.r),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 11.h),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: const Color(0xFFF4C7C3)),
+            border: Border(
+              left: BorderSide(color: Colors.grey.shade300),
+              right: BorderSide(color: Colors.grey.shade300),
+              bottom: BorderSide(color: Colors.grey.shade300),
+            ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 4.w,
-                height: 54.h,
-                margin: EdgeInsetsDirectional.only(end: 9.w),
-                decoration: BoxDecoration(
-                  color: salesReturnColor,
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-              ),
-              CircleAvatar(
-                backgroundColor: salesReturnColor.withValues(alpha: .11),
-                child: const Icon(Icons.assignment_return_outlined,
-                    color: salesReturnColor),
-              ),
-              SizedBox(width: 10.w),
               Expanded(
+                flex: 2,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            record.serialNumber,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w900,
-                              color: salesReturnColor,
-                            ),
-                          ),
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
+                      decoration: BoxDecoration(
+                        color:
+                            cancelled ? Colors.grey.shade600 : salesReturnColor,
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                      child: Text(
+                        cancelled ? 'مرتجع ملغى' : 'مرتجع مبيعات',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8.sp,
+                          fontWeight: FontWeight.w700,
                         ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 7.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: salesReturnColor,
-                            borderRadius: BorderRadius.circular(20.r),
-                          ),
-                          child: Text(
-                              record.isCancelled
-                                  ? 'مرتجع ملغى'
-                                  : 'مرتجع مبيعات',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w700)),
-                        ),
-                      ],
+                      ),
                     ),
-                    SizedBox(height: 5.h),
+                    SizedBox(height: 3.h),
                     Text(
-                      '${record.isSeller ? 'مورد / تاجر' : 'زبون'}: ${record.partnerName}',
+                      record.serialNumber,
+                      textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11.5.sp),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      '${record.returnedQuantity} قطعة • ${record.itemsCount} صنف • ${_date(record.completedAt)}',
                       style: TextStyle(
-                          fontSize: 10.sp, color: Colors.grey.shade700),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: salesReturnColor,
+                        decoration: TextDecoration.underline,
+                        decorationColor: salesReturnColor,
+                      ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: 8.w),
-              Column(
-                children: [
-                  Text(
-                    '${record.totalAmount.toStringAsFixed(2)} ₪',
-                    style: TextStyle(
-                      color: salesReturnColor,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_date(record.completedAt),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 10.sp)),
+                    SizedBox(height: 2.h),
+                    Text(_time(record.completedAt),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '${record.totalAmount.toStringAsFixed(2)} ₪',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: cancelled ? Colors.red.shade700 : salesReturnColor,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const Icon(Icons.chevron_left_rounded,
-                      color: salesReturnColor),
-                ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${record.returnedQuantity}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12.sp)),
+                    Text('${record.itemsCount} صنف',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 9.sp, color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(record.isSeller ? 'مورد / تاجر' : 'زبون',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.secondaryColor)),
+                    SizedBox(height: 2.h),
+                    Text(record.partnerName,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 11.sp)),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ReturnStatusChip(cancelled: cancelled),
+                    SizedBox(width: 2.w),
+                    _ReturnOperationInfo(record: record),
+                    Icon(Icons.chevron_left_rounded,
+                        size: 20.sp, color: salesReturnColor),
+                  ],
+                ),
               ),
             ],
           ),
@@ -185,8 +338,129 @@ class _SalesReturnCard extends StatelessWidget {
   String _date(String raw) {
     final parsed = DateTime.tryParse(raw);
     if (parsed == null) return raw;
-    return '${parsed.year}/${parsed.month.toString().padLeft(2, '0')}/${parsed.day.toString().padLeft(2, '0')}';
+    final local = parsed.toLocal();
+    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
   }
+
+  String _time(String raw) {
+    final parsed = DateTime.tryParse(raw)?.toLocal();
+    if (parsed == null) return '—';
+    return '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _ReturnStatusChip extends StatelessWidget {
+  const _ReturnStatusChip({required this.cancelled});
+
+  final bool cancelled;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = cancelled ? Colors.red : const Color(0xFF1B8A4A);
+    final label = cancelled ? 'ملغى' : 'فعال';
+    return Tooltip(
+      message: label,
+      child: Container(
+        width: 30.w,
+        height: 30.w,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .12),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: .35)),
+        ),
+        child: Icon(
+          cancelled ? Icons.cancel_outlined : Icons.check_circle_outline,
+          size: 19.sp,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReturnOperationInfo extends StatelessWidget {
+  const _ReturnOperationInfo({required this.record});
+
+  final SalesReturnRecord record;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: 'تفاصيل العملية',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14.r),
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('تفاصيل عملية المرتجع'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ReturnInfoRow(
+                      label: 'المعاد نقدًا',
+                      value: '${record.cashRefundAmount.toStringAsFixed(2)} ₪'),
+                  SizedBox(height: 8.h),
+                  _ReturnInfoRow(
+                      label: 'الرصيد المسجل',
+                      value: '${record.creditAmount.toStringAsFixed(2)} ₪'),
+                  SizedBox(height: 8.h),
+                  _ReturnInfoRow(
+                      label: 'صندوق الرد',
+                      value: record.refundBoxName.isEmpty
+                          ? '—'
+                          : record.refundBoxName),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('إغلاق'),
+                ),
+              ],
+            ),
+          ),
+          child: SizedBox(
+            width: 28.w,
+            height: 28.w,
+            child: Icon(Icons.info_outline,
+                size: 20.sp, color: AppColors.primaryColor),
+          ),
+        ),
+      );
+}
+
+class _ReturnInfoRow extends StatelessWidget {
+  const _ReturnInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90.w,
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      );
+}
+
+String _returnDateKey(String raw) {
+  final parsed = DateTime.tryParse(raw)?.toLocal();
+  if (parsed == null) return raw;
+  final month = parsed.month.toString().padLeft(2, '0');
+  final day = parsed.day.toString().padLeft(2, '0');
+  return '${parsed.year}-$month-$day';
 }
 
 class _ReturnDetails extends StatelessWidget {

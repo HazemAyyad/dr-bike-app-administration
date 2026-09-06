@@ -17,6 +17,7 @@ class SalesReturnsController extends GetxController {
   final isSubmitting = false.obs;
   final isReturnsLoading = false.obs;
   final returnsSearch = ''.obs;
+  final selectedReturnsDate = DateTime.now().obs;
   final personType = 'customer'.obs;
   final search = ''.obs;
   final editingReturnId = RxnInt();
@@ -95,6 +96,72 @@ class SalesReturnsController extends GetxController {
   double get total =>
       selected.values.fold(0, (sum, row) => sum + row.lineTotal);
 
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  String _formatDateParam(DateTime value) {
+    final date = _dateOnly(value);
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${date.year}-${two(date.month)}-${two(date.day)}';
+  }
+
+  String get selectedReturnsDateParam =>
+      _formatDateParam(selectedReturnsDate.value);
+
+  String get selectedReturnsDateLabel {
+    final selectedDate = _dateOnly(selectedReturnsDate.value);
+    final today = _dateOnly(DateTime.now());
+    if (selectedDate == today) return 'اليوم';
+    final label =
+        '${_weekdayLabel(selectedDate)} ${_formatDateParam(selectedDate)}';
+    if (selectedDate == today.subtract(const Duration(days: 1))) {
+      return 'أمس - $label';
+    }
+    return label;
+  }
+
+  String _weekdayLabel(DateTime date) {
+    const labels = [
+      'الإثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    return labels[date.weekday - 1];
+  }
+
+  bool get canGoNextReturnsDate =>
+      _dateOnly(selectedReturnsDate.value).isBefore(_dateOnly(DateTime.now()));
+
+  void changeReturnsDateByDays(int days) {
+    final today = _dateOnly(DateTime.now());
+    var next = _dateOnly(selectedReturnsDate.value).add(Duration(days: days));
+    if (next.isAfter(today)) next = today;
+    if (next == _dateOnly(selectedReturnsDate.value)) return;
+    selectedReturnsDate.value = next;
+    loadReturns();
+  }
+
+  Future<void> pickReturnsDate(BuildContext context) async {
+    final today = _dateOnly(DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedReturnsDate.value.isAfter(today)
+          ? today
+          : selectedReturnsDate.value,
+      firstDate: DateTime(2020),
+      lastDate: today,
+    );
+    if (picked == null) return;
+    final next = _dateOnly(picked);
+    if (next == _dateOnly(selectedReturnsDate.value)) return;
+    selectedReturnsDate.value = next;
+    await loadReturns();
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -105,7 +172,7 @@ class SalesReturnsController extends GetxController {
   Future<void> loadReturns() async {
     isReturnsLoading.value = true;
     try {
-      returns.assignAll(await api.list());
+      returns.assignAll(await api.list(date: selectedReturnsDateParam));
     } catch (error) {
       _error(error);
     } finally {

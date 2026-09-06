@@ -22,6 +22,7 @@ import '../../../sales_orders/presentation/widgets/sales_orders_table.dart';
 import '../../../sales_orders/presentation/widgets/sales_orders_toolbar.dart';
 import '../../../sales_returns/presentation/controllers/sales_returns_controller.dart';
 import '../../../sales_returns/presentation/widgets/sales_returns_list.dart';
+import '../../../sales_returns/presentation/widgets/sales_returns_toolbar.dart';
 
 class SalesScreen extends GetView<SalesController> {
   const SalesScreen({Key? key}) : super(key: key);
@@ -83,6 +84,11 @@ class SalesScreen extends GetView<SalesController> {
                     if (controller.currentTab.value == 0) {
                       return const SliverToBoxAdapter(
                         child: SalesInvoicesToolbar(),
+                      );
+                    }
+                    if (controller.currentTab.value == 3) {
+                      return const SliverToBoxAdapter(
+                        child: SalesReturnsToolbar(),
                       );
                     }
                     return const SliverToBoxAdapter(
