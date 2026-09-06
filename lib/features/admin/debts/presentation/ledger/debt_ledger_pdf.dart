@@ -102,12 +102,10 @@ class DebtLedgerPdf {
         pw.SizedBox(height: 16),
         if (isSummary)
           ..._summaryTransactions(
-            transactions,
-            currency,
-            bold,
-            takenLabel,
-            givenLabel,
-          )
+                  transactions, currency, bold, takenLabel, givenLabel)
+              .map((row) => pw.Center(
+                    child: pw.SizedBox(width: 455, child: row),
+                  ))
         else
           ...transactions.asMap().entries.expand((entry) {
             final tx = entry.value;
@@ -180,37 +178,35 @@ class DebtLedgerPdf {
   static pw.Widget _transaction(int index, Map tx, bool taken, String currency,
           pw.Font bold, String takenLabel, String givenLabel) =>
       pw.Container(
-        padding: const pw.EdgeInsets.all(9),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: pw.BoxDecoration(
             border: pw.Border.all(color: PdfColors.grey300),
             borderRadius: pw.BorderRadius.circular(5)),
-        child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('$index. ${tx['transaction_date'] ?? '—'}',
-                        style: pw.TextStyle(font: bold, color: _ink)),
-                    pw.Text(
-                        '${taken ? takenLabel : givenLabel}  ${_money(tx['amount'])} $currency',
-                        style: pw.TextStyle(
-                            font: bold,
-                            color:
-                                taken ? PdfColors.green700 : PdfColors.red700)),
-                  ]),
-              if ((tx['note']?.toString().trim() ?? '').isNotEmpty)
-                pw.Padding(
-                    padding: const pw.EdgeInsets.only(top: 5),
-                    child: pw.Text(tx['note'].toString(),
-                        style: const pw.TextStyle(
-                            fontSize: 9, color: PdfColors.grey700))),
-              pw.Padding(
-                  padding: const pw.EdgeInsets.only(top: 4),
-                  child: pw.Text(
-                      'الرصيد بعد الحركة: ${_money(tx['balance_after'])} $currency',
-                      style: const pw.TextStyle(fontSize: 9))),
-            ]),
+        child: pw.Row(children: [
+          pw.SizedBox(
+            width: 76,
+            child: pw.Text('$index. ${tx['transaction_date'] ?? '—'}',
+                style: pw.TextStyle(font: bold, fontSize: 9, color: _ink)),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              (tx['note']?.toString().trim() ?? '').isEmpty
+                  ? '—'
+                  : tx['note'].toString(),
+              maxLines: 1,
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            ),
+          ),
+          pw.SizedBox(width: 8),
+          pw.Text('${taken ? takenLabel : givenLabel} ${_money(tx['amount'])}',
+              style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 9,
+                  color: taken ? PdfColors.green700 : PdfColors.red700)),
+          pw.SizedBox(width: 10),
+          pw.Text('الرصيد ${_money(tx['balance_after'])} $currency',
+              style: const pw.TextStyle(fontSize: 8)),
+        ]),
       );
 
   static List<pw.Widget> _summaryTransactions(
@@ -268,7 +264,7 @@ class DebtLedgerPdf {
   }) =>
       pw.Container(
         alignment: alignment,
-        padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
         child: pw.Text(
           value,
           maxLines: 2,
@@ -281,28 +277,28 @@ class DebtLedgerPdf {
     final items =
         (detail['items'] as List? ?? const []).whereType<Map>().toList();
     return pw.Container(
-      margin: const pw.EdgeInsets.only(top: 5),
-      padding: const pw.EdgeInsets.all(8),
+      margin: const pw.EdgeInsets.only(top: 3),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       color: PdfColors.grey100,
       child:
           pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
         pw.Text(detail['title']?.toString() ?? '',
-            style: pw.TextStyle(font: bold, color: _purple)),
+            style: pw.TextStyle(font: bold, fontSize: 9, color: _purple)),
         ...items.map((item) {
           final url = item['image_path']?.toString();
           final image = url == null ? null : images[url];
           return pw.Container(
-              margin: const pw.EdgeInsets.only(top: 6),
+              margin: const pw.EdgeInsets.only(top: 3),
               child: pw.Row(children: [
                 if (includeImages) ...[
                   pw.Container(
-                      width: 42,
-                      height: 42,
+                      width: 32,
+                      height: 32,
                       color: PdfColors.white,
                       child: image == null
                           ? pw.Center(child: pw.Text('—'))
                           : pw.Image(image, fit: pw.BoxFit.cover)),
-                  pw.SizedBox(width: 8),
+                  pw.SizedBox(width: 6),
                 ],
                 pw.Expanded(
                     child: pw.Text(item['name']?.toString() ?? 'منتج',
