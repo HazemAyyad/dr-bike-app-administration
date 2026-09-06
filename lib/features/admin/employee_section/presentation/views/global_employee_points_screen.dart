@@ -10,9 +10,10 @@ import '../../../../../core/helpers/month_year_picker.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/app_save_progress_status.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/global_employee_points_controller.dart';
-import '../widgets/employee_points_tab.dart';
+import '../../../whatsapp_center/presentation/widgets/whatsapp_camera_image_picker.dart';
 import 'employee_points_logs_dialog.dart';
 
 /// Global "نقاط الموظفين" admin screen. Lists every employee with current
@@ -579,23 +580,16 @@ class _GlobalPointsMutationDialogState
   final TextEditingController _pointsCtrl = TextEditingController();
   final TextEditingController _reasonCtrl = TextEditingController();
   final TextEditingController _notesCtrl = TextEditingController();
-  final TextEditingController _manualCategoryCtrl = TextEditingController();
   EmployeePointCategoryModel? _selectedCategory;
+  String? _selectedType;
   DateTime? _selectedDate;
   File? _evidenceImage;
-  bool _manualMode = false;
-
-  Future<void> _captureEvidence() async {
-    final image = await captureEmployeePointsEvidence();
-    if (image != null && mounted) setState(() => _evidenceImage = image);
-  }
 
   @override
   void dispose() {
     _pointsCtrl.dispose();
     _reasonCtrl.dispose();
     _notesCtrl.dispose();
-    _manualCategoryCtrl.dispose();
     super.dispose();
   }
 
@@ -606,7 +600,6 @@ class _GlobalPointsMutationDialogState
     final categories = widget.controller.categories
         .where((c) => widget.isAdd ? c.isAdd : c.isDeduct)
         .toList();
-    final useManual = _manualMode || categories.isEmpty;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
@@ -642,82 +635,63 @@ class _GlobalPointsMutationDialogState
                   ],
                 ),
                 SizedBox(height: 14.h),
-                if (categories.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          selected: !useManual,
-                          label: Text('pointsConfiguredType'.tr),
-                          onSelected: (_) =>
-                              setState(() => _manualMode = false),
-                        ),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedType,
+                  isExpanded: true,
+                  decoration: _decoration('pointsCategory'.tr),
+                  items: [
+                    ...categories.map(
+                      (category) => DropdownMenuItem<String>(
+                        value: 'category:${category.id}',
+                        child: Text(_categoryDisplayName(category)),
                       ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: ChoiceChip(
-                          selected: useManual,
-                          label: Text('pointsManualType'.tr),
-                          onSelected: (_) => setState(() {
-                            _manualMode = true;
-                            _selectedCategory = null;
-                            _pointsCtrl.clear();
-                          }),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10.h),
-                ],
-                if (!useManual)
-                  DropdownButtonFormField<int>(
-                    initialValue: _selectedCategory?.id,
-                    isExpanded: true,
-                    decoration: _decoration('pointsCategory'.tr),
-                    items: categories
-                        .map(
-                          (c) => DropdownMenuItem<int>(
-                            value: c.id,
-                            child: Text(_categoryDisplayName(c)),
-                          ),
-                        )
-                        .toList(),
-                    validator: (v) =>
-                        v == null ? 'pointsCategoryRequired'.tr : null,
-                    onChanged: (id) {
-                      final cat = categories.firstWhere((c) => c.id == id);
-                      setState(() {
-                        _selectedCategory = cat;
-                        _pointsCtrl.text = cat.defaultPoints.toString();
-                      });
-                    },
-                  )
-                else
-                  TextFormField(
-                    controller: _manualCategoryCtrl,
-                    decoration: _decoration(
-                      'pointsManualTypeLabel'.tr,
-                      hint: 'pointsManualTypeHint'.tr,
                     ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'pointsCategoryRequired'.tr
-                        : null,
-                  ),
+                    DropdownMenuItem<String>(
+                      value: 'manual',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.edit_note_rounded),
+                          SizedBox(width: 7.w),
+                          Text('pointsManualEntry'.tr),
+                        ],
+                      ),
+                    ),
+                  ],
+                  validator: (value) =>
+                      value == null ? 'pointsCategoryRequired'.tr : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedType = value;
+                      if (value == 'manual') {
+                        _selectedCategory = null;
+                        _pointsCtrl.clear();
+                        return;
+                      }
+                      final id = int.tryParse(
+                          value?.replaceFirst('category:', '') ?? '');
+                      final category =
+                          categories.firstWhereOrNull((item) => item.id == id);
+                      _selectedCategory = category;
+                      _pointsCtrl.text =
+                          category?.defaultPoints.toString() ?? '';
+                    });
+                  },
+                ),
                 SizedBox(height: 10.h),
                 TextFormField(
                   controller: _pointsCtrl,
                   keyboardType: TextInputType.number,
-                  readOnly: !useManual && _selectedCategory != null,
-                  enabled: useManual || _selectedCategory == null,
+                  readOnly: _selectedCategory != null,
+                  enabled: _selectedCategory == null,
                   decoration: _decoration('pointsValue'.tr).copyWith(
-                    suffixIcon: !useManual && _selectedCategory != null
+                    suffixIcon: _selectedCategory != null
                         ? Icon(
                             Icons.lock_outline_rounded,
                             size: 18.sp,
                             color: const Color(0xFF9CA3AF),
                           )
                         : null,
-                    helperText: !useManual && _selectedCategory != null
+                    helperText: _selectedCategory != null
                         ? 'pointsCategoryAutoFill'.tr
                         : null,
                     helperStyle: TextStyle(
@@ -726,7 +700,7 @@ class _GlobalPointsMutationDialogState
                     ),
                   ),
                   validator: (v) {
-                    if (!useManual && _selectedCategory != null) return null;
+                    if (_selectedCategory != null) return null;
                     if (v == null || v.isEmpty) {
                       return 'pointsValueRequired'.tr;
                     }
@@ -748,11 +722,13 @@ class _GlobalPointsMutationDialogState
                 ),
                 SizedBox(height: 10.h),
                 Obx(
-                  () => EmployeePointsEvidenceCameraField(
+                  () => WhatsAppCameraImagePicker(
                     image: _evidenceImage,
-                    isUploading: widget.controller.isMutating.value,
-                    onCapture: _captureEvidence,
-                    onRemove: () => setState(() => _evidenceImage = null),
+                    title: 'pointsEvidenceTakePhoto'.tr,
+                    isBusy: widget.controller.isMutating.value,
+                    busyLabel: 'pointsEvidenceUploading'.tr,
+                    onChanged: (image) =>
+                        setState(() => _evidenceImage = image),
                   ),
                 ),
                 SizedBox(height: 10.h),
@@ -781,6 +757,20 @@ class _GlobalPointsMutationDialogState
                     ),
                   ),
                 ),
+                SizedBox(height: 10.h),
+                Obx(() {
+                  final saving = widget.controller.isMutating.value;
+                  return AppSaveProgressStatus(
+                    state: saving
+                        ? AppSaveProgressState.saving
+                        : AppSaveProgressState.idle,
+                    message: saving
+                        ? (_evidenceImage == null
+                            ? 'pointsSaving'.tr
+                            : 'pointsSavingWithImage'.tr)
+                        : 'pointsSaveReady'.tr,
+                  );
+                }),
                 SizedBox(height: 14.h),
                 Obx(() {
                   final loading = widget.controller.isMutating.value;
@@ -840,10 +830,8 @@ class _GlobalPointsMutationDialogState
     final ok = await widget.controller.mutatePoints(
       employeeId: widget.row.employeeId,
       isAdd: widget.isAdd,
-      categoryId: _manualMode ? null : _selectedCategory?.id,
-      category: _manualMode || _selectedCategory == null
-          ? _manualCategoryCtrl.text.trim()
-          : _selectedCategory?.code,
+      categoryId: _selectedCategory?.id,
+      category: _selectedCategory?.code ?? 'manual',
       points: overridePoints,
       reason: _reasonCtrl.text.trim(),
       notes: _notesCtrl.text.trim(),
