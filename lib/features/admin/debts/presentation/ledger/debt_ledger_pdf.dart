@@ -29,8 +29,10 @@ class DebtLedgerPdf {
     final details =
         Map<String, dynamic>.from(report['source_details'] as Map? ?? {});
     final isSummary = report['detail_level']?.toString() == 'summary';
+    final includeImages =
+        report['detail_level']?.toString() == 'detailed_with_images';
     final images = <String, pw.ImageProvider?>{};
-    for (final detail in isSummary
+    for (final detail in !includeImages
         ? const Iterable<Map<dynamic, dynamic>>.empty()
         : details.values.whereType<Map>()) {
       for (final item
@@ -97,7 +99,7 @@ class DebtLedgerPdf {
         ),
         pw.SizedBox(height: 16),
         if (isSummary)
-          _summaryTransactions(
+          ..._summaryTransactions(
             transactions,
             currency,
             bold,
@@ -115,7 +117,13 @@ class DebtLedgerPdf {
             ];
             final detail = details[id];
             if (detail is Map) {
-              widgets.add(_sourceDetail(detail, currency, images, bold));
+              widgets.add(_sourceDetail(
+                detail,
+                currency,
+                images,
+                bold,
+                includeImages,
+              ));
             }
             widgets.add(pw.SizedBox(height: 7));
             return widgets;
@@ -203,7 +211,7 @@ class DebtLedgerPdf {
             ]),
       );
 
-  static pw.Widget _summaryTransactions(
+  static List<pw.Widget> _summaryTransactions(
     List<Map> transactions,
     String currency,
     pw.Font bold,
@@ -211,50 +219,44 @@ class DebtLedgerPdf {
     String givenLabel,
   ) {
     final headers = ['التاريخ', 'البيان', takenLabel, givenLabel, 'الرصيد'];
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: .6),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(1.25),
-        1: pw.FlexColumnWidth(2.5),
-        2: pw.FlexColumnWidth(1.15),
-        3: pw.FlexColumnWidth(1.15),
-        4: pw.FlexColumnWidth(1.35),
-      },
-      children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: _purple),
-          children: headers
-              .map((header) => _summaryCell(
-                    header,
-                    bold: bold,
-                    color: PdfColors.white,
-                    alignment: pw.Alignment.center,
-                  ))
-              .toList(),
-        ),
-        ...transactions.asMap().entries.map((entry) {
-          final tx = entry.value;
-          final taken = tx['type'] == 'taken';
-          final note = tx['note']?.toString().trim() ?? '';
-          return pw.TableRow(
-            decoration: pw.BoxDecoration(
-              color: entry.key.isEven ? PdfColors.white : _soft,
-            ),
-            children: [
-              _summaryCell(tx['transaction_date']?.toString() ?? '—'),
-              _summaryCell(note.isEmpty ? '—' : note),
-              _summaryCell(taken ? _money(tx['amount']) : '—',
-                  color: PdfColors.green700),
-              _summaryCell(taken ? '—' : _money(tx['amount']),
-                  color: PdfColors.red700),
-              _summaryCell('${_money(tx['balance_after'])} $currency',
-                  bold: bold),
-            ],
-          );
-        }),
-      ],
-    );
+    return [
+      _summaryRow(headers, _purple, bold, PdfColors.white),
+      ...transactions.asMap().entries.map((entry) {
+        final tx = entry.value;
+        final taken = tx['type'] == 'taken';
+        final note = tx['note']?.toString().trim() ?? '';
+        return _summaryRow(
+          [
+            tx['transaction_date']?.toString() ?? '—',
+            note.isEmpty ? '—' : note,
+            taken ? _money(tx['amount']) : '—',
+            taken ? '—' : _money(tx['amount']),
+            '${_money(tx['balance_after'])} $currency',
+          ],
+          entry.key.isEven ? PdfColors.white : _soft,
+          bold,
+          _ink,
+        );
+      }),
+    ];
   }
+
+  static pw.Widget _summaryRow(List<String> values, PdfColor background,
+          pw.Font bold, PdfColor color) =>
+      pw.Container(
+        color: background,
+        child: pw.Row(children: [
+          pw.Expanded(
+              flex: 5,
+              child: _summaryCell(values[0], bold: bold, color: color)),
+          pw.Expanded(flex: 10, child: _summaryCell(values[1], color: color)),
+          pw.Expanded(flex: 5, child: _summaryCell(values[2], color: color)),
+          pw.Expanded(flex: 5, child: _summaryCell(values[3], color: color)),
+          pw.Expanded(
+              flex: 6,
+              child: _summaryCell(values[4], bold: bold, color: color)),
+        ]),
+      );
 
   static pw.Widget _summaryCell(
     String value, {
@@ -273,7 +275,7 @@ class DebtLedgerPdf {
       );
 
   static pw.Widget _sourceDetail(Map detail, String currency,
-      Map<String, pw.ImageProvider?> images, pw.Font bold) {
+      Map<String, pw.ImageProvider?> images, pw.Font bold, bool includeImages) {
     final items =
         (detail['items'] as List? ?? const []).whereType<Map>().toList();
     return pw.Container(
@@ -290,14 +292,16 @@ class DebtLedgerPdf {
           return pw.Container(
               margin: const pw.EdgeInsets.only(top: 6),
               child: pw.Row(children: [
-                pw.Container(
-                    width: 42,
-                    height: 42,
-                    color: PdfColors.white,
-                    child: image == null
-                        ? pw.Center(child: pw.Text('—'))
-                        : pw.Image(image, fit: pw.BoxFit.cover)),
-                pw.SizedBox(width: 8),
+                if (includeImages) ...[
+                  pw.Container(
+                      width: 42,
+                      height: 42,
+                      color: PdfColors.white,
+                      child: image == null
+                          ? pw.Center(child: pw.Text('—'))
+                          : pw.Image(image, fit: pw.BoxFit.cover)),
+                  pw.SizedBox(width: 8),
+                ],
                 pw.Expanded(
                     child: pw.Text(item['name']?.toString() ?? 'منتج',
                         style: pw.TextStyle(font: bold, fontSize: 9))),

@@ -16,7 +16,6 @@ class DebtLabelsSettingsSheet extends StatefulWidget {
 class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   late final TextEditingController takenController;
   late final TextEditingController givenController;
-  bool saving = false;
 
   @override
   void initState() {
@@ -35,6 +34,7 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final ledger = Get.find<DebtLedgerController>();
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SafeArea(
@@ -90,38 +90,41 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                 ),
               ),
               SizedBox(height: 8.h),
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: saving
-                        ? null
-                        : () => setState(() {
-                              takenController.text = 'أخذت';
-                              givenController.text = 'أعطيت';
-                            }),
-                    icon: const Icon(Icons.restart_alt),
-                    label: const Text('الافتراضي'),
-                  ),
-                  const Spacer(),
-                  FilledButton.icon(
-                    onPressed: saving ? null : _save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: LedgerColors.primaryBlue,
-                    ),
-                    icon: saving
-                        ? SizedBox(
-                            width: 16.w,
-                            height: 16.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.save_outlined),
-                    label: const Text('حفظ'),
-                  ),
-                ],
-              ),
+              Obx(() => Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: ledger.isSavingDebtLabels.value
+                            ? null
+                            : () => setState(() {
+                                  takenController.text = 'أخذت';
+                                  givenController.text = 'أعطيت';
+                                }),
+                        icon: const Icon(Icons.restart_alt),
+                        label: const Text('الافتراضي'),
+                      ),
+                      const Spacer(),
+                      FilledButton.icon(
+                        onPressed:
+                            ledger.isSavingDebtLabels.value ? null : _save,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: LedgerColors.primaryBlue,
+                        ),
+                        icon: ledger.isSavingDebtLabels.value
+                            ? SizedBox(
+                                width: 16.w,
+                                height: 16.w,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(ledger.isSavingDebtLabels.value
+                            ? 'جاري الحفظ...'
+                            : 'حفظ'),
+                      ),
+                    ],
+                  )),
             ],
           ),
         ),
@@ -130,19 +133,39 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   }
 
   Future<void> _save() async {
-    setState(() => saving = true);
-    final saved = await Get.find<DebtLedgerController>().saveDebtLabels(
+    FocusScope.of(context).unfocus();
+    final ledger = Get.find<DebtLedgerController>();
+    final saved = await ledger.saveDebtLabels(
       takenController.text,
       givenController.text,
     );
     if (!mounted) return;
-    setState(() => saving = false);
     if (saved) {
       Get.back();
       Get.snackbar(
         'تم الحفظ',
         'تم تحديث مسميات حركات الديون بنجاح',
         snackPosition: SnackPosition.BOTTOM,
+      );
+    } else {
+      await Get.dialog<void>(
+        AlertDialog(
+          icon: const Icon(Icons.error_outline, color: Colors.red, size: 42),
+          title: const Text('تعذر حفظ المسميات'),
+          content: Text(
+            ledger.debtLabelsSaveError.value.isEmpty
+                ? 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.'
+                : ledger.debtLabelsSaveError.value,
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('حسناً'),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
       );
     }
   }

@@ -112,6 +112,8 @@ class DebtLedgerController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
+  final RxBool isSavingDebtLabels = false.obs;
+  final RxString debtLabelsSaveError = ''.obs;
   final RxBool isGeneratingReport = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedPeriod = 'all'.obs;
@@ -318,8 +320,11 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<bool> saveDebtLabels(String taken, String given) async {
+    if (isSavingDebtLabels.value) return false;
     final nextTaken = taken.trim().isEmpty ? 'أخذت' : taken.trim();
     final nextGiven = given.trim().isEmpty ? 'أعطيت' : given.trim();
+    isSavingDebtLabels.value = true;
+    debtLabelsSaveError.value = '';
     try {
       final response = await Get.find<ApiConsumer>().put(
         EndPoints.adminUiPreferences,
@@ -347,9 +352,17 @@ class DebtLedgerController extends GetxController {
               ? labels['given_label'].toString().trim()
               : nextGiven;
       return true;
-    } catch (_) {
-      Get.snackbar('error'.tr, 'لم يتم حفظ مسميات الديون');
+    } catch (error) {
+      debtLabelsSaveError.value = error.toString().replaceFirst(
+            RegExp(r'^[A-Za-z]+Exception:\s*'),
+            '',
+          );
+      if (debtLabelsSaveError.value.trim().isEmpty) {
+        debtLabelsSaveError.value = 'لم يتم حفظ مسميات الديون';
+      }
       return false;
+    } finally {
+      isSavingDebtLabels.value = false;
     }
   }
 
@@ -1305,6 +1318,12 @@ class DebtLedgerController extends GetxController {
     try {
       final file = await downloadPersonReport(detailLevel: detailLevel);
       if (file != null) await openDownloadedReport(file);
+    } catch (error) {
+      Get.snackbar(
+        'تعذر فتح التقرير',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isGeneratingReport.value = false;
     }
