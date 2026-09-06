@@ -35,6 +35,9 @@ class WhatsAppApiService {
       _get('$_socialBase/conversations/$channel/$id',
           query: {'page': page, 'per_page': 50});
 
+  Future<Map<String, dynamic>> getLinkPreview(String url) =>
+      _get('$_socialBase/link-preview', query: {'url': url});
+
   Future<Map<String, dynamic>> sendWhatsAppMessageToConversation(
     int id,
     String message, {

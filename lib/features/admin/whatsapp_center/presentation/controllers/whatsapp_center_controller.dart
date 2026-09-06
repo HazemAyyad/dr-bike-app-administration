@@ -15,12 +15,13 @@ import 'package:flutter_svg/flutter_svg.dart' as svg;
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
+import '../../../../../core/services/initial_bindings.dart';
 
 class WhatsAppCenterController extends GetxController {
   final WhatsAppApiService api;
   WhatsAppCenterController(this.api);
 
-  final tabIndex = 0.obs;
+  final tabIndex = 1.obs;
   final loading = false.obs;
   final actionLoading = false.obs;
   final error = RxnString();
@@ -35,7 +36,11 @@ class WhatsAppCenterController extends GetxController {
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
   final selectedQuickFilter = 'all'.obs;
-  final selectedChannel = 'all'.obs;
+  final selectedChannel = (userType == 'admin' ||
+              employeePermissionNames.contains('Social Center WhatsApp')
+          ? 'whatsapp'
+          : 'all')
+      .obs;
   final searchController = TextEditingController();
   final testPhoneController = TextEditingController();
   final testMessageController =

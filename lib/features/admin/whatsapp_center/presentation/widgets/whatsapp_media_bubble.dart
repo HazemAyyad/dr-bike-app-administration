@@ -25,6 +25,7 @@ class WhatsAppAudioBubble extends StatefulWidget {
 class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
   final AudioPlayer _player = AudioPlayer();
   bool _loading = true;
+  double _speed = 1;
   Object? _error;
 
   @override
@@ -124,14 +125,40 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
                       duration: duration,
                       onSeek: _player.seek,
                     ),
-                    Text(
-                      _formatDuration(duration),
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF667781),
+                    Row(children: [
+                      Text(
+                        _formatDuration(duration),
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFF667781),
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () async {
+                          _speed = _speed == 1
+                              ? 1.5
+                              : _speed == 1.5
+                                  ? 2
+                                  : 1;
+                          await _player.setSpeed(_speed);
+                          if (mounted) setState(() {});
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          child: Text(
+                            '${_speed.toStringAsFixed(_speed == 1 ? 0 : 1)}x',
+                            style: const TextStyle(
+                              color: Color(0xFF008069),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
                   ],
                 );
               },

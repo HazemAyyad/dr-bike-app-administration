@@ -147,7 +147,10 @@ class MetaAppStatus {
 class WhatsAppConversation {
   final int id, unreadCount, failedCount;
   final String phone, status, channel;
-  final String? lastMessage, lastMessageType;
+  final String? lastMessage,
+      lastMessageType,
+      lastMessageDirection,
+      lastMessageStatus;
   final DateTime? lastMessageAt;
   final WhatsAppContact? contact;
   final bool needsReply;
@@ -164,6 +167,8 @@ class WhatsAppConversation {
     required this.unreadCount,
     this.failedCount = 0,
     this.lastMessageType,
+    this.lastMessageDirection,
+    this.lastMessageStatus,
     this.contact,
     this.needsReply = false,
     this.assignedEmployee,
@@ -182,6 +187,8 @@ class WhatsAppConversation {
         unreadCount: _int(j['unread_count']),
         failedCount: _int(j['failed_count']),
         lastMessageType: j['last_message_type']?.toString(),
+        lastMessageDirection: j['last_message_direction']?.toString(),
+        lastMessageStatus: j['last_message_status']?.toString(),
         needsReply: j['needs_reply'] == true || j['needs_reply'] == 1,
         assignedEmployee: j['assigned_employee'] is Map
             ? ConversationAssignee.fromJson(
@@ -206,6 +213,8 @@ class WhatsAppMessage {
   final String direction, type, status, channel;
   final String? body, errorMessage;
   final String? mediaUrl;
+  final String? linkUrl;
+  final WhatsAppMessageMedia? media;
   final String? senderName;
   final bool isAutomatic;
   final WhatsAppMessage? replyTo;
@@ -220,6 +229,8 @@ class WhatsAppMessage {
     required this.status,
     this.errorMessage,
     this.mediaUrl,
+    this.linkUrl,
+    this.media,
     this.senderName,
     this.isAutomatic = false,
     this.replyTo,
@@ -235,6 +246,11 @@ class WhatsAppMessage {
         status: j['status']?.toString() ?? 'pending',
         errorMessage: j['error_message']?.toString(),
         mediaUrl: j['media_url']?.toString(),
+        linkUrl: j['link_url']?.toString(),
+        media: j['media'] is Map
+            ? WhatsAppMessageMedia.fromJson(
+                Map<String, dynamic>.from(j['media'] as Map))
+            : null,
         senderName: j['sender'] is Map
             ? (j['sender'] as Map)['name']?.toString()
             : null,
@@ -246,6 +262,58 @@ class WhatsAppMessage {
         createdAt: DateTime.tryParse(j['created_at']?.toString() ?? ''),
         customerDeletedAt:
             DateTime.tryParse(j['customer_deleted_at']?.toString() ?? ''),
+      );
+}
+
+class WhatsAppMessageMedia {
+  final String kind, url;
+  final String? caption, mimeType, filename;
+  final int? fileSize, durationSeconds;
+
+  const WhatsAppMessageMedia({
+    required this.kind,
+    required this.url,
+    this.caption,
+    this.mimeType,
+    this.filename,
+    this.fileSize,
+    this.durationSeconds,
+  });
+
+  factory WhatsAppMessageMedia.fromJson(Map<String, dynamic> json) =>
+      WhatsAppMessageMedia(
+        kind: json['kind']?.toString() ?? '',
+        url: json['url']?.toString() ?? '',
+        caption: json['caption']?.toString(),
+        mimeType: json['mime_type']?.toString(),
+        filename: json['filename']?.toString(),
+        fileSize: int.tryParse(json['file_size']?.toString() ?? ''),
+        durationSeconds:
+            int.tryParse(json['duration_seconds']?.toString() ?? ''),
+      );
+}
+
+class SocialLinkPreview {
+  final String url, domain;
+  final String? title, description, imageUrl, siteName;
+
+  const SocialLinkPreview({
+    required this.url,
+    required this.domain,
+    this.title,
+    this.description,
+    this.imageUrl,
+    this.siteName,
+  });
+
+  factory SocialLinkPreview.fromJson(Map<String, dynamic> json) =>
+      SocialLinkPreview(
+        url: json['url']?.toString() ?? '',
+        domain: json['domain']?.toString() ?? '',
+        title: json['title']?.toString(),
+        description: json['description']?.toString(),
+        imageUrl: json['image_url']?.toString(),
+        siteName: json['site_name']?.toString(),
       );
 }
 

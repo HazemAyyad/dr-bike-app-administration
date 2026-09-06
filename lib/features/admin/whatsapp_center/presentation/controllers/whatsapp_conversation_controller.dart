@@ -9,6 +9,7 @@ import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 import '../../data/whatsapp_api_service.dart';
@@ -23,10 +24,12 @@ class WhatsAppConversationController extends GetxController {
   final sending = false.obs;
   final mediaLoading = false.obs;
   final Map<int, Uint8List> _mediaCache = {};
+  final Map<String, Future<SocialLinkPreview?>> _previewRequests = {};
   final error = RxnString();
   final input = TextEditingController();
   final scrollController = ScrollController();
   final composing = false.obs;
+  final showJumpToLatest = false.obs;
   final customerServiceWindowOpen = true.obs;
   final customerServiceWindowExpiresAt = Rxn<DateTime>();
   final replyingTo = Rxn<WhatsAppMessage>();
@@ -66,6 +69,7 @@ class WhatsAppConversationController extends GetxController {
       ..sampleRate = 48000
       ..bitRate = 128000;
     input.addListener(_onTextChanged);
+    scrollController.addListener(_syncJumpButton);
     load();
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 5),
@@ -147,6 +151,22 @@ class WhatsAppConversationController extends GetxController {
       if (!scrollController.hasClients) return;
       scrollController.jumpTo(scrollController.position.maxScrollExtent);
     });
+  }
+
+  void jumpToLatest() {
+    if (!scrollController.hasClients) return;
+    scrollController.animateTo(
+      scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _syncJumpButton() {
+    if (!scrollController.hasClients) return;
+    showJumpToLatest.value = scrollController.position.maxScrollExtent -
+            scrollController.position.pixels >
+        260;
   }
 
   void _onTextChanged() {
@@ -532,6 +552,30 @@ class WhatsAppConversationController extends GetxController {
     return bytes;
   }
 
+  Future<SocialLinkPreview?> getLinkPreview(String url) =>
+      _previewRequests.putIfAbsent(url, () async {
+        try {
+          final result = await api.getLinkPreview(url);
+          final preview = result['preview'];
+          if (preview is Map) {
+            return SocialLinkPreview.fromJson(
+                Map<String, dynamic>.from(preview));
+          }
+        } catch (_) {
+          // The URL itself remains usable when its metadata cannot be loaded.
+        }
+        final uri = Uri.tryParse(url);
+        return SocialLinkPreview(url: url, domain: uri?.host ?? url);
+      });
+
+  Future<void> openExternalLink(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      Get.snackbar('تعذر فتح الرابط', url, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Future<void> saveImage(WhatsAppMessage message) async {
     try {
       final bytes = await getMediaBytes(message);
@@ -568,6 +612,7 @@ class WhatsAppConversationController extends GetxController {
     _typingDebounce?.cancel();
     _recordingTimer?.cancel();
     input.removeListener(_onTextChanged);
+    scrollController.removeListener(_syncJumpButton);
     recorder.dispose();
     scrollController.dispose();
     input.dispose();
