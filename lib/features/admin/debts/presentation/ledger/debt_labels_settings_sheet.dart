@@ -137,6 +137,13 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
     );
     if (!mounted) return;
     setState(() => saving = false);
-    if (saved) Get.back();
+    if (saved) {
+      Get.back();
+      Get.snackbar(
+        'تم الحفظ',
+        'تم تحديث مسميات حركات الديون بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 }

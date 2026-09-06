@@ -112,6 +112,7 @@ class DebtLedgerController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
+  final RxBool isGeneratingReport = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedPeriod = 'all'.obs;
   final RxString selectedBalanceScope = 'full'.obs;
@@ -329,11 +330,22 @@ class DebtLedgerController extends GetxController {
           },
         },
       );
-      final data = response.data['data'] as Map? ?? const {};
+      final payload = response.data as Map? ?? const {};
+      if (payload['status']?.toString() != 'success') {
+        throw StateError(
+          payload['message']?.toString() ?? 'لم يتم حفظ مسميات الديون',
+        );
+      }
+      final data = payload['data'] as Map? ?? const {};
       final labels = data['debt_ledger'] as Map? ?? const {};
-      takenLabel.value = labels['taken_label']?.toString() ?? nextTaken;
-      givenLabel.value = labels['given_label']?.toString() ?? nextGiven;
-      await loadMainData();
+      takenLabel.value =
+          labels['taken_label']?.toString().trim().isNotEmpty == true
+              ? labels['taken_label'].toString().trim()
+              : nextTaken;
+      givenLabel.value =
+          labels['given_label']?.toString().trim().isNotEmpty == true
+              ? labels['given_label'].toString().trim()
+              : nextGiven;
       return true;
     } catch (_) {
       Get.snackbar('error'.tr, 'لم يتم حفظ مسميات الديون');
@@ -1264,25 +1276,6 @@ class DebtLedgerController extends GetxController {
     LedgerReportDetailLevel detailLevel = LedgerReportDetailLevel.summary,
   }) async {
     if (selectedPerson == null) return null;
-    if (detailLevel == LedgerReportDetailLevel.summary) {
-      final result = await repository.downloadReport(
-        customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
-        sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
-        period: selectedPeriod.value,
-        startDate: _formatDate(customStartDate.value),
-        endDate: _formatDate(customEndDate.value),
-        currency: selectedCurrency.value,
-        reportDetailLevel: detailLevel.apiValue,
-      );
-      return result.fold(
-        (failure) {
-          Get.snackbar('error'.tr, 'ledgerReportFailed'.tr);
-          return null;
-        },
-        (bytes) => _savePersonReport(bytes),
-      );
-    }
-
     final result = await repository.generateReportJson(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
@@ -1302,6 +1295,19 @@ class DebtLedgerController extends GetxController {
         return _savePersonReport(bytes);
       },
     );
+  }
+
+  Future<void> generateAndOpenPersonReport({
+    required LedgerReportDetailLevel detailLevel,
+  }) async {
+    if (isGeneratingReport.value) return;
+    isGeneratingReport.value = true;
+    try {
+      final file = await downloadPersonReport(detailLevel: detailLevel);
+      if (file != null) await openDownloadedReport(file);
+    } finally {
+      isGeneratingReport.value = false;
+    }
   }
 
   Future<File> _savePersonReport(List<int> bytes) async {

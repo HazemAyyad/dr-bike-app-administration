@@ -28,8 +28,11 @@ class DebtLedgerPdf {
 
     final details =
         Map<String, dynamic>.from(report['source_details'] as Map? ?? {});
+    final isSummary = report['detail_level']?.toString() == 'summary';
     final images = <String, pw.ImageProvider?>{};
-    for (final detail in details.values.whereType<Map>()) {
+    for (final detail in isSummary
+        ? const Iterable<Map<dynamic, dynamic>>.empty()
+        : details.values.whereType<Map>()) {
       for (final item
           in (detail['items'] as List? ?? const []).whereType<Map>()) {
         final url = item['image_path']?.toString();
@@ -93,21 +96,30 @@ class DebtLedgerPdf {
               ]),
         ),
         pw.SizedBox(height: 16),
-        ...transactions.asMap().entries.expand((entry) {
-          final tx = entry.value;
-          final id = tx['id']?.toString() ?? '';
-          final taken = tx['type'] == 'taken';
-          final widgets = <pw.Widget>[
-            _transaction(entry.key + 1, tx, taken, currency, bold, takenLabel,
-                givenLabel)
-          ];
-          final detail = details[id];
-          if (detail is Map) {
-            widgets.add(_sourceDetail(detail, currency, images, bold));
-          }
-          widgets.add(pw.SizedBox(height: 7));
-          return widgets;
-        }),
+        if (isSummary)
+          _summaryTransactions(
+            transactions,
+            currency,
+            bold,
+            takenLabel,
+            givenLabel,
+          )
+        else
+          ...transactions.asMap().entries.expand((entry) {
+            final tx = entry.value;
+            final id = tx['id']?.toString() ?? '';
+            final taken = tx['type'] == 'taken';
+            final widgets = <pw.Widget>[
+              _transaction(entry.key + 1, tx, taken, currency, bold, takenLabel,
+                  givenLabel)
+            ];
+            final detail = details[id];
+            if (detail is Map) {
+              widgets.add(_sourceDetail(detail, currency, images, bold));
+            }
+            widgets.add(pw.SizedBox(height: 7));
+            return widgets;
+          }),
       ],
     ));
     return document.save();
@@ -189,6 +201,75 @@ class DebtLedgerPdf {
                       'الرصيد بعد الحركة: ${_money(tx['balance_after'])} $currency',
                       style: const pw.TextStyle(fontSize: 9))),
             ]),
+      );
+
+  static pw.Widget _summaryTransactions(
+    List<Map> transactions,
+    String currency,
+    pw.Font bold,
+    String takenLabel,
+    String givenLabel,
+  ) {
+    final headers = ['التاريخ', 'البيان', takenLabel, givenLabel, 'الرصيد'];
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: .6),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1.25),
+        1: pw.FlexColumnWidth(2.5),
+        2: pw.FlexColumnWidth(1.15),
+        3: pw.FlexColumnWidth(1.15),
+        4: pw.FlexColumnWidth(1.35),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _purple),
+          children: headers
+              .map((header) => _summaryCell(
+                    header,
+                    bold: bold,
+                    color: PdfColors.white,
+                    alignment: pw.Alignment.center,
+                  ))
+              .toList(),
+        ),
+        ...transactions.asMap().entries.map((entry) {
+          final tx = entry.value;
+          final taken = tx['type'] == 'taken';
+          final note = tx['note']?.toString().trim() ?? '';
+          return pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: entry.key.isEven ? PdfColors.white : _soft,
+            ),
+            children: [
+              _summaryCell(tx['transaction_date']?.toString() ?? '—'),
+              _summaryCell(note.isEmpty ? '—' : note),
+              _summaryCell(taken ? _money(tx['amount']) : '—',
+                  color: PdfColors.green700),
+              _summaryCell(taken ? '—' : _money(tx['amount']),
+                  color: PdfColors.red700),
+              _summaryCell('${_money(tx['balance_after'])} $currency',
+                  bold: bold),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
+  static pw.Widget _summaryCell(
+    String value, {
+    pw.Font? bold,
+    PdfColor color = _ink,
+    pw.Alignment alignment = pw.Alignment.centerRight,
+  }) =>
+      pw.Container(
+        alignment: alignment,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+        child: pw.Text(
+          value,
+          maxLines: 2,
+          style: pw.TextStyle(font: bold, fontSize: 8, color: color),
+        ),
       );
 
   static pw.Widget _sourceDetail(Map detail, String currency,

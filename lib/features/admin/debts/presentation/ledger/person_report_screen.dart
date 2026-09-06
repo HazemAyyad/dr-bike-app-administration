@@ -45,33 +45,75 @@ class PersonReportScreen extends StatelessWidget {
               detail.balanceFor(controller.selectedCurrency.value);
           final transactions = detail.transactions;
 
-          return Column(
+          return Stack(
             children: [
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 16.h),
-                  children: [
-                    _ReportHeader(
-                      controller: controller,
-                      stats: stats,
-                      currency: currency,
+              Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(18.w, 8.h, 18.w, 16.h),
+                      children: [
+                        _ReportHeader(
+                          controller: controller,
+                          stats: stats,
+                          currency: currency,
+                        ),
+                        SizedBox(height: 22.h),
+                        _TransactionsTitle(count: transactions.length),
+                        SizedBox(height: 12.h),
+                        if (transactions.isEmpty)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 48.h),
+                            child:
+                                Center(child: Text('ledgerNoTransactions'.tr)),
+                          )
+                        else
+                          ...transactions.map(
+                            (tx) => _ReportTransactionRow(transaction: tx),
+                          ),
+                      ],
                     ),
-                    SizedBox(height: 22.h),
-                    _TransactionsTitle(count: transactions.length),
-                    SizedBox(height: 12.h),
-                    if (transactions.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 48.h),
-                        child: Center(child: Text('ledgerNoTransactions'.tr)),
-                      )
-                    else
-                      ...transactions.map(
-                        (tx) => _ReportTransactionRow(transaction: tx),
-                      ),
-                  ],
-                ),
+                  ),
+                  _ReportBottomActions(controller: controller),
+                ],
               ),
-              _ReportBottomActions(controller: controller),
+              if (controller.isGeneratingReport.value) ...[
+                const Positioned.fill(
+                  child: ModalBarrier(
+                    dismissible: false,
+                    color: Color(0x66000000),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Center(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 26.w,
+                        vertical: 22.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          SizedBox(height: 16.h),
+                          Text(
+                            'جاري تجهيز التقرير وفتحه...',
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: LedgerColors.primaryBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           );
         }),
@@ -444,10 +486,9 @@ class _ReportBottomActions extends StatelessWidget {
                   Get.bottomSheet(
                     ReportDetailLevelSheet(
                       onSelected: (detailLevel) async {
-                        final file = await controller.downloadPersonReport(
+                        await controller.generateAndOpenPersonReport(
                           detailLevel: detailLevel,
                         );
-                        if (file != null) controller.openDownloadedReport(file);
                       },
                     ),
                     isScrollControlled: true,
