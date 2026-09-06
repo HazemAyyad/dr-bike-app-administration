@@ -381,24 +381,27 @@ class _SwipeInstantSaleRow extends StatefulWidget {
 }
 
 class _SwipeInstantSaleRowState extends State<_SwipeInstantSaleRow> {
+  static const double _dragResistance = .65;
+  static const Duration _settleDuration = Duration(milliseconds: 320);
   double offset = 0;
 
   double get revealWidth => widget.actions.length * 66.0;
 
   void _update(DragUpdateDetails details) {
     setState(() {
-      offset = (offset + details.delta.dx).clamp(-revealWidth, revealWidth);
+      offset = (offset + details.delta.dx * _dragResistance)
+          .clamp(-revealWidth, revealWidth);
     });
   }
 
   void _finish(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
-    final open = offset.abs() > revealWidth * .25 || velocity.abs() > 350;
+    final open = offset.abs() > revealWidth * .32 || velocity.abs() > 500;
     setState(() {
       if (!open) {
         offset = 0;
       } else {
-        final direction = velocity.abs() > 350 ? velocity.sign : offset.sign;
+        final direction = velocity.abs() > 500 ? velocity.sign : offset.sign;
         offset = direction * revealWidth;
       }
     });
@@ -435,7 +438,7 @@ class _SwipeInstantSaleRowState extends State<_SwipeInstantSaleRow> {
             ),
           ),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 170),
+            duration: _settleDuration,
             curve: Curves.easeOut,
             transform: Matrix4.translationValues(offset, 0, 0),
             child: GestureDetector(

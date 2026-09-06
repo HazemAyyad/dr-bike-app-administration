@@ -33,6 +33,8 @@ class EmployeeCardSwipe extends StatefulWidget {
 
 class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
   static const double _actionWidth = 60;
+  static const double _dragResistance = .65;
+  static const Duration _settleDuration = Duration(milliseconds: 320);
   double _offset = 0;
 
   double get _revealWidth => widget.actions.length * (_actionWidth + 4);
@@ -40,15 +42,24 @@ class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
   void _update(DragUpdateDetails details) {
     if (widget.actions.isEmpty) return;
     setState(() {
-      _offset = (_offset + details.delta.dx).clamp(0, _revealWidth);
+      _offset = (_offset + details.delta.dx * _dragResistance)
+          .clamp(-_revealWidth, _revealWidth);
     });
   }
 
   void _finish(DragEndDetails details) {
     if (widget.actions.isEmpty) return;
+    final velocity = details.primaryVelocity ?? 0;
     final shouldOpen =
-        _offset > _revealWidth * .25 || (details.primaryVelocity ?? 0) > 350;
-    setState(() => _offset = shouldOpen ? _revealWidth : 0);
+        _offset.abs() > _revealWidth * .32 || velocity.abs() > 500;
+    setState(() {
+      if (!shouldOpen) {
+        _offset = 0;
+      } else {
+        final direction = velocity.abs() > 500 ? velocity.sign : _offset.sign;
+        _offset = direction * _revealWidth;
+      }
+    });
   }
 
   @override
@@ -58,10 +69,11 @@ class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4.r),
       child: Stack(
-        alignment: Alignment.centerLeft,
+        alignment: _offset >= 0 ? Alignment.centerLeft : Alignment.centerRight,
         children: [
           Positioned(
-            left: 0,
+            left: _offset >= 0 ? 0 : null,
+            right: _offset < 0 ? 0 : null,
             child: Row(
               children: widget.actions
                   .map(
@@ -80,7 +92,7 @@ class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
             ),
           ),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: _settleDuration,
             curve: Curves.easeOut,
             color: widget.backgroundColor,
             transform: Matrix4.translationValues(_offset, 0, 0),

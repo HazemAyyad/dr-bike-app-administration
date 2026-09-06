@@ -76,8 +76,6 @@ class BillDetailsScreen extends GetView<SalesController> {
                 ],
                 SizedBox(height: 12.h),
                 _SalesInfoGrid(invoice: invoice, dash: _dash),
-                SizedBox(height: 14.h),
-                _InvoiceHistorySection(invoice: invoice),
                 SizedBox(height: 18.h),
                 const _SalesSectionTitle(
                     icon: Icons.shopping_bag_outlined,
@@ -132,6 +130,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                       fmt.format(double.tryParse(invoice.remainingAmount) ?? 0),
                   total: fmt.format(double.tryParse(invoice.totalCost) ?? 0),
                 ),
+                SizedBox(height: 14.h),
+                _InvoiceHistorySection(invoice: invoice),
               ],
             ),
           );
@@ -151,13 +151,14 @@ class _InvoiceHistorySection extends StatefulWidget {
 }
 
 class _InvoiceHistorySectionState extends State<_InvoiceHistorySection> {
-  bool expanded = false;
+  bool isOpen = false;
+  bool showAll = false;
 
   @override
   Widget build(BuildContext context) {
     final history = widget.invoice.history;
     final visible =
-        expanded || history.length <= 3 ? history : history.take(3).toList();
+        showAll || history.length <= 3 ? history : history.take(3).toList();
 
     return Container(
       padding: EdgeInsets.all(14.w),
@@ -169,31 +170,70 @@ class _InvoiceHistorySectionState extends State<_InvoiceHistorySection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SalesTileTitle(
-            icon: Icons.history_rounded,
-            title: 'سجل الفاتورة',
-          ),
-          SizedBox(height: 10.h),
-          if (history.isEmpty)
-            Text(
-              'لا توجد حركات محفوظة لهذه الفاتورة',
-              style: TextStyle(
-                color: const Color(0xFF7A8092),
-                fontSize: 11.sp,
+          InkWell(
+            onTap: () => setState(() => isOpen = !isOpen),
+            borderRadius: BorderRadius.circular(10.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 2.h),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: _SalesTileTitle(
+                      icon: Icons.history_rounded,
+                      title: 'سجل الفاتورة',
+                    ),
+                  ),
+                  if (history.isNotEmpty)
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withValues(alpha: .08),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Text(
+                        '${history.length}',
+                        style: TextStyle(
+                          color: AppColors.primaryColor,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  SizedBox(width: 6.w),
+                  Icon(
+                    isOpen
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.primaryColor,
+                  ),
+                ],
               ),
-            )
-          else
-            ...visible.map((entry) => _InvoiceHistoryTile(entry)),
-          if (history.length > 3)
-            TextButton.icon(
-              onPressed: () => setState(() => expanded = !expanded),
-              icon: Icon(
-                expanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.more_horiz_rounded,
-              ),
-              label: Text(expanded ? 'عرض أقل' : 'عرض كل السجل'),
             ),
+          ),
+          if (isOpen) ...[
+            SizedBox(height: 10.h),
+            if (history.isEmpty)
+              Text(
+                'لا توجد حركات محفوظة لهذه الفاتورة',
+                style: TextStyle(
+                  color: const Color(0xFF7A8092),
+                  fontSize: 11.sp,
+                ),
+              )
+            else
+              ...visible.map((entry) => _InvoiceHistoryTile(entry)),
+            if (history.length > 3)
+              TextButton.icon(
+                onPressed: () => setState(() => showAll = !showAll),
+                icon: Icon(
+                  showAll
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.more_horiz_rounded,
+                ),
+                label: Text(showAll ? 'عرض أقل' : 'عرض كل السجل'),
+              ),
+          ],
         ],
       ),
     );

@@ -542,6 +542,8 @@ class _SwipeMaintenanceCard extends StatefulWidget {
 class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
   double offset = 0;
   static const double revealWidth = 146;
+  static const double dragResistance = .65;
+  static const Duration settleDuration = Duration(milliseconds: 320);
 
   @override
   void didUpdateWidget(covariant _SwipeMaintenanceCard oldWidget) {
@@ -551,14 +553,24 @@ class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
 
   void _update(DragUpdateDetails details) {
     if (!widget.enabled) return;
-    setState(() => offset = (offset + details.delta.dx).clamp(0, revealWidth));
+    setState(() {
+      offset = (offset + details.delta.dx * dragResistance)
+          .clamp(-revealWidth, revealWidth);
+    });
   }
 
   void _finish(DragEndDetails details) {
     if (!widget.enabled) return;
-    final shouldOpen =
-        offset > revealWidth * .34 || (details.primaryVelocity ?? 0) > 350;
-    setState(() => offset = shouldOpen ? revealWidth : 0);
+    final velocity = details.primaryVelocity ?? 0;
+    final shouldOpen = offset.abs() > revealWidth * .34 || velocity.abs() > 500;
+    setState(() {
+      if (!shouldOpen) {
+        offset = 0;
+      } else {
+        final direction = velocity.abs() > 500 ? velocity.sign : offset.sign;
+        offset = direction * revealWidth;
+      }
+    });
   }
 
   @override
@@ -567,11 +579,13 @@ class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.r),
           child: Stack(
-            alignment: Alignment.centerLeft,
+            alignment:
+                offset >= 0 ? Alignment.centerLeft : Alignment.centerRight,
             children: [
               if (widget.enabled)
                 Positioned(
-                  left: 0,
+                  left: offset >= 0 ? 0 : null,
+                  right: offset < 0 ? 0 : null,
                   child: Row(
                     children: [
                       _MaintenanceSwipeAction(
@@ -597,7 +611,7 @@ class _SwipeMaintenanceCardState extends State<_SwipeMaintenanceCard> {
                   ),
                 ),
               AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: settleDuration,
                 curve: Curves.easeOut,
                 transform: Matrix4.translationValues(offset, 0, 0),
                 child: GestureDetector(
