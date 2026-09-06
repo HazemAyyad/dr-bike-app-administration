@@ -8,7 +8,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
-import '../../../sales/presentation/utils/instant_sale_display.dart';
 import '../../data/sales_return_models.dart';
 import '../controllers/sales_returns_controller.dart';
 import '../utils/sales_return_invoice_pdf.dart';
@@ -35,70 +34,15 @@ class SalesReturnsList extends GetView<SalesReturnsController> {
           child: Center(child: Text('لا توجد فواتير مرتجع مبيعات')),
         );
       }
-      final groups = <String, List<SalesReturnRecord>>{};
-      for (final row in rows) {
-        groups.putIfAbsent(_returnDateKey(row.completedAt), () => []).add(row);
-      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _ReturnsTableHeader(),
-          for (var i = 0; i < groups.entries.length; i++) ...[
-            if (i > 0) SizedBox(height: 14.h),
-            _ReturnDateHeader(
-              dateKey: groups.entries.elementAt(i).key,
-              count: groups.entries.elementAt(i).value.length,
-            ),
-            ...groups.entries.elementAt(i).value.map(
-                  (row) => _SalesReturnRow(record: row),
-                ),
-          ],
+          ...rows.map((row) => _SalesReturnRow(record: row)),
           SizedBox(height: 4.h),
         ],
       );
     });
-  }
-}
-
-class _ReturnDateHeader extends StatelessWidget {
-  const _ReturnDateHeader({required this.dateKey, required this.count});
-
-  final String dateKey;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final formatted = formatInstantSalesDateHeader(
-      dateKey,
-      invoiceCount: count,
-    );
-    final separator = formatted.lastIndexOf(' · ');
-    final date = separator < 0 ? formatted : formatted.substring(0, separator);
-    final bg = ThemeService.isDark.value
-        ? salesReturnColor.withValues(alpha: .16)
-        : salesReturnColor.withValues(alpha: .07);
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade300),
-          right: BorderSide(color: Colors.grey.shade300),
-          bottom: BorderSide(color: Colors.grey.shade300),
-        ),
-      ),
-      child: Text(
-        '$date · $count ${count == 1 ? 'فاتورة مرتجع' : 'فواتير مرتجع'}',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: salesReturnColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 13.sp,
-        ),
-      ),
-    );
   }
 }
 
@@ -119,12 +63,11 @@ class _ReturnsTableHeader extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          _ReturnHeaderCell('الفاتورة', flex: 2),
-          _ReturnHeaderCell('التاريخ / الوقت', flex: 2),
+          _ReturnHeaderCell('الفاتورة', flex: 4),
+          _ReturnHeaderCell('فاتورة البيع', flex: 3),
           _ReturnHeaderCell('الإجمالي', flex: 2),
           _ReturnHeaderCell('القطع', flex: 2),
-          _ReturnHeaderCell('الطرف', flex: 2),
-          _ReturnHeaderCell('الحالة', flex: 3),
+          _ReturnHeaderCell('الطرف', flex: 3),
         ],
       ),
     );
@@ -181,58 +124,35 @@ class _SalesReturnRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                flex: 2,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
-                      decoration: BoxDecoration(
-                        color:
-                            cancelled ? Colors.grey.shade600 : salesReturnColor,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        cancelled ? 'مرتجع ملغى' : 'مرتجع مبيعات',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 3.h),
-                    Text(
-                      record.serialNumber,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: salesReturnColor,
-                        decoration: TextDecoration.underline,
-                        decorationColor: salesReturnColor,
-                      ),
-                    ),
-                  ],
+                flex: 4,
+                child: Text(
+                  record.serialNumber,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                    color: salesReturnColor,
+                    decoration: TextDecoration.underline,
+                    decorationColor: salesReturnColor,
+                  ),
                 ),
               ),
               Expanded(
-                flex: 2,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_date(record.completedAt),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 10.sp)),
-                    SizedBox(height: 2.h),
-                    Text(_time(record.completedAt),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 11.sp, fontWeight: FontWeight.w700)),
-                  ],
+                flex: 3,
+                child: Text(
+                  record.sourceInvoiceNumbers.isEmpty
+                      ? '—'
+                      : record.sourceInvoiceNumbers.join('\n'),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryColor,
+                  ),
                 ),
               ),
               Expanded(
@@ -263,7 +183,7 @@ class _SalesReturnRow extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -281,20 +201,6 @@ class _SalesReturnRow extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11.sp)),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _ReturnStatusChip(cancelled: cancelled),
-                    SizedBox(width: 2.w),
-                    _ReturnOperationInfo(record: record),
-                    Icon(Icons.chevron_left_rounded,
-                        size: 20.sp, color: salesReturnColor),
                   ],
                 ),
               ),
@@ -334,133 +240,6 @@ class _SalesReturnRow extends StatelessWidget {
       ),
     );
   }
-
-  String _date(String raw) {
-    final parsed = DateTime.tryParse(raw);
-    if (parsed == null) return raw;
-    final local = parsed.toLocal();
-    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
-  }
-
-  String _time(String raw) {
-    final parsed = DateTime.tryParse(raw)?.toLocal();
-    if (parsed == null) return '—';
-    return '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-class _ReturnStatusChip extends StatelessWidget {
-  const _ReturnStatusChip({required this.cancelled});
-
-  final bool cancelled;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = cancelled ? Colors.red : const Color(0xFF1B8A4A);
-    final label = cancelled ? 'ملغى' : 'فعال';
-    return Tooltip(
-      message: label,
-      child: Container(
-        width: 30.w,
-        height: 30.w,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .12),
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: .35)),
-        ),
-        child: Icon(
-          cancelled ? Icons.cancel_outlined : Icons.check_circle_outline,
-          size: 19.sp,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _ReturnOperationInfo extends StatelessWidget {
-  const _ReturnOperationInfo({required this.record});
-
-  final SalesReturnRecord record;
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: 'تفاصيل العملية',
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14.r),
-          onTap: () => showDialog<void>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              title: const Text('تفاصيل عملية المرتجع'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _ReturnInfoRow(
-                      label: 'المعاد نقدًا',
-                      value: '${record.cashRefundAmount.toStringAsFixed(2)} ₪'),
-                  SizedBox(height: 8.h),
-                  _ReturnInfoRow(
-                      label: 'الرصيد المسجل',
-                      value: '${record.creditAmount.toStringAsFixed(2)} ₪'),
-                  SizedBox(height: 8.h),
-                  _ReturnInfoRow(
-                      label: 'صندوق الرد',
-                      value: record.refundBoxName.isEmpty
-                          ? '—'
-                          : record.refundBoxName),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('إغلاق'),
-                ),
-              ],
-            ),
-          ),
-          child: SizedBox(
-            width: 28.w,
-            height: 28.w,
-            child: Icon(Icons.info_outline,
-                size: 20.sp, color: AppColors.primaryColor),
-          ),
-        ),
-      );
-}
-
-class _ReturnInfoRow extends StatelessWidget {
-  const _ReturnInfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 90.w,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600)),
-          ),
-          Expanded(
-            child: Text(value,
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      );
-}
-
-String _returnDateKey(String raw) {
-  final parsed = DateTime.tryParse(raw)?.toLocal();
-  if (parsed == null) return raw;
-  final month = parsed.month.toString().padLeft(2, '0');
-  final day = parsed.day.toString().padLeft(2, '0');
-  return '${parsed.year}-$month-$day';
 }
 
 class _ReturnDetails extends StatelessWidget {

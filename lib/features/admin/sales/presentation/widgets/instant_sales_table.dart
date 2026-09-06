@@ -11,7 +11,7 @@ import '../utils/sales_amount_format.dart';
 import 'instant_sale_audit_info.dart';
 import 'instant_sale_lines_modal.dart';
 
-/// Table-style list for instant sales, grouped by calendar day.
+/// Table-style list for instant sales on the selected calendar day.
 class InstantSalesTable extends GetView<SalesController> {
   const InstantSalesTable({Key? key}) : super(key: key);
 
@@ -31,64 +31,19 @@ class InstantSalesTable extends GetView<SalesController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _TableHeaderRow(),
-          for (var i = 0; i < groups.length; i++) ...[
-            if (i > 0) SizedBox(height: 14.h),
-            _DateGroupHeader(
-              label: formatInstantSalesDateHeader(
-                groups[i].key,
-                invoiceCount: groups[i].value.length,
+          for (final group in groups)
+            ...group.value.map(
+              (sale) => _InstantSaleTableRow(
+                sale: sale,
+                onInvoiceTap: () => showInstantSaleLinesModal(context, sale),
+                onLongPress: () =>
+                    controller.showInstantSaleActionsSheet(context, sale),
               ),
             ),
-            ...groups[i].value.map(
-                  (sale) => _InstantSaleTableRow(
-                    sale: sale,
-                    onInvoiceTap: () =>
-                        showInstantSaleLinesModal(context, sale),
-                    onLongPress: () =>
-                        controller.showInstantSaleActionsSheet(context, sale),
-                  ),
-                ),
-          ],
           SizedBox(height: 4.h),
         ],
       );
     });
-  }
-}
-
-class _DateGroupHeader extends StatelessWidget {
-  final String label;
-
-  const _DateGroupHeader({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = ThemeService.isDark.value
-        ? AppColors.primaryColor.withValues(alpha: 0.15)
-        : AppColors.primaryColor.withValues(alpha: 0.08);
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade300),
-          right: BorderSide(color: Colors.grey.shade300),
-          bottom: BorderSide(color: Colors.grey.shade300),
-        ),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppColors.primaryColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 13.sp,
-        ),
-      ),
-    );
   }
 }
 

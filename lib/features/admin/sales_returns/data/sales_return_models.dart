@@ -140,6 +140,7 @@ class SalesReturnRecord {
     required this.refundBoxName,
     required this.items,
     required this.sourceInvoices,
+    required this.sourceInvoiceNumbers,
     required this.accounting,
     required this.partnerId,
     required this.cancelledAt,
@@ -165,6 +166,7 @@ class SalesReturnRecord {
   final String refundBoxName;
   final List<SalesReturnRecordItem> items;
   final List<SalesReturnSourceInvoice> sourceInvoices;
+  final List<String> sourceInvoiceNumbers;
   final SalesReturnAccounting accounting;
   final int partnerId;
   final String cancelledAt;
@@ -214,6 +216,11 @@ class SalesReturnRecord {
           .map((row) =>
               SalesReturnSourceInvoice.fromJson(Map<String, dynamic>.from(row)))
           .toList(),
+      sourceInvoiceNumbers:
+          (json['source_invoice_numbers'] as List? ?? const [])
+              .map((value) => '$value')
+              .where((value) => value.trim().isNotEmpty)
+              .toList(),
       accounting: SalesReturnAccounting.fromJson(
         json['accounting'] is Map
             ? Map<String, dynamic>.from(json['accounting'] as Map)
