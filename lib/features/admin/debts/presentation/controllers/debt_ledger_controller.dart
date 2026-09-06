@@ -40,8 +40,6 @@ import '../ledger/transaction_entry_screen.dart';
 import '../ledger/ledger_pick_person_sheet.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../../../core/databases/api/api_consumer.dart';
-import '../../../../../core/databases/api/end_points.dart';
 
 enum LedgerReportDetailLevel {
   summary,
@@ -299,24 +297,23 @@ class DebtLedgerController extends GetxController {
       type == 'taken' ? takenLabel.value : givenLabel.value;
 
   Future<void> loadDebtLabels() async {
-    try {
-      final response = await Get.find<ApiConsumer>().get(
-        EndPoints.adminUiPreferences,
-      );
-      final data = response.data['data'] as Map? ?? const {};
-      final labels = data['debt_ledger'] as Map? ?? const {};
-      takenLabel.value =
-          labels['taken_label']?.toString().trim().isNotEmpty == true
-              ? labels['taken_label'].toString().trim()
-              : 'أخذت';
-      givenLabel.value =
-          labels['given_label']?.toString().trim().isNotEmpty == true
-              ? labels['given_label'].toString().trim()
-              : 'أعطيت';
-    } catch (_) {
-      takenLabel.value = 'أخذت';
-      givenLabel.value = 'أعطيت';
-    }
+    final result = await repository.getDebtLabels();
+    result.fold(
+      (_) {
+        takenLabel.value = 'أخذت';
+        givenLabel.value = 'أعطيت';
+      },
+      (labels) {
+        takenLabel.value =
+            labels['taken_label']?.toString().trim().isNotEmpty == true
+                ? labels['taken_label'].toString().trim()
+                : 'أخذت';
+        givenLabel.value =
+            labels['given_label']?.toString().trim().isNotEmpty == true
+                ? labels['given_label'].toString().trim()
+                : 'أعطيت';
+      },
+    );
   }
 
   Future<bool> saveDebtLabels(String taken, String given) async {
@@ -326,32 +323,26 @@ class DebtLedgerController extends GetxController {
     isSavingDebtLabels.value = true;
     debtLabelsSaveError.value = '';
     try {
-      final response = await Get.find<ApiConsumer>().put(
-        EndPoints.adminUiPreferences,
-        data: {
-          'debt_ledger': {
-            'taken_label': nextTaken,
-            'given_label': nextGiven,
-          },
+      final result = await repository.saveDebtLabels(
+        takenLabel: nextTaken,
+        givenLabel: nextGiven,
+      );
+      var saved = false;
+      result.fold(
+        (failure) => debtLabelsSaveError.value = failure.errMessage,
+        (labels) {
+          takenLabel.value =
+              labels['taken_label']?.toString().trim().isNotEmpty == true
+                  ? labels['taken_label'].toString().trim()
+                  : nextTaken;
+          givenLabel.value =
+              labels['given_label']?.toString().trim().isNotEmpty == true
+                  ? labels['given_label'].toString().trim()
+                  : nextGiven;
+          saved = true;
         },
       );
-      final payload = response.data as Map? ?? const {};
-      if (payload['status']?.toString() != 'success') {
-        throw StateError(
-          payload['message']?.toString() ?? 'لم يتم حفظ مسميات الديون',
-        );
-      }
-      final data = payload['data'] as Map? ?? const {};
-      final labels = data['debt_ledger'] as Map? ?? const {};
-      takenLabel.value =
-          labels['taken_label']?.toString().trim().isNotEmpty == true
-              ? labels['taken_label'].toString().trim()
-              : nextTaken;
-      givenLabel.value =
-          labels['given_label']?.toString().trim().isNotEmpty == true
-              ? labels['given_label'].toString().trim()
-              : nextGiven;
-      return true;
+      return saved;
     } catch (error) {
       debtLabelsSaveError.value = error.toString().replaceFirst(
             RegExp(r'^[A-Za-z]+Exception:\s*'),

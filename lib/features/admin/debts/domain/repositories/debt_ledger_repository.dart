@@ -7,6 +7,11 @@ import '../../../../../core/errors/failure.dart';
 import '../../data/models/debt_ledger_models.dart';
 
 abstract class DebtLedgerRepository {
+  Future<Either<Failure, Map<String, String>>> getDebtLabels();
+  Future<Either<Failure, Map<String, String>>> saveDebtLabels({
+    required String takenLabel,
+    required String givenLabel,
+  });
   Future<Either<Failure, LedgerSummary>> getSummary();
   Future<Either<Failure, List<LedgerPerson>>> getPeople({
     required String type,

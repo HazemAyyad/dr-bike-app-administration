@@ -15,6 +15,27 @@ class DebtLedgerDatasource {
 
   DebtLedgerDatasource({required this.api});
 
+  Future<Map<String, dynamic>> getDebtLabels() async {
+    final response = await api.get(EndPoints.adminUiPreferences);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> saveDebtLabels({
+    required String takenLabel,
+    required String givenLabel,
+  }) async {
+    final response = await api.put(
+      EndPoints.adminUiPreferences,
+      data: {
+        'debt_ledger': {
+          'taken_label': takenLabel,
+          'given_label': givenLabel,
+        },
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getSummary() async {
     try {
       final response = await api.get(EndPoints.debtLedgerSummary);

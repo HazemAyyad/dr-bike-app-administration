@@ -19,6 +19,51 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     required this.datasource,
   });
 
+  Map<String, String> _labelsFromResponse(Map<String, dynamic> data) {
+    final payload = data['data'] as Map? ?? const {};
+    final labels = payload['debt_ledger'] as Map? ?? const {};
+    return {
+      'taken_label': labels['taken_label']?.toString() ?? 'أخذت',
+      'given_label': labels['given_label']?.toString() ?? 'أعطيت',
+    };
+  }
+
+  @override
+  Future<Either<Failure, Map<String, String>>> getDebtLabels() async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      final data = await datasource.getDebtLabels();
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return Right(_labelsFromResponse(data));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, String>>> saveDebtLabels({
+    required String takenLabel,
+    required String givenLabel,
+  }) async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      final data = await datasource.saveDebtLabels(
+        takenLabel: takenLabel,
+        givenLabel: givenLabel,
+      );
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return Right(_labelsFromResponse(data));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   @override
   Future<Either<Failure, LedgerSummary>> getSummary() async {
     if (!await networkInfo.isConnected) {

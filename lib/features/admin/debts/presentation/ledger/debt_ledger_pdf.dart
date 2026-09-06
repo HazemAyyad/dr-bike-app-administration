@@ -26,8 +26,10 @@ class DebtLedgerPdf {
           .asUint8List());
     } catch (_) {}
 
-    final details =
-        Map<String, dynamic>.from(report['source_details'] as Map? ?? {});
+    final rawDetails = report['source_details'];
+    final details = rawDetails is Map
+        ? Map<String, dynamic>.from(rawDetails)
+        : <String, dynamic>{};
     final isSummary = report['detail_level']?.toString() == 'summary';
     final includeImages =
         report['detail_level']?.toString() == 'detailed_with_images';
