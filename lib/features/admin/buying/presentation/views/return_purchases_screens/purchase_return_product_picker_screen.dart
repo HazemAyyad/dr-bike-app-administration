@@ -115,24 +115,52 @@ class _PurchaseReturnProductPickerScreenState
                 }
                 return LayoutBuilder(
                   builder: (context, constraints) {
-                    final gap = 6.w;
+                    final hGap = 6.w;
+                    final vGap = 6.h;
                     final horizontalPadding = 10.w;
                     final desktop = DesktopLayout.isDesktop(context);
+                    if (!desktop) {
+                      final tileWidth = ((constraints.maxWidth -
+                                  horizontalPadding * 2 -
+                                  hGap * 3) /
+                              4)
+                          .clamp(68.0, 96.0)
+                          .toDouble();
+                      return GridView.builder(
+                        key: ValueKey('return_picker_grid_$query'),
+                        scrollDirection: Axis.horizontal,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: horizontalPadding),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: hGap,
+                          crossAxisSpacing: vGap,
+                          mainAxisExtent: tileWidth,
+                        ),
+                        itemCount: visible.length,
+                        itemBuilder: (_, index) => _ReturnProductCard(
+                          group: visible[index],
+                          controller: controller,
+                          onChanged: () => setState(() {}),
+                        ),
+                      );
+                    }
                     final columns = DesktopLayout.gridColumnsForWidth(
                       constraints.maxWidth - horizontalPadding * 2,
-                      minTileWidth: 152.w,
-                      min: desktop ? 4 : 2,
-                      max: 10,
-                      gap: gap,
+                      minTileWidth: 190,
+                      min: 4,
+                      max: 8,
+                      gap: hGap,
                     );
                     return GridView.builder(
-                      padding: EdgeInsets.fromLTRB(
-                          horizontalPadding, 2.h, horizontalPadding, 90.h),
+                      key: ValueKey('return_picker_grid_$query'),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: horizontalPadding),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
-                        mainAxisSpacing: gap,
-                        crossAxisSpacing: gap,
-                        childAspectRatio: desktop ? .82 : .72,
+                        mainAxisSpacing: hGap,
+                        crossAxisSpacing: vGap,
+                        childAspectRatio: .76,
                       ),
                       itemCount: visible.length,
                       itemBuilder: (_, index) => _ReturnProductCard(
@@ -250,6 +278,7 @@ class _ReturnProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = DesktopLayout.isDesktop(context);
     final selected = group.selectedQuantity;
     final simpleLine = group.lines.length == 1 ? group.primary : null;
     return Material(
@@ -284,10 +313,11 @@ class _ReturnProductCard extends StatelessWidget {
                                 _ImagePlaceholder(iconSize: 24.sp),
                           ),
                     Positioned(
-                      bottom: 4.h,
-                      right: 4.w,
-                      child:
-                          _Badge(text: 'المخزون ${_quantity(group.available)}'),
+                      bottom: 3.h,
+                      right: 3.w,
+                      child: _ReturnStockBadge(
+                        quantity: _quantity(group.available),
+                      ),
                     ),
                     if (selected > 0)
                       Positioned(
@@ -318,7 +348,9 @@ class _ReturnProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                fontSize: 9.sp, fontWeight: FontWeight.w700),
+                                fontSize: desktop ? 11.sp : 8.sp,
+                                fontWeight: FontWeight.w600,
+                                height: 1.05),
                           ),
                         ),
                       ),
@@ -339,8 +371,11 @@ class _ReturnProductCard extends StatelessWidget {
                         height: 22.h,
                         child: TextButton(
                           onPressed: () => _openSelection(context),
-                          child: Text('اختيار المقاس واللون',
-                              style: TextStyle(fontSize: 8.sp)),
+                          child: Text(
+                              desktop ? 'اختيار المقاس واللون' : 'اختيار',
+                              style: TextStyle(
+                                  fontSize: desktop ? 9.sp : 7.sp,
+                                  fontWeight: FontWeight.w700)),
                         ),
                       ),
                   ],
@@ -500,6 +535,35 @@ class _Badge extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 8.sp,
                 fontWeight: FontWeight.w700)),
+      );
+}
+
+class _ReturnStockBadge extends StatelessWidget {
+  const _ReturnStockBadge({required this.quantity});
+
+  final String quantity;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+        decoration: BoxDecoration(
+          color: quantity == '0'
+              ? Colors.red.shade700
+              : Colors.black.withValues(alpha: .65),
+          borderRadius: BorderRadius.circular(6.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, color: Colors.white, size: 8.sp),
+            SizedBox(width: 2.w),
+            Text(quantity,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 7.5.sp,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
       );
 }
 
