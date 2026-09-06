@@ -322,6 +322,50 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  void selectPurchasePartner(SellerModel partner, {required bool isSeller}) {
+    selectPurchaseSource(PurchaseSourceModel(
+      id: partner.id,
+      name: partner.name,
+      phone: partner.phone,
+      hasSeller: isSeller,
+      hasCustomer: !isSeller,
+      sellerId: isSeller ? partner.id : null,
+      customerId: isSeller ? null : partner.id,
+    ));
+  }
+
+  Future<SellerModel?> addPurchasePartner(bool isSeller) async {
+    final currentIds = (isSeller ? allSellersList : allCustomersList)
+        .map((item) => item.id)
+        .toSet();
+    await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'popOnceOnSuccess': true,
+        'employeeType': isSeller ? 'seller' : 'customer',
+      },
+    );
+    final refreshed = await allCustomersSellersUsecase.call(
+      endPoint: isSeller ? EndPoints.all_sellers : EndPoints.all_customers,
+    );
+    if (isSeller) {
+      allSellersList.assignAll(refreshed);
+    } else {
+      allCustomersList.assignAll(refreshed);
+    }
+    purchaseSourcesStatus.value = purchaseSources.isEmpty
+        ? PurchaseLoadStatus.empty
+        : PurchaseLoadStatus.success;
+    update();
+
+    final added = refreshed.where((item) => !currentIds.contains(item.id));
+    if (added.isEmpty) return null;
+    return added
+        .reduce((first, second) => first.id > second.id ? first : second);
+  }
+
   void onPurchaseProductSearchChanged(String value) {
     purchaseProductSearch.value = value;
     update();

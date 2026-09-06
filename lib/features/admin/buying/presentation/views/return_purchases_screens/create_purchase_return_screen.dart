@@ -10,6 +10,8 @@ import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../checks/data/models/check_model.dart';
+import '../../../../widgets/unified_partner_selector.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../controllers/bills_controller.dart';
 import 'purchase_return_product_picker_screen.dart';
@@ -713,15 +715,35 @@ class _DirectSourceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bills = Get.find<BillsController>();
     return _SectionCard(
-      title: 'المورد والعملة',
-      icon: Icons.storefront_outlined,
+      title: 'الجهة والعملة',
+      icon: Icons.people_alt_outlined,
       child: Column(children: [
-        _DirectSupplierSelector(
-          supplier: controller.selectedDirectSupplier.value,
-          onTap: () => _showDirectSupplierPicker(
-            context,
-            controller: controller,
-            sellers: bills.allSellersList,
+        UnifiedPartnerSelector<SellerModel>(
+          customers: bills.allCustomersList,
+          sellers: bills.allSellersList,
+          selected: controller.selectedDirectPartner.value,
+          selectedIsSeller: controller.directPartnerIsSeller.value,
+          idOf: (item) => item.id,
+          nameOf: (item) => item.name,
+          phoneOf: (item) => item.phone,
+          onSelected: (item, isSeller) =>
+              controller.selectDirectPartner(item, isSeller: isSeller),
+          onCleared: () => controller.selectDirectPartner(null),
+          onAddRequested: (isSeller) async {
+            final added = await bills.addPurchasePartner(isSeller);
+            if (added != null) {
+              controller.selectDirectPartner(added, isSeller: isSeller);
+            }
+          },
+          title: 'الزبون أو المورد',
+          hintText: 'ابحث بالاسم أو رقم الهاتف',
+        ),
+        SizedBox(height: 6.h),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            'يمكنك اختيار المنتجات أولاً، وحدد الجهة قبل حفظ المرتجع.',
+            style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
           ),
         ),
         SizedBox(height: 10.h),
@@ -737,215 +759,6 @@ class _DirectSourceCard extends StatelessWidget {
               controller.directCurrency.value = value ?? 'شيكل',
         ),
       ]),
-    );
-  }
-}
-
-class _DirectSupplierSelector extends StatelessWidget {
-  const _DirectSupplierSelector({
-    required this.supplier,
-    required this.onTap,
-  });
-
-  final dynamic supplier;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = supplier != null;
-    final name = selected ? supplier.name.toString().trim() : '';
-    final phone = selected ? supplier.phone.toString().trim() : '';
-    return Material(
-      color: selected
-          ? AppColors.primaryColor.withValues(alpha: .05)
-          : Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(11.r),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(11.r),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(11.r),
-            border: Border.all(
-              color: selected
-                  ? AppColors.primaryColor.withValues(alpha: .45)
-                  : Colors.grey.shade300,
-            ),
-          ),
-          child: Row(children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primaryColor.withValues(alpha: .1),
-              child: const Icon(Icons.storefront_outlined,
-                  color: AppColors.primaryColor),
-            ),
-            SizedBox(width: 10.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    selected ? name : 'اختيار المورد',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  Text(
-                    selected
-                        ? (phone.isEmpty ? 'اضغط لتغيير المورد' : phone)
-                        : 'ابحث باسم المورد أو رقم الهاتف',
-                    style:
-                        TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ),
-            Icon(selected ? Icons.edit_outlined : Icons.search_rounded,
-                color: AppColors.primaryColor),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-Future<void> _showDirectSupplierPicker(
-  BuildContext context, {
-  required ReturnPurchasesController controller,
-  required List<dynamic> sellers,
-}) async {
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
-    ),
-    builder: (sheetContext) => _DirectSupplierPickerSheet(
-      sellers: sellers,
-      selectedId: controller.selectedDirectSupplier.value?.id,
-      onSelected: (seller) {
-        controller.selectedDirectSupplier.value = seller;
-        controller.update();
-        Navigator.of(sheetContext).pop();
-      },
-    ),
-  );
-}
-
-class _DirectSupplierPickerSheet extends StatefulWidget {
-  const _DirectSupplierPickerSheet({
-    required this.sellers,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final List<dynamic> sellers;
-  final dynamic selectedId;
-  final ValueChanged<dynamic> onSelected;
-
-  @override
-  State<_DirectSupplierPickerSheet> createState() =>
-      _DirectSupplierPickerSheetState();
-}
-
-class _DirectSupplierPickerSheetState
-    extends State<_DirectSupplierPickerSheet> {
-  final searchController = TextEditingController();
-  String query = '';
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final normalized = query.trim().toLowerCase();
-    final results = widget.sellers.where((seller) {
-      if (normalized.isEmpty) return true;
-      return seller.name.toString().toLowerCase().contains(normalized) ||
-          seller.phone.toString().toLowerCase().contains(normalized);
-    }).toList(growable: false);
-
-    return SafeArea(
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * .72,
-        child: Column(children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-            child: Row(children: [
-              Expanded(
-                child: Text('اختيار المورد',
-                    style: TextStyle(
-                        fontSize: 18.sp, fontWeight: FontWeight.w900)),
-              ),
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ]),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: SearchBar(
-              controller: searchController,
-              leading: const Icon(Icons.search_rounded),
-              hintText: 'ابحث باسم المورد أو رقم الهاتف',
-              elevation: WidgetStateProperty.all(0),
-              backgroundColor: WidgetStateProperty.all(Colors.grey.shade100),
-              onChanged: (value) => setState(() => query = value),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 6.h),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text('${results.length} مورد',
-                  style: TextStyle(
-                      fontSize: 11.sp,
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ),
-          Expanded(
-            child: results.isEmpty
-                ? const Center(child: Text('لا يوجد مورد مطابق للبحث'))
-                : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 20.h),
-                    itemCount: results.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (_, index) {
-                      final seller = results[index];
-                      final selected = seller.id == widget.selectedId;
-                      final phone = seller.phone.toString().trim();
-                      return ListTile(
-                        selected: selected,
-                        selectedTileColor:
-                            AppColors.primaryColor.withValues(alpha: .06),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.r)),
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              AppColors.primaryColor.withValues(alpha: .1),
-                          child: const Icon(Icons.storefront_outlined,
-                              color: AppColors.primaryColor),
-                        ),
-                        title: Text(seller.name.toString(),
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w800)),
-                        subtitle: phone.isEmpty ? null : Text(phone),
-                        trailing: selected
-                            ? const Icon(Icons.check_circle_rounded,
-                                color: Colors.green)
-                            : const Icon(Icons.chevron_left_rounded),
-                        onTap: () => widget.onSelected(seller),
-                      );
-                    },
-                  ),
-          ),
-        ]),
-      ),
     );
   }
 }

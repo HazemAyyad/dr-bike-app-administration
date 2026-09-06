@@ -11,6 +11,8 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../checks/data/models/check_model.dart';
+import '../../../../widgets/unified_partner_selector.dart';
 import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../binding/buying_binding.dart';
@@ -633,127 +635,78 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   }
 
   Future<void> _showSourceSheet(BuildContext context) async {
+    if (controller.purchaseSourcesStatus.value == PurchaseLoadStatus.idle ||
+        controller.purchaseSourcesStatus.value == PurchaseLoadStatus.error) {
+      await controller.getAllPurchaseSources();
+    }
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.72,
-          minChildSize: 0.42,
-          maxChildSize: 0.92,
-          expand: false,
-          builder: (_, scrollController) {
-            return GetBuilder<BillsController>(
-              builder: (controller) {
-                return DefaultTabController(
-                  length: 2,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(18.w, 18.h, 18.w, 24.h),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'اختيار المورد / الزبون',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 16.sp,
-                                    ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(),
-                              icon: const Icon(Icons.close_rounded),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10.h),
-                        Container(
-                          height: 44.h,
-                          padding: EdgeInsets.all(4.w),
-                          decoration: BoxDecoration(
-                            color:
-                                AppColors.primaryColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          child: TabBar(
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            indicator: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10.r),
-                              border: Border.all(
-                                color: AppColors.primaryColor
-                                    .withValues(alpha: 0.18),
-                              ),
-                            ),
-                            labelColor: AppColors.primaryColor,
-                            unselectedLabelColor: Colors.grey.shade700,
-                            labelStyle: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            tabs: const [
-                              Tab(text: 'مورد'),
-                              Tab(text: 'زبون'),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 12.h),
-                        Expanded(
-                          child: TabBarView(
-                            children: [
-                              _PurchaseSourceList(
-                                emptyText: 'لا يوجد موردين',
-                                items: controller.allSellersList,
-                                sourceBuilder: (seller) => PurchaseSourceModel(
-                                  id: seller.id,
-                                  name: seller.name,
-                                  phone: seller.phone,
-                                  hasSeller: true,
-                                  hasCustomer: false,
-                                  sellerId: seller.id,
-                                ),
-                                onSelected: (source) {
-                                  controller.selectPurchaseSource(source);
-                                  Navigator.of(sheetContext).pop();
-                                },
-                              ),
-                              _PurchaseSourceList(
-                                emptyText: 'لا يوجد زبائن',
-                                items: controller.allCustomersList,
-                                sourceBuilder: (customer) =>
-                                    PurchaseSourceModel(
-                                  id: customer.id,
-                                  name: customer.name,
-                                  phone: customer.phone,
-                                  hasSeller: false,
-                                  hasCustomer: true,
-                                  customerId: customer.id,
-                                ),
-                                onSelected: (source) {
-                                  controller.selectPurchaseSource(source);
-                                  Navigator.of(sheetContext).pop();
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+            ),
+            child: Container(
+              margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+              child: GetBuilder<BillsController>(
+                builder: (controller) {
+                  final source = controller.selectedPurchaseSource.value;
+                  final selected = source == null
+                      ? null
+                      : SellerModel(
+                          id: source.hasSeller
+                              ? (source.sellerId ?? source.id)
+                              : (source.customerId ?? source.id),
+                          name: source.name,
+                          phone: source.phone,
+                        );
+                  return SingleChildScrollView(
+                    child: UnifiedPartnerSelector<SellerModel>(
+                      customers: controller.allCustomersList,
+                      sellers: controller.allSellersList,
+                      selected: selected,
+                      selectedIsSeller: source?.hasSeller == true,
+                      idOf: (item) => item.id,
+                      nameOf: (item) => item.name,
+                      phoneOf: (item) => item.phone,
+                      onSelected: (item, isSeller) {
+                        controller.selectPurchasePartner(
+                          item,
+                          isSeller: isSeller,
+                        );
+                        Navigator.of(sheetContext).pop();
+                      },
+                      onCleared: () => controller.selectPurchaseSource(null),
+                      onAddRequested: (isSeller) async {
+                        final added =
+                            await controller.addPurchasePartner(isSeller);
+                        if (added == null) return;
+                        controller.selectPurchasePartner(
+                          added,
+                          isSeller: isSeller,
+                        );
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      },
+                      title: 'الزبون أو المورد',
+                      hintText: 'ابحث بالاسم أو رقم الهاتف',
                     ),
-                  ),
-                );
-              },
-            );
-          },
+                  );
+                },
+              ),
+            ),
+          ),
         );
       },
     );
@@ -944,131 +897,6 @@ class _PurchaseProductsContent extends GetView<BillsController> {
           },
         );
       },
-    );
-  }
-}
-
-class _PurchaseSourceList extends StatefulWidget {
-  const _PurchaseSourceList({
-    required this.emptyText,
-    required this.items,
-    required this.sourceBuilder,
-    required this.onSelected,
-  });
-
-  final String emptyText;
-  final List<dynamic> items;
-  final PurchaseSourceModel Function(dynamic item) sourceBuilder;
-  final ValueChanged<PurchaseSourceModel> onSelected;
-
-  @override
-  State<_PurchaseSourceList> createState() => _PurchaseSourceListState();
-}
-
-class _PurchaseSourceListState extends State<_PurchaseSourceList> {
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sources = widget.items.map(widget.sourceBuilder).where((source) {
-      final query = _query.trim().toLowerCase();
-      if (query.isEmpty) return true;
-      return source.name.toLowerCase().contains(query) ||
-          source.phone.toLowerCase().contains(query) ||
-          source.typeLabel.toLowerCase().contains(query);
-    }).toList();
-
-    return Column(
-      children: [
-        TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'ابحث بالاسم أو رقم الهاتف',
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _query.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _query = '');
-                    },
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 12.w,
-              vertical: 10.h,
-            ),
-          ),
-          onChanged: (value) => setState(() => _query = value),
-        ),
-        SizedBox(height: 10.h),
-        Expanded(
-          child: sources.isEmpty
-              ? Center(
-                  child: Text(
-                    _query.isEmpty ? widget.emptyText : 'لا توجد نتائج',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                )
-              : ListView.separated(
-                  itemCount: sources.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                  itemBuilder: (_, index) {
-                    final source = sources[index];
-                    return ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            AppColors.primaryColor.withValues(alpha: 0.1),
-                        child: Icon(
-                          source.hasSeller
-                              ? Icons.storefront_outlined
-                              : Icons.person_outline_rounded,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                      title: Text(
-                        source.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13.sp,
-                        ),
-                      ),
-                      subtitle: Text(
-                        [
-                          source.typeLabel,
-                          if (source.phone.isNotEmpty) source.phone,
-                        ].join(' • '),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.primaryColor,
-                      ),
-                      onTap: () => widget.onSelected(source),
-                    );
-                  },
-                ),
-        ),
-      ],
     );
   }
 }

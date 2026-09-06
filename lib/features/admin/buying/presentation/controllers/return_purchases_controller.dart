@@ -13,6 +13,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/helpers/product_image_utils.dart';
+import '../../../checks/data/models/check_model.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
@@ -57,7 +58,8 @@ class ReturnPurchasesController extends GetxController {
   final selectedBill = Rxn<Map<String, dynamic>>();
   final isDirectReturn = false.obs;
   final directItems = <PurchaseReturnDraftLine>[].obs;
-  final selectedDirectSupplier = Rxn<dynamic>();
+  final selectedDirectPartner = Rxn<SellerModel>();
+  final directPartnerIsSeller = true.obs;
   final directCurrency = 'شيكل'.obs;
   final reasonController = TextEditingController();
   final notesController = TextEditingController();
@@ -222,6 +224,12 @@ class ReturnPurchasesController extends GetxController {
     update();
   }
 
+  void selectDirectPartner(SellerModel? partner, {bool isSeller = true}) {
+    selectedDirectPartner.value = partner;
+    directPartnerIsSeller.value = isSeller;
+    update();
+  }
+
   Future<bool> saveDraft(BuildContext context, {bool confirm = false}) async {
     final direct = isDirectReturn.value;
     final bill = selectedBill.value;
@@ -229,13 +237,13 @@ class ReturnPurchasesController extends GetxController {
         .where((line) => line.quantity > 0)
         .toList();
     if ((!direct && bill == null) ||
-        (direct && selectedDirectSupplier.value == null) ||
+        (direct && selectedDirectPartner.value == null) ||
         lines.isEmpty) {
       Helpers.showCustomDialogError(
           context: context,
           title: 'تنبيه',
           message: direct
-              ? 'اختر المورد وكمية لصنف واحد على الأقل'
+              ? 'اختر الزبون أو المورد وكمية لصنف واحد على الأقل'
               : 'اختر فاتورة وكمية لصنف واحد على الأقل');
       return false;
     }
@@ -244,7 +252,12 @@ class ReturnPurchasesController extends GetxController {
     try {
       final result = asMap(await purchaseWorkflowUsecase.createReturnDraft(
         billId: direct ? null : asString(bill!['id']),
-        sellerId: direct ? asString(selectedDirectSupplier.value?.id) : null,
+        sellerId: direct && directPartnerIsSeller.value
+            ? asString(selectedDirectPartner.value?.id)
+            : null,
+        customerId: direct && !directPartnerIsSeller.value
+            ? asString(selectedDirectPartner.value?.id)
+            : null,
         currency: direct ? directCurrency.value : null,
         items: lines.map((line) => line.toRequest()).toList(),
         reason: reasonController.text.trim(),
