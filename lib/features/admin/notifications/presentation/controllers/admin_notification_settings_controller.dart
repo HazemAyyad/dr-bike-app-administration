@@ -31,6 +31,8 @@ class AdminNotificationSettingsController extends GetxController {
   final manualPush = true.obs;
   final manualSoundId = RxnInt();
   final employeeSearch = ''.obs;
+  final policySearch = ''.obs;
+  final policyCategory = 'all'.obs;
   final manualTitleController = TextEditingController();
   final manualBodyController = TextEditingController();
 
@@ -56,6 +58,30 @@ class AdminNotificationSettingsController extends GetxController {
     if (query.isEmpty) return employeeOptions.toList();
     return employeeOptions.where((row) {
       return '${row['name'] ?? ''} ${row['job_title'] ?? ''} ${row['email'] ?? ''}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
+  }
+
+  List<String> get policyCategories {
+    final values = catalog
+        .map((row) => row['category']?.toString() ?? '')
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList();
+    values.sort();
+    return values;
+  }
+
+  List<Map<String, dynamic>> get filteredPolicies {
+    final query = policySearch.value.trim().toLowerCase();
+    return catalog.where((row) {
+      final category = row['category']?.toString() ?? '';
+      if (policyCategory.value != 'all' && category != policyCategory.value) {
+        return false;
+      }
+      if (query.isEmpty) return true;
+      return '${row['name'] ?? ''} ${row['type'] ?? ''} $category'
           .toLowerCase()
           .contains(query);
     }).toList();
@@ -245,6 +271,21 @@ class AdminNotificationSettingsController extends GetxController {
       (row) => int.tryParse('${row['id']}') == id,
     );
     if (sound != null) await preview(sound);
+  }
+
+  Future<void> previewSoundById(int? id) async {
+    if (id == null) {
+      Get.snackbar('بدون صوت', 'هذا الخيار يرسل الإشعار بشكل صامت.');
+      return;
+    }
+    final sound = sounds.firstWhereOrNull(
+      (row) => int.tryParse('${row['id']}') == id,
+    );
+    if (sound == null) {
+      Get.snackbar('الصوت غير جاهز', 'تعذر العثور على الصوت المختار.');
+      return;
+    }
+    await preview(sound);
   }
 
   Future<void> retryDelivery(Map<String, dynamic> row) async {

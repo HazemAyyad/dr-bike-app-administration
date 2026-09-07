@@ -12,7 +12,7 @@ class AdminNotificationSettingsScreen
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 6,
+      length: 4,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5FA),
         appBar: CustomAppBar(
@@ -46,9 +46,9 @@ class AdminNotificationSettingsScreen
                   Tab(icon: Icon(Icons.campaign), text: 'إرسال'),
                   Tab(icon: Icon(Icons.tune), text: 'السياسات'),
                   Tab(icon: Icon(Icons.library_music), text: 'الأصوات'),
-                  Tab(icon: Icon(Icons.devices), text: 'أجهزة الاستقبال'),
-                  Tab(icon: Icon(Icons.route), text: 'حالة الإرسال'),
-                  Tab(icon: Icon(Icons.history), text: 'سجل التغييرات'),
+                  Tab(
+                      icon: Icon(Icons.monitor_heart_outlined),
+                      text: 'المتابعة'),
                 ],
               ),
             ),
@@ -62,9 +62,7 @@ class AdminNotificationSettingsScreen
                     _ManualSendTab(controller: controller),
                     _PoliciesTab(controller: controller),
                     _SoundsTab(controller: controller),
-                    _DevicesTab(controller: controller),
-                    _DeliveriesTab(controller: controller),
-                    _AuditsTab(controller: controller),
+                    _TechnicalTab(controller: controller),
                   ],
                 );
               }),
@@ -550,9 +548,71 @@ class _PoliciesTab extends StatelessWidget {
       onRefresh: controller.load,
       child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: controller.catalog.length,
+        itemCount: controller.filteredPolicies.length + 1,
         itemBuilder: (context, index) {
-          final item = controller.catalog[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      onChanged: (value) =>
+                          controller.policySearch.value = value,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث في السياسات',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: controller.policyCategory.value,
+                      decoration: InputDecoration(
+                        labelText: 'القسم',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: 'all',
+                          child: Text('الكل'),
+                        ),
+                        ...controller.policyCategories.map(
+                          (category) => DropdownMenuItem(
+                            value: category,
+                            child: Text(
+                              _categoryLabel(category),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) =>
+                          controller.policyCategory.value = value ?? 'all',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          if (controller.filteredPolicies.isEmpty) {
+            return const _EmptyState(label: 'لا توجد سياسات مطابقة');
+          }
+          final item = controller.filteredPolicies[index - 1];
           final policy =
               Map<String, dynamic>.from(item['policy'] as Map? ?? {});
           final type = item['type']?.toString() ?? '';
@@ -655,28 +715,48 @@ class _PoliciesTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: DropdownButtonFormField<int>(
-                          initialValue: int.tryParse('${policy['sound_id']}'),
-                          decoration: const InputDecoration(
-                            labelText: 'الصوت',
-                            isDense: true,
-                          ),
-                          items: controller.sounds
-                              .where((row) => row['is_active'] == true)
-                              .map(
-                                (row) => DropdownMenuItem<int>(
-                                  value: int.tryParse('${row['id']}'),
-                                  child: Text(
-                                    row['name']?.toString() ?? '',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) => controller.updatePolicy(
-                            type,
-                            {'sound_id': value},
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            DropdownButtonFormField<int>(
+                              initialValue:
+                                  int.tryParse('${policy['sound_id']}'),
+                              decoration: const InputDecoration(
+                                labelText: 'الصوت',
+                                isDense: true,
+                              ),
+                              items: controller.sounds
+                                  .where((row) => row['is_active'] == true)
+                                  .map(
+                                    (row) => DropdownMenuItem<int>(
+                                      value: int.tryParse('${row['id']}'),
+                                      child: Text(
+                                        row['name']?.toString() ?? '',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: controller.busyType.value == type
+                                  ? null
+                                  : (value) async {
+                                      await controller.previewSoundById(value);
+                                      await controller.updatePolicy(
+                                        type,
+                                        {'sound_id': value},
+                                      );
+                                    },
+                            ),
+                            TextButton.icon(
+                              onPressed: policy['sound_id'] == null
+                                  ? null
+                                  : () => controller.previewSoundById(
+                                        int.tryParse('${policy['sound_id']}'),
+                                      ),
+                              icon: const Icon(Icons.play_circle_outline),
+                              label: const Text('معاينة الصوت الحالي'),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -709,6 +789,47 @@ class _PoliciesTab extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _TechnicalTab extends StatelessWidget {
+  const _TechnicalTab({required this.controller});
+
+  final AdminNotificationSettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const TabBar(
+              dividerColor: Colors.transparent,
+              tabs: [
+                Tab(icon: Icon(Icons.devices), text: 'الأجهزة'),
+                Tab(icon: Icon(Icons.route), text: 'الإرسال'),
+                Tab(icon: Icon(Icons.history), text: 'السجل'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _DevicesTab(controller: controller),
+                _DeliveriesTab(controller: controller),
+                _AuditsTab(controller: controller),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
