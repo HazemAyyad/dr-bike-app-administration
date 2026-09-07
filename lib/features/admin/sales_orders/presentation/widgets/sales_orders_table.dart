@@ -685,9 +685,12 @@ class _OrderCard extends StatelessWidget {
                     SizedBox(height: 4.h),
                     Row(
                       children: [
-                        _Meta(
-                          icon: Icons.location_on_outlined,
-                          text: order.cityName ?? '—',
+                        Expanded(
+                          child: _Meta(
+                            icon: Icons.location_on_outlined,
+                            text: order.cityName ?? '—',
+                            expandText: true,
+                          ),
                         ),
                         SizedBox(width: 8.w),
                         _Meta(
@@ -826,10 +829,16 @@ class _OrderCard extends StatelessWidget {
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta({required this.icon, required this.text, this.strong = false});
+  const _Meta({
+    required this.icon,
+    required this.text,
+    this.strong = false,
+    this.expandText = false,
+  });
   final IconData icon;
   final String text;
   final bool strong;
+  final bool expandText;
 
   @override
   Widget build(BuildContext context) {
@@ -838,17 +847,21 @@ class _Meta extends StatelessWidget {
       children: [
         Icon(icon, size: 13.sp, color: Colors.grey.shade600),
         SizedBox(width: 2.w),
-        Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
-            color: strong ? AppColors.primaryColor : Colors.grey.shade700,
-          ),
-        ),
+        if (expandText) Expanded(child: _text()) else _text(),
       ],
+    );
+  }
+
+  Widget _text() {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 10.sp,
+        fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
+        color: strong ? AppColors.primaryColor : Colors.grey.shade700,
+      ),
     );
   }
 }
