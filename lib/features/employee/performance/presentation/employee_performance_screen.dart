@@ -58,6 +58,8 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
                       if (data != null) ...[
                         _monthlyChart(data.monthlyTrend),
                         SizedBox(height: 14.h),
+                        _pointsCard(data.pointsSummary),
+                        SizedBox(height: 14.h),
                         _sections(data.sections),
                         if (data.section('social') != null) ...[
                           SizedBox(height: 14.h),
@@ -336,6 +338,188 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _pointsCard(EmployeePerformancePointsSummary points) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFF6F1FF)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFE5DAFF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6730D7).withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: const Icon(
+                  Icons.stars_rounded,
+                  color: Color(0xFF6730D7),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              const Expanded(
+                child: Text(
+                  'نقاطي خلال الفترة',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Text(
+                'الرصيد ${points.lifetimeNet}',
+                style: const TextStyle(
+                  color: Color(0xFF6730D7),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              _pointsMetric(
+                'مكتسبة',
+                points.earned,
+                const Color(0xFF15996E),
+                Icons.add_circle_outline,
+              ),
+              SizedBox(width: 8.w),
+              _pointsMetric(
+                'مخصومة',
+                points.deducted,
+                const Color(0xFFD94A4F),
+                Icons.remove_circle_outline,
+              ),
+              SizedBox(width: 8.w),
+              _pointsMetric(
+                'الصافي',
+                points.net,
+                points.net < 0
+                    ? const Color(0xFFD94A4F)
+                    : const Color(0xFF6730D7),
+                Icons.balance_rounded,
+                signed: true,
+              ),
+            ],
+          ),
+          if (!points.available) ...[
+            SizedBox(height: 12.h),
+            const Text(
+              'سجل النقاط غير متوفر حاليًا.',
+              style: TextStyle(color: Color(0xFF777287)),
+            ),
+          ] else if (points.movements.isEmpty) ...[
+            SizedBox(height: 12.h),
+            const Text(
+              'لا توجد حركات نقاط ضمن الفترة المختارة.',
+              style: TextStyle(color: Color(0xFF777287)),
+            ),
+          ] else ...[
+            SizedBox(height: 16.h),
+            const Text(
+              'آخر الحركات',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            SizedBox(height: 7.h),
+            ...points.movements.map(_pointMovementRow),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _pointsMetric(
+    String label,
+    int value,
+    Color color,
+    IconData icon, {
+    bool signed = false,
+  }) {
+    final valueText = signed && value > 0 ? '+$value' : '$value';
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 7.w),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 20.w),
+            SizedBox(height: 5.h),
+            Text(
+              valueText,
+              style: TextStyle(
+                color: color,
+                fontSize: 20.sp,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF6F697C)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pointMovementRow(EmployeePerformancePointMovement movement) {
+    final color = movement.isAdd
+        ? const Color(0xFF15996E)
+        : const Color(0xFFD94A4F);
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        children: [
+          Icon(
+            movement.isAdd
+                ? Icons.arrow_circle_up_rounded
+                : Icons.arrow_circle_down_rounded,
+            color: color,
+            size: 22.w,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  movement.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                if (movement.date.isNotEmpty)
+                  Text(
+                    movement.date,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF8B8495),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            '${movement.isAdd ? '+' : '-'}${movement.points}',
+            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );

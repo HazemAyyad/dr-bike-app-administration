@@ -6,6 +6,7 @@ class EmployeePerformanceModel {
     required this.sections,
     required this.improvementTip,
     required this.monthlyTrend,
+    required this.pointsSummary,
   });
 
   final double? score;
@@ -14,6 +15,7 @@ class EmployeePerformanceModel {
   final List<EmployeePerformanceSection> sections;
   final String improvementTip;
   final List<EmployeePerformanceTrendPoint> monthlyTrend;
+  final EmployeePerformancePointsSummary pointsSummary;
 
   factory EmployeePerformanceModel.fromJson(Map<String, dynamic> json) {
     final rating = _map(json['rating']);
@@ -35,6 +37,9 @@ class EmployeePerformanceModel {
           : const [],
       improvementTip: '${json['improvement_tip'] ?? ''}',
       monthlyTrend: _trendPoints(json['monthly_trend']),
+      pointsSummary: EmployeePerformancePointsSummary.fromJson(
+        _map(json['points_summary']),
+      ),
     );
   }
 
@@ -44,6 +49,68 @@ class EmployeePerformanceModel {
     }
     return null;
   }
+}
+
+class EmployeePerformancePointsSummary {
+  const EmployeePerformancePointsSummary({
+    required this.available,
+    required this.earned,
+    required this.deducted,
+    required this.net,
+    required this.lifetimeNet,
+    required this.movements,
+  });
+
+  final bool available;
+  final int earned;
+  final int deducted;
+  final int net;
+  final int lifetimeNet;
+  final List<EmployeePerformancePointMovement> movements;
+
+  factory EmployeePerformancePointsSummary.fromJson(Map<String, dynamic> json) {
+    final raw = json['recent_movements'];
+    return EmployeePerformancePointsSummary(
+      available: json['available'] == true,
+      earned: _integer(json['earned_points']),
+      deducted: _integer(json['deducted_points']),
+      net: _integer(json['net_points']),
+      lifetimeNet: _integer(json['lifetime_net_points']),
+      movements: raw is List
+          ? raw
+                .whereType<Map>()
+                .map(
+                  (item) => EmployeePerformancePointMovement.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
+          : const [],
+    );
+  }
+}
+
+class EmployeePerformancePointMovement {
+  const EmployeePerformancePointMovement({
+    required this.isAdd,
+    required this.points,
+    required this.label,
+    required this.date,
+  });
+
+  final bool isAdd;
+  final int points;
+  final String label;
+  final String date;
+
+  factory EmployeePerformancePointMovement.fromJson(
+    Map<String, dynamic> json,
+  ) => EmployeePerformancePointMovement(
+    isAdd: json['operation_type'] == 'add',
+    points: _integer(json['points']),
+    label: '${json['label'] ?? 'حركة نقاط'}',
+    date: '${json['date'] ?? ''}',
+  );
 }
 
 class EmployeePerformanceTrendPoint {
