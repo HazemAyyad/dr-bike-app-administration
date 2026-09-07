@@ -350,6 +350,9 @@ class SalesController extends GetxController
   String get selectedProfitSalesDateLabel =>
       _salesDateLabel(selectedProfitSalesDate.value);
 
+  String get selectedProfitSalesDateParam =>
+      _formatDateParam(selectedProfitSalesDate.value);
+
   String _salesDateLabel(DateTime value) {
     final selected = _dateOnly(value);
     final today = _todayDateOnly();
@@ -398,7 +401,7 @@ class SalesController extends GetxController
     if (next.isAfter(today)) next = today;
     if (next == selectedProfitSalesDate.value) return;
     selectedProfitSalesDate.value = next;
-    notifySalesListChanged();
+    fetchProfitSales(clearCache: true, showLoading: true);
   }
 
   Future<void> pickProfitSalesDate(BuildContext context) async {
@@ -415,7 +418,7 @@ class SalesController extends GetxController
     final next = _dateOnly(picked);
     if (next == selectedProfitSalesDate.value) return;
     selectedProfitSalesDate.value = next;
-    notifySalesListChanged();
+    await fetchProfitSales(clearCache: true, showLoading: true);
   }
 
   void onInstantSalesSearchChanged(String value) {
@@ -525,14 +528,12 @@ class SalesController extends GetxController
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
     final query = profitSalesSearchQuery.value.trim().toLowerCase();
-    final selectedDate = _dateOnly(selectedProfitSalesDate.value);
 
     final entries = salesService.profitSalesTasks.entries
         .map((entry) {
           final list = entry.value.where((task) {
             final start = task.createdAt;
             final end = task.updatedAt;
-            if (_dateOnly(start) != selectedDate) return false;
             if (from != null && to == null) {
               if (!(start.isAtSameMomentAs(from) || start.isAfter(from))) {
                 return false;
@@ -5162,7 +5163,9 @@ class SalesController extends GetxController
       isLoading(true);
     }
     try {
-      final list = await getProfitSalesUsecase.call();
+      final list = await getProfitSalesUsecase.call(
+        date: selectedProfitSalesDateParam,
+      );
       if (clearCache) {
         salesService.profitSalesTasks.clear();
       }

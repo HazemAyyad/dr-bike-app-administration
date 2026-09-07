@@ -259,9 +259,14 @@ class SalesDatasource {
   }
 
   // get profit sales
-  Future<List<ProfitSale>> getProfitSales() async {
+  Future<List<ProfitSale>> getProfitSales({String? date}) async {
     try {
-      final response = await api.get(EndPoints.allProfitSales);
+      final response = await api.get(
+        EndPoints.allProfitSales,
+        queryParameters: {
+          if (date?.trim().isNotEmpty == true) 'date': date!.trim(),
+        },
+      );
       return mapListFromResponseKey(
         response.data,
         'profit_sales',

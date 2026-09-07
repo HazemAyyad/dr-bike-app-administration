@@ -70,12 +70,12 @@ class SalesImplement implements SalesRepository {
 
   // get profit sales
   @override
-  Future<List<ProfitSale>> getProfitSales() async {
+  Future<List<ProfitSale>> getProfitSales({String? date}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await salesDatasource.getProfitSales();
+      final result = await salesDatasource.getProfitSales(date: date);
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
