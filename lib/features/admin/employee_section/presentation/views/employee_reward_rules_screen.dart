@@ -258,20 +258,22 @@ class _RewardRuleCard extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: 6.h),
-                  Text(
-                    '${'rewardRuleAmount'.tr}: ${rule.rewardAmount}',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: isDark ? Colors.white70 : const Color(0xFF374151),
-                    ),
-                  ),
-                  if ((rule.statusLabel != null &&
-                          rule.statusLabel!.isNotEmpty) ||
-                      (rule.statusColor != null &&
-                          rule.statusColor!.isNotEmpty)) ...[
-                    SizedBox(height: 6.h),
-                    Row(
-                      children: [
+                  Row(
+                    children: [
+                      Text(
+                        rule.rewardAmount,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w800,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF374151),
+                        ),
+                      ),
+                      const Spacer(),
+                      if ((rule.statusLabel != null &&
+                              rule.statusLabel!.isNotEmpty) ||
+                          (rule.statusColor != null &&
+                              rule.statusColor!.isNotEmpty)) ...[
                         Container(
                           width: 14.w,
                           height: 14.w,
@@ -282,22 +284,22 @@ class _RewardRuleCard extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: 6.w),
-                        Flexible(
-                          child: Text(
-                            rule.statusLabel ?? '',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w700,
-                              color: _parseHex(rule.statusColor) ??
-                                  (isDark
-                                      ? Colors.white
-                                      : const Color(0xFF111827)),
-                            ),
+                        Text(
+                          rule.statusLabel ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: _parseHex(rule.statusColor) ??
+                                (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF111827)),
                           ),
                         ),
                       ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ],
               ),
             ),
