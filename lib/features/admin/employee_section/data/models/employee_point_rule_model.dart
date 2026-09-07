@@ -32,6 +32,7 @@ class EmployeePointRuleModel {
   final List<int> employeeIds;
 
   String get cutoffTime => settings['cutoff_time']?.toString() ?? '02:00';
+  int get graceMinutes => asInt(settings['grace_minutes']);
 
   factory EmployeePointRuleModel.fromJson(Map<String, dynamic> json) {
     final j = asMap(json);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -246,6 +247,13 @@ class _RuleCard extends StatelessWidget {
                   _Badge(
                       label: 'قبل ${_timeLabel(rule.cutoffTime)}',
                       color: const Color(0xFF0891B2)),
+                if (rule.conditionType == 'employee_attended_on_time' ||
+                    rule.conditionType ==
+                        'employee_perfect_attendance_and_tasks')
+                  _Badge(
+                    label: 'سماح ${rule.graceMinutes} دقيقة',
+                    color: const Color(0xFF0891B2),
+                  ),
               ],
             ),
           ],
@@ -335,6 +343,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _pointsCtrl;
+  late final TextEditingController _graceMinutesCtrl;
   int _cutoffHour = 2;
   String _cutoffMinute = '00';
   String _cutoffPeriod = 'am';
@@ -353,6 +362,8 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _pointsCtrl =
         TextEditingController(text: r?.defaultPoints.toString() ?? '0');
+    _graceMinutesCtrl =
+        TextEditingController(text: r?.graceMinutes.toString() ?? '0');
     _initCutoff(r?.cutoffTime ?? '02:00');
     _condition = r?.conditionType ?? _condition;
     _period = r?.periodType ?? _period;
@@ -366,6 +377,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
   void dispose() {
     _nameCtrl.dispose();
     _pointsCtrl.dispose();
+    _graceMinutesCtrl.dispose();
     super.dispose();
   }
 
@@ -436,25 +448,42 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
                           v == null || v.trim().isEmpty ? 'مطلوب' : null,
                     ),
                     SizedBox(height: 10.h),
-                    DropdownButtonFormField<String>(
-                      initialValue: _condition,
-                      decoration: _decoration('الشرط'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'employee_completed_all_tasks_before_time',
-                          child: Text('الموظف أنهى كل مهامه قبل وقت معين'),
+                    DropdownSearch<_RuleConditionOption>(
+                      selectedItem: _conditionOptions.firstWhere(
+                        (item) => item.value == _condition,
+                        orElse: () => _conditionOptions.first,
+                      ),
+                      items: (filter, _) async {
+                        final query = filter.trim().toLowerCase();
+                        if (query.isEmpty) return _conditionOptions;
+                        return _conditionOptions
+                            .where((item) =>
+                                item.label.toLowerCase().contains(query))
+                            .toList();
+                      },
+                      itemAsString: (item) => item.label,
+                      compareFn: (a, b) => a.value == b.value,
+                      decoratorProps: DropDownDecoratorProps(
+                        decoration: _decoration('الشرط').copyWith(
+                          hintText: 'ابحث عن الشرط',
+                          prefixIcon: const Icon(Icons.search),
                         ),
-                        DropdownMenuItem(
-                          value: 'all_employees_completed_tasks',
-                          child: Text('كل الموظفين أنهوا مهامهم'),
+                      ),
+                      popupProps: const PopupProps.menu(
+                        showSearchBox: true,
+                        searchDelay: Duration(milliseconds: 100),
+                        constraints: BoxConstraints(maxHeight: 360),
+                        searchFieldProps: TextFieldProps(
+                          decoration: InputDecoration(
+                            labelText: 'بحث في الشروط',
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                        DropdownMenuItem(
-                          value: 'employee_has_incomplete_tasks',
-                          child: Text('الموظف عنده مهام غير منتهية'),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _condition = v ?? _condition),
+                      ),
+                      onChanged: (item) => setState(() {
+                        if (item != null) _condition = item.value;
+                      }),
                     ),
                     SizedBox(height: 10.h),
                     Row(
@@ -503,77 +532,95 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
                       },
                     ),
                     SizedBox(height: 10.h),
-                    InputDecorator(
-                      decoration: _decoration('وقت القطع'),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<int>(
-                                value: _cutoffHour,
-                                isExpanded: true,
-                                items: List.generate(12, (i) => i + 1)
-                                    .map(
-                                      (h) => DropdownMenuItem(
-                                        value: h,
-                                        child: Text('$h'),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) => setState(
-                                  () => _cutoffHour = v ?? _cutoffHour,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _cutoffMinute,
-                                isExpanded: true,
-                                items: List.generate(
-                                  60,
-                                  (i) => i.toString().padLeft(2, '0'),
-                                )
-                                    .map(
-                                      (m) => DropdownMenuItem(
-                                        value: m,
-                                        child: Text(m),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (v) => setState(
-                                  () => _cutoffMinute = v ?? _cutoffMinute,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _cutoffPeriod,
-                                isExpanded: true,
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'am',
-                                    child: Text('صباحا'),
+                    if (_condition ==
+                        'employee_completed_all_tasks_before_time')
+                      InputDecorator(
+                        decoration: _decoration('وقت القطع'),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<int>(
+                                  value: _cutoffHour,
+                                  isExpanded: true,
+                                  items: List.generate(12, (i) => i + 1)
+                                      .map(
+                                        (h) => DropdownMenuItem(
+                                          value: h,
+                                          child: Text('$h'),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) => setState(
+                                    () => _cutoffHour = v ?? _cutoffHour,
                                   ),
-                                  DropdownMenuItem(
-                                    value: 'pm',
-                                    child: Text('مساء'),
-                                  ),
-                                ],
-                                onChanged: (v) => setState(
-                                  () => _cutoffPeriod = v ?? _cutoffPeriod,
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _cutoffMinute,
+                                  isExpanded: true,
+                                  items: List.generate(
+                                    60,
+                                    (i) => i.toString().padLeft(2, '0'),
+                                  )
+                                      .map(
+                                        (m) => DropdownMenuItem(
+                                          value: m,
+                                          child: Text(m),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) => setState(
+                                    () => _cutoffMinute = v ?? _cutoffMinute,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _cutoffPeriod,
+                                  isExpanded: true,
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'am',
+                                      child: Text('صباحا'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'pm',
+                                      child: Text('مساء'),
+                                    ),
+                                  ],
+                                  onChanged: (v) => setState(
+                                    () => _cutoffPeriod = v ?? _cutoffPeriod,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    if (_condition == 'employee_attended_on_time' ||
+                        _condition ==
+                            'employee_perfect_attendance_and_tasks') ...[
+                      SizedBox(height: 10.h),
+                      TextFormField(
+                        controller: _graceMinutesCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _decoration('فترة سماح التأخير بالدقائق'),
+                        validator: (value) {
+                          final minutes = int.tryParse((value ?? '').trim());
+                          return minutes == null || minutes < 0 || minutes > 240
+                              ? 'أدخل قيمة من 0 إلى 240'
+                              : null;
+                        },
+                      ),
+                    ],
                     SizedBox(height: 8.h),
                     DropdownButtonFormField<String>(
                       initialValue: _effectivePolicy,
@@ -656,6 +703,7 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
       appliesToAll: _appliesToAll,
       employeeIds: _employeeIds.toList(),
       cutoffTime: _cutoff24h(),
+      graceMinutes: int.tryParse(_graceMinutesCtrl.text.trim()) ?? 0,
       effectivePolicy: _effectivePolicy,
       isActive: _isActive,
     );
@@ -668,6 +716,40 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
         contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       );
 }
+
+class _RuleConditionOption {
+  const _RuleConditionOption(this.value, this.label);
+
+  final String value;
+  final String label;
+}
+
+const List<_RuleConditionOption> _conditionOptions = [
+  _RuleConditionOption(
+    'employee_completed_all_tasks_before_time',
+    'الموظف أنهى كل مهامه قبل وقت معين',
+  ),
+  _RuleConditionOption(
+    'employee_completed_all_tasks',
+    'الموظف أنهى جميع مهامه',
+  ),
+  _RuleConditionOption(
+    'employee_attended_on_time',
+    'الموظف حضر في الموعد',
+  ),
+  _RuleConditionOption(
+    'employee_perfect_attendance_and_tasks',
+    'حضور كامل بلا تأخير ولا مهام ناقصة',
+  ),
+  _RuleConditionOption(
+    'all_employees_completed_tasks',
+    'كل الموظفين أنهوا مهامهم',
+  ),
+  _RuleConditionOption(
+    'employee_has_incomplete_tasks',
+    'الموظف عنده مهام غير منتهية',
+  ),
+];
 
 class _EmployeePicker extends StatelessWidget {
   const _EmployeePicker({
@@ -766,6 +848,12 @@ String _periodLabel(String value) {
 
 String _conditionLabel(String value) {
   switch (value) {
+    case 'employee_completed_all_tasks':
+      return 'أنهى جميع مهامه';
+    case 'employee_attended_on_time':
+      return 'حضر في الموعد';
+    case 'employee_perfect_attendance_and_tasks':
+      return 'حضور ومهام مكتملة';
     case 'all_employees_completed_tasks':
       return 'كل الموظفين أنهوا المهام';
     case 'employee_has_incomplete_tasks':

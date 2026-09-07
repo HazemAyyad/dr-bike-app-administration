@@ -49,6 +49,7 @@ class EmployeePointRulesController extends GetxController {
     required bool appliesToAll,
     required List<int> employeeIds,
     required String cutoffTime,
+    required int graceMinutes,
     required String effectivePolicy,
     String? effectiveFrom,
     required bool isActive,
@@ -65,7 +66,10 @@ class EmployeePointRulesController extends GetxController {
         'default_points': defaultPoints,
         'applies_to_all': appliesToAll ? 1 : 0,
         if (!appliesToAll) 'employee_ids': employeeIds,
-        'settings': {'cutoff_time': cutoffTime},
+        'settings': {
+          'cutoff_time': cutoffTime,
+          'grace_minutes': graceMinutes,
+        },
         'effective_policy': effectivePolicy,
         if (effectiveFrom != null && effectiveFrom.isNotEmpty)
           'effective_from': effectiveFrom,
@@ -101,6 +105,7 @@ class EmployeePointRulesController extends GetxController {
       appliesToAll: rule.appliesToAll,
       employeeIds: rule.employeeIds,
       cutoffTime: rule.cutoffTime,
+      graceMinutes: rule.graceMinutes,
       effectivePolicy: 'from_date',
       effectiveFrom: rule.effectiveFrom,
       isActive: !rule.isActive,
