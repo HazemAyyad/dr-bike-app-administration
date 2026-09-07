@@ -513,7 +513,11 @@ class _ReturnActions extends StatelessWidget {
         style: OutlinedButton.styleFrom(
             foregroundColor: Colors.orange.shade800,
             visualDensity: VisualDensity.compact),
-        onPressed: () => controller.showSettlementDialog(context, row),
+        onPressed: () => controller.showSettlementDialog(
+          context,
+          row,
+          closeCurrentPageOnSuccess: true,
+        ),
         icon: Icon(Icons.account_balance_wallet_outlined, size: 17.sp),
         label: Text('تسوية المرتجع', style: TextStyle(fontSize: 11.sp)),
       ));
@@ -533,8 +537,13 @@ class _ReturnActions extends StatelessWidget {
       onPressed: controller.isLoading.value
           ? null
           : () async {
-              await controller.runAction(context, row, action, data: data);
-              await controller.loadReturnDetails(row.id.toString());
+              await controller.runAction(
+                context,
+                row,
+                action,
+                data: data,
+                closeCurrentPageOnSuccess: true,
+              );
             },
       icon: Icon(icon, size: 17.sp),
       label: Text(label, style: TextStyle(fontSize: 11.sp)),

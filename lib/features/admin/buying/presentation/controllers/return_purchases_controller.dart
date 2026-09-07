@@ -451,30 +451,56 @@ class ReturnPurchasesController extends GetxController {
             : 'تم حفظ المسودة');
   }
 
-  Future<void> runAction(BuildContext context, ReturnProduct row, String action,
-      {Map<String, dynamic> data = const {}}) async {
+  Future<bool> runAction(BuildContext context, ReturnProduct row, String action,
+      {Map<String, dynamic> data = const {},
+      bool closeCurrentPageOnSuccess = false}) async {
     isLoading.value = true;
     update();
     try {
       await purchaseWorkflowUsecase.runPurchaseReturnAction(
           returnId: row.id.toString(), action: action, data: data);
+      currentTab.value = _tabIndexAfterAction(action);
       await getReturnBills();
-      if (Get.isDialogOpen == true) Get.back();
-      if (!context.mounted) return;
-      Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: 'تم تنفيذ العملية بنجاح');
+      if (!context.mounted) return true;
+      if (closeCurrentPageOnSuccess) {
+        Navigator.of(context).pop();
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+        final listContext = Get.context;
+        if (listContext != null && listContext.mounted) {
+          _showActionSuccess(listContext);
+        }
+      } else {
+        _showActionSuccess(context);
+      }
+      return true;
     } catch (error) {
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Helpers.showCustomDialogError(
           context: context,
           title: 'تعذر تنفيذ العملية',
           message: error.toString());
+      return false;
     } finally {
       isLoading.value = false;
       update();
     }
+  }
+
+  void _showActionSuccess(BuildContext context) {
+    Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'تم تنفيذ العملية بنجاح');
+  }
+
+  int _tabIndexAfterAction(String action) {
+    const indexes = {
+      'confirm': 1,
+      'deliver': 2,
+      'settle': 3,
+      'cancel': 4,
+    };
+    return indexes[action] ?? currentTab.value;
   }
 
   void changeReturnToDelivered(
@@ -484,7 +510,8 @@ class ReturnPurchasesController extends GetxController {
     if (row != null) runAction(context, row, 'deliver');
   }
 
-  void showSettlementDialog(BuildContext context, ReturnProduct row) {
+  void showSettlementDialog(BuildContext context, ReturnProduct row,
+      {bool closeCurrentPageOnSuccess = false}) {
     final billsController = Get.find<BillsController>();
     billsController.loadPurchaseBoxes();
     final amount = TextEditingController(
@@ -577,7 +604,9 @@ class ReturnPurchasesController extends GetxController {
                   data['bill_id'] = billId.text.trim();
                 }
                 Navigator.pop(dialogContext);
-                runAction(context, row, 'settle', data: data);
+                runAction(context, row, 'settle',
+                    data: data,
+                    closeCurrentPageOnSuccess: closeCurrentPageOnSuccess);
               },
               child: const Text('تسجيل التسوية'),
             ),
@@ -659,6 +688,8 @@ class PurchaseReturnDraftLine {
       this.sizeId,
       this.sizeColorId,
       required this.productName,
+      this.productNameEnglish = '',
+      this.productCode = '',
       required this.variant,
       required this.available,
       required this.unitPrice,
@@ -671,6 +702,8 @@ class PurchaseReturnDraftLine {
   final int? sizeId;
   final int? sizeColorId;
   String productName;
+  String productNameEnglish;
+  String productCode;
   String variant;
   double available;
   double unitPrice;
@@ -696,6 +729,8 @@ class PurchaseReturnDraftLine {
       PurchaseReturnDraftLine(
         billItemId: asInt(json['bill_item_id']),
         productName: asString(json['product_name']),
+        productNameEnglish: asString(json['product_name_en']),
+        productCode: asString(json['product_code']),
         variant: [asString(json['size_label']), asString(json['color_label'])]
             .where((v) => v.isNotEmpty)
             .join(' / '),
@@ -715,6 +750,8 @@ class PurchaseReturnDraftLine {
         sizeColorId:
             json['size_color_id'] == null ? null : asInt(json['size_color_id']),
         productName: asString(json['product_name']),
+        productNameEnglish: asString(json['product_name_en']),
+        productCode: asString(json['product_code']),
         variant: [asString(json['size_label']), asString(json['color_label'])]
             .where((v) => v.isNotEmpty)
             .join(' / '),
@@ -730,6 +767,8 @@ class PurchaseReturnDraftLine {
   bool get isDirect => billItemId == 0;
   void updateDetailsFrom(PurchaseReturnDraftLine fresh) {
     productName = fresh.productName;
+    productNameEnglish = fresh.productNameEnglish;
+    productCode = fresh.productCode;
     variant = fresh.variant;
     available = fresh.available;
     unitPrice = fresh.unitPrice;

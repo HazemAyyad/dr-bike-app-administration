@@ -50,16 +50,6 @@ class _PurchaseReturnProductPickerScreenState
         .toList(growable: false);
   }
 
-  Future<void> _searchServer(String value) async {
-    final normalized = value.trim();
-    setState(() => query = normalized);
-    await controller.loadDirectOptions(
-      search: normalized.isEmpty ? null : normalized,
-      force: true,
-    );
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,7 +73,7 @@ class _PurchaseReturnProductPickerScreenState
                     : IconButton(
                         onPressed: () {
                           searchController.clear();
-                          _searchServer('');
+                          setState(() => query = '');
                         },
                         icon: const Icon(Icons.close_rounded),
                       ),
@@ -92,7 +82,6 @@ class _PurchaseReturnProductPickerScreenState
                 ),
               ),
               onChanged: (value) => setState(() => query = value),
-              onSubmitted: _searchServer,
             ),
           ),
           Expanded(
@@ -261,6 +250,8 @@ class _ReturnProductGroup {
 
   bool matches(String query) =>
       primary.productName.toLowerCase().contains(query) ||
+      primary.productNameEnglish.toLowerCase().contains(query) ||
+      primary.productCode.toLowerCase().contains(query) ||
       primary.productId.toString().contains(query) ||
       lines.any((line) => line.variant.toLowerCase().contains(query));
 }
