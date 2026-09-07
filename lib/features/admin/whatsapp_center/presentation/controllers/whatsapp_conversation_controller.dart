@@ -308,13 +308,21 @@ class WhatsAppConversationController extends GetxController {
     }
   }
 
-  Future<bool> sendSelectedProducts(List<String> productIds) async {
+  Future<bool> sendSelectedProducts(
+    List<String> productIds, {
+    Map<String, int>? quantities,
+  }) async {
     if (productIds.isEmpty || sending.value) {
       return false;
     }
     sending.value = true;
     try {
-      await api.sendProducts(id, productIds, channel: channel);
+      await api.sendProducts(
+        id,
+        productIds,
+        channel: channel,
+        quantities: quantities,
+      );
       await load(silent: true);
       return true;
     } catch (e) {

@@ -93,9 +93,13 @@ class WhatsAppApiService {
     int conversationId,
     List<String> productIds, {
     String channel = 'whatsapp',
+    Map<String, int>? quantities,
   }) =>
-      _post('$_socialBase/conversations/$channel/$conversationId/send-products',
-          {'product_ids': productIds});
+      _post(
+          '$_socialBase/conversations/$channel/$conversationId/send-products', {
+        'product_ids': productIds,
+        if (quantities != null) 'quantities': quantities,
+      });
 
   Future<void> hideMessage(int conversationId, int messageId) async {
     await _api

@@ -21,7 +21,8 @@ class _WhatsAppProductPickerScreenState
   final WhatsAppConversationController controller =
       Get.find<WhatsAppConversationController>();
   final TextEditingController search = TextEditingController();
-  final Set<String> selected = <String>{};
+  final Map<String, WhatsAppProduct> selected = <String, WhatsAppProduct>{};
+  final Map<String, int> quantities = <String, int>{};
   List<WhatsAppProduct> products = const [];
   bool loading = true;
   Object? error;
@@ -200,7 +201,18 @@ class _WhatsAppProductPickerScreenState
       );
 
   Future<void> _sendPdf() async {
-    final sent = await controller.sendSelectedProducts(selected.toList());
+    Map<String, int>? confirmedQuantities;
+    if (controller.channel == 'whatsapp') {
+      confirmedQuantities = await _confirmQuantities();
+      if (confirmedQuantities == null) return;
+      quantities
+        ..clear()
+        ..addAll(confirmedQuantities);
+    }
+    final sent = await controller.sendSelectedProducts(
+      selected.keys.toList(),
+      quantities: controller.channel == 'whatsapp' ? quantities : null,
+    );
     if (!sent || !mounted) return;
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero, () {
@@ -211,6 +223,132 @@ class _WhatsAppProductPickerScreenState
             : 'تم إرسال روابط المنتجات في المحادثة',
       );
     });
+  }
+
+  Future<Map<String, int>?> _confirmQuantities() {
+    final draft = <String, int>{
+      for (final product in selected.values)
+        product.id: quantities[product.id] ?? 1,
+    };
+
+    return showModalBottomSheet<Map<String, int>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * .78,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long, color: Color(0xFF6B65BD)),
+                      SizedBox(width: 8),
+                      Text('تأكيد كميات عرض المنتجات',
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    itemCount: selected.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, index) {
+                      final product = selected.values.elementAt(index);
+                      final quantity = draft[product.id] ?? 1;
+                      final maxQuantity = product.stock > 999
+                          ? 999
+                          : product.stock > 0
+                              ? product.stock
+                              : 1;
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                        title: Text(product.name,
+                            maxLines: 2, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(
+                          'السعر: ${product.price ?? 0} ₪  •  المتوفر: ${product.stock}',
+                        ),
+                        trailing: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F1FF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                onPressed: quantity >= maxQuantity
+                                    ? null
+                                    : () => setSheetState(
+                                        () => draft[product.id] = quantity + 1),
+                                icon: const Icon(Icons.add, size: 19),
+                              ),
+                              Text('$quantity',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700)),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                onPressed: quantity <= 1
+                                    ? null
+                                    : () => setSheetState(
+                                        () => draft[product.id] = quantity - 1),
+                                icon: const Icon(Icons.remove, size: 19),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7DF),
+                    border: Border.all(color: const Color(0xFFEFC75E)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'ملاحظة: قد توجد أخطاء في الأسعار أو الكميات لأن العرض مُعد بمساعدة الذكاء الاصطناعي. يرجى مراجعته قبل الاعتماد.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF77550A)),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B65BD),
+                      ),
+                      onPressed: () => Navigator.of(sheetContext).pop(draft),
+                      icon: const Icon(Icons.picture_as_pdf),
+                      label: const Text('إنشاء وإرسال PDF'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _content() {
@@ -260,14 +398,16 @@ class _WhatsAppProductPickerScreenState
   }
 
   Widget _productCard(WhatsAppProduct product) {
-    final isSelected = selected.contains(product.id);
+    final isSelected = selected.containsKey(product.id);
     final image = ShowNetImage.getThumbnailPhoto(product.image ?? '');
     return InkWell(
       onTap: () => setState(() {
         if (isSelected) {
           selected.remove(product.id);
+          quantities.remove(product.id);
         } else if (selected.length < 30) {
-          selected.add(product.id);
+          selected[product.id] = product;
+          quantities[product.id] = 1;
         }
       }),
       borderRadius: BorderRadius.circular(10),
