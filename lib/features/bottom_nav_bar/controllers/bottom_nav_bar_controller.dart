@@ -35,6 +35,7 @@ import '../../admin/employee_tasks/domain/usecases/upload_task_image_usecase.dar
 import '../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../../employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
 import '../../employee/employee_dashbord/presentation/views/tasks_screen.dart';
+import '../../employee/performance/presentation/employee_performance_screen.dart';
 import '../../common_feature/presentation/user_profile/controllers/profile_controller.dart';
 import '../../home/views/home_page_screen.dart';
 
@@ -56,16 +57,15 @@ class BottomNavBarController extends GetxController {
   }
 
   Widget animatedSwitch() {
-    return Obx(
-      () {
-        final role =
-            sessionUserType.value.isNotEmpty ? sessionUserType.value : userType;
-        return KeyedSubtree(
-          key: ValueKey<String>('nav_${role}_${sessionEpoch.value}'),
-          child: _getPage(currentIndex.value, role),
-        );
-      },
-    );
+    return Obx(() {
+      final role = sessionUserType.value.isNotEmpty
+          ? sessionUserType.value
+          : userType;
+      return KeyedSubtree(
+        key: ValueKey<String>('nav_${role}_${sessionEpoch.value}'),
+        child: _getPage(currentIndex.value, role),
+      );
+    });
   }
 
   Widget _getPage(int index, String role) {
@@ -185,10 +185,7 @@ class BottomNavBarController extends GetxController {
           }
           return const EmployeeSectionScreen(key: ValueKey(2));
         }
-        if (!Get.isRegistered<ProfileController>()) {
-          Get.put(ProfileController());
-        }
-        return const ProfileScreen(key: ValueKey(2));
+        return const EmployeePerformanceScreen(key: ValueKey(2));
       case 3:
         if (!Get.isRegistered<ProfileController>()) {
           Get.put(ProfileController());

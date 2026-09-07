@@ -16,7 +16,7 @@ import 'build_nav_item.dart';
 
 class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
   const CustomBottomNavigationBar({Key? key, this.onNavigate})
-      : super(key: key);
+    : super(key: key);
 
   final ValueChanged<int>? onNavigate;
 
@@ -56,72 +56,74 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                 ),
               ],
             ),
-            child: Obx(
-              () {
-                final role = sessionUserType.value.isNotEmpty
-                    ? sessionUserType.value
-                    : userType;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
+            child: Obx(() {
+              final role = sessionUserType.value.isNotEmpty
+                  ? sessionUserType.value
+                  : userType;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  BuildNavItem(
+                    assetImage: AssetsManager.homeIcon,
+                    isSelected: controller.currentIndex.value == 0,
+                    label: 'home'.tr,
+                    onTap: () => _selectPage(0),
+                  ),
+                  role == 'admin'
+                      ? BuildNavItem(
+                          assetImage: AssetsManager.taskIcon,
+                          isSelected: controller.currentIndex.value == 1,
+                          label: 'statistics'.tr,
+                          onTap: () {
+                            CountersController(
+                              getReportInformationUsecase:
+                                  GetReportInformationUsecase(
+                                    countersRepository:
+                                        Get.find<CountrersImplement>(),
+                                  ),
+                              getReportByType: GetReportByTypeUsecase(
+                                countersRepository:
+                                    Get.find<CountrersImplement>(),
+                              ),
+                            ).getReportInformation();
+                            _selectPage(1);
+                          },
+                        )
+                      : BuildNavItem(
+                          assetImage: AssetsManager.taskIcon,
+                          isSelected: controller.currentIndex.value == 1,
+                          label: 'tasks'.tr,
+                          onTap: () {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Get.find<EmployeeDashbordController>()
+                                  .scrollToToday();
+                            });
+                            _selectPage(1);
+                          },
+                        ),
+                  if (role == 'admin')
                     BuildNavItem(
-                      assetImage: AssetsManager.homeIcon,
-                      isSelected: controller.currentIndex.value == 0,
-                      label: 'home'.tr,
-                      onTap: () => _selectPage(0),
+                      assetImage: AssetsManager.usersIcon,
+                      isSelected: controller.currentIndex.value == 2,
+                      label: 'employeeDepartment'.tr,
+                      onTap: () => _selectPage(2),
                     ),
-                    role == 'admin'
-                        ? BuildNavItem(
-                            assetImage: AssetsManager.taskIcon,
-                            isSelected: controller.currentIndex.value == 1,
-                            label: 'statistics'.tr,
-                            onTap: () {
-                              CountersController(
-                                getReportInformationUsecase:
-                                    GetReportInformationUsecase(
-                                  countersRepository:
-                                      Get.find<CountrersImplement>(),
-                                ),
-                                getReportByType: GetReportByTypeUsecase(
-                                  countersRepository:
-                                      Get.find<CountrersImplement>(),
-                                ),
-                              ).getReportInformation();
-                              _selectPage(1);
-                            },
-                          )
-                        : BuildNavItem(
-                            assetImage: AssetsManager.taskIcon,
-                            isSelected: controller.currentIndex.value == 1,
-                            label: 'tasks'.tr,
-                            onTap: () {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                Get.find<EmployeeDashbordController>()
-                                    .scrollToToday();
-                              });
-                              _selectPage(1);
-                            },
-                          ),
-                    if (role == 'admin')
-                      BuildNavItem(
-                        assetImage: AssetsManager.usersIcon,
-                        isSelected: controller.currentIndex.value == 2,
-                        label: 'employeeDepartment'.tr,
-                        onTap: () => _selectPage(2),
-                      ),
+                  if (role != 'admin')
                     BuildNavItem(
-                      assetImage: AssetsManager.profileIcon,
-                      isSelected: controller.currentIndex.value ==
-                          (role == 'admin' ? 3 : 2),
-                      label: 'profile'.tr,
-                      onTap: () => _selectPage(
-                        role == 'admin' ? 3 : 2,
-                      ),
+                      icon: Icons.insights_rounded,
+                      isSelected: controller.currentIndex.value == 2,
+                      label: 'أدائي',
+                      onTap: () => _selectPage(2),
                     ),
-                  ],
-                );
-              },
-            ),
+                  BuildNavItem(
+                    assetImage: AssetsManager.profileIcon,
+                    isSelected: controller.currentIndex.value == 3,
+                    label: 'profile'.tr,
+                    onTap: () => _selectPage(3),
+                  ),
+                ],
+              );
+            }),
           ),
         ),
       ),

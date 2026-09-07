@@ -9,13 +9,16 @@ class BuildNavItem extends StatelessWidget {
     Key? key,
     required this.isSelected,
     required this.onTap,
-    required this.assetImage,
+    this.assetImage,
+    this.icon,
     required this.label,
-  }) : super(key: key);
+  }) : assert(assetImage != null || icon != null),
+       super(key: key);
 
   final bool isSelected;
   final void Function() onTap;
-  final String assetImage;
+  final String? assetImage;
+  final IconData? icon;
   final String label;
 
   @override
@@ -24,8 +27,8 @@ class BuildNavItem extends StatelessWidget {
     final iconColor = isSelected
         ? AppColors.operationalPurple
         : ThemeService.isDark.value
-            ? AppColors.whiteColor2
-            : const Color(0xFF8792AD);
+        ? AppColors.whiteColor2
+        : const Color(0xFF8792AD);
 
     return Expanded(
       child: InkWell(
@@ -37,14 +40,16 @@ class BuildNavItem extends StatelessWidget {
             SizedBox(
               width: iconSize,
               height: iconSize,
-              child: Image.asset(
-                assetImage,
-                width: iconSize,
-                height: iconSize,
-                fit: BoxFit.contain,
-                color: iconColor,
-                filterQuality: FilterQuality.medium,
-              ),
+              child: icon != null
+                  ? Icon(icon, size: iconSize, color: iconColor)
+                  : Image.asset(
+                      assetImage!,
+                      width: iconSize,
+                      height: iconSize,
+                      fit: BoxFit.contain,
+                      color: iconColor,
+                      filterQuality: FilterQuality.medium,
+                    ),
             ),
             SizedBox(height: 3.h),
             Text(
@@ -53,10 +58,10 @@ class BuildNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: iconColor,
-                    fontSize: 10.sp,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  ),
+                color: iconColor,
+                fontSize: 10.sp,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
             ),
           ],
         ),
