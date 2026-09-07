@@ -130,18 +130,192 @@ class AttendanceHistoryBody extends StatelessWidget {
               ),
             ),
           ),
-          ..._logDays.map(
-            (day) => _CompactAttendanceDayCard(
-              day: day,
-              showAdminEdit: showAdminEdit,
-              onEdit: onEditDay == null ? null : () => onEditDay!(day),
-              onShowAdjustments: day.adjustments.isEmpty
-                  ? null
-                  : () => _AttendanceDaysTable.showAdjustments(day),
-            ),
+          _CompactAttendanceDaysTable(
+            days: _logDays,
+            showAdminEdit: showAdminEdit,
+            onEditDay: onEditDay,
           ),
         ],
       ],
+    );
+  }
+}
+
+class _CompactAttendanceDaysTable extends StatelessWidget {
+  const _CompactAttendanceDaysTable({
+    required this.days,
+    required this.showAdminEdit,
+    required this.onEditDay,
+  });
+
+  final List<EmployeeAttendanceDay> days;
+  final bool showAdminEdit;
+  final Future<void> Function(EmployeeAttendanceDay day)? onEditDay;
+
+  String _date(String value) {
+    try {
+      final parsed = DateTime.parse(value);
+      return '${parsed.day}/${parsed.month}';
+    } catch (_) {
+      return value;
+    }
+  }
+
+  String _time(DateTime? value, {bool currentlyIn = false}) {
+    if (currentlyIn) return 'بالدوام';
+    if (value == null) return '-';
+    final local = value.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _workedTime(int minutes) {
+    if (minutes <= 0) return '-';
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+    if (remainingMinutes == 0) return '${hours.toString()}س';
+    return '${hours.toString()}س ${remainingMinutes.toString()}د';
+  }
+
+  Widget _cell(
+    String value, {
+    required int flex,
+    bool header = false,
+    Color? color,
+  }) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 8.h),
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: header ? 10.5.sp : 10.sp,
+            fontWeight: header ? FontWeight.w800 : FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final border = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final textColor = isDark ? Colors.white : AppColors.operationalNavy;
+    final muted = isDark ? Colors.white70 : const Color(0xFF6B7280);
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor4 : Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        children: [
+          Container(
+            color: AppColors.primaryColor.withValues(alpha: 0.1),
+            child: Row(
+              children: [
+                _cell('التاريخ', flex: 18, header: true, color: textColor),
+                _cell('دخول', flex: 17, header: true, color: textColor),
+                _cell('خروج', flex: 17, header: true, color: textColor),
+                _cell('الساعات', flex: 20, header: true, color: textColor),
+                _cell('تعديل', flex: 22, header: true, color: textColor),
+              ],
+            ),
+          ),
+          ...days.asMap().entries.map((entry) {
+            final day = entry.value;
+            final isOff = day.isWeeklyOff || _isPresentOnWeeklyDayOff(day);
+            return Container(
+              decoration: BoxDecoration(
+                color: isOff
+                    ? AppColors.customOrange3.withValues(alpha: 0.08)
+                    : null,
+                border: entry.key == days.length - 1
+                    ? null
+                    : Border(bottom: BorderSide(color: border)),
+              ),
+              child: Row(
+                children: [
+                  _cell(_date(day.date), flex: 18, color: textColor),
+                  _cell(_time(day.firstCheckIn), flex: 17, color: muted),
+                  _cell(
+                    _time(day.lastCheckOut, currentlyIn: day.currentlyIn),
+                    flex: 17,
+                    color: day.currentlyIn ? AppColors.customGreen1 : muted,
+                  ),
+                  _cell(
+                    _workedTime(day.calculatedWorkedMinutes),
+                    flex: 20,
+                    color: textColor,
+                  ),
+                  Expanded(
+                    flex: 22,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 27.w,
+                          height: 30.h,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            tooltip: day.adjustments.isEmpty
+                                ? 'لا توجد تعديلات'
+                                : 'سجل التعديلات',
+                            onPressed: day.adjustments.isEmpty
+                                ? null
+                                : () => _AttendanceDaysTable.showAdjustments(
+                                      context,
+                                      day,
+                                    ),
+                            icon: Icon(
+                              Icons.manage_history_outlined,
+                              size: 17.sp,
+                              color: day.adjustments.isEmpty
+                                  ? muted.withValues(alpha: 0.35)
+                                  : AppColors.primaryColor,
+                            ),
+                          ),
+                        ),
+                        if (showAdminEdit) ...[
+                          SizedBox(width: 1.w),
+                          SizedBox(
+                            width: 27.w,
+                            height: 30.h,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              tooltip: day.canEditDay
+                                  ? 'editAttendanceDay'.tr
+                                  : _AttendanceDaysTable._editDisabledReason(
+                                      day,
+                                    ),
+                              onPressed: day.canEditDay && onEditDay != null
+                                  ? () => onEditDay!(day)
+                                  : null,
+                              icon: Icon(
+                                day.canEditDay
+                                    ? Icons.edit_outlined
+                                    : Icons.lock_clock_outlined,
+                                size: 16.sp,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
@@ -620,10 +794,6 @@ class _AttendanceDaysTable extends StatelessWidget {
     return value.substring(0, 5);
   }
 
-  static String _rangeValue(Map<String, dynamic> data) {
-    return 'من ${_timeValue(data, 'arrived_at')} إلى ${_timeValue(data, 'left_at')}';
-  }
-
   static String _countedCheckoutValue(Map<String, dynamic> data) {
     final arrived = _timeValue(data, 'arrived_at');
     final worked = data['worked_minutes'];
@@ -715,225 +885,305 @@ class _AttendanceDaysTable extends StatelessWidget {
     );
   }
 
-  static Widget _timeStateRow({
+  static Widget _adjustmentStatePanel({
     required String title,
     required Map<String, dynamic> values,
-    required bool isLatest,
+    required Color color,
+    required bool isDark,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
-        color: isLatest
-            ? AppColors.primaryColor.withValues(alpha: 0.08)
-            : const Color(0xFFF8FAFC),
-        border: Border.all(
-          color: isLatest ? AppColors.primaryColor : const Color(0xFFE5E7EB),
-        ),
-        borderRadius: BorderRadius.circular(8.r),
+        color: color.withValues(alpha: isDark ? 0.16 : 0.07),
+        borderRadius: BorderRadius.circular(9.r),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            isLatest ? Icons.check_circle_outline : Icons.history,
-            size: 18.sp,
-            color:
-                isLatest ? AppColors.primaryColor : AppColors.customGreyColor5,
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w900,
-                    color: isLatest
-                        ? AppColors.primaryColor
-                        : AppColors.operationalNavy,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  _rangeValue(values),
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w900,
+              color: color,
             ),
           ),
-          if (isLatest)
-            Text(
-              'المعتمد',
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryColor,
-              ),
-            ),
+          SizedBox(height: 5.h),
+          Text(
+            'دخول  ${_timeValue(values, 'arrived_at')}',
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            'خروج  ${_timeValue(values, 'left_at')}',
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
   }
 
-  static Widget _adjustmentsTimeline(
-      List<EmployeeAttendanceAdjustmentRow> adjustments) {
-    final widgets = <Widget>[];
-    final first = adjustments.first;
-    widgets.add(_timeStateRow(
-      title: 'الوقت الأصلي',
-      values: first.beforeValues,
-      isLatest: false,
-    ));
-
-    for (var i = 0; i < adjustments.length; i++) {
-      final adjustment = adjustments[i];
-      final isLatest = i == adjustments.length - 1;
-      widgets.add(_timeStateRow(
-        title: 'بعد تعديل #${adjustment.id}',
-        values: adjustment.afterValues,
-        isLatest: isLatest,
-      ));
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: widgets,
+  static Widget _adjustmentMetric(String label, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700),
+      ),
     );
   }
 
-  static void showAdjustments(EmployeeAttendanceDay day) {
+  static void showAdjustments(
+    BuildContext context,
+    EmployeeAttendanceDay day,
+  ) {
     if (day.adjustments.isEmpty) return;
-    Get.dialog<void>(
-      AlertDialog(
-        title: Text('تعديلات ${day.date}'),
-        content: SizedBox(
-          width: 560.w,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _adjustmentsTimeline(day.adjustments),
-                SizedBox(height: 8.h),
-                Text(
-                  'تفاصيل التعديلات',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                ...day.adjustments.map((adjustment) {
-                  final before = adjustment.beforeValues;
-                  final after = adjustment.afterValues;
-                  return Container(
-                    margin: EdgeInsets.only(bottom: 10.h),
-                    padding: EdgeInsets.all(10.w),
+    final isDark = ThemeService.isDark.value;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: isDark ? AppColors.darkColor : const Color(0xFFF8FAFC),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+      ),
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.88,
+        child: Column(
+          children: [
+            SizedBox(height: 8.h),
+            Container(
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 8.w, 8.h),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38.w,
+                    height: 38.w,
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      borderRadius: BorderRadius.circular(8.r),
+                      color: AppColors.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
+                    child: Icon(
+                      Icons.manage_history_outlined,
+                      color: AppColors.primaryColor,
+                      size: 21.sp,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          adjustment.createdAt == null
-                              ? 'تعديل #${adjustment.id}'
-                              : 'تعديل #${adjustment.id} - ${_time(adjustment.createdAt)}',
+                          'سجل تعديلات الدوام',
                           style: TextStyle(
-                            fontSize: 13.sp,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        SizedBox(height: 4.h),
                         Text(
-                          'بواسطة: ${adjustment.editedByName ?? adjustment.editedBy?.toString() ?? '-'}   المصدر: ${_sourceLabel(adjustment.source)}',
+                          '${day.date} • ${day.adjustments.length} تعديل',
                           style: TextStyle(
                             fontSize: 11.sp,
                             color: AppColors.customGreyColor5,
                           ),
                         ),
-                        if ((adjustment.note ?? '').isNotEmpty) ...[
-                          SizedBox(height: 3.h),
-                          Text(
-                            adjustment.note!,
-                            style: TextStyle(fontSize: 11.sp),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'close'.tr,
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1.h),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(12.w),
+                itemCount: day.adjustments.length,
+                itemBuilder: (_, index) {
+                  final adjustment = day.adjustments[index];
+                  final before = adjustment.beforeValues;
+                  final after = adjustment.afterValues;
+                  final isLatest = index == day.adjustments.length - 1;
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 9.h),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.customGreyColor4 : Colors.white,
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isLatest
+                            ? AppColors.primaryColor.withValues(alpha: 0.5)
+                            : const Color(0xFFE5E7EB),
+                      ),
+                    ),
+                    child: ExpansionTile(
+                      initiallyExpanded: isLatest,
+                      tilePadding: EdgeInsets.symmetric(horizontal: 10.w),
+                      childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
+                      leading: CircleAvatar(
+                        radius: 15.r,
+                        backgroundColor: AppColors.primaryColor
+                            .withValues(alpha: isLatest ? 0.16 : 0.08),
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: AppColors.primaryColor,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w900,
                           ),
-                        ],
-                        SizedBox(height: 8.h),
+                        ),
+                      ),
+                      title: Text(
+                        isLatest
+                            ? 'آخر تعديل • المعتمد'
+                            : 'تعديل #${adjustment.id}',
+                        style: TextStyle(
+                          fontSize: 12.5.sp,
+                          fontWeight: FontWeight.w900,
+                          color: isLatest ? AppColors.primaryColor : null,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${adjustment.editedByName ?? adjustment.editedBy?.toString() ?? '-'} • ${_sourceLabel(adjustment.source)}'
+                        '${adjustment.createdAt == null ? '' : ' • ${_time(adjustment.createdAt)}'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 10.sp),
+                      ),
+                      children: [
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                'قبل: ${_rangeValue(before)}',
-                                style: TextStyle(fontSize: 12.sp),
+                              child: _adjustmentStatePanel(
+                                title: 'قبل التعديل',
+                                values: before,
+                                color: Colors.orange.shade700,
+                                isDark: isDark,
                               ),
                             ),
+                            SizedBox(width: 7.w),
                             Expanded(
-                              child: Text(
-                                'بعد: ${_rangeValue(after)}',
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                              child: _adjustmentStatePanel(
+                                title: 'بعد التعديل',
+                                values: after,
+                                color: AppColors.customGreen1,
+                                isDark: isDark,
                               ),
                             ),
                           ],
                         ),
                         SizedBox(height: 8.h),
-                        Text(
-                          'الصافي: ${_durationValue(after, 'worked_minutes')}   '
-                          'العادي: ${_durationValue(after, 'normal_minutes')}   '
-                          'الأوفر: ${_durationValue(after, 'overtime_minutes')}',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: AppColors.customGreyColor5,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          childrenPadding: EdgeInsets.zero,
-                          title: Text(
-                            'حركات الدخول والخروج قبل/بعد',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                        Wrap(
+                          spacing: 5.w,
+                          runSpacing: 5.h,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                    child:
-                                        _scanList('حركات اليوم قبل', before)),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                    child: _scanList('حركات اليوم بعد', after)),
-                              ],
+                            _adjustmentMetric(
+                              'الصافي',
+                              _durationValue(after, 'worked_minutes'),
+                            ),
+                            _adjustmentMetric(
+                              'العادي',
+                              _durationValue(after, 'normal_minutes'),
+                            ),
+                            _adjustmentMetric(
+                              'الأوفر',
+                              _durationValue(after, 'overtime_minutes'),
                             ),
                           ],
+                        ),
+                        if ((adjustment.note ?? '').isNotEmpty) ...[
+                          SizedBox(height: 8.h),
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(8.w),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor
+                                  .withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Text(
+                              'ملاحظة: ${adjustment.note}',
+                              style: TextStyle(fontSize: 10.5.sp),
+                            ),
+                          ),
+                        ],
+                        Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                          ),
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            childrenPadding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            title: Text(
+                              'حركات الدخول والخروج',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            children: [
+                              LayoutBuilder(
+                                builder: (_, constraints) {
+                                  final beforeScans = _scanList(
+                                    'قبل التعديل',
+                                    before,
+                                  );
+                                  final afterScans = _scanList(
+                                    'بعد التعديل',
+                                    after,
+                                  );
+                                  if (constraints.maxWidth < 330.w) {
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        beforeScans,
+                                        SizedBox(height: 8.h),
+                                        afterScans,
+                                      ],
+                                    );
+                                  }
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: beforeScans),
+                                      SizedBox(width: 8.w),
+                                      Expanded(child: afterScans),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   );
-                }),
-              ],
+                },
+              ),
             ),
-          ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('cancel'.tr),
-          ),
-        ],
       ),
     );
   }
@@ -1039,7 +1289,7 @@ class _AttendanceDaysTable extends StatelessWidget {
                 day.adjustments.isEmpty
                     ? const Text('-')
                     : TextButton.icon(
-                        onPressed: () => showAdjustments(day),
+                        onPressed: () => showAdjustments(context, day),
                         icon: const Icon(Icons.history, size: 16),
                         label: Text('${day.adjustments.length}'),
                       ),
