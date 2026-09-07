@@ -6,30 +6,39 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
 
-/// Search + sort + package filter for instant sales list.
+/// Date navigation for sales lists and composition filters for instant sales.
 class SalesInvoicesToolbar extends GetView<SalesController> {
   const SalesInvoicesToolbar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 4.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Obx(
-            () => Row(
+    return Obx(() {
+      final isProfitSales = controller.currentTab.value == 1;
+      final dateLabel = isProfitSales
+          ? controller.selectedProfitSalesDateLabel
+          : controller.selectedInstantSalesDateLabel;
+
+      return Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 4.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
                 _DateNavButton(
                   icon: Icons.chevron_left_rounded,
                   tooltip: 'اليوم السابق',
-                  onTap: () => controller.changeInstantSalesDateByDays(-1),
+                  onTap: () => isProfitSales
+                      ? controller.changeProfitSalesDateByDays(-1)
+                      : controller.changeInstantSalesDateByDays(-1),
                 ),
                 SizedBox(width: 8.w),
                 Expanded(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14.r),
-                    onTap: () => controller.pickInstantSalesDate(context),
+                    onTap: () => isProfitSales
+                        ? controller.pickProfitSalesDate(context)
+                        : controller.pickInstantSalesDate(context),
                     child: Container(
                       height: 42.h,
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -53,7 +62,7 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                           SizedBox(width: 8.w),
                           Flexible(
                             child: Text(
-                              controller.selectedInstantSalesDateLabel,
+                              dateLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -74,61 +83,65 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                 _DateNavButton(
                   icon: Icons.chevron_right_rounded,
                   tooltip: 'اليوم التالي',
-                  enabled: controller.canGoNextInstantSalesDate,
-                  onTap: () => controller.changeInstantSalesDateByDays(1),
+                  enabled: isProfitSales
+                      ? controller.canGoNextProfitSalesDate
+                      : controller.canGoNextInstantSalesDate,
+                  onTap: () => isProfitSales
+                      ? controller.changeProfitSalesDateByDays(1)
+                      : controller.changeInstantSalesDateByDays(1),
                 ),
               ],
             ),
-          ),
-          SizedBox(height: 8.h),
-          Obx(
-            () {
-              final mode = controller.instantSalesPackageFilter.value;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _CompositionFilter(
-                      label: 'instantSaleFilterAll'.tr,
-                      icon: Icons.grid_view_rounded,
-                      count: controller.instantSalesCompositionCount(0),
-                      selected: mode == 0,
-                      onTap: () => controller.setInstantSalesPackageFilter(0),
-                    ),
-                    SizedBox(width: 6.w),
-                    _CompositionFilter(
-                      label: 'instantSaleCompositionPackage'.tr,
-                      icon: Icons.inventory_2_outlined,
-                      count: controller.instantSalesCompositionCount(1),
-                      selected: mode == 1,
-                      accent: const Color(0xFFE65100),
-                      onTap: () => controller.setInstantSalesPackageFilter(1),
-                    ),
-                    SizedBox(width: 6.w),
-                    _CompositionFilter(
-                      label: 'instantSaleCompositionMixed'.tr,
-                      icon: Icons.layers_outlined,
-                      count: controller.instantSalesCompositionCount(2),
-                      selected: mode == 2,
-                      accent: const Color(0xFF6A1B9A),
-                      onTap: () => controller.setInstantSalesPackageFilter(2),
-                    ),
-                    SizedBox(width: 6.w),
-                    _CompositionFilter(
-                      label: 'instantSaleCompositionProduct'.tr,
-                      icon: Icons.two_wheeler_outlined,
-                      count: controller.instantSalesCompositionCount(3),
-                      selected: mode == 3,
-                      onTap: () => controller.setInstantSalesPackageFilter(3),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+            if (!isProfitSales) ...[
+              SizedBox(height: 8.h),
+              Builder(builder: (context) {
+                final mode = controller.instantSalesPackageFilter.value;
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _CompositionFilter(
+                        label: 'instantSaleFilterAll'.tr,
+                        icon: Icons.grid_view_rounded,
+                        count: controller.instantSalesCompositionCount(0),
+                        selected: mode == 0,
+                        onTap: () => controller.setInstantSalesPackageFilter(0),
+                      ),
+                      SizedBox(width: 6.w),
+                      _CompositionFilter(
+                        label: 'instantSaleCompositionPackage'.tr,
+                        icon: Icons.inventory_2_outlined,
+                        count: controller.instantSalesCompositionCount(1),
+                        selected: mode == 1,
+                        accent: const Color(0xFFE65100),
+                        onTap: () => controller.setInstantSalesPackageFilter(1),
+                      ),
+                      SizedBox(width: 6.w),
+                      _CompositionFilter(
+                        label: 'instantSaleCompositionMixed'.tr,
+                        icon: Icons.layers_outlined,
+                        count: controller.instantSalesCompositionCount(2),
+                        selected: mode == 2,
+                        accent: const Color(0xFF6A1B9A),
+                        onTap: () => controller.setInstantSalesPackageFilter(2),
+                      ),
+                      SizedBox(width: 6.w),
+                      _CompositionFilter(
+                        label: 'instantSaleCompositionProduct'.tr,
+                        icon: Icons.two_wheeler_outlined,
+                        count: controller.instantSalesCompositionCount(3),
+                        selected: mode == 3,
+                        onTap: () => controller.setInstantSalesPackageFilter(3),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 

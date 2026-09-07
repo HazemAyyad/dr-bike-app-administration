@@ -286,6 +286,7 @@ class SalesController extends GetxController
       TextEditingController();
   final profitSalesSearchQuery = ''.obs;
   final profitSalesSortDescending = true.obs;
+  final selectedProfitSalesDate = _todayDateOnly().obs;
   Timer? _profitSalesSearchDebounce;
 
   String get instantSalesSortDirection =>
@@ -346,6 +347,23 @@ class SalesController extends GetxController
   bool get canGoNextInstantSalesDate =>
       selectedInstantSalesDate.value.isBefore(_todayDateOnly());
 
+  String get selectedProfitSalesDateLabel =>
+      _salesDateLabel(selectedProfitSalesDate.value);
+
+  String _salesDateLabel(DateTime value) {
+    final selected = _dateOnly(value);
+    final today = _todayDateOnly();
+    if (selected == today) return 'today'.tr;
+    final label = '${_weekdayLabel(selected)} ${_formatDateParam(selected)}';
+    if (selected == today.subtract(const Duration(days: 1))) {
+      return '${'yesterday'.tr} - $label';
+    }
+    return label;
+  }
+
+  bool get canGoNextProfitSalesDate =>
+      selectedProfitSalesDate.value.isBefore(_todayDateOnly());
+
   void changeInstantSalesDateByDays(int days) {
     final today = _todayDateOnly();
     var next =
@@ -371,6 +389,33 @@ class SalesController extends GetxController
     if (next == selectedInstantSalesDate.value) return;
     selectedInstantSalesDate.value = next;
     getInstantSales(loding: true, clearCache: true);
+  }
+
+  void changeProfitSalesDateByDays(int days) {
+    final today = _todayDateOnly();
+    var next =
+        _dateOnly(selectedProfitSalesDate.value).add(Duration(days: days));
+    if (next.isAfter(today)) next = today;
+    if (next == selectedProfitSalesDate.value) return;
+    selectedProfitSalesDate.value = next;
+    notifySalesListChanged();
+  }
+
+  Future<void> pickProfitSalesDate(BuildContext context) async {
+    final today = _todayDateOnly();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedProfitSalesDate.value.isAfter(today)
+          ? today
+          : selectedProfitSalesDate.value,
+      firstDate: DateTime(2020),
+      lastDate: today,
+    );
+    if (picked == null) return;
+    final next = _dateOnly(picked);
+    if (next == selectedProfitSalesDate.value) return;
+    selectedProfitSalesDate.value = next;
+    notifySalesListChanged();
   }
 
   void onInstantSalesSearchChanged(String value) {
@@ -480,12 +525,14 @@ class SalesController extends GetxController
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
     final query = profitSalesSearchQuery.value.trim().toLowerCase();
+    final selectedDate = _dateOnly(selectedProfitSalesDate.value);
 
     final entries = salesService.profitSalesTasks.entries
         .map((entry) {
           final list = entry.value.where((task) {
             final start = task.createdAt;
             final end = task.updatedAt;
+            if (_dateOnly(start) != selectedDate) return false;
             if (from != null && to == null) {
               if (!(start.isAtSameMomentAs(from) || start.isAfter(from))) {
                 return false;

@@ -81,7 +81,8 @@ class SalesScreen extends GetView<SalesController> {
                         child: SalesOrdersToolbar(),
                       );
                     }
-                    if (controller.currentTab.value == 0) {
+                    if (controller.currentTab.value == 0 ||
+                        controller.currentTab.value == 1) {
                       return const SliverToBoxAdapter(
                         child: SalesInvoicesToolbar(),
                       );
