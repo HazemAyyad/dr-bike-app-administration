@@ -30,16 +30,16 @@ class EmployeeSalaryReceiptAlert
           padding: EdgeInsets.all(13.r),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [
-              AppColors.customGreen1.withValues(alpha: .16),
-              AppColors.operationalPurple.withValues(alpha: .09),
+              AppColors.operationalPurple.withValues(alpha: .04),
+              AppColors.operationalPurple.withValues(alpha: .10),
             ]),
             borderRadius: BorderRadius.circular(16.r),
             border: Border.all(
-              color: AppColors.customGreen1.withValues(alpha: .45),
+              color: AppColors.operationalPurple.withValues(alpha: .35),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.customGreen1.withValues(alpha: .09),
+                color: AppColors.operationalPurple.withValues(alpha: .08),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -48,11 +48,12 @@ class EmployeeSalaryReceiptAlert
           child: Row(children: [
             Container(
               padding: EdgeInsets.all(10.r),
-              decoration: const BoxDecoration(
-                color: AppColors.customGreen1,
-                shape: BoxShape.circle,
+              decoration: BoxDecoration(
+                color: AppColors.operationalPurple.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: const Icon(Icons.payments_rounded, color: Colors.white),
+              child: const Icon(Icons.description_outlined,
+                  color: AppColors.operationalPurple),
             ),
             SizedBox(width: 10.w),
             Expanded(
@@ -95,7 +96,7 @@ class EmployeeSalaryReceiptAlert
                           icon: const Icon(Icons.draw_rounded, size: 19),
                           label: const Text('مراجعة وتوقيع'),
                           style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.customGreen1),
+                              backgroundColor: AppColors.operationalPurple),
                         ),
                       ),
                     ),

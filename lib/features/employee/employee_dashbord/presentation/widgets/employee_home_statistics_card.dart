@@ -10,9 +10,7 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../../../../admin/employee_section/presentation/controllers/attendance_history_controller.dart';
-import '../../data/models/dashbord_employee_details_model.dart';
 import '../controllers/employee_dashbord_controller.dart';
-import 'employee_compact_stat_tile.dart';
 
 class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
   const EmployeeHomeStatisticsCard({Key? key}) : super(key: key);
@@ -29,159 +27,245 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Obx(
-          () => _CompactAttendanceStrip(
-            day: controller.todayAttendance.value,
-            inside: controller.isAttendanceInside,
-            loading: controller.todayAttendanceLoading.value,
-            elapsed: controller.elapsed.value,
-            isStartWork: controller.isStartWork,
-            startTime: controller.startTime,
-            formatClock: _formatClock,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: AppColors.operationalPurple.withValues(alpha: .20),
         ),
-        SizedBox(height: 8.h),
-        Obx(() {
-          final summary = controller.employeeData.value?.todayTasksSummary ??
-              const TodayTasksSummary();
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: controller.openTasksTab,
-              borderRadius: BorderRadius.circular(12.r),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12.r),
-                  color: AppColors.operationalPurple.withValues(alpha: 0.08),
-                  border: Border.all(
-                    color: AppColors.operationalPurple.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'todayTasksProgress'.tr,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.operationalNavy,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Row(
-                      children: [
-                        Text(
-                          '${summary.progressPercent}%',
-                          style: TextStyle(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.operationalPurple,
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'todayTasksProgressSubtitle'.trParams({
-                                  'done': '${summary.completed}',
-                                  'total': '${summary.total}',
-                                }),
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: AppColors.customGreyColor5,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.operationalPurple.withValues(alpha: .05),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(14.w, 13.h, 14.w, 8.h),
+          child: Row(children: [
+            Icon(Icons.bar_chart_rounded,
+                color: AppColors.operationalPurple, size: 22.sp),
+            SizedBox(width: 7.w),
+            Text(
+              'ملخصي اليوم',
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w900,
+                color: ThemeService.isDark.value
+                    ? Colors.white
+                    : AppColors.operationalNavy,
+              ),
+            ),
+          ]),
+        ),
+        GetBuilder<EmployeeDashbordController>(builder: (c) {
+          final data = c.employeeData.value;
+          final tiles = <Widget>[
+            _SummaryStat(
+              title: 'workingHours',
+              iconAsset: AssetsManager.doneIcon,
+              value: data?.totalWorkHours ?? '0',
+              subtitle:
+                  data == null ? null : _hoursSubtitle(data.numberOfWorkHours),
+              formatNumber: false,
+            ),
+            _SummaryStat(
+              title: 'hourlyRate',
+              iconAsset: AssetsManager.moneyIcon,
+              value: data?.hourWorkPrice.toString() ?? '0',
+              subtitle: 'currency',
+            ),
+            _SummaryStat(
+              title: 'advancesAndDebts',
+              iconAsset: AssetsManager.cashIcon,
+              value: data?.debts ?? '0',
+              subtitle: 'currency',
+            ),
+            _SummaryStat(
+              title: 'remainingBalance',
+              iconAsset: AssetsManager.cashIcon,
+              value: data?.salary.toString() ?? '0',
+              subtitle: 'currency',
+            ),
+            _SummaryStat(
+              title: 'points',
+              iconAsset: AssetsManager.cashIcon4,
+              value: data?.points ?? '0',
+              subtitle: 'point',
+              formatNumber: false,
+            ),
+          ];
+          return SizedBox(
+            height: 72.h,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 5.w),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: List.generate(tiles.length, (index) {
+                  return Expanded(
+                    child: Container(
+                      decoration: index == tiles.length - 1
+                          ? null
+                          : BoxDecoration(
+                              border: BorderDirectional(
+                                end: BorderSide(
+                                  color: AppColors.operationalPurple
+                                      .withValues(alpha: .16),
                                 ),
                               ),
-                              SizedBox(height: 4.h),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4.r),
-                                child: LinearProgressIndicator(
-                                  value: summary.total > 0
-                                      ? summary.progressPercent / 100
-                                      : 0,
-                                  minHeight: 6.h,
-                                  color: AppColors.operationalPurple,
-                                  backgroundColor: AppColors.operationalSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                            ),
+                      child: tiles[index],
                     ),
-                  ],
-                ),
+                  );
+                }),
               ),
             ),
           );
         }),
-        SizedBox(height: 8.h),
-        GetBuilder<EmployeeDashbordController>(
-          builder: (c) {
-            final data = c.employeeData.value;
-            final tiles = <Widget>[
-              EmployeeCompactStatTile(
-                title: 'workingHours',
-                iconAsset: AssetsManager.doneIcon,
-                value: data?.totalWorkHours ?? '0',
-                subtitle: data == null
-                    ? null
-                    : _hoursSubtitle(data.numberOfWorkHours),
-                formatNumber: false,
-              ),
-              EmployeeCompactStatTile(
-                title: 'hourlyRate',
-                iconAsset: AssetsManager.moneyIcon,
-                value: data?.hourWorkPrice.toString() ?? '0',
-                subtitle: 'currency',
-              ),
-              EmployeeCompactStatTile(
-                title: 'advancesAndDebts',
-                iconAsset: AssetsManager.cashIcon,
-                value: data?.debts ?? '0',
-                subtitle: 'currency',
-              ),
-              EmployeeCompactStatTile(
-                title: 'remainingBalance',
-                iconAsset: AssetsManager.cashIcon,
-                value: data?.salary.toString() ?? '0',
-                subtitle: 'currency',
-              ),
-              EmployeeCompactStatTile(
-                title: 'points',
-                iconAsset: AssetsManager.cashIcon4,
-                value: data?.points ?? '0',
-                subtitle: 'point',
-                formatNumber: false,
-              ),
-            ];
-            return Container(
-              padding: EdgeInsets.all(8.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(9.r),
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : AppColors.whiteColor2,
-              ),
-              child: GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 6.h,
-                crossAxisSpacing: 6.w,
-                childAspectRatio: 2.35,
-                children: tiles,
-              ),
-            );
-          },
+        Obx(() {
+          final summary = controller.employeeData.value?.todayTasksSummary;
+          final total = summary?.total ?? 0;
+          final completed = summary?.completed ?? 0;
+          final progress = summary?.progressPercent ?? 0;
+          return InkWell(
+            onTap: controller.openTasksTab,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(13.w, 7.h, 13.w, 4.h),
+              child: Row(children: [
+                Icon(Icons.task_alt_rounded,
+                    color: AppColors.operationalPurple, size: 20.sp),
+                SizedBox(width: 7.w),
+                Text(
+                  'todayTasksProgress'.tr,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10.r),
+                    child: LinearProgressIndicator(
+                      value: total == 0 ? 0 : progress / 100,
+                      minHeight: 7.h,
+                      color: AppColors.operationalPurple,
+                      backgroundColor:
+                          AppColors.operationalPurple.withValues(alpha: .10),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  '$completed/$total',
+                  style: TextStyle(
+                    color: AppColors.operationalPurple,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ]),
+            ),
+          );
+        }),
+        Divider(height: 18.h, color: AppColors.operationalCardBorder),
+        Padding(
+          padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
+          child: Obx(
+            () => _CompactAttendanceStrip(
+              day: controller.todayAttendance.value,
+              inside: controller.isAttendanceInside,
+              loading: controller.todayAttendanceLoading.value,
+              elapsed: controller.elapsed.value,
+              isStartWork: controller.isStartWork,
+              startTime: controller.startTime,
+              formatClock: _formatClock,
+            ),
+          ),
         ),
-      ],
+      ]),
+    );
+  }
+}
+
+class _SummaryStat extends StatelessWidget {
+  const _SummaryStat({
+    required this.title,
+    required this.iconAsset,
+    required this.value,
+    this.subtitle,
+    this.formatNumber = true,
+  });
+
+  final String title;
+  final String iconAsset;
+  final String value;
+  final String? subtitle;
+  final bool formatNumber;
+
+  String get displayValue {
+    if (!formatNumber) return value;
+    final number = double.tryParse(value.replaceAll(',', ''));
+    return number == null ? value : NumberFormat('#,###.##').format(number);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shortTitle = <String, String>{
+          'workingHours': 'ساعات العمل',
+          'hourlyRate': 'سعر الساعة',
+          'advancesAndDebts': 'السلف والديون',
+          'remainingBalance': 'الرصيد',
+          'points': 'النقاط',
+        }[title] ??
+        title.tr;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 4.h),
+      child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Image.asset(iconAsset, width: 13.w, height: 13.w),
+          SizedBox(width: 2.w),
+          Flexible(
+            child: Text(
+              shortTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 7.5.sp,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: ThemeService.isDark.value
+                    ? Colors.white70
+                    : AppColors.operationalNavy,
+              ),
+            ),
+          ),
+        ]),
+        const Spacer(),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            displayValue,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w900,
+              color: AppColors.operationalPurple,
+            ),
+          ),
+        ),
+        if (subtitle != null)
+          Text(
+            subtitle!.tr,
+            maxLines: 1,
+            style: TextStyle(fontSize: 7.sp, color: AppColors.customGreyColor5),
+          ),
+      ]),
     );
   }
 }

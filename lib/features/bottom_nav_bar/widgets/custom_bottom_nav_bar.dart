@@ -15,7 +15,15 @@ import '../controllers/bottom_nav_bar_controller.dart';
 import 'build_nav_item.dart';
 
 class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
-  const CustomBottomNavigationBar({Key? key}) : super(key: key);
+  const CustomBottomNavigationBar({Key? key, this.onNavigate})
+      : super(key: key);
+
+  final ValueChanged<int>? onNavigate;
+
+  void _selectPage(int index) {
+    final callback = onNavigate;
+    callback != null ? callback(index) : controller.changePage(index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,17 +32,29 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
     }
     return SafeArea(
       child: SizedBox(
-        height: 70.h, // ارتفاع شريط التنقل
+        height: 66.h,
         child: Obx(
           () => Container(
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.greyColor
-                  : AppColors.whiteColor2,
+                  : Colors.white,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18.r),
-                topRight: Radius.circular(18.r),
+                topLeft: Radius.circular(24.r),
+                topRight: Radius.circular(24.r),
               ),
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.operationalPurple.withValues(alpha: .10),
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.operationalNavy.withValues(alpha: .08),
+                  blurRadius: 16,
+                  offset: const Offset(0, -3),
+                ),
+              ],
             ),
             child: Obx(
               () {
@@ -48,7 +68,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                       assetImage: AssetsManager.homeIcon,
                       isSelected: controller.currentIndex.value == 0,
                       label: 'home'.tr,
-                      onTap: () => controller.changePage(0),
+                      onTap: () => _selectPage(0),
                     ),
                     role == 'admin'
                         ? BuildNavItem(
@@ -67,7 +87,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                                       Get.find<CountrersImplement>(),
                                 ),
                               ).getReportInformation();
-                              controller.changePage(1);
+                              _selectPage(1);
                             },
                           )
                         : BuildNavItem(
@@ -79,7 +99,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                                 Get.find<EmployeeDashbordController>()
                                     .scrollToToday();
                               });
-                              controller.changePage(1);
+                              _selectPage(1);
                             },
                           ),
                     if (role == 'admin')
@@ -87,14 +107,14 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                         assetImage: AssetsManager.usersIcon,
                         isSelected: controller.currentIndex.value == 2,
                         label: 'employeeDepartment'.tr,
-                        onTap: () => controller.changePage(2),
+                        onTap: () => _selectPage(2),
                       ),
                     BuildNavItem(
                       assetImage: AssetsManager.profileIcon,
                       isSelected: controller.currentIndex.value ==
                           (role == 'admin' ? 3 : 2),
                       label: 'profile'.tr,
-                      onTap: () => controller.changePage(
+                      onTap: () => _selectPage(
                         role == 'admin' ? 3 : 2,
                       ),
                     ),

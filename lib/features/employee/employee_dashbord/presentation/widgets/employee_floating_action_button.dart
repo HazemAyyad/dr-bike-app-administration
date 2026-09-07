@@ -16,12 +16,12 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.bottomRight,
+      alignment: Alignment.bottomLeft,
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
-          alignment: Alignment.bottomRight,
+          alignment: Alignment.bottomLeft,
           children: [
             Obx(() {
               if (!controller.isAddMenuOpen.value) {
@@ -145,18 +145,21 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
             }),
 
             // زر الإضافة
-            SizedBox(
-              height: 55.h,
-              width: 55.w,
-              child: FloatingActionButton(
-                onPressed: () => controller.toggleAddMenu(),
-                backgroundColor: AppColors.secondaryColor,
-                elevation: 2.0,
-                shape: const CircleBorder(),
-                child: Icon(
-                  Icons.add,
-                  color: AppColors.whiteColor,
-                  size: 42.sp,
+            Padding(
+              padding: EdgeInsets.only(left: 18.w),
+              child: SizedBox(
+                height: 55.h,
+                width: 55.w,
+                child: FloatingActionButton(
+                  onPressed: () => controller.toggleAddMenu(),
+                  backgroundColor: AppColors.operationalPurple,
+                  elevation: 6.0,
+                  shape: const CircleBorder(),
+                  child: Icon(
+                    Icons.add,
+                    color: AppColors.whiteColor,
+                    size: 42.sp,
+                  ),
                 ),
               ),
             ),

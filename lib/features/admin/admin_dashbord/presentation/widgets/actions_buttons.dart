@@ -16,12 +16,14 @@ class BuildActionButtons extends StatelessWidget {
     this.employeePermissions,
     this.badges = const {},
     this.onReorder,
+    this.employeePurpleStyle = false,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
   final List<int>? employeePermissions;
   final Map<String, int> badges;
   final Future<void> Function(String draggedKey, String targetKey)? onReorder;
+  final bool employeePurpleStyle;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -41,15 +43,28 @@ class BuildActionButtons extends StatelessWidget {
         SizedBox(height: 5.h),
         Row(
           children: [
-            Text(
-              'permissions'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor6
-                        : AppColors.secondaryColor,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  employeePurpleStyle ? 'الأقسام المتاحة' : 'permissions'.tr,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w800,
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.secondaryColor,
+                      ),
+                ),
+                if (employeePurpleStyle)
+                  Text(
+                    'حسب صلاحياتك',
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      color: AppColors.customGreyColor5,
+                    ),
                   ),
+              ],
             ),
           ],
         ),
@@ -69,7 +84,7 @@ class BuildActionButtons extends StatelessWidget {
                 crossAxisCount: columns,
                 childAspectRatio: DesktopLayout.isDesktop(context) ? 3 : 2.h,
                 crossAxisSpacing: 8.w,
-                mainAxisSpacing: 13.h,
+                mainAxisSpacing: employeePurpleStyle ? 7.h : 13.h,
               ),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -89,6 +104,7 @@ class BuildActionButtons extends StatelessWidget {
                   button['route'],
                   badges[button['badgeKey']?.toString() ?? ''] ?? 0,
                   badgeDescriptors,
+                  employeePurpleStyle: employeePurpleStyle,
                 );
                 if (onReorder == null || buttonKey.isEmpty) return tile;
                 final tileWidth =
@@ -200,8 +216,9 @@ Widget _buildActionButton(
   String title,
   String route,
   int badge,
-  List<_ActionBadge> badgeDescriptors,
-) {
+  List<_ActionBadge> badgeDescriptors, {
+  bool employeePurpleStyle = false,
+}) {
   String desktopWindowTitle() {
     final count = badge > 0
         ? badge
@@ -226,12 +243,38 @@ Widget _buildActionButton(
           width: double.infinity,
           padding: EdgeInsets.symmetric(horizontal: 5.w),
           decoration: BoxDecoration(
-            color: AppColors.primaryColor,
+            color: employeePurpleStyle
+                ? (ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : Colors.white)
+                : AppColors.primaryColor,
             borderRadius: BorderRadius.circular(10.r),
+            border: employeePurpleStyle
+                ? Border.all(
+                    color: AppColors.operationalPurple.withValues(alpha: .20),
+                  )
+                : null,
+            boxShadow: employeePurpleStyle
+                ? [
+                    BoxShadow(
+                      color: AppColors.operationalPurple.withValues(alpha: .05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (employeePurpleStyle) ...[
+                Icon(
+                  _employeeActionIcon(title),
+                  color: AppColors.operationalPurple,
+                  size: 25.sp,
+                ),
+                SizedBox(height: 3.h),
+              ],
               if (DesktopWindowService.isSupported && route.isNotEmpty)
                 Align(
                   alignment: AlignmentDirectional.topEnd,
@@ -243,11 +286,13 @@ Widget _buildActionButton(
                         route: route,
                         title: desktopWindowTitle(),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.all(5),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5),
                         child: Icon(
                           Icons.open_in_new_rounded,
-                          color: Colors.white,
+                          color: employeePurpleStyle
+                              ? AppColors.operationalPurple
+                              : Colors.white,
                           size: 16,
                         ),
                       ),
@@ -259,7 +304,11 @@ Widget _buildActionButton(
                   title.tr,
                   textAlign: TextAlign.center,
                   style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
-                        color: Colors.white,
+                        color: employeePurpleStyle
+                            ? (ThemeService.isDark.value
+                                ? Colors.white
+                                : AppColors.operationalNavy)
+                            : Colors.white,
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
                       ),
@@ -307,6 +356,51 @@ Widget _buildActionButton(
       ],
     ),
   );
+}
+
+IconData _employeeActionIcon(String title) {
+  switch (title) {
+    case 'employeeTasks':
+      return Icons.assignment_ind_outlined;
+    case 'employeeDepartment':
+      return Icons.badge_outlined;
+    case 'maintenance':
+      return Icons.build_outlined;
+    case 'sales':
+      return Icons.shopping_bag_outlined;
+    case 'stock':
+      return Icons.inventory_2_outlined;
+    case 'privateTasks':
+      return Icons.task_alt_rounded;
+    case 'followUpDepartment':
+      return Icons.pending_actions_outlined;
+    case 'technicalSupport':
+      return Icons.support_agent_rounded;
+    case 'suggestionBox':
+      return Icons.lightbulb_outline_rounded;
+    case 'مركز التواصل الاجتماعي':
+      return Icons.forum_outlined;
+    case 'الملاحظات':
+      return Icons.chat_bubble_outline_rounded;
+    case 'projectManagement':
+      return Icons.account_tree_outlined;
+    case 'targetSetting':
+      return Icons.track_changes_rounded;
+    case 'debts':
+      return Icons.account_balance_wallet_outlined;
+    case 'generalData':
+      return Icons.dataset_outlined;
+    case 'boxes':
+      return Icons.point_of_sale_outlined;
+    case 'purchasesandReturns':
+      return Icons.shopping_cart_checkout_rounded;
+    case 'financialMatters':
+      return Icons.account_balance_outlined;
+    case 'checksandCommitments':
+      return Icons.receipt_long_outlined;
+    default:
+      return Icons.apps_rounded;
+  }
 }
 
 Widget _buildBadgeDetailsButton(List<_ActionBadge> badges) {

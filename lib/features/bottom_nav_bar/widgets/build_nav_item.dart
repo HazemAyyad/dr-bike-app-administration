@@ -20,12 +20,12 @@ class BuildNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = 28.w;
+    final iconSize = 24.w;
     final iconColor = isSelected
-        ? AppColors.secondaryColor
+        ? AppColors.operationalPurple
         : ThemeService.isDark.value
             ? AppColors.whiteColor2
-            : AppColors.customGreyColor5;
+            : const Color(0xFF8792AD);
 
     return Expanded(
       child: InkWell(
@@ -46,7 +46,7 @@ class BuildNavItem extends StatelessWidget {
                 filterQuality: FilterQuality.medium,
               ),
             ),
-            SizedBox(height: 2.h),
+            SizedBox(height: 3.h),
             Text(
               label,
               maxLines: 1,
@@ -54,8 +54,8 @@ class BuildNavItem extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: iconColor,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10.sp,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
             ),
           ],

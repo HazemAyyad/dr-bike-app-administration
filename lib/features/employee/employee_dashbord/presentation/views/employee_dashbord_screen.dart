@@ -19,7 +19,6 @@ import '../helpers/employee_task_visibility.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
-import '../widgets/employee_attendance_app_bar_button.dart';
 import '../widgets/impersonation_exit_button.dart';
 import '../widgets/employee_salary_receipt_alert.dart';
 import '../controllers/employee_salary_receipt_controller.dart';
@@ -40,116 +39,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          userName.isEmpty ? 'welcome'.tr : '${'welcome'.tr}  $userName',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        actions: [
-          const ImpersonationExitButton(),
-          if (userType == 'employee') ...[
-            Tooltip(
-              message: 'pointsGuideTitle'.tr,
-              child: Padding(
-                padding: EdgeInsetsDirectional.only(start: 3.w),
-                child: ClipOval(
-                  child: Material(
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.whiteColor2,
-                    child: InkWell(
-                      onTap: () => Get.toNamed(AppRoutes.POINTSTABLE),
-                      customBorder: const CircleBorder(),
-                      child: SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Icon(
-                          Icons.redeem_rounded,
-                          color: AppColors.primaryColor,
-                          size: 23.sp,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const EmployeeAttendanceAppBarButton(),
-            Obx(() {
-              final c = Get.isRegistered<EmployeeNotificationBadgeController>()
-                  ? Get.find<EmployeeNotificationBadgeController>()
-                  : null;
-              final n = c?.unreadCount.value ?? 0;
-              return Padding(
-                padding: EdgeInsets.only(right: 4.w),
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      ClipOval(
-                        child: Material(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.whiteColor2,
-                          child: InkWell(
-                            onTap: () async {
-                              await Get.toNamed(
-                                AppRoutes.EMPLOYEENOTIFICATIONCENTER,
-                              );
-                              c?.refresh();
-                            },
-                            customBorder: const CircleBorder(),
-                            child: SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: Icon(
-                                Icons.notifications_none_rounded,
-                                color: AppColors.primaryColor,
-                                size: 25.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (n > 0)
-                        Positioned(
-                          right: 2,
-                          top: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(minWidth: 18),
-                            child: Text(
-                              n > 99 ? '99+' : '$n',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
-        ],
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(92.h),
+        child: const _EmployeeHomeHeader(),
       ),
       body: Obx(() {
         if (userType == 'employee' &&
@@ -172,7 +64,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 10.h),
+                SizedBox(height: 14.h),
                 // بطاقات الإحصائيات
                 const EmployeeHomeStatisticsCard(),
                 SizedBox(height: 12.h),
@@ -195,24 +87,6 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                             if (controller.employeeData.value != null) {
                               return Column(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'tasks'.tr,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                              fontSize: 17.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: ThemeService.isDark.value
-                                                  ? AppColors.customGreyColor5
-                                                  : AppColors.operationalNavy,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8.h),
                                   ...() {
                                     final dashboardTasks =
                                         dashboardTasksForToday(
@@ -248,34 +122,68 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                       ];
                                     }
                                     return [
-                                      ...dashboardTasks.take(5).map((e) =>
-                                          EmployeeDashbordTasks(task: e)),
-                                      if (dashboardTasks.length > 5)
-                                        Padding(
-                                          padding: EdgeInsets.only(top: 8.h),
-                                          child: Align(
-                                            alignment:
-                                                AlignmentDirectional.centerEnd,
-                                            child: TextButton(
-                                              onPressed: () {
-                                                if (Get.isRegistered<
-                                                    BottomNavBarController>()) {
-                                                  Get.find<
-                                                          BottomNavBarController>()
-                                                      .changePage(1);
-                                                }
-                                              },
-                                              child: Text(
-                                                'showMoreTasks'.tr,
-                                                style: TextStyle(
-                                                  fontSize: 14.sp,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.primaryColor,
-                                                ),
-                                              ),
-                                            ),
+                                      Row(children: [
+                                        Text(
+                                          'مهام اليوم',
+                                          style: TextStyle(
+                                            fontSize: 18.sp,
+                                            fontWeight: FontWeight.w900,
+                                            color: ThemeService.isDark.value
+                                                ? Colors.white
+                                                : AppColors.operationalNavy,
                                           ),
                                         ),
+                                        SizedBox(width: 7.w),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 7.w, vertical: 2.h),
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.operationalPurple,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                              '${dashboardTasks.length}',
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10.sp,
+                                                  fontWeight: FontWeight.w900)),
+                                        ),
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            if (Get.isRegistered<
+                                                BottomNavBarController>()) {
+                                              Get.find<BottomNavBarController>()
+                                                  .changePage(1);
+                                            }
+                                          },
+                                          icon: const Icon(
+                                              Icons.chevron_left_rounded),
+                                          label: const Text('عرض الكل'),
+                                        ),
+                                      ]),
+                                      Container(
+                                        clipBehavior: Clip.antiAlias,
+                                        decoration: BoxDecoration(
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor
+                                              : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(14.r),
+                                          border: Border.all(
+                                            color:
+                                                AppColors.operationalCardBorder,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          children: dashboardTasks
+                                              .take(4)
+                                              .map((e) => EmployeeDashbordTasks(
+                                                  task: e))
+                                              .toList(),
+                                        ),
+                                      ),
+                                      SizedBox(height: 12.h),
                                     ];
                                   }(),
                                 ],
@@ -295,6 +203,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                               .map((e) => e.id)
                               .toList(),
                           onReorder: controller.reorderDashboardButton,
+                          employeePurpleStyle: true,
                         ),
                       ],
                     );
@@ -308,8 +217,162 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
       }),
       floatingActionButton: const EmployeeFloatingActionButton(),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
-          ? FloatingActionButtonLocation.startFloat
-          : FloatingActionButtonLocation.endFloat,
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.startFloat,
+    );
+  }
+}
+
+class _EmployeeHomeHeader extends GetView<EmployeeDashbordController> {
+  const _EmployeeHomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = ThemeService.isDark.value;
+    return Material(
+      color: dark ? AppColors.darkColor : AppColors.whiteColor,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsetsDirectional.fromSTEB(20.w, 7.h, 14.w, 7.h),
+          child: Row(children: [
+            Expanded(
+              child: Text(
+                userName.isEmpty ? 'مرحباً' : 'مرحباً، $userName',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                  color: dark ? Colors.white : AppColors.operationalNavy,
+                ),
+              ),
+            ),
+            const ImpersonationExitButton(),
+            if (userType == 'employee') ...[
+              if (Get.isRegistered<EmployeeNotificationBadgeController>())
+                Obx(() {
+                  final badge = Get.find<EmployeeNotificationBadgeController>();
+                  return _HeaderAction(
+                    icon: Icons.notifications_none_rounded,
+                    label: 'التنبيهات',
+                    badge: badge.unreadCount.value,
+                    onTap: () async {
+                      await Get.toNamed(AppRoutes.EMPLOYEENOTIFICATIONCENTER);
+                      badge.refresh();
+                    },
+                  );
+                })
+              else
+                _HeaderAction(
+                  icon: Icons.notifications_none_rounded,
+                  label: 'التنبيهات',
+                  onTap: () =>
+                      Get.toNamed(AppRoutes.EMPLOYEENOTIFICATIONCENTER),
+                ),
+              Obx(() => _HeaderAction(
+                    icon: Icons.history_rounded,
+                    label: 'سجل الدوام',
+                    dotColor: controller.todayAttendanceLoading.value
+                        ? null
+                        : controller.isAttendanceInside
+                            ? Colors.green
+                            : controller.todayAttendance.value != null
+                                ? AppColors.operationalPurple
+                                : null,
+                    onTap: controller.openMyAttendanceHistory,
+                  )),
+              _HeaderAction(
+                icon: Icons.redeem_outlined,
+                label: 'النقاط',
+                onTap: () => Get.toNamed(AppRoutes.POINTSTABLE),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderAction extends StatelessWidget {
+  const _HeaderAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge = 0,
+    this.dotColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final int badge;
+  final Color? dotColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10.r),
+      child: SizedBox(
+        width: 55.w,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Stack(clipBehavior: Clip.none, children: [
+            Icon(icon, color: AppColors.operationalPurple, size: 25.sp),
+            if (badge > 0)
+              PositionedDirectional(
+                top: -7.h,
+                end: -9.w,
+                child: Container(
+                  constraints: BoxConstraints(minWidth: 17.w, minHeight: 17.w),
+                  padding: EdgeInsets.symmetric(horizontal: 4.w),
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    badge > 9 ? '9+' : '$badge',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            if (dotColor != null)
+              PositionedDirectional(
+                top: -2.h,
+                end: -3.w,
+                child: Container(
+                  width: 8.w,
+                  height: 8.w,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1),
+                  ),
+                ),
+              ),
+          ]),
+          SizedBox(height: 4.h),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: ThemeService.isDark.value
+                    ? Colors.white70
+                    : AppColors.operationalNavy,
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -329,7 +392,7 @@ class _EmployeeSharedGoalsSection extends GetView<EmployeeDashbordController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'targetSection'.tr,
+            'الأهداف',
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w800,
@@ -340,13 +403,12 @@ class _EmployeeSharedGoalsSection extends GetView<EmployeeDashbordController> {
           ),
           SizedBox(height: 8.h),
           SizedBox(
-            height: 132.h,
+            height: 104.h,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: goals.length,
               separatorBuilder: (_, __) => SizedBox(width: 8.w),
-              itemBuilder: (context, index) =>
-                  _EmployeeGoalCard(goal: goals[index]),
+              itemBuilder: (_, index) => _EmployeeGoalCard(goal: goals[index]),
             ),
           ),
         ],
@@ -365,37 +427,26 @@ class _EmployeeGoalCard extends StatelessWidget {
     final achievement = double.tryParse(goal.achievementPercentage) ?? 0;
     final color = _goalStatusColor(goal.statusColor);
     return Container(
-      width: 210.w,
+      width: 185.w,
+      height: 94.h,
       padding: EdgeInsets.all(10.w),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value
             ? AppColors.customGreyColor
             : AppColors.whiteColor2,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: .40)),
       ),
       child: Row(
         children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                height: 54.h,
-                width: 54.h,
-                child: CircularProgressIndicator(
-                  value: (achievement / 100).clamp(0.0, 1.0),
-                  strokeWidth: 6,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                ),
-              ),
-              Text(
-                '${achievement.toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-            ],
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.track_changes_rounded, color: color, size: 24.sp),
           ),
           SizedBox(width: 10.w),
           Expanded(
@@ -408,26 +459,43 @@ class _EmployeeGoalCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 13.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w800,
                       ),
                 ),
                 SizedBox(height: 5.h),
+                Row(children: [
+                  Text(
+                    '${achievement.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(width: 7.w),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: LinearProgressIndicator(
+                        value: (achievement / 100).clamp(0.0, 1.0),
+                        minHeight: 6.h,
+                        color: color,
+                        backgroundColor: color.withValues(alpha: .10),
+                      ),
+                    ),
+                  ),
+                ]),
+                SizedBox(height: 2.h),
                 Text(
                   goal.statusLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  '${goal.currentValue} / ${goal.targetedValue}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -438,17 +506,19 @@ class _EmployeeGoalCard extends StatelessWidget {
   }
 }
 
-Color _goalStatusColor(String color) {
-  switch (color) {
-    case 'gold':
-      return const Color(0xFFD4AF37);
+Color _goalStatusColor(String statusColor) {
+  switch (statusColor.toLowerCase()) {
+    case 'red':
+      return Colors.redAccent;
     case 'green':
       return Colors.green;
+    case 'gold':
+    case 'yellow':
+      return const Color(0xFFD4A017);
     case 'blue':
-      return AppColors.operationalPurple;
-    case 'red':
+      return Colors.blue;
     default:
-      return Colors.redAccent;
+      return AppColors.operationalPurple;
   }
 }
 
