@@ -85,11 +85,15 @@ class AdminDashboardDatasource {
       final adminDashboard = data['admin_dashboard'] as Map? ?? {};
       final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
       final order = adminDashboard['button_order_keys'] as List? ?? const [];
+      final quickAccessCount = int.tryParse(
+              adminDashboard['quick_access_count']?.toString() ?? '') ??
+          6;
       return DashboardUiPreferences(
         hiddenButtonKeys:
             keys.map((item) => item.toString()).toList(growable: false),
         buttonOrderKeys:
             order.map((item) => item.toString()).toList(growable: false),
+        quickAccessCount: quickAccessCount.clamp(3, 30),
       );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};
@@ -106,6 +110,7 @@ class AdminDashboardDatasource {
   Future<DashboardUiPreferences> saveDashboardUiPreferences({
     required List<String> hiddenButtonKeys,
     required List<String> buttonOrderKeys,
+    int? quickAccessCount,
   }) async {
     try {
       final response = await api.put(
@@ -114,6 +119,8 @@ class AdminDashboardDatasource {
           'admin_dashboard': {
             'hidden_button_keys': hiddenButtonKeys,
             'button_order_keys': buttonOrderKeys,
+            if (quickAccessCount != null)
+              'quick_access_count': quickAccessCount,
           },
         },
       );
@@ -121,11 +128,16 @@ class AdminDashboardDatasource {
       final adminDashboard = data['admin_dashboard'] as Map? ?? {};
       final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
       final order = adminDashboard['button_order_keys'] as List? ?? const [];
+      final savedQuickAccessCount = int.tryParse(
+              adminDashboard['quick_access_count']?.toString() ?? '') ??
+          quickAccessCount ??
+          6;
       return DashboardUiPreferences(
         hiddenButtonKeys:
             keys.map((item) => item.toString()).toList(growable: false),
         buttonOrderKeys:
             order.map((item) => item.toString()).toList(growable: false),
+        quickAccessCount: savedQuickAccessCount.clamp(3, 30),
       );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};

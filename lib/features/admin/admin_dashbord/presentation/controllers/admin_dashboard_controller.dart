@@ -201,6 +201,8 @@ class AdminDashboardController extends GetxController
   final RxList<String> hiddenDashboardButtonKeys = <String>[].obs;
   final RxList<String> dashboardButtonOrderKeys = <String>[].obs;
   final RxBool isUiPreferencesSaving = false.obs;
+  final RxInt dashboardQuickAccessCount = 6.obs;
+  final RxBool isDashboardReorderMode = false.obs;
 
   List<Map<String, dynamic>> get visibleDashboardButtons {
     final visible = buttons
@@ -230,6 +232,7 @@ class AdminDashboardController extends GetxController
       final preferences = await getAdminUiPreferencesUsecase.call();
       hiddenDashboardButtonKeys.assignAll(preferences.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(preferences.buttonOrderKeys);
+      dashboardQuickAccessCount.value = preferences.quickAccessCount;
       update();
     } catch (_) {
       hiddenDashboardButtonKeys.clear();
@@ -280,9 +283,11 @@ class AdminDashboardController extends GetxController
       final saved = await saveAdminUiPreferencesUsecase.call(
         const [],
         buttonOrderKeys: const [],
+        quickAccessCount: 6,
       );
       hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
+      dashboardQuickAccessCount.value = saved.quickAccessCount;
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
       Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
@@ -302,8 +307,9 @@ class AdminDashboardController extends GetxController
     final from = order.indexOf(draggedKey);
     final to = order.indexOf(targetKey);
     if (from < 0 || to < 0) return;
-    final moved = order.removeAt(from);
-    order.insert(to, moved);
+    final target = order[to];
+    order[to] = order[from];
+    order[from] = target;
     dashboardButtonOrderKeys.assignAll(order);
     update();
 
@@ -646,6 +652,45 @@ class AdminDashboardController extends GetxController
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showPendingClosingPromptIfNeeded();
     });
+  }
+
+  void startDashboardReorder() {
+    if (isDashboardReorderMode.value) return;
+    isDashboardReorderMode.value = true;
+    update();
+  }
+
+  void finishDashboardReorder() {
+    if (!isDashboardReorderMode.value) return;
+    isDashboardReorderMode.value = false;
+    update();
+  }
+
+  Future<void> setDashboardQuickAccessCount(int count) async {
+    final next = count.clamp(3, 30);
+    if (next == dashboardQuickAccessCount.value ||
+        isUiPreferencesSaving.value) {
+      return;
+    }
+    final previous = dashboardQuickAccessCount.value;
+    dashboardQuickAccessCount.value = next;
+    update();
+
+    isUiPreferencesSaving(true);
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        hiddenDashboardButtonKeys.toList(growable: false),
+        buttonOrderKeys: dashboardButtonOrderKeys.toList(growable: false),
+        quickAccessCount: next,
+      );
+      dashboardQuickAccessCount.value = saved.quickAccessCount;
+    } catch (_) {
+      dashboardQuickAccessCount.value = previous;
+      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      isUiPreferencesSaving(false);
+      update();
+    }
   }
 
   @override

@@ -19,6 +19,10 @@ class BuildActionButtons extends StatelessWidget {
     this.employeePurpleStyle = false,
     this.sectionTitle,
     this.sectionSubtitle,
+    this.accentColor,
+    this.reorderMode = false,
+    this.onReorderStarted,
+    this.onReorderFinished,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
@@ -28,6 +32,10 @@ class BuildActionButtons extends StatelessWidget {
   final bool employeePurpleStyle;
   final String? sectionTitle;
   final String? sectionSubtitle;
+  final Color? accentColor;
+  final bool reorderMode;
+  final VoidCallback? onReorderStarted;
+  final VoidCallback? onReorderFinished;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -114,8 +122,16 @@ class BuildActionButtons extends StatelessWidget {
                   badges[button['badgeKey']?.toString() ?? ''] ?? 0,
                   badgeDescriptors,
                   employeePurpleStyle: employeePurpleStyle,
+                  accentColor: accentColor,
                 );
-                if (onReorder == null || buttonKey.isEmpty) return tile;
+                final animatedTile = _ReorderWiggle(
+                  enabled: reorderMode,
+                  reverse: index.isOdd,
+                  child: tile,
+                );
+                if (onReorder == null || buttonKey.isEmpty) {
+                  return animatedTile;
+                }
                 final tileWidth =
                     (constraints.maxWidth - ((columns - 1) * 8.w)) / columns;
                 return DragTarget<String>(
@@ -127,6 +143,9 @@ class BuildActionButtons extends StatelessWidget {
                       LongPressDraggable<String>(
                     data: buttonKey,
                     delay: const Duration(milliseconds: 350),
+                    onDragStarted: onReorderStarted,
+                    onDragEnd: (_) => onReorderFinished?.call(),
+                    onDraggableCanceled: (_, __) => onReorderFinished?.call(),
                     feedback: Material(
                       color: Colors.transparent,
                       child: SizedBox(
@@ -139,7 +158,7 @@ class BuildActionButtons extends StatelessWidget {
                     child: AnimatedScale(
                       scale: candidates.isEmpty ? 1 : .94,
                       duration: const Duration(milliseconds: 120),
-                      child: tile,
+                      child: animatedTile,
                     ),
                   ),
                 );
@@ -196,6 +215,72 @@ class BuildActionButtons extends StatelessWidget {
   }
 }
 
+class _ReorderWiggle extends StatefulWidget {
+  const _ReorderWiggle({
+    required this.enabled,
+    required this.reverse,
+    required this.child,
+  });
+
+  final bool enabled;
+  final bool reverse;
+  final Widget child;
+
+  @override
+  State<_ReorderWiggle> createState() => _ReorderWiggleState();
+}
+
+class _ReorderWiggleState extends State<_ReorderWiggle>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 115),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReorderWiggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled != widget.enabled) _syncAnimation();
+  }
+
+  void _syncAnimation() {
+    if (widget.enabled) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.stop();
+      _controller.value = .5;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) {
+        if (!widget.enabled) return child!;
+        final direction = widget.reverse ? -1.0 : 1.0;
+        return Transform.rotate(
+          angle: (_controller.value - .5) * .022 * direction,
+          child: child,
+        );
+      },
+    );
+  }
+}
+
 class _ActionBadge {
   const _ActionBadge({
     required this.label,
@@ -227,7 +312,9 @@ Widget _buildActionButton(
   int badge,
   List<_ActionBadge> badgeDescriptors, {
   bool employeePurpleStyle = false,
+  Color? accentColor,
 }) {
+  final effectiveAccent = accentColor ?? AppColors.operationalPurple;
   String desktopWindowTitle() {
     final count = badge > 0
         ? badge
@@ -260,13 +347,13 @@ Widget _buildActionButton(
             borderRadius: BorderRadius.circular(10.r),
             border: employeePurpleStyle
                 ? Border.all(
-                    color: AppColors.operationalPurple.withValues(alpha: .20),
+                    color: effectiveAccent.withValues(alpha: .28),
                   )
                 : null,
             boxShadow: employeePurpleStyle
                 ? [
                     BoxShadow(
-                      color: AppColors.operationalPurple.withValues(alpha: .05),
+                      color: effectiveAccent.withValues(alpha: .06),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -279,7 +366,7 @@ Widget _buildActionButton(
               if (employeePurpleStyle) ...[
                 Icon(
                   _actionIcon(title),
-                  color: AppColors.operationalPurple,
+                  color: effectiveAccent,
                   size: 23.sp,
                 ),
                 SizedBox(height: 3.h),
@@ -300,7 +387,7 @@ Widget _buildActionButton(
                         child: Icon(
                           Icons.open_in_new_rounded,
                           color: employeePurpleStyle
-                              ? AppColors.operationalPurple
+                              ? effectiveAccent
                               : Colors.white,
                           size: 16,
                         ),

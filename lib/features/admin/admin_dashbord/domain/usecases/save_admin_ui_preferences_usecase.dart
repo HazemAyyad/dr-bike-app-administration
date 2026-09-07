@@ -8,10 +8,12 @@ class SaveAdminUiPreferencesUsecase {
   Future<DashboardUiPreferences> call(
     List<String> hiddenButtonKeys, {
     required List<String> buttonOrderKeys,
+    int? quickAccessCount,
   }) {
     return adminDashboardRepository.saveDashboardUiPreferences(
       hiddenButtonKeys: hiddenButtonKeys,
       buttonOrderKeys: buttonOrderKeys,
+      quickAccessCount: quickAccessCount,
     );
   }
 }

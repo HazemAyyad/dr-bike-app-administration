@@ -17,15 +17,18 @@ abstract class AdminDashboardRepository {
   Future<DashboardUiPreferences> saveDashboardUiPreferences({
     required List<String> hiddenButtonKeys,
     required List<String> buttonOrderKeys,
+    int? quickAccessCount,
   });
 }
 
 class DashboardUiPreferences {
   final List<String> hiddenButtonKeys;
   final List<String> buttonOrderKeys;
+  final int quickAccessCount;
 
   const DashboardUiPreferences({
     this.hiddenButtonKeys = const [],
     this.buttonOrderKeys = const [],
+    this.quickAccessCount = 6,
   });
 }

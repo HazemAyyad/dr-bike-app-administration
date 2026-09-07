@@ -177,7 +177,11 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
               GetBuilder<AdminDashboardController>(
                 builder: (controller) {
                   final buttons = controller.visibleDashboardButtons;
-                  final quickCount = buttons.length > 6 ? 6 : buttons.length;
+                  final preferredQuickCount =
+                      controller.dashboardQuickAccessCount.value;
+                  final quickCount = buttons.length > preferredQuickCount
+                      ? preferredQuickCount
+                      : buttons.length;
                   final quick = buttons.take(quickCount).toList();
                   final remaining = buttons.skip(quickCount).toList();
                   final badges =
@@ -191,6 +195,10 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                         employeePurpleStyle: true,
                         sectionTitle: 'الوصول السريع',
                         sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
+                        accentColor: const Color(0xFFF28C28),
+                        reorderMode: controller.isDashboardReorderMode.value,
+                        onReorderStarted: controller.startDashboardReorder,
+                        onReorderFinished: controller.finishDashboardReorder,
                       ),
                       if (remaining.isNotEmpty) ...[
                         SizedBox(height: 16.h),
@@ -201,6 +209,9 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                           employeePurpleStyle: true,
                           sectionTitle: 'كل الأقسام',
                           sectionSubtitle: 'الأقسام المتاحة للأدمن',
+                          reorderMode: controller.isDashboardReorderMode.value,
+                          onReorderStarted: controller.startDashboardReorder,
+                          onReorderFinished: controller.finishDashboardReorder,
                         ),
                       ],
                     ],
@@ -261,6 +272,75 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                       ),
                     ),
                   ],
+                ),
+                SizedBox(height: 12.h),
+                GetBuilder<AdminDashboardController>(
+                  builder: (controller) => Container(
+                    padding: EdgeInsets.all(10.r),
+                    decoration: BoxDecoration(
+                      color: AppColors.operationalPurple.withValues(alpha: .06),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'عدد أقسام الوصول السريع',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                'اختر عدد البطاقات التي تظهر في الأعلى',
+                                style: TextStyle(
+                                  fontSize: 9.sp,
+                                  color: AppColors.customGreyColor5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: controller
+                                      .dashboardQuickAccessCount.value <=
+                                  3
+                              ? null
+                              : () => controller.setDashboardQuickAccessCount(
+                                    controller.dashboardQuickAccessCount.value -
+                                        1,
+                                  ),
+                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                        ),
+                        Container(
+                          constraints: BoxConstraints(minWidth: 34.w),
+                          child: Text(
+                            '${controller.dashboardQuickAccessCount.value}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.operationalPurple,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: controller
+                                      .dashboardQuickAccessCount.value >=
+                                  controller.visibleDashboardButtons.length
+                              ? null
+                              : () => controller.setDashboardQuickAccessCount(
+                                    controller.dashboardQuickAccessCount.value +
+                                        1,
+                                  ),
+                          icon: const Icon(Icons.add_circle_outline_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 SizedBox(height: 12.h),
                 Flexible(

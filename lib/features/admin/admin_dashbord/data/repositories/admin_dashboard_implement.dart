@@ -81,12 +81,14 @@ class AdminDashboardImplement implements AdminDashboardRepository {
   Future<DashboardUiPreferences> saveDashboardUiPreferences({
     required List<String> hiddenButtonKeys,
     required List<String> buttonOrderKeys,
+    int? quickAccessCount,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         return await adminDashboardDataSource.saveDashboardUiPreferences(
           hiddenButtonKeys: hiddenButtonKeys,
           buttonOrderKeys: buttonOrderKeys,
+          quickAccessCount: quickAccessCount,
         );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
