@@ -52,7 +52,14 @@ import com.thingclips.smart.sdk.api.IResultCallback
 import com.thingclips.smart.sdk.bean.DeviceBean
 import com.thingclips.smart.sdk.enums.ActivatorModelEnum
 import com.thingclips.smart.scene.api.IResultCallback as ISceneResultCallback
+import com.thingclips.smart.scene.model.NormalScene
+import com.thingclips.smart.scene.model.SavedScene
+import com.thingclips.smart.scene.model.action.SceneAction as SceneActionV2
+import com.thingclips.smart.scene.model.condition.SceneCondition as SceneConditionV2
 import com.thingclips.smart.scene.model.log.ExecuteLogList
+import com.thingclips.scene.core.bean.ConditionBase
+import com.thingclips.scene.core.protocol.b.usualimpl.TimingConditionBuilder
+import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.HashMap
 import java.text.SimpleDateFormat
@@ -734,6 +741,22 @@ class MainActivity : FlutterFragmentActivity() {
             return
         }
 
+        val needsSceneV2 = rawConditions.any { raw ->
+            raw["type"]?.toString() == "schedule" &&
+                raw["repeat_type"]?.toString() in setOf("monthly", "yearly")
+        }
+        if (needsSceneV2) {
+            saveTuyaSceneV2(
+                homeId = homeId,
+                name = name,
+                matchType = matchType,
+                rawConditions = rawConditions,
+                rawActions = rawActions,
+                result = result,
+            )
+            return
+        }
+
         val tasks = rawActions.mapNotNull { raw ->
             val devId = raw["tuya_device_id"]?.toString().orEmpty()
             val dpId = raw["dp_id"]?.toString().orEmpty()
@@ -815,6 +838,164 @@ class MainActivity : FlutterFragmentActivity() {
                 override fun onError(code: String?, error: String?) = create("")
             },
         )
+    }
+
+    private fun saveTuyaSceneV2(
+        homeId: Long,
+        name: String,
+        matchType: String,
+        rawConditions: List<Map<Any?, Any?>>,
+        rawActions: List<Map<Any?, Any?>>,
+        result: MethodChannel.Result,
+    ) {
+        val actions = rawActions.mapNotNull { raw ->
+            val devId = raw["tuya_device_id"]?.toString().orEmpty()
+            val dpId = raw["dp_id"]?.toString().orEmpty()
+            val value = raw["value"]
+            if (devId.isBlank() || dpId.isBlank() || value == null) {
+                null
+            } else {
+                val bean = ThingHomeSdk.getDataInstance().getDeviceBean(devId)
+                SceneActionV2().apply {
+                    entityId = devId
+                    entityName = raw["device_name"]?.toString()
+                        ?.takeIf { it.isNotBlank() }
+                        ?: bean?.name.orEmpty()
+                    actionExecutor = "dpIssue"
+                    executorProperty = hashMapOf<String, Any>(dpId to value)
+                    isDevOnline = bean?.isOnline == true
+                    productId = bean?.productId.orEmpty()
+                    devIcon = bean?.iconUrl.orEmpty()
+                }
+            }
+        }
+        if (actions.size != rawActions.size) {
+            result.success(sceneResult(false, "", "invalid_scene_action", "A scene action has no Tuya device, DP, or value"))
+            return
+        }
+
+        val conditions = rawConditions.mapNotNull { raw ->
+            if (raw["type"]?.toString() != "schedule") return@mapNotNull null
+            val time = raw["time"]?.toString().orEmpty()
+            if (time.isBlank()) return@mapNotNull null
+            val date = raw["date"]?.toString()?.replace("-", "")
+                ?.takeIf { it.length == 8 }
+                ?: SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+            val timezone = raw["timezone"]?.toString()?.takeIf { it.isNotBlank() }
+                ?: TimeZone.getDefault().id
+            val repeatType = raw["repeat_type"]?.toString().orEmpty()
+            val recurrence = raw["recurrence_config"] as? Map<*, *> ?: emptyMap<Any?, Any?>()
+            var loops = raw["loops"]?.toString()?.takeIf { it.length == 7 } ?: "0000000"
+            var tuyaRepeatType = "onlyOnce"
+            var monthLoops = ""
+            var dayLoops = ""
+            when (repeatType) {
+                "once", "" -> {
+                    loops = "0000000"
+                    tuyaRepeatType = "onlyOnce"
+                }
+                "daily" -> {
+                    loops = "1111111"
+                    tuyaRepeatType = "everyDay"
+                }
+                "weekly" -> {
+                    if (!loops.contains('1')) return@mapNotNull null
+                    tuyaRepeatType = "weekly"
+                }
+                "monthly" -> {
+                    loops = "0000000"
+                    tuyaRepeatType = "custom"
+                    monthLoops = "111111111111"
+                    val mode = recurrence["monthly_mode"]?.toString()
+                    val selectedDays = if (mode == "custom_dates") {
+                        (recurrence["custom_month_days"] as? List<*>)
+                            ?.mapNotNull { it?.toString()?.toIntOrNull() }
+                            ?: emptyList()
+                    } else {
+                        listOf(recurrence["month_day"]?.toString()?.toIntOrNull() ?: 1)
+                    }
+                    dayLoops = tuyaDayLoops(selectedDays)
+                }
+                "yearly" -> {
+                    loops = "0000000"
+                    tuyaRepeatType = "custom"
+                    val month = recurrence["yearly_month"]?.toString()?.toIntOrNull() ?: 1
+                    val day = recurrence["yearly_day"]?.toString()?.toIntOrNull() ?: 1
+                    monthLoops = (1..12).joinToString("") { if (it == month) "1" else "0" }
+                    dayLoops = tuyaDayLoops(listOf(day))
+                }
+                else -> return@mapNotNull null
+            }
+            if (repeatType in setOf("monthly", "yearly") && dayLoops == "0") return@mapNotNull null
+
+            val extraInfo = hashMapOf<String, Any?>(
+                "repeatType" to tuyaRepeatType,
+                "timeZoneId" to timezone,
+                "loops" to loops,
+            )
+            if (monthLoops.isNotBlank()) extraInfo["monthLoops"] = monthLoops
+            if (dayLoops.isNotBlank()) extraInfo["dayLoops"] = dayLoops
+            val base = TimingConditionBuilder(
+                timezone,
+                loops,
+                time,
+                date,
+            ).build() as ConditionBase
+            base.extraInfo = extraInfo
+            SceneConditionV2(base).apply {
+                entityName = "Schedule"
+                entityNameV2 = "Schedule / $tuyaRepeatType"
+                exprDisplay = time
+            }
+        }
+        if (conditions.size != rawConditions.size) {
+            result.success(sceneResult(false, "", "invalid_scene_condition", "Scene v2 custom recurrence requires valid schedule conditions"))
+            return
+        }
+
+        fun save(background: String) {
+            val scene = NormalScene().apply {
+                this.name = name
+                this.background = background
+                this.conditions = conditions
+                this.actions = actions
+                this.matchType = if (matchType == "any") SceneBean.MATCH_TYPE_OR else SceneBean.MATCH_TYPE_AND
+                isEnabled = true
+                scenarioRule = true
+                isStickyOnTop = false
+                ruleGenre = 2
+            }
+            ThingHomeSdk.getSceneServiceInstance().baseService().saveSceneV2(
+                homeId,
+                scene,
+                object : ISceneResultCallback<SavedScene?> {
+                    override fun onSuccess(saved: SavedScene?) {
+                        val sceneId = saved?.ruleId.orEmpty()
+                        if (sceneId.isBlank()) {
+                            result.success(sceneResult(false, "", "empty_scene_id", "Tuya saved the scene without an ID"))
+                        } else {
+                            result.success(sceneResult(true, sceneId, "", "Tuya scene v2 saved"))
+                        }
+                    }
+
+                    override fun onError(errorCode: String?, errorMessage: String?) {
+                        result.success(sceneResult(false, "", safeTuyaErrorCode(errorCode), safeTuyaErrorMessage(errorCode, errorMessage)))
+                    }
+                },
+            )
+        }
+
+        ThingHomeSdk.getSceneManagerInstance().getSceneBgs(
+            object : IThingResultCallback<ArrayList<String>> {
+                override fun onSuccess(backgrounds: ArrayList<String>?) = save(backgrounds?.firstOrNull().orEmpty())
+                override fun onError(code: String?, error: String?) = save("")
+            },
+        )
+    }
+
+    private fun tuyaDayLoops(days: List<Int>): String {
+        val bits = (1..31).joinToString("") { if (days.contains(it)) "1" else "0" }
+        return BigInteger(bits, 2).toString()
     }
 
     private fun executeTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {

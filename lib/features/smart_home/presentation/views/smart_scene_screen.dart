@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -569,6 +570,7 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
   int? roomId;
   bool saving = false;
   late List<Map<String, dynamic>> conditions;
+  late final Map<String, List<Map<String, dynamic>>> conditionsByTrigger;
   late List<Map<String, dynamic>> actions;
 
   @override
@@ -581,10 +583,19 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
     enabled = existing?.enabled ?? true;
     showOnHome = existing?.showOnHome ?? true;
     roomId = existing?.smartRoomId;
-    conditions = existing?.conditions
+    final loadedConditions = existing?.conditions
             .map((item) => Map<String, dynamic>.from(item))
             .toList() ??
         [];
+    conditionsByTrigger = {
+      'schedule': loadedConditions
+          .where((item) => item['type'] == 'schedule')
+          .toList(growable: true),
+      'device': loadedConditions
+          .where((item) => item['type'] == 'device')
+          .toList(growable: true),
+    };
+    conditions = conditionsByTrigger[triggerType] ?? <Map<String, dynamic>>[];
     actions = existing?.actions
             .map((item) => Map<String, dynamic>.from(item))
             .toList() ??
@@ -690,9 +701,15 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
               ],
               selected: {triggerType},
               onSelectionChanged: (selection) {
+                final nextType = selection.first;
+                if (nextType == triggerType) return;
                 setState(() {
-                  triggerType = selection.first;
-                  conditions.clear();
+                  if (triggerType != 'manual') {
+                    conditionsByTrigger[triggerType] = conditions;
+                  }
+                  triggerType = nextType;
+                  conditions =
+                      conditionsByTrigger[nextType] ?? <Map<String, dynamic>>[];
                 });
               },
             ),
@@ -724,6 +741,9 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
                         (entry) => _ConditionTile(
                           controller: widget.controller,
                           condition: entry.value,
+                          onEdit: entry.value['type'] == 'schedule'
+                              ? () => _editScheduleCondition(entry.key)
+                              : null,
                           onDelete: () =>
                               setState(() => conditions.removeAt(entry.key)),
                         ),
@@ -806,10 +826,21 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
     if (selected.isNotEmpty) setState(() => conditions.add(selected.first));
   }
 
+  Future<void> _editScheduleCondition(int index) async {
+    final condition = await _pickSchedule(
+      context,
+      initial: conditions[index],
+    );
+    if (condition != null && mounted) {
+      setState(() => conditions[index] = condition);
+    }
+  }
+
   Future<void> _addAction() async {
     final selected = await _pickSceneActionTargets(
       context,
       controller: widget.controller,
+      existingActions: actions,
     );
     if (selected.isEmpty) return;
     setState(() {
@@ -934,6 +965,7 @@ class _SceneNameDialogState extends State<_SceneNameDialog> {
 Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
   BuildContext context, {
   required SmartHomeController controller,
+  required List<Map<String, dynamic>> existingActions,
 }) async {
   final taskType = await showModalBottomSheet<String>(
     context: context,
@@ -1025,6 +1057,7 @@ Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
   if (multiple == null || !context.mounted) return const [];
 
   final targets = <_SceneBoolTarget>[];
+  final seen = <String>{};
   for (final device in controller.devices) {
     final functions = <TuyaDeviceFunction>[
       ...DeviceCapabilityResolver.boolSwitches(device),
@@ -1032,8 +1065,11 @@ Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
           .where((function) => function.isEnum),
     ];
     for (final function in functions) {
-      if (_semanticSceneValue(function, turnOn: true) != null &&
-          _semanticSceneValue(function, turnOn: false) != null) {
+      final key = '${device.id}:${function.dpId}';
+      if (seen.add(key) &&
+          _SceneSemanticAction.values.any(
+            (action) => _semanticSceneValue(function, action: action) != null,
+          )) {
         targets.add(_SceneBoolTarget(device: device, function: function));
       }
     }
@@ -1043,179 +1079,18 @@ Future<List<Map<String, dynamic>>> _pickSceneActionTargets(
     return const [];
   }
 
-  final selectedKeys = <String>{};
-  var turnOn = true;
-  final accepted = await showModalBottomSheet<bool>(
+  final result = await showModalBottomSheet<List<Map<String, dynamic>>>(
     context: context,
     isScrollControlled: true,
-    builder: (sheetContext) => StatefulBuilder(
-      builder: (context, setSheetState) => FractionallySizedBox(
-        heightFactor: .92,
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 14.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'اختر الأمر والأجهزة',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-                SizedBox(height: 14.h),
-                Container(
-                  padding: EdgeInsets.all(10.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15.r),
-                    border: Border.all(color: smartHomeBorder),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'الأمر المطلوب',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      SizedBox(height: 8.h),
-                      SegmentedButton<bool>(
-                        segments: const [
-                          ButtonSegment(
-                            value: true,
-                            icon: Icon(Icons.power_settings_new_rounded),
-                            label: Text('تشغيل / فتح'),
-                          ),
-                          ButtonSegment(
-                            value: false,
-                            icon: Icon(Icons.power_off_rounded),
-                            label: Text('إطفاء / إغلاق'),
-                          ),
-                        ],
-                        selected: {turnOn},
-                        onSelectionChanged: (selection) =>
-                            setSheetState(() => turnOn = selection.first),
-                      ),
-                      SizedBox(height: 7.h),
-                      const Text(
-                        'كل جهاز سيحوّل الأمر تلقائيًا حسب نوعه وقدراته.',
-                        style: TextStyle(color: smartHomeMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                if (multiple)
-                  Row(
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => setSheetState(() {
-                          if (selectedKeys.length == targets.length) {
-                            selectedKeys.clear();
-                          } else {
-                            selectedKeys
-                              ..clear()
-                              ..addAll(targets.map(_sceneTargetKey));
-                          }
-                        }),
-                        icon: const Icon(Icons.select_all_rounded),
-                        label: Text(selectedKeys.length == targets.length
-                            ? 'إلغاء تحديد الكل'
-                            : 'تحديد الكل'),
-                      ),
-                      const Spacer(),
-                      Text('${selectedKeys.length} محدد'),
-                    ],
-                  ),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: targets.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 7.h),
-                    itemBuilder: (_, index) {
-                      final target = targets[index];
-                      final key = _sceneTargetKey(target);
-                      final selected = selectedKeys.contains(key);
-                      final mappedValue = _semanticSceneValue(
-                        target.function,
-                        turnOn: turnOn,
-                      );
-                      final subtitle = [
-                        _sceneFunctionLabel(target.device, target.function),
-                        _friendlySceneEnumValue(mappedValue.toString()),
-                        if (target.device.roomName.isNotEmpty)
-                          target.device.roomName,
-                        target.device.online ? 'متصل' : 'غير متصل',
-                      ].join(' • ');
-                      return Material(
-                        color: selected
-                            ? smartHomeAccent.withOpacity(.08)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(13.r),
-                        child: CheckboxListTile(
-                          value: selected,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(13.r),
-                            side: BorderSide(
-                              color:
-                                  selected ? smartHomeAccent : smartHomeBorder,
-                            ),
-                          ),
-                          secondary: Icon(
-                            target.function.isBool
-                                ? Icons.lightbulb_outline_rounded
-                                : Icons.curtains_rounded,
-                            color: smartHomeAccent,
-                          ),
-                          title: Text(
-                            target.device.name,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          subtitle: Text(subtitle),
-                          onChanged: (_) => setSheetState(() {
-                            if (multiple) {
-                              selected
-                                  ? selectedKeys.remove(key)
-                                  : selectedKeys.add(key);
-                            } else {
-                              selectedKeys
-                                ..clear()
-                                ..add(key);
-                            }
-                          }),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                FilledButton(
-                  onPressed: selectedKeys.isEmpty
-                      ? null
-                      : () => Navigator.pop(sheetContext, true),
-                  child: Text('إضافة المحدد (${selectedKeys.length})'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    useSafeArea: true,
+    builder: (sheetContext) => _SceneActionPickerSheet(
+      devices: controller.devices.toList(growable: false),
+      targets: targets,
+      multiple: multiple,
+      existingActions: existingActions,
     ),
   );
-  if (accepted != true) return const [];
-
-  return targets
-      .where((target) => selectedKeys.contains(_sceneTargetKey(target)))
-      .map((target) {
-    final value = _semanticSceneValue(target.function, turnOn: turnOn);
-    return <String, dynamic>{
-      'device_id': target.device.id,
-      'dp_id': target.function.dpId,
-      'value': value,
-      'device_name': target.device.name,
-      'function_name': _sceneFunctionLabel(target.device, target.function),
-    };
-  }).toList(growable: false);
+  return result ?? const <Map<String, dynamic>>[];
 }
 
 class _SceneTaskTypeTile extends StatelessWidget {
@@ -1302,28 +1177,585 @@ class _SceneDeviceModeTile extends StatelessWidget {
   }
 }
 
+enum _SceneSemanticAction { activate, deactivate, stop }
+
+class _SceneActionPickerSheet extends StatefulWidget {
+  const _SceneActionPickerSheet({
+    Key? key,
+    required this.devices,
+    required this.targets,
+    required this.multiple,
+    required this.existingActions,
+  }) : super(key: key);
+
+  final List<SmartDeviceModel> devices;
+  final List<_SceneBoolTarget> targets;
+  final bool multiple;
+  final List<Map<String, dynamic>> existingActions;
+
+  @override
+  State<_SceneActionPickerSheet> createState() =>
+      _SceneActionPickerSheetState();
+}
+
+class _SceneActionPickerSheetState extends State<_SceneActionPickerSheet> {
+  late final TextEditingController searchController;
+  final selectedKeys = <String>{};
+  late _SceneSemanticAction action;
+  String query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    searchController = TextEditingController();
+    action = _availableActions.contains(_SceneSemanticAction.activate)
+        ? _SceneSemanticAction.activate
+        : _availableActions.first;
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  List<_SceneSemanticAction> get _availableActions => _SceneSemanticAction
+      .values
+      .where((candidate) => widget.targets.any(
+            (target) =>
+                _semanticSceneValue(target.function, action: candidate) != null,
+          ))
+      .toList(growable: false);
+
+  Set<String> get _existingKeys => widget.existingActions
+      .map((item) => '${item['device_id']}:${item['dp_id']}')
+      .toSet();
+
+  List<_SceneBoolTarget> _targetsForDevice(SmartDeviceModel device) =>
+      widget.targets
+          .where((target) => target.device.id == device.id)
+          .toList(growable: false);
+
+  bool _supports(_SceneBoolTarget target) =>
+      _semanticSceneValue(target.function, action: action) != null;
+
+  bool _matchesDevice(SmartDeviceModel device) {
+    final clean = query.trim().toLowerCase();
+    if (clean.isEmpty) return true;
+    final searchable = [
+      device.name,
+      device.roomName,
+      device.productName,
+      device.category,
+      ..._targetsForDevice(device)
+          .map((target) => _sceneFunctionLabel(device, target.function)),
+    ].join(' ').toLowerCase();
+    return searchable.contains(clean);
+  }
+
+  List<_SceneBoolTarget> get _visibleTargets {
+    final clean = query.trim().toLowerCase();
+    if (clean.isEmpty) return widget.targets;
+    return widget.targets.where((target) {
+      final searchable = [
+        target.device.name,
+        target.device.roomName,
+        target.device.productName,
+        target.device.category,
+        _sceneFunctionLabel(target.device, target.function),
+      ].join(' ').toLowerCase();
+      return searchable.contains(clean);
+    }).toList(growable: false);
+  }
+
+  Set<String> get _visibleSupportedKeys =>
+      _visibleTargets.where(_supports).map(_sceneTargetKey).toSet();
+
+  int get _unsupportedSelectedCount => widget.targets
+      .where((target) =>
+          selectedKeys.contains(_sceneTargetKey(target)) && !_supports(target))
+      .length;
+
+  void _toggleTarget(_SceneBoolTarget target) {
+    final key = _sceneTargetKey(target);
+    final selected = selectedKeys.contains(key);
+    if (!selected && !_supports(target)) return;
+    setState(() {
+      if (selected) {
+        selectedKeys.remove(key);
+      } else if (widget.multiple) {
+        selectedKeys.add(key);
+      } else {
+        selectedKeys
+          ..clear()
+          ..add(key);
+      }
+    });
+  }
+
+  void _toggleVisible() {
+    final visible = _visibleSupportedKeys;
+    if (visible.isEmpty) return;
+    final allSelected = visible.every(selectedKeys.contains);
+    setState(() {
+      if (allSelected) {
+        selectedKeys.removeAll(visible);
+      } else {
+        selectedKeys.addAll(visible);
+      }
+    });
+  }
+
+  void _removeUnsupportedSelections() {
+    setState(() {
+      selectedKeys.removeWhere((key) {
+        final target = widget.targets
+            .firstWhereOrNull((item) => _sceneTargetKey(item) == key);
+        return target == null || !_supports(target);
+      });
+    });
+  }
+
+  void _confirm() {
+    if (selectedKeys.isEmpty || _unsupportedSelectedCount > 0) return;
+    final result = widget.targets
+        .where((target) => selectedKeys.contains(_sceneTargetKey(target)))
+        .map((target) => <String, dynamic>{
+              'device_id': target.device.id,
+              'dp_id': target.function.dpId,
+              'value': _semanticSceneValue(target.function, action: action),
+              'device_name': target.device.name,
+              'function_name':
+                  _sceneFunctionLabel(target.device, target.function),
+            })
+        .toList(growable: false);
+    Navigator.pop(context, result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleDevices =
+        widget.devices.where(_matchesDevice).toList(growable: false);
+    final supportedVisible = _visibleSupportedKeys;
+    final allVisibleSelected = supportedVisible.isNotEmpty &&
+        supportedVisible.every(selectedKeys.contains);
+    final unsupportedSelected = _unsupportedSelectedCount;
+
+    return FractionallySizedBox(
+      heightFactor: .94,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 12.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 42.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: smartHomeBorder,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              widget.multiple ? 'اختيار عدة أجهزة' : 'اختيار جهاز واحد',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            SizedBox(height: 12.h),
+            Container(
+              padding: EdgeInsets.all(10.w),
+              decoration: BoxDecoration(
+                color: smartHomeAccent.withOpacity(.055),
+                borderRadius: BorderRadius.circular(15.r),
+                border: Border.all(color: smartHomeAccent.withOpacity(.13)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'الأمر المطلوب',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    children: _availableActions
+                        .map((candidate) => Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 3.w),
+                                child: _SceneCommandChoice(
+                                  action: candidate,
+                                  selected: action == candidate,
+                                  onTap: () =>
+                                      setState(() => action = candidate),
+                                ),
+                              ),
+                            ))
+                        .toList(growable: false),
+                  ),
+                  SizedBox(height: 7.h),
+                  const Text(
+                    'تبقى الأجهزة ثابتة، ويتغير الأمر المناسب لكل مفتاح فقط.',
+                    style: TextStyle(color: smartHomeMuted),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: searchController,
+              onChanged: (value) => setState(() => query = value),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'ابحث باسم الجهاز أو الغرفة أو المفتاح',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'مسح البحث',
+                        onPressed: () {
+                          searchController.clear();
+                          setState(() => query = '');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(13.r),
+                  borderSide: const BorderSide(color: smartHomeBorder),
+                ),
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Row(
+              children: [
+                if (widget.multiple)
+                  TextButton.icon(
+                    onPressed: supportedVisible.isEmpty ? null : _toggleVisible,
+                    icon: Icon(allVisibleSelected
+                        ? Icons.deselect_rounded
+                        : Icons.select_all_rounded),
+                    label: Text(allVisibleSelected
+                        ? 'إلغاء تحديد النتائج'
+                        : 'تحديد النتائج'),
+                  ),
+                const Spacer(),
+                Text(
+                  '${selectedKeys.length} أوامر محددة',
+                  style: const TextStyle(
+                    color: smartHomeMuted,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            if (unsupportedSelected > 0)
+              Container(
+                margin: EdgeInsets.only(bottom: 7.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4E5),
+                  borderRadius: BorderRadius.circular(11.r),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded,
+                        color: Color(0xFFB76A00)),
+                    SizedBox(width: 7.w),
+                    Expanded(
+                      child: Text(
+                        '$unsupportedSelected من اختياراتك لا تدعم الأمر الجديد',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _removeUnsupportedSelections,
+                      child: const Text('إلغاءها'),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: visibleDevices.isEmpty
+                  ? const Center(child: Text('لا توجد نتائج مطابقة'))
+                  : ListView.separated(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      itemCount: visibleDevices.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                      itemBuilder: (context, index) => _deviceCard(
+                        context,
+                        visibleDevices[index],
+                      ),
+                    ),
+            ),
+            SizedBox(height: 9.h),
+            FilledButton.icon(
+              onPressed: selectedKeys.isEmpty || unsupportedSelected > 0
+                  ? null
+                  : _confirm,
+              icon: const Icon(Icons.add_task_rounded),
+              label: Text('إضافة ${selectedKeys.length} أوامر'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _deviceCard(BuildContext context, SmartDeviceModel device) {
+    final clean = query.trim().toLowerCase();
+    final deviceMatches = clean.isEmpty ||
+        [device.name, device.roomName, device.productName, device.category]
+            .join(' ')
+            .toLowerCase()
+            .contains(clean);
+    final allTargets = _targetsForDevice(device);
+    final targets = deviceMatches
+        ? allTargets
+        : allTargets
+            .where((target) => _sceneFunctionLabel(device, target.function)
+                .toLowerCase()
+                .contains(clean))
+            .toList(growable: false);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: smartHomeBorder),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(11.w, 10.h, 11.w, 8.h),
+            child: Row(
+              children: [
+                Container(
+                  width: 38.r,
+                  height: 38.r,
+                  decoration: BoxDecoration(
+                    color: smartHomeAccent.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child:
+                      const Icon(Icons.devices_rounded, color: smartHomeAccent),
+                ),
+                SizedBox(width: 9.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        device.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.visible,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      Text(
+                        [
+                          if (device.roomName.isNotEmpty) device.roomName,
+                          device.online ? 'متصل' : 'غير متصل الآن',
+                        ].join(' • '),
+                        style: TextStyle(
+                          color: device.online
+                              ? const Color(0xFF1B8F63)
+                              : const Color(0xFFB76A00),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          if (targets.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(13),
+              child: Row(
+                children: [
+                  Icon(Icons.block_rounded, color: smartHomeMuted),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'لا توجد مفاتيح قابلة للتحكم في هذا الجهاز',
+                      style: TextStyle(color: smartHomeMuted),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...targets.map((target) => _targetTile(target)),
+        ],
+      ),
+    );
+  }
+
+  Widget _targetTile(_SceneBoolTarget target) {
+    final key = _sceneTargetKey(target);
+    final selected = selectedKeys.contains(key);
+    final value = _semanticSceneValue(target.function, action: action);
+    final supported = value != null;
+    final alreadyAdded = _existingKeys.contains(key);
+    final label = _sceneFunctionLabel(target.device, target.function);
+    final outcome = supported
+        ? _semanticOutcomeLabel(target.function, value, action)
+        : 'هذا الأمر غير مدعوم';
+
+    return InkWell(
+      onTap: selected || supported ? () => _toggleTarget(target) : null,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+        child: Row(
+          children: [
+            Checkbox(
+              value: selected,
+              onChanged:
+                  selected || supported ? (_) => _toggleTarget(target) : null,
+            ),
+            Icon(
+              target.function.isBool
+                  ? Icons.toggle_on_outlined
+                  : Icons.curtains_rounded,
+              color: supported ? smartHomeAccent : smartHomeMuted,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: supported ? null : smartHomeMuted,
+                    ),
+                  ),
+                  Text(
+                    [
+                      outcome,
+                      if (alreadyAdded) 'مضاف للمشهد وسيتم تحديثه',
+                    ].join(' • '),
+                    style: TextStyle(
+                      color:
+                          supported ? smartHomeMuted : const Color(0xFFB76A00),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SceneCommandChoice extends StatelessWidget {
+  const _SceneCommandChoice({
+    required this.action,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _SceneSemanticAction action;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = action == _SceneSemanticAction.activate
+        ? 'تشغيل / فتح'
+        : action == _SceneSemanticAction.deactivate
+            ? 'إطفاء / إغلاق'
+            : 'توقف';
+    final icon = action == _SceneSemanticAction.activate
+        ? Icons.power_settings_new_rounded
+        : action == _SceneSemanticAction.deactivate
+            ? Icons.power_off_rounded
+            : Icons.stop_circle_outlined;
+    return Material(
+      color: selected ? smartHomeAccent : Colors.white,
+      borderRadius: BorderRadius.circular(11.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 9.h),
+          child: Column(
+            children: [
+              Icon(icon,
+                  size: 20.r, color: selected ? Colors.white : smartHomeAccent),
+              SizedBox(height: 3.h),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? Colors.white : smartHomeInk,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 String _sceneTargetKey(_SceneBoolTarget target) =>
     '${target.device.id}:${target.function.dpId}';
 
 dynamic _semanticSceneValue(
   TuyaDeviceFunction function, {
-  required bool turnOn,
+  required _SceneSemanticAction action,
 }) {
-  if (function.isBool) return turnOn;
+  if (function.isBool) {
+    if (action == _SceneSemanticAction.activate) return true;
+    if (action == _SceneSemanticAction.deactivate) return false;
+    return null;
+  }
   if (!function.isEnum) return null;
   final rawRange = function.values['range'];
   final options = rawRange is List
       ? rawRange.map((item) => item.toString()).toList(growable: false)
       : const <String>[];
-  final preferred = turnOn
-      ? const ['open', 'continue', 'on', 'start']
-      : const ['close', 'off', 'stop', 'end'];
+  final preferred = action == _SceneSemanticAction.activate
+      ? const ['open', 'on', 'start']
+      : action == _SceneSemanticAction.deactivate
+          ? const ['close', 'off', 'end']
+          : const ['stop', 'pause'];
   for (final wanted in preferred) {
     for (final option in options) {
       if (option.toLowerCase() == wanted) return option;
     }
   }
   return null;
+}
+
+String _semanticOutcomeLabel(
+  TuyaDeviceFunction function,
+  dynamic value,
+  _SceneSemanticAction action,
+) {
+  if (function.isBool) {
+    return action == _SceneSemanticAction.activate
+        ? 'سيتم التشغيل'
+        : 'سيتم الإطفاء';
+  }
+  return 'سيتم: ${_friendlySceneEnumValue(value?.toString() ?? '')}';
 }
 
 String _friendlySceneEnumValue(String value) {
@@ -1336,6 +1768,12 @@ String _friendlySceneEnumValue(String value) {
       return 'إيقاف';
     case 'continue':
       return 'متابعة';
+    case 'start':
+      return 'بدء';
+    case 'end':
+      return 'إنهاء';
+    case 'pause':
+      return 'إيقاف مؤقت';
     case 'on':
       return 'تشغيل';
     case 'off':
@@ -1444,38 +1882,44 @@ class _ConditionTile extends StatelessWidget {
   const _ConditionTile({
     required this.controller,
     required this.condition,
+    this.onEdit,
     required this.onDelete,
   });
   final SmartHomeController controller;
   final Map<String, dynamic> condition;
+  final VoidCallback? onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final scheduled = condition['type'] == 'schedule';
-    final days = (condition['repeat_days'] as List?)?.length ?? 0;
-    final repeatType = condition['repeat_type']?.toString() ??
-        (days == 0
-            ? 'once'
-            : days == 7
-                ? 'daily'
-                : 'weekly');
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(scheduled ? Icons.schedule_rounded : Icons.sensors_rounded),
       title: Text(scheduled
           ? 'الساعة ${condition['time']}'
           : '${_sceneTargetDeviceName(controller, condition)} • ${_sceneTargetFunctionName(controller, condition)}'),
-      subtitle: Text(scheduled
-          ? (repeatType == 'once'
-              ? 'مرة واحدة'
-              : repeatType == 'daily'
-                  ? 'يتكرر يوميًا'
-                  : 'يتكرر في $days أيام')
-          : (condition['value'] == true ? 'عند التشغيل' : 'عند الإطفاء')),
-      trailing: IconButton(
-        onPressed: onDelete,
-        icon: const Icon(Icons.close_rounded),
+      subtitle: Text(
+        scheduled
+            ? _sceneScheduleSummary(condition)
+            : (condition['value'] == true ? 'عند التشغيل' : 'عند الإطفاء'),
+      ),
+      onTap: onEdit,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (onEdit != null)
+            IconButton(
+              tooltip: 'تعديل المؤقت',
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          IconButton(
+            tooltip: 'حذف الشرط',
+            onPressed: onDelete,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
       ),
     );
   }
@@ -1520,134 +1964,834 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-Future<Map<String, dynamic>?> _pickSchedule(BuildContext context) async {
-  final now = DateTime.now();
-  final time = await showTimePicker(
+Future<Map<String, dynamic>?> _pickSchedule(
+  BuildContext context, {
+  Map<String, dynamic>? initial,
+}) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  return showModalBottomSheet<Map<String, dynamic>>(
     context: context,
-    initialTime: TimeOfDay.fromDateTime(now.add(const Duration(minutes: 5))),
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => _SceneSchedulePickerSheet(initial: initial),
   );
-  if (time == null || !context.mounted) return null;
+}
+
+class _SceneSchedulePickerSheet extends StatefulWidget {
+  const _SceneSchedulePickerSheet({this.initial});
+
+  final Map<String, dynamic>? initial;
+
+  @override
+  State<_SceneSchedulePickerSheet> createState() =>
+      _SceneSchedulePickerSheetState();
+}
+
+class _SceneSchedulePickerSheetState extends State<_SceneSchedulePickerSheet> {
+  static const _repeatTypes = <String>[
+    'once',
+    'daily',
+    'weekly',
+    'monthly',
+    'yearly',
+  ];
+  static const _weekdays = <_SceneWeekday>[
+    _SceneWeekday('sat', 'س', 'السبت'),
+    _SceneWeekday('sun', 'ح', 'الأحد'),
+    _SceneWeekday('mon', 'ن', 'الإثنين'),
+    _SceneWeekday('tue', 'ث', 'الثلاثاء'),
+    _SceneWeekday('wed', 'ر', 'الأربعاء'),
+    _SceneWeekday('thu', 'خ', 'الخميس'),
+    _SceneWeekday('fri', 'ج', 'الجمعة'),
+  ];
+  static const _monthNames = <String>[
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+
+  late TimeOfDay time;
+  late String repeatType;
   final selectedDays = <String>{};
-  var repeatType = 'once';
-  final accepted = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) {
-        const days = {
-          'sun': 'الأحد',
-          'mon': 'الإثنين',
-          'tue': 'الثلاثاء',
-          'wed': 'الأربعاء',
-          'thu': 'الخميس',
-          'fri': 'الجمعة',
-          'sat': 'السبت',
-        };
-        return AlertDialog(
-          title: const Text('تكرار المؤقت'),
-          content: SingleChildScrollView(
+  late String monthlyMode;
+  late int monthDay;
+  final customMonthDays = <int>{};
+  late int yearlyMonth;
+  late int yearlyDay;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial ?? const <String, dynamic>{};
+    final initialTime = initial['time']?.toString().split(':') ?? const [];
+    final now = DateTime.now().add(const Duration(minutes: 5));
+    final parsedHour =
+        initialTime.isNotEmpty ? int.tryParse(initialTime.first) : null;
+    final parsedMinute =
+        initialTime.length > 1 ? int.tryParse(initialTime[1]) : null;
+    time = TimeOfDay(
+      hour: (parsedHour ?? now.hour).clamp(0, 23),
+      minute: (parsedMinute ?? now.minute).clamp(0, 59),
+    );
+    final initialRepeat = initial['repeat_type']?.toString() ?? 'once';
+    repeatType = _repeatTypes.contains(initialRepeat) ? initialRepeat : 'once';
+    final rawDays = initial['repeat_days'];
+    if (rawDays is List) {
+      selectedDays.addAll(rawDays.map((item) => item.toString()));
+    }
+    final config = _sceneRecurrenceConfig(initial);
+    monthlyMode = config['monthly_mode']?.toString() == 'custom_dates'
+        ? 'custom_dates'
+        : 'day_of_month';
+    monthDay = _sceneInt(config['month_day'], fallback: now.day).clamp(1, 31);
+    final rawMonthDays = config['custom_month_days'];
+    if (rawMonthDays is List) {
+      customMonthDays.addAll(rawMonthDays
+          .map((item) => int.tryParse(item.toString()))
+          .whereType<int>()
+          .where((day) => day >= 1 && day <= 31));
+    }
+    yearlyMonth =
+        _sceneInt(config['yearly_month'], fallback: now.month).clamp(1, 12);
+    yearlyDay = _sceneInt(config['yearly_day'], fallback: now.day)
+        .clamp(1, _daysInMonth(now.year, yearlyMonth));
+  }
+
+  bool get _valid {
+    if (repeatType == 'weekly' && selectedDays.isEmpty) return false;
+    if (repeatType == 'monthly' &&
+        monthlyMode == 'custom_dates' &&
+        customMonthDays.isEmpty) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _buildCondition();
+    return FractionallySizedBox(
+      heightFactor: .95,
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 7.h),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 42.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: smartHomeBorder,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+                SizedBox(height: 9.h),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'إغلاق',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.initial == null ? 'إضافة مؤقت' : 'تعديل المؤقت',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                    ),
+                    SizedBox(width: 48.w),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 18.h),
+              children: [
+                _sectionTitle('وقت التنفيذ'),
+                _card(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12.r),
+                    onTap: _pickTime,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 12.w, vertical: 12.h),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40.r,
+                            height: 40.r,
+                            decoration: BoxDecoration(
+                              color: smartHomeAccent.withOpacity(.1),
+                              borderRadius: BorderRadius.circular(11.r),
+                            ),
+                            child: const Icon(
+                              Icons.schedule_rounded,
+                              color: smartHomeAccent,
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'الساعة',
+                                  style: TextStyle(color: smartHomeMuted),
+                                ),
+                                Text(
+                                  time.format(context),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_left_rounded),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                _sectionTitle('نمط التكرار'),
+                _card(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.w),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: _repeatTypes
+                              .take(3)
+                              .map(_repeatTypeChoice)
+                              .toList(growable: false),
+                        ),
+                        SizedBox(height: 6.h),
+                        Row(
+                          children: _repeatTypes
+                              .skip(3)
+                              .map(_repeatTypeChoice)
+                              .toList(growable: false),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (repeatType == 'weekly') ...[
+                  SizedBox(height: 10.h),
+                  _sectionTitle('أيام التكرار'),
+                  _card(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 7.w, vertical: 12.h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: _weekdays.map(_weekdayChoice).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+                if (repeatType == 'monthly') ...[
+                  SizedBox(height: 10.h),
+                  _sectionTitle('التكرار الشهري'),
+                  _monthlySection(),
+                ],
+                if (repeatType == 'yearly') ...[
+                  SizedBox(height: 10.h),
+                  _sectionTitle('موعد التكرار السنوي'),
+                  _yearlySection(),
+                ],
+                if (repeatType != 'once') ...[
+                  SizedBox(height: 10.h),
+                  _sectionTitle('مدة التكرار'),
+                  _card(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 12.w, vertical: 11.h),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.radio_button_checked_rounded,
+                            color: smartHomeAccent,
+                          ),
+                          SizedBox(width: 9.w),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'دائمًا',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
+                                Text(
+                                  'يستمر حسب النمط إلى أن توقف الأتمتة. Tuya لا يضمن الإيقاف بعد عدد مرات من داخل المشهد.',
+                                  style: TextStyle(color: smartHomeMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                SizedBox(height: 10.h),
+                _sectionTitle('الملخص'),
+                Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
                   decoration: BoxDecoration(
                     color: smartHomeAccent.withOpacity(.07),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(13.r),
+                    border: Border.all(
+                      color: smartHomeAccent.withOpacity(.14),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.schedule_rounded,
+                      const Icon(Icons.event_repeat_rounded,
                           color: smartHomeAccent),
-                      const SizedBox(width: 8),
-                      Text(
-                        time.format(context),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
+                      SizedBox(width: 9.w),
+                      Expanded(
+                        child: Text(
+                          _sceneScheduleSummary(preview),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'once', label: Text('مرة')),
-                    ButtonSegment(value: 'daily', label: Text('يومي')),
-                    ButtonSegment(value: 'weekly', label: Text('أسبوعي')),
-                  ],
-                  selected: {repeatType},
-                  onSelectionChanged: (selection) => setState(() {
-                    repeatType = selection.first;
-                    if (repeatType != 'weekly') selectedDays.clear();
-                  }),
-                ),
-                if (repeatType == 'weekly') ...[
-                  const SizedBox(height: 14),
-                  const Text(
-                    'اختر أيام التكرار',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 7,
-                    runSpacing: 7,
-                    children: days.entries
-                        .map((day) => FilterChip(
-                              label: Text(day.value),
-                              selected: selectedDays.contains(day.key),
-                              onSelected: (selected) => setState(() {
-                                selected
-                                    ? selectedDays.add(day.key)
-                                    : selectedDays.remove(day.key);
-                              }),
-                            ))
-                        .toList(),
-                  ),
-                ],
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
+          Container(
+            padding: EdgeInsets.fromLTRB(14.w, 9.h, 14.w, 12.h),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: smartHomeBorder)),
             ),
-            FilledButton(
-              onPressed: repeatType == 'weekly' && selectedDays.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, true),
-              child: const Text('تأكيد'),
+            child: FilledButton.icon(
+              onPressed: _valid ? () => Navigator.pop(context, preview) : null,
+              icon: const Icon(Icons.check_rounded),
+              label:
+                  Text(widget.initial == null ? 'إضافة المؤقت' : 'حفظ التعديل'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) => Padding(
+        padding: EdgeInsets.only(bottom: 6.h, right: 2.w),
+        child: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      );
+
+  Widget _card({required Widget child}) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: smartHomeBorder),
+        ),
+        child: child,
+      );
+
+  Widget _repeatTypeChoice(String type) {
+    final selected = repeatType == type;
+    final label = type == 'once'
+        ? 'مرة واحدة'
+        : type == 'daily'
+            ? 'يومي'
+            : type == 'weekly'
+                ? 'أسبوعي'
+                : type == 'monthly'
+                    ? 'شهري'
+                    : 'سنوي';
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 3.w),
+        child: Material(
+          color: selected ? smartHomeAccent : smartHomeSurface,
+          borderRadius: BorderRadius.circular(10.r),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10.r),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => repeatType = type);
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 9.h),
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10.5.sp,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? Colors.white : smartHomeInk,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _weekdayChoice(_SceneWeekday day) {
+    final selected = selectedDays.contains(day.key);
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: day.fullLabel,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() {
+            selected ? selectedDays.remove(day.key) : selectedDays.add(day.key);
+          });
+        },
+        borderRadius: BorderRadius.circular(30.r),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 35.r,
+          height: 35.r,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? smartHomeAccent : smartHomeSurface,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? smartHomeAccent : smartHomeBorder,
+            ),
+          ),
+          child: Text(
+            day.shortLabel,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: selected ? Colors.white : smartHomeInk,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _monthlySection() => _card(
+        child: Padding(
+          padding: EdgeInsets.all(11.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _monthlyModeTile(
+                value: 'day_of_month',
+                title: 'في يوم محدد من كل شهر',
+              ),
+              if (monthlyMode == 'day_of_month') ...[
+                SizedBox(height: 6.h),
+                _numberStepper(
+                  label: 'اليوم من الشهر',
+                  value: monthDay,
+                  max: 31,
+                  onChanged: (value) => setState(() => monthDay = value),
+                ),
+                SizedBox(height: 5.h),
+                const Text(
+                  'إذا لم يوجد هذا اليوم في شهر معين، يتجاوزه Tuya إلى الشهر التالي.',
+                  style: TextStyle(color: smartHomeMuted),
+                ),
+              ],
+              const Divider(height: 22),
+              _monthlyModeTile(
+                value: 'custom_dates',
+                title: 'عدة أيام محددة من كل شهر',
+              ),
+              if (monthlyMode == 'custom_dates') ...[
+                SizedBox(height: 9.h),
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: List.generate(31, (index) {
+                    final day = index + 1;
+                    final selected = customMonthDays.contains(day);
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8.r),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => selected
+                            ? customMonthDays.remove(day)
+                            : customMonthDays.add(day));
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 140),
+                        width: 34.r,
+                        height: 34.r,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: selected ? smartHomeAccent : smartHomeSurface,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: selected ? smartHomeAccent : smartHomeBorder,
+                          ),
+                        ),
+                        child: Text(
+                          '$day',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: selected ? Colors.white : smartHomeInk,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                if (customMonthDays.isEmpty) ...[
+                  SizedBox(height: 7.h),
+                  const Text(
+                    'اختر يومًا واحدًا على الأقل',
+                    style: TextStyle(
+                      color: Color(0xFFB76A00),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+              const Divider(height: 22),
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, color: smartHomeMuted),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'نمط «أول/آخر يوم أسبوع من الشهر» غير متاح مباشرة في محرك Tuya، لذلك لم نعرض خيارًا لن يعمل فعليًا.',
+                      style: TextStyle(color: smartHomeMuted),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _monthlyModeTile({required String value, required String title}) {
+    final selected = monthlyMode == value;
+    return InkWell(
+      borderRadius: BorderRadius.circular(9.r),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => monthlyMode = value);
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4.h),
+        child: Row(
+          children: [
+            Icon(
+              selected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              color: selected ? smartHomeAccent : smartHomeMuted,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(title,
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
-        );
-      },
-    ),
-  );
-  if (accepted != true) return null;
-  if (repeatType == 'daily') {
-    selectedDays.addAll(const [
-      'sun',
-      'mon',
-      'tue',
-      'wed',
-      'thu',
-      'fri',
-      'sat',
-    ]);
+        ),
+      ),
+    );
   }
-  var date = DateTime(now.year, now.month, now.day, time.hour, time.minute);
-  if (!date.isAfter(now)) date = date.add(const Duration(days: 1));
-  String two(int value) => value.toString().padLeft(2, '0');
-  return {
-    'type': 'schedule',
-    'time': '${two(time.hour)}:${two(time.minute)}',
-    'date': '${date.year}-${two(date.month)}-${two(date.day)}',
-    'repeat_days': selectedDays.toList(growable: false),
-    'repeat_type': repeatType,
-    'timezone': 'Asia/Jerusalem',
+
+  Widget _yearlySection() => _card(
+        child: Padding(
+          padding: EdgeInsets.all(11.w),
+          child: Column(
+            children: [
+              DropdownButtonFormField<int>(
+                initialValue: yearlyMonth,
+                decoration: InputDecoration(
+                  labelText: 'الشهر',
+                  filled: true,
+                  fillColor: smartHomeSurface,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: List.generate(
+                  12,
+                  (index) => DropdownMenuItem<int>(
+                    value: index + 1,
+                    child: Text(_monthNames[index]),
+                  ),
+                ),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    yearlyMonth = value;
+                    yearlyDay = yearlyDay.clamp(
+                      1,
+                      _daysInMonth(DateTime.now().year, yearlyMonth),
+                    );
+                  });
+                },
+              ),
+              SizedBox(height: 10.h),
+              _numberStepper(
+                label: 'اليوم من الشهر',
+                value: yearlyDay,
+                max: _daysInMonth(DateTime.now().year, yearlyMonth),
+                onChanged: (value) => setState(() => yearlyDay = value),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _numberStepper({
+    required String label,
+    required int value,
+    required int max,
+    required ValueChanged<int> onChanged,
+  }) =>
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+        decoration: BoxDecoration(
+          color: smartHomeSurface,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            IconButton(
+              tooltip: 'إنقاص',
+              onPressed: value <= 1 ? null : () => onChanged(value - 1),
+              icon: const Icon(Icons.remove_circle_outline_rounded),
+              color: smartHomeAccent,
+            ),
+            SizedBox(
+              width: 34.w,
+              child: Text(
+                '$value',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'زيادة',
+              onPressed: value >= max ? null : () => onChanged(value + 1),
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              color: smartHomeAccent,
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _pickTime() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: time,
+    );
+    if (selected != null && mounted) setState(() => time = selected);
+  }
+
+  Map<String, dynamic> _buildCondition() {
+    final days = repeatType == 'daily'
+        ? <String>['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+        : repeatType == 'weekly'
+            ? selectedDays.toList()
+            : <String>[];
+    days.sort(_weekdaySort);
+    final sortedMonthDays = customMonthDays.toList(growable: false)..sort();
+    final config = <String, dynamic>{
+      if (repeatType == 'monthly') 'monthly_mode': monthlyMode,
+      if (repeatType == 'monthly') 'month_day': monthDay,
+      if (repeatType == 'monthly') 'custom_month_days': sortedMonthDays,
+      if (repeatType == 'yearly') 'yearly_month': yearlyMonth,
+      if (repeatType == 'yearly') 'yearly_day': yearlyDay,
+      'duration_type': 'forever',
+    };
+    final next = _nextSceneScheduleDate(
+      time: time,
+      repeatType: repeatType,
+      repeatDays: days,
+      config: config,
+    );
+    return <String, dynamic>{
+      'type': 'schedule',
+      'time': '${_two(time.hour)}:${_two(time.minute)}',
+      'date': '${next.year}-${_two(next.month)}-${_two(next.day)}',
+      'repeat_days': days,
+      'repeat_type': repeatType,
+      'recurrence_config': config,
+      'timezone': 'Asia/Jerusalem',
+    };
+  }
+}
+
+class _SceneWeekday {
+  const _SceneWeekday(this.key, this.shortLabel, this.fullLabel);
+
+  final String key;
+  final String shortLabel;
+  final String fullLabel;
+}
+
+Map<String, dynamic> _sceneRecurrenceConfig(Map<String, dynamic> condition) {
+  final raw = condition['recurrence_config'];
+  return raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+}
+
+int _sceneInt(dynamic value, {required int fallback}) =>
+    int.tryParse(value?.toString() ?? '') ?? fallback;
+
+String _two(int value) => value.toString().padLeft(2, '0');
+
+int _weekdaySort(String left, String right) {
+  const order = <String>['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return order.indexOf(left).compareTo(order.indexOf(right));
+}
+
+int _daysInMonth(int year, int month) => DateTime(year, month + 1, 0).day;
+
+String _weekdayKey(int weekday) {
+  const keys = <int, String>{
+    DateTime.monday: 'mon',
+    DateTime.tuesday: 'tue',
+    DateTime.wednesday: 'wed',
+    DateTime.thursday: 'thu',
+    DateTime.friday: 'fri',
+    DateTime.saturday: 'sat',
+    DateTime.sunday: 'sun',
   };
+  return keys[weekday] ?? '';
+}
+
+DateTime _nextSceneScheduleDate({
+  required TimeOfDay time,
+  required String repeatType,
+  required List<String> repeatDays,
+  required Map<String, dynamic> config,
+}) {
+  final now = DateTime.now();
+  final selectedWeekdays = repeatDays.toSet();
+  final monthlyMode = config['monthly_mode']?.toString();
+  final monthDays = monthlyMode == 'custom_dates'
+      ? ((config['custom_month_days'] as List?) ?? const [])
+          .map((item) => int.tryParse(item.toString()))
+          .whereType<int>()
+          .toSet()
+      : <int>{_sceneInt(config['month_day'], fallback: now.day)};
+  final yearlyMonth = _sceneInt(config['yearly_month'], fallback: now.month);
+  final yearlyDay = _sceneInt(config['yearly_day'], fallback: now.day);
+
+  for (var offset = 0; offset <= 1461; offset++) {
+    final date = DateTime(now.year, now.month, now.day + offset);
+    final candidate =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!candidate.isAfter(now)) continue;
+    if (repeatType == 'weekly' &&
+        !selectedWeekdays.contains(_weekdayKey(candidate.weekday))) {
+      continue;
+    }
+    if (repeatType == 'monthly' && !monthDays.contains(candidate.day)) {
+      continue;
+    }
+    if (repeatType == 'yearly' &&
+        (candidate.month != yearlyMonth || candidate.day != yearlyDay)) {
+      continue;
+    }
+    return candidate;
+  }
+  return DateTime(now.year, now.month, now.day + 1, time.hour, time.minute);
+}
+
+String _sceneScheduleSummary(Map<String, dynamic> condition) {
+  final repeatType = condition['repeat_type']?.toString() ?? 'once';
+  final config = _sceneRecurrenceConfig(condition);
+  if (repeatType == 'daily') return 'يتكرر يوميًا';
+  if (repeatType == 'weekly') {
+    const labels = <String, String>{
+      'sun': 'الأحد',
+      'mon': 'الإثنين',
+      'tue': 'الثلاثاء',
+      'wed': 'الأربعاء',
+      'thu': 'الخميس',
+      'fri': 'الجمعة',
+      'sat': 'السبت',
+    };
+    final rawDays = condition['repeat_days'];
+    final days = rawDays is List
+        ? rawDays.map((item) => item.toString()).toList(growable: false)
+        : <String>[];
+    days.sort(_weekdaySort);
+    return days.isEmpty
+        ? 'أسبوعيًا — اختر الأيام'
+        : 'أسبوعيًا: ${days.map((day) => labels[day] ?? day).join('، ')}';
+  }
+  if (repeatType == 'monthly') {
+    final mode = config['monthly_mode']?.toString();
+    if (mode == 'custom_dates') {
+      final rawDays = config['custom_month_days'];
+      final days = rawDays is List
+          ? rawDays.map((item) => item.toString()).join('، ')
+          : '';
+      return days.isEmpty ? 'شهريًا — اختر الأيام' : 'شهريًا في الأيام: $days';
+    }
+    return 'شهريًا في اليوم ${_sceneInt(config['month_day'], fallback: 1)}';
+  }
+  if (repeatType == 'yearly') {
+    const months = <String>[
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    final month = _sceneInt(config['yearly_month'], fallback: 1).clamp(1, 12);
+    final day = _sceneInt(config['yearly_day'], fallback: 1);
+    return 'سنويًا في $day ${months[month - 1]}';
+  }
+  final date = condition['date']?.toString();
+  return date == null || date.isEmpty ? 'مرة واحدة' : 'مرة واحدة بتاريخ $date';
 }
 
 Future<List<Map<String, dynamic>>> _pickBoolTargets(
