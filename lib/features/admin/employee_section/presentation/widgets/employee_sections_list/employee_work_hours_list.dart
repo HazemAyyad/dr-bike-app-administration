@@ -567,27 +567,30 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
     return '${two(d.inHours)}:${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))}';
   }
 
-  Color get _boxColor {
+  Color get _statusAccentColor {
     switch (_status) {
       case _ShiftStatus.beforeShift:
-        return Colors.blueGrey;
+        return const Color(0xFF607D8B);
       case _ShiftStatus.workingOnTime:
-        return AppColors.customGreen1;
+        return const Color(0xFF16A34A);
       case _ShiftStatus.absentDuringShift:
-        return Colors.red.shade600;
+        return const Color(0xFFDC2626);
       case _ShiftStatus.leftEarly:
-        return Colors.teal.shade600;
+        return const Color(0xFF0F766E);
       case _ShiftStatus.overtime:
-        return Colors.orange.shade700;
+        return const Color(0xFFF59E0B);
       case _ShiftStatus.leftWork:
-        return AppColors.customGreyColor3;
+        return const Color(0xFF737373);
       case _ShiftStatus.neverCame:
-        return Colors.red.shade900;
+        return const Color(0xFFDC2626);
     }
   }
 
-  Color get _timerColor =>
-      _status == _ShiftStatus.overtime ? Colors.yellow.shade200 : Colors.white;
+  Color get _boxColor => _statusAccentColor.withValues(
+        alpha: ThemeService.isDark.value ? .20 : .09,
+      );
+
+  Color get _timerColor => _statusAccentColor;
 
   bool get _showTimer =>
       _status != _ShiftStatus.leftWork && _status != _ShiftStatus.neverCame;
@@ -607,7 +610,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
       case _ShiftStatus.leftWork:
         return 'غادر';
       case _ShiftStatus.neverCame:
-        return 'لم يحضر';
+        return 'لم يبدأ الدوام';
     }
   }
 
@@ -625,63 +628,6 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
       case _ShiftStatus.leftWork:
       case _ShiftStatus.neverCame:
         return '';
-    }
-  }
-
-  String get _employeeStatusText {
-    switch (_status) {
-      case _ShiftStatus.beforeShift:
-        return 'قبل بداية دوامه';
-      case _ShiftStatus.workingOnTime:
-        return 'مداوم في وقته';
-      case _ShiftStatus.absentDuringShift:
-        return 'معطل لحد الان';
-      case _ShiftStatus.leftEarly:
-        return 'غادر العمل مبكراً';
-      case _ShiftStatus.overtime:
-        return 'شغال أوفر تايم';
-      case _ShiftStatus.leftWork:
-        return 'غادر العمل';
-      case _ShiftStatus.neverCame:
-        return 'لم يحضر اليوم';
-    }
-  }
-
-  Color get _employeeStatusColor {
-    switch (_status) {
-      case _ShiftStatus.beforeShift:
-        return Colors.blueGrey;
-      case _ShiftStatus.workingOnTime:
-        return Colors.green;
-      case _ShiftStatus.absentDuringShift:
-        return Colors.red;
-      case _ShiftStatus.leftEarly:
-        return Colors.teal;
-      case _ShiftStatus.overtime:
-        return Colors.orange;
-      case _ShiftStatus.leftWork:
-        return Colors.grey;
-      case _ShiftStatus.neverCame:
-        return Colors.red.shade900;
-    }
-  }
-
-  IconData get _employeeStatusIcon {
-    switch (_status) {
-      case _ShiftStatus.beforeShift:
-        return Icons.schedule_rounded;
-      case _ShiftStatus.workingOnTime:
-        return Icons.login_rounded;
-      case _ShiftStatus.absentDuringShift:
-        return Icons.warning_amber_rounded;
-      case _ShiftStatus.leftEarly:
-        return Icons.directions_walk_rounded;
-      case _ShiftStatus.overtime:
-        return Icons.alarm_add_rounded;
-      case _ShiftStatus.leftWork:
-        return Icons.logout_rounded;
-      case _ShiftStatus.neverCame:
-        return Icons.person_off_rounded;
     }
   }
 
@@ -746,9 +692,10 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
           ? AppColors.customGreyColor4
           : AppColors.whiteColor2,
       child: InkWell(
+        borderRadius: BorderRadius.circular(12.r),
         onTap: _openDetails,
         child: Padding(
-          padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 72.w),
+          padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 82.w),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -759,8 +706,8 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                     child: GestureDetector(
                       onTap: () => _openImageViewer(context),
                       child: SizedBox(
-                        height: 58.h,
-                        width: 58.w,
+                        height: 62.h,
+                        width: 62.w,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -851,12 +798,6 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                                 color: _pointsColor(),
                                 icon: Icons.redeem_rounded,
                               ),
-                            if (work != null)
-                              _IconChip(
-                                tooltip: _employeeStatusText,
-                                color: _employeeStatusColor,
-                                icon: _employeeStatusIcon,
-                              ),
                           ],
                         ),
                       ],
@@ -868,7 +809,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                 PositionedDirectional(
                   top: 0,
                   bottom: 0,
-                  end: -72.w,
+                  end: -82.w,
                   child: _ShiftTimerBox(
                     boxColor: _boxColor,
                     timerColor: _timerColor,
@@ -983,12 +924,14 @@ class _WifiStatusDot extends StatelessWidget {
     return Tooltip(
       message: message,
       child: Container(
-        width: 17.w,
-        height: 17.w,
+        width: 22.w,
+        height: 22.w,
         decoration: BoxDecoration(
-          color: color,
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2.w),
+          border: Border.all(color: color.withValues(alpha: .25), width: 1.w),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
@@ -997,6 +940,7 @@ class _WifiStatusDot extends StatelessWidget {
             ),
           ],
         ),
+        child: Icon(Icons.wifi_rounded, color: color, size: 13.sp),
       ),
     );
   }
@@ -1025,14 +969,14 @@ class _ShiftTimerBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     return Container(
-      width: 72.w,
-      height: 60.h,
-      padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 3.h),
+      width: 82.w,
+      height: 78.h,
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 5.h),
       decoration: BoxDecoration(
         color: boxColor,
         borderRadius: BorderRadiusDirectional.only(
-          topEnd: Radius.circular(4.r),
-          bottomEnd: Radius.circular(4.r),
+          topEnd: Radius.circular(12.r),
+          bottomEnd: Radius.circular(12.r),
         ),
       ),
       alignment: Alignment.center,
@@ -1050,14 +994,14 @@ class _ShiftTimerBox extends StatelessWidget {
                             ? Icons.warning_amber_rounded
                             : Icons.check_circle,
             color: timerColor,
-            size: 12.sp,
+            size: 15.sp,
           ),
           SizedBox(height: 1.h),
           Text(
             statusLabel,
             textAlign: TextAlign.center,
             style: textStyle.copyWith(
-              fontSize: 7.sp,
+              fontSize: 9.sp,
               fontWeight: FontWeight.bold,
               color: timerColor,
             ),
@@ -1068,7 +1012,7 @@ class _ShiftTimerBox extends StatelessWidget {
               timerText,
               textAlign: TextAlign.center,
               style: textStyle.copyWith(
-                fontSize: 10.sp,
+                fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 color: timerColor,
               ),
@@ -1078,7 +1022,7 @@ class _ShiftTimerBox extends StatelessWidget {
               timerLabel,
               textAlign: TextAlign.center,
               style: textStyle.copyWith(
-                fontSize: 7.sp,
+                fontSize: 8.sp,
                 color: timerColor.withValues(alpha: 0.85),
               ),
             ),

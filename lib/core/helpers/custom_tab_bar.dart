@@ -25,7 +25,7 @@ class AppTabs extends StatefulWidget {
   }) : super(key: key);
 
   final List<String> tabs;
-  final List<int>? tabCounts;
+  final List<int?>? tabCounts;
   final RxInt currentTab;
   final Function(int index) changeTab;
   final double? width;

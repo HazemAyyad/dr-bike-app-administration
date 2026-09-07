@@ -97,16 +97,36 @@ class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
           physics: kRefreshableScrollPhysics,
           slivers: [
             SliverToBoxAdapter(
-              child: AppTabs(
-                tabs: controller.tabs,
-                currentTab: controller.currentTab,
-                changeTab: controller.changeTab,
-                height: 38.h,
-                horizontalPadding: 8.w,
-                tabHorizontalPadding: 12.w,
-                tabVerticalPadding: 7.h,
-                tabHorizontalMargin: 3.w,
-                fontSize: 12.sp,
+              child: Obx(
+                () => AppTabs(
+                  tabs: controller.tabs,
+                  tabCounts: controller.visibleTabIndexes.map((tab) {
+                    if (tab == EmployeeSectionController.loansTab) {
+                      final count = controller.filteredLoanList
+                          .where((order) => order.orderStatus == 'pending')
+                          .length;
+                      return count == 0 ? null : count;
+                    }
+                    if (tab == EmployeeSectionController.overtimeTab) {
+                      final count = controller
+                              .attendanceOvertimeRequests.length +
+                          controller.filteredOvertimeList
+                              .where((order) => order.orderStatus == 'pending')
+                              .length;
+                      return count == 0 ? null : count;
+                    }
+                    return null;
+                  }).toList(growable: false),
+                  currentTab: controller.currentTab,
+                  changeTab: controller.changeTab,
+                  height: 42.h,
+                  horizontalPadding: 12.w,
+                  tabHorizontalPadding: 12.w,
+                  tabVerticalPadding: 7.h,
+                  tabHorizontalMargin: 3.w,
+                  fontSize: 12.sp,
+                  fitToWidthUpToCount: 3,
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -134,10 +154,10 @@ class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
                       if (isEmployeeList && hasFinancialActions) ...[
                         SizedBox(height: 3.h),
                         Text(
-                          'employeeCardSwipeHint'.tr,
+                          'اسحب البطاقة لعرض الإجراءات',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontSize: 10.sp,
+                                    fontSize: 10.5.sp,
                                     color: Colors.grey.shade600,
                                   ),
                         ),
@@ -498,7 +518,7 @@ class _EmployeeListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: 24.w,
+        horizontal: 16.w,
         vertical: 5.h,
       ),
       child: Column(
@@ -509,7 +529,16 @@ class _EmployeeListCard extends StatelessWidget {
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor4
                   : AppColors.whiteColor2,
-              borderRadius: BorderRadius.circular(4.r),
+              borderRadius: BorderRadius.circular(12.r),
+              boxShadow: ThemeService.isDark.value
+                  ? const []
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: .055),
+                        blurRadius: 10.r,
+                        offset: Offset(0, 3.h),
+                      ),
+                    ],
             ),
             child: child,
           ),

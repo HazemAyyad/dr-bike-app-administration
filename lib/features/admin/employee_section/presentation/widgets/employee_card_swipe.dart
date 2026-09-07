@@ -67,7 +67,7 @@ class _EmployeeCardSwipeState extends State<EmployeeCardSwipe> {
     if (widget.actions.isEmpty) return widget.child;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4.r),
+      borderRadius: BorderRadius.circular(12.r),
       child: Stack(
         alignment: _offset >= 0 ? Alignment.centerLeft : Alignment.centerRight,
         children: [
@@ -119,13 +119,13 @@ class _SwipeAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: action.color,
-      borderRadius: BorderRadius.circular(4.r),
+      borderRadius: BorderRadius.circular(10.r),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4.r),
+        borderRadius: BorderRadius.circular(10.r),
         child: SizedBox(
           width: _EmployeeCardSwipeState._actionWidth.w,
-          height: 72.h,
+          height: 78.h,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
