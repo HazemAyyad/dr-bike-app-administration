@@ -17,6 +17,8 @@ class BuildActionButtons extends StatelessWidget {
     this.badges = const {},
     this.onReorder,
     this.employeePurpleStyle = false,
+    this.sectionTitle,
+    this.sectionSubtitle,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
@@ -24,6 +26,8 @@ class BuildActionButtons extends StatelessWidget {
   final Map<String, int> badges;
   final Future<void> Function(String draggedKey, String targetKey)? onReorder;
   final bool employeePurpleStyle;
+  final String? sectionTitle;
+  final String? sectionSubtitle;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -47,18 +51,21 @@ class BuildActionButtons extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  employeePurpleStyle ? 'الأقسام المتاحة' : 'permissions'.tr,
+                  sectionTitle ??
+                      (employeePurpleStyle
+                          ? 'الأقسام المتاحة'
+                          : 'permissions'.tr),
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 17.sp,
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w800,
                         color: ThemeService.isDark.value
                             ? AppColors.customGreyColor6
                             : AppColors.secondaryColor,
                       ),
                 ),
-                if (employeePurpleStyle)
+                if (sectionSubtitle != null)
                   Text(
-                    'حسب صلاحياتك',
+                    sectionSubtitle!,
                     style: TextStyle(
                       fontSize: 9.sp,
                       color: AppColors.customGreyColor5,
@@ -82,7 +89,9 @@ class BuildActionButtons extends StatelessWidget {
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
-                childAspectRatio: DesktopLayout.isDesktop(context) ? 3 : 2.h,
+                childAspectRatio: DesktopLayout.isDesktop(context)
+                    ? 3
+                    : (employeePurpleStyle ? 2.25.h : 2.h),
                 crossAxisSpacing: 8.w,
                 mainAxisSpacing: employeePurpleStyle ? 7.h : 13.h,
               ),
@@ -269,9 +278,9 @@ Widget _buildActionButton(
             children: [
               if (employeePurpleStyle) ...[
                 Icon(
-                  _employeeActionIcon(title),
+                  _actionIcon(title),
                   color: AppColors.operationalPurple,
-                  size: 25.sp,
+                  size: 23.sp,
                 ),
                 SizedBox(height: 3.h),
               ],
@@ -309,7 +318,7 @@ Widget _buildActionButton(
                                 ? Colors.white
                                 : AppColors.operationalNavy)
                             : Colors.white,
-                        fontSize: 14.sp,
+                        fontSize: employeePurpleStyle ? 13.sp : 14.sp,
                         fontWeight: FontWeight.w700,
                       ),
                   maxLines: 2,
@@ -358,7 +367,7 @@ Widget _buildActionButton(
   );
 }
 
-IconData _employeeActionIcon(String title) {
+IconData _actionIcon(String title) {
   switch (title) {
     case 'employeeTasks':
       return Icons.assignment_ind_outlined;
@@ -396,6 +405,18 @@ IconData _employeeActionIcon(String title) {
       return Icons.shopping_cart_checkout_rounded;
     case 'financialMatters':
       return Icons.account_balance_outlined;
+    case 'التقارير':
+      return Icons.analytics_outlined;
+    case 'dailyBoxes':
+      return Icons.today_outlined;
+    case 'productManagement':
+      return Icons.inventory_outlined;
+    case 'generalSettings':
+      return Icons.settings_outlined;
+    case 'employeeReminders':
+      return Icons.notifications_active_outlined;
+    case 'smartHome':
+      return Icons.home_outlined;
     case 'checksandCommitments':
       return Icons.receipt_long_outlined;
     default:

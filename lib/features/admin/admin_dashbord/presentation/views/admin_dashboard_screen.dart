@@ -21,12 +21,32 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        title: Text(
-          userName.isEmpty ? 'welcome'.tr : '${'welcome'.tr} $userName',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'welcome'.tr,
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    fontSize: userName.isEmpty ? 18.sp : 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: userName.isEmpty ? null : AppColors.customGreyColor5,
+                  ),
+            ),
+            if (userName.isNotEmpty)
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(
+                  userName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
               ),
+          ],
         ),
         actions: [
           if (userType == 'admin')
@@ -145,23 +165,47 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
         color: AppColors.primaryColor,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.symmetric(horizontal: 18.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // const CustomSearchBar(),
-              SizedBox(height: 20.h),
+              SizedBox(height: 12.h),
               // بطاقات الإحصائيات
               const BuildStatisticsCards(),
-              SizedBox(height: 20.h),
-              // أزرار الوظائف
+              SizedBox(height: 14.h),
               GetBuilder<AdminDashboardController>(
-                builder: (controller) => BuildActionButtons(
-                  buttons: controller.visibleDashboardButtons,
-                  badges:
-                      controller.mainDashboardDataModel?.dashboardBadges ?? {},
-                  onReorder: controller.reorderDashboardButton,
-                ),
+                builder: (controller) {
+                  final buttons = controller.visibleDashboardButtons;
+                  final quickCount = buttons.length > 6 ? 6 : buttons.length;
+                  final quick = buttons.take(quickCount).toList();
+                  final remaining = buttons.skip(quickCount).toList();
+                  final badges =
+                      controller.mainDashboardDataModel?.dashboardBadges ?? {};
+                  return Column(
+                    children: [
+                      BuildActionButtons(
+                        buttons: quick,
+                        badges: badges,
+                        onReorder: controller.reorderDashboardButton,
+                        employeePurpleStyle: true,
+                        sectionTitle: 'الوصول السريع',
+                        sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
+                      ),
+                      if (remaining.isNotEmpty) ...[
+                        SizedBox(height: 16.h),
+                        BuildActionButtons(
+                          buttons: remaining,
+                          badges: badges,
+                          onReorder: controller.reorderDashboardButton,
+                          employeePurpleStyle: true,
+                          sectionTitle: 'كل الأقسام',
+                          sectionSubtitle: 'الأقسام المتاحة للأدمن',
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
               SizedBox(height: 70.h),
             ],
@@ -176,6 +220,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
           sizeAnimation: controller.opacityAnimation,
           addList: controller.visibleAdminAddList,
           useGrid: true,
+          backgroundColor: AppColors.operationalPurple,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
