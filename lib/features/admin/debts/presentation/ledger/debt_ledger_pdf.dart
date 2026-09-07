@@ -212,8 +212,8 @@ class DebtLedgerPdf {
       {bool header = false}) {
     const widths = [1, 3, 10, 2, 2, 3];
     return pw.Container(
-      color: header ? _purple : PdfColors.white,
       decoration: pw.BoxDecoration(
+          color: header ? _purple : PdfColors.white,
           border: pw.Border.all(color: PdfColors.grey400, width: .55)),
       child: pw.Row(
         children: List.generate(
@@ -312,33 +312,6 @@ class DebtLedgerPdf {
       color: PdfColors.grey100,
       child:
           pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Container(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-          child: pw.Row(children: [
-            pw.Expanded(
-              child: pw.Text(detail['title']?.toString() ?? '',
-                  style: pw.TextStyle(font: bold, fontSize: 8, color: _purple)),
-            ),
-            if ((detail['meta'] as Map? ?? const {}).isNotEmpty)
-              pw.Expanded(
-                child: pw.Text(
-                  (detail['meta'] as Map)
-                      .entries
-                      .map((entry) => '${entry.key}: ${entry.value}')
-                      .join(' | '),
-                  maxLines: 1,
-                  textAlign: pw.TextAlign.left,
-                  style: const pw.TextStyle(
-                      fontSize: 6.5, color: PdfColors.grey700),
-                ),
-              ),
-          ]),
-        ),
-        if (items.isNotEmpty) ...[
-          _productRow(includeImages, null,
-              ['المنتج', 'الكمية', 'السعر', 'الإجمالي'], bold,
-              header: true),
-        ],
         ...items.map((item) {
           final url = item['image_path']?.toString();
           final image = url == null ? null : images[url];
@@ -347,9 +320,7 @@ class DebtLedgerPdf {
               image,
               [
                 item['name']?.toString() ?? 'منتج',
-                _money(item['quantity']),
-                _money(item['unit_price']),
-                '${_money(item['line_total'])} $currency',
+                '${_money(item['quantity'])} × ${_money(item['unit_price'])} = ${_money(item['line_total'])} $currency',
               ],
               bold);
         }),
@@ -358,29 +329,22 @@ class DebtLedgerPdf {
   }
 
   static pw.Widget _productRow(bool includeImages, pw.ImageProvider? image,
-          List<String> values, pw.Font bold,
-          {bool header = false}) =>
+          List<String> values, pw.Font bold) =>
       pw.Container(
-        color: header ? const PdfColor.fromInt(0xFFDDEFF0) : PdfColors.white,
         decoration: pw.BoxDecoration(
+            color: PdfColors.white,
             border: pw.Border.all(color: PdfColors.grey400, width: .45)),
         child: pw.Row(children: [
           if (includeImages)
             pw.SizedBox(
               width: 34,
-              height: header ? 19 : 27,
-              child: header
-                  ? pw.Center(
-                      child: pw.Text('الصورة',
-                          style: pw.TextStyle(font: bold, fontSize: 7)))
-                  : image == null
-                      ? pw.Center(child: pw.Text('—'))
-                      : pw.Image(image, fit: pw.BoxFit.cover),
+              height: 27,
+              child: image == null
+                  ? pw.Center(child: pw.Text('—'))
+                  : pw.Image(image, fit: pw.BoxFit.cover),
             ),
-          pw.Expanded(flex: 7, child: _productCell(values[0], bold, header)),
-          pw.Expanded(flex: 2, child: _productCell(values[1], bold, header)),
-          pw.Expanded(flex: 3, child: _productCell(values[2], bold, header)),
-          pw.Expanded(flex: 3, child: _productCell(values[3], bold, header)),
+          pw.Expanded(flex: 7, child: _productCell(values[0], bold, true)),
+          pw.Expanded(flex: 5, child: _productCell(values[1], bold, false)),
         ]),
       );
 
