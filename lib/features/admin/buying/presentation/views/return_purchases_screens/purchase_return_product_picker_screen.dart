@@ -28,7 +28,7 @@ class _PurchaseReturnProductPickerScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.loadDirectOptions(force: true);
+      controller.loadDirectOptions();
     });
   }
 
@@ -290,7 +290,7 @@ class _ReturnProductCard extends StatelessWidget {
             Expanded(
               flex: 5,
               child: InkWell(
-                onTap: () => _openSelection(context),
+                onTap: () => _handleProductTap(context),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -331,7 +331,7 @@ class _ReturnProductCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => _openSelection(context),
+                        onTap: () => _handleProductTap(context),
                         child: Center(
                           child: Text(
                             group.primary.productName,
@@ -385,6 +385,24 @@ class _ReturnProductCard extends StatelessWidget {
   void _change(PurchaseReturnDraftLine line, double delta) {
     controller.changeDirectQuantity(line, line.quantity + delta);
     onChanged();
+  }
+
+  void _handleProductTap(BuildContext context) {
+    if (group.selectedQuantity > 0) {
+      for (final line in group.lines) {
+        controller.changeDirectQuantity(line, 0);
+      }
+      onChanged();
+      return;
+    }
+
+    if (group.lines.length == 1 && group.primary.variant.isEmpty) {
+      controller.changeDirectQuantity(group.primary, 1);
+      onChanged();
+      return;
+    }
+
+    _openSelection(context);
   }
 
   Future<void> _openSelection(BuildContext context) async {
@@ -485,15 +503,69 @@ class _ReturnProductCard extends StatelessWidget {
       );
       return;
     }
-    final input = TextEditingController(text: _quantity(line.quantity));
     final value = await showDialog<double>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (_) => _ReturnQuantityDialog(
+        initialQuantity: line.quantity,
+        available: line.available,
+      ),
+    );
+    if (value == null) return;
+    controller.changeDirectQuantity(line, value);
+    onChanged();
+  }
+}
+
+class _ReturnQuantityDialog extends StatefulWidget {
+  const _ReturnQuantityDialog({
+    required this.initialQuantity,
+    required this.available,
+  });
+
+  final double initialQuantity;
+  final double available;
+
+  @override
+  State<_ReturnQuantityDialog> createState() => _ReturnQuantityDialogState();
+}
+
+class _ReturnQuantityDialogState extends State<_ReturnQuantityDialog> {
+  late final TextEditingController input;
+  String? errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    input = TextEditingController(text: _quantity(widget.initialQuantity));
+  }
+
+  @override
+  void dispose() {
+    input.dispose();
+    super.dispose();
+  }
+
+  double? _parsedValue() =>
+      double.tryParse(input.text.trim().replaceAll(',', '.'));
+
+  void _submit() {
+    final value = _parsedValue();
+    if (value == null || value < 0 || value > widget.available) {
+      setState(() {
+        errorText = 'أدخل كمية من 0 إلى ${_quantity(widget.available)}';
+      });
+      return;
+    }
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
         title: const Text('تحديد الكمية'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('المتاح ${_quantity(line.available)}'),
+            Text('المتاح ${_quantity(widget.available)}'),
             SizedBox(height: 10.h),
             TextField(
               controller: input,
@@ -501,37 +573,29 @@ class _ReturnProductCard extends StatelessWidget {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'الكمية',
-                border: OutlineInputBorder(),
+                errorText: errorText,
+                border: const OutlineInputBorder(),
               ),
-              onSubmitted: (_) {
-                final parsed = double.tryParse(input.text.trim());
-                if (parsed != null) Navigator.pop(dialogContext, parsed);
+              onChanged: (_) {
+                if (errorText != null) setState(() => errorText = null);
               },
+              onSubmitted: (_) => _submit(),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () {
-              final parsed = double.tryParse(input.text.trim());
-              if (parsed != null) Navigator.pop(dialogContext, parsed);
-            },
+            onPressed: _submit,
             child: const Text('تأكيد'),
           ),
         ],
-      ),
-    );
-    input.dispose();
-    if (value == null) return;
-    controller.changeDirectQuantity(line, value);
-    onChanged();
-  }
+      );
 }
 
 class _PickerError extends StatelessWidget {

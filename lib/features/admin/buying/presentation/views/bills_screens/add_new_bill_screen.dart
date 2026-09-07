@@ -421,60 +421,6 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 8.h),
-                    GetBuilder<BillsController>(
-                      builder: (controller) {
-                        final source = controller.selectedPurchaseSource.value;
-                        return InkWell(
-                          onTap: () => _showSourceSheet(context),
-                          borderRadius: BorderRadius.circular(12.r),
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12.w,
-                              vertical: 10.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryColor
-                                  .withValues(alpha: 0.07),
-                              borderRadius: BorderRadius.circular(12.r),
-                              border: Border.all(
-                                color: AppColors.primaryColor
-                                    .withValues(alpha: 0.16),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.person_search_outlined,
-                                  color: AppColors.primaryColor,
-                                  size: 20.sp,
-                                ),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: Text(
-                                    source == null
-                                        ? 'اختر المورد أو الزبون'
-                                        : '${source.name} • ${source.typeLabel}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.primaryColor,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12.sp,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_left,
-                                  color: AppColors.primaryColor,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
               ),
