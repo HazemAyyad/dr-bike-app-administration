@@ -24,7 +24,7 @@ class WhatsAppCenterController extends GetxController {
   final WhatsAppApiService api;
   WhatsAppCenterController(this.api);
 
-  final tabIndex = 0.obs;
+  final tabIndex = 1.obs;
   final loading = false.obs;
   final actionLoading = false.obs;
   final error = RxnString();
@@ -47,10 +47,11 @@ class WhatsAppCenterController extends GetxController {
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
   final selectedQuickFilter = 'all'.obs;
-  final selectedChannel = (userType == 'admin' ||
-              employeePermissionNames.contains('Social Center WhatsApp')
-          ? 'whatsapp'
-          : 'all')
+  final selectedChannel = (userType == 'admin'
+          ? 'all'
+          : employeePermissionNames.contains('Social Center WhatsApp')
+              ? 'whatsapp'
+              : 'all')
       .obs;
   final searchController = TextEditingController();
   final testPhoneController = TextEditingController();
@@ -72,6 +73,10 @@ class WhatsAppCenterController extends GetxController {
     tabIndex.value = index;
     await refreshCurrent();
   }
+
+  Future<void> toggleSettings() => selectTab(tabIndex.value == 3 ? 1 : 3);
+
+  Future<void> toggleDashboard() => selectTab(tabIndex.value == 0 ? 1 : 0);
 
   Future<void> refreshCurrent() async {
     switch (tabIndex.value) {

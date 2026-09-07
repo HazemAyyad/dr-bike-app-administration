@@ -5,6 +5,9 @@ import 'dart:typed_data';
 
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
+import '../../../../../features/bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
+import '../../../../../features/bottom_nav_bar/widgets/custom_bottom_nav_bar.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_center_controller.dart';
 
@@ -35,40 +38,60 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(kToolbarHeight),
               child: Obx(() {
-                final whatsAppInbox = controller.tabIndex.value == 1 &&
-                    controller.selectedChannel.value == 'whatsapp';
+                final showingDashboard = controller.tabIndex.value == 0;
+                final showingSettings = controller.tabIndex.value == 3;
+                final selectedChannel = controller.selectedChannel.value;
+                final channelColor = _channelColor(selectedChannel);
                 return AppBar(
-                  backgroundColor:
-                      whatsAppInbox ? Colors.white : const Color(0xFF075E54),
-                  foregroundColor:
-                      whatsAppInbox ? const Color(0xFF111B21) : Colors.white,
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF111B21),
                   surfaceTintColor: Colors.transparent,
-                  elevation: whatsAppInbox ? 0 : 1,
+                  elevation: 0,
                   title: Text(
-                    whatsAppInbox ? 'WhatsApp' : 'مركز التواصل الاجتماعي',
+                    showingDashboard
+                        ? 'إحصائيات مركز التواصل'
+                        : showingSettings
+                            ? 'إعدادات ${_channelLabel(selectedChannel)}'
+                            : selectedChannel == 'all'
+                                ? 'جميع المحادثات'
+                                : _channelLabel(selectedChannel),
                     style: TextStyle(
-                      color: whatsAppInbox
-                          ? const Color(0xFF00A884)
-                          : Colors.white,
+                      color: channelColor,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  actions: whatsAppInbox
-                      ? [
-                          IconButton(
-                            tooltip: 'فلترة المحادثات',
-                            onPressed: () =>
-                                _showConversationFilters(context, controller),
-                            icon: const Icon(Icons.tune_rounded),
-                          ),
-                        ]
-                      : null,
+                  actions: [
+                    if (!showingSettings && !showingDashboard)
+                      IconButton(
+                        tooltip: 'فلترة المحادثات',
+                        onPressed: () =>
+                            _showConversationFilters(context, controller),
+                        icon: const Icon(Icons.tune_rounded),
+                      ),
+                    IconButton(
+                      tooltip: showingDashboard
+                          ? 'العودة إلى المحادثات'
+                          : 'إحصائيات مركز التواصل',
+                      onPressed: controller.toggleDashboard,
+                      icon: Icon(showingDashboard
+                          ? Icons.forum_outlined
+                          : Icons.analytics_outlined),
+                    ),
+                    IconButton(
+                      tooltip: showingSettings
+                          ? 'العودة إلى المحادثات'
+                          : 'إعدادات ${_channelLabel(selectedChannel)}',
+                      onPressed: controller.toggleSettings,
+                      icon: Icon(showingSettings
+                          ? Icons.forum_outlined
+                          : Icons.settings_outlined),
+                    ),
+                  ],
                 );
               }),
             ),
             body: Column(children: [
               _SocialChannelBar(controller: controller),
-              _SectionNavigationBar(controller: controller),
               Expanded(child: Obx(() {
                 if (controller.loading.value) {
                   return _CenterSkeleton(tabIndex: controller.tabIndex.value);
@@ -80,141 +103,29 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
                     action: controller.refreshCurrent,
                   );
                 }
-                final children = <Widget>[
-                  _DashboardTab(controller: controller),
-                  _ConversationsTab(controller: controller),
-                  _TemplatesTab(controller: controller),
-                  _SettingsTab(controller: controller),
-                ];
                 return RefreshIndicator(
                   onRefresh: controller.refreshCurrent,
-                  child: children[controller.tabIndex.value],
+                  child: controller.tabIndex.value == 0
+                      ? _DashboardTab(controller: controller)
+                      : controller.tabIndex.value == 3
+                          ? _SettingsTab(controller: controller)
+                          : _ConversationsTab(controller: controller),
                 );
               })),
             ]),
-            floatingActionButton: Obx(() => controller.tabIndex.value == 1
-                ? FloatingActionButton(
-                    backgroundColor: const Color(0xFF00A884),
-                    foregroundColor: Colors.white,
-                    onPressed: () => _showDirectMessage(context),
-                    tooltip: 'محادثة جديدة',
-                    child: const Icon(Icons.add_comment_rounded))
-                : const SizedBox.shrink()),
+            bottomNavigationBar: Listener(
+              onPointerUp: (_) {
+                if (Get.isRegistered<BottomNavBarController>()) {
+                  Future<void>.delayed(Duration.zero, () {
+                    Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+                  });
+                }
+              },
+              child: const CustomBottomNavigationBar(),
+            ),
           )),
     );
   }
-
-  Future<void> _showDirectMessage(BuildContext context) async {
-    final phone = TextEditingController();
-    final message = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('إرسال رسالة مباشرة'),
-        content: SizedBox(
-            width: 420,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _WhatsAppAccountPicker(controller: controller),
-              const SizedBox(height: 12),
-              TextField(
-                  controller: phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                      labelText: 'رقم الهاتف الدولي',
-                      hintText: '9705XXXXXXXX')),
-              const SizedBox(height: 12),
-              TextField(
-                  controller: message,
-                  minLines: 3,
-                  maxLines: 6,
-                  decoration: const InputDecoration(labelText: 'الرسالة')),
-            ])),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('إلغاء')),
-          Obx(() => FilledButton.icon(
-                onPressed: controller.actionLoading.value
-                    ? null
-                    : () async {
-                        if (await controller.sendDirect(
-                            phone.text, message.text)) {
-                          Get.back();
-                        }
-                      },
-                icon: controller.actionLoading.value
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.send),
-                label: const Text('إرسال'),
-              )),
-        ],
-      ),
-    );
-    phone.dispose();
-    message.dispose();
-  }
-}
-
-class _SectionNavigationBar extends StatelessWidget {
-  const _SectionNavigationBar({required this.controller});
-
-  final WhatsAppCenterController controller;
-
-  @override
-  Widget build(BuildContext context) => Obx(() => Container(
-        color: const Color(0xFFF7FAF9),
-        padding: const EdgeInsets.fromLTRB(10, 5, 10, 8),
-        child: Row(
-          children: const <Map<String, dynamic>>[
-            {'icon': Icons.dashboard_outlined, 'label': 'الرئيسية'},
-            {'icon': Icons.forum_outlined, 'label': 'المحادثات'},
-            {'icon': Icons.description_outlined, 'label': 'القوالب'},
-            {'icon': Icons.settings_outlined, 'label': 'الإعدادات'},
-          ].asMap().entries.map((entry) {
-            final selected = controller.tabIndex.value == entry.key;
-            return Expanded(
-              child: InkWell(
-                onTap: () => controller.selectTab(entry.key),
-                borderRadius: BorderRadius.circular(10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  decoration: BoxDecoration(
-                    color: selected ? Colors.white : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: selected
-                        ? const [
-                            BoxShadow(
-                                color: Color(0x16000000),
-                                blurRadius: 7,
-                                offset: Offset(0, 2)),
-                          ]
-                        : null,
-                  ),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(entry.value['icon'] as IconData,
-                        size: 19,
-                        color: selected
-                            ? const Color(0xFF008069)
-                            : const Color(0xFF667781)),
-                    const SizedBox(height: 2),
-                    Text(entry.value['label'] as String,
-                        maxLines: 1,
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight:
-                                selected ? FontWeight.w700 : FontWeight.w500,
-                            color: selected
-                                ? const Color(0xFF008069)
-                                : const Color(0xFF667781))),
-                  ]),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ));
 }
 
 class _CenterSkeleton extends StatelessWidget {
@@ -923,9 +834,7 @@ class _ConversationCard extends StatelessWidget {
     final linked =
         item.contact?.customerId != null || item.contact?.supplierId != null;
     final color = _channelColor(item.channel);
-    final preview = item.lastMessage?.trim().isNotEmpty == true
-        ? item.lastMessage!.trim()
-        : _messageTypeLabel(item.lastMessageType);
+    final preview = _conversationPreview(item);
     return Material(
       color: Colors.white,
       child: InkWell(
@@ -1329,6 +1238,8 @@ class _ProfileRow extends StatelessWidget {
       );
 }
 
+// Kept for a possible WhatsApp templates entry from the settings screen.
+// ignore: unused_element
 class _TemplatesTab extends StatelessWidget {
   final WhatsAppCenterController controller;
   const _TemplatesTab({required this.controller});
@@ -1533,7 +1444,8 @@ class _SettingsTab extends StatelessWidget {
         style: TextStyle(fontSize: 12, color: Color(0xFF52635F)),
       ),
       Obx(() {
-        if (!controller.canManageWhatsAppEmployees.value) {
+        if (!controller.canManageWhatsAppEmployees.value ||
+            controller.selectedChannel.value != 'all') {
           return const SizedBox.shrink();
         }
         return Card(
@@ -1656,62 +1568,74 @@ class _SettingsTab extends StatelessWidget {
           ),
         );
       }),
-      const SizedBox(height: 16),
-      _WhatsAppAccountPicker(controller: controller),
-      const SizedBox(height: 12),
-      Text('رسالة تجربة', style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 10),
-      TextField(
-          controller: controller.testPhoneController,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-              labelText: 'رقم الهاتف الدولي', border: OutlineInputBorder())),
-      const SizedBox(height: 10),
-      TextField(
-          controller: controller.testMessageController,
-          minLines: 3,
-          maxLines: 5,
-          decoration: const InputDecoration(
-              labelText: 'نص التجربة', border: OutlineInputBorder())),
-      const SizedBox(height: 12),
-      Obx(() => FilledButton.icon(
-            onPressed: controller.actionLoading.value
-                ? null
-                : () => controller.sendDirect(
-                    controller.testPhoneController.text,
-                    controller.testMessageController.text,
-                    test: true),
-            icon: const Icon(Icons.send),
-            label: const Text('إرسال رسالة تجربة'),
-          )),
-      const Divider(height: 28),
-      Text('QR واتساب دكتور بايك',
-          style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      Obx(() => controller.qrBytes.value == null
-          ? const SizedBox(
-              height: 180, child: Center(child: CircularProgressIndicator()))
-          : Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(12),
-              height: 230,
-              child: SvgPicture.memory(controller.qrBytes.value!),
-            )),
-      const SizedBox(height: 8),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        OutlinedButton.icon(
-            onPressed: controller.printQrA4,
-            icon: const Icon(Icons.print),
-            label: const Text('طباعة A4')),
-        OutlinedButton.icon(
-            onPressed: controller.downloadQrA4,
-            icon: const Icon(Icons.download),
-            label: const Text('تنزيل')),
-        OutlinedButton.icon(
-            onPressed: controller.shareQrA4,
-            icon: const Icon(Icons.share),
-            label: const Text('مشاركة')),
-      ]),
+      Obx(() {
+        if (controller.selectedChannel.value != 'whatsapp') {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            _WhatsAppAccountPicker(controller: controller),
+            const SizedBox(height: 12),
+            Text('رسالة تجربة', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            TextField(
+                controller: controller.testPhoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف الدولي',
+                    border: OutlineInputBorder())),
+            const SizedBox(height: 10),
+            TextField(
+                controller: controller.testMessageController,
+                minLines: 3,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                    labelText: 'نص التجربة', border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: controller.actionLoading.value
+                  ? null
+                  : () => controller.sendDirect(
+                      controller.testPhoneController.text,
+                      controller.testMessageController.text,
+                      test: true),
+              icon: const Icon(Icons.send),
+              label: const Text('إرسال رسالة تجربة'),
+            ),
+            const Divider(height: 28),
+            Text('QR واتساب دكتور بايك',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            controller.qrBytes.value == null
+                ? const SizedBox(
+                    height: 180,
+                    child: Center(child: CircularProgressIndicator()))
+                : Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(12),
+                    height: 230,
+                    child: SvgPicture.memory(controller.qrBytes.value!),
+                  ),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              OutlinedButton.icon(
+                  onPressed: controller.printQrA4,
+                  icon: const Icon(Icons.print),
+                  label: const Text('طباعة A4')),
+              OutlinedButton.icon(
+                  onPressed: controller.downloadQrA4,
+                  icon: const Icon(Icons.download),
+                  label: const Text('تنزيل')),
+              OutlinedButton.icon(
+                  onPressed: controller.shareQrA4,
+                  icon: const Icon(Icons.share),
+                  label: const Text('مشاركة')),
+            ]),
+          ],
+        );
+      }),
     ]);
   }
 }
@@ -2057,10 +1981,34 @@ String _messageTypeLabel(String? type) =>
       'audio': 'رسالة صوتية',
       'video': 'فيديو',
       'document': 'مستند',
+      'sticker': 'ملصق',
+      'location': 'موقع',
+      'system': 'رسالة غير مدعومة',
       'interactive': 'منتجات',
       'template': 'قالب',
     }[type] ??
     'لا توجد رسائل';
+
+String _conversationPreview(WhatsAppConversation conversation) {
+  final type = conversation.lastMessageType?.toLowerCase();
+  final body = conversation.lastMessage?.trim();
+  if (body == null || body.isEmpty) return _messageTypeLabel(type);
+
+  final normalized = body.toLowerCase();
+  const internalMediaPlaceholders = {
+    '[image]',
+    '[video]',
+    '[audio]',
+    '[document]',
+    '[sticker]',
+    '[system]',
+  };
+  if (internalMediaPlaceholders.contains(normalized) ||
+      (type != null && normalized == '[$type]')) {
+    return _messageTypeLabel(type);
+  }
+  return body;
+}
 
 String _statusLabel(String status) =>
     const {

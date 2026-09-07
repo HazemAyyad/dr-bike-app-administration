@@ -1793,6 +1793,7 @@ class _ReplyPreview extends StatelessWidget {
 String? _visibleBody(WhatsAppMessage message) {
   final body = message.body?.trim();
   if (body == null || body.isEmpty) return null;
+  if (body.toLowerCase() == '[system]') return null;
   if (['image', 'audio', 'video'].contains(message.type)) {
     final normalized = body.toLowerCase();
     if (normalized == '[${message.type}]') return null;
@@ -1811,6 +1812,7 @@ String _mediaLabel(String type) =>
       'video': '🎬 فيديو',
       'document': '📎 مستند',
       'interactive': '🛍️ منتجات',
+      'system': 'رسالة غير مدعومة',
     }[type] ??
     'رسالة';
 

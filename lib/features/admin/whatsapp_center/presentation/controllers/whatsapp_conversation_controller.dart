@@ -393,7 +393,8 @@ class WhatsAppConversationController extends GetxController {
           : AndroidOutputFormat.mpeg4
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
       ..sampleRate = 48000
-      ..bitRate = useNativeVoiceNote ? 48000 : 128000;
+      ..bitRate = useNativeVoiceNote ? 128000 : 192000
+      ..updateFrequency = const Duration(milliseconds: 50);
     _recordingIsVoiceNote = useNativeVoiceNote;
     final directory = await getTemporaryDirectory();
     final extension = useNativeVoiceNote ? 'ogg' : 'm4a';

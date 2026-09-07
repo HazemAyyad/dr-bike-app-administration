@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../data/whatsapp_models.dart';
@@ -22,6 +23,7 @@ class WhatsAppAudioBubble extends StatefulWidget {
 }
 
 class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
+  static const _platformChannel = MethodChannel('dr_bike/platform_info');
   final PlayerController _player = PlayerController();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   bool _loading = true;
@@ -34,6 +36,7 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
   @override
   void initState() {
     super.initState();
+    _player.updateFrequency = UpdateFrequency.high;
     _subscriptions.add(_player.onPlayerStateChanged.listen((state) {
       if (mounted) setState(() => _playing = state == PlayerState.playing);
     }));
@@ -57,6 +60,7 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
       const waveStyle = PlayerWaveStyle(spacing: 4, waveThickness: 2.2);
       await _player.preparePlayer(
         path: file.path,
+        volume: 1,
         shouldExtractWaveform: true,
         noOfSamples: waveStyle.getSamplesForWidth(160),
       );
@@ -115,8 +119,20 @@ class _WhatsAppAudioBubbleState extends State<WhatsAppAudioBubble> {
           ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            onPressed: () =>
-                _playing ? _player.pausePlayer() : _player.startPlayer(),
+            onPressed: () async {
+              if (_playing) {
+                await _player.pausePlayer();
+                return;
+              }
+              try {
+                await _platformChannel
+                    .invokeMethod<void>('prepareMediaPlayback');
+              } catch (_) {
+                // Non-Android platforms already use their normal media route.
+              }
+              await _player.setVolume(1);
+              await _player.startPlayer();
+            },
             icon: Icon(
               _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
               color: const Color(0xFF667781),

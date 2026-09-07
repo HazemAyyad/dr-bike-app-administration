@@ -2,6 +2,7 @@ package com.application.doctorbike
 
 import android.app.KeyguardManager
 import android.app.Activity
+import android.media.AudioManager
 import android.content.Context
 import android.content.Intent
 import android.content.ActivityNotFoundException
@@ -177,6 +178,13 @@ class MainActivity : FlutterFragmentActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "androidSdkInt" -> result.success(Build.VERSION.SDK_INT)
+                    "prepareMediaPlayback" -> {
+                        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        audioManager.mode = AudioManager.MODE_NORMAL
+                        @Suppress("DEPRECATION")
+                        audioManager.isSpeakerphoneOn = false
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
