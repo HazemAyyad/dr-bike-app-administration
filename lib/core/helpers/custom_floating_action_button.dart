@@ -147,6 +147,7 @@ class CustomFloatingActionButton extends StatelessWidget {
             // زر الإضافة
             Positioned(
               right: Get.locale!.languageCode == 'ar' ? 30.w : 0.w,
+              bottom: 10.h,
               child: FloatingActionButton(
                 onPressed: onTap,
                 backgroundColor: backgroundColor ?? AppColors.secondaryColor,

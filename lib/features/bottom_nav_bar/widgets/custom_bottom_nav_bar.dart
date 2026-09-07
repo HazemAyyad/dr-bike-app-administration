@@ -16,7 +16,7 @@ import 'build_nav_item.dart';
 
 class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
   const CustomBottomNavigationBar({Key? key, this.onNavigate})
-    : super(key: key);
+      : super(key: key);
 
   final ValueChanged<int>? onNavigate;
 
@@ -32,7 +32,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
     }
     return SafeArea(
       child: SizedBox(
-        height: 66.h,
+        height: 62.h,
         child: Obx(
           () => Container(
             decoration: BoxDecoration(
@@ -40,8 +40,8 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                   ? AppColors.greyColor
                   : Colors.white,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24.r),
-                topRight: Radius.circular(24.r),
+                topLeft: Radius.circular(18.r),
+                topRight: Radius.circular(18.r),
               ),
               border: Border(
                 top: BorderSide(
@@ -50,9 +50,9 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.operationalNavy.withValues(alpha: .08),
-                  blurRadius: 16,
-                  offset: const Offset(0, -3),
+                  color: AppColors.operationalNavy.withValues(alpha: .07),
+                  blurRadius: 12,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
@@ -78,9 +78,9 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                             CountersController(
                               getReportInformationUsecase:
                                   GetReportInformationUsecase(
-                                    countersRepository:
-                                        Get.find<CountrersImplement>(),
-                                  ),
+                                countersRepository:
+                                    Get.find<CountrersImplement>(),
+                              ),
                               getReportByType: GetReportByTypeUsecase(
                                 countersRepository:
                                     Get.find<CountrersImplement>(),

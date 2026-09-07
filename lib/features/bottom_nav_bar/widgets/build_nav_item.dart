@@ -12,8 +12,8 @@ class BuildNavItem extends StatelessWidget {
     this.assetImage,
     this.icon,
     required this.label,
-  }) : assert(assetImage != null || icon != null),
-       super(key: key);
+  })  : assert(assetImage != null || icon != null),
+        super(key: key);
 
   final bool isSelected;
   final void Function() onTap;
@@ -23,47 +23,67 @@ class BuildNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = 24.w;
+    final iconSize = 22.w;
     final iconColor = isSelected
         ? AppColors.operationalPurple
         : ThemeService.isDark.value
-        ? AppColors.whiteColor2
-        : const Color(0xFF8792AD);
+            ? AppColors.customGreyColor6
+            : const Color(0xFF667085);
 
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: iconSize,
-              height: iconSize,
-              child: icon != null
-                  ? Icon(icon, size: iconSize, color: iconColor)
-                  : Image.asset(
-                      assetImage!,
-                      width: iconSize,
-                      height: iconSize,
-                      fit: BoxFit.contain,
-                      color: iconColor,
-                      filterQuality: FilterQuality.medium,
-                    ),
-            ),
-            SizedBox(height: 3.h),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: iconColor,
-                fontSize: 10.sp,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 5.h),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(15.r),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.operationalPurple.withValues(
+                        alpha: ThemeService.isDark.value ? .20 : .10,
+                      )
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(15.r),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: iconSize,
+                    height: iconSize,
+                    child: icon != null
+                        ? Icon(icon, size: iconSize, color: iconColor)
+                        : Image.asset(
+                            assetImage!,
+                            width: iconSize,
+                            height: iconSize,
+                            fit: BoxFit.contain,
+                            color: iconColor,
+                            filterQuality: FilterQuality.medium,
+                          ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: iconColor,
+                          fontSize: 9.sp,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
