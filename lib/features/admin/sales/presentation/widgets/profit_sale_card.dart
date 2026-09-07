@@ -7,7 +7,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/profit_sale_model.dart';
 import '../controllers/sales_controller.dart';
-import '../utils/instant_sale_display.dart';
 import '../utils/product_image_viewer.dart';
 import '../utils/sales_amount_format.dart';
 
@@ -30,58 +29,14 @@ class ProfitSalesTable extends GetView<SalesController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _ProfitTableHeaderRow(),
-          for (var i = 0; i < groups.length; i++) ...[
-            if (i > 0) SizedBox(height: 14.h),
-            _ProfitDateGroupHeader(
-              label: formatInstantSalesDateHeader(
-                groups[i].key,
-                invoiceCount: groups[i].value.length,
-              ),
+          for (final group in groups)
+            ...group.value.map(
+              (sale) => _ProfitSaleTableRow(sale: sale),
             ),
-            ...groups[i].value.map(
-                  (sale) => _ProfitSaleTableRow(sale: sale),
-                ),
-          ],
           SizedBox(height: 4.h),
         ],
       );
     });
-  }
-}
-
-class _ProfitDateGroupHeader extends StatelessWidget {
-  const _ProfitDateGroupHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = ThemeService.isDark.value
-        ? AppColors.primaryColor.withValues(alpha: 0.15)
-        : AppColors.primaryColor.withValues(alpha: 0.08);
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(top: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade300),
-          right: BorderSide(color: Colors.grey.shade300),
-          bottom: BorderSide(color: Colors.grey.shade300),
-        ),
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppColors.primaryColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 13.sp,
-        ),
-      ),
-    );
   }
 }
 
@@ -103,12 +58,12 @@ class _ProfitTableHeaderRow extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          _ProfitHeaderCell('#', flex: 1),
-          _ProfitHeaderCell('details', flex: 3),
-          _ProfitHeaderCell('price', flex: 2),
+          _ProfitHeaderCell('instantSaleInvoice', flex: 2),
+          _ProfitHeaderCell('instantSaleAudit', flex: 2),
+          _ProfitHeaderCell('total', flex: 2),
+          _ProfitHeaderCell('details', flex: 2),
           _ProfitHeaderCell('customerName', flex: 2),
-          _ProfitHeaderCell('paidAmount', flex: 2),
-          _ProfitHeaderCell('attachments', flex: 1),
+          _ProfitHeaderCell('status', flex: 3),
         ],
       ),
     );
@@ -167,9 +122,36 @@ class _ProfitSaleTableRow extends StatelessWidget {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _ProfitInvoiceCell(sale: sale),
-              _ProfitTextCell(sale.notes, flex: 3),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _formatProfitSaleTime(sale),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      _displayProfitBoxName(sale.paymentBoxName),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               _ProfitTextCell(
                 SalesAmountFormat.display(
                   SalesAmountFormat.parse(sale.totalCost),
@@ -177,44 +159,21 @@ class _ProfitSaleTableRow extends StatelessWidget {
                 flex: 2,
                 strong: true,
               ),
+              _ProfitTextCell(sale.notes, flex: 2),
               _ProfitTextCell(sale.partnerDisplay, flex: 2),
-              _ProfitTextCell(
-                cancelled ? 'cancelled'.tr : sale.paymentDisplay,
-                flex: 2,
-                color: cancelled ? Colors.red.shade700 : null,
-              ),
               Expanded(
-                flex: 1,
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 4.w,
-                  children: [
-                    if (sale.imagePath?.isNotEmpty ?? false)
-                      InkWell(
-                        onTap: () => openProductImageViewer(
-                          context,
-                          sale.imagePath!,
-                        ),
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 16.sp,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                    if (sale.videoPath?.isNotEmpty ?? false)
-                      Icon(
-                        Icons.videocam_outlined,
-                        size: 16.sp,
-                        color: AppColors.primaryColor,
-                      ),
-                    if (!(sale.imagePath?.isNotEmpty ?? false) &&
-                        !(sale.videoPath?.isNotEmpty ?? false))
-                      Text(
-                        '-',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12.sp),
-                      ),
-                  ],
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(start: 4.w),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ProfitStatusChip(cancelled: cancelled),
+                      SizedBox(width: 2.w),
+                      _ProfitOperationInfoButton(sale: sale),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -233,7 +192,7 @@ class _ProfitInvoiceCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      flex: 1,
+      flex: 2,
       child: InkWell(
         onTap: () => showProfitSaleDetailsModal(context, sale),
         child: Padding(
@@ -252,6 +211,79 @@ class _ProfitInvoiceCell extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProfitStatusChip extends StatelessWidget {
+  const _ProfitStatusChip({required this.cancelled});
+
+  final bool cancelled;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = cancelled ? Colors.red : const Color(0xFF1B8A4A);
+    final label = cancelled ? 'cancelled'.tr : 'saleStatusActive'.tr;
+
+    return Tooltip(
+      message: label,
+      child: Container(
+        width: 30.w,
+        height: 30.w,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Icon(
+          cancelled ? Icons.cancel_outlined : Icons.check_circle_outline,
+          size: 19.sp,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfitOperationInfoButton extends StatelessWidget {
+  const _ProfitOperationInfoButton({required this.sale});
+
+  final ProfitSale sale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'instantSaleOperationDetails'.tr,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14.r),
+        onTap: () => showProfitSaleDetailsModal(context, sale),
+        child: SizedBox(
+          width: 28.w,
+          height: 28.w,
+          child: Icon(
+            Icons.info_outline,
+            size: 20.sp,
+            color: AppColors.primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _displayProfitBoxName(String? raw) {
+  final value = raw?.trim();
+  if (value == null || value.isEmpty) return '—';
+
+  return value
+      .replaceFirst('صندوق مبيعات يومي - ', '')
+      .replaceFirst('Daily sales box - ', '');
+}
+
+String _formatProfitSaleTime(ProfitSale sale) {
+  final local = sale.createdAt.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }
 
 void showProfitSaleDetailsModal(BuildContext context, ProfitSale sale) {
@@ -502,13 +534,11 @@ class _ProfitTextCell extends StatelessWidget {
     this.text, {
     required this.flex,
     this.strong = false,
-    this.color,
   });
 
   final String text;
   final int flex;
   final bool strong;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -522,10 +552,9 @@ class _ProfitTextCell extends StatelessWidget {
         style: TextStyle(
           fontSize: 11.sp,
           fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
-          color: color ??
-              (ThemeService.isDark.value
-                  ? AppColors.customGreyColor6
-                  : AppColors.customGreyColor5),
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor6
+              : AppColors.customGreyColor5,
         ),
       ),
     );
