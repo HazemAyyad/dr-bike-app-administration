@@ -67,7 +67,7 @@ class DebtLedgerPdf {
     document.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       textDirection: pw.TextDirection.rtl,
-      margin: const pw.EdgeInsets.all(28),
+      margin: const pw.EdgeInsets.fromLTRB(40, 28, 40, 28),
       header: (_) => _header(logo, bold),
       footer: (context) => pw.Align(
         alignment: pw.Alignment.center,
@@ -104,7 +104,7 @@ class DebtLedgerPdf {
           ..._summaryTransactions(
                   transactions, currency, bold, takenLabel, givenLabel)
               .map((row) => pw.Center(
-                    child: pw.SizedBox(width: 455, child: row),
+                    child: pw.SizedBox(width: 410, child: row),
                   ))
         else ...[
           _detailTableHeader(bold, takenLabel, givenLabel),
@@ -126,7 +126,7 @@ class DebtLedgerPdf {
                 includeImages,
               ));
             }
-            widgets.add(pw.SizedBox(height: 7));
+            widgets.add(pw.SizedBox(height: 2));
             return widgets;
           }),
         ],
@@ -194,7 +194,7 @@ class DebtLedgerPdf {
         tx['transaction_date']?.toString() ?? '—',
         (tx['note']?.toString().trim() ?? '').isEmpty
             ? '—'
-            : tx['note'].toString(),
+            : _displayText(tx['note']),
         taken ? _money(tx['amount']) : '—',
         taken ? '—' : _money(tx['amount']),
         '${_money(tx['balance_after'])} $currency',
@@ -210,7 +210,7 @@ class DebtLedgerPdf {
 
   static pw.Widget _detailTableRow(List<String> values, pw.Font bold,
       {bool header = false}) {
-    const widths = [1, 3, 8, 3, 3, 4];
+    const widths = [1, 3, 10, 2, 2, 3];
     return pw.Container(
       color: header ? _purple : PdfColors.white,
       decoration: pw.BoxDecoration(
@@ -256,7 +256,7 @@ class DebtLedgerPdf {
         return _summaryRow(
           [
             tx['transaction_date']?.toString() ?? '—',
-            note.isEmpty ? '—' : note,
+            note.isEmpty ? '—' : _displayText(note),
             taken ? _money(tx['amount']) : '—',
             taken ? '—' : _money(tx['amount']),
             '${_money(tx['balance_after'])} $currency',
@@ -307,26 +307,34 @@ class DebtLedgerPdf {
     final items =
         (detail['items'] as List? ?? const []).whereType<Map>().toList();
     return pw.Container(
-      margin: const pw.EdgeInsets.only(top: 3),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      margin: const pw.EdgeInsets.only(top: 1),
+      padding: pw.EdgeInsets.zero,
       color: PdfColors.grey100,
       child:
           pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Text(detail['title']?.toString() ?? '',
-            style: pw.TextStyle(font: bold, fontSize: 9, color: _purple)),
-        if ((detail['meta'] as Map? ?? const {}).isNotEmpty)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 3),
-            child: pw.Text(
-              (detail['meta'] as Map)
-                  .entries
-                  .map((entry) => '${entry.key}: ${entry.value}')
-                  .join('   |   '),
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+          child: pw.Row(children: [
+            pw.Expanded(
+              child: pw.Text(detail['title']?.toString() ?? '',
+                  style: pw.TextStyle(font: bold, fontSize: 8, color: _purple)),
             ),
-          ),
+            if ((detail['meta'] as Map? ?? const {}).isNotEmpty)
+              pw.Expanded(
+                child: pw.Text(
+                  (detail['meta'] as Map)
+                      .entries
+                      .map((entry) => '${entry.key}: ${entry.value}')
+                      .join(' | '),
+                  maxLines: 1,
+                  textAlign: pw.TextAlign.left,
+                  style: const pw.TextStyle(
+                      fontSize: 6.5, color: PdfColors.grey700),
+                ),
+              ),
+          ]),
+        ),
         if (items.isNotEmpty) ...[
-          pw.SizedBox(height: 4),
           _productRow(includeImages, null,
               ['المنتج', 'الكمية', 'السعر', 'الإجمالي'], bold,
               header: true),
@@ -359,8 +367,8 @@ class DebtLedgerPdf {
         child: pw.Row(children: [
           if (includeImages)
             pw.SizedBox(
-              width: 38,
-              height: header ? 23 : 34,
+              width: 34,
+              height: header ? 19 : 27,
               child: header
                   ? pw.Center(
                       child: pw.Text('الصورة',
@@ -378,7 +386,7 @@ class DebtLedgerPdf {
 
   static pw.Widget _productCell(String value, pw.Font bold, bool header) =>
       pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2.5),
         child: pw.Text(value,
             maxLines: 2,
             style: pw.TextStyle(font: header ? bold : null, fontSize: 7)),
@@ -391,4 +399,10 @@ class DebtLedgerPdf {
           : 'شيكل';
   static String _money(dynamic value) =>
       (double.tryParse(value?.toString() ?? '0') ?? 0).toStringAsFixed(2);
+
+  static String _displayText(dynamic value) => value
+      .toString()
+      .replaceAllMapped(RegExp(r'#\s*(\d+)'), (match) => 'رقم ${match[1]}')
+      .replaceAllMapped(RegExp(r'(\d+)\s*#'), (match) => 'رقم ${match[1]}')
+      .replaceAll('#', ' - ');
 }
