@@ -185,10 +185,14 @@ class ReturnPurchasesController extends GetxController {
         }
       }
       loaded.addAll(previous.values.where((line) => line.quantity > 0));
-      for (final line in previous.values.where((line) => line.quantity <= 0)) {
-        line.dispose();
-      }
+      final removedLines =
+          previous.values.where((line) => line.quantity <= 0).toList();
       directItems.assignAll(loaded);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        for (final line in removedLines) {
+          line.dispose();
+        }
+      });
       _directOptionsLoaded = true;
     } catch (error) {
       directOptionsError.value = error.toString();
@@ -206,13 +210,13 @@ class ReturnPurchasesController extends GetxController {
     if (existing == null) return fresh;
     final preservedQuantity =
         existing.quantity.clamp(0, fresh.available).toDouble();
-    fresh.quantityController.text =
+    existing.updateDetailsFrom(fresh);
+    existing.quantityController.text =
         preservedQuantity == preservedQuantity.roundToDouble()
             ? preservedQuantity.toInt().toString()
             : preservedQuantity.toStringAsFixed(2);
-    fresh.priceController.text = existing.priceController.text;
-    existing.dispose();
-    return fresh;
+    fresh.dispose();
+    return existing;
   }
 
   void changeDirectQuantity(PurchaseReturnDraftLine line, double quantity) {
@@ -666,12 +670,12 @@ class PurchaseReturnDraftLine {
   final int productId;
   final int? sizeId;
   final int? sizeColorId;
-  final String productName;
-  final String variant;
-  final double available;
-  final double unitPrice;
-  final String productImage;
-  final List<String> productImageUrls;
+  String productName;
+  String variant;
+  double available;
+  double unitPrice;
+  String productImage;
+  List<String> productImageUrls;
   final TextEditingController priceController;
   final quantityController = TextEditingController(text: '0');
   double get quantity => double.tryParse(quantityController.text) ?? 0;
@@ -724,6 +728,15 @@ class PurchaseReturnDraftLine {
         editablePrice: true,
       );
   bool get isDirect => billItemId == 0;
+  void updateDetailsFrom(PurchaseReturnDraftLine fresh) {
+    productName = fresh.productName;
+    variant = fresh.variant;
+    available = fresh.available;
+    unitPrice = fresh.unitPrice;
+    productImage = fresh.productImage;
+    productImageUrls = fresh.productImageUrls;
+  }
+
   Map<String, dynamic> toRequest() => isDirect
       ? {
           'product_id': productId,
