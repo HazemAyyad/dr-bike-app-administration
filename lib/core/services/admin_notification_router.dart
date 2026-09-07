@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../features/admin/checks/presentation/binding/checks_binding.dart';
@@ -40,6 +40,13 @@ class AdminNotificationRouter {
           }
           break;
         case 'check_due_reminder':
+          if (_openCheckSummary(raw)) {
+            return;
+          }
+          if (_openChecks(raw)) {
+            return;
+          }
+          break;
         case 'check_cashed':
         case 'check_returned':
           if (_openChecks(raw)) {
@@ -160,6 +167,121 @@ class AdminNotificationRouter {
       debugPrint('[NotificationRouter] checks unavailable: $e\n$st');
       return false;
     }
+  }
+
+  static bool _openCheckSummary(Map<String, dynamic> raw) {
+    if (raw['is_summary']?.toString() != '1') return false;
+
+    final checks = _decodeList(raw['checks']);
+    if (checks.isEmpty) return false;
+
+    Get.bottomSheet<void>(
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(Get.context!).size.height * .82,
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            decoration: BoxDecoration(
+              color: Theme.of(Get.context!).colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Text(
+                  'تفاصيل الشيكات المستحقة (${checks.length})',
+                  style: Theme.of(Get.context!).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: checks.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final check = checks[index];
+                      final incoming = check['direction'] == 'incoming';
+                      final owner = check['owner']?.toString() ?? '';
+                      final bank = check['bank']?.toString() ?? '';
+                      final amount = check['amount']?.toString() ?? '0';
+                      final currency = check['currency']?.toString() ?? '';
+
+                      return ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 4),
+                        leading: CircleAvatar(
+                          backgroundColor: incoming
+                              ? Colors.green.withValues(alpha: .12)
+                              : Colors.orange.withValues(alpha: .12),
+                          child: Icon(
+                            incoming ? Icons.south_west : Icons.north_east,
+                            color: incoming ? Colors.green : Colors.orange,
+                          ),
+                        ),
+                        title: Text(
+                          'شيك ${incoming ? 'وارد' : 'صادر'} رقم ${check['number'] ?? ''}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          [
+                            if (owner.isNotEmpty) owner,
+                            if (bank.isNotEmpty) bank,
+                            '${check['due_date'] ?? ''}',
+                          ].where((value) => value.isNotEmpty).join(' · '),
+                        ),
+                        trailing: Text(
+                          '$amount $currency',
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        onTap: () {
+                          Get.back<void>();
+                          _openChecks({
+                            'related_type':
+                                incoming ? 'incoming_check' : 'outgoing_check',
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+    return true;
+  }
+
+  static List<Map<String, dynamic>> _decodeList(dynamic value) {
+    dynamic decoded = value;
+    if (value is String && value.isNotEmpty) {
+      try {
+        decoded = jsonDecode(value);
+      } catch (_) {
+        return <Map<String, dynamic>>[];
+      }
+    }
+    if (decoded is! List) return <Map<String, dynamic>>[];
+    return decoded
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
   }
 
   static bool _openEmployeeAttendance(Map<String, dynamic> raw) {
