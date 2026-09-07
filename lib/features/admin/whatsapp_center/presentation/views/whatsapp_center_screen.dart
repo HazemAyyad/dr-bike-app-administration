@@ -10,6 +10,7 @@ import '../../../../../features/bottom_nav_bar/widgets/custom_bottom_nav_bar.dar
 import '../../../../../routes/app_routes.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_center_controller.dart';
+import '../utils/social_datetime_formatters.dart';
 
 class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
   const WhatsAppCenterScreen({Key? key}) : super(key: key);
@@ -1931,17 +1932,7 @@ class _ContactAvatar extends StatelessWidget {
 }
 
 String _shortDate(DateTime? date) {
-  if (date == null) return '';
-  final local = date.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(local.year, local.month, local.day);
-  final difference = today.difference(day).inDays;
-  final time =
-      '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  if (difference == 0) return time;
-  if (difference == 1) return 'أمس';
-  return '${local.day}/${local.month}/${local.year.toString().substring(2)}';
+  return formatSocialConversationStamp(date);
 }
 
 String _shortDuration(Duration duration) {

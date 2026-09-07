@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'dart:typed_data';
 
 import '../controllers/whatsapp_conversation_controller.dart';
+import '../utils/social_datetime_formatters.dart';
 import '../widgets/whatsapp_media_bubble.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import '../../data/whatsapp_models.dart';
@@ -1843,15 +1844,7 @@ bool _sameDay(DateTime? first, DateTime? second) {
 }
 
 String _dayLabel(DateTime? value) {
-  if (value == null) return '';
-  final date = value.toLocal();
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final day = DateTime(date.year, date.month, date.day);
-  final difference = today.difference(day).inDays;
-  if (difference == 0) return 'اليوم';
-  if (difference == 1) return 'أمس';
-  return '${date.day}/${date.month}/${date.year}';
+  return formatSocialDayDivider(value);
 }
 
 String _fileDetails(WhatsAppMessageMedia? media) {
@@ -1868,9 +1861,7 @@ String _fileDetails(WhatsAppMessageMedia? media) {
 }
 
 String _time(DateTime? date) {
-  if (date == null) return '';
-  final d = date.toLocal();
-  return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  return formatSocialClock(date);
 }
 
 Color _channelColor(String channel) =>
