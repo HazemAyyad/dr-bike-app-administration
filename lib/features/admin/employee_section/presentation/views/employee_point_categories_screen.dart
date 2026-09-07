@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/employee_point_categories_controller.dart';
+import '../widgets/employee_point_swipe_card.dart';
 
 class EmployeePointCategoriesScreen
     extends GetView<EmployeePointCategoriesController> {
@@ -97,8 +98,7 @@ class EmployeePointCategoriesScreen
                           category: cat,
                           isDark: isDark,
                           onEdit: () => _openEditor(context, category: cat),
-                          onToggle: () => controller.toggleActive(cat),
-                          onDelete: () => _confirmDelete(context, cat.id),
+                          onOptions: () => _openCategoryOptions(context, cat),
                         ),
                       ),
                       SizedBox(height: 14.h),
@@ -115,8 +115,7 @@ class EmployeePointCategoriesScreen
                           category: cat,
                           isDark: isDark,
                           onEdit: () => _openEditor(context, category: cat),
-                          onToggle: () => controller.toggleActive(cat),
-                          onDelete: () => _confirmDelete(context, cat.id),
+                          onOptions: () => _openCategoryOptions(context, cat),
                         ),
                       ),
                     ],
@@ -132,8 +131,11 @@ class EmployeePointCategoriesScreen
 
   Future<void> _openEditor(BuildContext context,
       {EmployeePointCategoryModel? category}) async {
-    await showDialog<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => _PointCategoryEditorDialog(
         controller: controller,
         existing: category,
@@ -164,6 +166,42 @@ class EmployeePointCategoriesScreen
     if (result == true) {
       await controller.deleteCategory(id);
     }
+  }
+
+  Future<void> _openCategoryOptions(
+      BuildContext context, EmployeePointCategoryModel category) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _CategoryActionsSheet(
+        title: 'خيارات التصنيف',
+        actions: [
+          _CategorySheetAction(
+            icon: category.isActive
+                ? Icons.pause_circle_outline_rounded
+                : Icons.play_circle_outline_rounded,
+            label: category.isActive
+                ? 'pointCategoryInactive'.tr
+                : 'pointCategoryActive'.tr,
+            color: const Color(0xFF64748B),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              controller.toggleActive(category);
+            },
+          ),
+          _CategorySheetAction(
+            icon: Icons.delete_outline_rounded,
+            label: 'delete'.tr,
+            color: const Color(0xFFDC2626),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              _confirmDelete(context, category.id);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -298,15 +336,13 @@ class _CategoryCard extends StatelessWidget {
     required this.category,
     required this.isDark,
     required this.onEdit,
-    required this.onToggle,
-    required this.onDelete,
+    required this.onOptions,
   });
 
   final EmployeePointCategoryModel category;
   final bool isDark;
   final VoidCallback onEdit;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
+  final VoidCallback onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -316,137 +352,115 @@ class _CategoryCard extends StatelessWidget {
     final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
     final titleColor = isDark ? Colors.white : const Color(0xFF111827);
     final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: borderColor),
+    final swipeActions = [
+      EmployeePointSwipeAction(
+        icon: Icons.edit_outlined,
+        label: 'edit'.tr,
+        color: AppColors.primaryColor,
+        onTap: onEdit,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44.w,
-            height: 44.w,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(
-              category.isAdd ? Icons.add_rounded : Icons.remove_rounded,
-              color: accent,
-              size: 22.sp,
-            ),
+      EmployeePointSwipeAction(
+        icon: Icons.more_horiz_rounded,
+        label: 'الخيارات',
+        color: AppColors.secondaryColor,
+        onTap: onOptions,
+      ),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: EmployeePointSwipeCard(
+        startActions: swipeActions,
+        endActions: swipeActions,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: borderColor),
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        category.nameAr,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: titleColor,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            category.nameAr,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w800,
+                              color: titleColor,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                      decoration: BoxDecoration(
-                        color: (category.isActive
-                                ? const Color(0xFF16A34A)
-                                : const Color(0xFF9CA3AF))
-                            .withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        category.isActive
-                            ? 'pointCategoryActive'.tr
-                            : 'pointCategoryInactive'.tr,
-                        style: TextStyle(
-                          color: category.isActive
-                              ? const Color(0xFF16A34A)
-                              : const Color(0xFF6B7280),
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 8.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: (category.isActive
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFF9CA3AF))
+                                .withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Text(
+                            category.isActive
+                                ? 'pointCategoryActive'.tr
+                                : 'pointCategoryInactive'.tr,
+                            style: TextStyle(
+                              color: category.isActive
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFF6B7280),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    SizedBox(height: 5.h),
+                    Row(
+                      children: [
+                        _Pill(
+                          icon: category.isAdd
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded,
+                          text: '${category.defaultPoints}',
+                          color: accent,
+                          isDark: isDark,
+                        ),
+                        if (category.createdAt != null) ...[
+                          SizedBox(width: 8.w),
+                          Icon(Icons.calendar_today_outlined,
+                              size: 13.sp, color: subColor),
+                          SizedBox(width: 4.w),
+                          Text(
+                            _createdDate(category.createdAt!),
+                            style: TextStyle(fontSize: 11.sp, color: subColor),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
-                if (category.nameEn != null && category.nameEn!.isNotEmpty)
-                  Padding(
-                    padding: EdgeInsets.only(top: 2.h),
-                    child: Text(
-                      category.nameEn!,
-                      style: TextStyle(fontSize: 12.sp, color: subColor),
-                    ),
-                  ),
-                SizedBox(height: 6.h),
-                Row(
-                  children: [
-                    _Pill(
-                      icon: Icons.tag,
-                      text: category.code,
-                      isDark: isDark,
-                    ),
-                    SizedBox(width: 6.w),
-                    _Pill(
-                      icon: category.isAdd
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
-                      text: '${category.defaultPoints}',
-                      color: accent,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Wrap(
-                  spacing: 8.w,
-                  children: [
-                    TextButton.icon(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: Text('edit'.tr),
-                      onPressed: onEdit,
-                    ),
-                    TextButton.icon(
-                      icon: Icon(
-                        category.isActive
-                            ? Icons.toggle_on_rounded
-                            : Icons.toggle_off_rounded,
-                        size: 22,
-                        color: accent,
-                      ),
-                      label: Text(category.isActive
-                          ? 'pointCategoryInactive'.tr
-                          : 'pointCategoryActive'.tr),
-                      onPressed: onToggle,
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.delete_outline,
-                          size: 18, color: Color(0xFFDC2626)),
-                      label: Text('delete'.tr,
-                          style: const TextStyle(color: Color(0xFFDC2626))),
-                      onPressed: onDelete,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  String _createdDate(String value) {
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }
 
@@ -491,6 +505,72 @@ class _Pill extends StatelessWidget {
   }
 }
 
+class _CategorySheetAction {
+  const _CategorySheetAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _CategoryActionsSheet extends StatelessWidget {
+  const _CategoryActionsSheet({required this.title, required this.actions});
+
+  final String title;
+  final List<_CategorySheetAction> actions;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 18.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: .45),
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(title,
+                    style: TextStyle(
+                        fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              ),
+              SizedBox(height: 8.h),
+              ...actions.map((action) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: action.color.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(action.icon, color: action.color),
+                    ),
+                    title: Text(action.label,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    onTap: action.onTap,
+                  )),
+            ],
+          ),
+        ),
+      );
+}
+
 class _PointCategoryEditorDialog extends StatefulWidget {
   const _PointCategoryEditorDialog({
     required this.controller,
@@ -509,10 +589,7 @@ class _PointCategoryEditorDialogState
     extends State<_PointCategoryEditorDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameArCtrl;
-  late final TextEditingController _nameEnCtrl;
-  late final TextEditingController _codeCtrl;
   late final TextEditingController _pointsCtrl;
-  late final TextEditingController _sortCtrl;
   late String _operationType;
   bool _isActive = true;
 
@@ -521,11 +598,8 @@ class _PointCategoryEditorDialogState
     super.initState();
     final c = widget.existing;
     _nameArCtrl = TextEditingController(text: c?.nameAr ?? '');
-    _nameEnCtrl = TextEditingController(text: c?.nameEn ?? '');
-    _codeCtrl = TextEditingController(text: c?.code ?? '');
     _pointsCtrl =
         TextEditingController(text: c?.defaultPoints.toString() ?? '');
-    _sortCtrl = TextEditingController(text: c?.sortOrder.toString() ?? '0');
     _operationType = c?.operationType ?? 'add';
     _isActive = c?.isActive ?? true;
   }
@@ -533,158 +607,159 @@ class _PointCategoryEditorDialogState
   @override
   void dispose() {
     _nameArCtrl.dispose();
-    _nameEnCtrl.dispose();
-    _codeCtrl.dispose();
     _pointsCtrl.dispose();
-    _sortCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isUpdate = widget.existing != null;
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Material(
+        color: Theme.of(context).dialogTheme.backgroundColor ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * .82,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      isUpdate ? Icons.edit_outlined : Icons.add_circle_outline,
-                      color: AppColors.primaryColor,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        isUpdate
-                            ? 'editPointCategory'.tr
-                            : 'addPointCategory'.tr,
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
+                    Center(
+                      child: Container(
+                        width: 42.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: .45),
+                          borderRadius: BorderRadius.circular(2.r),
                         ),
                       ),
                     ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-                TextFormField(
-                  controller: _nameArCtrl,
-                  decoration: _decoration('pointCategoryNameAr'.tr),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'pointCategoryNameRequired'.tr
-                      : null,
-                ),
-                SizedBox(height: 10.h),
-                TextFormField(
-                  controller: _nameEnCtrl,
-                  decoration: _decoration('pointCategoryNameEn'.tr),
-                ),
-                SizedBox(height: 10.h),
-                TextFormField(
-                  controller: _codeCtrl,
-                  decoration: _decoration(
-                    'pointCategoryCode'.tr,
-                    hint: 'pointCategoryCodeHint'.tr,
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'pointCategoryCodeRequired'.tr
-                      : null,
-                ),
-                SizedBox(height: 10.h),
-                DropdownButtonFormField<String>(
-                  initialValue: _operationType,
-                  decoration: _decoration('pointCategoryOperationType'.tr),
-                  items: [
-                    DropdownMenuItem(
-                      value: 'add',
-                      child: Text('pointCategoryOpAdd'.tr),
-                    ),
-                    DropdownMenuItem(
-                      value: 'deduct',
-                      child: Text('pointCategoryOpDeduct'.tr),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() => _operationType = v ?? 'add'),
-                ),
-                SizedBox(height: 10.h),
-                TextFormField(
-                  controller: _pointsCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration('pointCategoryDefaultPoints'.tr),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'pointCategoryPointsRequired'.tr;
-                    }
-                    final n = int.tryParse(v.trim());
-                    if (n == null || n < 1) {
-                      return 'pointCategoryPointsRequired'.tr;
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 10.h),
-                TextFormField(
-                  controller: _sortCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration('pointCategorySortOrder'.tr),
-                ),
-                SizedBox(height: 6.h),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('pointCategoryActive'.tr),
-                  value: _isActive,
-                  onChanged: (v) => setState(() => _isActive = v),
-                ),
-                SizedBox(height: 8.h),
-                Obx(() {
-                  final loading = widget.controller.isMutating.value;
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: loading
-                              ? null
-                              : () => Navigator.of(context).pop(false),
-                          child: Text('cancel'.tr),
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Icon(
+                          isUpdate
+                              ? Icons.edit_outlined
+                              : Icons.add_circle_outline,
+                          color: AppColors.primaryColor,
                         ),
-                      ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: loading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.r),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            isUpdate
+                                ? 'editPointCategory'.tr
+                                : 'addPointCategory'.tr,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child: loading
-                              ? SizedBox(
-                                  width: 18.w,
-                                  height: 18.w,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text('save'.tr),
                         ),
-                      ),
-                    ],
-                  );
-                }),
-              ],
+                      ],
+                    ),
+                    SizedBox(height: 14.h),
+                    TextFormField(
+                      controller: _nameArCtrl,
+                      decoration: _decoration('pointCategoryNameAr'.tr),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'pointCategoryNameRequired'.tr
+                          : null,
+                    ),
+                    SizedBox(height: 10.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: _operationType,
+                      decoration: _decoration('pointCategoryOperationType'.tr),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'add',
+                          child: Text('pointCategoryOpAdd'.tr),
+                        ),
+                        DropdownMenuItem(
+                          value: 'deduct',
+                          child: Text('pointCategoryOpDeduct'.tr),
+                        ),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _operationType = v ?? 'add'),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextFormField(
+                      controller: _pointsCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _decoration('pointCategoryDefaultPoints'.tr),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'pointCategoryPointsRequired'.tr;
+                        }
+                        final n = int.tryParse(v.trim());
+                        if (n == null || n < 1) {
+                          return 'pointCategoryPointsRequired'.tr;
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 10.h),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('pointCategoryActive'.tr),
+                      value: _isActive,
+                      onChanged: (v) => setState(() => _isActive = v),
+                    ),
+                    SizedBox(height: 8.h),
+                    Obx(() {
+                      final loading = widget.controller.isMutating.value;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: loading
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                              child: Text('cancel'.tr),
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: loading ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                              ),
+                              child: loading
+                                  ? SizedBox(
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text('save'.tr),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -696,10 +771,7 @@ class _PointCategoryEditorDialogState
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final nameAr = _nameArCtrl.text.trim();
-    final nameEn = _nameEnCtrl.text.trim();
-    final code = _codeCtrl.text.trim();
     final points = int.parse(_pointsCtrl.text.trim());
-    final sort = int.tryParse(_sortCtrl.text.trim()) ?? 0;
 
     final isUpdate = widget.existing != null;
     bool ok;
@@ -707,22 +779,17 @@ class _PointCategoryEditorDialogState
       ok = await widget.controller.updateCategory(
         id: widget.existing!.id,
         nameAr: nameAr,
-        nameEn: nameEn.isEmpty ? null : nameEn,
-        code: code,
         operationType: _operationType,
         defaultPoints: points,
         isActive: _isActive,
-        sortOrder: sort,
       );
     } else {
       ok = await widget.controller.createCategory(
         nameAr: nameAr,
-        nameEn: nameEn.isEmpty ? null : nameEn,
-        code: code,
+        code: 'custom_${DateTime.now().microsecondsSinceEpoch}',
         operationType: _operationType,
         defaultPoints: points,
         isActive: _isActive,
-        sortOrder: sort,
       );
     }
     if (ok && mounted) Navigator.of(context).pop(true);

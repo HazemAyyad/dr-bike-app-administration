@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_reward_rule_model.dart';
 import '../controllers/employee_reward_rules_controller.dart';
+import '../widgets/employee_point_swipe_card.dart';
 
 class EmployeeRewardRulesScreen extends GetView<EmployeeRewardRulesController> {
   const EmployeeRewardRulesScreen({Key? key}) : super(key: key);
@@ -76,8 +77,7 @@ class EmployeeRewardRulesScreen extends GetView<EmployeeRewardRulesController> {
             itemBuilder: (_, i) => _RewardRuleCard(
               rule: controller.rules[i],
               onEdit: () => _openRuleEditor(context, rule: controller.rules[i]),
-              onToggle: () => controller.toggleActive(controller.rules[i]),
-              onDelete: () => _confirmDelete(context, controller.rules[i].id),
+              onOptions: () => _openRuleOptions(context, controller.rules[i]),
             ),
             separatorBuilder: (_, __) => SizedBox(height: 10.h),
             itemCount: controller.rules.length,
@@ -89,8 +89,11 @@ class EmployeeRewardRulesScreen extends GetView<EmployeeRewardRulesController> {
 
   Future<void> _openRuleEditor(BuildContext context,
       {EmployeeRewardRuleModel? rule}) async {
-    await showDialog<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => _RewardRuleEditorDialog(
         controller: controller,
         existingRule: rule,
@@ -124,20 +127,52 @@ class EmployeeRewardRulesScreen extends GetView<EmployeeRewardRulesController> {
       await controller.deleteRule(id);
     }
   }
+
+  Future<void> _openRuleOptions(
+      BuildContext context, EmployeeRewardRuleModel rule) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _RewardActionsSheet(
+        actions: [
+          _RewardSheetAction(
+            icon: rule.isActive
+                ? Icons.pause_circle_outline_rounded
+                : Icons.play_circle_outline_rounded,
+            label:
+                rule.isActive ? 'rewardRuleInactive'.tr : 'rewardRuleActive'.tr,
+            color: const Color(0xFF64748B),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              controller.toggleActive(rule);
+            },
+          ),
+          _RewardSheetAction(
+            icon: Icons.delete_outline_rounded,
+            label: 'delete'.tr,
+            color: const Color(0xFFDC2626),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              _confirmDelete(context, rule.id);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RewardRuleCard extends StatelessWidget {
   const _RewardRuleCard({
     required this.rule,
     required this.onEdit,
-    required this.onToggle,
-    required this.onDelete,
+    required this.onOptions,
   });
 
   final EmployeeRewardRuleModel rule;
   final VoidCallback onEdit;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
+  final VoidCallback onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -147,144 +182,197 @@ class _RewardRuleCard extends StatelessWidget {
     final accent =
         rule.isActive ? const Color(0xFF16A34A) : const Color(0xFF9CA3AF);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: borderColor),
+    final swipeActions = [
+      EmployeePointSwipeAction(
+        icon: Icons.edit_outlined,
+        label: 'edit'.tr,
+        color: AppColors.primaryColor,
+        onTap: onEdit,
       ),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(10.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFB45309).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10.r),
+      EmployeePointSwipeAction(
+        icon: Icons.more_horiz_rounded,
+        label: 'الخيارات',
+        color: AppColors.secondaryColor,
+        onTap: onOptions,
+      ),
+    ];
+
+    return EmployeePointSwipeCard(
+      startActions: swipeActions,
+      endActions: swipeActions,
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: borderColor),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.all(10.w),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB45309).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: const Icon(Icons.emoji_events_outlined,
+                  color: Color(0xFFB45309)),
             ),
-            child: const Icon(Icons.emoji_events_outlined,
-                color: Color(0xFFB45309)),
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${'rewardRuleMinPoints'.tr}: ${rule.minPoints} • ${'rewardRuleMaxPoints'.tr}: ${rule.maxPoints?.toString() ?? '∞'}',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF111827),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        rule.isActive
-                            ? 'rewardRuleActive'.tr
-                            : 'rewardRuleInactive'.tr,
-                        style: TextStyle(
-                          color: accent,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  '${'rewardRuleAmount'.tr}: ${rule.rewardAmount}',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    color: isDark ? Colors.white70 : const Color(0xFF374151),
-                  ),
-                ),
-                if ((rule.statusLabel != null &&
-                        rule.statusLabel!.isNotEmpty) ||
-                    (rule.statusColor != null &&
-                        rule.statusColor!.isNotEmpty)) ...[
-                  SizedBox(height: 6.h),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
                     children: [
-                      Container(
-                        width: 14.w,
-                        height: 14.w,
-                        decoration: BoxDecoration(
-                          color: _parseHex(rule.statusColor) ??
-                              const Color(0xFF9CA3AF),
-                          shape: BoxShape.circle,
+                      Expanded(
+                        child: Text(
+                          '${'rewardRuleMinPoints'.tr}: ${rule.minPoints} • ${'rewardRuleMaxPoints'.tr}: ${rule.maxPoints?.toString() ?? '∞'}',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color:
+                                isDark ? Colors.white : const Color(0xFF111827),
+                          ),
                         ),
                       ),
-                      SizedBox(width: 6.w),
-                      Flexible(
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 8.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
                         child: Text(
-                          rule.statusLabel ?? '',
+                          rule.isActive
+                              ? 'rewardRuleActive'.tr
+                              : 'rewardRuleInactive'.tr,
                           style: TextStyle(
-                            fontSize: 12.sp,
+                            color: accent,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.w700,
-                            color: _parseHex(rule.statusColor) ??
-                                (isDark
-                                    ? Colors.white
-                                    : const Color(0xFF111827)),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
-                SizedBox(height: 6.h),
-                Wrap(
-                  spacing: 8.w,
-                  children: [
-                    TextButton.icon(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: Text('edit'.tr),
-                      onPressed: onEdit,
+                  SizedBox(height: 6.h),
+                  Text(
+                    '${'rewardRuleAmount'.tr}: ${rule.rewardAmount}',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isDark ? Colors.white70 : const Color(0xFF374151),
                     ),
-                    TextButton.icon(
-                      icon: Icon(
-                        rule.isActive
-                            ? Icons.toggle_on_rounded
-                            : Icons.toggle_off_rounded,
-                        size: 22,
-                        color: accent,
-                      ),
-                      label: Text(rule.isActive
-                          ? 'rewardRuleInactive'.tr
-                          : 'rewardRuleActive'.tr),
-                      onPressed: onToggle,
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.delete_outline,
-                          size: 18, color: Color(0xFFDC2626)),
-                      label: Text(
-                        'delete'.tr,
-                        style: const TextStyle(color: Color(0xFFDC2626)),
-                      ),
-                      onPressed: onDelete,
+                  ),
+                  if ((rule.statusLabel != null &&
+                          rule.statusLabel!.isNotEmpty) ||
+                      (rule.statusColor != null &&
+                          rule.statusColor!.isNotEmpty)) ...[
+                    SizedBox(height: 6.h),
+                    Row(
+                      children: [
+                        Container(
+                          width: 14.w,
+                          height: 14.w,
+                          decoration: BoxDecoration(
+                            color: _parseHex(rule.statusColor) ??
+                                const Color(0xFF9CA3AF),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        Flexible(
+                          child: Text(
+                            rule.statusLabel ?? '',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                              color: _parseHex(rule.statusColor) ??
+                                  (isDark
+                                      ? Colors.white
+                                      : const Color(0xFF111827)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+class _RewardSheetAction {
+  const _RewardSheetAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _RewardActionsSheet extends StatelessWidget {
+  const _RewardActionsSheet({required this.actions});
+
+  final List<_RewardSheetAction> actions;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 18.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: .45),
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  'خيارات قانون المكافأة',
+                  style:
+                      TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+                ),
+              ),
+              SizedBox(height: 8.h),
+              ...actions.map((action) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: action.color.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(action.icon, color: action.color),
+                    ),
+                    title: Text(action.label,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    onTap: action.onTap,
+                  )),
+            ],
+          ),
+        ),
+      );
 }
 
 class _RewardRuleEditorDialog extends StatefulWidget {
@@ -345,182 +433,206 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
   @override
   Widget build(BuildContext context) {
     final isUpdate = widget.existingRule != null;
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Material(
+        color: Theme.of(context).dialogTheme.backgroundColor ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * .82,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.workspace_premium_outlined,
-                        color: Color(0xFFB45309)),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        isUpdate ? 'editRewardRule'.tr : 'addRewardRule'.tr,
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-                TextFormField(
-                  controller: _minCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration('rewardRuleMinPoints'.tr),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'rewardRuleMinRequired'.tr;
-                    }
-                    if (int.tryParse(v.trim()) == null) {
-                      return 'rewardRuleMinRequired'.tr;
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 12.h),
-                TextFormField(
-                  controller: _maxCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration(
-                    'rewardRuleMaxPoints'.tr,
-                    hint: 'rewardRuleMaxPointsHint'.tr,
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return null;
-                    final maxVal = int.tryParse(v.trim());
-                    if (maxVal == null) return 'rewardRuleMaxLessMin'.tr;
-                    final minVal = int.tryParse(_minCtrl.text.trim()) ?? 0;
-                    if (maxVal < minVal) return 'rewardRuleMaxLessMin'.tr;
-                    return null;
-                  },
-                ),
-                SizedBox(height: 12.h),
-                TextFormField(
-                  controller: _amountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: _decoration('rewardRuleAmount'.tr),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'rewardRuleAmountRequired'.tr;
-                    }
-                    final n = double.tryParse(v.trim());
-                    if (n == null || n < 0) {
-                      return 'rewardRuleAmountRequired'.tr;
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 12.h),
-                TextFormField(
-                  controller: _statusLabelCtrl,
-                  decoration: _decoration(
-                    'rewardRuleStatusLabel'.tr,
-                    hint: 'rewardRuleStatusLabelHint'.tr,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    'rewardRuleStatusColor'.tr,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                Wrap(
-                  spacing: 8.w,
-                  runSpacing: 8.h,
-                  children: _palette.map((hex) {
-                    final isSelected =
-                        _statusColor.toLowerCase() == hex.toLowerCase();
-                    return InkWell(
-                      onTap: () => setState(() => _statusColor = hex),
-                      borderRadius: BorderRadius.circular(20.r),
+                    Center(
                       child: Container(
-                        width: 32.w,
-                        height: 32.w,
+                        width: 42.w,
+                        height: 4.h,
                         decoration: BoxDecoration(
-                          color: _parseHex(hex) ?? Colors.grey,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color:
-                                isSelected ? Colors.black : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 18)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                ),
-                SizedBox(height: 6.h),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('rewardRuleActive'.tr),
-                  value: _isActive,
-                  onChanged: (v) => setState(() => _isActive = v),
-                ),
-                SizedBox(height: 8.h),
-                Obx(() {
-                  final loading = widget.controller.isMutating.value;
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: loading
-                              ? null
-                              : () => Navigator.of(context).pop(false),
-                          child: Text('cancel'.tr),
+                          color: Colors.grey.withValues(alpha: .45),
+                          borderRadius: BorderRadius.circular(2.r),
                         ),
                       ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: loading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFB45309),
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        const Icon(Icons.workspace_premium_outlined,
+                            color: Color(0xFFB45309)),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            isUpdate ? 'editRewardRule'.tr : 'addRewardRule'.tr,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child: loading
-                              ? SizedBox(
-                                  width: 18.w,
-                                  height: 18.w,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text('save'.tr),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 14.h),
+                    TextFormField(
+                      controller: _minCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _decoration('rewardRuleMinPoints'.tr),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'rewardRuleMinRequired'.tr;
+                        }
+                        if (int.tryParse(v.trim()) == null) {
+                          return 'rewardRuleMinRequired'.tr;
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: _maxCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _decoration(
+                        'rewardRuleMaxPoints'.tr,
+                        hint: 'rewardRuleMaxPointsHint'.tr,
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        final maxVal = int.tryParse(v.trim());
+                        if (maxVal == null) return 'rewardRuleMaxLessMin'.tr;
+                        final minVal = int.tryParse(_minCtrl.text.trim()) ?? 0;
+                        if (maxVal < minVal) return 'rewardRuleMaxLessMin'.tr;
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: _amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: _decoration('rewardRuleAmount'.tr),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'rewardRuleAmountRequired'.tr;
+                        }
+                        final n = double.tryParse(v.trim());
+                        if (n == null || n < 0) {
+                          return 'rewardRuleAmountRequired'.tr;
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: _statusLabelCtrl,
+                      decoration: _decoration(
+                        'rewardRuleStatusLabel'.tr,
+                        hint: 'rewardRuleStatusLabelHint'.tr,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        'rewardRuleStatusColor'.tr,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
-                    ],
-                  );
-                }),
-              ],
+                    ),
+                    SizedBox(height: 6.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: _palette.map((hex) {
+                        final isSelected =
+                            _statusColor.toLowerCase() == hex.toLowerCase();
+                        return InkWell(
+                          onTap: () => setState(() => _statusColor = hex),
+                          borderRadius: BorderRadius.circular(20.r),
+                          child: Container(
+                            width: 32.w,
+                            height: 32.w,
+                            decoration: BoxDecoration(
+                              color: _parseHex(hex) ?? Colors.grey,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.black
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 18)
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 6.h),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('rewardRuleActive'.tr),
+                      value: _isActive,
+                      onChanged: (v) => setState(() => _isActive = v),
+                    ),
+                    SizedBox(height: 8.h),
+                    Obx(() {
+                      final loading = widget.controller.isMutating.value;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: loading
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                              child: Text('cancel'.tr),
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: loading ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFB45309),
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 12.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                              ),
+                              child: loading
+                                  ? SizedBox(
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text('save'.tr),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

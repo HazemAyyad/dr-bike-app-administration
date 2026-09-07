@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_point_rule_model.dart';
 import '../controllers/employee_point_rules_controller.dart';
+import '../widgets/employee_point_swipe_card.dart';
 
 class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
   const EmployeePointRulesScreen({Key? key}) : super(key: key);
@@ -63,9 +64,7 @@ class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
               return _RuleCard(
                 rule: rule,
                 onEdit: () => _openEditor(context, rule: rule),
-                onRun: () => controller.runRules(ruleId: rule.id),
-                onToggle: () => controller.toggleRule(rule),
-                onDelete: () => _confirmDelete(context, rule.id),
+                onOptions: () => _openRuleOptions(context, rule),
               );
             },
             separatorBuilder: (_, __) => SizedBox(height: 10.h),
@@ -78,8 +77,11 @@ class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
 
   Future<void> _openEditor(BuildContext context,
       {EmployeePointRuleModel? rule}) async {
-    await showDialog<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => _RuleEditorDialog(controller: controller, rule: rule),
     );
   }
@@ -108,22 +110,61 @@ class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
     );
     if (ok == true) await controller.deleteRule(id);
   }
+
+  Future<void> _openRuleOptions(
+      BuildContext context, EmployeePointRuleModel rule) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _ActionsSheet(
+        title: 'خيارات القاعدة',
+        actions: [
+          _SheetAction(
+            icon: Icons.play_arrow_rounded,
+            label: 'تشغيل القاعدة الآن',
+            color: const Color(0xFF16A34A),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              controller.runRules(ruleId: rule.id);
+            },
+          ),
+          _SheetAction(
+            icon: rule.isActive
+                ? Icons.pause_circle_outline_rounded
+                : Icons.play_circle_outline_rounded,
+            label: rule.isActive ? 'إيقاف القاعدة' : 'تفعيل القاعدة',
+            color: const Color(0xFF64748B),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              controller.toggleRule(rule);
+            },
+          ),
+          _SheetAction(
+            icon: Icons.delete_outline_rounded,
+            label: 'حذف القاعدة',
+            color: const Color(0xFFDC2626),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              _confirmDelete(context, rule.id);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RuleCard extends StatelessWidget {
   const _RuleCard({
     required this.rule,
     required this.onEdit,
-    required this.onRun,
-    required this.onToggle,
-    required this.onDelete,
+    required this.onOptions,
   });
 
   final EmployeePointRuleModel rule;
   final VoidCallback onEdit;
-  final VoidCallback onRun;
-  final VoidCallback onToggle;
-  final VoidCallback onDelete;
+  final VoidCallback onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -131,100 +172,153 @@ class _RuleCard extends StatelessWidget {
     final accent = rule.operationType == 'deduct'
         ? const Color(0xFFDC2626)
         : const Color(0xFF16A34A);
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1F1F23) : Colors.white,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-            color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+    final swipeActions = [
+      EmployeePointSwipeAction(
+        icon: Icons.edit_outlined,
+        label: 'edit'.tr,
+        color: AppColors.primaryColor,
+        onTap: onEdit,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.rule_rounded, color: accent),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  rule.name,
-                  style:
-                      TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+      EmployeePointSwipeAction(
+        icon: Icons.more_horiz_rounded,
+        label: 'الخيارات',
+        color: AppColors.secondaryColor,
+        onTap: onOptions,
+      ),
+    ];
+    return EmployeePointSwipeCard(
+      startActions: swipeActions,
+      endActions: swipeActions,
+      child: Container(
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1F1F23) : Colors.white,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+              color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.rule_rounded, color: accent),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    rule.name,
+                    style:
+                        TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+                  ),
                 ),
-              ),
-              _Badge(
-                label: rule.isActive ? 'فعالة' : 'موقوفة',
-                color: rule.isActive
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFF9CA3AF),
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              _Badge(
-                  label: _periodLabel(rule.periodType),
-                  color: const Color(0xFF2563EB)),
-              _Badge(
-                  label: _conditionLabel(rule.conditionType),
-                  color: const Color(0xFF7C3AED)),
-              _Badge(
-                label:
-                    '${rule.operationType == 'deduct' ? '-' : '+'}${rule.defaultPoints}',
-                color: accent,
-              ),
-              _Badge(
-                label: rule.appliesToAll
-                    ? 'كل الموظفين'
-                    : '${rule.employeeIds.length} موظف',
-                color: const Color(0xFFB45309),
-              ),
-              if (rule.conditionType ==
-                  'employee_completed_all_tasks_before_time')
                 _Badge(
-                    label: 'قبل ${_timeLabel(rule.cutoffTime)}',
-                    color: const Color(0xFF0891B2)),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Wrap(
-            spacing: 4.w,
-            runSpacing: 4.h,
-            children: [
-              TextButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: Text('edit'.tr),
-              ),
-              TextButton.icon(
-                onPressed: onRun,
-                icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                label: const Text('تشغيل'),
-              ),
-              TextButton.icon(
-                onPressed: onToggle,
-                icon: Icon(rule.isActive
-                    ? Icons.toggle_on_rounded
-                    : Icons.toggle_off_rounded),
-                label: Text(rule.isActive ? 'إيقاف' : 'تفعيل'),
-              ),
-              TextButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline,
-                    size: 18, color: Color(0xFFDC2626)),
-                label: const Text('حذف',
-                    style: TextStyle(color: Color(0xFFDC2626))),
-              ),
-            ],
-          ),
-        ],
+                  label: rule.isActive ? 'فعالة' : 'موقوفة',
+                  color: rule.isActive
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFF9CA3AF),
+                ),
+              ],
+            ),
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                _Badge(
+                    label: _periodLabel(rule.periodType),
+                    color: const Color(0xFF2563EB)),
+                _Badge(
+                    label: _conditionLabel(rule.conditionType),
+                    color: const Color(0xFF7C3AED)),
+                _Badge(
+                  label:
+                      '${rule.operationType == 'deduct' ? '-' : '+'}${rule.defaultPoints}',
+                  color: accent,
+                ),
+                _Badge(
+                  label: rule.appliesToAll
+                      ? 'كل الموظفين'
+                      : '${rule.employeeIds.length} موظف',
+                  color: const Color(0xFFB45309),
+                ),
+                if (rule.conditionType ==
+                    'employee_completed_all_tasks_before_time')
+                  _Badge(
+                      label: 'قبل ${_timeLabel(rule.cutoffTime)}',
+                      color: const Color(0xFF0891B2)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _SheetAction {
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _ActionsSheet extends StatelessWidget {
+  const _ActionsSheet({required this.title, required this.actions});
+
+  final String title;
+  final List<_SheetAction> actions;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 18.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: .45),
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(title,
+                    style: TextStyle(
+                        fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              ),
+              SizedBox(height: 8.h),
+              ...actions.map((action) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 40.w,
+                      height: 40.w,
+                      decoration: BoxDecoration(
+                        color: action.color.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(action.icon, color: action.color),
+                    ),
+                    title: Text(action.label,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    onTap: action.onTap,
+                  )),
+            ],
+          ),
+        ),
+      );
 }
 
 class _RuleEditorDialog extends StatefulWidget {
@@ -293,224 +387,252 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 20.h),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.rule == null ? 'إضافة قاعدة نقاط' : 'تعديل قاعدة نقاط',
-                  style:
-                      TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 14.h),
-                TextFormField(
-                  controller: _nameCtrl,
-                  decoration: _decoration('اسم القاعدة'),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                SizedBox(height: 10.h),
-                DropdownButtonFormField<String>(
-                  initialValue: _condition,
-                  decoration: _decoration('الشرط'),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'employee_completed_all_tasks_before_time',
-                      child: Text('الموظف أنهى كل مهامه قبل وقت معين'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'all_employees_completed_tasks',
-                      child: Text('كل الموظفين أنهوا مهامهم'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'employee_has_incomplete_tasks',
-                      child: Text('الموظف عنده مهام غير منتهية'),
-                    ),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _condition = v ?? _condition),
-                ),
-                SizedBox(height: 10.h),
-                Row(
+    final keyboard = MediaQuery.of(context).viewInsets.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: Material(
+        color: Theme.of(context).dialogTheme.backgroundColor ??
+            Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * .9,
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _period,
-                        decoration: _decoration('الفترة'),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'daily', child: Text('يومية')),
-                          DropdownMenuItem(
-                              value: 'weekly', child: Text('أسبوعية')),
-                          DropdownMenuItem(
-                              value: 'monthly', child: Text('شهرية')),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _period = v ?? _period),
+                    Center(
+                      child: Container(
+                        width: 42.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: .45),
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _operation,
-                        decoration: _decoration('العملية'),
-                        items: const [
-                          DropdownMenuItem(value: 'add', child: Text('إضافة')),
-                          DropdownMenuItem(value: 'deduct', child: Text('خصم')),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _operation = v ?? _operation),
-                      ),
+                    SizedBox(height: 12.h),
+                    Text(
+                      widget.rule == null
+                          ? 'إضافة قاعدة نقاط'
+                          : 'تعديل قاعدة نقاط',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 16.sp, fontWeight: FontWeight.w800),
                     ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                TextFormField(
-                  controller: _pointsCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _decoration('النقاط'),
-                  validator: (v) {
-                    final n = int.tryParse((v ?? '').trim());
-                    return n == null || n < 0 ? '0 أو أكثر' : null;
-                  },
-                ),
-                SizedBox(height: 10.h),
-                InputDecorator(
-                  decoration: _decoration('وقت القطع'),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int>(
-                            value: _cutoffHour,
-                            isExpanded: true,
-                            items: List.generate(12, (i) => i + 1)
-                                .map(
-                                  (h) => DropdownMenuItem(
-                                    value: h,
-                                    child: Text('$h'),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (v) => setState(
-                              () => _cutoffHour = v ?? _cutoffHour,
-                            ),
-                          ),
+                    SizedBox(height: 14.h),
+                    TextFormField(
+                      controller: _nameCtrl,
+                      decoration: _decoration('اسم القاعدة'),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                    ),
+                    SizedBox(height: 10.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: _condition,
+                      decoration: _decoration('الشرط'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'employee_completed_all_tasks_before_time',
+                          child: Text('الموظف أنهى كل مهامه قبل وقت معين'),
                         ),
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _cutoffMinute,
-                            isExpanded: true,
-                            items: List.generate(
-                              60,
-                              (i) => i.toString().padLeft(2, '0'),
-                            )
-                                .map(
-                                  (m) => DropdownMenuItem(
-                                    value: m,
-                                    child: Text(m),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (v) => setState(
-                              () => _cutoffMinute = v ?? _cutoffMinute,
-                            ),
-                          ),
+                        DropdownMenuItem(
+                          value: 'all_employees_completed_tasks',
+                          child: Text('كل الموظفين أنهوا مهامهم'),
                         ),
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _cutoffPeriod,
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'am',
-                                child: Text('صباحا'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'pm',
-                                child: Text('مساء'),
-                              ),
-                            ],
-                            onChanged: (v) => setState(
-                              () => _cutoffPeriod = v ?? _cutoffPeriod,
-                            ),
-                          ),
+                        DropdownMenuItem(
+                          value: 'employee_has_incomplete_tasks',
+                          child: Text('الموظف عنده مهام غير منتهية'),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                DropdownButtonFormField<String>(
-                  initialValue: _effectivePolicy,
-                  decoration: _decoration('يبدأ التطبيق من'),
-                  items: const [
-                    DropdownMenuItem(value: 'today', child: Text('اليوم')),
-                    DropdownMenuItem(
-                        value: 'current_week',
-                        child: Text('بداية الأسبوع الحالي')),
-                    DropdownMenuItem(
-                        value: 'current_month',
-                        child: Text('بداية الشهر الحالي')),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _effectivePolicy = v ?? _effectivePolicy),
-                ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('تطبيق على كل الموظفين'),
-                  value: _appliesToAll,
-                  onChanged: (v) => setState(() => _appliesToAll = v),
-                ),
-                if (!_appliesToAll)
-                  _EmployeePicker(
-                    controller: widget.controller,
-                    selectedIds: _employeeIds,
-                    onChanged: () => setState(() {}),
-                  ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('القاعدة فعالة'),
-                  value: _isActive,
-                  onChanged: (v) => setState(() => _isActive = v),
-                ),
-                SizedBox(height: 8.h),
-                Obx(() => Row(
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _condition = v ?? _condition),
+                    ),
+                    SizedBox(height: 10.h),
+                    Row(
                       children: [
                         Expanded(
-                          child: TextButton(
-                            onPressed: widget.controller.isMutating.value
-                                ? null
-                                : () => Navigator.of(context).pop(false),
-                            child: Text('cancel'.tr),
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _period,
+                            decoration: _decoration('الفترة'),
+                            items: const [
+                              DropdownMenuItem(
+                                  value: 'daily', child: Text('يومية')),
+                              DropdownMenuItem(
+                                  value: 'weekly', child: Text('أسبوعية')),
+                              DropdownMenuItem(
+                                  value: 'monthly', child: Text('شهرية')),
+                            ],
+                            onChanged: (v) =>
+                                setState(() => _period = v ?? _period),
                           ),
                         ),
-                        SizedBox(width: 10.w),
+                        SizedBox(width: 8.w),
                         Expanded(
-                          child: ElevatedButton(
-                            onPressed: widget.controller.isMutating.value
-                                ? null
-                                : _submit,
-                            child: Text('save'.tr),
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _operation,
+                            decoration: _decoration('العملية'),
+                            items: const [
+                              DropdownMenuItem(
+                                  value: 'add', child: Text('إضافة')),
+                              DropdownMenuItem(
+                                  value: 'deduct', child: Text('خصم')),
+                            ],
+                            onChanged: (v) =>
+                                setState(() => _operation = v ?? _operation),
                           ),
                         ),
                       ],
-                    )),
-              ],
+                    ),
+                    SizedBox(height: 10.h),
+                    TextFormField(
+                      controller: _pointsCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: _decoration('النقاط'),
+                      validator: (v) {
+                        final n = int.tryParse((v ?? '').trim());
+                        return n == null || n < 0 ? '0 أو أكثر' : null;
+                      },
+                    ),
+                    SizedBox(height: 10.h),
+                    InputDecorator(
+                      decoration: _decoration('وقت القطع'),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _cutoffHour,
+                                isExpanded: true,
+                                items: List.generate(12, (i) => i + 1)
+                                    .map(
+                                      (h) => DropdownMenuItem(
+                                        value: h,
+                                        child: Text('$h'),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) => setState(
+                                  () => _cutoffHour = v ?? _cutoffHour,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _cutoffMinute,
+                                isExpanded: true,
+                                items: List.generate(
+                                  60,
+                                  (i) => i.toString().padLeft(2, '0'),
+                                )
+                                    .map(
+                                      (m) => DropdownMenuItem(
+                                        value: m,
+                                        child: Text(m),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) => setState(
+                                  () => _cutoffMinute = v ?? _cutoffMinute,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _cutoffPeriod,
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'am',
+                                    child: Text('صباحا'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'pm',
+                                    child: Text('مساء'),
+                                  ),
+                                ],
+                                onChanged: (v) => setState(
+                                  () => _cutoffPeriod = v ?? _cutoffPeriod,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: _effectivePolicy,
+                      decoration: _decoration('يبدأ التطبيق من'),
+                      items: const [
+                        DropdownMenuItem(value: 'today', child: Text('اليوم')),
+                        DropdownMenuItem(
+                            value: 'current_week',
+                            child: Text('بداية الأسبوع الحالي')),
+                        DropdownMenuItem(
+                            value: 'current_month',
+                            child: Text('بداية الشهر الحالي')),
+                      ],
+                      onChanged: (v) => setState(
+                          () => _effectivePolicy = v ?? _effectivePolicy),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('تطبيق على كل الموظفين'),
+                      value: _appliesToAll,
+                      onChanged: (v) => setState(() => _appliesToAll = v),
+                    ),
+                    if (!_appliesToAll)
+                      _EmployeePicker(
+                        controller: widget.controller,
+                        selectedIds: _employeeIds,
+                        onChanged: () => setState(() {}),
+                      ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('القاعدة فعالة'),
+                      value: _isActive,
+                      onChanged: (v) => setState(() => _isActive = v),
+                    ),
+                    SizedBox(height: 8.h),
+                    Obx(() => Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: widget.controller.isMutating.value
+                                    ? null
+                                    : () => Navigator.of(context).pop(false),
+                                child: Text('cancel'.tr),
+                              ),
+                            ),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: widget.controller.isMutating.value
+                                    ? null
+                                    : _submit,
+                                child: Text('save'.tr),
+                              ),
+                            ),
+                          ],
+                        )),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
