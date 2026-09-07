@@ -155,7 +155,16 @@ class _CompactAttendanceDaysTable extends StatelessWidget {
   String _date(String value) {
     try {
       final parsed = DateTime.parse(value);
-      return '${parsed.day}/${parsed.month}';
+      const shortDayNames = <String>[
+        'اثن',
+        'ثلا',
+        'أرب',
+        'خمي',
+        'جمع',
+        'سبت',
+        'أحد',
+      ];
+      return '${parsed.day}/${parsed.month} ${shortDayNames[parsed.weekday - 1]}';
     } catch (_) {
       return value;
     }
@@ -168,8 +177,8 @@ class _CompactAttendanceDaysTable extends StatelessWidget {
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
-  String _workedTime(int minutes) {
-    if (minutes <= 0) return '-';
+  String _workedTime(int minutes, {bool showZero = false}) {
+    if (minutes <= 0) return showZero ? '0س' : '-';
     final hours = minutes ~/ 60;
     final remainingMinutes = minutes % 60;
     if (remainingMinutes == 0) return '${hours.toString()}س';
@@ -221,11 +230,12 @@ class _CompactAttendanceDaysTable extends StatelessWidget {
             color: AppColors.primaryColor.withValues(alpha: 0.1),
             child: Row(
               children: [
-                _cell('التاريخ', flex: 18, header: true, color: textColor),
-                _cell('دخول', flex: 17, header: true, color: textColor),
-                _cell('خروج', flex: 17, header: true, color: textColor),
-                _cell('الساعات', flex: 20, header: true, color: textColor),
-                _cell('تعديل', flex: 22, header: true, color: textColor),
+                _cell('التاريخ', flex: 19, header: true, color: textColor),
+                _cell('دخول', flex: 14, header: true, color: textColor),
+                _cell('خروج', flex: 14, header: true, color: textColor),
+                _cell('الدوام', flex: 17, header: true, color: textColor),
+                _cell('أوفر', flex: 16, header: true, color: textColor),
+                _cell('تعديل', flex: 20, header: true, color: textColor),
               ],
             ),
           ),
@@ -243,20 +253,31 @@ class _CompactAttendanceDaysTable extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _cell(_date(day.date), flex: 18, color: textColor),
-                  _cell(_time(day.firstCheckIn), flex: 17, color: muted),
+                  _cell(_date(day.date), flex: 19, color: textColor),
+                  _cell(_time(day.firstCheckIn), flex: 14, color: muted),
                   _cell(
                     _time(day.lastCheckOut, currentlyIn: day.currentlyIn),
-                    flex: 17,
+                    flex: 14,
                     color: day.currentlyIn ? AppColors.customGreen1 : muted,
                   ),
                   _cell(
                     _workedTime(day.calculatedWorkedMinutes),
-                    flex: 20,
+                    flex: 17,
                     color: textColor,
                   ),
+                  _cell(
+                    _workedTime(
+                      day.contractOvertimeMinutes ?? day.overtimeMinutes,
+                      showZero: true,
+                    ),
+                    flex: 16,
+                    color:
+                        (day.contractOvertimeMinutes ?? day.overtimeMinutes) > 0
+                            ? AppColors.customOrange3
+                            : muted,
+                  ),
                   Expanded(
-                    flex: 22,
+                    flex: 20,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
