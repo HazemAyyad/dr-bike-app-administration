@@ -5,6 +5,7 @@ class EmployeePerformanceModel {
     required this.change,
     required this.sections,
     required this.improvementTip,
+    required this.monthlyTrend,
   });
 
   final double? score;
@@ -12,6 +13,7 @@ class EmployeePerformanceModel {
   final double? change;
   final List<EmployeePerformanceSection> sections;
   final String improvementTip;
+  final List<EmployeePerformanceTrendPoint> monthlyTrend;
 
   factory EmployeePerformanceModel.fromJson(Map<String, dynamic> json) {
     final rating = _map(json['rating']);
@@ -32,6 +34,7 @@ class EmployeePerformanceModel {
                 .toList()
           : const [],
       improvementTip: '${json['improvement_tip'] ?? ''}',
+      monthlyTrend: _trendPoints(json['monthly_trend']),
     );
   }
 
@@ -41,6 +44,42 @@ class EmployeePerformanceModel {
     }
     return null;
   }
+}
+
+class EmployeePerformanceTrendPoint {
+  const EmployeePerformanceTrendPoint({
+    required this.label,
+    required this.score,
+    required this.tasksTotal,
+    required this.tasksCompleted,
+  });
+
+  final String label;
+  final double? score;
+  final int tasksTotal;
+  final int tasksCompleted;
+
+  factory EmployeePerformanceTrendPoint.fromJson(Map<String, dynamic> json) =>
+      EmployeePerformanceTrendPoint(
+        label: '${json['label'] ?? ''}',
+        score: _number(json['score']),
+        tasksTotal: _integer(json['tasks_total']),
+        tasksCompleted: _integer(json['tasks_completed']),
+      );
+}
+
+List<EmployeePerformanceTrendPoint> _trendPoints(dynamic value) {
+  final map = _map(value);
+  final points = map['points'];
+  if (points is! List) return const [];
+  return points
+      .whereType<Map>()
+      .map(
+        (item) => EmployeePerformanceTrendPoint.fromJson(
+          Map<String, dynamic>.from(item),
+        ),
+      )
+      .toList();
 }
 
 class EmployeePerformanceSection {
@@ -76,3 +115,6 @@ double? _number(dynamic value) => value is num
     : value == null
     ? null
     : double.tryParse('$value');
+
+int _integer(dynamic value) =>
+    value is num ? value.toInt() : int.tryParse('${value ?? ''}') ?? 0;

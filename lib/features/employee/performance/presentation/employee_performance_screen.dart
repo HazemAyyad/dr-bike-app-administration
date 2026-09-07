@@ -56,6 +56,8 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
                           const Color(0xFFC2413B),
                         ),
                       if (data != null) ...[
+                        _monthlyChart(data.monthlyTrend),
+                        SizedBox(height: 14.h),
                         _sections(data.sections),
                         if (data.section('social') != null) ...[
                           SizedBox(height: 14.h),
@@ -83,6 +85,7 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
   Widget _header(EmployeePerformanceModel? data) {
     final score = data?.score;
     final change = data?.change;
+    final scoreColor = _performanceColor(score);
     return Container(
       padding: EdgeInsets.fromLTRB(20.w, 48.h, 20.w, 24.h),
       decoration: const BoxDecoration(
@@ -102,45 +105,18 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
             ),
           ),
           SizedBox(height: 20.h),
-          SizedBox(
-            width: 142.w,
-            height: 142.w,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox.expand(
-                  child: CircularProgressIndicator(
-                    value: ((score ?? 0) / 100).clamp(0.0, 1.0),
-                    strokeWidth: 11.w,
-              backgroundColor: Colors.white.withValues(alpha: .18),
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF35E0A1)),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      score == null ? '—' : score.round().toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 42.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      'من 100',
-                      style: TextStyle(color: Colors.white70, fontSize: 12.sp),
-                    ),
-                  ],
-                ),
-              ],
+          _AnimatedPerformanceScore(
+            key: ValueKey<String>(
+              'performance-${controller.period.value}-$score',
             ),
+            score: score,
+            color: scoreColor,
           ),
           SizedBox(height: 14.h),
           Text(
             data?.rating ?? 'جاري حساب الأداء',
             style: TextStyle(
-              color: const Color(0xFF35E0A1),
+              color: scoreColor,
               fontSize: 19.sp,
               fontWeight: FontWeight.w800,
             ),
@@ -202,10 +178,14 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
         spacing: 12.w,
         runSpacing: 12.h,
         children: items
+            .asMap()
+            .entries
             .map(
-              (item) => SizedBox(
-                width: (limits.maxWidth - 12.w) / 2,
-                child: _section(item),
+              (entry) => SizedBox(
+                width: items.length.isOdd && entry.key == items.length - 1
+                    ? limits.maxWidth
+                    : (limits.maxWidth - 12.w) / 2,
+                child: _section(entry.value),
               ),
             )
             .toList(),
@@ -252,7 +232,9 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
           ),
           SizedBox(height: 14.h),
           Text(
-            item.score == null ? 'لا بيانات' : '${item.score!.round()}%',
+            item.score == null
+                ? _emptySectionLabel(item)
+                : '${item.score!.round()}%',
             style: TextStyle(
               fontSize: 23.sp,
               color: const Color(0xFF6730D7),
@@ -267,6 +249,93 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
             color: const Color(0xFF6730D7),
             backgroundColor: const Color(0xFFE9E3F8),
           ),
+        ],
+      ),
+    );
+  }
+
+  String _emptySectionLabel(EmployeePerformanceSection item) {
+    if (item.key == 'tasks') return 'لا توجد مهام ضمن الفترة';
+    if (item.key == 'goals') return 'لا توجد أهداف ضمن الفترة';
+    if (item.key == 'attendance') return 'لا يوجد سجل دوام';
+    return 'لا توجد بيانات';
+  }
+
+  Widget _monthlyChart(List<EmployeePerformanceTrendPoint> points) {
+    final withData = points.where((point) => point.score != null).length;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x100F172A),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.show_chart_rounded, color: Color(0xFF6730D7)),
+              SizedBox(width: 8.w),
+              const Expanded(
+                child: Text(
+                  'مستوى الأداء خلال الشهر',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            withData == 0
+                ? 'سيظهر المنحنى عند توفر مهام أو سجلات دوام.'
+                : 'يتحدث يوميًا من إنجاز المهام والالتزام المتوفر.',
+            style: const TextStyle(color: Color(0xFF777287), fontSize: 12),
+          ),
+          SizedBox(height: 16.h),
+          SizedBox(
+            height: 150.h,
+            child: CustomPaint(
+              painter: _MonthlyPerformanceChartPainter(points),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          if (points.isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  points.first.label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF777287),
+                  ),
+                ),
+                Text(
+                  points[points.length ~/ 2].label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF777287),
+                  ),
+                ),
+                Text(
+                  points.last.label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF777287),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -397,4 +466,180 @@ class _EmployeePerformanceScreenState extends State<EmployeePerformanceScreen> {
       ),
     );
   }
+}
+
+Color _performanceColor(double? score) {
+  if (score == null) return const Color(0xFFB8AED2);
+  if (score < 50) return const Color(0xFFE5484D);
+  if (score < 65) return const Color(0xFFF07A2B);
+  if (score < 80) return const Color(0xFFE5B62F);
+  if (score < 90) return const Color(0xFF35BFA4);
+  return const Color(0xFF24D98B);
+}
+
+class _AnimatedPerformanceScore extends StatefulWidget {
+  const _AnimatedPerformanceScore({
+    Key? key,
+    required this.score,
+    required this.color,
+  }) : super(key: key);
+
+  final double? score;
+  final Color color;
+
+  @override
+  State<_AnimatedPerformanceScore> createState() =>
+      _AnimatedPerformanceScoreState();
+}
+
+class _AnimatedPerformanceScoreState extends State<_AnimatedPerformanceScore>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    final target = (widget.score ?? 0).clamp(0.0, 100.0);
+    final upper = (target + 9).clamp(0.0, 100.0);
+    final lower = (target - 5).clamp(0.0, 100.0);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    );
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: upper,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 58,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: upper,
+          end: lower,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 22,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: lower,
+          end: target,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 20,
+      ),
+    ]).animate(_controller);
+    if (widget.score != null) _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.score == null) {
+      return _scoreRing(0, '—');
+    }
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (_, __) => _scoreRing(
+        (_animation.value / 100).clamp(0.0, 1.0),
+        _animation.value.round().toString(),
+      ),
+    );
+  }
+
+  Widget _scoreRing(double progress, String value) {
+    return SizedBox(
+      width: 142.w,
+      height: 142.w,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox.expand(
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 11.w,
+              strokeCap: StrokeCap.round,
+              backgroundColor: Colors.white.withValues(alpha: .18),
+              valueColor: AlwaysStoppedAnimation(widget.color),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 42.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                'من 100',
+                style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthlyPerformanceChartPainter extends CustomPainter {
+  const _MonthlyPerformanceChartPainter(this.points);
+
+  final List<EmployeePerformanceTrendPoint> points;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final grid = Paint()
+      ..color = const Color(0xFFE9E3F8)
+      ..strokeWidth = 1;
+    for (var row = 0; row <= 4; row++) {
+      final y = size.height * row / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+    if (points.isEmpty) return;
+
+    final line = Paint()
+      ..color = const Color(0xFF6730D7)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final fill = Paint()
+      ..color = const Color(0xFF35E0A1)
+      ..style = PaintingStyle.fill;
+    final path = Path();
+    var started = false;
+    for (var index = 0; index < points.length; index++) {
+      final score = points[index].score;
+      if (score == null) {
+        started = false;
+        continue;
+      }
+      final x = points.length == 1
+          ? size.width / 2
+          : size.width * index / (points.length - 1);
+      final y = size.height - (score.clamp(0, 100) / 100 * size.height);
+      if (!started) {
+        path.moveTo(x, y);
+        started = true;
+      } else {
+        path.lineTo(x, y);
+      }
+      canvas.drawCircle(Offset(x, y), 3.5, fill);
+    }
+    canvas.drawPath(path, line);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MonthlyPerformanceChartPainter oldDelegate) =>
+      oldDelegate.points != points;
 }
