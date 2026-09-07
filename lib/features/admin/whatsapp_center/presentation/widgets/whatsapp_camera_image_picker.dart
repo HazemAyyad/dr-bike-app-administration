@@ -8,30 +8,30 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../views/whatsapp_camera_screen.dart';
 
-/// Reusable single-image picker that opens Doctor Bike's WhatsApp-style
-/// camera directly, then renders a removable preview and a busy overlay.
-class WhatsAppCameraImagePicker extends StatelessWidget {
-  const WhatsAppCameraImagePicker({
+/// Reusable media picker that opens the same photo/video camera used by the
+/// WhatsApp conversation screen.
+class WhatsAppCameraMediaPicker extends StatelessWidget {
+  const WhatsAppCameraMediaPicker({
     Key? key,
-    required this.image,
+    required this.media,
     required this.onChanged,
     required this.title,
     this.isBusy = false,
     this.busyLabel,
   }) : super(key: key);
 
-  final File? image;
-  final ValueChanged<File?> onChanged;
+  final WhatsAppCapture? media;
+  final ValueChanged<WhatsAppCapture?> onChanged;
   final String title;
   final bool isBusy;
   final String? busyLabel;
 
   Future<void> _capture() async {
     final capture = await Get.to<WhatsAppCapture>(
-      () => const WhatsAppCameraScreen(allowVideo: false),
+      () => const WhatsAppCameraScreen(),
       fullscreenDialog: true,
     );
-    if (capture != null) onChanged(File(capture.path));
+    if (capture != null) onChanged(capture);
   }
 
   @override
@@ -39,7 +39,7 @@ class WhatsAppCameraImagePicker extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
     final border = isDark ? Colors.white24 : const Color(0xFFD1D5DB);
 
-    if (image == null) {
+    if (media == null) {
       return InkWell(
         onTap: isBusy ? null : _capture,
         borderRadius: BorderRadius.circular(12.r),
@@ -79,7 +79,29 @@ class WhatsAppCameraImagePicker extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.file(image!, fit: BoxFit.cover),
+            if (media!.mediaKind == 'video')
+              Container(
+                color: Colors.black87,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_circle_fill_rounded,
+                        color: Colors.white, size: 48.sp),
+                    SizedBox(height: 6.h),
+                    Text(
+                      'فيديو مرفق',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Image.file(File(media!.path), fit: BoxFit.cover),
             PositionedDirectional(
               top: 7.h,
               start: 7.w,
@@ -98,7 +120,10 @@ class WhatsAppCameraImagePicker extends StatelessWidget {
                         Icon(Icons.camera_alt_rounded,
                             color: Colors.white, size: 15.sp),
                         SizedBox(width: 4.w),
-                        Text('retakePhoto'.tr,
+                        Text(
+                            media!.mediaKind == 'video'
+                                ? 'إعادة التصوير'
+                                : 'retakePhoto'.tr,
                             style: TextStyle(
                                 color: Colors.white, fontSize: 10.sp)),
                       ],

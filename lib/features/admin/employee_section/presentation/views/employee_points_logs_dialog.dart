@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 import '../../data/repositorie_imp/employee_implement.dart';
+import '../widgets/employee_point_evidence_preview.dart';
 
 /// Simple reusable dialog that fetches and lists a single employee's points
 /// log entries for the selected month/year. Used by the global screen and
@@ -195,22 +195,10 @@ class _LogTile extends StatelessWidget {
                       style: const TextStyle(color: Color(0xFF6B7280))),
                 if ((log.imageUrl ?? '').isNotEmpty) ...[
                   SizedBox(height: 6.h),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: Image.network(
-                      ShowNetImage.getPhoto(log.imageUrl),
-                      height: 90.h,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (_, child, progress) => progress == null
-                          ? child
-                          : SizedBox(
-                              height: 90.h,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                    ),
+                  EmployeePointEvidencePreview(
+                    url: log.imageUrl!,
+                    mediaType: log.mediaType ?? 'image',
+                    height: 90,
                   ),
                 ],
                 if (log.pointsDate != null)

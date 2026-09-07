@@ -14,6 +14,7 @@ class EmployeePointsLogModel {
     this.reason,
     this.notes,
     this.imageUrl,
+    this.mediaType,
     this.pointsDate,
     this.createdById,
     this.createdByName,
@@ -32,6 +33,7 @@ class EmployeePointsLogModel {
   final String? reason;
   final String? notes;
   final String? imageUrl;
+  final String? mediaType;
   final String? pointsDate;
   final int? createdById;
   final String? createdByName;
@@ -55,7 +57,8 @@ class EmployeePointsLogModel {
       source: asString(j['source'], 'manual'),
       reason: asNullableString(j['reason']),
       notes: asNullableString(j['notes']),
-      imageUrl: asNullableString(j['image_url']),
+      imageUrl: asNullableString(j['media_url'] ?? j['image_url']),
+      mediaType: asNullableString(j['media_type']) ?? 'image',
       pointsDate: asNullableString(j['points_date']),
       createdById: j['created_by'] == null ? null : asInt(j['created_by']),
       createdByName: asNullableString(j['created_by_name']),

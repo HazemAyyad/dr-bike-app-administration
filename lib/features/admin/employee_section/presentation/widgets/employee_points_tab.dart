@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,13 +5,14 @@ import 'package:get/get.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/widgets/app_save_progress_status.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../data/models/employee_point_rule_model.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/employee_points_controller.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../whatsapp_center/presentation/widgets/whatsapp_camera_image_picker.dart';
+import 'employee_point_evidence_preview.dart';
 
 /// Points & Rewards tab body: monthly summary card, filters, logs, action buttons.
 class EmployeePointsTab extends StatelessWidget {
@@ -823,22 +822,9 @@ class _LogTile extends StatelessWidget {
                   ),
                 if ((item.imageUrl ?? '').isNotEmpty) ...[
                   SizedBox(height: 6.h),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10.r),
-                    child: Image.network(
-                      ShowNetImage.getPhoto(item.imageUrl),
-                      height: 100.h,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (_, child, progress) => progress == null
-                          ? child
-                          : SizedBox(
-                              height: 100.h,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                    ),
+                  EmployeePointEvidencePreview(
+                    url: item.imageUrl!,
+                    mediaType: item.mediaType ?? 'image',
                   ),
                 ],
                 Wrap(
@@ -956,7 +942,7 @@ class _EmployeePointsMutationDialogState
   EmployeePointCategoryModel? _selectedConfigurableCategory;
   String? _selectedType;
   DateTime? _selectedDate;
-  File? _evidenceImage;
+  WhatsAppCapture? _evidenceMedia;
   late bool _isAdd;
 
   @override
@@ -1193,13 +1179,15 @@ class _EmployeePointsMutationDialogState
                 ),
                 SizedBox(height: 12.h),
                 Obx(
-                  () => WhatsAppCameraImagePicker(
-                    image: _evidenceImage,
-                    title: 'pointsEvidenceTakePhoto'.tr,
+                  () => WhatsAppCameraMediaPicker(
+                    media: _evidenceMedia,
+                    title: 'إرفاق صورة أو فيديو',
                     isBusy: widget.controller.isMutating.value,
-                    busyLabel: 'pointsEvidenceUploading'.tr,
-                    onChanged: (image) =>
-                        setState(() => _evidenceImage = image),
+                    busyLabel: _evidenceMedia?.mediaKind == 'video'
+                        ? 'جاري رفع الفيديو...'
+                        : 'pointsEvidenceUploading'.tr,
+                    onChanged: (media) =>
+                        setState(() => _evidenceMedia = media),
                   ),
                 ),
                 SizedBox(height: 12.h),
@@ -1236,9 +1224,11 @@ class _EmployeePointsMutationDialogState
                         ? AppSaveProgressState.saving
                         : AppSaveProgressState.idle,
                     message: saving
-                        ? (_evidenceImage == null
+                        ? (_evidenceMedia == null
                             ? 'pointsSaving'.tr
-                            : 'pointsSavingWithImage'.tr)
+                            : (_evidenceMedia!.mediaKind == 'video'
+                                ? 'جاري الحفظ ورفع الفيديو...'
+                                : 'pointsSavingWithImage'.tr))
                         : 'pointsSaveReady'.tr,
                   );
                 }),
@@ -1309,7 +1299,7 @@ class _EmployeePointsMutationDialogState
         reason: _reasonCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         pointsDate: _selectedDate,
-        imagePath: _evidenceImage?.path,
+        imagePath: _evidenceMedia?.path,
       );
     } else {
       ok = await widget.controller.mutatePoints(
@@ -1320,7 +1310,7 @@ class _EmployeePointsMutationDialogState
         reason: _reasonCtrl.text.trim(),
         notes: _notesCtrl.text.trim(),
         pointsDate: _selectedDate,
-        imagePath: _evidenceImage?.path,
+        imagePath: _evidenceMedia?.path,
       );
     }
     if (ok && mounted) {

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -13,6 +11,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/app_save_progress_status.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../controllers/global_employee_points_controller.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../whatsapp_center/presentation/widgets/whatsapp_camera_image_picker.dart';
 import 'employee_points_logs_dialog.dart';
 
@@ -583,7 +582,7 @@ class _GlobalPointsMutationDialogState
   EmployeePointCategoryModel? _selectedCategory;
   String? _selectedType;
   DateTime? _selectedDate;
-  File? _evidenceImage;
+  WhatsAppCapture? _evidenceMedia;
 
   @override
   void dispose() {
@@ -722,13 +721,15 @@ class _GlobalPointsMutationDialogState
                 ),
                 SizedBox(height: 10.h),
                 Obx(
-                  () => WhatsAppCameraImagePicker(
-                    image: _evidenceImage,
-                    title: 'pointsEvidenceTakePhoto'.tr,
+                  () => WhatsAppCameraMediaPicker(
+                    media: _evidenceMedia,
+                    title: 'إرفاق صورة أو فيديو',
                     isBusy: widget.controller.isMutating.value,
-                    busyLabel: 'pointsEvidenceUploading'.tr,
-                    onChanged: (image) =>
-                        setState(() => _evidenceImage = image),
+                    busyLabel: _evidenceMedia?.mediaKind == 'video'
+                        ? 'جاري رفع الفيديو...'
+                        : 'pointsEvidenceUploading'.tr,
+                    onChanged: (media) =>
+                        setState(() => _evidenceMedia = media),
                   ),
                 ),
                 SizedBox(height: 10.h),
@@ -765,9 +766,11 @@ class _GlobalPointsMutationDialogState
                         ? AppSaveProgressState.saving
                         : AppSaveProgressState.idle,
                     message: saving
-                        ? (_evidenceImage == null
+                        ? (_evidenceMedia == null
                             ? 'pointsSaving'.tr
-                            : 'pointsSavingWithImage'.tr)
+                            : (_evidenceMedia!.mediaKind == 'video'
+                                ? 'جاري الحفظ ورفع الفيديو...'
+                                : 'pointsSavingWithImage'.tr))
                         : 'pointsSaveReady'.tr,
                   );
                 }),
@@ -836,7 +839,7 @@ class _GlobalPointsMutationDialogState
       reason: _reasonCtrl.text.trim(),
       notes: _notesCtrl.text.trim(),
       pointsDate: _selectedDate,
-      imagePath: _evidenceImage?.path,
+      imagePath: _evidenceMedia?.path,
     );
     if (ok && mounted) Navigator.of(context).pop(true);
   }
