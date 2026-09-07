@@ -47,38 +47,41 @@ class SalesBinding extends Bindings {
       );
     }
 
-    Get.lazyPut(
-      () => SalesController(
-        salesService: SalesService(),
-        addProfitSaleUsecase: AddProfitSaleUsecase(
-          salesRepository: Get.find<SalesImplement>(),
+    if (!Get.isRegistered<SalesController>() &&
+        !Get.isPrepared<SalesController>()) {
+      Get.lazyPut(
+        () => SalesController(
+          salesService: SalesService(),
+          addProfitSaleUsecase: AddProfitSaleUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          getProfitSalesUsecase: GetProfitSalesUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          getInstantSalesUsecase: GetInstantSalesUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          getAllProductsUsecase: GetAllProductsUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          updateProductRetailPriceUsecase: UpdateProductRetailPriceUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          addInstantSalesUsecase: AddInstantSalesUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          invoiceModelUsecase: InvoiceModelUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          getCustomerProductPriceHistoryUsecase:
+              GetCustomerProductPriceHistoryUsecase(
+            salesRepository: Get.find<SalesImplement>(),
+          ),
+          allCustomersSellersUsecase: AllCustomersSellersUsecase(
+            checksRepository: Get.find<ChecksImplement>(),
+          ),
         ),
-        getProfitSalesUsecase: GetProfitSalesUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        getInstantSalesUsecase: GetInstantSalesUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        getAllProductsUsecase: GetAllProductsUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        updateProductRetailPriceUsecase: UpdateProductRetailPriceUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        addInstantSalesUsecase: AddInstantSalesUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        invoiceModelUsecase: InvoiceModelUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        getCustomerProductPriceHistoryUsecase:
-            GetCustomerProductPriceHistoryUsecase(
-          salesRepository: Get.find<SalesImplement>(),
-        ),
-        allCustomersSellersUsecase: AllCustomersSellersUsecase(
-          checksRepository: Get.find<ChecksImplement>(),
-        ),
-      ),
-    );
+      );
+    }
   }
 }

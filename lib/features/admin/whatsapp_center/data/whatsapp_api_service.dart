@@ -94,11 +94,13 @@ class WhatsAppApiService {
     List<String> productIds, {
     String channel = 'whatsapp',
     Map<String, int>? quantities,
+    List<Map<String, dynamic>>? items,
   }) =>
       _post(
           '$_socialBase/conversations/$channel/$conversationId/send-products', {
         'product_ids': productIds,
         if (quantities != null) 'quantities': quantities,
+        if (items != null) 'items': items,
       });
 
   Future<void> hideMessage(int conversationId, int messageId) async {
@@ -135,6 +137,16 @@ class WhatsAppApiService {
   Future<Map<String, dynamic>> linkPerson(int id, String type, String name) =>
       _post('$_base/conversations/$id/link-person',
           {'person_type': type, 'name': name});
+
+  Future<Map<String, dynamic>> prepareCommerceDraft(
+    int conversationId,
+    int messageId,
+    String target,
+  ) =>
+      _post(
+        '$_socialBase/conversations/whatsapp/$conversationId/messages/$messageId/prepare-commerce',
+        {'target': target},
+      );
 
   Future<List<int>> getMedia(int messageId) async {
     final response = await _api.get('$_base/messages/$messageId/media',

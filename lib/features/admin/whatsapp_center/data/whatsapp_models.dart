@@ -224,6 +224,7 @@ class WhatsAppMessage {
   final String? mediaUrl;
   final String? linkUrl;
   final WhatsAppMessageMedia? media;
+  final WhatsAppCommerceMessage? commerce;
   final String? senderName;
   final bool isAutomatic;
   final WhatsAppMessage? replyTo;
@@ -240,6 +241,7 @@ class WhatsAppMessage {
     this.mediaUrl,
     this.linkUrl,
     this.media,
+    this.commerce,
     this.senderName,
     this.isAutomatic = false,
     this.replyTo,
@@ -260,6 +262,10 @@ class WhatsAppMessage {
             ? WhatsAppMessageMedia.fromJson(
                 Map<String, dynamic>.from(j['media'] as Map))
             : null,
+        commerce: j['commerce'] is Map
+            ? WhatsAppCommerceMessage.fromJson(
+                Map<String, dynamic>.from(j['commerce'] as Map))
+            : null,
         senderName: j['sender'] is Map
             ? (j['sender'] as Map)['name']?.toString()
             : null,
@@ -271,6 +277,79 @@ class WhatsAppMessage {
         createdAt: DateTime.tryParse(j['created_at']?.toString() ?? ''),
         customerDeletedAt:
             DateTime.tryParse(j['customer_deleted_at']?.toString() ?? ''),
+      );
+}
+
+class WhatsAppCommerceMessage {
+  final String kind, title, currency;
+  final int itemsCount, linesCount;
+  final double estimatedTotal;
+  final bool canConvert;
+  final List<WhatsAppCommerceItem> items;
+
+  const WhatsAppCommerceMessage({
+    required this.kind,
+    required this.title,
+    required this.currency,
+    required this.itemsCount,
+    required this.linesCount,
+    required this.estimatedTotal,
+    required this.canConvert,
+    required this.items,
+  });
+
+  factory WhatsAppCommerceMessage.fromJson(Map<String, dynamic> json) =>
+      WhatsAppCommerceMessage(
+        kind: json['kind']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        currency: json['currency']?.toString() ?? 'ILS',
+        itemsCount: _int(json['items_count']),
+        linesCount: _int(json['lines_count']),
+        estimatedTotal:
+            double.tryParse(json['estimated_total']?.toString() ?? '') ?? 0,
+        canConvert: json['can_convert'] == true || json['can_convert'] == 1,
+        items: json['items'] is List
+            ? (json['items'] as List)
+                .whereType<Map>()
+                .map((item) => WhatsAppCommerceItem.fromJson(
+                    Map<String, dynamic>.from(item)))
+                .toList()
+            : const [],
+      );
+}
+
+class WhatsAppCommerceItem {
+  final String? productId, sizeColorId, image, variantLabel;
+  final String name;
+  final int quantity, stock;
+  final double unitPrice, lineTotal;
+  final bool matched;
+
+  const WhatsAppCommerceItem({
+    this.productId,
+    this.sizeColorId,
+    this.image,
+    this.variantLabel,
+    required this.name,
+    required this.quantity,
+    required this.stock,
+    required this.unitPrice,
+    required this.lineTotal,
+    required this.matched,
+  });
+
+  factory WhatsAppCommerceItem.fromJson(Map<String, dynamic> json) =>
+      WhatsAppCommerceItem(
+        productId: json['product_id']?.toString(),
+        sizeColorId: json['size_color_id']?.toString(),
+        image: json['image']?.toString(),
+        variantLabel: json['variant_label']?.toString(),
+        name: json['name']?.toString() ?? 'منتج',
+        quantity: _int(json['quantity']),
+        stock: _int(json['stock']),
+        unitPrice: double.tryParse(json['unit_price']?.toString() ?? '') ?? 0,
+        lineTotal: double.tryParse(json['line_total']?.toString() ?? '') ?? 0,
+        matched: json['matched'] == true || json['matched'] == 1,
       );
 }
 
@@ -331,6 +410,11 @@ class WhatsAppProduct {
   final String? image, code, model, category;
   final int stock;
   final dynamic price;
+  final List<WhatsAppProductVariant> variants;
+
+  bool get isAvailable => variants.isEmpty
+      ? stock > 0
+      : variants.any((variant) => variant.stock > 0);
 
   const WhatsAppProduct({
     required this.id,
@@ -341,6 +425,7 @@ class WhatsAppProduct {
     this.category,
     this.stock = 0,
     this.price,
+    this.variants = const [],
   });
 
   factory WhatsAppProduct.fromJson(Map<String, dynamic> json) =>
@@ -351,6 +436,44 @@ class WhatsAppProduct {
         code: json['code']?.toString(),
         model: json['model']?.toString(),
         category: json['category']?.toString(),
+        stock: _int(json['stock']),
+        price: json['price'],
+        variants: json['variants'] is List
+            ? (json['variants'] as List)
+                .whereType<Map>()
+                .map((item) => WhatsAppProductVariant.fromJson(
+                    Map<String, dynamic>.from(item)))
+                .toList()
+            : const [],
+      );
+}
+
+class WhatsAppProductVariant {
+  final String id;
+  final String? size, color, image;
+  final int stock;
+  final dynamic price;
+
+  const WhatsAppProductVariant({
+    required this.id,
+    this.size,
+    this.color,
+    this.image,
+    this.stock = 0,
+    this.price,
+  });
+
+  String get label => <String>[
+        if (color?.trim().isNotEmpty == true) color!.trim(),
+        if (size?.trim().isNotEmpty == true) size!.trim(),
+      ].join(' / ');
+
+  factory WhatsAppProductVariant.fromJson(Map<String, dynamic> json) =>
+      WhatsAppProductVariant(
+        id: json['id']?.toString() ?? '',
+        size: json['size']?.toString(),
+        color: json['color']?.toString(),
+        image: json['image']?.toString(),
         stock: _int(json['stock']),
         price: json['price'],
       );

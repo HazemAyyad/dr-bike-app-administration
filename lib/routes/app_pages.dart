@@ -849,6 +849,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.INSTANTSALEPRODUCTPICKER,
       page: () => const InstantSaleProductPickerScreen(),
+      binding: SalesBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,

@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
+import '../../../../../routes/app_routes.dart';
 
 class WhatsAppConversationController extends GetxController {
   static const _platformChannel = MethodChannel('dr_bike/platform_info');
@@ -27,6 +28,8 @@ class WhatsAppConversationController extends GetxController {
   final loading = false.obs;
   final sending = false.obs;
   final mediaLoading = false.obs;
+  final preparingCommerceMessageId = RxnInt();
+  final preparingCommerceTarget = RxnString();
   final Map<int, Uint8List> _mediaCache = {};
   final Map<String, Future<SocialLinkPreview?>> _previewRequests = {};
   final error = RxnString();
@@ -308,9 +311,47 @@ class WhatsAppConversationController extends GetxController {
     }
   }
 
+  Future<void> openCommerceDraft(
+    WhatsAppMessage message, {
+    required String target,
+  }) async {
+    if (preparingCommerceMessageId.value != null) return;
+    preparingCommerceMessageId.value = message.id;
+    preparingCommerceTarget.value = target;
+    try {
+      final response = await api.prepareCommerceDraft(id, message.id, target);
+      final rawDraft = response['draft'];
+      if (rawDraft is! Map) {
+        throw Exception('لم يتم تجهيز بيانات السلة.');
+      }
+      final draft = Map<String, dynamic>.from(rawDraft);
+      await Get.toNamed(
+        target == 'sales_order'
+            ? AppRoutes.NEWSALESORDERSCREEN
+            : AppRoutes.INSTANTSALEPRODUCTPICKER,
+        arguments: {
+          'whatsappCommerceDraft': draft,
+          'salesOrderFlow': target == 'sales_order',
+          'freshInstantSale': target == 'instant_sale',
+        },
+      );
+      await load(silent: true);
+    } catch (e) {
+      Get.snackbar(
+        'تعذر تجهيز السلة',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      preparingCommerceMessageId.value = null;
+      preparingCommerceTarget.value = null;
+    }
+  }
+
   Future<bool> sendSelectedProducts(
     List<String> productIds, {
     Map<String, int>? quantities,
+    List<Map<String, dynamic>>? items,
   }) async {
     if (productIds.isEmpty || sending.value) {
       return false;
@@ -322,6 +363,7 @@ class WhatsAppConversationController extends GetxController {
         productIds,
         channel: channel,
         quantities: quantities,
+        items: items,
       );
       await load(silent: true);
       return true;

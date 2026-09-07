@@ -3642,6 +3642,63 @@ class SalesController extends GetxController
     }
   }
 
+  Future<void> applyWhatsAppCommerceDraft(Map<String, dynamic> draft) async {
+    final customerData = draft['customer'];
+    final rawItems = draft['items'];
+    if (customerData is! Map || rawItems is! List || rawItems.isEmpty) {
+      throw StateError('مسودة سلة واتساب غير مكتملة.');
+    }
+
+    await ensurePickerPartnersLoaded();
+    final customer = Map<String, dynamic>.from(customerData);
+    final customerId = int.tryParse(customer['id']?.toString() ?? '');
+    if (customerId == null) {
+      throw StateError('تعذر تحديد زبون سلة واتساب.');
+    }
+    var partner = pickerCustomersList.firstWhereOrNull(
+      (item) => item.id == customerId,
+    );
+    partner ??= SellerModel(
+      id: customerId,
+      name: customer['name']?.toString() ?? 'زبون واتساب',
+      phone: customer['phone']?.toString() ?? '',
+    );
+    if (!pickerCustomersList.any((item) => item.id == customerId)) {
+      pickerCustomersList.insert(0, partner);
+    }
+    pickerPartnerIsCustomer.value = true;
+    await onPickerPartnerSelected(partner);
+
+    clearCartLines(deferDispose: false);
+    for (final rawItem in rawItems) {
+      if (rawItem is! Map) continue;
+      final item = Map<String, dynamic>.from(rawItem);
+      final productId = item['product_id']?.toString() ?? '';
+      final quantity = int.tryParse(item['quantity']?.toString() ?? '') ?? 0;
+      final stock = int.tryParse(item['stock']?.toString() ?? '') ?? 0;
+      if (productId.isEmpty || quantity <= 0 || stock <= 0) continue;
+      final price = double.tryParse(item['unit_price']?.toString() ?? '') ?? 0;
+      addCartLine(InstantSaleCartLine(
+        productId: productId,
+        productName: item['product_name']?.toString() ?? 'منتج',
+        imageUrl: item['image']?.toString() ?? '',
+        stock: stock,
+        sizeColorId: item['size_color_id']?.toString(),
+        sizeId: item['size_id']?.toString(),
+        sizeLabel: item['size_label']?.toString(),
+        colorLabel: item['color_label']?.toString(),
+        initialQuantity: quantity.toString(),
+        initialPrice: _formatUnitPrice(price),
+      ));
+    }
+    if (cartLines.isEmpty) {
+      throw StateError('منتجات السلة غير متوفرة حالياً.');
+    }
+    syncCartToItems();
+    calculateGrandTotal();
+    bumpCartRevision();
+  }
+
   String _extractQuickAddError(dynamic response) {
     if (response is Map) {
       final errors = response['errors'];

@@ -36,6 +36,7 @@ class _InstantSaleProductPickerScreenState
   bool _maintenanceFlow = false;
   bool _adjustmentFlow = false;
   bool _salesOrderFlow = false;
+  Map<String, dynamic>? _whatsAppCommerceDraft;
 
   SalesOrdersController get orders => Get.find<SalesOrdersController>();
 
@@ -43,6 +44,11 @@ class _InstantSaleProductPickerScreenState
   void initState() {
     super.initState();
     final args = Get.arguments;
+    if (args is Map && args['whatsappCommerceDraft'] is Map) {
+      _whatsAppCommerceDraft = Map<String, dynamic>.from(
+        args['whatsappCommerceDraft'] as Map,
+      );
+    }
     _salesOrderFlow = Get.currentRoute == AppRoutes.NEWSALESORDERSCREEN ||
         (args is Map && args['salesOrderFlow'] == true);
     final maintenanceFlow = args is Map && args['maintenanceFlow'] == true;
@@ -55,8 +61,9 @@ class _InstantSaleProductPickerScreenState
 
     if (_salesOrderFlow) {
       controller.enablePickerReservedStock(salesOrderFlow: true);
-      if (!(args is Map && args['editSalesOrder'] == true) &&
-          !orders.hasSuspendedDraft.value) {
+      if (_whatsAppCommerceDraft != null ||
+          (!(args is Map && args['editSalesOrder'] == true) &&
+              !orders.hasSuspendedDraft.value)) {
         controller.resetInstantSaleForm();
         controller.isPackageSale.value = false;
         controller.selectedPackageId.value = null;
@@ -96,6 +103,29 @@ class _InstantSaleProductPickerScreenState
         Get.find<SalesOrdersController>().scheduleStockAvailabilityRefresh(
           controller.filteredProductsForPicker,
         );
+      }
+      if (mounted && _whatsAppCommerceDraft != null) {
+        try {
+          await controller.applyWhatsAppCommerceDraft(
+            _whatsAppCommerceDraft!,
+          );
+          if (mounted) {
+            Get.snackbar(
+              'تم تجهيز السلة',
+              'تمت إضافة الزبون ومنتجات واتساب تلقائياً',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
+        } catch (error) {
+          if (mounted) {
+            Get.snackbar(
+              'تعذر تجهيز السلة',
+              error.toString(),
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
+        }
+        return;
       }
       if (mounted &&
           !_maintenanceFlow &&

@@ -438,6 +438,11 @@ class WhatsAppConversationScreen
                                                     ]),
                                               ),
                                             ),
+                                          if (message.commerce != null)
+                                            _WhatsAppCommerceCard(
+                                              message: message,
+                                              controller: controller,
+                                            ),
                                           if (_visibleBody(message) != null)
                                             Text(_visibleBody(message)!),
                                           const SizedBox(height: 4),
@@ -1791,7 +1796,259 @@ class _ReplyPreview extends StatelessWidget {
   }
 }
 
+class _WhatsAppCommerceCard extends StatelessWidget {
+  const _WhatsAppCommerceCard({
+    required this.message,
+    required this.controller,
+  });
+
+  final WhatsAppMessage message;
+  final WhatsAppConversationController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final commerce = message.commerce!;
+    final incomingOrder = commerce.kind == 'order';
+    final visibleItems = commerce.items.take(6).toList();
+    final hiddenCount = commerce.items.length - visibleItems.length;
+
+    return Container(
+      width: 292,
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .78),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD9E5E1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFE7FCE8),
+                  foregroundColor: const Color(0xFF008069),
+                  child: Icon(incomingOrder
+                      ? Icons.shopping_cart_outlined
+                      : Icons.storefront_outlined),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        commerce.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        '${commerce.itemsCount} قطعة • ${commerce.linesCount} منتج',
+                        style: const TextStyle(
+                          color: Color(0xFF667781),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          for (final item in visibleItems) _commerceItem(item),
+          if (hiddenCount > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: Text(
+                'و $hiddenCount منتجات أخرى',
+                style: const TextStyle(
+                  color: Color(0xFF667781),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
+            child: Row(
+              children: [
+                Text(
+                  incomingOrder ? 'الإجمالي الحالي' : 'القيمة الحالية',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                const Spacer(),
+                Text(
+                  _commerceMoney(commerce.estimatedTotal, commerce.currency),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF008069),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (incomingOrder) ...[
+            if (!commerce.canConvert)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(10, 0, 10, 7),
+                child: Text(
+                  'يوجد منتج غير مربوط أو كمية غير متوفرة حالياً.',
+                  style: TextStyle(
+                    color: Color(0xFFB54708),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(7),
+              child: Obx(() {
+                final loading =
+                    controller.preparingCommerceMessageId.value == message.id;
+                final loadingOrder = loading &&
+                    controller.preparingCommerceTarget.value == 'sales_order';
+                final loadingInvoice = loading &&
+                    controller.preparingCommerceTarget.value == 'instant_sale';
+                return Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: !commerce.canConvert || loading
+                            ? null
+                            : () => controller.openCommerceDraft(
+                                  message,
+                                  target: 'sales_order',
+                                ),
+                        icon: loadingOrder
+                            ? const SizedBox(
+                                width: 15,
+                                height: 15,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.receipt_long_outlined, size: 17),
+                        label: const Text('طلبية بيع'),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: !commerce.canConvert || loading
+                            ? null
+                            : () => controller.openCommerceDraft(
+                                  message,
+                                  target: 'instant_sale',
+                                ),
+                        icon: loadingInvoice
+                            ? const SizedBox(
+                                width: 15,
+                                height: 15,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.point_of_sale_outlined,
+                                size: 17),
+                        label: const Text('فاتورة بيع'),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _commerceItem(WhatsAppCommerceItem item) {
+    final unavailable = !item.matched || item.stock < item.quantity;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 0),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: item.image != null && item.image!.isNotEmpty
+                ? Image.network(
+                    item.image!,
+                    width: 42,
+                    height: 42,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _commercePlaceholder(),
+                  )
+                : _commercePlaceholder(),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11.5),
+                ),
+                if (item.variantLabel != null && item.variantLabel!.isNotEmpty)
+                  Text(
+                    item.variantLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF667781),
+                      fontSize: 10,
+                    ),
+                  ),
+                Text(
+                  unavailable
+                      ? 'غير متوفر بالكمية المطلوبة'
+                      : '${item.quantity} × ${_commerceMoney(item.unitPrice, message.commerce!.currency)}',
+                  style: TextStyle(
+                    color: unavailable
+                        ? const Color(0xFFB54708)
+                        : const Color(0xFF667781),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            _commerceMoney(item.lineTotal, message.commerce!.currency),
+            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _commercePlaceholder() => Container(
+        width: 42,
+        height: 42,
+        color: const Color(0xFFE7F0ED),
+        child: const Icon(Icons.inventory_2_outlined,
+            size: 20, color: Color(0xFF667781)),
+      );
+}
+
+String _commerceMoney(double value, String currency) {
+  final amount = value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value.toStringAsFixed(2);
+  return currency.toUpperCase() == 'ILS' ? '$amount ₪' : '$amount $currency';
+}
+
 String? _visibleBody(WhatsAppMessage message) {
+  if (message.commerce != null) return null;
   final body = message.body?.trim();
   if (body == null || body.isEmpty) return null;
   if (body.toLowerCase() == '[system]') return null;

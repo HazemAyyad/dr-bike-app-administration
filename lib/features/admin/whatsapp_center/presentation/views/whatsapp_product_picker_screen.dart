@@ -8,6 +8,20 @@ import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_conversation_controller.dart';
 
+class _SelectedProductOfferLine {
+  const _SelectedProductOfferLine(this.product, [this.variant]);
+
+  final WhatsAppProduct product;
+  final WhatsAppProductVariant? variant;
+
+  String get key =>
+      variant == null ? product.id : '${product.id}::${variant!.id}';
+  String get name => product.name;
+  String? get variantLabel => variant?.label;
+  dynamic get price => variant?.price ?? product.price;
+  int get stock => variant?.stock ?? product.stock;
+}
+
 class WhatsAppProductPickerScreen extends StatefulWidget {
   const WhatsAppProductPickerScreen({Key? key}) : super(key: key);
 
@@ -21,7 +35,8 @@ class _WhatsAppProductPickerScreenState
   final WhatsAppConversationController controller =
       Get.find<WhatsAppConversationController>();
   final TextEditingController search = TextEditingController();
-  final Map<String, WhatsAppProduct> selected = <String, WhatsAppProduct>{};
+  final Map<String, _SelectedProductOfferLine> selected =
+      <String, _SelectedProductOfferLine>{};
   final Map<String, int> quantities = <String, int>{};
   List<WhatsAppProduct> products = const [];
   bool loading = true;
@@ -210,8 +225,16 @@ class _WhatsAppProductPickerScreenState
         ..addAll(confirmedQuantities);
     }
     final sent = await controller.sendSelectedProducts(
-      selected.keys.toList(),
-      quantities: controller.channel == 'whatsapp' ? quantities : null,
+      selected.values.map((line) => line.product.id).toSet().toList(),
+      items: controller.channel == 'whatsapp'
+          ? selected.values
+              .map((line) => <String, dynamic>{
+                    'product_id': line.product.id,
+                    if (line.variant != null) 'size_color_id': line.variant!.id,
+                    'quantity': quantities[line.key] ?? 1,
+                  })
+              .toList()
+          : null,
     );
     if (!sent || !mounted) return;
     Navigator.of(context).pop();
@@ -227,8 +250,7 @@ class _WhatsAppProductPickerScreenState
 
   Future<Map<String, int>?> _confirmQuantities() {
     final draft = <String, int>{
-      for (final product in selected.values)
-        product.id: quantities[product.id] ?? 1,
+      for (final line in selected.values) line.key: quantities[line.key] ?? 1,
     };
 
     return showModalBottomSheet<Map<String, int>>(
@@ -267,19 +289,19 @@ class _WhatsAppProductPickerScreenState
                     itemCount: selected.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (_, index) {
-                      final product = selected.values.elementAt(index);
-                      final quantity = draft[product.id] ?? 1;
-                      final maxQuantity = product.stock > 999
+                      final line = selected.values.elementAt(index);
+                      final quantity = draft[line.key] ?? 1;
+                      final maxQuantity = line.stock > 999
                           ? 999
-                          : product.stock > 0
-                              ? product.stock
+                          : line.stock > 0
+                              ? line.stock
                               : 1;
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                        title: Text(product.name,
+                        title: Text(line.name,
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         subtitle: Text(
-                          'السعر: ${product.price ?? 0} ₪  •  المتوفر: ${product.stock}',
+                          '${line.variantLabel?.isNotEmpty == true ? '${line.variantLabel}  •  ' : ''}السعر: ${line.price ?? 0} ₪  •  المتوفر: ${line.stock}',
                         ),
                         trailing: Container(
                           decoration: BoxDecoration(
@@ -294,7 +316,7 @@ class _WhatsAppProductPickerScreenState
                                 onPressed: quantity >= maxQuantity
                                     ? null
                                     : () => setSheetState(
-                                        () => draft[product.id] = quantity + 1),
+                                        () => draft[line.key] = quantity + 1),
                                 icon: const Icon(Icons.add, size: 19),
                               ),
                               Text('$quantity',
@@ -305,7 +327,7 @@ class _WhatsAppProductPickerScreenState
                                 onPressed: quantity <= 1
                                     ? null
                                     : () => setSheetState(
-                                        () => draft[product.id] = quantity - 1),
+                                        () => draft[line.key] = quantity - 1),
                                 icon: const Icon(Icons.remove, size: 19),
                               ),
                             ],
@@ -340,6 +362,162 @@ class _WhatsAppProductPickerScreenState
                       onPressed: () => Navigator.of(sheetContext).pop(draft),
                       icon: const Icon(Icons.picture_as_pdf),
                       label: const Text('إنشاء وإرسال PDF'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleProduct(WhatsAppProduct product) async {
+    if (!product.isAvailable) return;
+
+    if (product.variants.isEmpty) {
+      final key = product.id;
+      setState(() {
+        if (selected.containsKey(key)) {
+          selected.remove(key);
+          quantities.remove(key);
+        } else if (selected.length < 30) {
+          selected[key] = _SelectedProductOfferLine(product);
+          quantities[key] = 1;
+        }
+      });
+      return;
+    }
+
+    final otherSelections =
+        selected.values.where((line) => line.product.id != product.id).length;
+    final maxForProduct = 30 - otherSelections;
+    final current = selected.values
+        .where((line) => line.product.id == product.id && line.variant != null)
+        .map((line) => line.variant!.id)
+        .toSet();
+    final picked = await _pickVariants(
+      product,
+      current: current,
+      maximum: maxForProduct,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      final oldKeys = selected.entries
+          .where((entry) => entry.value.product.id == product.id)
+          .map((entry) => entry.key)
+          .toList();
+      selected.removeWhere((_, line) => line.product.id == product.id);
+
+      for (final variant in product.variants) {
+        if (!picked.contains(variant.id)) continue;
+        final line = _SelectedProductOfferLine(product, variant);
+        selected[line.key] = line;
+        quantities.putIfAbsent(line.key, () => 1);
+      }
+      for (final oldKey in oldKeys) {
+        if (!selected.containsKey(oldKey)) quantities.remove(oldKey);
+      }
+    });
+  }
+
+  Future<Set<String>?> _pickVariants(
+    WhatsAppProduct product, {
+    required Set<String> current,
+    required int maximum,
+  }) {
+    final draft = Set<String>.from(current);
+    return showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * .72,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.palette_outlined,
+                          color: Color(0xFF6B65BD)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'اختيار اللون والمقاس — ${product.name}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 18),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('يمكنك اختيار أكثر من لون للعرض نفسه'),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: product.variants.length,
+                    itemBuilder: (_, index) {
+                      final variant = product.variants[index];
+                      final checked = draft.contains(variant.id);
+                      final canAdd = checked || draft.length < maximum;
+                      final isAvailable = variant.stock > 0;
+                      return CheckboxListTile(
+                        value: checked,
+                        onChanged: checked || (isAvailable && canAdd)
+                            ? (value) => setSheetState(() {
+                                  if (value == true) {
+                                    draft.add(variant.id);
+                                  } else {
+                                    draft.remove(variant.id);
+                                  }
+                                })
+                            : null,
+                        title: Text(variant.label.isEmpty
+                            ? 'خيار ${index + 1}'
+                            : variant.label),
+                        subtitle: Text(
+                          isAvailable
+                              ? 'السعر: ${variant.price ?? product.price ?? 0} ₪  •  المتوفر: ${variant.stock}'
+                              : 'غير متوفر حاليًا',
+                        ),
+                        activeColor: const Color(0xFF6B65BD),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B65BD),
+                      ),
+                      onPressed: () => Navigator.of(sheetContext).pop(draft),
+                      child: Text('تأكيد (${draft.length})'),
                     ),
                   ),
                 ),
@@ -398,22 +576,18 @@ class _WhatsAppProductPickerScreenState
   }
 
   Widget _productCard(WhatsAppProduct product) {
-    final isSelected = selected.containsKey(product.id);
+    final isSelected =
+        selected.values.any((line) => line.product.id == product.id);
+    final isAvailable = product.isAvailable;
+    final availableVariants =
+        product.variants.where((variant) => variant.stock > 0).length;
     final image = ShowNetImage.getThumbnailPhoto(product.image ?? '');
     return InkWell(
-      onTap: () => setState(() {
-        if (isSelected) {
-          selected.remove(product.id);
-          quantities.remove(product.id);
-        } else if (selected.length < 30) {
-          selected[product.id] = product;
-          quantities[product.id] = 1;
-        }
-      }),
+      onTap: isAvailable ? () => _toggleProduct(product) : null,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isAvailable ? Colors.white : const Color(0xFFF1F1F1),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color:
@@ -450,6 +624,22 @@ class _WhatsAppProductPickerScreenState
                         child: Icon(Icons.check, color: Colors.white, size: 16),
                       ),
                     ),
+                  if (product.variants.isNotEmpty)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xDD6B65BD),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text('${product.variants.length} خيارات',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 8)),
+                      ),
+                    ),
                   Positioned(
                     bottom: 3,
                     right: 3,
@@ -460,7 +650,14 @@ class _WhatsAppProductPickerScreenState
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(5),
                       ),
-                      child: Text('المتوفر ${product.stock}',
+                      child: Text(
+                          product.variants.isNotEmpty
+                              ? availableVariants > 0
+                                  ? '$availableVariants خيارات متوفرة'
+                                  : 'غير متوفر'
+                              : product.stock > 0
+                                  ? 'المتوفر ${product.stock}'
+                                  : 'غير متوفر',
                           style: const TextStyle(
                               color: Colors.white, fontSize: 8)),
                     ),
