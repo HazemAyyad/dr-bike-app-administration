@@ -7,6 +7,7 @@ import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../controllers/admin_dashboard_controller.dart';
@@ -160,79 +161,93 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
           SizedBox(width: 10.w),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: controller.refreshDashboard,
-        color: AppColors.primaryColor,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 18.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // const CustomSearchBar(),
-              SizedBox(height: 12.h),
-              // بطاقات الإحصائيات
-              const BuildStatisticsCards(),
-              SizedBox(height: 14.h),
-              GetBuilder<AdminDashboardController>(
-                builder: (controller) {
-                  final buttons = controller.visibleDashboardButtons;
-                  final preferredQuickCount =
-                      controller.dashboardQuickAccessCount.value;
-                  final quickCount = buttons.length > preferredQuickCount
-                      ? preferredQuickCount
-                      : buttons.length;
-                  final quick = buttons.take(quickCount).toList();
-                  final remaining = buttons.skip(quickCount).toList();
-                  final badges =
-                      controller.mainDashboardDataModel?.dashboardBadges ?? {};
-                  return Column(
+      body: Obx(
+        () => controller.isDashboardPreparing.value
+            ? const _AdminDashboardSkeleton()
+            : RefreshIndicator(
+                onRefresh: controller.refreshDashboard,
+                color: AppColors.primaryColor,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 18.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      BuildActionButtons(
-                        buttons: quick,
-                        badges: badges,
-                        onReorder: controller.reorderDashboardButton,
-                        employeePurpleStyle: true,
-                        sectionTitle: 'الوصول السريع',
-                        sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
-                        accentColor: const Color(0xFFF28C28),
-                        reorderMode: controller.isDashboardReorderMode.value,
-                        onReorderStarted: controller.startDashboardReorder,
-                        onReorderFinished: controller.finishDashboardReorder,
+                      // const CustomSearchBar(),
+                      SizedBox(height: 12.h),
+                      // بطاقات الإحصائيات
+                      const BuildStatisticsCards(),
+                      SizedBox(height: 14.h),
+                      GetBuilder<AdminDashboardController>(
+                        builder: (controller) {
+                          final buttons = controller.visibleDashboardButtons;
+                          final preferredQuickCount =
+                              controller.dashboardQuickAccessCount.value;
+                          final quickCount =
+                              buttons.length > preferredQuickCount
+                                  ? preferredQuickCount
+                                  : buttons.length;
+                          final quick = buttons.take(quickCount).toList();
+                          final remaining = buttons.skip(quickCount).toList();
+                          final badges = controller
+                                  .mainDashboardDataModel?.dashboardBadges ??
+                              {};
+                          return Column(
+                            children: [
+                              BuildActionButtons(
+                                buttons: quick,
+                                badges: badges,
+                                onReorder: controller.reorderDashboardButton,
+                                employeePurpleStyle: true,
+                                sectionTitle: 'الوصول السريع',
+                                sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
+                                accentColor: const Color(0xFFF28C28),
+                                reorderMode:
+                                    controller.isDashboardReorderMode.value,
+                                onReorderStarted:
+                                    controller.startDashboardReorder,
+                                onReorderFinished:
+                                    controller.finishDashboardReorder,
+                              ),
+                              if (remaining.isNotEmpty) ...[
+                                SizedBox(height: 16.h),
+                                BuildActionButtons(
+                                  buttons: remaining,
+                                  badges: badges,
+                                  onReorder: controller.reorderDashboardButton,
+                                  employeePurpleStyle: true,
+                                  sectionTitle: 'كل الأقسام',
+                                  sectionSubtitle: 'الأقسام المتاحة للأدمن',
+                                  reorderMode:
+                                      controller.isDashboardReorderMode.value,
+                                  onReorderStarted:
+                                      controller.startDashboardReorder,
+                                  onReorderFinished:
+                                      controller.finishDashboardReorder,
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
-                      if (remaining.isNotEmpty) ...[
-                        SizedBox(height: 16.h),
-                        BuildActionButtons(
-                          buttons: remaining,
-                          badges: badges,
-                          onReorder: controller.reorderDashboardButton,
-                          employeePurpleStyle: true,
-                          sectionTitle: 'كل الأقسام',
-                          sectionSubtitle: 'الأقسام المتاحة للأدمن',
-                          reorderMode: controller.isDashboardReorderMode.value,
-                          onReorderStarted: controller.startDashboardReorder,
-                          onReorderFinished: controller.finishDashboardReorder,
-                        ),
-                      ],
+                      SizedBox(height: 70.h),
                     ],
-                  );
-                },
+                  ),
+                ),
               ),
-              SizedBox(height: 70.h),
-            ],
-          ),
-        ),
       ),
       floatingActionButton: Obx(
-        () => CustomFloatingActionButton(
-          isAddMenuOpen: controller.isAddMenuOpen,
-          onTap: () => controller.toggleAddMenu(),
-          opacityAnimation: controller.sizeAnimation,
-          sizeAnimation: controller.opacityAnimation,
-          addList: controller.visibleAdminAddList,
-          useGrid: true,
-          backgroundColor: AppColors.operationalPurple,
-        ),
+        () => controller.isDashboardPreparing.value
+            ? const SizedBox.shrink()
+            : CustomFloatingActionButton(
+                isAddMenuOpen: controller.isAddMenuOpen,
+                onTap: () => controller.toggleAddMenu(),
+                opacityAnimation: controller.sizeAnimation,
+                sizeAnimation: controller.opacityAnimation,
+                addList: controller.visibleAdminAddList,
+                useGrid: true,
+                backgroundColor: AppColors.operationalPurple,
+              ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
@@ -405,6 +420,77 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AdminDashboardSkeleton extends StatelessWidget {
+  const _AdminDashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(18.w, 12.h, 18.w, 80.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonBlock(width: double.infinity, height: 66.h, radius: 12),
+          SizedBox(height: 14.h),
+          SkeletonBlock(width: 118.w, height: 22.h, radius: 6),
+          SizedBox(height: 8.h),
+          SkeletonBlock(width: double.infinity, height: 82.h, radius: 12),
+          SizedBox(height: 20.h),
+          SkeletonBlock(width: 145.w, height: 24.h, radius: 6),
+          SizedBox(height: 5.h),
+          SkeletonBlock(width: 172.w, height: 11.h, radius: 5),
+          SizedBox(height: 10.h),
+          const _DashboardGridSkeleton(colorHint: Color(0xFFF28C28)),
+          SizedBox(height: 22.h),
+          SkeletonBlock(width: 112.w, height: 24.h, radius: 6),
+          SizedBox(height: 5.h),
+          SkeletonBlock(width: 155.w, height: 11.h, radius: 5),
+          SizedBox(height: 10.h),
+          const _DashboardGridSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardGridSkeleton extends StatelessWidget {
+  const _DashboardGridSkeleton({this.colorHint});
+
+  final Color? colorHint;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 6,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 2.25.h,
+        crossAxisSpacing: 8.w,
+        mainAxisSpacing: 7.h,
+      ),
+      itemBuilder: (_, __) => Stack(
+        alignment: Alignment.center,
+        children: [
+          const SkeletonBlock(
+              width: double.infinity, height: double.infinity, radius: 10),
+          if (colorHint != null)
+            Container(
+              width: 24.r,
+              height: 24.r,
+              decoration: BoxDecoration(
+                color: colorHint!.withValues(alpha: .10),
+                shape: BoxShape.circle,
+              ),
+            ),
+        ],
       ),
     );
   }

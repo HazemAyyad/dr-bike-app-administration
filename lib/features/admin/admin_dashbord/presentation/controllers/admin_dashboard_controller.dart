@@ -203,6 +203,7 @@ class AdminDashboardController extends GetxController
   final RxBool isUiPreferencesSaving = false.obs;
   final RxInt dashboardQuickAccessCount = 6.obs;
   final RxBool isDashboardReorderMode = false.obs;
+  final RxBool isDashboardPreparing = true.obs;
 
   List<Map<String, dynamic>> get visibleDashboardButtons {
     final visible = buttons
@@ -619,6 +620,21 @@ class AdminDashboardController extends GetxController
     ]);
   }
 
+  Future<void> prepareDashboard() async {
+    isDashboardPreparing.value = true;
+    try {
+      await Future.wait([
+        getMainDashboardData(),
+        loadUiPreferences(),
+      ]);
+    } catch (_) {
+      // Each section keeps its current fallback; never leave the skeleton stuck.
+    } finally {
+      isDashboardPreparing.value = false;
+      update();
+    }
+  }
+
   @override
   void onInit() async {
     WidgetsBinding.instance.addObserver(this);
@@ -629,8 +645,7 @@ class AdminDashboardController extends GetxController
       Get.find<AdminNotificationBadgeController>().refresh();
     }
     AppSettingsService.instance.ensureLoaded();
-    loadUiPreferences();
-    getMainDashboardData();
+    prepareDashboard();
     super.onInit();
     animController = AnimationController(
       vsync: this,
