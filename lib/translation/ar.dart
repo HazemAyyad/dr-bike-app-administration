@@ -1625,7 +1625,7 @@ const Map<String, String> ar = {
   'salesOrderMarkReady': 'جاهزة',
   'salesOrderHandover': 'تسليم للتوصيل',
   'salesOrderDeliver': 'تم التوصيل',
-  'salesOrderSettle': 'تسوية شركة التوصيل',
+  'salesOrderSettle': 'التسوية المالية',
   'salesOrderResolveStuck': 'تم حل المشكلة',
   'salesOrderArchive': 'أرشفة',
   'salesOrderUploadMedia': 'رفع صور',
@@ -1890,7 +1890,7 @@ const Map<String, String> ar = {
   'salesOrderCalculatedTotal': 'الإجمالي الأساسي المحسوب',
   'salesOrderPriceIncludesDelivery': 'السعر شامل التوصيل',
   'salesOrderPriceIncludesDeliveryHint':
-      'عند الإرسال إلى شبلي سيُخصم سعر التوصيل من الإجمالي.',
+      'إجمالي المبلغ المطلوب من الزبون يتضمن رسوم التوصيل المعروضة.',
   'salesOrderIncludesDelivery': 'شامل التوصيل',
   'salesOrderExcludesDelivery': 'غير شامل التوصيل',
   'salesOrderShiplyQuotedFee': 'سعر شبلي (أصلي)',

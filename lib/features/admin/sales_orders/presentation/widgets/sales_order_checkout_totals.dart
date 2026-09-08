@@ -21,8 +21,7 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
       final deliveryFee = orders.selectedCityDeliveryFee;
       final discount = SalesAmountFormat.parse(sales.discountController.text);
       final subtotal = itemsTotal + discount;
-      final calculatedTotal = itemsTotal + deliveryFee;
-      final grandTotal = orders.manualTotal.value ?? itemsTotal + deliveryFee;
+      final grandTotal = itemsTotal + deliveryFee;
 
       return Container(
         padding: EdgeInsets.all(12.w),
@@ -33,53 +32,26 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _line('subtotal'.tr, subtotal),
+            _line('سعر المنتجات قبل الخصم', subtotal),
             if (discount > 0) _line('discount'.tr, -discount, muted: true),
-            if (deliveryFee > 0) _line('salesOrderDeliveryFee'.tr, deliveryFee),
-            _line('salesOrderCalculatedTotal'.tr, calculatedTotal),
+            _line('صافي سعر الطلب', itemsTotal),
+            _line('رسوم التوصيل على الزبون', deliveryFee),
             Divider(height: 14.h, color: SalesOrdersController.borderGray),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: orders.deliveryFeeController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (_) => orders.onDeliveryFeeChanged(),
-                    decoration: InputDecoration(
-                      labelText: 'salesOrderDeliveryFeeInput'.tr,
-                      suffixText: '₪',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: TextField(
-                    controller: orders.totalController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: orders.onTotalChanged,
-                    decoration: InputDecoration(
-                      labelText: 'salesOrderEditableTotal'.tr,
-                      suffixText: '₪',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: orders.deliveryFeeController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => orders.onDeliveryFeeChanged(),
+              decoration: const InputDecoration(
+                labelText: 'رسوم التوصيل المحمّلة على الزبون',
+                helperText:
+                    'تُضاف إلى صافي سعر الطلب لتكوين المبلغ المطلوب من الزبون.',
+                suffixText: '₪',
+                border: OutlineInputBorder(),
+              ),
             ),
-            SizedBox(height: 8.h),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: orders.priceIncludesDelivery.value,
-              onChanged: (value) =>
-                  orders.priceIncludesDelivery.value = value ?? false,
-              title: Text('salesOrderPriceIncludesDelivery'.tr),
-              subtitle: Text('salesOrderPriceIncludesDeliveryHint'.tr),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-            _line('total'.tr, grandTotal, bold: true),
+            SizedBox(height: 10.h),
+            _line('إجمالي المطلوب من الزبون', grandTotal, bold: true),
           ],
         ),
       );

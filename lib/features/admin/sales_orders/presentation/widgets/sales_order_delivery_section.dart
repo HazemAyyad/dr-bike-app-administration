@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/initial_bindings.dart';
+import '../../../sales/presentation/views/delivery_companies_management_screen.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import 'sales_order_shiply_address_fields.dart';
@@ -72,24 +74,46 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
             ),
           ),
           SizedBox(height: 8.h),
-          DropdownButtonFormField<int>(
-            initialValue:
-                companies.any((c) => c.id == selectedId) ? selectedId : null,
-            dropdownColor: SalesOrdersController.cardGray,
-            style: TextStyle(
-              color: SalesOrdersController.textPrimary,
-              fontSize: 14.sp,
-            ),
-            decoration: _fieldDecoration('salesOrderDeliveryCompany'.tr),
-            items: companies
-                .map(
-                  (DeliveryCompanyModel c) => DropdownMenuItem(
-                    value: c.id,
-                    child: Text(controller.deliveryCompanyLabel(c)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  initialValue: companies.any((c) => c.id == selectedId)
+                      ? selectedId
+                      : null,
+                  dropdownColor: SalesOrdersController.cardGray,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontSize: 14.sp,
                   ),
-                )
-                .toList(),
-            onChanged: controller.onDeliveryCompanyChanged,
+                  decoration: _fieldDecoration('salesOrderDeliveryCompany'.tr),
+                  items: companies
+                      .map(
+                        (DeliveryCompanyModel c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text(controller.deliveryCompanyLabel(c)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: controller.onDeliveryCompanyChanged,
+                ),
+              ),
+              if (canManageSalesSettings) ...[
+                SizedBox(width: 8.w),
+                IconButton.filledTonal(
+                  tooltip: 'إضافة جهة توصيل',
+                  onPressed: () async {
+                    final added =
+                        await showDeliveryCompanyEditorDialog(context);
+                    if (added == null) return;
+                    await controller.loadLookups();
+                    controller.onDeliveryCompanyChanged(added.id);
+                  },
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: 12.h),
           if (isShiply) ...[

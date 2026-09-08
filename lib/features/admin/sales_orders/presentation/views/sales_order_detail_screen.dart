@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/video_view.dart';
 import 'package:doctorbike/core/services/app_dependency_registry.dart';
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../../employee_section/domain/entities/employee_entity.dart';
 import '../../../general_data_list/presentation/views/partner_addresses_sheet.dart';
+import '../../../sales/presentation/views/delivery_companies_management_screen.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
@@ -866,8 +868,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   }
 
   Widget _totalsSummary(SalesOrderDetailModel order) {
-    final paid = order.paymentAmount;
-    final remaining = (order.total - paid).clamp(0, double.infinity).toDouble();
+    final collectedCash = order.settlementCashTotal;
+    final openBalance =
+        order.customerDebtBalance + order.carrierReceivableBalance;
     final quoted = order.shiplyQuotedDeliveryFee;
     final hasShiplyFeeBreakdown = order.isShiplyDelivery &&
         quoted != null &&
@@ -890,17 +893,24 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
             ),
         ] else if (order.customerDeliveryFee > 0)
           _totalLine('salesOrderDeliveryFee'.tr, order.customerDeliveryFee),
+        if (order.carrierDeliveryCost != null && order.carrierDeliveryCost! > 0)
+          _totalLine('أجرة شركة التوصيل المتوقعة', order.carrierDeliveryCost!,
+              muted: true),
         Divider(height: 16.h, color: SalesOrdersController.borderGray),
         _totalLine(
           'total'.tr,
           order.total,
           bold: true,
         ),
-        if (paid > 0) ...[
+        if (collectedCash.abs() > 0.009) ...[
           SizedBox(height: 6.h),
-          _totalLine('paidAmount'.tr, paid, muted: true),
+          _totalLine('دخل الصندوق فعلياً', collectedCash, muted: true),
         ],
-        if (remaining > 0) _totalLine('remainingAmount'.tr, remaining),
+        if (order.settlementCarrierFeeTotal.abs() > 0.009)
+          _totalLine('أجرة توصيل مسجلة', order.settlementCarrierFeeTotal,
+              muted: true),
+        if (openBalance > 0.009)
+          _totalLine('الرصيد المالي المفتوح', openBalance),
       ],
     );
   }
@@ -2801,6 +2811,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     controller.carrierContactPhoneController.clear();
     controller.carrierOfficeNameController.clear();
     controller.carrierVehicleNumberController.clear();
+    controller.applySelectedDeliveryCompanyDefaults();
+    final defaultCarrierCost = order.carrierDeliveryCost ??
+        order.shiplyQuotedDeliveryFee ??
+        controller.selectedDeliveryCompany?.defaultCarrierFee ??
+        0;
+    controller.carrierDeliveryCostController.text =
+        defaultCarrierCost.toStringAsFixed(2);
     Get.bottomSheet(
       Padding(
         padding: EdgeInsets.only(
@@ -2827,35 +2844,63 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ),
                 ),
                 SizedBox(height: 12.h),
-                Obx(() => DropdownButtonFormField<int>(
-                      initialValue: controller.deliveryCompanies.any((c) =>
-                              c.id ==
-                              controller.selectedDeliveryCompanyId.value)
-                          ? controller.selectedDeliveryCompanyId.value
-                          : null,
-                      dropdownColor: SalesOrdersController.cardGray,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          borderSide: const BorderSide(
-                              color: SalesOrdersController.borderGray),
-                        ),
-                      ),
-                      items: controller.deliveryCompanies
-                          .map(
-                            (c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(controller.deliveryCompanyLabel(c)),
+                Obx(() => Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: controller.deliveryCompanies.any(
+                                    (c) =>
+                                        c.id ==
+                                        controller
+                                            .selectedDeliveryCompanyId.value)
+                                ? controller.selectedDeliveryCompanyId.value
+                                : null,
+                            dropdownColor: SalesOrdersController.cardGray,
+                            style: TextStyle(
+                              color: SalesOrdersController.textPrimary,
+                              fontSize: 14.sp,
                             ),
-                          )
-                          .toList(),
-                      onChanged: controller.onDeliveryCompanyChanged,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: SalesOrdersController.cardGray,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.r),
+                                borderSide: const BorderSide(
+                                  color: SalesOrdersController.borderGray,
+                                ),
+                              ),
+                            ),
+                            items: controller.deliveryCompanies
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c.id,
+                                    child: Text(
+                                      controller.deliveryCompanyLabel(c),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: controller.onDeliveryCompanyChanged,
+                          ),
+                        ),
+                        if (canManageSalesSettings) ...[
+                          SizedBox(width: 8.w),
+                          IconButton.filledTonal(
+                            tooltip: 'إضافة جهة توصيل',
+                            onPressed: () async {
+                              final added =
+                                  await showDeliveryCompanyEditorDialog(
+                                Get.context!,
+                              );
+                              if (added == null) return;
+                              await controller.loadLookups();
+                              controller.onDeliveryCompanyChanged(added.id);
+                            },
+                            icon: const Icon(Icons.add),
+                          ),
+                        ],
+                      ],
                     )),
                 Obx(() {
                   if (controller.isSelectedCompanyShiply) {
@@ -3114,6 +3159,27 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ],
                   );
                 }),
+                Obx(() => controller.isSelectedCompanyExternalCarrier
+                    ? Padding(
+                        padding: EdgeInsets.only(top: 10.h),
+                        child: TextField(
+                          controller: controller.carrierDeliveryCostController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'أجرة شركة التوصيل على المحل',
+                            helperText:
+                                'هذه تكلفة الشركة، وليست رسوم التوصيل المحمّلة على الزبون.',
+                            suffixText: '₪',
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink()),
                 SizedBox(height: 16.h),
                 ElevatedButton(
                   onPressed: () async {
@@ -3164,6 +3230,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         carrierBalance > 0 ? carrierBalance : customerDebt;
     controller.settleAmountController.text =
         settlementBalance.toStringAsFixed(2);
+    final suggestedFee = carrierBalance > 0
+        ? ((currentOrder.carrierDeliveryCost ??
+                    currentOrder.shiplyQuotedDeliveryFee ??
+                    0) -
+                currentOrder.settlementCarrierFeeTotal)
+            .clamp(0, settlementBalance)
+            .toDouble()
+        : 0.0;
+    controller.settleCarrierFeeController.text =
+        suggestedFee.toStringAsFixed(2);
     controller.settleBoxIdController.clear();
 
     Get.bottomSheet(
@@ -3209,7 +3285,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'salesOrderSettle'.tr,
+                          carrierBalance > 0
+                              ? 'تحصيل وتسوية شركة التوصيل'
+                              : 'تحصيل دين من الزبون',
                           style: TextStyle(
                             color: SalesOrdersController.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -3238,7 +3316,45 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             filled: true,
                             fillColor: SalesOrdersController.cardGray,
                           ),
+                          onChanged: (_) => setSheetState(() {}),
                         ),
+                        if (carrierBalance > 0) ...[
+                          SizedBox(height: 12.h),
+                          TextField(
+                            controller: controller.settleCarrierFeeController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'أجرة الشركة المخصومة',
+                              helperText:
+                                  'تُسجل كمصروف توصيل، ولا تدخل الصندوق.',
+                              suffixText: '₪',
+                              filled: true,
+                              fillColor: SalesOrdersController.cardGray,
+                            ),
+                            onChanged: (_) => setSheetState(() {}),
+                          ),
+                          SizedBox(height: 8.h),
+                          Builder(builder: (_) {
+                            final gross = double.tryParse(controller
+                                    .settleAmountController.text
+                                    .trim()) ??
+                                0;
+                            final fee = double.tryParse(controller
+                                    .settleCarrierFeeController.text
+                                    .trim()) ??
+                                0;
+                            final net = (gross - fee).clamp(0, double.infinity);
+                            return Text(
+                              'إجمالي إغلاق الذمة: ${gross.toStringAsFixed(2)} ₪  •  صافي الداخل للصندوق: ${net.toStringAsFixed(2)} ₪',
+                              style: TextStyle(
+                                color: SalesOrdersController.textPrimary,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            );
+                          }),
+                        ],
                         SizedBox(height: 12.h),
                         if (snapshot.connectionState == ConnectionState.waiting)
                           const Center(child: CircularProgressIndicator())
@@ -3301,10 +3417,21 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                     .settleAmountController.text
                                     .trim()) ??
                                 0;
+                            final fee = double.tryParse(controller
+                                    .settleCarrierFeeController.text
+                                    .trim()) ??
+                                0;
                             if (entered <= 0 ||
                                 entered > settlementBalance + .001) {
                               SalesOrderNotice.error(
                                 'أدخل مبلغاً أكبر من صفر ولا يتجاوز الرصيد المستحق',
+                              );
+                              return;
+                            }
+                            if (carrierBalance > 0 &&
+                                (fee < 0 || fee > entered + .001)) {
+                              SalesOrderNotice.error(
+                                'أجرة الشركة يجب أن تكون بين صفر ومبلغ التسوية',
                               );
                               return;
                             }

@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+import 'delivery_companies_management_screen.dart';
+
 class SalesSettingsScreen extends StatefulWidget {
   const SalesSettingsScreen({Key? key}) : super(key: key);
 
@@ -365,6 +367,15 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
                       ),
                     ),
                   if (canManageSalesSettings) ...[
+                    _SettingsCard(
+                      icon: Icons.local_shipping_outlined,
+                      title: 'جهات ووسائل التوصيل',
+                      subtitle:
+                          'إضافة المكاتب والتكاسي والتوصيل الداخلي وتحديد أجرتها الافتراضية',
+                      onTap: () => Get.to(
+                        () => const DeliveryCompaniesManagementScreen(),
+                      ),
+                    ),
                     _SettingsCard(
                       icon: Icons.point_of_sale_outlined,
                       title: 'إعدادات صندوق المبيعات اليومي',

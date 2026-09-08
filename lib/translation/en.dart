@@ -1560,7 +1560,7 @@ const Map<String, String> en = {
   'salesOrderMarkReady': 'Mark ready',
   'salesOrderHandover': 'Handover',
   'salesOrderDeliver': 'Delivered',
-  'salesOrderSettle': 'Settle delivery',
+  'salesOrderSettle': 'Financial settlement',
   'salesOrderResolveStuck': 'Resolve issue',
   'salesOrderArchive': 'Archive',
   'salesOrderUploadMedia': 'Upload media',
@@ -1834,7 +1834,7 @@ const Map<String, String> en = {
   'salesOrderCalculatedTotal': 'Original calculated total',
   'salesOrderPriceIncludesDelivery': 'Price includes delivery',
   'salesOrderPriceIncludesDeliveryHint':
-      'The delivery fee will be deducted from the total sent to Shiply.',
+      'The customer total includes the displayed delivery fee.',
   'salesOrderIncludesDelivery': 'Includes delivery',
   'salesOrderExcludesDelivery': 'Excludes delivery',
   'salesOrderShiplyQuotedFee': 'Shiply price (original)',

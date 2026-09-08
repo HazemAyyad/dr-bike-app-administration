@@ -608,6 +608,7 @@ class EndPoints {
 
   static const String salesOrders = 'sales/orders';
   static const String salesSettings = 'sales/settings';
+  static const String manageDeliveryCompanies = 'sales/delivery-companies';
   static const String deliveryCompanyAccounts =
       'sales/delivery-company-accounts';
   static const String deliveryCompanyAccount = 'sales/delivery-company-account';

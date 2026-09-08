@@ -9,6 +9,7 @@ import '../controllers/sales_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 const _navy = Color(0xFF12304A);
 const _surface = Color(0xFFF4F7F9);
 const _border = Color(0xFFDDE5EA);
@@ -377,7 +378,8 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                       }),
                       title: Text(
                           '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}'),
-                      subtitle: Text('تاريخ الطلبية: ${date(o['created_at'])}'),
+                      subtitle: Text(
+                          'تاريخ الطلبية: ${date(o['created_at'])}\nإجمالي الزبون: ${number(o['total']).toStringAsFixed(2)} • توصيل على الزبون: ${number(o['customer_delivery_fee']).toStringAsFixed(2)} • أجرة الشركة: ${number(o['carrier_delivery_cost']).toStringAsFixed(2)} ₪'),
                       secondary: Text(
                           number(o['carrier_receivable_balance'])
                               .toStringAsFixed(2),
@@ -401,7 +403,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                         title: Text(
                             '${o['serial_number'] ?? '#${o['id']}'} — ${o['customer_name'] ?? 'زبون'}'),
                         subtitle: Text(
-                            '${date(o['created_at'])}\nتم قبض: ${number(o['settled_amount']).toStringAsFixed(2)}'),
+                            '${date(o['created_at'])}\nأُغلق من الذمة: ${number(o['settled_amount']).toStringAsFixed(2)} • دخل الصندوق: ${number(o['settled_cash_amount']).toStringAsFixed(2)} • أجرة: ${number(o['settled_carrier_fee']).toStringAsFixed(2)}'),
                         trailing: Text(
                           number(o['carrier_receivable_balance']) <= 0
                               ? 'مسددة'
@@ -461,9 +463,9 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
             borderRadius: BorderRadius.circular(13),
             side: const BorderSide(color: _border)),
         child: ExpansionTile(
-          title: Text('تسوية بقيمة ${number(b['amount']).toStringAsFixed(2)}'),
+          title: Text('إغلاق ذمة ${number(b['amount']).toStringAsFixed(2)} ₪'),
           subtitle: Text(
-              '${date(b['created_at'])} — ${b['created_by'] ?? '-'}\nالصندوق: ${b['box_name'] ?? 'صندوق الطلبيات اليومي'}'),
+              '${date(b['created_at'])} — ${b['created_by'] ?? '-'}\nصافي الصندوق: ${number(b['cash_amount']).toStringAsFixed(2)} ₪ • أجرة الشركة: ${number(b['carrier_fee']).toStringAsFixed(2)} ₪'),
           children: [
             for (final a in allocations)
               ListTile(
@@ -519,6 +521,7 @@ class BatchSettlementDialog extends StatefulWidget {
 
 class _BatchSettlementState extends State<BatchSettlementDialog> {
   late final TextEditingController total;
+  late final TextEditingController carrierFee;
   final notes = TextEditingController();
   final Map<int, TextEditingController> allocations = {};
   bool saving = false;
@@ -529,6 +532,14 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
   void initState() {
     super.initState();
     total = TextEditingController(text: maximum.toStringAsFixed(2));
+    final suggestedFee = widget.orders.fold<double>(0, (sum, order) {
+      final expected = number(order['carrier_delivery_cost']);
+      final recorded = number(order['settled_carrier_fee']);
+      final remainingCost = max(0, expected - recorded);
+      return sum +
+          min(number(order['carrier_receivable_balance']), remainingCost);
+    });
+    carrierFee = TextEditingController(text: suggestedFee.toStringAsFixed(2));
     for (final o in widget.orders) {
       allocations[(o['id'] as num).toInt()] = TextEditingController(
           text: number(o['carrier_receivable_balance']).toStringAsFixed(2));
@@ -538,6 +549,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
   @override
   void dispose() {
     total.dispose();
+    carrierFee.dispose();
     notes.dispose();
     for (final controller in allocations.values) {
       controller.dispose();
@@ -563,8 +575,13 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
 
   Future<void> submit() async {
     final received = double.tryParse(total.text.trim()) ?? 0;
+    final fee = double.tryParse(carrierFee.text.trim()) ?? 0;
     if (received <= 0 || received > maximum + .001) {
       Get.snackbar('تنبيه', 'أدخل مبلغاً صحيحاً لا يتجاوز الرصيد المحدد');
+      return;
+    }
+    if (fee < 0 || fee > received + .001) {
+      Get.snackbar('تنبيه', 'أجرة الشركة يجب أن تكون بين صفر وإجمالي التسوية');
       return;
     }
     final rows = <Map<String, dynamic>>[];
@@ -591,6 +608,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
         'delivery_company_id': widget.companyId,
         'delivery_company_name': widget.companyName,
         'allocations': rows,
+        'carrier_fee': fee,
         'notes': notes.text.trim().isEmpty ? null : notes.text.trim(),
         'idempotency_key':
             'carrier-${widget.companyId}-${DateTime.now().microsecondsSinceEpoch}',
@@ -601,8 +619,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
       Get.back(result: true);
       AppSuccessNotice.show(
         title: 'تمت التسوية',
-        message:
-            'تمت الإضافة إلى صندوق الطلبيات اليومي وبقيت أي مديونية متبقية',
+        message: 'تم إغلاق الذمة وإضافة الصافي فقط إلى صندوق الطلبيات اليومي',
       );
     } catch (e) {
       AppFailureNotice.show(
@@ -657,6 +674,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                 ),
                 TextField(
                     controller: total,
+                    onChanged: (_) => setState(() {}),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
@@ -669,6 +687,33 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                             const Icon(Icons.account_balance_wallet_outlined),
                         suffixText: '₪',
                         border: const OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(
+                    controller: carrierFee,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                        labelText: 'أجرة الشركة المخصومة',
+                        helperText: 'تُسجل مصروف توصيل ولا تدخل الصندوق.',
+                        suffixText: '₪',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                Builder(builder: (_) {
+                  final gross = double.tryParse(total.text.trim()) ?? 0;
+                  final fee = double.tryParse(carrierFee.text.trim()) ?? 0;
+                  final net = (gross - fee).clamp(0, double.infinity);
+                  return Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      'صافي المبلغ الذي سيدخل الصندوق: ${net.toStringAsFixed(2)} ₪',
+                      style: const TextStyle(
+                          color: _navy, fontWeight: FontWeight.w800),
+                    ),
+                  );
+                }),
                 const SizedBox(height: 6),
                 Align(
                     alignment: AlignmentDirectional.centerStart,
@@ -718,7 +763,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                         border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 const Text(
-                    'المبلغ يدخل صندوق الطلبيات اليومي، وأي باقي يظل مديونية على الشركة.'),
+                    'إجمالي التسوية يغلق ذمة الشركة، ويُضاف الصافي بعد خصم أجرتها إلى صندوق الطلبيات اليومي.'),
               ],
             ))),
         actions: [

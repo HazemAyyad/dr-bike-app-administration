@@ -320,10 +320,13 @@ class SalesOrderDetailModel {
   final bool priceIncludesDelivery;
   final double? shiplyQuotedDeliveryFee;
   final double? shiplyDeliveryFeeAdjustment;
+  final double? carrierDeliveryCost;
   final String paymentType;
   final double paymentAmount;
   final double customerDebtBalance;
   final double carrierReceivableBalance;
+  final double settlementCashTotal;
+  final double settlementCarrierFeeTotal;
   final int? paymentBoxId;
   final String? notes;
   final int? instantSaleId;
@@ -377,10 +380,13 @@ class SalesOrderDetailModel {
     this.priceIncludesDelivery = false,
     this.shiplyQuotedDeliveryFee,
     this.shiplyDeliveryFeeAdjustment,
+    this.carrierDeliveryCost,
     required this.paymentType,
     this.paymentAmount = 0,
     this.customerDebtBalance = 0,
     this.carrierReceivableBalance = 0,
+    this.settlementCashTotal = 0,
+    this.settlementCarrierFeeTotal = 0,
     this.paymentBoxId,
     this.notes,
     this.instantSaleId,
@@ -462,12 +468,17 @@ class SalesOrderDetailModel {
           (json['shiply_quoted_delivery_fee'] as num?)?.toDouble(),
       shiplyDeliveryFeeAdjustment:
           (json['shiply_delivery_fee_adjustment'] as num?)?.toDouble(),
+      carrierDeliveryCost: (json['carrier_delivery_cost'] as num?)?.toDouble(),
       paymentType: json['payment_type'] as String? ?? 'cash',
       paymentAmount: (json['payment_amount'] as num?)?.toDouble() ?? 0,
       customerDebtBalance:
           (json['customer_debt_balance'] as num?)?.toDouble() ?? 0,
       carrierReceivableBalance:
           (json['carrier_receivable_balance'] as num?)?.toDouble() ?? 0,
+      settlementCashTotal:
+          (json['settlement_cash_total'] as num?)?.toDouble() ?? 0,
+      settlementCarrierFeeTotal:
+          (json['settlement_carrier_fee_total'] as num?)?.toDouble() ?? 0,
       paymentBoxId: json['payment_box_id'] as int?,
       notes: json['notes'] as String?,
       instantSaleId: json['instant_sale_id'] as int?,
@@ -625,14 +636,44 @@ class DeliveryCompanyModel {
   final int id;
   final String name;
   final String? code;
+  final String deliveryType;
+  final double? defaultCarrierFee;
+  final String? contactName;
+  final String? contactPhone;
+  final String? vehicleNumber;
+  final String? notes;
+  final bool isActive;
 
-  DeliveryCompanyModel({required this.id, required this.name, this.code});
+  DeliveryCompanyModel({
+    required this.id,
+    required this.name,
+    this.code,
+    required this.deliveryType,
+    this.defaultCarrierFee,
+    this.contactName,
+    this.contactPhone,
+    this.vehicleNumber,
+    this.notes,
+    this.isActive = true,
+  });
 
   factory DeliveryCompanyModel.fromJson(Map<String, dynamic> json) {
     return DeliveryCompanyModel(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
       code: json['code'] as String?,
+      deliveryType: (json['delivery_type'] ?? json['code'] ?? 'office')
+          .toString()
+          .toLowerCase(),
+      defaultCarrierFee:
+          double.tryParse('${json['default_carrier_fee'] ?? ''}'),
+      contactName: json['contact_name'] as String?,
+      contactPhone: json['contact_phone'] as String?,
+      vehicleNumber: json['vehicle_number'] as String?,
+      notes: json['notes'] as String?,
+      isActive: json['is_active'] == null ||
+          json['is_active'] == true ||
+          json['is_active'] == 1,
     );
   }
 }

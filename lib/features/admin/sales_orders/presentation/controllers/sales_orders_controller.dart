@@ -103,7 +103,9 @@ class SalesOrdersController extends GetxController {
   final carrierContactPhoneController = TextEditingController();
   final carrierOfficeNameController = TextEditingController();
   final carrierVehicleNumberController = TextEditingController();
+  final carrierDeliveryCostController = TextEditingController(text: '0');
   final settleAmountController = TextEditingController();
+  final settleCarrierFeeController = TextEditingController(text: '0');
   final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
   final searchController = TextEditingController();
@@ -147,7 +149,12 @@ class SalesOrdersController extends GetxController {
 
   bool get isSelectedCompanyOffice => _selectedCompanyCode == 'office';
 
-  bool get isSelectedCompanyDoctorBike => _selectedCompanyCode == 'doctor_bike';
+  bool get isSelectedCompanyDoctorBike => _selectedCompanyCode == 'internal';
+
+  bool get isSelectedCompanyExternalCarrier {
+    final code = _selectedCompanyCode;
+    return code != null && !const ['internal', 'pickup'].contains(code);
+  }
 
   bool get isSelectedCompanyManualCarrier =>
       isSelectedCompanyTaxi || isSelectedCompanyOffice;
@@ -158,7 +165,7 @@ class SalesOrdersController extends GetxController {
     final id = selectedDeliveryCompanyId.value;
     for (final company in deliveryCompanies) {
       if (company.id == id) {
-        return company.code?.toLowerCase();
+        return company.deliveryType;
       }
     }
     return null;
@@ -174,6 +181,19 @@ class SalesOrdersController extends GetxController {
 
   void onDeliveryCompanyChanged(int? companyId) {
     selectedDeliveryCompanyId.value = companyId;
+    applySelectedDeliveryCompanyDefaults();
+  }
+
+  void applySelectedDeliveryCompanyDefaults() {
+    final company = selectedDeliveryCompany;
+    if (company == null) return;
+    carrierContactNameController.text = company.contactName ?? '';
+    carrierContactPhoneController.text = company.contactPhone ?? '';
+    carrierVehicleNumberController.text = company.vehicleNumber ?? '';
+    carrierOfficeNameController.text =
+        company.deliveryType == 'office' ? company.name : '';
+    carrierDeliveryCostController.text =
+        (company.defaultCarrierFee ?? 0).toStringAsFixed(2);
   }
 
   void pickDefaultDeliveryCompany(SalesOrderDetailModel? order) {
@@ -191,7 +211,7 @@ class SalesOrdersController extends GetxController {
 
   DeliveryCompanyModel? get shiplyDeliveryCompany {
     for (final company in deliveryCompanies) {
-      if (company.code?.toLowerCase() == 'shiply') return company;
+      if (company.deliveryType == 'shiply') return company;
     }
     return null;
   }
@@ -214,9 +234,8 @@ class SalesOrdersController extends GetxController {
       return;
     }
 
-    final nonShiply = deliveryCompanies
-        .where((c) => c.code?.toLowerCase() != 'shiply')
-        .toList();
+    final nonShiply =
+        deliveryCompanies.where((c) => c.deliveryType != 'shiply').toList();
     if (nonShiply.isNotEmpty) {
       selectedDeliveryCompanyId.value = nonShiply.first.id;
       return;
@@ -280,7 +299,9 @@ class SalesOrdersController extends GetxController {
     carrierContactPhoneController.dispose();
     carrierOfficeNameController.dispose();
     carrierVehicleNumberController.dispose();
+    carrierDeliveryCostController.dispose();
     settleAmountController.dispose();
+    settleCarrierFeeController.dispose();
     settleBoxIdController.dispose();
     notesController.dispose();
     searchController.dispose();
@@ -298,7 +319,7 @@ class SalesOrdersController extends GetxController {
   }
 
   String deliveryCompanyLabel(DeliveryCompanyModel company) {
-    if (company.code?.toLowerCase() == 'shiply' && shiplyIsSandboxMode.value) {
+    if (company.deliveryType == 'shiply' && shiplyIsSandboxMode.value) {
       return '${company.name} (${'shiplySandboxShort'.tr})';
     }
     return company.name;
@@ -430,6 +451,8 @@ class SalesOrdersController extends GetxController {
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
     activeEditReservesStock.value = null;
+    carrierDeliveryCostController.text = '0';
+    settleCarrierFeeController.text = '0';
   }
 
   Future<void> loadPartnerAddresses({
@@ -1207,6 +1230,7 @@ class SalesOrdersController extends GetxController {
   void onDeliveryFeeChanged() {
     manualDeliveryFee.value =
         double.tryParse(deliveryFeeController.text.trim()) ?? 0;
+    manualTotal.value = null;
   }
 
   void initializeEditableTotal(double calculatedTotal) {
@@ -1561,8 +1585,7 @@ class SalesOrdersController extends GetxController {
     }
 
     final discount = SalesAmountFormat.parse(sales.discountController.text);
-    final total =
-        manualTotal.value ?? sales.totalCost.value + selectedCityDeliveryFee;
+    final total = sales.totalCost.value + selectedCityDeliveryFee;
     var paymentType = selectedPaymentType.value;
     if (paymentType != 'visa') {
       paymentType = 'credit';
@@ -1611,7 +1634,7 @@ class SalesOrdersController extends GetxController {
       if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
       'discount': discount,
       'customer_delivery_fee': selectedCityDeliveryFee,
-      'price_includes_delivery': priceIncludesDelivery.value,
+      'price_includes_delivery': selectedCityDeliveryFee > 0,
       'total': total,
       'notes': notesController.text.trim(),
       'items': items,
@@ -1736,6 +1759,8 @@ class SalesOrdersController extends GetxController {
     final body = <String, dynamic>{
       if (selectedDeliveryCompanyId.value != null)
         'delivery_company_id': selectedDeliveryCompanyId.value,
+      'carrier_delivery_cost':
+          double.tryParse(carrierDeliveryCostController.text.trim()) ?? 0,
     };
     if (isSelectedCompanyTaxi) {
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
@@ -1787,6 +1812,8 @@ class SalesOrdersController extends GetxController {
 
   Future<void> settle(int orderId) async {
     final amount = double.tryParse(settleAmountController.text.trim()) ?? 0;
+    final carrierFee =
+        double.tryParse(settleCarrierFeeController.text.trim()) ?? 0;
     final boxId = int.tryParse(settleBoxIdController.text.trim());
     final order = detail.value;
     final source = (order?.carrierReceivableBalance ?? 0) > 0
@@ -1794,6 +1821,7 @@ class SalesOrdersController extends GetxController {
         : 'customer_debt';
     await runAction(() => repository.settle(orderId, {
           'delivery_settled_amount': amount,
+          if (source == 'carrier') 'carrier_fee': carrierFee,
           'source': source,
           'idempotency_key':
               'settlement-$orderId-${DateTime.now().microsecondsSinceEpoch}',

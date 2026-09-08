@@ -827,7 +827,7 @@ class _OrderCard extends StatelessWidget {
     final parts = <String>[];
     if (order.carrierReceivableBalance > 0.009) {
       parts.add(
-        'مستحق شركة التوصيل ${order.carrierReceivableBalance.toStringAsFixed(2)} ₪',
+        'مستحق من شركة التوصيل ${order.carrierReceivableBalance.toStringAsFixed(2)} ₪',
       );
     }
     if (order.customerDebtBalance > 0.009) {

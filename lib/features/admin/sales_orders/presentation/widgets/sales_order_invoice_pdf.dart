@@ -217,8 +217,9 @@ class SalesOrderInvoicePdf {
         line('التوصيل', order.customerDeliveryFee),
         line('الخصم', order.discount),
         line('الإجمالي', order.total, strong: true),
-        line('المدفوع', order.paymentAmount),
-        line('المتبقي', order.customerDebtBalance),
+        line('دخل صندوق المحل', order.settlementCashTotal),
+        line('دين على الزبون', order.customerDebtBalance),
+        line('في ذمة شركة التوصيل', order.carrierReceivableBalance),
       ]),
     );
   }

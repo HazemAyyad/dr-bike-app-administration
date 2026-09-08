@@ -265,7 +265,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
           Expanded(
             child: InputDecorator(
               decoration: const InputDecoration(
-                labelText: 'إجمالي الفاتورة',
+                labelText: 'صافي سعر الطلب',
                 border: OutlineInputBorder(),
               ),
               child: Text(
