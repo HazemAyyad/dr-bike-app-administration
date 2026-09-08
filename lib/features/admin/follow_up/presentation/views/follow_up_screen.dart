@@ -135,6 +135,7 @@ class _FollowUpQuickFilters extends GetView<FollowUpController> {
             icon: Icons.pending_actions_outlined,
             color: AppColors.primaryColor,
             count: controller.activeSectionsCount,
+            showBadge: true,
           ),
           _FollowUpFilterData(
             value: FollowUpController.followUpFilterDelivered,
@@ -190,6 +191,7 @@ class _FollowUpFilterData {
     required this.icon,
     required this.color,
     required this.count,
+    this.showBadge = false,
   });
 
   final String value;
@@ -197,6 +199,7 @@ class _FollowUpFilterData {
   final IconData icon;
   final Color color;
   final int count;
+  final bool showBadge;
 }
 
 class _FollowUpFilterChip extends StatelessWidget {
@@ -239,7 +242,7 @@ class _FollowUpFilterChip extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Icon(data.icon, size: 20.sp, color: foreground),
-              if (data.count > 0)
+              if (data.showBadge && data.count > 0)
                 PositionedDirectional(
                   top: -5.h,
                   end: -5.w,

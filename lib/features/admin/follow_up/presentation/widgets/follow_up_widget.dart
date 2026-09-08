@@ -314,14 +314,13 @@ class _FollowUpCard extends StatelessWidget {
     final subColor =
         isDark ? AppColors.customGreyColor3 : AppColors.customGreyColor5;
 
-    return Material(
+    final card = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: readOnly ? null : onOpen,
-        onLongPress: readOnly ? null : () => _showFollowUpActions(context),
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 3.h),
+          margin: EdgeInsets.symmetric(vertical: 3.h),
           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
           decoration: BoxDecoration(
             color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
@@ -360,42 +359,92 @@ class _FollowUpCard extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 4.h),
-                        Wrap(
-                          spacing: 4.w,
-                          runSpacing: 3.h,
-                          children: [
-                            _MiniChip(
-                              label: _personType,
-                              color: AppColors.operationalPurple,
-                              icon: Icons.person_outline_rounded,
-                            ),
-                            if (followup.createdByName.isNotEmpty)
-                              _MiniChip(
-                                label:
-                                    '${'createdBy'.tr}: ${followup.createdByName}',
-                                color: AppColors.customGreen1,
-                                icon: Icons.badge_outlined,
-                              ),
-                          ],
+                        _MiniChip(
+                          label: _personType,
+                          color: AppColors.operationalPurple,
+                          icon: Icons.person_outline_rounded,
                         ),
                       ],
                     ),
                   ),
-                  if (followup.productName.trim().isNotEmpty) ...[
-                    SizedBox(width: 8.w),
-                    SizedBox(
-                      width: 132.w,
-                      child: _FollowUpDetailsPreview(
-                        details: followup.productName.trim(),
-                        color: subColor,
+                  if (followup.createdByName.isNotEmpty)
+                    IconButton(
+                      tooltip: 'createdBy'.tr,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _showCreatorDialog(),
+                      icon: Container(
+                        width: 30.w,
+                        height: 30.w,
+                        decoration: BoxDecoration(
+                          color: AppColors.customGreen1.withValues(alpha: .1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.badge_outlined,
+                          size: 16.sp,
+                          color: AppColors.customGreen1,
+                        ),
                       ),
                     ),
-                  ],
                 ],
               ),
+              if (followup.productName.trim().isNotEmpty) ...[
+                SizedBox(height: 7.h),
+                _FollowUpDetailsPreview(
+                  details: followup.productName.trim(),
+                  color: subColor,
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+
+    return _SwipeFollowUpCard(
+      enabled: !readOnly,
+      onCall: onContact,
+      onOptions: () => _showFollowUpActions(context),
+      child: card,
+    );
+  }
+
+  void _showCreatorDialog() {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: ThemeService.isDark.value
+            ? AppColors.darkColor
+            : AppColors.whiteColor,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+        title: Row(
+          children: [
+            const Icon(Icons.badge_outlined, color: AppColors.customGreen1),
+            SizedBox(width: 8.w),
+            Expanded(child: Text('createdBy'.tr)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              followup.createdByName,
+              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              DateFormat('yyyy-MM-dd').format(followup.createdAt),
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.customGreyColor5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: Text('close'.tr)),
+        ],
       ),
     );
   }
@@ -481,6 +530,161 @@ class _FollowUpCard extends StatelessWidget {
                   Get.back();
                   onDelete();
                 },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeFollowUpCard extends StatefulWidget {
+  const _SwipeFollowUpCard({
+    required this.child,
+    required this.enabled,
+    required this.onCall,
+    required this.onOptions,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final VoidCallback onCall;
+  final VoidCallback onOptions;
+
+  @override
+  State<_SwipeFollowUpCard> createState() => _SwipeFollowUpCardState();
+}
+
+class _SwipeFollowUpCardState extends State<_SwipeFollowUpCard> {
+  static const double _revealWidth = 146;
+  static const double _dragResistance = .65;
+  static const Duration _settleDuration = Duration(milliseconds: 320);
+  double _offset = 0;
+
+  @override
+  void didUpdateWidget(covariant _SwipeFollowUpCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled && _offset != 0) {
+      _offset = 0;
+    }
+  }
+
+  void _update(DragUpdateDetails details) {
+    if (!widget.enabled) return;
+    setState(() {
+      _offset = (_offset + details.delta.dx * _dragResistance)
+          .clamp(-_revealWidth, _revealWidth);
+    });
+  }
+
+  void _finish(DragEndDetails details) {
+    if (!widget.enabled) return;
+    final velocity = details.primaryVelocity ?? 0;
+    final shouldOpen =
+        _offset.abs() > _revealWidth * .34 || velocity.abs() > 500;
+    setState(() {
+      if (!shouldOpen) {
+        _offset = 0;
+      } else {
+        final direction = velocity.abs() > 500 ? velocity.sign : _offset.sign;
+        _offset = direction * _revealWidth;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.r),
+        child: Stack(
+          alignment:
+              _offset >= 0 ? Alignment.centerLeft : Alignment.centerRight,
+          children: [
+            if (widget.enabled)
+              Positioned(
+                left: _offset >= 0 ? 0 : null,
+                right: _offset < 0 ? 0 : null,
+                child: Row(
+                  children: [
+                    _FollowUpSwipeAction(
+                      icon: Icons.phone_outlined,
+                      label: 'اتصال',
+                      color: const Color(0xFF0F766E),
+                      onTap: () {
+                        setState(() => _offset = 0);
+                        widget.onCall();
+                      },
+                    ),
+                    SizedBox(width: 5.w),
+                    _FollowUpSwipeAction(
+                      icon: Icons.more_horiz_rounded,
+                      label: 'الخيارات',
+                      color: AppColors.primaryColor,
+                      onTap: () {
+                        setState(() => _offset = 0);
+                        widget.onOptions();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            AnimatedContainer(
+              duration: _settleDuration,
+              curve: Curves.easeOut,
+              transform: Matrix4.translationValues(_offset, 0, 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: widget.enabled ? _update : null,
+                onHorizontalDragEnd: widget.enabled ? _finish : null,
+                child: widget.child,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowUpSwipeAction extends StatelessWidget {
+  const _FollowUpSwipeAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(11.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11.r),
+        child: SizedBox(
+          width: 66.w,
+          height: 66.h,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 20.sp),
+              SizedBox(height: 3.h),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -585,95 +789,26 @@ class _FollowUpDetailsPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final style = TextStyle(
-      fontSize: 10.5.sp,
-      height: 1.25,
-      fontWeight: FontWeight.w600,
-      color: color,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final direction = Directionality.of(context);
-        final iconSpace = 28.w;
-        final detailsWidth = constraints.maxWidth > iconSpace
-            ? constraints.maxWidth - iconSpace
-            : 0.0;
-        final painter = TextPainter(
-          text: TextSpan(text: details, style: style),
-          maxLines: 2,
-          textDirection: direction,
-        )..layout(maxWidth: detailsWidth);
-        final hasMore = painter.didExceedMaxLines;
-
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsetsDirectional.fromSTEB(8.w, 5.h, 5.w, 5.h),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.darkColor.withValues(alpha: 0.35)
-                : AppColors.customGreyColor7.withValues(alpha: 0.38),
-            borderRadius: BorderRadius.circular(7.r),
-            border: Border.all(
-              color: AppColors.operationalCardBorder.withValues(alpha: 0.55),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Text(
-                  details,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: style,
-                ),
-              ),
-              if (hasMore) ...[
-                SizedBox(width: 3.w),
-                InkWell(
-                  onTap: () => _showDetailsDialog(details),
-                  borderRadius: BorderRadius.circular(18.r),
-                  child: Padding(
-                    padding: EdgeInsets.all(3.w),
-                    child: Icon(
-                      Icons.open_in_full_rounded,
-                      size: 14.sp,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showDetailsDialog(String details) {
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: ThemeService.isDark.value
-            ? AppColors.darkColor
-            : AppColors.whiteColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-        title: Text(
-          'productDetails'.tr,
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.darkColor.withValues(alpha: 0.35)
+            : AppColors.customGreyColor7.withValues(alpha: 0.38),
+        borderRadius: BorderRadius.circular(7.r),
+        border: Border.all(
+          color: AppColors.operationalCardBorder.withValues(alpha: 0.55),
         ),
-        content: SingleChildScrollView(
-          child: Text(
-            details,
-            style: TextStyle(fontSize: 13.sp, height: 1.45),
-          ),
+      ),
+      child: Text(
+        details,
+        style: TextStyle(
+          fontSize: 11.sp,
+          height: 1.4,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
-        actions: [
-          TextButton(
-            onPressed: Get.back,
-            child: Text('close'.tr),
-          ),
-        ],
       ),
     );
   }

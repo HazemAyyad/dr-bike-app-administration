@@ -1,17 +1,16 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../checks/data/models/check_model.dart';
 import '../../../maintenance/presentation/widgets/next_back_button.dart';
+import '../../../widgets/unified_partner_selector.dart';
 import '../controllers/follow_up_controller.dart';
 
 class AddNewFollowUpScreen extends GetView<FollowUpController> {
@@ -66,134 +65,13 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                     maxLines: 7,
                     validator: (p0) => null,
                     keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) =>
-                        controller.openCustomerPickerFromKeyboard(),
+                    textInputAction: TextInputAction.newline,
                     onChanged: (_) => controller.scheduleAutoSave(),
                   ),
                   SizedBox(height: 16.h),
-                  Row(
+                  _FollowUpPartnerSearch(
                     key: controller.customerPickerKey,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Flexible(
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: controller
-                                        .selectSellerTypeAndOpenPicker,
-                                    child: CustomCheckBox(
-                                      title: 'seller'.tr,
-                                      value:
-                                          RxBool(!controller.isCustomer.value),
-                                      onChanged: (_) => controller
-                                          .selectSellerTypeAndOpenPicker(),
-                                    ),
-                                  ),
-                                ),
-                                Flexible(
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: controller
-                                        .selectCustomerTypeAndOpenPicker,
-                                    child: CustomCheckBox(
-                                      title: 'customer'.tr,
-                                      value:
-                                          RxBool(controller.isCustomer.value),
-                                      onChanged: (_) => controller
-                                          .selectCustomerTypeAndOpenPicker(),
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                            SizedBox(height: 10.h),
-                            CustomDropdownFieldWithSearch(
-                              dropdownKey: controller.customerDropdownKey,
-                              popupProps: PopupProps.menu(
-                                showSearchBox: true,
-                                fit: FlexFit.loose,
-                                constraints: BoxConstraints(maxHeight: 170.h),
-                                searchDelay: const Duration(milliseconds: 120),
-                                searchFieldProps: TextFieldProps(
-                                  focusNode: controller.customerSearchFocusNode,
-                                  autofocus: true,
-                                  textInputAction: TextInputAction.search,
-                                  decoration: InputDecoration(
-                                    hintText: 'search'.tr,
-                                    prefixIcon:
-                                        const Icon(Icons.search_rounded),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              tital: controller.isCustomer.value
-                                  ? 'customerName'.tr
-                                  : 'sellerName'.tr,
-                              hint: 'employeeNameExample',
-                              items: controller.isCustomer.value
-                                  ? controller.allCustomersList
-                                  : controller.allSellersList,
-                              value: (controller.customerAndSellerIdController
-                                      .text.isEmpty)
-                                  ? null
-                                  : (controller.isCustomer.value
-                                      ? controller.allCustomersList
-                                          .firstWhereOrNull(
-                                          (e) =>
-                                              e.id.toString() ==
-                                              controller
-                                                  .customerAndSellerIdController
-                                                  .text,
-                                        )
-                                      : controller.allSellersList
-                                          .firstWhereOrNull(
-                                          (e) =>
-                                              e.id.toString() ==
-                                              controller
-                                                  .customerAndSellerIdController
-                                                  .text,
-                                        )),
-                              onChanged: (value) {
-                                if (value == null) {
-                                  return;
-                                }
-                                controller.customerAndSellerIdController.text =
-                                    value.id.toString();
-                                controller.scheduleAutoSave();
-                              },
-                              itemAsString: (f) => f.name,
-                              compareFn: (a, b) => a.id == b.id,
-                              isEnabled: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (controller.selectedStep.value == 1)
-                        IconButton(
-                          onPressed: () => Get.toNamed(
-                            AppRoutes.ADDNEWCUSTOMERSCREEN,
-                            arguments: {
-                              'employeeType': '',
-                              'employeeId': '',
-                              'sellerId': '',
-                            },
-                          )?.then(
-                            (value) => controller.getAllCustomersAndSellers(),
-                          ),
-                          icon: Icon(
-                            Icons.add_circle_sharp,
-                            color: AppColors.primaryColor,
-                            size: 35.sp,
-                          ),
-                        )
-                    ],
+                    controller: controller,
                   ),
                   if (controller.isEdite.value) ...[
                     SizedBox(height: 8.h),
@@ -246,6 +124,65 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FollowUpPartnerSearch extends StatelessWidget {
+  const _FollowUpPartnerSearch({Key? key, required this.controller})
+      : super(key: key);
+
+  final FollowUpController controller;
+
+  SellerModel? _selectedPartner() {
+    final list = controller.isCustomer.value
+        ? controller.allCustomersList
+        : controller.allSellersList;
+    return list.firstWhereOrNull(
+      (item) =>
+          item.id.toString() == controller.customerAndSellerIdController.text,
+    );
+  }
+
+  Future<void> _addPartner(bool isSeller) async {
+    await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'popOnceOnSuccess': true,
+        'employeeType': isSeller ? 'seller' : 'customer',
+      },
+    );
+    controller.getAllCustomersAndSellers();
+  }
+
+  void _selectPartner(SellerModel item, bool isSeller) {
+    controller.isCustomer.value = !isSeller;
+    controller.customerAndSellerIdController.text = item.id.toString();
+    controller.scheduleAutoSave();
+    controller.update();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => UnifiedPartnerSelector<SellerModel>(
+        customers: controller.allCustomersList,
+        sellers: controller.allSellersList,
+        selected: _selectedPartner(),
+        selectedIsSeller: !controller.isCustomer.value,
+        idOf: (item) => item.id,
+        nameOf: (item) => item.name,
+        phoneOf: (item) => item.phone,
+        requiredSelection: true,
+        onSelected: _selectPartner,
+        onCleared: () {
+          controller.customerAndSellerIdController.clear();
+          controller.scheduleAutoSave();
+        },
+        onAddRequested: controller.selectedStep.value == 1 ? _addPartner : null,
       ),
     );
   }

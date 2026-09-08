@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -61,8 +60,6 @@ class FollowUpController extends GetxController {
   final itemIdController = TextEditingController();
   final detailsFocusNode = FocusNode();
   final customerPickerKey = GlobalKey();
-  final customerDropdownKey = GlobalKey<DropdownSearchState<dynamic>>();
-  final customerSearchFocusNode = FocusNode();
 
   final customerNameController = TextEditingController();
   final customerTypeController = TextEditingController();
@@ -104,7 +101,6 @@ class FollowUpController extends GetxController {
       initialCount +
       informCount +
       finishAgreementCount +
-      archivedCount +
       canceledCount +
       deletedCount;
 
@@ -131,7 +127,6 @@ class FollowUpController extends GetxController {
       followUpViewFilter.value == followUpFilterActive;
 
   bool get showDeliveredFollowUpSection =>
-      followUpViewFilter.value == followUpFilterAll ||
       followUpViewFilter.value == followUpFilterDelivered;
 
   bool get showCanceledFollowUpSection =>
@@ -380,45 +375,6 @@ class FollowUpController extends GetxController {
       detailsFocusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.show');
     });
-  }
-
-  void openCustomerPickerFromKeyboard() {
-    detailsFocusNode.unfocus();
-    getAllCustomersAndSellers();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final context = customerPickerKey.currentContext;
-      if (context != null) {
-        await Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          alignment: 0.08,
-        );
-      }
-      customerSearchFocusNode.requestFocus();
-      customerDropdownKey.currentState?.openDropDownSearch();
-      SystemChannels.textInput.invokeMethod('TextInput.show');
-    });
-  }
-
-  void selectSellerTypeAndOpenPicker() {
-    getAllCustomersAndSellers();
-    if (isCustomer.value) {
-      customerAndSellerIdController.clear();
-      isCustomer.value = false;
-    }
-    update();
-    openCustomerPickerFromKeyboard();
-  }
-
-  void selectCustomerTypeAndOpenPicker() {
-    getAllCustomersAndSellers();
-    if (!isCustomer.value) {
-      customerAndSellerIdController.clear();
-      isCustomer.value = true;
-    }
-    update();
-    openCustomerPickerFromKeyboard();
   }
 
   void scheduleAutoSave({int? step}) {
@@ -799,7 +755,6 @@ class FollowUpController extends GetxController {
     customerTypeController.dispose();
     customerNotesController.dispose();
     detailsFocusNode.dispose();
-    customerSearchFocusNode.dispose();
     super.onClose();
   }
 }
