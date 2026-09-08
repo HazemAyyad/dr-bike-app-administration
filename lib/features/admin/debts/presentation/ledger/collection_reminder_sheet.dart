@@ -41,7 +41,9 @@ class CollectionReminderSheet extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 24.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(

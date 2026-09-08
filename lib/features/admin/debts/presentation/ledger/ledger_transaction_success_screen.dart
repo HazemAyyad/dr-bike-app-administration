@@ -98,7 +98,9 @@ class _LedgerTransactionSuccessScreenState
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : Colors.white,
         body: SafeArea(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -186,7 +188,9 @@ class _SuccessCard extends StatelessWidget {
       constraints: BoxConstraints(maxWidth: 320.w),
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 32.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [

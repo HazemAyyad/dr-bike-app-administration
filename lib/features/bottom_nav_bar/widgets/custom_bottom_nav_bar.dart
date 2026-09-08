@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../../core/services/initial_bindings.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_colors.dart';
-import '../../../core/utils/assets_manger.dart';
 import '../../admin/counters/data/repositories/countrers_implement.dart';
 import '../../admin/counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../admin/counters/domain/usecases/get_report_information_usecase.dart';
@@ -37,7 +36,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
           () => Container(
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
-                  ? AppColors.greyColor
+                  ? const Color(0xFF20202D)
                   : Colors.white,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18.r),
@@ -45,12 +44,16 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
               ),
               border: Border(
                 top: BorderSide(
-                  color: AppColors.operationalPurple.withValues(alpha: .10),
+                  color: ThemeService.isDark.value
+                      ? const Color(0xFF4A465F)
+                      : AppColors.operationalPurple.withValues(alpha: .10),
                 ),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.operationalNavy.withValues(alpha: .07),
+                  color: Colors.black.withValues(
+                    alpha: ThemeService.isDark.value ? .28 : .07,
+                  ),
                   blurRadius: 12,
                   offset: const Offset(0, -2),
                 ),
@@ -64,14 +67,14 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   BuildNavItem(
-                    assetImage: AssetsManager.homeIcon,
+                    icon: Icons.home_outlined,
                     isSelected: controller.currentIndex.value == 0,
                     label: 'home'.tr,
                     onTap: () => _selectPage(0),
                   ),
                   role == 'admin'
                       ? BuildNavItem(
-                          assetImage: AssetsManager.taskIcon,
+                          icon: Icons.bar_chart_rounded,
                           isSelected: controller.currentIndex.value == 1,
                           label: 'statistics'.tr,
                           onTap: () {
@@ -90,7 +93,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                           },
                         )
                       : BuildNavItem(
-                          assetImage: AssetsManager.taskIcon,
+                          icon: Icons.task_alt_rounded,
                           isSelected: controller.currentIndex.value == 1,
                           label: 'tasks'.tr,
                           onTap: () {
@@ -103,7 +106,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                         ),
                   if (role == 'admin')
                     BuildNavItem(
-                      assetImage: AssetsManager.usersIcon,
+                      icon: Icons.groups_2_outlined,
                       isSelected: controller.currentIndex.value == 2,
                       label: 'employeeDepartment'.tr,
                       onTap: () => _selectPage(2),
@@ -116,7 +119,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                       onTap: () => _selectPage(2),
                     ),
                   BuildNavItem(
-                    assetImage: AssetsManager.profileIcon,
+                    icon: Icons.person_outline_rounded,
                     isSelected: controller.currentIndex.value == 3,
                     label: 'profile'.tr,
                     onTap: () => _selectPage(3),

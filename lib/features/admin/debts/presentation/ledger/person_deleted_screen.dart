@@ -29,7 +29,9 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : const Color(0xFFF3F4F6),
         appBar: AppBar(
           title: Text(
             'ledgerDeletedTitle'.tr,
@@ -40,7 +42,9 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
             ),
           ),
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           foregroundColor: LedgerColors.primaryBlue,
           elevation: 0,
         ),
@@ -74,7 +78,9 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 14.w),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF242430)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Text(
@@ -92,7 +98,9 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 20.h),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF242430)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Column(
@@ -132,7 +140,9 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
               SizedBox(height: 12.h),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF242430)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Column(

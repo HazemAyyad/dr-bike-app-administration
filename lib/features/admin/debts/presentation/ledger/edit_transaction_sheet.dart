@@ -20,6 +20,7 @@ import 'receipt_media_thumb.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class EditTransactionSheet extends StatefulWidget {
   final LedgerTransaction transaction;
 
@@ -121,9 +122,11 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     return Get.bottomSheet<String>(
       SafeArea(
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF242430)
+                : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -207,7 +210,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
       child: Container(
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: SingleChildScrollView(

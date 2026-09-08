@@ -26,6 +26,7 @@ import '../controllers/sales_controller.dart';
 import '../widgets/invoice_package_expandable_line.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class BillDetailsScreen extends GetView<SalesController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
 
@@ -58,7 +59,9 @@ class BillDetailsScreen extends GetView<SalesController> {
           final fmt = NumberFormat('#,###.##');
 
           return ColoredBox(
-            color: const Color(0xFFF7F8FC),
+            color: ThemeService.isDark.value
+                ? AppColors.darkColor
+                : const Color(0xFFF7F8FC),
             child: ListView(
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 28.h),
               children: [
@@ -164,7 +167,9 @@ class _InvoiceHistorySectionState extends State<_InvoiceHistorySection> {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: const Color(0xFFE8EAF2)),
       ),
@@ -270,7 +275,9 @@ class _InvoiceHistoryTile extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(10.w),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FC),
+                color: ThemeService.isDark.value
+                    ? AppColors.darkColor
+                    : const Color(0xFFF8F9FC),
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Column(
@@ -590,7 +597,9 @@ class _SalesInfoCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: EdgeInsets.all(14.w),
         decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(16.r),
             border: Border.all(color: const Color(0xFFE8EAF2))),
         child: Column(children: [
@@ -681,7 +690,9 @@ class _SalesProductCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: EdgeInsets.all(10.w),
         decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(15.r),
             border: Border.all(color: const Color(0xFFE8EAF2))),
         child: Row(children: [
@@ -742,7 +753,9 @@ class _ProductPill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
         decoration: BoxDecoration(
-            color: const Color(0xFFF3F2FA),
+            color: ThemeService.isDark.value
+                ? AppColors.darkColor
+                : const Color(0xFFF3F2FA),
             borderRadius: BorderRadius.circular(7.r)),
         child: Text('$label: $value',
             style: TextStyle(
@@ -1851,9 +1864,9 @@ class _MaintenanceInvoiceLinkCard extends StatelessWidget {
 
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }

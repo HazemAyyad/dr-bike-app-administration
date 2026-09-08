@@ -140,21 +140,21 @@ class _InstantSaleTableRow extends StatelessWidget {
       _SwipeSaleActionData(
         icon: Icons.receipt_long_outlined,
         label: 'التفاصيل',
-        color: AppColors.secondaryColor,
+        color: const Color(0xFF6D5CE7),
         onTap: onViewInvoice,
       ),
       if (!cancelled)
         _SwipeSaleActionData(
           icon: Icons.edit_outlined,
           label: 'تعديل',
-          color: AppColors.primaryColor,
+          color: const Color(0xFF2563EB),
           onTap: onEdit,
         ),
       if (!cancelled)
         _SwipeSaleActionData(
           icon: Icons.more_horiz_rounded,
           label: 'الخيارات',
-          color: const Color(0xFF475569),
+          color: const Color(0xFFF28C28),
           onTap: onOptions,
         ),
     ];
@@ -511,7 +511,9 @@ class _OperationInfoButton extends StatelessWidget {
           context: context,
           builder: (ctx) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : Colors.white,
               surfaceTintColor: Colors.transparent,
               title: Text(
                 'instantSaleOperationDetails'.tr,

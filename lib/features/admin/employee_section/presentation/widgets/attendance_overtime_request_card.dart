@@ -29,9 +29,15 @@ class AttendanceOvertimeRequestCard extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 3.h),
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F8),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : const Color(0xFFF5F6F8),
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF3B3B49)
+              : const Color(0xFFE5E7EB),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,

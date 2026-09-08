@@ -23,7 +23,9 @@ class ShareSheet extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
@@ -91,7 +93,9 @@ class ReportDetailLevelSheet extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: SafeArea(
@@ -187,7 +191,9 @@ class TransactionShareSheet extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
@@ -246,7 +252,9 @@ class ShareOptionsSheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       child: Column(
@@ -263,7 +271,10 @@ class ShareOptionsSheet extends StatelessWidget {
                   onSelected: (detailLevel) => Get.bottomSheet(
                     ShareSheet(detailLevel: detailLevel),
                     isScrollControlled: true,
-                    backgroundColor: Colors.white,
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                   ),
                 ),
                 isScrollControlled: true,

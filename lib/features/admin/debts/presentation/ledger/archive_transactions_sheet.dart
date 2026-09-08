@@ -8,6 +8,7 @@ import 'ledger_colors.dart';
 import 'ledger_format.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ArchiveTransactionsSheet extends StatefulWidget {
   final List<LedgerTransaction> transactions;
 
@@ -67,7 +68,9 @@ class _ArchiveTransactionsSheetState extends State<ArchiveTransactionsSheet> {
       child: Container(
         height: MediaQuery.of(context).size.height * 0.88,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
         ),
         child: Column(

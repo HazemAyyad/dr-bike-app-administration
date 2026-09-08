@@ -22,7 +22,9 @@ class LedgerCurrencyTabBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         boxShadow: [
           BoxShadow(

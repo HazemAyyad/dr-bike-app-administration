@@ -37,10 +37,16 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : const Color(0xFFF3F4F6),
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
+          foregroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black87,
           elevation: 0,
           centerTitle: true,
           title: Column(
@@ -51,7 +57,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 style: TextStyle(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
                 ),
               ),
               SizedBox(height: 2.h),
@@ -271,7 +279,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       Container(
         padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 32.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
@@ -337,7 +347,9 @@ class _BalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
@@ -491,7 +503,9 @@ class _QuickAction extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12.sp,
-              color: Colors.black87,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black87,
             ),
           ),
         ],
@@ -520,7 +534,9 @@ class _TransactionCard extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Material(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.circular(14.r),
         elevation: 0,
         child: Container(
@@ -574,7 +590,10 @@ class _TransactionCard extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 18.sp,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white
+                                            : Colors.black87,
                                       ),
                                     ),
                                     SizedBox(width: 4.w),
@@ -689,7 +708,9 @@ class _BottomActions extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),

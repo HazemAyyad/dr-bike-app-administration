@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/theme_service.dart';
+
 /// Neutral confirm dialog for debt ledger (archive / delete).
 Future<bool?> showLedgerConfirmDialog({
   required String title,
@@ -11,7 +13,9 @@ Future<bool?> showLedgerConfirmDialog({
 }) {
   return Get.dialog<bool>(
     AlertDialog(
-      backgroundColor: const Color(0xFFF0F0F0),
+      backgroundColor: ThemeService.isDark.value
+          ? const Color(0xFF242430)
+          : const Color(0xFFF0F0F0),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
       title: Text(
@@ -19,14 +23,14 @@ Future<bool?> showLedgerConfirmDialog({
         style: TextStyle(
           fontSize: 16.sp,
           fontWeight: FontWeight.w700,
-          color: Colors.black87,
+          color: ThemeService.isDark.value ? Colors.white : Colors.black87,
         ),
       ),
       content: Text(
         body,
         style: TextStyle(
           fontSize: 14.sp,
-          color: Colors.black87,
+          color: ThemeService.isDark.value ? Colors.white70 : Colors.black87,
           height: 1.4,
         ),
       ),
@@ -37,7 +41,9 @@ Future<bool?> showLedgerConfirmDialog({
             'cancel'.tr,
             style: TextStyle(
               fontSize: 14.sp,
-              color: Colors.grey.shade800,
+              color: ThemeService.isDark.value
+                  ? Colors.white70
+                  : Colors.grey.shade800,
               fontWeight: FontWeight.w600,
             ),
           ),

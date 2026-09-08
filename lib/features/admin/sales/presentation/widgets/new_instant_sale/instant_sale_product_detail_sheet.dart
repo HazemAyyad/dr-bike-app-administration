@@ -59,7 +59,7 @@ class _ProductDetailSheet extends StatelessWidget {
         margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
         padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14.r),
         ),
         child: Obx(() {

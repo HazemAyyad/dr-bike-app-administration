@@ -228,6 +228,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                   employeePurpleStyle: true,
                                   sectionTitle: 'كل الأقسام',
                                   sectionSubtitle: 'الأقسام المتاحة للأدمن',
+                                  backgroundColor: const Color(0xFFFAF8FF),
                                   reorderMode:
                                       controller.isDashboardReorderMode.value,
                                   onReorderStarted:

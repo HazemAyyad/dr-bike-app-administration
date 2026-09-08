@@ -214,7 +214,9 @@ class MaintenanceProductsSection extends StatelessWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF242430)
+          : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
       ),

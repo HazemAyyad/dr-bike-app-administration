@@ -10,6 +10,7 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/show_image_or_video.dart';
 import '../../../../../core/helpers/showtime.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../widgets/unified_partner_selector.dart';
@@ -20,8 +21,8 @@ import '../widgets/maintenance_service_media.dart';
 import '../widgets/maintenance_products_section.dart';
 import '../widgets/next_back_button.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class NewMaintenanceScreen extends StatelessWidget {
   const NewMaintenanceScreen({Key? key}) : super(key: key);
 
@@ -412,9 +413,15 @@ class _MaintenanceServiceSuggestions extends StatelessWidget {
           margin: EdgeInsets.only(top: 6.h),
           padding: EdgeInsets.symmetric(vertical: 4.h),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(color: AppColors.operationalCardBorder),
+            border: Border.all(
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor4
+                  : AppColors.operationalCardBorder,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),

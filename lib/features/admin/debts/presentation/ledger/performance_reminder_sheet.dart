@@ -6,8 +6,8 @@ import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_performance_reminder_widget.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class PerformanceReminderSheet extends StatefulWidget {
   const PerformanceReminderSheet({Key? key}) : super(key: key);
 
@@ -82,7 +82,9 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
       child: Container(
         constraints: BoxConstraints(maxHeight: 0.92.sh),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(

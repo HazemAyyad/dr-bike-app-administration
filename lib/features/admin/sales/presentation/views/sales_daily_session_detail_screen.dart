@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
@@ -90,7 +91,9 @@ class _SalesDailySessionDetailScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F9),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF17171F)
+          : const Color(0xFFF4F7F9),
       appBar: CustomAppBar(
         title: _maintenanceMode
             ? 'تفاصيل جلسة صندوق الصيانة'
@@ -335,9 +338,15 @@ class _SessionMetrics extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: ThemeService.isDark.value
+                ? const Color(0xFF242430)
+                : Colors.white,
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: const Color(0xFFDDE5EA)),
+            border: Border.all(
+              color: ThemeService.isDark.value
+                  ? const Color(0xFF3B3B49)
+                  : const Color(0xFFDDE5EA),
+            ),
           ),
           child: Column(children: [
             Icon(icon, size: 18.sp, color: AppColors.primaryColor),

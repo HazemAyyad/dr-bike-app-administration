@@ -19,9 +19,13 @@ class PersonReportScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           foregroundColor: LedgerColors.primaryBlue,
           elevation: 0,
           centerTitle: true,
@@ -92,7 +96,9 @@ class PersonReportScreen extends StatelessWidget {
                         vertical: 22.h,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(14.r),
                       ),
                       child: Column(
@@ -147,7 +153,10 @@ class _ReportHeader extends StatelessWidget {
                 onTap: () => Get.bottomSheet(
                   const ReportPeriodSheet(),
                   isScrollControlled: true,
-                  backgroundColor: Colors.white,
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF242430)
+                          : Colors.white,
                 ),
               ),
             ),
@@ -167,7 +176,9 @@ class _ReportHeader extends StatelessWidget {
               onPressed: () => Get.bottomSheet(
                 const ReportPeriodSheet(),
                 isScrollControlled: true,
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF242430)
+                    : Colors.white,
               ),
               child: Text(
                 'ledgerChangePeriod'.tr,
@@ -458,7 +469,9 @@ class _ReportBottomActions extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(18.w, 10.h, 18.w, 18.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .08),
@@ -492,7 +505,10 @@ class _ReportBottomActions extends StatelessWidget {
                       },
                     ),
                     isScrollControlled: true,
-                    backgroundColor: Colors.white,
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                   );
                 },
                 child: Text(
@@ -521,11 +537,17 @@ class _ReportBottomActions extends StatelessWidget {
                     onSelected: (detailLevel) => Get.bottomSheet(
                       ShareSheet(detailLevel: detailLevel),
                       isScrollControlled: true,
-                      backgroundColor: Colors.white,
+                      backgroundColor:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF242430)
+                              : Colors.white,
                     ),
                   ),
                   isScrollControlled: true,
-                  backgroundColor: Colors.white,
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF242430)
+                          : Colors.white,
                 ),
                 child: Text(
                   'ledgerShareReport'.tr,

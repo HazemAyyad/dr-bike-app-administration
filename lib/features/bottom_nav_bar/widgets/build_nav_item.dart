@@ -24,11 +24,10 @@ class BuildNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconSize = 22.w;
+    final isDark = ThemeService.isDark.value;
     final iconColor = isSelected
-        ? AppColors.operationalPurple
-        : ThemeService.isDark.value
-            ? AppColors.customGreyColor6
-            : const Color(0xFF667085);
+        ? (isDark ? const Color(0xFFC7C2FF) : AppColors.operationalPurple)
+        : (isDark ? const Color(0xFFE4E4EC) : const Color(0xFF667085));
 
     return Expanded(
       child: Padding(
@@ -44,7 +43,7 @@ class BuildNavItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.operationalPurple.withValues(
-                        alpha: ThemeService.isDark.value ? .20 : .10,
+                        alpha: isDark ? .28 : .10,
                       )
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(15.r),

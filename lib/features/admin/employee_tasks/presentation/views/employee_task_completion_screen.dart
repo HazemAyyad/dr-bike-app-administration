@@ -21,6 +21,7 @@ import 'employee_task_details_operational_screen.dart'
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 /// Employee flow: complete subtasks, upload proof, submit for review.
 class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
   const EmployeeTaskCompletionScreen({Key? key}) : super(key: key);
@@ -380,7 +381,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
 
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        backgroundColor: const Color(0xFFF0F0F0),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : const Color(0xFFF0F0F0),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14.r),

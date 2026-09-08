@@ -82,7 +82,12 @@ class _ActivityTile extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             entry.description,
-            style: TextStyle(fontSize: 12.sp, color: Colors.black87),
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white70
+                  : Colors.black87,
+            ),
           ),
           if (entry.createdAt != null && entry.createdAt!.isNotEmpty) ...[
             SizedBox(height: 4.h),

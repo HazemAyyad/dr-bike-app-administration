@@ -33,7 +33,9 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
       return Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF17171F)
+              : Colors.white,
           appBar: AppBar(
             title: Text(
               personName,
@@ -44,7 +46,9 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
               ),
             ),
             centerTitle: true,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF242430)
+                : Colors.white,
             foregroundColor: LedgerColors.primaryBlue,
             elevation: 0,
           ),

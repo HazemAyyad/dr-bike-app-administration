@@ -25,8 +25,10 @@ class DebtsScreen extends GetView<DebtLedgerController> {
       extendBody: true,
       appBar: AppBar(
         title: Text('debtBook'.tr),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor:
+            ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
+        foregroundColor:
+            ThemeService.isDark.value ? Colors.white : Colors.black87,
         elevation: 0,
         actions: [
           IconButton(
@@ -34,7 +36,9 @@ class DebtsScreen extends GetView<DebtLedgerController> {
             onPressed: () => Get.bottomSheet(
               const DebtLabelsSettingsSheet(),
               isScrollControlled: true,
-              backgroundColor: Colors.white,
+              backgroundColor: ThemeService.isDark.value
+                  ? AppColors.darkColor
+                  : Colors.white,
             ),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -388,7 +392,9 @@ class _PersonRow extends StatelessWidget {
         margin: EdgeInsets.only(bottom: 8.h),
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
           boxShadow: [
             BoxShadow(
@@ -473,7 +479,9 @@ class _PersonRow extends StatelessWidget {
           child: Container(
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeService.isDark.value
+                  ? AppColors.darkColor
+                  : Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
             ),
             child: Column(

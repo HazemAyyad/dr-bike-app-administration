@@ -9,6 +9,7 @@ import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class PersonArchiveScreen extends StatefulWidget {
   const PersonArchiveScreen({Key? key}) : super(key: key);
 
@@ -71,7 +72,9 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : const Color(0xFFF3F4F6),
         appBar: AppBar(
           title: Text(
             'ledgerArchiveTitle'.tr,
@@ -82,7 +85,9 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
             ),
           ),
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           foregroundColor: LedgerColors.primaryBlue,
           elevation: 0,
         ),
@@ -119,7 +124,9 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(vertical: 20.h),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Column(
@@ -159,7 +166,9 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                     SizedBox(height: 12.h),
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Column(

@@ -50,7 +50,9 @@ class PeriodFilterSheet extends StatelessWidget {
         ),
         padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF242430)
+              : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
@@ -252,7 +254,9 @@ class _FilterCardSection extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2D2D3A)
+            : Colors.white,
         border: Border.all(color: Colors.blue.shade100),
         borderRadius: BorderRadius.circular(12.r),
       ),
@@ -308,7 +312,9 @@ class _FilterOptionTile extends StatelessWidget {
         constraints: BoxConstraints(minHeight: 50.h),
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF2D2D3A)
+              : Colors.white,
           borderRadius: BorderRadius.circular(8.r),
           border: Border.all(
             color: selected ? LedgerColors.primaryBlue : Colors.blue.shade50,
@@ -389,7 +395,10 @@ class _CategoryFilterSection extends StatelessWidget {
                   onPressed: () => Get.bottomSheet(
                     const LedgerCategoryManagerSheet(),
                     isScrollControlled: true,
-                    backgroundColor: Colors.white,
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF242430)
+                            : Colors.white,
                   ),
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 8.w),
@@ -483,7 +492,10 @@ class LedgerCategoryManagerSheet extends StatelessWidget {
                 onPressed: () => Get.bottomSheet(
                   const LedgerCategoryFormSheet(),
                   isScrollControlled: true,
-                  backgroundColor: Colors.white,
+                  backgroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF242430)
+                          : Colors.white,
                 ),
                 child: Text('ledgerAddCategory'.tr),
               ),
@@ -503,7 +515,10 @@ class LedgerCategoryManagerSheet extends StatelessWidget {
                         onTap: () => Get.bottomSheet(
                           LedgerCategoryFormSheet(category: category),
                           isScrollControlled: true,
-                          backgroundColor: Colors.white,
+                          backgroundColor:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFF242430)
+                                  : Colors.white,
                         ),
                         leading: CircleAvatar(
                           backgroundColor: _hexColor(category.color),
@@ -584,7 +599,9 @@ class _LedgerCategoryFormSheetState extends State<LedgerCategoryFormSheet> {
         initialSellerIds: selectedSellers,
       ),
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF242430)
+          : Colors.white,
     );
     if (selection == null) return;
     setState(() {
@@ -600,7 +617,9 @@ class _LedgerCategoryFormSheetState extends State<LedgerCategoryFormSheet> {
   Future<void> _pickColor() async {
     final picked = await Get.bottomSheet<String>(
       _CategoryColorSheet(selected: color),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF242430)
+          : Colors.white,
     );
     if (picked != null) setState(() => color = picked);
   }
@@ -627,7 +646,9 @@ class _LedgerCategoryFormSheetState extends State<LedgerCategoryFormSheet> {
     if (id == null) return;
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        backgroundColor: const Color(0xFFF3F4F6),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : const Color(0xFFF3F4F6),
         surfaceTintColor: Colors.transparent,
         title: Text(
           'delete'.tr,

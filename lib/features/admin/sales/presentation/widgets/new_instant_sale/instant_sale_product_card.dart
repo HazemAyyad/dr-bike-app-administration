@@ -97,7 +97,9 @@ class InstantSaleProductCard extends StatelessWidget {
             );
 
       return Material(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF242430)
+            : Colors.white,
         borderRadius: BorderRadius.circular(10.r),
         clipBehavior: Clip.antiAlias,
         child: Container(

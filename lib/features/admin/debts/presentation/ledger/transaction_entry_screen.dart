@@ -53,8 +53,12 @@ class TransactionEntryScreen extends StatelessWidget {
       backgroundColor: LedgerColors.background,
       appBar: AppBar(
         title: Text(personName),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF17171F)
+            : Colors.white,
+        foregroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black87,
         elevation: 0,
       ),
       bottomNavigationBar: Obx(
