@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/employee_notification_router.dart';
-import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/notification_swipe_card.dart';
 import '../controllers/employee_notification_center_controller.dart';
 
 class EmployeeNotificationCenterScreen
@@ -99,123 +99,54 @@ class EmployeeNotificationCenterScreen
               return RefreshIndicator(
                 onRefresh: controller.load,
                 child: ListView.builder(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8),
                   itemCount: controller.items.length,
                   itemBuilder: (context, index) {
                     final row = controller.items[index];
                     final id = row['id'];
                     final title = row['title']?.toString() ?? '';
                     final body = row['body']?.toString() ?? '';
-                    final read =
-                        row['is_read'] == true || row['is_read'] == 1;
+                    final read = row['is_read'] == true || row['is_read'] == 1;
                     final created = row['created_at']?.toString() ?? '';
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.whiteColor2,
-                      child: InkWell(
-                        onTap: () {
-                          if (id != null) {
-                            final parsedId = int.tryParse(id.toString());
-                            if (parsedId != null) {
-                              controller.markRead(parsedId);
-                            }
+                    final type = row['type']?.toString() ?? '';
+                    final accent = _employeeNotificationColor(type);
+                    return NotificationSwipeCard(
+                      notificationKey: 'employee_notification_$id',
+                      title: title,
+                      body: body,
+                      createdAt: created,
+                      isRead: read,
+                      icon: _employeeNotificationIcon(type),
+                      accent: accent,
+                      onMarkRead: () async {
+                        final parsedId = int.tryParse('$id');
+                        if (parsedId != null) {
+                          await controller.markRead(parsedId);
+                        }
+                      },
+                      onDelete: () async {
+                        final parsedId = int.tryParse('$id');
+                        if (parsedId != null) {
+                          await controller.deleteOne(parsedId);
+                        }
+                      },
+                      onTap: () {
+                        if (id != null) {
+                          final parsedId = int.tryParse(id.toString());
+                          if (parsedId != null) {
+                            controller.markRead(parsedId);
                           }
-                          final data = row['data'];
-                          final Map<String, dynamic> payload = {
-                            if (data is Map)
-                              ...Map<String, dynamic>.from(data),
-                            'type': row['type']?.toString() ?? '',
-                            'related_type':
-                                row['related_type']?.toString() ?? '',
-                            'related_id':
-                                row['related_id']?.toString() ?? '',
-                            'employee_id':
-                                row['employee_id']?.toString() ?? '',
-                          };
-                          EmployeeNotificationRouter.handlePayload(payload);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title,
-                                      style: theme.copyWith(
-                                        fontWeight: read
-                                            ? FontWeight.w500
-                                            : FontWeight.w800,
-                                        fontSize: 15.sp,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      body,
-                                      style:
-                                          theme.copyWith(fontSize: 13.sp),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      created,
-                                      style: theme.copyWith(
-                                        fontSize: 11.sp,
-                                        color: AppColors.customGreyColor5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: controller.isBusyAction.value
-                                    ? null
-                                    : () async {
-                                        if (id == null) return;
-                                        final parsedId =
-                                            int.tryParse(id.toString());
-                                        if (parsedId == null) return;
-                                        final ok = await Get.dialog<bool>(
-                                          AlertDialog(
-                                            title: Text('confirmDelete'.tr),
-                                            content: Text(
-                                              'deleteNotificationConfirm'.tr,
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Get.back(result: false),
-                                                child: Text('cancel'.tr),
-                                              ),
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Get.back(result: true),
-                                                child: Text(
-                                                  'delete'.tr,
-                                                  style: const TextStyle(
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (ok == true) {
-                                          await controller.deleteOne(parsedId);
-                                        }
-                                      },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        }
+                        final data = row['data'];
+                        final Map<String, dynamic> payload = {
+                          if (data is Map) ...Map<String, dynamic>.from(data),
+                          'type': row['type']?.toString() ?? '',
+                          'related_type': row['related_type']?.toString() ?? '',
+                          'related_id': row['related_id']?.toString() ?? '',
+                          'employee_id': row['employee_id']?.toString() ?? '',
+                        };
+                        EmployeeNotificationRouter.handlePayload(payload);
+                      },
                     );
                   },
                 ),
@@ -226,4 +157,25 @@ class EmployeeNotificationCenterScreen
       ),
     );
   }
+}
+
+Color _employeeNotificationColor(String type) {
+  if (type.contains('complete') || type.contains('approved')) {
+    return const Color(0xFF268B69);
+  }
+  if (type.contains('urgent') || type.contains('overdue')) {
+    return const Color(0xFFD64545);
+  }
+  if (type.contains('reminder')) return const Color(0xFFE58A2B);
+  return const Color(0xFF6844A5);
+}
+
+IconData _employeeNotificationIcon(String type) {
+  if (type.contains('task')) return Icons.task_alt_rounded;
+  if (type.contains('reminder')) return Icons.alarm_rounded;
+  if (type.contains('salary')) return Icons.payments_outlined;
+  if (type.contains('point') || type.contains('reward')) {
+    return Icons.workspace_premium_outlined;
+  }
+  return Icons.notifications_none_rounded;
 }

@@ -15,59 +15,85 @@ class AdminNotificationSettingsScreen
       length: 4,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F5FA),
-        appBar: CustomAppBar(
+        appBar: const CustomAppBar(
           title: 'مركز التحكم بالإشعارات',
           action: false,
-          actions: [
-            IconButton(
-              tooltip: 'تحديث',
-              onPressed: controller.load,
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
+          actions: [],
         ),
-        body: Column(
-          children: [
-            _ControlCenterSummary(controller: controller),
-            Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x10000000), blurRadius: 12),
-                ],
+        body: Theme(
+          data: Theme.of(context).copyWith(
+            iconTheme: const IconThemeData(size: 19),
+            listTileTheme: const ListTileThemeData(
+              dense: true,
+              iconColor: Color(0xFF514C55),
+              titleTextStyle: TextStyle(
+                color: Color(0xFF211D24),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
-              child: const TabBar(
-                isScrollable: true,
-                dividerColor: Colors.transparent,
-                tabAlignment: TabAlignment.start,
-                tabs: [
-                  Tab(icon: Icon(Icons.campaign), text: 'إرسال'),
-                  Tab(icon: Icon(Icons.tune), text: 'السياسات'),
-                  Tab(icon: Icon(Icons.library_music), text: 'الأصوات'),
-                  Tab(
-                      icon: Icon(Icons.monitor_heart_outlined),
-                      text: 'المتابعة'),
-                ],
+              subtitleTextStyle: TextStyle(
+                color: Color(0xFF625D66),
+                fontSize: 11,
               ),
             ),
-            Expanded(
-              child: Obx(() {
-                if (controller.isLoading.value && controller.catalog.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return TabBarView(
-                  children: [
-                    _ManualSendTab(controller: controller),
-                    _PoliciesTab(controller: controller),
-                    _SoundsTab(controller: controller),
-                    _TechnicalTab(controller: controller),
+          ),
+          child: Column(
+            children: [
+              _ControlCenterSummary(controller: controller),
+              Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x10000000), blurRadius: 12),
                   ],
-                );
-              }),
-            ),
-          ],
+                ),
+                child: const TabBar(
+                  dividerColor: Colors.transparent,
+                  labelPadding: EdgeInsets.symmetric(horizontal: 4),
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelStyle:
+                      TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  unselectedLabelStyle: TextStyle(fontSize: 12),
+                  tabs: [
+                    Tab(
+                        height: 48,
+                        icon: Icon(Icons.campaign_outlined, size: 19),
+                        text: 'إرسال'),
+                    Tab(
+                        height: 48,
+                        icon: Icon(Icons.tune_rounded, size: 19),
+                        text: 'السياسات'),
+                    Tab(
+                        height: 48,
+                        icon: Icon(Icons.library_music_outlined, size: 19),
+                        text: 'الأصوات'),
+                    Tab(
+                        height: 48,
+                        icon: Icon(Icons.monitor_heart_outlined, size: 19),
+                        text: 'المتابعة'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Obx(() {
+                  if (controller.isLoading.value &&
+                      controller.catalog.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return TabBarView(
+                    children: [
+                      _ManualSendTab(controller: controller),
+                      _PoliciesTab(controller: controller),
+                      _SoundsTab(controller: controller),
+                      _TechnicalTab(controller: controller),
+                    ],
+                  );
+                }),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -87,100 +113,42 @@ class _ControlCenterSummary extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4D2F83), Color(0xFF7652B1)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x354D2F83), blurRadius: 18, offset: Offset(0, 8)),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE7E1EC)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Color(0x28FFFFFF),
-                child: Icon(Icons.notifications_active, color: Colors.white),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('غرفة تحكم الإشعارات',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
-                    Text('الصوت، الظهور، المستلمون والتسليم من مكان واحد',
-                        style:
-                            TextStyle(color: Color(0xDFFFFFFF), fontSize: 12)),
-                  ],
-                ),
-              ),
-            ],
+          const Icon(Icons.notifications_active_outlined,
+              size: 20, color: Color(0xFF6844A5)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'جاهز للإرسال إلى ${controller.employeeOptions.length} موظف · '
+              '${controller.activePolicies} سياسة فعالة',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _SummaryPill(
-                  label: 'سياسة فعالة',
-                  value: controller.activePolicies,
-                  icon: Icons.rule),
-              _SummaryPill(
-                  label: 'صوت متاح',
-                  value: controller.readySounds,
-                  icon: Icons.volume_up),
-              _SummaryPill(
-                  label: 'جهاز مسجل',
-                  value: controller.healthyDevices,
-                  icon: Icons.smartphone),
-              _SummaryPill(
-                  label: 'فشل',
-                  value: controller.failedDeliveries,
-                  icon: Icons.warning_amber),
-            ],
+          _StatusLabel(
+            icon: controller.failedDeliveries == 0
+                ? Icons.check_circle_outline
+                : Icons.warning_amber,
+            label: controller.failedDeliveries == 0
+                ? 'جاهز'
+                : '${controller.failedDeliveries} فشل',
+            color: controller.failedDeliveries == 0
+                ? const Color(0xFF268B69)
+                : Colors.red,
           ),
         ],
       ),
     );
   }
-}
-
-class _SummaryPill extends StatelessWidget {
-  const _SummaryPill(
-      {required this.label, required this.value, required this.icon});
-  final String label;
-  final int value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-            color: const Color(0x20FFFFFF),
-            borderRadius: BorderRadius.circular(14)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 6),
-          Text('$value',
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w900)),
-          const SizedBox(width: 4),
-          Text(label,
-              style: const TextStyle(color: Color(0xE8FFFFFF), fontSize: 11)),
-        ]),
-      );
 }
 
 class _ManualSendTab extends StatelessWidget {
@@ -195,282 +163,262 @@ class _ManualSendTab extends StatelessWidget {
       final selected = controller.selectedEmployeeIds.length;
       final isAll = controller.manualAudience.value == 'all';
       final visibleEmployees = controller.filteredEmployeeOptions;
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 24),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0EAF9),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFDCCEF0)),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  backgroundColor: Color(0xFF6844A5),
-                  child: Icon(Icons.campaign, color: Colors.white),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'إنشاء إشعار للموظفين',
-                        style: TextStyle(
-                            fontSize: 17, fontWeight: FontWeight.w800),
+      return RefreshIndicator(
+        onRefresh: controller.load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+          children: [
+            _ManualSection(
+              number: '1',
+              title: 'المستلمون',
+              subtitle: isAll
+                  ? 'كل الموظفين · $allEmployees مستلم'
+                  : '$selected موظف محدد',
+              icon: Icons.groups_outlined,
+              child: Column(
+                children: [
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                        value: 'all',
+                        icon: const Icon(Icons.groups),
+                        label: Text('كل الموظفين ($allEmployees)'),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'سيظهر داخل مركز الموظف، ويمكن إرساله كتنبيه فوري بالصوت والأولوية التي تختارها.',
-                        style: TextStyle(fontSize: 12, height: 1.45),
+                      ButtonSegment(
+                        value: 'selected',
+                        icon: const Icon(Icons.person_search),
+                        label: Text('تحديد ($selected)'),
                       ),
                     ],
+                    selected: {controller.manualAudience.value},
+                    onSelectionChanged: (values) =>
+                        controller.manualAudience.value = values.first,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ManualSection(
-            number: '1',
-            title: 'المستلمون',
-            child: Column(
-              children: [
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                      value: 'all',
-                      icon: const Icon(Icons.groups),
-                      label: Text('كل الموظفين ($allEmployees)'),
-                    ),
-                    ButtonSegment(
-                      value: 'selected',
-                      icon: const Icon(Icons.person_search),
-                      label: Text('تحديد ($selected)'),
-                    ),
-                  ],
-                  selected: {controller.manualAudience.value},
-                  onSelectionChanged: (values) =>
-                      controller.manualAudience.value = values.first,
-                ),
-                if (!isAll) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    onChanged: (value) =>
-                        controller.employeeSearch.value = value,
-                    decoration: InputDecoration(
-                      hintText: 'ابحث باسم الموظف أو المسمى الوظيفي',
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: const Color(0xFFF8F7FA),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => controller.selectedEmployeeIds.addAll(
-                            visibleEmployees
-                                .map((row) => int.tryParse('${row['id']}'))
-                                .whereType<int>()),
-                        child: const Text('تحديد الظاهر'),
-                      ),
-                      TextButton(
-                        onPressed: controller.selectedEmployeeIds.clear,
-                        child: const Text('إلغاء التحديد'),
-                      ),
-                    ],
-                  ),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 290),
-                    child: visibleEmployees.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text('لا يوجد موظفون مطابقون للبحث'),
-                          )
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            itemCount: visibleEmployees.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final employee = visibleEmployees[index];
-                              final id = int.tryParse('${employee['id']}');
-                              final checked = id != null &&
-                                  controller.selectedEmployeeIds.contains(id);
-                              return CheckboxListTile(
-                                value: checked,
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                contentPadding: EdgeInsets.zero,
-                                onChanged: id == null
-                                    ? null
-                                    : (_) => controller.toggleEmployee(id),
-                                title: Text(
-                                  employee['name']?.toString() ?? 'موظف #$id',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w700),
-                                ),
-                                subtitle: Text(
-                                  [
-                                    employee['job_title']?.toString() ?? '',
-                                    employee['has_push'] == true
-                                        ? 'Push جاهز'
-                                        : 'داخل المركز فقط عند غياب FCM',
-                                  ]
-                                      .where((text) => text.isNotEmpty)
-                                      .join(' · '),
-                                ),
-                                secondary: Icon(
-                                  employee['has_push'] == true
-                                      ? Icons.notifications_active
-                                      : Icons.notifications_none,
-                                  color: employee['has_push'] == true
-                                      ? Colors.green
-                                      : Colors.grey,
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ManualSection(
-            number: '2',
-            title: 'محتوى الإشعار',
-            child: Column(
-              children: [
-                TextField(
-                  controller: controller.manualTitleController,
-                  maxLength: 120,
-                  decoration: const InputDecoration(
-                    labelText: 'العنوان',
-                    hintText: 'مثال: اجتماع الفريق اليوم',
-                    prefixIcon: Icon(Icons.title),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: controller.manualBodyController,
-                  minLines: 4,
-                  maxLines: 7,
-                  maxLength: 1000,
-                  decoration: const InputDecoration(
-                    labelText: 'نص الإشعار',
-                    hintText: 'اكتب الرسالة التي ستظهر للموظف بوضوح...',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ManualSection(
-            number: '3',
-            title: 'طريقة التنبيه',
-            child: Column(
-              children: [
-                DropdownButtonFormField<int>(
-                  initialValue: controller.manualSoundId.value,
-                  decoration: const InputDecoration(
-                    labelText: 'الصوت',
-                    prefixIcon: Icon(Icons.volume_up),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: controller.manualSounds
-                      .map(
-                        (sound) => DropdownMenuItem<int>(
-                          value: int.tryParse('${sound['id']}'),
-                          child: Text(sound['name']?.toString() ?? ''),
+                  if (!isAll) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      onChanged: (value) =>
+                          controller.employeeSearch.value = value,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث باسم الموظف أو المسمى الوظيفي',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: const Color(0xFFF8F7FA),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) => controller.manualSoundId.value = value,
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: controller.previewManualSound,
-                    icon: const Icon(Icons.play_circle_outline),
-                    label: const Text('معاينة الصوت المختار'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  initialValue: controller.manualPriority.value,
-                  decoration: const InputDecoration(
-                    labelText: 'الأولوية',
-                    prefixIcon: Icon(Icons.flag_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'low', child: Text('منخفضة')),
-                    DropdownMenuItem(value: 'normal', child: Text('عادية')),
-                    DropdownMenuItem(value: 'high', child: Text('مرتفعة')),
-                    DropdownMenuItem(value: 'critical', child: Text('حرجة')),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => controller.selectedEmployeeIds
+                              .addAll(visibleEmployees
+                                  .map((row) => int.tryParse('${row['id']}'))
+                                  .whereType<int>()),
+                          child: const Text('تحديد الظاهر'),
+                        ),
+                        TextButton(
+                          onPressed: controller.selectedEmployeeIds.clear,
+                          child: const Text('إلغاء التحديد'),
+                        ),
+                      ],
+                    ),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 290),
+                      child: visibleEmployees.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text('لا يوجد موظفون مطابقون للبحث'),
+                            )
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: visibleEmployees.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final employee = visibleEmployees[index];
+                                final id = int.tryParse('${employee['id']}');
+                                final checked = id != null &&
+                                    controller.selectedEmployeeIds.contains(id);
+                                return CheckboxListTile(
+                                  value: checked,
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  contentPadding: EdgeInsets.zero,
+                                  onChanged: id == null
+                                      ? null
+                                      : (_) => controller.toggleEmployee(id),
+                                  title: Text(
+                                    employee['name']?.toString() ?? 'موظف #$id',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  subtitle: Text(
+                                    [
+                                      employee['job_title']?.toString() ?? '',
+                                      employee['has_push'] == true
+                                          ? 'Push جاهز'
+                                          : 'داخل المركز فقط عند غياب FCM',
+                                    ]
+                                        .where((text) => text.isNotEmpty)
+                                        .join(' · '),
+                                  ),
+                                  secondary: Icon(
+                                    employee['has_push'] == true
+                                        ? Icons.notifications_active
+                                        : Icons.notifications_none,
+                                    color: employee['has_push'] == true
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) controller.manualPriority.value = value;
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('إرسال Push فوري'),
-                  subtitle:
-                      const Text('يبقى الإشعار داخل المركز حتى عند فشل Push'),
-                  secondary: const Icon(Icons.send_to_mobile),
-                  value: controller.manualPush.value,
-                  onChanged: (value) => controller.manualPush.value = value,
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('الاهتزاز'),
-                  secondary: const Icon(Icons.vibration),
-                  value: controller.manualVibration.value,
-                  onChanged: controller.manualPush.value
-                      ? (value) => controller.manualVibration.value = value
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                ],
               ),
             ),
-            onPressed: controller.isSendingManual.value
-                ? null
-                : controller.sendManualEmployeeNotification,
-            icon: controller.isSendingManual.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.send),
-            label: Text(
-              controller.isSendingManual.value
-                  ? 'جاري الإرسال...'
-                  : 'مراجعة وإرسال إلى ${isAll ? allEmployees : selected} موظف',
+            const SizedBox(height: 12),
+            _ManualSection(
+              number: '2',
+              title: 'محتوى الإشعار',
+              subtitle: 'العنوان، الرسالة والمعاينة',
+              icon: Icons.chat_bubble_outline_rounded,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: controller.manualTitleController,
+                    maxLength: 120,
+                    decoration: const InputDecoration(
+                      labelText: 'العنوان',
+                      hintText: 'مثال: اجتماع الفريق اليوم',
+                      prefixIcon: Icon(Icons.title),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: controller.manualBodyController,
+                    minLines: 4,
+                    maxLines: 7,
+                    maxLength: 1000,
+                    decoration: const InputDecoration(
+                      labelText: 'نص الإشعار',
+                      hintText: 'اكتب الرسالة التي ستظهر للموظف بوضوح...',
+                      alignLabelWithHint: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            _ManualSection(
+              number: '3',
+              title: 'طريقة التنبيه',
+              subtitle:
+                  '${_priorityLabel(controller.manualPriority.value)} · ${controller.manualPush.value ? 'Push فوري' : 'داخل المركز فقط'}',
+              icon: Icons.notifications_active_outlined,
+              child: Column(
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: controller.manualSoundId.value,
+                    decoration: const InputDecoration(
+                      labelText: 'الصوت',
+                      prefixIcon: Icon(Icons.volume_up),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: controller.manualSounds
+                        .map(
+                          (sound) => DropdownMenuItem<int>(
+                            value: int.tryParse('${sound['id']}'),
+                            child: Text(sound['name']?.toString() ?? ''),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        controller.manualSoundId.value = value,
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: controller.previewManualSound,
+                      icon: const Icon(Icons.play_circle_outline),
+                      label: const Text('معاينة الصوت المختار'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    initialValue: controller.manualPriority.value,
+                    decoration: const InputDecoration(
+                      labelText: 'الأولوية',
+                      prefixIcon: Icon(Icons.flag_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'low', child: Text('منخفضة')),
+                      DropdownMenuItem(value: 'normal', child: Text('عادية')),
+                      DropdownMenuItem(value: 'high', child: Text('مرتفعة')),
+                      DropdownMenuItem(value: 'critical', child: Text('حرجة')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        controller.manualPriority.value = value;
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('إرسال Push فوري'),
+                    subtitle:
+                        const Text('يبقى الإشعار داخل المركز حتى عند فشل Push'),
+                    secondary: const Icon(Icons.send_to_mobile),
+                    value: controller.manualPush.value,
+                    onChanged: (value) => controller.manualPush.value = value,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('الاهتزاز'),
+                    secondary: const Icon(Icons.vibration),
+                    value: controller.manualVibration.value,
+                    onChanged: controller.manualPush.value
+                        ? (value) => controller.manualVibration.value = value
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: controller.isSendingManual.value
+                  ? null
+                  : controller.sendManualEmployeeNotification,
+              icon: controller.isSendingManual.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send),
+              label: Text(
+                controller.isSendingManual.value
+                    ? 'جاري الإرسال...'
+                    : 'مراجعة وإرسال إلى ${isAll ? allEmployees : selected} موظف',
+              ),
+            ),
+          ],
+        ),
       );
     });
   }
@@ -480,11 +428,15 @@ class _ManualSection extends StatelessWidget {
   const _ManualSection({
     required this.number,
     required this.title,
+    required this.subtitle,
+    required this.icon,
     required this.child,
   });
 
   final String number;
   final String title;
+  final String subtitle;
+  final IconData icon;
   final Widget child;
 
   @override
@@ -492,39 +444,46 @@ class _ManualSection extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFE7E1EC)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEDE5F8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: const Color(0xFF6844A5), size: 18),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 15,
-                  backgroundColor: const Color(0xFF6844A5),
-                  child: Text(
-                    number,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: const Color(0xFF6844A5),
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(width: 9),
-                Text(
-                  title,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
-            child,
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded),
           ],
         ),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        children: [child],
       ),
     );
   }
@@ -689,6 +648,7 @@ class _PoliciesTab extends StatelessWidget {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
                           initialValue:
                               policy['priority']?.toString() ?? 'normal',
                           decoration: const InputDecoration(
@@ -719,6 +679,7 @@ class _PoliciesTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             DropdownButtonFormField<int>(
+                              isExpanded: true,
                               initialValue:
                                   int.tryParse('${policy['sound_id']}'),
                               decoration: const InputDecoration(
@@ -806,17 +767,29 @@ class _TechnicalTab extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            margin: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+            margin: const EdgeInsets.fromLTRB(12, 4, 12, 6),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
             ),
             child: const TabBar(
               dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              unselectedLabelStyle: TextStyle(fontSize: 11),
               tabs: [
-                Tab(icon: Icon(Icons.devices), text: 'الأجهزة'),
-                Tab(icon: Icon(Icons.route), text: 'الإرسال'),
-                Tab(icon: Icon(Icons.history), text: 'السجل'),
+                Tab(
+                    height: 44,
+                    icon: Icon(Icons.devices_outlined, size: 18),
+                    text: 'الأجهزة'),
+                Tab(
+                    height: 44,
+                    icon: Icon(Icons.route_outlined, size: 18),
+                    text: 'الإرسال'),
+                Tab(
+                    height: 44,
+                    icon: Icon(Icons.history_rounded, size: 18),
+                    text: 'السجل'),
               ],
             ),
           ),
@@ -849,10 +822,13 @@ class _SoundsTab extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
           child: SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
               onPressed: controller.pickAndUploadSound,
               icon: const Icon(Icons.upload_file),
               label: const Text('رفع صوت جديد'),
@@ -862,59 +838,66 @@ class _SoundsTab extends StatelessWidget {
         Expanded(
           child: controller.sounds.isEmpty
               ? const _EmptyState(label: 'مكتبة الأصوات فارغة')
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  itemCount: controller.sounds.length,
-                  itemBuilder: (context, index) {
-                    final sound = controller.sounds[index];
-                    final bundled = sound['source'] == 'bundled';
-                    final fromLibrary = sound['category'] == 'library';
-                    final active = sound['is_active'] == true;
-                    return Card(
-                      child: ListTile(
-                        leading: IconButton.filledTonal(
-                          tooltip: 'معاينة',
-                          onPressed: () => controller.preview(sound),
-                          icon: const Icon(Icons.play_arrow),
+              : RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    itemCount: controller.sounds.length,
+                    itemBuilder: (context, index) {
+                      final sound = controller.sounds[index];
+                      final bundled = sound['source'] == 'bundled';
+                      final fromLibrary = sound['category'] == 'library';
+                      final active = sound['is_active'] == true;
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: ListTile(
+                          dense: true,
+                          visualDensity: const VisualDensity(vertical: -1),
+                          leading: IconButton.filledTonal(
+                            tooltip: 'معاينة',
+                            onPressed: () => controller.preview(sound),
+                            icon: const Icon(Icons.play_arrow),
+                          ),
+                          title: Text(sound['name']?.toString() ?? ''),
+                          subtitle: Text(fromLibrary
+                              ? 'مكتبة Doctor Bike · جاهز بالخلفية'
+                              : bundled
+                                  ? 'صوت نظام · جاهز بالخلفية'
+                                  : 'مرفوع · يتزامن تلقائياً مع أجهزة الأدمن'),
+                          trailing: bundled
+                              ? _StatusLabel(
+                                  icon: fromLibrary
+                                      ? Icons.library_music
+                                      : Icons.inventory_2_outlined,
+                                  label: fromLibrary
+                                      ? 'مكتبة جاهزة'
+                                      : 'مدمج بالتطبيق',
+                                  color: const Color(0xFF6844A5),
+                                )
+                              : PopupMenuButton<String>(
+                                  onSelected: (action) {
+                                    if (action == 'toggle') {
+                                      controller.toggleSound(sound);
+                                    } else if (action == 'delete') {
+                                      controller.deleteSound(sound);
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                      value: 'toggle',
+                                      child: Text(active ? 'تعطيل' : 'تفعيل'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('حذف'),
+                                    ),
+                                  ],
+                                ),
                         ),
-                        title: Text(sound['name']?.toString() ?? ''),
-                        subtitle: Text(fromLibrary
-                            ? 'مكتبة Doctor Bike · جاهز بالخلفية'
-                            : bundled
-                                ? 'صوت نظام · جاهز بالخلفية'
-                                : 'مرفوع · يتزامن تلقائياً مع أجهزة الأدمن'),
-                        trailing: bundled
-                            ? _StatusLabel(
-                                icon: fromLibrary
-                                    ? Icons.library_music
-                                    : Icons.inventory_2_outlined,
-                                label: fromLibrary
-                                    ? 'مكتبة جاهزة'
-                                    : 'مدمج بالتطبيق',
-                                color: const Color(0xFF6844A5),
-                              )
-                            : PopupMenuButton<String>(
-                                onSelected: (action) {
-                                  if (action == 'toggle') {
-                                    controller.toggleSound(sound);
-                                  } else if (action == 'delete') {
-                                    controller.deleteSound(sound);
-                                  }
-                                },
-                                itemBuilder: (_) => [
-                                  PopupMenuItem(
-                                    value: 'toggle',
-                                    child: Text(active ? 'تعطيل' : 'تفعيل'),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('حذف'),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
@@ -936,24 +919,28 @@ class _DevicesTab extends StatelessWidget {
     return Column(
       children: [
         Card(
-          margin: const EdgeInsets.all(12),
+          margin: const EdgeInsets.fromLTRB(12, 6, 12, 8),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Icon(Icons.info_outline),
-                    SizedBox(width: 10),
-                    Expanded(
+                    const Icon(Icons.devices_outlined,
+                        color: Color(0xFF6844A5)),
+                    const SizedBox(width: 8),
+                    const Expanded(
                       child: Text(
-                        'يعرض هذا التبويب أجهزة الأدمن المسجلة لاستقبال الإشعارات، والمنصة وصاحب الجهاز وآخر اتصال بالسيرفر.',
+                        'أجهزة الأدمن المسجلة',
+                        style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
+                    Text('${controller.devices.length} جهاز',
+                        style: const TextStyle(
+                            color: Color(0xFF6844A5), fontSize: 12)),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -971,40 +958,80 @@ class _DevicesTab extends StatelessWidget {
         Expanded(
           child: controller.devices.isEmpty
               ? const _EmptyState(label: 'لا توجد أجهزة أدمن مسجلة')
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  itemCount: controller.devices.length,
-                  itemBuilder: (context, index) {
-                    final device = controller.devices[index];
-                    final user = device['user'] as Map?;
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          device['platform'] == 'ios'
-                              ? Icons.phone_iphone
-                              : Icons.android,
+              : RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    itemCount: controller.devices.length,
+                    itemBuilder: (context, index) {
+                      final device = controller.devices[index];
+                      final user = device['user'] as Map?;
+                      final platform = device['platform']?.toString();
+                      final lastSeen =
+                          _formatDeviceDate(device['last_seen_at']);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: ListTile(
+                          dense: true,
+                          visualDensity: const VisualDensity(vertical: -1),
+                          leading: Icon(
+                            platform == 'ios'
+                                ? Icons.phone_iphone
+                                : Icons.android,
+                          ),
+                          title: Text(
+                            device['device_name']
+                                        ?.toString()
+                                        .trim()
+                                        .isNotEmpty ==
+                                    true
+                                ? device['device_name'].toString()
+                                : platform == 'ios'
+                                    ? 'جهاز آيفون'
+                                    : 'جهاز أندرويد',
+                          ),
+                          subtitle: Text(
+                            '${user?['name'] ?? ''} · ${platform == 'ios' ? 'آيفون' : 'أندرويد'}\nآخر اتصال: $lastSeen\n'
+                            'أصوات جاهزة: ${device['ready_sounds_count'] ?? 0} · فشل: ${device['failed_sounds_count'] ?? 0}',
+                          ),
+                          isThreeLine: true,
+                          trailing: const _StatusLabel(
+                            icon: Icons.circle,
+                            label: 'Push مسجل',
+                            color: Color(0xFF268B69),
+                          ),
                         ),
-                        title: Text(
-                          device['device_name']?.toString() ?? 'جهاز غير مسمى',
-                        ),
-                        subtitle: Text(
-                          '${user?['name'] ?? ''}\nآخر اتصال: ${device['last_seen_at'] ?? '-'}\n'
-                          'أصوات جاهزة: ${device['ready_sounds_count'] ?? 0} · فشل: ${device['failed_sounds_count'] ?? 0}',
-                        ),
-                        isThreeLine: true,
-                        trailing: const _StatusLabel(
-                          icon: Icons.circle,
-                          label: 'Push متصل',
-                          color: Color(0xFF268B69),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
     );
   }
+}
+
+String _formatDeviceDate(dynamic value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty) return '-';
+  DateTime? parsed = DateTime.tryParse(raw);
+  if (parsed == null) {
+    final legacy = RegExp(
+      r'^(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?Z-(\d{2})-(\d{4})$',
+    ).firstMatch(raw);
+    if (legacy != null) {
+      parsed = DateTime.tryParse(
+        '${legacy.group(6)}-${legacy.group(5)}-${legacy.group(1)}T'
+        '${legacy.group(2)}:${legacy.group(3)}:${legacy.group(4)}Z',
+      );
+    }
+  }
+  if (parsed == null) return raw;
+  final local = parsed.toLocal();
+  String two(int number) => number.toString().padLeft(2, '0');
+  return '${two(local.day)}/${two(local.month)}/${local.year} · '
+      '${two(local.hour)}:${two(local.minute)}';
 }
 
 class _DeliveriesTab extends StatelessWidget {
@@ -1029,46 +1056,56 @@ class _DeliveriesTab extends StatelessWidget {
         Expanded(
           child: controller.deliveries.isEmpty
               ? const _EmptyState(label: 'لا توجد محاولات إرسال مسجلة بعد')
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  itemCount: controller.deliveries.length,
-                  itemBuilder: (context, index) {
-                    final row = controller.deliveries[index];
-                    final notification = row['notification'] as Map?;
-                    final status = row['status']?.toString() ?? 'pending';
-                    final successful =
-                        const ['sent', 'delivered', 'opened'].contains(status);
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(
-                          successful ? Icons.check_circle : Icons.error_outline,
-                          color: successful ? Colors.green : Colors.red,
+              : RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    itemCount: controller.deliveries.length,
+                    itemBuilder: (context, index) {
+                      final row = controller.deliveries[index];
+                      final notification = row['notification'] as Map?;
+                      final status = row['status']?.toString() ?? 'pending';
+                      final successful = const ['sent', 'delivered', 'opened']
+                          .contains(status);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: ListTile(
+                          dense: true,
+                          visualDensity: const VisualDensity(vertical: -1),
+                          leading: Icon(
+                            successful
+                                ? Icons.check_circle
+                                : Icons.error_outline,
+                            color: successful ? Colors.green : Colors.red,
+                          ),
+                          title: Text(
+                            notification?['title']?.toString() ?? 'إشعار',
+                          ),
+                          subtitle: Text(
+                            '${notification?['type'] ?? ''}\n'
+                            '${row['used_fallback'] == true ? 'استُخدم الصوت الاحتياطي' : 'استُخدم الصوت المختار'}'
+                            '${row['created_at'] == null ? '' : ' · ${_formatDeviceDate(row['created_at'])}'}',
+                          ),
+                          isThreeLine: true,
+                          trailing: status == 'failed'
+                              ? IconButton.filledTonal(
+                                  tooltip: 'إعادة المحاولة',
+                                  onPressed: controller.busyType.value ==
+                                          'delivery_${row['id']}'
+                                      ? null
+                                      : () => controller.retryDelivery(row),
+                                  icon: const Icon(Icons.refresh),
+                                )
+                              : _StatusLabel(
+                                  icon: _deliveryStatusIcon(status),
+                                  label: _deliveryStatusLabel(status),
+                                  color: _deliveryStatusColor(status),
+                                ),
                         ),
-                        title: Text(
-                          notification?['title']?.toString() ?? 'إشعار',
-                        ),
-                        subtitle: Text(
-                          '${notification?['type'] ?? ''}\n'
-                          '${row['used_fallback'] == true ? 'استُخدم الصوت الاحتياطي' : 'استُخدم الصوت المختار'}',
-                        ),
-                        isThreeLine: true,
-                        trailing: status == 'failed'
-                            ? IconButton.filledTonal(
-                                tooltip: 'إعادة المحاولة',
-                                onPressed: controller.busyType.value ==
-                                        'delivery_${row['id']}'
-                                    ? null
-                                    : () => controller.retryDelivery(row),
-                                icon: const Icon(Icons.refresh),
-                              )
-                            : _StatusLabel(
-                                icon: _deliveryStatusIcon(status),
-                                label: _deliveryStatusLabel(status),
-                                color: _deliveryStatusColor(status),
-                              ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
@@ -1098,24 +1135,32 @@ class _AuditsTab extends StatelessWidget {
         Expanded(
           child: controller.audits.isEmpty
               ? const _EmptyState(label: 'لا توجد تغييرات إدارية مسجلة بعد')
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  itemCount: controller.audits.length,
-                  itemBuilder: (context, index) {
-                    final row = controller.audits[index];
-                    final user = row['user'] as Map?;
-                    return Card(
-                      child: ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.history)),
-                        title: Text(
-                          '${_auditAction(row['action'])} · ${_auditType(row['auditable_type'])}',
+              : RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    itemCount: controller.audits.length,
+                    itemBuilder: (context, index) {
+                      final row = controller.audits[index];
+                      final user = row['user'] as Map?;
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: ListTile(
+                          dense: true,
+                          visualDensity: const VisualDensity(vertical: -1),
+                          leading:
+                              const CircleAvatar(child: Icon(Icons.history)),
+                          title: Text(
+                            '${_auditAction(row['action'])} · ${_auditType(row['auditable_type'])}',
+                          ),
+                          subtitle: Text(
+                            '${user?['name'] ?? 'أدمن'} · ${_formatDeviceDate(row['created_at'])}',
+                          ),
                         ),
-                        subtitle: Text(
-                          '${user?['name'] ?? 'أدمن'} · ${row['created_at'] ?? '-'}',
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ),
       ],
@@ -1239,11 +1284,11 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
         color: const Color(0xFFF0EAF9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFDCCEF0)),
       ),
       child: Row(

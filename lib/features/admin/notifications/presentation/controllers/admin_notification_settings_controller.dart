@@ -6,7 +6,9 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/admin_notification_settings_api_service.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AdminNotificationSettingsController extends GetxController {
   final _api = AdminNotificationSettingsApiService();
   final _player = AudioPlayer();
@@ -119,9 +121,9 @@ class AdminNotificationSettingsController extends GetxController {
     );
     isLoading.value = false;
     if (failedSections.isNotEmpty) {
-      Get.snackbar(
-        'تحميل جزئي',
-        'تعذر تحميل: ${failedSections.join('، ')}',
+      AppFailureNotice.show(
+        title: 'تحميل جزئي',
+        message: 'تعذر تحميل: ${failedSections.join('، ')}',
       );
     }
   }
@@ -192,7 +194,10 @@ class AdminNotificationSettingsController extends GetxController {
       return;
     }
     if (soundId == null) {
-      Get.snackbar('الصوت غير جاهز', 'حدّث المركز ثم اختر صوتاً');
+      AppFailureNotice.show(
+        title: 'الصوت غير جاهز',
+        message: 'حدّث المركز ثم اختر صوتاً',
+      );
       return;
     }
 
@@ -259,7 +264,10 @@ class AdminNotificationSettingsController extends GetxController {
         ),
       );
     } catch (_) {
-      Get.snackbar('تعذر الإرسال', 'راجع البيانات والاتصال ثم حاول مرة أخرى');
+      AppFailureNotice.show(
+        title: 'تعذر الإرسال',
+        message: 'راجع البيانات والاتصال ثم حاول مرة أخرى',
+      );
     } finally {
       isSendingManual.value = false;
     }
@@ -282,7 +290,10 @@ class AdminNotificationSettingsController extends GetxController {
       (row) => int.tryParse('${row['id']}') == id,
     );
     if (sound == null) {
-      Get.snackbar('الصوت غير جاهز', 'تعذر العثور على الصوت المختار.');
+      AppFailureNotice.show(
+        title: 'الصوت غير جاهز',
+        message: 'تعذر العثور على الصوت المختار.',
+      );
       return;
     }
     await preview(sound);
@@ -295,9 +306,15 @@ class AdminNotificationSettingsController extends GetxController {
     try {
       await _api.retryDelivery(id);
       deliveries.assignAll(await _api.fetchDeliveries());
-      Get.snackbar('تمت إعادة المحاولة', 'تم إرسال الإشعار للجهاز مرة أخرى');
+      AppSuccessNotice.show(
+        title: 'تمت إعادة المحاولة',
+        message: 'تم إرسال الإشعار للجهاز مرة أخرى',
+      );
     } catch (_) {
-      Get.snackbar('تعذر الإرسال', 'راجع اتصال الجهاز وبيانات Firebase');
+      AppFailureNotice.show(
+        title: 'تعذر الإرسال',
+        message: 'راجع اتصال الجهاز وبيانات Firebase',
+      );
     } finally {
       busyType.value = '';
     }
@@ -311,9 +328,15 @@ class AdminNotificationSettingsController extends GetxController {
         source: 'notification_center_manual_sync',
       );
       devices.assignAll(await _api.fetchDevices());
-      Get.snackbar('اكتملت المزامنة', 'تم تحديث جاهزية الأصوات على هذا الجهاز');
+      AppSuccessNotice.show(
+        title: 'اكتملت المزامنة',
+        message: 'تم تحديث جاهزية الأصوات على هذا الجهاز',
+      );
     } catch (_) {
-      Get.snackbar('تعذرت المزامنة', 'تحقق من الاتصال ثم حاول مرة أخرى');
+      AppFailureNotice.show(
+        title: 'تعذرت المزامنة',
+        message: 'تحقق من الاتصال ثم حاول مرة أخرى',
+      );
     } finally {
       busyType.value = '';
     }
@@ -328,7 +351,10 @@ class AdminNotificationSettingsController extends GetxController {
       await _api.updatePolicy(type, values);
       await _reloadCatalog();
     } catch (_) {
-      Get.snackbar('خطأ', 'تعذر حفظ سياسة الإشعار');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر حفظ سياسة الإشعار',
+      );
     } finally {
       busyType.value = '';
     }
@@ -697,9 +723,15 @@ class AdminNotificationSettingsController extends GetxController {
         source: 'notification_sound_upload',
       );
       sounds.assignAll(await _api.fetchSounds());
-      Get.snackbar('تم', 'تم رفع الصوت وبدأت مزامنته مع هذا الجهاز');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم رفع الصوت وبدأت مزامنته مع هذا الجهاز',
+      );
     } catch (_) {
-      Get.snackbar('خطأ', 'تعذر رفع الصوت. تأكد من الصيغة والحجم.');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر رفع الصوت. تأكد من الصيغة والحجم.',
+      );
     } finally {
       isLoading.value = false;
     }
@@ -734,7 +766,10 @@ class AdminNotificationSettingsController extends GetxController {
       );
       await _player.play(BytesSource(data.buffer.asUint8List()));
     } catch (_) {
-      Get.snackbar('خطأ', 'تعذر تشغيل معاينة الصوت');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر تشغيل معاينة الصوت',
+      );
     }
   }
 
