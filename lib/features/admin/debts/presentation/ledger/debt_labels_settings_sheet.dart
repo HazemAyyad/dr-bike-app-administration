@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class DebtLabelsSettingsSheet extends StatefulWidget {
   const DebtLabelsSettingsSheet({Key? key}) : super(key: key);
@@ -150,10 +151,9 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
     if (!mounted) return;
     if (saved) {
       Get.back();
-      Get.snackbar(
-        'تم الحفظ',
-        'تم تحديث مسميات حركات الديون بنجاح',
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'تم الحفظ',
+        message: 'تم تحديث مسميات حركات الديون بنجاح',
       );
     } else {
       await Get.dialog<void>(

@@ -1,5 +1,4 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,6 +10,8 @@ import '../datasources/checks_datasource.dart';
 import '../models/check_model.dart';
 import '../models/general_checks_data_model.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ChecksImplement implements ChecksRepository {
   final NetworkInfo networkInfo;
   final ChecksDatasource checksDatasource;
@@ -122,12 +123,9 @@ class ChecksImplement implements ChecksRepository {
       final result = await checksDatasource.generalChecksData();
       return result;
     } on ServerException catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.errorModel.errorMessage,
       );
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

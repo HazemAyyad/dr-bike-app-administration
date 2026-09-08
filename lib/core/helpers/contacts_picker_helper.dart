@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 
 import 'phone_format_helper.dart';
 
+
+import 'app_failure_notice.dart';
 class PickedContactData {
   const PickedContactData({required this.name, required this.phone});
 
@@ -27,10 +29,9 @@ Future<List<PickedContactData>?> pickContactsFromDevice(
   bool allowMultiple = true,
 }) async {
   if (!await FlutterContacts.requestPermission(readonly: true)) {
-    Get.snackbar(
-      'error'.tr,
-      'contactsPermissionRequired'.tr,
-      snackPosition: SnackPosition.BOTTOM,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'contactsPermissionRequired'.tr,
     );
     return null;
   }

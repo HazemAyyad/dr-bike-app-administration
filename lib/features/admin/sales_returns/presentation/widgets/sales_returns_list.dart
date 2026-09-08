@@ -12,6 +12,7 @@ import '../../data/sales_return_models.dart';
 import '../controllers/sales_returns_controller.dart';
 import '../utils/sales_return_invoice_pdf.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 const salesReturnColor = Color(0xFFB42318);
 const salesReturnSurface = Color(0xFFFFF1F0);
 
@@ -738,7 +739,10 @@ Future<void> _openSaleInvoice(
     return;
   }
   if (!Get.isRegistered<SalesController>()) {
-    Get.snackbar('تعذر فتح الفاتورة', 'متحكم المبيعات غير متاح حاليًا.');
+    AppFailureNotice.show(
+      title: 'تعذر فتح الفاتورة',
+      message: 'متحكم المبيعات غير متاح حاليًا.',
+    );
     return;
   }
   await Get.find<SalesController>()

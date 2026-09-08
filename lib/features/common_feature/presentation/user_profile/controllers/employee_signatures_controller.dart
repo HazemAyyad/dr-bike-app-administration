@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeSignatureModel {
   const EmployeeSignatureModel(
       {required this.id,
@@ -67,7 +69,10 @@ class EmployeeSignaturesController extends GetxController {
               EmployeeSignatureModel.fromJson(Map<String, dynamic>.from(row)))
           : const []);
     } catch (error) {
-      Get.snackbar('تعذر تحميل التوقيعات', _message(error));
+      AppFailureNotice.show(
+        title: 'تعذر تحميل التوقيعات',
+        message: _message(error),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -96,10 +101,16 @@ class EmployeeSignaturesController extends GetxController {
       });
       _ensureSuccess(response.data);
       await load();
-      Get.snackbar('تم حفظ التوقيع', '${response.data['message'] ?? ''}');
+      AppSuccessNotice.show(
+        title: 'تم حفظ التوقيع',
+        message: '${response.data['message'] ?? ''}',
+      );
       return true;
     } catch (error) {
-      Get.snackbar('تعذر حفظ التوقيع', _message(error));
+      AppFailureNotice.show(
+        title: 'تعذر حفظ التوقيع',
+        message: _message(error),
+      );
       return false;
     } finally {
       isSaving.value = false;
@@ -114,9 +125,15 @@ class EmployeeSignaturesController extends GetxController {
           data: {'is_default': true});
       _ensureSuccess(response.data);
       await load();
-      Get.snackbar('تم التحديث', 'أصبح ${signature.name} هو التوقيع الافتراضي');
+      AppSuccessNotice.show(
+        title: 'تم التحديث',
+        message: 'أصبح ${signature.name} هو التوقيع الافتراضي',
+      );
     } catch (error) {
-      Get.snackbar('تعذر تغيير الافتراضي', _message(error));
+      AppFailureNotice.show(
+        title: 'تعذر تغيير الافتراضي',
+        message: _message(error),
+      );
     } finally {
       actionId.value = null;
     }
@@ -132,7 +149,10 @@ class EmployeeSignaturesController extends GetxController {
       _ensureSuccess(response.data);
       await load();
     } catch (error) {
-      Get.snackbar('تعذر تعديل الاسم', _message(error));
+      AppFailureNotice.show(
+        title: 'تعذر تعديل الاسم',
+        message: _message(error),
+      );
     } finally {
       actionId.value = null;
     }
@@ -145,9 +165,15 @@ class EmployeeSignaturesController extends GetxController {
           await api.delete(EndPoints.employeeSignature(signature.id));
       _ensureSuccess(response.data);
       await load();
-      Get.snackbar('تم الحذف', 'تم حذف التوقيع من ملفك');
+      AppSuccessNotice.show(
+        title: 'تم الحذف',
+        message: 'تم حذف التوقيع من ملفك',
+      );
     } catch (error) {
-      Get.snackbar('تعذر حذف التوقيع', _message(error));
+      AppFailureNotice.show(
+        title: 'تعذر حذف التوقيع',
+        message: _message(error),
+      );
     } finally {
       actionId.value = null;
     }

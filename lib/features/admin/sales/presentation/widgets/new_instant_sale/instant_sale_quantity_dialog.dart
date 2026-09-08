@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import 'instant_sale_dialog_shell.dart';
 
+
+import '../../../../../../core/helpers/app_failure_notice.dart';
 Future<int?> showInstantSaleQuantityDialog(
   BuildContext context, {
   required int initialQuantity,
@@ -57,11 +59,17 @@ class _InstantSaleQuantityDialogState extends State<_InstantSaleQuantityDialog> 
   void _submit() {
     final qty = int.tryParse(_controller.text.trim()) ?? 0;
     if (qty < 1) {
-      Get.snackbar('error'.tr, 'invalidQuantity'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidQuantity'.tr,
+      );
       return;
     }
     if (qty > widget.maxQuantity) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'out_of_stock_products'.tr,
+      );
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();

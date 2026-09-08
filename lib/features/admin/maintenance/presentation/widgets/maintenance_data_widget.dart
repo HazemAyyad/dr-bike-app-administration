@@ -14,6 +14,7 @@ import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../data/models/maintenances_model.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class MaintenanceDataWidget extends GetView<MaintenanceController> {
   const MaintenanceDataWidget({Key? key}) : super(key: key);
@@ -74,7 +75,10 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                 onTap: () async {
                   await Clipboard.setData(ClipboardData(text: phone));
                   Get.back();
-                  Get.snackbar('تم النسخ', phone);
+                  AppSuccessNotice.show(
+                    title: 'تم النسخ',
+                    message: phone,
+                  );
                 },
               ),
             ],

@@ -118,7 +118,7 @@ class BuildStatisticsCards extends StatelessWidget {
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
                 ? AppColors.customGreyColor
-                : Colors.white,
+                : const Color(0xFFF6F2FF),
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
                 color: AppColors.operationalPurple.withValues(alpha: .16)),

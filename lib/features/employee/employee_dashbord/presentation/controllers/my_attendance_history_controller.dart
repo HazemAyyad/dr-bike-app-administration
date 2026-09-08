@@ -7,6 +7,7 @@ import '../../../../admin/employee_section/data/models/employee_attendance_histo
 import '../../../../admin/employee_section/presentation/controllers/attendance_history_controller.dart';
 import '../../domain/usecases/get_my_attendance_history_usecase.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MyAttendanceHistoryController extends GetxController {
   MyAttendanceHistoryController({required this.getMyAttendanceHistoryUsecase});
 
@@ -33,12 +34,16 @@ class MyAttendanceHistoryController extends GetxController {
       );
     } on Failure catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isLoading.value = false;
     }

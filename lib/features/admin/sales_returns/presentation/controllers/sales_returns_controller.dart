@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/sales_return_models.dart';
 import '../../data/sales_returns_api_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesReturnsController extends GetxController {
   SalesReturnsController(this.api);
   final SalesReturnsApiService api;
@@ -304,13 +306,12 @@ class SalesReturnsController extends GetxController {
         AppRoutes.SALESSCREEN,
         arguments: {'salesTab': 3},
       );
-      Get.snackbar(
-          currentEditId == null ? 'تم إنشاء المرتجع' : 'تم تعديل المرتجع',
-          serial.toString().isEmpty
-              ? 'تمت إعادة المخزون وتسجيل التسوية بنجاح.'
-              : 'تم إنشاء الفاتورة $serial وإتمام التسوية.',
-          backgroundColor: Colors.green.shade700,
-          colorText: Colors.white);
+      AppSuccessNotice.show(
+        title: currentEditId == null ? 'تم إنشاء المرتجع' : 'تم تعديل المرتجع',
+        message: serial.toString().isEmpty
+            ? 'تمت إعادة المخزون وتسجيل التسوية بنجاح.'
+            : 'تم إنشاء الفاتورة $serial وإتمام التسوية.',
+      );
     } catch (error) {
       _error(error);
     } finally {
@@ -389,11 +390,9 @@ class SalesReturnsController extends GetxController {
     try {
       await api.cancel(id: id, reason: reason);
       await loadReturns();
-      Get.snackbar(
-        'تم إلغاء المرتجع',
-        'تم عكس المخزون والنقد ورصيد الطرف بنجاح.',
-        backgroundColor: Colors.green.shade700,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'تم إلغاء المرتجع',
+        message: 'تم عكس المخزون والنقد ورصيد الطرف بنجاح.',
       );
       return true;
     } catch (error) {
@@ -410,8 +409,10 @@ class SalesReturnsController extends GetxController {
     editNote.value = '';
   }
 
-  void _error(Object error) => Get.snackbar(
-      'تعذر تنفيذ العملية', error.toString().replaceFirst('Exception: ', ''));
+  void _error(Object error) => AppFailureNotice.show(
+  title: 'تعذر تنفيذ العملية',
+  message: error.toString().replaceFirst('Exception: ', ''),
+);
   @override
   void onClose() {
     _debounce?.cancel();

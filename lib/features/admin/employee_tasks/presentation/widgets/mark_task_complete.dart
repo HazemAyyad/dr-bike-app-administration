@@ -15,6 +15,8 @@ import '../../data/models/task_details_model.dart';
 import '../controllers/employee_tasks_controller.dart';
 import 'task_media_thumbnail_row.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MarkTaskComplete extends GetView<EmployeeTasksController> {
   const MarkTaskComplete({Key? key, required this.data}) : super(key: key);
 
@@ -188,10 +190,9 @@ class MarkTaskComplete extends GetView<EmployeeTasksController> {
                                 <File>[];
 
                         if (!controller.canCompleteSubTask(task, pending)) {
-                          Get.snackbar(
-                            'error'.tr,
-                            'employeeImageRequired'.tr,
-                            snackPosition: SnackPosition.BOTTOM,
+                          AppFailureNotice.show(
+                            title: 'error'.tr,
+                            message: 'employeeImageRequired'.tr,
                           );
                           return;
                         }

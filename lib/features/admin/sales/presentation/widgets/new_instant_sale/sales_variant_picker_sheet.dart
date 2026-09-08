@@ -14,7 +14,9 @@ import '../../../../sales_orders/data/models/sales_order_model.dart';
 import '../../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import '../../utils/sales_amount_format.dart';
+import '../../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class SalesVariantPickerResult {
   final ProductColorVariant variant;
   final ProductSizeVariant size;
@@ -205,17 +207,26 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
   Future<void> _confirm() async {
     final selected = _drafts.where((draft) => draft.selected).toList();
     if (selected.isEmpty) {
-      Get.snackbar('error'.tr, 'selectSizeColor'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'selectSizeColor'.tr,
+      );
       return;
     }
 
     for (final draft in selected) {
       if (draft.quantity < 1) {
-        Get.snackbar('error'.tr, 'invalidQuantity'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'invalidQuantity'.tr,
+        );
         return;
       }
       if (draft.unitPrice < 0) {
-        Get.snackbar('error'.tr, 'priceRequired'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'priceRequired'.tr,
+        );
         return;
       }
       if (draft.quantity > draft.variant.stock && !_isAdjustmentSale) {
@@ -697,10 +708,9 @@ class _VariantPriceHistorySheet extends StatelessWidget {
                       onTap: () {
                         onApply(entry.cost);
                         Navigator.pop(context);
-                        Get.snackbar(
-                          'success'.tr,
-                          'instantSalePriceApplied'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
+                        AppSuccessNotice.show(
+                          title: 'success'.tr,
+                          message: 'instantSalePriceApplied'.tr,
                         );
                       },
                     );

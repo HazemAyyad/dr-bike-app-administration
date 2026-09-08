@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/app_settings_service.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AppVersionReportScreen extends StatefulWidget {
   const AppVersionReportScreen({Key? key}) : super(key: key);
 
@@ -33,12 +34,9 @@ class _AppVersionReportScreenState extends State<AppVersionReportScreen> {
       _loading = false;
     });
     if (report == null) {
-      Get.snackbar(
-        'error'.tr,
-        'settingsUpdateFailed'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade700,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
       );
     }
   }

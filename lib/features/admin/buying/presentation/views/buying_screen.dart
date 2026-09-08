@@ -534,7 +534,6 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
             ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-          const SliverToBoxAdapter(child: PurchaseReturnsTableHeader()),
           GetBuilder<ReturnPurchasesController>(
             builder: (controller) {
               if (controller.isLoading.value) {

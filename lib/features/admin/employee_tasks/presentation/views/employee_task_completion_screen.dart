@@ -18,7 +18,9 @@ import '../widgets/task_status_badge.dart';
 import '../widgets/task_assignees_section.dart';
 import 'employee_task_details_operational_screen.dart'
     show OperationalChecklist;
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Employee flow: complete subtasks, upload proof, submit for review.
 class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
   const EmployeeTaskCompletionScreen({Key? key}) : super(key: key);
@@ -184,11 +186,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
         showFullScreenLoader: false,
       );
       if (!context.mounted) return;
-      Get.snackbar(
-        'success'.tr,
-        'taskSubmittedForReview'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'taskSubmittedForReview'.tr,
       );
       Get.back(result: true);
       return;
@@ -219,11 +219,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     );
     if (!context.mounted) return;
     if (submitted) {
-      Get.snackbar(
-        'success'.tr,
-        'taskSubmittedForReview'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'taskSubmittedForReview'.tr,
       );
       Get.back(result: true);
     }
@@ -305,7 +303,10 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
           TextButton(
             onPressed: () {
               if (reasonController.text.trim().isEmpty) {
-                Get.snackbar('error'.tr, 'declineReasonRequired'.tr);
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'declineReasonRequired'.tr,
+                );
                 return;
               }
               Get.back(result: true);
@@ -347,11 +348,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     // Auto-submitted by the backend (no remaining subtasks, proof satisfied).
     if (refreshed?.status == 'waiting_review' ||
         refreshed?.status == 'completed') {
-      Get.snackbar(
-        'success'.tr,
-        'taskSubmittedForReview'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'taskSubmittedForReview'.tr,
       );
       Get.back(result: true);
       return;
@@ -367,11 +366,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
       return;
     }
 
-    Get.snackbar(
-      'success'.tr,
-      'subtaskDeclined'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: 'subtaskDeclined'.tr,
     );
   }
 
@@ -466,7 +463,10 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     final incomplete = data.subTasks
         .any((s) => s.status != 'completed' && s.status != 'rejected');
     if (incomplete) {
-      Get.snackbar('error'.tr, 'completeAllSubtasksFirst'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'completeAllSubtasksFirst'.tr,
+      );
       return;
     }
 
@@ -480,7 +480,10 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     if (data.isForcedToUploadImg &&
         !controller.taskHasEmployeeImage(data) &&
         controller.selectedFile.isEmpty) {
-      Get.snackbar('error'.tr, 'employeeImageRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'employeeImageRequired'.tr,
+      );
       return;
     }
 

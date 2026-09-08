@@ -28,6 +28,7 @@ class _AdminActivtiLogScreenState extends State<AdminActivtiLogScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: controller.logsSearchQuery);
+    controller.getLogs();
     controller.getActivitySummary();
   }
 

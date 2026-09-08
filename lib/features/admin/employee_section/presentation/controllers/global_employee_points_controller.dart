@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Controller for the global "نقاط الموظفين" admin screen that shows every
 /// employee with their current month points + reward status, and allows
 /// inline add/deduct mutations without entering employee details.
@@ -69,8 +70,10 @@ class GlobalEmployeePointsController extends GetxController {
       );
     } on Failure catch (e) {
       errorMessage.value = e.errMessage;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -120,18 +123,17 @@ class GlobalEmployeePointsController extends GetxController {
       );
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (_) async {
           await loadRows();
-          Get.snackbar(
-            'success'.tr,
-            'pointsUpdatedMessage'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'pointsUpdatedMessage'.tr,
           );
           return true;
         },

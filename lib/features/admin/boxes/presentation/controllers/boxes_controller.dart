@@ -26,7 +26,9 @@ import '../../domain/usecases/get_shown_box_usecase.dart';
 import '../../domain/usecases/transfer_box_balance_usecase.dart';
 import 'boxes_serves.dart';
 import '../widgets/box_report_pdf_builder.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class BoxesController extends GetxController {
   AddBoxesUsecase boxesUsecase;
   GetShownBoxUsecase getShownBoxUsecase;
@@ -301,11 +303,9 @@ class BoxesController extends GetxController {
         debugPrint('[BoxesController.getboxDetails] error: $e');
         debugPrintStack(stackTrace: stackTrace);
       }
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLoading(false);
@@ -474,12 +474,10 @@ class BoxesController extends GetxController {
         isAddBoxLoading(false);
         update();
         isDelete
-            ? Get.snackbar(
-                failure.errMessage,
-                failure.data['message'],
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 2),
-              )
+            ? AppFailureNotice.show(
+  title: failure.errMessage,
+  message: failure.data['message'],
+)
             : Helpers.showCustomDialogError(
                 context: context,
                 title: failure.errMessage,
@@ -490,11 +488,9 @@ class BoxesController extends GetxController {
         getAllBoxes();
         _popToBoxesScreen();
         isDelete
-            ? Get.snackbar(
-                'success'.tr,
-                success,
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 2),
+            ? AppSuccessNotice.show(
+                title: 'success'.tr,
+                message: success,
               )
             : Helpers.showCustomDialogSuccess(
                 context: context,
@@ -713,22 +709,18 @@ class BoxesController extends GetxController {
       final filePath = "${directory.path}/$reportFileName";
       final file = File(filePath);
       await file.writeAsBytes(success);
-      Get.snackbar(
-        "fileDownloadedSuccessfully".tr,
-        filePath,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2000),
+      AppSuccessNotice.show(
+        title: "fileDownloadedSuccessfully".tr,
+        message: filePath,
       );
 
       await OpenFilex.open(filePath);
       _clearReportFilters();
       if (Get.isBottomSheetOpen == true) Get.back();
     } catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2500),
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
       );
     } finally {
       isReportLoading.value = false;

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
 // ignore: depend_on_referenced_packages
@@ -15,6 +14,8 @@ import '../models/check_model.dart';
 import '../models/general_checks_data_model.dart';
 import '../../domain/repositories/checks_repository.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ChecksDatasource {
   final ApiConsumer api;
 
@@ -174,12 +175,9 @@ class ChecksDatasource {
       final response = await api.get(EndPoints.notCashedIncomingChecks);
       return GeneralChecksDataModel.fromJson(response.data['data']);
     } on DioException catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
       );
       final data = e.response?.data;
       throw ServerException(

@@ -16,7 +16,9 @@ import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/product_assembly_model.dart';
 import '../widgets/product_location_badge.dart';
 import '../controllers/stock_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AddCombinationScreen extends StatefulWidget {
   const AddCombinationScreen({Key? key}) : super(key: key);
 
@@ -103,7 +105,10 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
         }
       });
     } catch (e) {
-      Get.snackbar('error'.tr, _errorText(e));
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: _errorText(e),
+      );
     } finally {
       if (mounted) setState(() => _recipesLoading = false);
     }
@@ -162,15 +167,24 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
   Future<void> _executeAssembly() async {
     final target = _targetProduct;
     if (target == null) {
-      Get.snackbar('error'.tr, 'اختر المنتج الناتج أولاً.');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'اختر المنتج الناتج أولاً.',
+      );
       return;
     }
     if (_components.isEmpty) {
-      Get.snackbar('error'.tr, 'أضف مكوّناً واحداً على الأقل.');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'أضف مكوّناً واحداً على الأقل.',
+      );
       return;
     }
     if (_runs < 1) {
-      Get.snackbar('error'.tr, 'عدد مرات التركيب يجب أن يكون أكبر من صفر.');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'عدد مرات التركيب يجب أن يكون أكبر من صفر.',
+      );
       return;
     }
 
@@ -191,9 +205,10 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
                 })
             .toList(),
       );
-      Get.snackbar(
-        'success'.tr,
-        'تم تركيب ${operation.quantity} من ${operation.targetProductName}.',
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message:
+            'تم تركيب ${operation.quantity} من ${operation.targetProductName}.',
       );
       await _stock.getAllProducts();
       await _loadRecipes();
@@ -209,7 +224,10 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
         _noteController.clear();
       });
     } catch (e) {
-      Get.snackbar('error'.tr, _errorText(e));
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: _errorText(e),
+      );
     } finally {
       _isSubmitting(false);
     }
@@ -218,11 +236,17 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
   Future<void> _executeDisassembly() async {
     final recipe = _selectedRecipe;
     if (recipe == null) {
-      Get.snackbar('error'.tr, 'اختر وصفة تركيب لفكها.');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'اختر وصفة تركيب لفكها.',
+      );
       return;
     }
     if (_disassembleQty < 1) {
-      Get.snackbar('error'.tr, 'كمية الفك يجب أن تكون أكبر من صفر.');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'كمية الفك يجب أن تكون أكبر من صفر.',
+      );
       return;
     }
 
@@ -233,9 +257,10 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
         quantity: _disassembleQty,
         note: _noteController.text,
       );
-      Get.snackbar(
-        'success'.tr,
-        'تم فك ${operation.quantity} من ${operation.targetProductName}.',
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message:
+            'تم فك ${operation.quantity} من ${operation.targetProductName}.',
       );
       await _stock.getAllProducts();
       await _loadRecipes();
@@ -244,7 +269,10 @@ class _AddCombinationScreenState extends State<AddCombinationScreen> {
         _noteController.clear();
       });
     } catch (e) {
-      Get.snackbar('error'.tr, _errorText(e));
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: _errorText(e),
+      );
     } finally {
       _isSubmitting(false);
     }
@@ -641,7 +669,10 @@ class _AssemblyVariantDialogState extends State<_AssemblyVariantDialog> {
             final size = _size;
             final color = _color;
             if (size == null || color == null) {
-              Get.snackbar('error'.tr, 'اختر المقاس واللون.');
+              AppFailureNotice.show(
+                title: 'error'.tr,
+                message: 'اختر المقاس واللون.',
+              );
               return;
             }
             Navigator.pop(
@@ -700,7 +731,10 @@ class _AssemblyProductPickerState extends State<_AssemblyProductPicker> {
       if (!mounted) return;
       setState(() => _products = products);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -857,7 +891,10 @@ class _AssemblyComponentPickerState extends State<_AssemblyComponentPicker> {
       if (!mounted) return;
       setState(() => _products = products);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -943,8 +980,10 @@ class _AssemblyComponentPickerState extends State<_AssemblyComponentPicker> {
       final controller = _quantityControllers[product.id];
       final quantity = int.tryParse(controller?.text.trim() ?? '') ?? 0;
       if (quantity < 1) {
-        Get.snackbar(
-            'error'.tr, 'كمية ${product.nameAr} يجب أن تكون أكبر من صفر.');
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'كمية ${product.nameAr} يجب أن تكون أكبر من صفر.',
+        );
         return;
       }
       debugPrint(

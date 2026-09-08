@@ -9,6 +9,8 @@ import 'languague_service.dart';
 import 'final_classes.dart';
 import 'initial_bindings.dart';
 
+
+import '../helpers/app_failure_notice.dart';
 /// Home-screen quick actions (long-press app icon) and deferred deep navigation.
 class AppShortcutService {
   AppShortcutService._();
@@ -115,10 +117,9 @@ class AppShortcutService {
 
     if (!canOpenAddSpecialTask) {
       debugPrint('[WidgetShortcutFlow] permission denied for add_special_task');
-      Get.snackbar(
-        'error'.tr,
-        'shortcutSpecialTaskNoPermission'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'shortcutSpecialTaskNoPermission'.tr,
       );
       return;
     }

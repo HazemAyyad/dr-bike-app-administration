@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_conversation_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class _SelectedProductOfferLine {
   const _SelectedProductOfferLine(this.product, [this.variant]);
@@ -239,9 +240,9 @@ class _WhatsAppProductPickerScreenState
     if (!sent || !mounted) return;
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero, () {
-      Get.snackbar(
-        'تم',
-        controller.channel == 'whatsapp'
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: controller.channel == 'whatsapp'
             ? 'تم إرسال ملف المنتجات PDF في المحادثة'
             : 'تم إرسال روابط المنتجات في المحادثة',
       );

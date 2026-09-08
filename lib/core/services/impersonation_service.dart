@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
+import '../helpers/app_success_notice.dart';
 import '../../features/admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
 import '../../features/admin/boxes/presentation/controllers/boxes_controller.dart';
 import '../../features/admin/boxes/presentation/controllers/boxes_serves.dart';
@@ -237,21 +238,11 @@ class ImpersonationService {
     }
 
     if (Get.isSnackbarOpen) Get.closeAllSnackbars();
-    Get.rawSnackbar(
+    AppSuccessNotice.show(
+      title: 'success'.tr,
       message: returningToAdmin
           ? 'impersonationExitSuccess'.tr
           : 'impersonationExitSuccessEmployee'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 3),
-      margin: const EdgeInsets.all(12),
-      borderRadius: 8,
-      backgroundColor: const Color(0xFF374151),
-      messageText: Text(
-        returningToAdmin
-            ? 'impersonationExitSuccess'.tr
-            : 'impersonationExitSuccessEmployee'.tr,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-      ),
     );
   }
 

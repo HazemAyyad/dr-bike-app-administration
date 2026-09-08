@@ -20,6 +20,7 @@ import '../utils/sales_amount_format.dart';
 import 'instant_sale_audit_info.dart';
 import 'instant_sale_payment_totals_footer.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 void showInstantSaleLinesModal(BuildContext context, InstantSalesModel sale) {
   showModalBottomSheet<void>(
     context: context,
@@ -96,13 +97,10 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
     ).call(maintenanceId: maintenanceId.toString());
 
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }

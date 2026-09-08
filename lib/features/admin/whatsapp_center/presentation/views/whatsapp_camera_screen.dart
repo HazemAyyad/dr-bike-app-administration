@@ -2,6 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class WhatsAppCapture {
   const WhatsAppCapture({required this.path, required this.mediaKind});
 
@@ -88,7 +89,10 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
         setState(() => _recording = true);
       }
     } catch (e) {
-      Get.snackbar('خطأ', 'تعذر استخدام الكاميرا: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر استخدام الكاميرا: $e',
+      );
     }
   }
 

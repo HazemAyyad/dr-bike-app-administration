@@ -36,7 +36,9 @@ import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
 import '../../domain/usecases/get_my_attendance_history_usecase.dart';
 import '../../domain/usecases/request_over_time_loan_usecase.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeDashbordController extends GetxController
     with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
@@ -527,7 +529,10 @@ class EmployeeDashbordController extends GetxController
         ..clear()
         ..addAll(previous);
       update();
-      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
     } finally {
       _dashboardOrderSaving = false;
     }
@@ -666,10 +671,9 @@ class EmployeeDashbordController extends GetxController
 
     final uploaded = await uploadResult.fold<Future<bool>>(
       (failure) async {
-        Get.snackbar(
-          'error'.tr,
-          failure.data?['message']?.toString() ?? failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.data?['message']?.toString() ?? failure.errMessage,
         );
         return false;
       },
@@ -800,11 +804,9 @@ class EmployeeDashbordController extends GetxController
           } else {
             errorMessages = failure.data?['message'] ?? failure.errMessage;
           }
-          Get.snackbar(
-            'error'.tr,
-            errorMessages,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1000),
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: errorMessages,
           );
         },
         (success) async {
@@ -820,11 +822,9 @@ class EmployeeDashbordController extends GetxController
             const Duration(milliseconds: 1000),
             () => getEmployeeData(scrollToTodayb: false),
           );
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1000),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
         },
       );
@@ -956,21 +956,17 @@ class EmployeeDashbordController extends GetxController
             "${directory.path}/تقرير_ساعات_عمل_$customerName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
+        AppSuccessNotice.show(
+          title: "fileDownloadedSuccessfully".tr,
+          message: filePath,
         );
 
         await OpenFilex.open(filePath);
       });
     } catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2000),
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
       );
     }
   }

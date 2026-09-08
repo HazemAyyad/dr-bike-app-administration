@@ -19,7 +19,9 @@ import '../widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
 import '../../../sales_orders/presentation/widgets/sales_order_partner_selector.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
   const InstantSaleProductPickerScreen({Key? key}) : super(key: key);
@@ -110,18 +112,16 @@ class _InstantSaleProductPickerScreenState
             _whatsAppCommerceDraft!,
           );
           if (mounted) {
-            Get.snackbar(
-              'تم تجهيز السلة',
-              'تمت إضافة الزبون ومنتجات واتساب تلقائياً',
-              snackPosition: SnackPosition.BOTTOM,
+            AppSuccessNotice.show(
+              title: 'تم تجهيز السلة',
+              message: 'تمت إضافة الزبون ومنتجات واتساب تلقائياً',
             );
           }
         } catch (error) {
           if (mounted) {
-            Get.snackbar(
-              'تعذر تجهيز السلة',
-              error.toString(),
-              snackPosition: SnackPosition.BOTTOM,
+            AppFailureNotice.show(
+              title: 'تعذر تجهيز السلة',
+              message: error.toString(),
             );
           }
         }

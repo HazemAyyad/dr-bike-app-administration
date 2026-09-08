@@ -7,7 +7,9 @@ import '../../data/smart_home_api_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
 import '../controllers/smart_home_controller.dart';
 import '../smart_home_theme.dart';
+import '../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../core/helpers/app_failure_notice.dart';
 class SmartScenesSection extends StatelessWidget {
   const SmartScenesSection({
     Key? key,
@@ -346,9 +348,9 @@ class _SceneCard extends StatelessWidget {
             ? () async {
                 final ok = await controller.executeScene(scene);
                 if (ok) {
-                  Get.snackbar(
-                    'تم إرسال الأمر',
-                    'سيظهر تأكيد التنفيذ من سجل Tuya على بطاقة المشهد',
+                  AppSuccessNotice.show(
+                    title: 'تم إرسال الأمر',
+                    message: 'سيظهر تأكيد التنفيذ من سجل Tuya على بطاقة المشهد',
                   );
                 }
               }
@@ -889,9 +891,15 @@ class _SmartSceneEditorScreenState extends State<SmartSceneEditorScreen> {
     setState(() => saving = false);
     if (ok) {
       Get.back<void>();
-      Get.snackbar('تم', 'تم حفظ المشهد بنجاح');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ المشهد بنجاح',
+      );
     } else {
-      Get.snackbar('تعذر الحفظ', widget.controller.errorMessage.value);
+      AppFailureNotice.show(
+        title: 'تعذر الحفظ',
+        message: widget.controller.errorMessage.value,
+      );
     }
   }
 }

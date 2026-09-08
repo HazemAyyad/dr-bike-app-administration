@@ -10,6 +10,7 @@ import '../../data/models/employee_point_rule_model.dart';
 import '../controllers/employee_point_rules_controller.dart';
 import '../widgets/employee_point_swipe_card.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeePointRulesScreen extends GetView<EmployeePointRulesController> {
   const EmployeePointRulesScreen({Key? key}) : super(key: key);
 
@@ -690,7 +691,10 @@ class _RuleEditorDialogState extends State<_RuleEditorDialog> {
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_appliesToAll && _employeeIds.isEmpty) {
-      Get.snackbar('خطأ', 'اختر موظف واحد على الأقل');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'اختر موظف واحد على الأقل',
+      );
       return;
     }
     final ok = await widget.controller.saveRule(

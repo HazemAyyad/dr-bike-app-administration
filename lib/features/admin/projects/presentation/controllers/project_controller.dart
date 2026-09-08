@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
@@ -21,6 +20,7 @@ import '../../domain/usecases/get_project_details_usecase.dart';
 import '../../domain/usecases/get_project_expenses_sales_usecase.dart';
 import '../../domain/usecases/get_usecase.dart';
 import 'project_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class ProjectController extends GetxController {
   final GetProjectsUsecase getProjectsUsecase;
@@ -193,13 +193,9 @@ class ProjectController extends GetxController {
     } else if (isSales) {
       ProjectService().projectSales.value = ProjectSaleModel.fromJson(result);
     } else {
-      Get.snackbar(
-        'success'.tr,
-        result['message'],
-        backgroundColor: AppColors.secondaryColor,
-        colorText: AppColors.whiteColor,
-        duration: const Duration(seconds: 2),
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: result['message'],
       );
     }
     expensesController.clear();
@@ -297,13 +293,9 @@ class ProjectController extends GetxController {
           const Duration(milliseconds: 500),
           () {
             // Get.back();
-            Get.snackbar(
-              'success'.tr,
-              success,
-              colorText: Colors.white,
-              backgroundColor: Colors.green,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
+            AppSuccessNotice.show(
+              title: 'success'.tr,
+              message: success,
             );
           },
         );

@@ -9,7 +9,9 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/stock_images_export_model.dart';
 import '../controllers/stock_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockImagesExportsScreen extends StatefulWidget {
   const StockImagesExportsScreen({Key? key}) : super(key: key);
 
@@ -95,12 +97,9 @@ class _StockImagesExportsScreenState extends State<StockImagesExportsScreen> {
       await controller.stockDatasource.deleteProductsImagesZipExport(
         exportId: export.id,
       );
-      Get.snackbar(
-        'success'.tr,
-        'stockImagesExportDeleted'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'stockImagesExportDeleted'.tr,
       );
       await _loadExports(silent: true);
     } on ServerException catch (e) {
@@ -113,12 +112,9 @@ class _StockImagesExportsScreenState extends State<StockImagesExportsScreen> {
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'error'.tr,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
     );
   }
 

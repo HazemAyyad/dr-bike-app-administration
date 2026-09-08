@@ -6,6 +6,8 @@ import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_performance_reminder_widget.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class PerformanceReminderSheet extends StatefulWidget {
   const PerformanceReminderSheet({Key? key}) : super(key: key);
 
@@ -38,7 +40,10 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
 
   Future<void> _send() async {
     if (_shareUrl == null || _shareUrl!.isEmpty) {
-      Get.snackbar('error'.tr, 'ledgerShareLinkFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerShareLinkFailed'.tr,
+      );
       return;
     }
     setState(() => _sending = true);

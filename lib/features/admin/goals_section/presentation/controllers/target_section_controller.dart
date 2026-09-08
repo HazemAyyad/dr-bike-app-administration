@@ -23,7 +23,9 @@ import '../../domain/usecases/add_goal_usecase.dart';
 import '../../domain/usecases/get_goal_details_usecase.dart';
 import '../../domain/usecases/get_goals_usecase.dart';
 import 'goals_services.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class TargetSectionController extends GetxController {
   final GetGoalsUsecase getGoalsUsecase;
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
@@ -262,11 +264,9 @@ class TargetSectionController extends GetxController {
     } else {
       Get.back();
       getAllGoal();
-      Get.snackbar(
-        'success'.tr,
-        goalDetails['message'],
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: goalDetails['message'],
       );
     }
     isLoading(false);
@@ -476,23 +476,20 @@ class TargetSectionController extends GetxController {
       if (response['status'] == 'success') {
         Get.back();
         getGoalDetails(goalId: goalDetailsList!.goal.id.toString());
-        Get.snackbar(
-          'success'.tr,
-          response['message']?.toString() ?? 'success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: response['message']?.toString() ?? 'success'.tr,
         );
       } else {
-        Get.snackbar(
-          'error'.tr,
-          response['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: response['message']?.toString() ?? 'error'.tr,
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isAddLoading(false);

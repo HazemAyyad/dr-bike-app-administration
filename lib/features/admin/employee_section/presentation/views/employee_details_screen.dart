@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/whatsapp_launcher.dart';
 import '../../../../../core/helpers/showtime.dart';
@@ -26,6 +27,7 @@ import '../controllers/employee_section_controller.dart';
 import '../../domain/entities/employee_details_entity.dart';
 import '../widgets/employee_points_tab.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   const EmployeeDetailsScreen({Key? key}) : super(key: key);
 
@@ -222,11 +224,10 @@ class _EmployeeOverviewTab extends StatelessWidget {
   Future<void> _copyEmail(BuildContext context, String email) async {
     await Clipboard.setData(ClipboardData(text: email));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${'copied'.tr}: $email'),
-        duration: const Duration(seconds: 2),
-      ),
+    AppSuccessNotice.show(
+      context: context,
+      title: 'copied'.tr,
+      message: email,
     );
   }
 
@@ -241,16 +242,20 @@ class _EmployeeOverviewTab extends StatelessWidget {
             digits.length >= 11;
     if (!isSupportedNumber) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الموظف غير صالح للتواصل عبر واتساب')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'رقم الموظف غير صالح للتواصل عبر واتساب',
       );
       return;
     }
 
     final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'تعذر فتح واتساب على هذا الجهاز',
       );
     }
   }
@@ -1437,8 +1442,10 @@ class _EmployeeActivityLogsTabState extends State<EmployeeActivityLogsTab> {
         _lastPage = result.pagination.lastPage;
       });
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) {
         setState(() {

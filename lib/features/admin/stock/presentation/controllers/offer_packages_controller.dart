@@ -9,7 +9,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../domain/usecases/search_products_usecase.dart';
 import '../widgets/offer_package_add_product_dialog.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class OfferPackageProductRow {
   final String productId;
   final String productName;
@@ -48,10 +50,12 @@ class OfferPackagesController extends GetxController {
   final RxnString editingPackageId = RxnString();
   final Rxn<XFile> pendingImage = Rxn<XFile>();
   String? existingImageUrl;
-  final RxList<OfferPackageProductRow> packageProducts = <OfferPackageProductRow>[].obs;
+  final RxList<OfferPackageProductRow> packageProducts =
+      <OfferPackageProductRow>[].obs;
   final RxBool isSubmitting = false.obs;
 
-  final RxList<AllStockProductsModel> searchResults = <AllStockProductsModel>[].obs;
+  final RxList<AllStockProductsModel> searchResults =
+      <AllStockProductsModel>[].obs;
   final RxBool isSearching = false.obs;
 
   int get packageQuantity =>
@@ -149,8 +153,7 @@ class OfferPackagesController extends GetxController {
 
   Future<void> openProductDialog({int? editIndex}) async {
     searchResults.clear();
-    final initial =
-        editIndex != null ? packageProducts[editIndex] : null;
+    final initial = editIndex != null ? packageProducts[editIndex] : null;
     final result = await Get.dialog<OfferPackageProductRow>(
       OfferPackageAddProductDialog(
         controller: this,
@@ -164,7 +167,10 @@ class OfferPackagesController extends GetxController {
       (p) => p.productId == result.productId,
     );
     if (duplicateIndex >= 0 && duplicateIndex != editIndex) {
-      Get.snackbar('error'.tr, 'productAlreadyInPackage'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'productAlreadyInPackage'.tr,
+      );
       return;
     }
 
@@ -199,12 +205,18 @@ class OfferPackagesController extends GetxController {
     final pkgQty = packageQuantity;
 
     if (name.isEmpty || price < 0 || pkgQty < 1) {
-      Get.snackbar('error'.tr, 'requiredField'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'requiredField'.tr,
+      );
       return;
     }
 
     if (packageProducts.isEmpty) {
-      Get.snackbar('error'.tr, 'addAtLeastOneProductToPackage'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'addAtLeastOneProductToPackage'.tr,
+      );
       return;
     }
 
@@ -232,7 +244,10 @@ class OfferPackagesController extends GetxController {
       if (Get.currentRoute.contains('AddEditOfferPackage')) {
         Get.back();
       }
-      Get.snackbar('success'.tr, 'operationCompletedSuccessfully'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'operationCompletedSuccessfully'.tr,
+      );
     } catch (e) {
       _showError(e);
     } finally {
@@ -257,7 +272,10 @@ class OfferPackagesController extends GetxController {
         }
       }
     }
-    Get.snackbar('error'.tr, message, duration: const Duration(seconds: 5));
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
+    );
   }
 
   Future<void> deletePackage(OfferPackageModel pkg) async {
@@ -281,7 +299,8 @@ class OfferPackagesController extends GetxController {
             onPressed: () => Get.back(result: true),
             child: Text(
               'delete'.tr,
-              style: Get.textTheme.bodyMedium?.copyWith(color: AppColors.redColor),
+              style:
+                  Get.textTheme.bodyMedium?.copyWith(color: AppColors.redColor),
             ),
           ),
         ],
@@ -292,7 +311,10 @@ class OfferPackagesController extends GetxController {
     try {
       await stockDatasource.deleteOfferPackage(id: pkg.id.toString());
       await loadPackages();
-      Get.snackbar('success'.tr, 'operationCompletedSuccessfully'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'operationCompletedSuccessfully'.tr,
+      );
     } catch (e) {
       _showError(e);
     }

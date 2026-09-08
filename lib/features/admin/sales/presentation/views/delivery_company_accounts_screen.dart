@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/sales_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 const _navy = Color(0xFF12304A);
 const _surface = Color(0xFFF4F7F9);
 const _border = Color(0xFFDDE5EA);
@@ -44,7 +46,10 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
             : []);
       }
     } catch (e) {
-      Get.snackbar('تعذر تحميل الحسابات', e.toString());
+      AppFailureNotice.show(
+        title: 'تعذر تحميل الحسابات',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -265,7 +270,10 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
         setState(() => account = Map<String, dynamic>.from(raw));
       }
     } catch (e) {
-      Get.snackbar('تعذر تحميل الحساب', e.toString());
+      AppFailureNotice.show(
+        title: 'تعذر تحميل الحساب',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -591,10 +599,16 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
         await Get.find<SalesController>().loadDailySession();
       }
       Get.back(result: true);
-      Get.snackbar('تمت التسوية',
-          'تمت الإضافة إلى صندوق الطلبيات اليومي وبقيت أي مديونية متبقية');
+      AppSuccessNotice.show(
+        title: 'تمت التسوية',
+        message:
+            'تمت الإضافة إلى صندوق الطلبيات اليومي وبقيت أي مديونية متبقية',
+      );
     } catch (e) {
-      Get.snackbar('تعذر تنفيذ التسوية', e.toString());
+      AppFailureNotice.show(
+        title: 'تعذر تنفيذ التسوية',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => saving = false);
     }

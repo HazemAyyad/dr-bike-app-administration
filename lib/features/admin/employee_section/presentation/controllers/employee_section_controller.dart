@@ -49,7 +49,9 @@ import '../../domain/usecases/working_times_usecase.dart';
 import '../../domain/usecases/admin_users_usecase.dart';
 import '../../data/models/admin_user_model.dart';
 import 'employee_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeSectionController extends GetxController
     with GetTickerProviderStateMixin {
   final PaySalaryToEmployeeUsecase paySalaryEmployee;
@@ -372,10 +374,9 @@ class EmployeeSectionController extends GetxController
         overtimeValue.value = false;
         Get.back();
         getOvertimeAndLoan();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -432,10 +433,9 @@ class EmployeeSectionController extends GetxController
         overtimeValue.value = false;
         Get.back();
         getOvertimeAndLoan();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -485,16 +485,14 @@ class EmployeeSectionController extends GetxController
       employeeService.employeeList.assignAll(result);
       filteredEmployees.assignAll(employeeService.employeeList);
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (showLoader) isLoading(false);
@@ -508,16 +506,14 @@ class EmployeeSectionController extends GetxController
       filteredSuspendedEmployees
           .assignAll(employeeService.suspendedEmployeeList);
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     }
   }
@@ -533,16 +529,14 @@ class EmployeeSectionController extends GetxController
       employeeService.adminList.assignAll(result);
       filteredAdmins.assignAll(employeeService.adminList);
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (showLoader) isLoading(false);
@@ -555,14 +549,15 @@ class EmployeeSectionController extends GetxController
     update();
     final result = await manageAdminUserUsecase.delete(adminId: adminId);
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (success) async {
-        Get.snackbar('success'.tr, success,
-            snackPosition: SnackPosition.BOTTOM);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
+        );
         await getAdminUsers();
       },
     );
@@ -575,14 +570,15 @@ class EmployeeSectionController extends GetxController
     update();
     final result = await manageAdminUserUsecase.toggleBlock(adminId: adminId);
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (success) async {
-        Get.snackbar('success'.tr, success,
-            snackPosition: SnackPosition.BOTTOM);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
+        );
         await getAdminUsers();
       },
     );
@@ -601,14 +597,15 @@ class EmployeeSectionController extends GetxController
       developmentRole: developmentRole,
     );
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (success) async {
-        Get.snackbar('success'.tr, success,
-            snackPosition: SnackPosition.BOTTOM);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
+        );
         await getAdminUsers();
       },
     );
@@ -632,10 +629,9 @@ class EmployeeSectionController extends GetxController
       final result = await deleteEmployeeUsecase.call(employeeId: employeeId);
       return result.fold(
         (failure) {
-          Get.snackbar(
-            'error'.tr,
-            failure.errMessage,
-            snackPosition: SnackPosition.BOTTOM,
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
           );
           return false;
         },
@@ -652,12 +648,9 @@ class EmployeeSectionController extends GetxController
             filteredWorkingTimes.removeWhere((e) => e.id == id);
             filteredFinancialDues.removeWhere((e) => e.id == id);
           }
-          Get.snackbar(
-            'success'.tr,
-            message.isNotEmpty ? message : 'employeeDeletedSuccess'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: message.isNotEmpty ? message : 'employeeDeletedSuccess'.tr,
           );
           return true;
         },
@@ -676,21 +669,18 @@ class EmployeeSectionController extends GetxController
       );
       return result.fold(
         (failure) {
-          Get.snackbar(
-            'error'.tr,
-            failure.errMessage,
-            snackPosition: SnackPosition.BOTTOM,
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
           );
           return false;
         },
         (message) async {
           await _refreshEmployeesAfterStatusChange();
-          Get.snackbar(
-            'success'.tr,
-            message.isNotEmpty ? message : 'employeeSuspendedSuccess'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFFFF7ED),
-            colorText: const Color(0xFF9A3412),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message:
+                message.isNotEmpty ? message : 'employeeSuspendedSuccess'.tr,
           );
           return true;
         },
@@ -708,21 +698,18 @@ class EmployeeSectionController extends GetxController
       );
       return result.fold(
         (failure) {
-          Get.snackbar(
-            'error'.tr,
-            failure.errMessage,
-            snackPosition: SnackPosition.BOTTOM,
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
           );
           return false;
         },
         (message) async {
           await _refreshEmployeesAfterStatusChange();
-          Get.snackbar(
-            'success'.tr,
-            message.isNotEmpty ? message : 'employeeRestoredSuccess'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message:
+                message.isNotEmpty ? message : 'employeeRestoredSuccess'.tr,
           );
           return true;
         },
@@ -752,24 +739,20 @@ class EmployeeSectionController extends GetxController
       );
       return result.fold(
         (failure) {
-          Get.snackbar(
-            'error'.tr,
-            failure.errMessage,
-            snackPosition: SnackPosition.BOTTOM,
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
           );
           return false;
         },
         (message) {
           employeePasswordController.clear();
           employeePasswordConfirmationController.clear();
-          Get.snackbar(
-            'success'.tr,
-            message.isNotEmpty
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: message.isNotEmpty
                 ? message
                 : 'employeePasswordChangedSuccessfully'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
           );
           return true;
         },
@@ -818,10 +801,9 @@ class EmployeeSectionController extends GetxController
       }
       await employeeDetailsUsecase.call(employeeId: details.id.toString());
       if (!context.mounted) return;
-      Get.snackbar(
-        'success'.tr,
-        raw['message']?.toString() ?? 'manualCheckoutSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'manualCheckoutSuccess'.tr,
       );
     } on ServerException catch (e) {
       if (!context.mounted) return;
@@ -910,16 +892,14 @@ class EmployeeSectionController extends GetxController
       employeeService.workingTimesList.assignAll(result);
       filteredWorkingTimes.assignAll(employeeService.workingTimesList);
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (showLoader) isLoading(false);
@@ -935,16 +915,14 @@ class EmployeeSectionController extends GetxController
       employeeService.financialDuesList.assignAll(result);
       filteredFinancialDues.assignAll(employeeService.financialDuesList);
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (showLoader) isLoading(false);
@@ -1062,16 +1040,14 @@ class EmployeeSectionController extends GetxController
       filteredLoanList.assignAll(employeeService.loanList);
       await attendanceFuture;
     } on Failure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (showLoader) isLoading(false);
@@ -1100,13 +1076,22 @@ class EmployeeSectionController extends GetxController
         approvedMinutes: approvedMinutes,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar('error'.tr, raw['message']?.toString() ?? 'error'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
+        );
         return;
       }
-      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'success'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'success'.tr,
+      );
       await loadAttendanceOvertimeRequests();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -1118,13 +1103,22 @@ class EmployeeSectionController extends GetxController
         approve: false,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar('error'.tr, raw['message']?.toString() ?? 'error'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
+        );
         return;
       }
-      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'success'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'success'.tr,
+      );
       await loadAttendanceOvertimeRequests();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -1166,17 +1160,15 @@ class EmployeeSectionController extends GetxController
       employeeService.qrHistory.assignAll(result.items);
     } on Failure catch (e) {
       employeeService.qrHistory.clear();
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } catch (e) {
       employeeService.qrHistory.clear();
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isQrHistoryLoading(false);
@@ -1343,9 +1335,15 @@ class EmployeeSectionController extends GetxController
         name: "employee_qr_${DateTime.now().millisecondsSinceEpoch}",
       );
 
-      Get.snackbar("نجاح ✅", "تم حفظ الكود في المعرض");
+      AppSuccessNotice.show(
+        title: "نجاح ✅",
+        message: "تم حفظ الكود في المعرض",
+      );
     } catch (e) {
-      Get.snackbar("خطأ ❌", "فشل حفظ الكود");
+      AppFailureNotice.show(
+        title: "خطأ ❌",
+        message: "فشل حفظ الكود",
+      );
     }
   }
 
@@ -1404,17 +1402,18 @@ class EmployeeSectionController extends GetxController
             "${directory.path}/${p.basename(type)}_تقرير_$employeeName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
+        AppSuccessNotice.show(
+          title: "fileDownloadedSuccessfully".tr,
+          message: filePath,
         );
 
         await OpenFilex.open(filePath);
       });
     } catch (e) {
-      Get.snackbar("error".tr, e.toString());
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
+      );
     }
   }
 

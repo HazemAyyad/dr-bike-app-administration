@@ -8,6 +8,7 @@ import 'ledger_colors.dart';
 import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class PersonArchiveScreen extends StatefulWidget {
   const PersonArchiveScreen({Key? key}) : super(key: key);
 
@@ -40,7 +41,10 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
 
   Future<void> _restoreSelected() async {
     if (_selected.isEmpty) {
-      Get.snackbar('error'.tr, 'ledgerSelectTransactions'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerSelectTransactions'.tr,
+      );
       return;
     }
 

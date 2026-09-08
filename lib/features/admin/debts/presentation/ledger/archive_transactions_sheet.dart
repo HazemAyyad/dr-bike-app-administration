@@ -7,6 +7,7 @@ import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_format.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ArchiveTransactionsSheet extends StatefulWidget {
   final List<LedgerTransaction> transactions;
 
@@ -40,7 +41,10 @@ class _ArchiveTransactionsSheetState extends State<ArchiveTransactionsSheet> {
 
   Future<void> _archive() async {
     if (_selected.isEmpty) {
-      Get.snackbar('error'.tr, 'ledgerSelectTransactions'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerSelectTransactions'.tr,
+      );
       return;
     }
 

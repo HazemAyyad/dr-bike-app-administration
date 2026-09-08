@@ -12,7 +12,9 @@ import '../../../../../routes/app_routes.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import 'sales_order_status_ui.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// عرض الطلبيات كبطاقات تشغيلية مضغوطة، بنفس لغة قسم الصيانة.
 class SalesOrdersTable extends GetView<SalesOrdersController> {
   const SalesOrdersTable({Key? key}) : super(key: key);
@@ -129,7 +131,10 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
               onTap: () async {
                 await Clipboard.setData(ClipboardData(text: phone));
                 Get.back();
-                Get.snackbar('تم النسخ', phone);
+                AppSuccessNotice.show(
+                  title: 'تم النسخ',
+                  message: phone,
+                );
               },
             ),
           ]),
@@ -240,7 +245,10 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
     Get.back();
     final uri = Uri(scheme: 'tel', path: phone);
     if (!await launchUrl(uri)) {
-      Get.snackbar('تعذر الاتصال', 'لا يوجد تطبيق اتصال متاح');
+      AppFailureNotice.show(
+        title: 'تعذر الاتصال',
+        message: 'لا يوجد تطبيق اتصال متاح',
+      );
     }
   }
 
@@ -248,7 +256,10 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
     Get.back();
     final uri = Uri.parse('https://wa.me/$phone');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('تعذر فتح واتساب', 'تأكد من تثبيت واتساب على الجهاز');
+      AppFailureNotice.show(
+        title: 'تعذر فتح واتساب',
+        message: 'تأكد من تثبيت واتساب على الجهاز',
+      );
     }
   }
 

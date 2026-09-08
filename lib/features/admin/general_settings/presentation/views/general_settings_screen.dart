@@ -13,6 +13,9 @@ import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 
 class GeneralSettingsScreen extends StatefulWidget {
   const GeneralSettingsScreen({Key? key}) : super(key: key);
@@ -1044,6 +1047,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     final items = userType == 'admin'
         ? <_SettingsItem>[
             _SettingsItem(
+              icon: Icons.history_rounded,
+              iconColor: const Color(0xFF6B65BD),
+              titleKey: 'activityLog',
+              descriptionKey: 'سجل عمليات ونشاطات النظام',
+              onTap: () => Get.toNamed(AppRoutes.ADMINACTIVTILOGSCREEN),
+            ),
+            _SettingsItem(
               icon: Icons.category_outlined,
               iconColor: const Color(0xFF6B65BD),
               titleKey: 'categoryManagement',
@@ -1291,12 +1301,16 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    Get.snackbar(
-      isError ? 'تنبيه' : 'تم',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-      colorText: Colors.white,
+    if (!isError) {
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
+      );
+      return;
+    }
+    AppFailureNotice.show(
+      title: 'تنبيه',
+      message: message,
     );
   }
 
@@ -1420,10 +1434,9 @@ class _PasswordResetCodeReportCard extends StatelessWidget {
                 tooltip: 'copy'.tr,
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: row.token));
-                  Get.snackbar(
-                    'copied'.tr,
-                    row.token,
-                    snackPosition: SnackPosition.BOTTOM,
+                  AppSuccessNotice.show(
+                    title: 'copied'.tr,
+                    message: row.token,
                   );
                 },
                 icon: const Icon(Icons.copy_outlined),

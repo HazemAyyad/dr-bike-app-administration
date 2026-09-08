@@ -4,6 +4,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Controller for the global "تقرير النقاط" screen. Aggregates earned /
 /// deducted / net points + reward amounts across all (or selected)
 /// employees, with optional embedded logs.
@@ -66,8 +67,10 @@ class EmployeePointsReportController extends GetxController {
       );
     } on Failure catch (e) {
       errorMessage.value = e.errMessage;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {

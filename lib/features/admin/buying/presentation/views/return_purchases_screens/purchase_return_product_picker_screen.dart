@@ -10,6 +10,7 @@ import '../../../../sales/presentation/widgets/new_instant_sale/instant_sale_pro
 import '../../../../sales/presentation/widgets/new_instant_sale/instant_sale_qty_stepper.dart';
 import '../../controllers/return_purchases_controller.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class PurchaseReturnProductPickerScreen extends StatefulWidget {
   const PurchaseReturnProductPickerScreen({Key? key}) : super(key: key);
 
@@ -496,10 +497,10 @@ class _ReturnProductCard extends StatelessWidget {
     PurchaseReturnDraftLine line,
   ) async {
     if (line.available <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لا توجد كمية متاحة من هذا المنتج في المخزون'),
-        ),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'لا توجد كمية متاحة من هذا المنتج في المخزون',
       );
       return;
     }

@@ -13,6 +13,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../utils/signature_image_processor.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeSignatureCapture {
   const EmployeeSignatureCapture({
     required this.originalBytes,
@@ -99,7 +100,10 @@ Future<EmployeeSignatureCapture?> showEmployeeSignatureCapture(
     processed = await processSignatureImage(original);
   } catch (error) {
     if (Get.isDialogOpen ?? false) Get.back();
-    Get.snackbar('تعذر تجهيز التوقيع', '$error');
+    AppFailureNotice.show(
+      title: 'تعذر تجهيز التوقيع',
+      message: '$error',
+    );
     return null;
   }
   if (Get.isDialogOpen ?? false) Get.back();

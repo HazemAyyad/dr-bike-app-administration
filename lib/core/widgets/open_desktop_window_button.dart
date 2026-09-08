@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../services/desktop_window_service.dart';
 
+import '../helpers/app_failure_notice.dart';
 class OpenDesktopWindowButton extends StatelessWidget {
   const OpenDesktopWindowButton({
     Key? key,
@@ -29,7 +30,10 @@ class OpenDesktopWindowButton extends StatelessWidget {
           title: title?.tr,
         );
         if (!ok) {
-          Get.snackbar('error'.tr, 'openInNewWindowFailed'.tr);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'openInNewWindowFailed'.tr,
+          );
         }
       },
     );

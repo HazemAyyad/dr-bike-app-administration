@@ -74,8 +74,17 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
           SizedBox(width: 10.w),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        color: AppColors.primaryColor,
+        onRefresh: () async {
+          await Future.wait([
+            controller.getMaintenancesData(),
+            controller.loadMaintenanceDailySession(),
+          ]);
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
           GetBuilder<MaintenanceController>(
             id: 'maintenanceSearchBar',
             builder: (_) => SliverToBoxAdapter(
@@ -174,8 +183,9 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
             ),
           ),
           const MaintenanceDataWidget(),
-          SliverToBoxAdapter(child: SizedBox(height: 60.h)),
-        ],
+            SliverToBoxAdapter(child: SizedBox(height: 60.h)),
+          ],
+        ),
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () => controller.startNewMaintenanceFlow(

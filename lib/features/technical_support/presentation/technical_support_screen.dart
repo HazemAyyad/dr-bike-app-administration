@@ -19,6 +19,7 @@ import '../../../core/utils/app_colors.dart';
 import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../data/support_service.dart';
 
+import '../../../core/helpers/app_failure_notice.dart';
 class TechnicalSupportScreen extends StatefulWidget {
   final int? conversationId;
 
@@ -378,8 +379,10 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
 
   void _message(String text) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    AppFailureNotice.show(
+      context: context,
+      title: 'خطأ',
+      message: text,
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../sales_orders/data/models/sales_order_model.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class _PartnerAddressOption {
   const _PartnerAddressOption({required this.city, required this.village});
   final ShiplyCityModel city;
@@ -452,12 +453,10 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
     final cityId = asInt(row['shiply_city_id']);
     final villageId = asInt(row['shiply_village_id']);
     if (cityId <= 0 || villageId <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'أكمل مدينة وقرية التوصيل المطلوبة قبل اختيار العنوان',
-          ),
-        ),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'أكمل مدينة وقرية التوصيل المطلوبة قبل اختيار العنوان',
       );
       await _edit(row);
       return;

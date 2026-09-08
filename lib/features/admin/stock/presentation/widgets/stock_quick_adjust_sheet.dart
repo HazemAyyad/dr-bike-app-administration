@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockQuickAdjustResult {
   final int quantity;
   final String? note;
@@ -59,7 +61,10 @@ class _StockQuickAdjustSheetState extends State<_StockQuickAdjustSheet> {
   void _submit() {
     final parsed = int.tryParse(_qtyController.text.trim());
     if (parsed == null || parsed < 1) {
-      Get.snackbar('error'.tr, 'invalidQuantity'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidQuantity'.tr,
+      );
       return;
     }
     final signed = _subtract ? -parsed : parsed;

@@ -9,6 +9,7 @@ import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/daily_session_model.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class SalesDailyAdminController extends GetxController {
   final SalesDatasource datasource;
@@ -70,7 +71,10 @@ class SalesDailyAdminController extends GetxController {
       );
       return;
     }
-    Get.snackbar('success'.tr, message);
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: message,
+    );
   }
 
   Future<void> approveClosing({

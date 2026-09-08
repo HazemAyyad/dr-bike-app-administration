@@ -58,7 +58,9 @@ import '../widgets/new_instant_sale/instant_sale_quantity_dialog.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import 'sales_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// GetX tag for payment fields on the new instant sale screen.
 const String kInstantSalePaymentTag = 'instant_sale_payment';
 const String kSalesOrderPaymentTag = 'sales_order_payment';
@@ -718,12 +720,16 @@ class SalesController extends GetxController
         await ds.rejectSalesCancellation(request.id);
       }
       await loadDailySession();
-      Get.snackbar(
-        'success'.tr,
-        approve ? 'تمت الموافقة على طلب الإلغاء' : 'تم رفض طلب الإلغاء',
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message:
+            approve ? 'تمت الموافقة على طلب الإلغاء' : 'تم رفض طلب الإلغاء',
       );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -732,9 +738,15 @@ class SalesController extends GetxController
       final ds = Get.find<SalesDatasource>();
       await ds.rejectDailyClosing(closingRequestId: requestId);
       await loadDailySession();
-      Get.snackbar('success'.tr, 'تم رفض طلب إغلاق الصندوق');
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تم رفض طلب إغلاق الصندوق',
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -758,9 +770,15 @@ class SalesController extends GetxController
         transfers: const [],
       );
       await loadDailySession();
-      Get.snackbar('success'.tr, 'تمت الموافقة على إغلاق الصندوق');
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تمت الموافقة على إغلاق الصندوق',
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -843,7 +861,10 @@ class SalesController extends GetxController
                     : payload.isReopenPending
                         ? 'salesDailyReopenPending'.tr
                         : 'salesDailyDayClosed'.tr;
-    Get.snackbar('error'.tr, message, backgroundColor: Colors.red);
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
+    );
     return true;
   }
 
@@ -963,10 +984,9 @@ class SalesController extends GetxController
         payment?.clearDailySalesBox();
         payment?.boxIdController.clear();
         payment?.selectedBox.value = null;
-        Get.snackbar(
-          'error'.tr,
-          'salesDailyNoSessionOpen'.tr,
-          backgroundColor: Colors.red,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyNoSessionOpen'.tr,
         );
         return false;
       }
@@ -1025,7 +1045,10 @@ class SalesController extends GetxController
       await saveLocalInstantSaleDraft();
       return hasLocalInstantSaleDraft;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     }
   }
@@ -1059,7 +1082,10 @@ class SalesController extends GetxController
     try {
       await requestDailyOpen();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -1228,10 +1254,9 @@ class SalesController extends GetxController
 
   bool confirmMaintenancePickerAndPop() {
     if (!canContinueFromPicker) {
-      Get.snackbar(
-        'error'.tr,
-        'instantSaleCartEmpty'.tr,
-        backgroundColor: Colors.red,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSaleCartEmpty'.tr,
       );
       return false;
     }
@@ -1669,7 +1694,10 @@ class SalesController extends GetxController
 
     return result.fold<ProductModel?>(
       (f) {
-        Get.snackbar('error'.tr, f.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: f.errMessage,
+        );
         return null;
       },
       (prices) {
@@ -1678,10 +1706,9 @@ class SalesController extends GetxController
           unitPrice: prices.retail,
           wholesalePrice: prices.wholesale > 0 ? prices.wholesale : null,
         );
-        Get.snackbar(
-          'success'.tr,
-          'instantSaleProductPricesSaved'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'instantSaleProductPricesSaved'.tr,
         );
         return productById(product.id) ??
             product.copyWith(
@@ -2031,9 +2058,9 @@ class SalesController extends GetxController
       return;
     }
     if (next > pkg.maxSellableQuantity) {
-      Get.snackbar(
-        'error'.tr,
-        'packageQtyExceedsAvailable'.trParams({
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'packageQtyExceedsAvailable'.trParams({
           'qty': '$next',
           'max': '${pkg.maxSellableQuantity}',
         }),
@@ -2343,8 +2370,10 @@ class SalesController extends GetxController
     final hasProducts = cartLines.isNotEmpty;
 
     if (!hasPackage && !hasProducts) {
-      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
-          backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSaleCartEmpty'.tr,
+      );
       return;
     }
 
@@ -2353,7 +2382,10 @@ class SalesController extends GetxController
         items.first.quantityController.text,
       );
       if (qtyError != null) {
-        Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: qtyError,
+        );
         return;
       }
     }
@@ -2371,8 +2403,10 @@ class SalesController extends GetxController
     final hasProducts = cartLines.where((l) => !l.isDisposed).isNotEmpty;
 
     if (!hasProducts) {
-      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
-          backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSaleCartEmpty'.tr,
+      );
       return;
     }
 
@@ -2621,8 +2655,10 @@ class SalesController extends GetxController
     if (activeEditInstantSaleId.value != null) return false;
 
     if (!canContinueFromPicker) {
-      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
-          backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSaleCartEmpty'.tr,
+      );
       return false;
     }
 
@@ -2795,11 +2831,9 @@ class SalesController extends GetxController
       return true;
     } catch (e) {
       _instantSaleDebug('resume failed', e);
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     }
@@ -3167,10 +3201,9 @@ class SalesController extends GetxController
           Future<Map<String, String>?> closeWithMode(String mode) async {
             final reason = reasonCtrl.text.trim();
             if (reason.isEmpty) {
-              Get.snackbar(
-                'error'.tr,
-                'سبب تعديل فاتورة من صندوق مغلق مطلوب.',
-                backgroundColor: Colors.red,
+              AppFailureNotice.show(
+                title: 'error'.tr,
+                message: 'سبب تعديل فاتورة من صندوق مغلق مطلوب.',
               );
               return null;
             }
@@ -3314,10 +3347,9 @@ class SalesController extends GetxController
       final invoice =
           await invoiceModelUsecase.call(invoiceId: sale.id.toString());
       if ((invoice.status ?? '').toLowerCase() == 'cancelled') {
-        Get.snackbar(
-          'error'.tr,
-          'instantSaleAlreadyCancelled'.tr,
-          backgroundColor: Colors.red,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'instantSaleAlreadyCancelled'.tr,
         );
         return;
       }
@@ -3343,7 +3375,10 @@ class SalesController extends GetxController
           : AppRoutes.INSTANTSALEPRODUCTPICKER);
     } catch (e) {
       clearActiveEditInstantSale();
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isLoading(false);
     }
@@ -3380,7 +3415,10 @@ class SalesController extends GetxController
           : AppRoutes.INSTANTSALEPRODUCTPICKER);
     } catch (e) {
       clearActiveEditInstantSale();
-      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isLoading(false);
     }
@@ -3666,13 +3704,9 @@ class SalesController extends GetxController
         }
         await onPickerPartnerSelected(model);
 
-        Get.snackbar(
-          'success'.tr,
-          response['message']?.toString() ?? 'success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: response['message']?.toString() ?? 'success'.tr,
         );
         return true;
       }
@@ -3767,13 +3801,9 @@ class SalesController extends GetxController
   }
 
   void _showQuickAddError(String message) {
-    Get.snackbar(
-      'error'.tr,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
     );
   }
 
@@ -4324,8 +4354,10 @@ class SalesController extends GetxController
         .replaceAll(',', '')
         .replaceAll('،', '')
         .trim();
-    if (_instantSalePaymentAmountTouched ||
-        (onlyIfCashEmpty && current.isNotEmpty)) {
+    final currentAmount = double.tryParse(current) ?? 0;
+    final exceedsInvoiceTotal = currentAmount > totalCost.value + 0.0001;
+    if ((_instantSalePaymentAmountTouched && !exceedsInvoiceTotal) ||
+        (onlyIfCashEmpty && current.isNotEmpty && !exceedsInvoiceTotal)) {
       payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
       refreshInstantSalePaymentSummary();
       return;
@@ -4353,11 +4385,9 @@ class SalesController extends GetxController
       return true;
     }
 
-    Get.snackbar(
-      'error'.tr,
-      'عند وجود مبلغ باقي يجب اختيار زبون أو تاجر.',
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'عند وجود مبلغ باقي يجب اختيار زبون أو تاجر.',
     );
     return false;
   }
@@ -4387,8 +4417,10 @@ class SalesController extends GetxController
       final hasProducts = cartLines.isNotEmpty;
 
       if (!hasPackage && !hasProducts) {
-        Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
-            backgroundColor: Colors.red);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'instantSaleCartEmpty'.tr,
+        );
         return;
       }
 
@@ -4397,7 +4429,10 @@ class SalesController extends GetxController
           items.first.quantityController.text,
         );
         if (qtyError != null && !isAdjustmentInstantSale) {
-          Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: qtyError,
+          );
           return;
         }
       }
@@ -5387,7 +5422,10 @@ class SalesController extends GetxController
         .whereType<PastedInstantSaleProductRequest>()
         .toList();
     if (parsed.isEmpty) {
-      Get.snackbar('error'.tr, 'instantSalePasteListEmpty'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSalePasteListEmpty'.tr,
+      );
       return;
     }
 

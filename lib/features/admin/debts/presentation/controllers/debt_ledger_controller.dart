@@ -40,7 +40,9 @@ import '../ledger/transaction_entry_screen.dart';
 import '../ledger/ledger_pick_person_sheet.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 enum LedgerReportDetailLevel {
   summary,
   detailed,
@@ -395,7 +397,10 @@ class DebtLedgerController extends GetxController {
         categoryId: selectedCategoryId.value,
       );
       result.fold(
-        (failure) => Get.snackbar('error'.tr, failure.errMessage),
+        (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
         (data) => people.assignAll(data),
       );
     }
@@ -437,7 +442,10 @@ class DebtLedgerController extends GetxController {
     final nextPeople = <LedgerPerson>[];
     for (final result in results) {
       result.fold(
-        (failure) => Get.snackbar('error'.tr, failure.errMessage),
+        (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
         nextPeople.addAll,
       );
     }
@@ -452,7 +460,10 @@ class DebtLedgerController extends GetxController {
   Future<void> fetchCategories() async {
     final result = await repository.getCategories();
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (list) => categories.assignAll(list),
     );
   }
@@ -485,9 +496,11 @@ class DebtLedgerController extends GetxController {
     );
 
     if (saved) {
-      Get.snackbar(
-        'success'.tr,
-        makePrivate ? 'ledgerMovedToPrivate'.tr : 'ledgerRemovedFromPrivate'.tr,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: makePrivate
+            ? 'ledgerMovedToPrivate'.tr
+            : 'ledgerRemovedFromPrivate'.tr,
       );
     }
   }
@@ -523,7 +536,10 @@ class DebtLedgerController extends GetxController {
     );
     final success = result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (_) => true,
@@ -539,7 +555,10 @@ class DebtLedgerController extends GetxController {
     final result = await repository.deleteCategory(id);
     final success = result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (_) => true,
@@ -639,7 +658,10 @@ class DebtLedgerController extends GetxController {
       balanceScope: selectedBalanceScope.value,
     );
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (data) {
         personDetail.value = data;
         selectedPerson = data.person;
@@ -695,7 +717,10 @@ class DebtLedgerController extends GetxController {
 
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (updated) {
@@ -718,7 +743,10 @@ class DebtLedgerController extends GetxController {
 
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (updated) {
@@ -741,7 +769,10 @@ class DebtLedgerController extends GetxController {
 
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (updated) {
@@ -791,7 +822,10 @@ class DebtLedgerController extends GetxController {
     result.fold(
       (failure) {
         transactionActivity.clear();
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
       },
       (list) => transactionActivity.assignAll(list),
     );
@@ -809,7 +843,10 @@ class DebtLedgerController extends GetxController {
     result.fold(
       (failure) {
         personActivity.clear();
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
       },
       (list) => personActivity.assignAll(list),
     );
@@ -926,11 +963,17 @@ class DebtLedgerController extends GetxController {
 
     final result = await repository.deleteTransaction(id);
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (_) {
         Get.back(result: true);
         Future.delayed(const Duration(milliseconds: 300), () {
-          Get.snackbar('success'.tr, 'ledgerDeleted'.tr);
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'ledgerDeleted'.tr,
+          );
         });
       },
     );
@@ -947,11 +990,17 @@ class DebtLedgerController extends GetxController {
 
     final result = await repository.archiveTransaction(id);
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (_) {
         Get.back(result: true);
         Future.delayed(const Duration(milliseconds: 300), () {
-          Get.snackbar('success'.tr, 'ledgerArchived'.tr);
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'ledgerArchived'.tr,
+          );
         });
       },
     );
@@ -979,7 +1028,10 @@ class DebtLedgerController extends GetxController {
     );
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (tx) {
@@ -1159,7 +1211,10 @@ class DebtLedgerController extends GetxController {
       currency: selectedCurrency.value,
     );
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (data) => personArchiveDetail.value = data,
     );
     personArchiveLoading(false);
@@ -1168,7 +1223,10 @@ class DebtLedgerController extends GetxController {
   void openArchiveSheet() {
     final txs = personDetail.value?.transactions ?? [];
     if (txs.isEmpty) {
-      Get.snackbar('error'.tr, 'ledgerNoTransactions'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerNoTransactions'.tr,
+      );
       return;
     }
     Get.bottomSheet(
@@ -1179,7 +1237,10 @@ class DebtLedgerController extends GetxController {
       if (archived == true) {
         await loadPersonDetail();
         await fetchSummary();
-        Get.snackbar('success'.tr, 'ledgerArchived'.tr);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'ledgerArchived'.tr,
+        );
       }
     });
   }
@@ -1199,7 +1260,10 @@ class DebtLedgerController extends GetxController {
       currency: selectedCurrency.value,
     );
     result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (data) => personDeletedDetail.value = data,
     );
     personDeletedLoading(false);
@@ -1215,7 +1279,10 @@ class DebtLedgerController extends GetxController {
     final result = await repository.archiveTransactionsBulk(ids);
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (_) => true,
@@ -1226,7 +1293,10 @@ class DebtLedgerController extends GetxController {
     final result = await repository.restoreTransactionsBulk(ids);
     return await result.fold(
       (failure) async {
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
         return false;
       },
       (_) async {
@@ -1291,7 +1361,10 @@ class DebtLedgerController extends GetxController {
     );
     return result.fold(
       (failure) {
-        Get.snackbar('error'.tr, 'ledgerReportFailed'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'ledgerReportFailed'.tr,
+        );
         return null;
       },
       (report) async {
@@ -1310,10 +1383,9 @@ class DebtLedgerController extends GetxController {
       final file = await downloadPersonReport(detailLevel: detailLevel);
       if (file != null) await openDownloadedReport(file);
     } catch (error) {
-      Get.snackbar(
-        'تعذر فتح التقرير',
-        error.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'تعذر فتح التقرير',
+        message: error.toString(),
       );
     } finally {
       isGeneratingReport.value = false;
@@ -1337,13 +1409,19 @@ class DebtLedgerController extends GetxController {
         personDetail.value?.balanceFor(currency).balance ??
         0;
     if (balance <= 0) {
-      Get.snackbar('error'.tr, 'ledgerNoDebtToCollect'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerNoDebtToCollect'.tr,
+      );
       return;
     }
 
     final phone = selectedPerson!.phone?.replaceAll(RegExp(r'\D'), '') ?? '';
     if (phone.isEmpty) {
-      Get.snackbar('error'.tr, 'ledgerNoPhone'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerNoPhone'.tr,
+      );
       return;
     }
 
@@ -1526,7 +1604,10 @@ class DebtLedgerController extends GetxController {
   }) async {
     final shareUrl = await fetchPersonShareUrl(detailLevel: detailLevel);
     if (shareUrl == null) {
-      Get.snackbar('error'.tr, 'ledgerShareLinkFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerShareLinkFailed'.tr,
+      );
       return;
     }
 
@@ -1845,7 +1926,10 @@ class TransactionCalculatorController extends GetxController {
 
     final amount = double.tryParse(display.value) ?? 0;
     if (amount <= 0) {
-      Get.snackbar('error'.tr, 'ledgerAmountRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerAmountRequired'.tr,
+      );
       return;
     }
 
@@ -1872,12 +1956,11 @@ class TransactionCalculatorController extends GetxController {
 
       result.fold(
         (failure) {
-          Get.snackbar(
-            'error'.tr,
-            failure.errMessage.isNotEmpty
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage.isNotEmpty
                 ? failure.errMessage
                 : 'ledgerSaveFailed'.tr,
-            duration: const Duration(seconds: 4),
           );
         },
         (createResult) {

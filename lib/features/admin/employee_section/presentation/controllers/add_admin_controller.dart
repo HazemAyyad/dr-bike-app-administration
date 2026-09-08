@@ -5,6 +5,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/admin_user_model.dart';
 import '../../domain/usecases/admin_users_usecase.dart';
 import 'employee_section_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class AddAdminController extends GetxController {
   final ManageAdminUserUsecase manageAdminUserUsecase;
@@ -118,8 +119,10 @@ class AddAdminController extends GetxController {
       (success) async {
         debugPrint('[AdminEdit] success message=$success');
         Get.back();
-        Get.snackbar('success'.tr, success,
-            snackPosition: SnackPosition.BOTTOM);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
+        );
         debugPrint('[AdminEdit] refreshing admin list after success');
         await sectionController.getAdminUsers();
         debugPrint('[AdminEdit] admin list refresh finished');

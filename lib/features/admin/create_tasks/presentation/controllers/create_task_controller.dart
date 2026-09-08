@@ -13,7 +13,6 @@ import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/helpers/proof_media_type.dart';
 import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/helpers/showtime.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
 import '../../../employee_tasks/presentation/controllers/employee_task_service.dart';
@@ -29,6 +28,7 @@ import '../helpers/recurrence_config_helper.dart';
 import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../widgets/horizontal_time_picker_sheet.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CreateTaskController extends GetxController {
   CreateTaskUsecase createTaskUsecase;
   GetAllEmployeeUsecase getAllEmployeeUsecase;
@@ -980,12 +980,9 @@ class CreateTaskController extends GetxController {
         }
       }
     } else {
-      Get.snackbar(
-        'info'.tr,
-        'pleaseFillAllFields'.tr,
-        backgroundColor: AppColors.redColor,
-        colorText: AppColors.whiteColor,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'pleaseFillAllFields'.tr,
       );
     }
   }
@@ -1016,10 +1013,9 @@ class CreateTaskController extends GetxController {
       if (!_closed &&
           employeeService.employeeList.isEmpty &&
           lastError != null) {
-        Get.snackbar(
-          'error'.tr,
-          'failedToLoadEmployees'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'failedToLoadEmployees'.tr,
         );
       }
     } finally {

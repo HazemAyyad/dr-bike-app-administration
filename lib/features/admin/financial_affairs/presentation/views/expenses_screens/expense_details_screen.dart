@@ -13,6 +13,7 @@ import '../../widgets/financial_image_cache.dart';
 import '../../widgets/financial_operational_ui.dart';
 import '../../widgets/financial_skeletons.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class ExpenseDetailsScreen extends GetView<ExpensesController> {
   const ExpenseDetailsScreen({Key? key}) : super(key: key);
 
@@ -33,8 +34,10 @@ class ExpenseDetailsScreen extends GetView<ExpensesController> {
                 if (salary) {
                   final periodId = expense.salaryPeriodId;
                   if (periodId == null) {
-                    Get.snackbar('ملف الراتب غير متاح',
-                        'لم يتم العثور على دورة الراتب المرتبطة بهذا القيد');
+                    AppFailureNotice.show(
+                      title: 'ملف الراتب غير متاح',
+                      message: 'لم يتم العثور على دورة الراتب المرتبطة بهذا القيد',
+                    );
                     return;
                   }
                   Get.toNamed(

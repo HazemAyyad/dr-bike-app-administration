@@ -15,6 +15,7 @@ import '../../controllers/sales_controller.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 Future<void> showInstantSaleAddProductModal(
   BuildContext context, {
   InstantSaleCartLine? editLine,
@@ -346,8 +347,10 @@ class _AddProductSheetState extends State<_AddProductSheet> {
 
     final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
     if (qty < 1) {
-      Get.snackbar('error'.tr, 'quantity'.tr,
-          backgroundColor: Colors.red, colorText: Colors.white);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'quantity'.tr,
+      );
       return;
     }
 

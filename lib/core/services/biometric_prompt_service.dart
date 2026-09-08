@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../helpers/app_success_notice.dart';
 import '../utils/app_colors.dart';
 import 'biometric_auth_service.dart';
 
+import '../helpers/app_failure_notice.dart';
 class BiometricPromptService {
   BiometricPromptService._();
 
@@ -81,12 +83,16 @@ class BiometricPromptService {
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    Get.snackbar(
-      isError ? 'تنبيه' : 'تم',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-      colorText: Colors.white,
+    if (!isError) {
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
+      );
+      return;
+    }
+    AppFailureNotice.show(
+      title: 'تنبيه',
+      message: message,
     );
   }
 }

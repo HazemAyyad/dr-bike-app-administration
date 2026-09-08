@@ -29,7 +29,9 @@ import '../../domain/usecases/get_billt_details_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
 import 'buying_serves.dart';
 import 'return_purchases_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Resolves `bill_details` whether it is top-level or under `data`.
 Map<String, dynamic> _billDetailsMap(dynamic result) {
   final m = asMap(result);
@@ -896,7 +898,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       if (response is List<int>) return Uint8List.fromList(response);
       return null;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return null;
     }
   }
@@ -962,16 +967,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
             "${directory.path}/فاتورة_${billDetails!.sellerName}${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(response);
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
+        AppSuccessNotice.show(
+          title: "fileDownloadedSuccessfully".tr,
+          message: filePath,
         );
 
         await OpenFilex.open(filePath);
       } catch (e) {
-        Get.snackbar("error".tr, e.toString());
+        AppFailureNotice.show(
+          title: "error".tr,
+          message: e.toString(),
+        );
       }
     } else {
       final result = await getBilltDetailsUsecase.call(

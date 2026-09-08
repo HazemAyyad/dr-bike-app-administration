@@ -7,6 +7,7 @@ import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/data/models/product_variant_model.dart';
 import '../../controllers/bills_controller.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 Future<List<PurchaseVariantSelection>?> showPurchaseVariantPickerSheet({
   required BuildContext context,
   required ProductModel product,
@@ -98,8 +99,10 @@ class _PurchaseVariantPickerSheetState
       final quantity = num.tryParse(draft.quantityController.text.trim()) ?? 0;
       final price = num.tryParse(draft.priceController.text.trim()) ?? -1;
       if (quantity <= 0 || price < 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تأكد من الكمية وسعر الشراء')),
+        AppFailureNotice.show(
+          context: context,
+          title: 'خطأ',
+          message: 'تأكد من الكمية وسعر الشراء',
         );
         return;
       }

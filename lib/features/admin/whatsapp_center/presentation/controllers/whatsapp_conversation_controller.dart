@@ -16,7 +16,9 @@ import 'package:flutter/services.dart';
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class WhatsAppConversationController extends GetxController {
   static const _platformChannel = MethodChannel('dr_bike/platform_info');
   static final Map<String, Future<File>> _mediaFileRequests = {};
@@ -215,7 +217,10 @@ class WhatsAppConversationController extends GetxController {
       replyingTo.value = null;
       await load();
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       sending.value = false;
     }
@@ -227,10 +232,15 @@ class WhatsAppConversationController extends GetxController {
     try {
       await api.resendMessage(id, message.id, channel: channel);
       await load(silent: true);
-      Get.snackbar('تم', 'تمت إعادة إرسال الرسالة');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تمت إعادة إرسال الرسالة',
+      );
     } catch (e) {
-      Get.snackbar('تعذر إعادة الإرسال', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'تعذر إعادة الإرسال',
+        message: e.toString(),
+      );
     } finally {
       sending.value = false;
     }
@@ -244,10 +254,15 @@ class WhatsAppConversationController extends GetxController {
         conversation.value = WhatsAppConversation.fromJson(
             Map<String, dynamic>.from(result['conversation'] as Map));
       }
-      Get.snackbar(
-          'تم', employeeId == null ? 'تم إلغاء التعيين' : 'تم تعيين المحادثة');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: employeeId == null ? 'تم إلغاء التعيين' : 'تم تعيين المحادثة',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     }
   }
 
@@ -264,9 +279,15 @@ class WhatsAppConversationController extends GetxController {
         availableTags.assignAll(tagsBlock.whereType<Map>().map((item) =>
             ConversationTag.fromJson(Map<String, dynamic>.from(item))));
       }
-      Get.snackbar('تم', 'تم تحديث وسوم المحادثة');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم تحديث وسوم المحادثة',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     }
   }
 
@@ -283,10 +304,15 @@ class WhatsAppConversationController extends GetxController {
     try {
       await api.requestConversationContinuation(id);
       await load(silent: true);
-      Get.snackbar('تم الإرسال', 'تم إرسال طلب الاستمرار إلى الزبون');
+      AppSuccessNotice.show(
+        title: 'تم الإرسال',
+        message: 'تم إرسال طلب الاستمرار إلى الزبون',
+      );
     } catch (e) {
-      Get.snackbar('تعذر إرسال القالب', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'تعذر إرسال القالب',
+        message: e.toString(),
+      );
     } finally {
       sending.value = false;
     }
@@ -305,9 +331,15 @@ class WhatsAppConversationController extends GetxController {
       await api.hideMessage(id, message.id);
       messages.removeWhere((item) => item.id == message.id);
       if (replyingTo.value?.id == message.id) replyingTo.value = null;
-      Get.snackbar('تم', 'تم حذف الرسالة من عرضك فقط');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حذف الرسالة من عرضك فقط',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     }
   }
 
@@ -337,10 +369,9 @@ class WhatsAppConversationController extends GetxController {
       );
       await load(silent: true);
     } catch (e) {
-      Get.snackbar(
-        'تعذر تجهيز السلة',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'تعذر تجهيز السلة',
+        message: e.toString(),
       );
     } finally {
       preparingCommerceMessageId.value = null;
@@ -368,7 +399,10 @@ class WhatsAppConversationController extends GetxController {
       await load(silent: true);
       return true;
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
       return false;
     } finally {
       sending.value = false;
@@ -467,7 +501,10 @@ class WhatsAppConversationController extends GetxController {
       );
     } catch (e) {
       _recordingIsVoiceNote = false;
-      Get.snackbar('خطأ', 'تعذر بدء التسجيل: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر بدء التسجيل: $e',
+      );
     }
   }
 
@@ -504,7 +541,10 @@ class WhatsAppConversationController extends GetxController {
         recordingPaused.value = true;
       }
     } catch (e) {
-      Get.snackbar('خطأ', 'تعذر إيقاف أو متابعة التسجيل: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر إيقاف أو متابعة التسجيل: $e',
+      );
     }
   }
 
@@ -524,7 +564,10 @@ class WhatsAppConversationController extends GetxController {
       );
     } catch (e) {
       recording.value = false;
-      Get.snackbar('خطأ', 'تعذر إرسال التسجيل: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر إرسال التسجيل: $e',
+      );
     } finally {
       recordingDuration.value = Duration.zero;
       recordingPaused.value = false;
@@ -546,7 +589,10 @@ class WhatsAppConversationController extends GetxController {
           voiceNote: voiceNote);
       await load(silent: true);
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       sending.value = false;
     }
@@ -612,7 +658,10 @@ class WhatsAppConversationController extends GetxController {
         await OpenFilex.open(file.path);
       }
     } catch (e) {
-      Get.snackbar('خطأ', 'تعذر فتح المرفق: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر فتح المرفق: $e',
+      );
     } finally {
       mediaLoading.value = false;
     }
@@ -742,7 +791,10 @@ class WhatsAppConversationController extends GetxController {
     final uri = Uri.tryParse(url);
     if (uri == null ||
         !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('تعذر فتح الرابط', url, snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'تعذر فتح الرابط',
+        message: url,
+      );
     }
   }
 
@@ -755,11 +807,15 @@ class WhatsAppConversationController extends GetxController {
         name:
             '${message.channel}_${message.id}_${DateTime.now().millisecondsSinceEpoch}',
       );
-      Get.snackbar('تم', 'تم حفظ الصورة في معرض الصور',
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ الصورة في معرض الصور',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', 'تعذر حفظ الصورة: $e',
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'تعذر حفظ الصورة: $e',
+      );
     }
   }
 
@@ -767,11 +823,16 @@ class WhatsAppConversationController extends GetxController {
     try {
       await api.linkPerson(id, type, name);
       await load();
-      Get.snackbar(
-          'تم', type == 'customer' ? 'تمت إضافة الزبون' : 'تمت إضافة التاجر');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: type == 'customer' ? 'تمت إضافة الزبون' : 'تمت إضافة التاجر',
+      );
       return true;
     } catch (e) {
-      Get.snackbar('خطأ', e.toString());
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
       return false;
     }
   }

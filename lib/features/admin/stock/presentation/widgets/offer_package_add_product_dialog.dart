@@ -9,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../controllers/offer_packages_controller.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class OfferPackageAddProductDialog extends StatefulWidget {
   const OfferPackageAddProductDialog({
     Key? key,
@@ -169,12 +170,18 @@ class _OfferPackageAddProductDialogState
 
   void _save() {
     if (selectedProduct == null) {
-      Get.snackbar('error'.tr, 'selectProduct'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'selectProduct'.tr,
+      );
       return;
     }
     final qty = int.tryParse(quantityController.text.trim()) ?? 0;
     if (qty < 1) {
-      Get.snackbar('error'.tr, 'requiredField'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'requiredField'.tr,
+      );
       return;
     }
     Get.back(

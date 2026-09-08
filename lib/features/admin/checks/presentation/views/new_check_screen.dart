@@ -23,6 +23,8 @@ import '../../../../../routes/app_routes.dart';
 import '../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../controllers/checks_controller.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class NewCheckScreen extends GetView<ChecksController> {
   const NewCheckScreen({Key? key}) : super(key: key);
 
@@ -1295,7 +1297,10 @@ class _IncomingBatchCreateScaffoldState
     if (!mounted) return;
 
     if (useSharedImages && controller.checkFrontImage.value == null) {
-      Get.snackbar('error'.tr, 'checkFrontImage'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'checkFrontImage'.tr,
+      );
       return;
     }
 
@@ -1664,7 +1669,10 @@ class _SharedBatchImagesDialog extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {
                         if (frontImage.value == null) {
-                          Get.snackbar('error'.tr, 'checkFrontImage'.tr);
+                          AppFailureNotice.show(
+                            title: 'error'.tr,
+                            message: 'checkFrontImage'.tr,
+                          );
                           return;
                         }
                         Navigator.pop(context, true);

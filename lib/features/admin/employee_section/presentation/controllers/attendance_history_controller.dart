@@ -12,7 +12,9 @@ import '../../data/models/employee_attendance_history_model.dart';
 import '../../data/models/employee_advances_model.dart';
 import '../../domain/usecases/get_employee_attendance_history_usecase.dart';
 import '../../utils/employee_attendance_history_pdf_helper.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AttendanceHistoryController extends GetxController {
   AttendanceHistoryController({
     required this.employeeId,
@@ -112,12 +114,16 @@ class AttendanceHistoryController extends GetxController {
       await loadAdvances(silent: true);
     } on Failure catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (!silent) isLoading.value = false;
     }
@@ -161,10 +167,9 @@ class AttendanceHistoryController extends GetxController {
         note: note,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
@@ -185,16 +190,17 @@ class AttendanceHistoryController extends GetxController {
       } else {
         message = 'تمت إضافة السلفة، لكن لم يرجع من السيرفر تأكيد الصندوق.';
       }
-      Get.snackbar(
-        'success'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
       );
       await loadAdvances(silent: true);
       return true;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isAdvancesLoading.value = false;
@@ -214,23 +220,23 @@ class AttendanceHistoryController extends GetxController {
         note: note,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
-      Get.snackbar(
-        'success'.tr,
-        raw['message']?.toString() ?? 'تم تعديل السلفة',
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'تم تعديل السلفة',
       );
       await loadAdvances(silent: true);
       return true;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isAdvancesLoading.value = false;
@@ -248,23 +254,23 @@ class AttendanceHistoryController extends GetxController {
         reason: reason,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
-      Get.snackbar(
-        'success'.tr,
-        raw['message']?.toString() ?? 'تم إلغاء السلفة',
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'تم إلغاء السلفة',
       );
       await loadAdvances(silent: true);
       return true;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isAdvancesLoading.value = false;
@@ -428,10 +434,9 @@ class AttendanceHistoryController extends GetxController {
             'employee_attendance_${employeeId}_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     } finally {
       isExporting.value = false;
@@ -457,17 +462,15 @@ class AttendanceHistoryController extends GetxController {
         advancesTotal: advances.total,
         approvedAdvancesTotal: advances.approvedTotal,
       );
-      Get.snackbar(
-        'fileDownloadedSuccessfully'.tr,
-        file.path,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'fileDownloadedSuccessfully'.tr,
+        message: file.path,
       );
       await OpenFilex.open(file.path);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     } finally {
       isExporting.value = false;
@@ -482,32 +485,28 @@ class AttendanceHistoryController extends GetxController {
           .manualEmployeeCheckout(employeeId: employeeId);
       final status = raw['status']?.toString() ?? '';
       if (status != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
-      Get.snackbar(
-        'success'.tr,
-        raw['message']?.toString() ?? 'manualCheckoutSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'manualCheckoutSuccess'.tr,
       );
       await load();
       return true;
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return false;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     } finally {
@@ -530,32 +529,28 @@ class AttendanceHistoryController extends GetxController {
         checkOutAt: checkOutAt,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
-      Get.snackbar(
-        'success'.tr,
-        raw['message']?.toString() ?? 'settingsUpdated'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: raw['message']?.toString() ?? 'settingsUpdated'.tr,
       );
       await load();
       return true;
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return false;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     }
@@ -574,17 +569,15 @@ class AttendanceHistoryController extends GetxController {
       );
     } on ServerException catch (e) {
       weeklyOffImportCandidates.clear();
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } catch (e) {
       weeklyOffImportCandidates.clear();
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isWeeklyOffImportLoading.value = false;
@@ -603,34 +596,30 @@ class AttendanceHistoryController extends GetxController {
         date: date,
       );
       if (raw['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          raw['message']?.toString() ?? 'error'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
         );
         return false;
       }
 
-      Get.snackbar(
-        'success'.tr,
-        'weeklyOffImportSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'weeklyOffImportSuccess'.tr,
       );
       weeklyOffImportCandidates.removeWhere((d) => d.date == date);
       await load(silent: true);
       return true;
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return false;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     } finally {

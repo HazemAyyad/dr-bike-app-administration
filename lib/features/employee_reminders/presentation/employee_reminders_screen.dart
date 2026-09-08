@@ -16,8 +16,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+
+import '../../../core/helpers/app_success_notice.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/helpers/app_failure_notice.dart';
 class EmployeeRemindersScreen extends StatefulWidget {
   final bool isAdmin;
 
@@ -161,7 +164,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
       scheduledTime = TimeOfDay.fromDateTime(scheduledAt);
       await _load();
       if (mounted) Navigator.pop(context);
-      _message('reminderSaved'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'reminderSaved'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     } finally {
@@ -173,7 +179,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
     try {
       await datasource.deleteReminder(id);
       await _load();
-      _message('reminderDeleted'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'reminderDeleted'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     }
@@ -210,7 +219,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
     try {
       await datasource.markDone(id);
       await _load();
-      _message('reminderDone'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'reminderDone'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     }
@@ -220,7 +232,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
     try {
       await datasource.snooze(id, minutes: minutes);
       await _load();
-      _message('reminderSnoozed'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'reminderSnoozed'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     }
@@ -331,8 +346,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
 
   void _message(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    AppFailureNotice.show(
+      context: context,
+      title: 'خطأ',
+      message: message,
     );
   }
 

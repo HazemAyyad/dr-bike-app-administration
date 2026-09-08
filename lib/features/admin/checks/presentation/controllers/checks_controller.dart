@@ -32,7 +32,9 @@ import '../../domain/usecases/chash_to_box_usecase.dart';
 import '../../domain/repositories/checks_repository.dart';
 import '../widgets/check_details.dart';
 import 'checks_serves.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ChecksController extends GetxController
     with GetSingleTickerProviderStateMixin {
   static const _exchangeFromKey = 'checks_exchange_from_currency';
@@ -284,7 +286,10 @@ class ChecksController extends GetxController
   }) {
     final count = int.tryParse(incomingBatchCountController.text.trim()) ?? 0;
     if (count < 1) {
-      Get.snackbar('error'.tr, 'incomingBatchCountRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'incomingBatchCountRequired'.tr,
+      );
       return;
     }
 
@@ -465,10 +470,9 @@ class ChecksController extends GetxController
       incoming ? canCreateIncomingChecks : canCreateOutgoingChecks;
 
   void _showChecksPermissionDenied() {
-    Get.snackbar(
-      'error'.tr,
-      'لا تملك صلاحية تنفيذ هذه العملية',
-      snackPosition: SnackPosition.BOTTOM,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'لا تملك صلاحية تنفيذ هذه العملية',
     );
   }
 
@@ -890,11 +894,9 @@ class ChecksController extends GetxController
       (failure) {
         isLoading(false);
         update();
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (success) async {
@@ -912,11 +914,9 @@ class ChecksController extends GetxController
         //     Get.back();
         //   },
         // );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -968,12 +968,7 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
-    Get.snackbar(
-      failureMessage == null ? 'success'.tr : 'error'.tr,
-      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1500),
-    );
+    _showBulkActionResult(failureMessage, successMessage, processed);
     update();
   }
 
@@ -1020,11 +1015,9 @@ class ChecksController extends GetxController
         //     Get.back();
         //   },
         // );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -1091,7 +1084,10 @@ class ChecksController extends GetxController
               onPressed: () async {
                 final phone = phoneController.text.trim();
                 if (phone.length < 8) {
-                  Get.snackbar('error'.tr, 'invalidPhoneNumber'.tr);
+                  AppFailureNotice.show(
+                    title: 'error'.tr,
+                    message: 'invalidPhoneNumber'.tr,
+                  );
                   return;
                 }
                 await api.put(
@@ -1119,7 +1115,10 @@ class ChecksController extends GetxController
       phoneController.dispose();
       return saved == true;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     }
   }
@@ -1159,12 +1158,7 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
-    Get.snackbar(
-      failureMessage == null ? 'success'.tr : 'error'.tr,
-      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1500),
-    );
+    _showBulkActionResult(failureMessage, successMessage, processed);
     update();
   }
 
@@ -1182,11 +1176,9 @@ class ChecksController extends GetxController
         isLoading(false);
         update();
 
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (success) async {
@@ -1204,11 +1196,9 @@ class ChecksController extends GetxController
         //     Get.back();
         //   },
         // );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -1248,12 +1238,7 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
-    Get.snackbar(
-      failureMessage == null ? 'success'.tr : 'error'.tr,
-      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1500),
-    );
+    _showBulkActionResult(failureMessage, successMessage, processed);
     update();
   }
 
@@ -1268,11 +1253,9 @@ class ChecksController extends GetxController
       (failure) {
         isLoading(false);
         update();
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (success) async {
@@ -1290,11 +1273,9 @@ class ChecksController extends GetxController
         //     Get.back();
         //   },
         // );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -1332,13 +1313,29 @@ class ChecksController extends GetxController
       getGeneralChecksData(),
     ]);
     isLoading(false);
-    Get.snackbar(
-      failureMessage == null ? 'success'.tr : 'error'.tr,
-      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1500),
-    );
+    _showBulkActionResult(failureMessage, successMessage, processed);
     update();
+  }
+
+  void _showBulkActionResult(
+    String? failureMessage,
+    String? successMessage,
+    int processed,
+  ) {
+    final message = failureMessage ??
+        successMessage ??
+        '${'selectedChecks'.tr}: $processed';
+    if (failureMessage == null) {
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
+      );
+      return;
+    }
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
+    );
   }
 
   // get all not cashed outgoing checks

@@ -41,38 +41,6 @@ class ReturnPurchasesList extends StatelessWidget {
   }
 }
 
-class PurchaseReturnsTableHeader extends StatelessWidget {
-  const PurchaseReturnsTableHeader({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-          decoration: BoxDecoration(
-            color: AppColors.primaryColor.withValues(alpha: .06),
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(
-                color: AppColors.primaryColor.withValues(alpha: .18)),
-          ),
-          child: Row(children: [
-            Icon(Icons.swipe_right_alt_rounded,
-                color: AppColors.primaryColor, size: 23.sp),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Text(
-                'اسحب بطاقة المرتجع من اليسار إلى اليمين لإظهار الخيارات',
-                style: TextStyle(
-                    color: AppColors.primaryColor,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700),
-              ),
-            ),
-          ]),
-        ),
-      );
-}
-
 class _ReturnMonthDivider extends StatelessWidget {
   const _ReturnMonthDivider({required this.month, required this.count});
   final String month;

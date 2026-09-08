@@ -8,6 +8,7 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../debts/data/models/debt_ledger_models.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ContactCategoriesSettingsScreen extends StatefulWidget {
   const ContactCategoriesSettingsScreen({Key? key}) : super(key: key);
 
@@ -40,7 +41,10 @@ class _ContactCategoriesSettingsScreenState
               .map((e) => ContactCategory.fromJson(e as Map<String, dynamic>)),
         );
     } catch (_) {
-      Get.snackbar('error'.tr, 'حدث خطأ أثناء تحميل التصنيفات');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'حدث خطأ أثناء تحميل التصنيفات',
+      );
     }
     if (mounted) setState(() => loading = false);
   }
@@ -67,7 +71,10 @@ class _ContactCategoriesSettingsScreenState
       );
       await _load();
     } catch (_) {
-      Get.snackbar('error'.tr, 'تعذر حفظ التصنيف');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر حفظ التصنيف',
+      );
     }
   }
 
@@ -115,7 +122,10 @@ class _ContactCategoriesSettingsScreenState
       await api.post(EndPoints.contactCategoryDelete(category.id));
       await _load();
     } catch (_) {
-      Get.snackbar('error'.tr, 'تعذر حذف التصنيف');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر حذف التصنيف',
+      );
     }
   }
 
@@ -478,7 +488,10 @@ class _CategoryContactsSheetState extends State<_CategoryContactsSheet> {
           ..addAll(people);
       }
     } catch (_) {
-      Get.snackbar('error'.tr, 'تعذر تحميل جهات الاتصال');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر تحميل جهات الاتصال',
+      );
     }
     if (mounted) setState(() => loading = false);
   }

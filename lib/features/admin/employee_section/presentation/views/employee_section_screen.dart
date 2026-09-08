@@ -125,44 +125,22 @@ class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
                   tabVerticalPadding: 7.h,
                   tabHorizontalMargin: 3.w,
                   fontSize: 12.sp,
-                  fitToWidthUpToCount: 3,
                 ),
               ),
             ),
             SliverToBoxAdapter(
               child: Obx(() {
-                final isEmployeeList = controller.activeTab ==
-                    EmployeeSectionController.employeeListTab;
-                final hasFinancialActions =
-                    canViewEmployeesFinancial || canManageEmployeesOrders;
                 return Padding(
                   padding: EdgeInsetsDirectional.fromSTEB(16.w, 8.h, 16.w, 2.h),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        controller.activeTabLabel.tr,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.primaryColor
-                                      : AppColors.secondaryColor,
-                                ),
-                      ),
-                      if (isEmployeeList && hasFinancialActions) ...[
-                        SizedBox(height: 3.h),
-                        Text(
-                          'اسحب البطاقة لعرض الإجراءات',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontSize: 10.5.sp,
-                                    color: Colors.grey.shade600,
-                                  ),
+                  child: Text(
+                    controller.activeTabLabel.tr,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w800,
+                          color: ThemeService.isDark.value
+                              ? AppColors.primaryColor
+                              : AppColors.secondaryColor,
                         ),
-                      ],
-                    ],
                   ),
                 );
               }),

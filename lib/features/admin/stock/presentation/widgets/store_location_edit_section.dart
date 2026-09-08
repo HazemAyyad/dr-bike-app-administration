@@ -8,7 +8,9 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'product_location_badge.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 Future<void> showCreateStoreSectionDialog() async {
   final controller = Get.find<StockController>();
   final nameCtrl = TextEditingController();
@@ -62,18 +64,23 @@ Future<void> showCreateStoreSectionDialog() async {
   if (ok == true) {
     final name = nameCtrl.text.trim();
     if (name.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'storeSectionName'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'storeSectionName'.tr,
       );
       return;
     }
     try {
       await controller.createStoreSection(name: name);
-      Get.snackbar('success'.tr, 'OK', snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'OK',
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 }
@@ -222,8 +229,7 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
       ),
     ),
     isScrollControlled: true,
-    backgroundColor: ThemeService.isDark.value
-        ? AppColors.darkColor
-        : AppColors.whiteColor,
+    backgroundColor:
+        ThemeService.isDark.value ? AppColors.darkColor : AppColors.whiteColor,
   );
 }

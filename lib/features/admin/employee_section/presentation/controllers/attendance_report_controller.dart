@@ -10,7 +10,9 @@ import '../../domain/usecases/get_attendance_report_usecase.dart';
 import '../../utils/attendance_report_export_helper.dart';
 import '../models/attendance_report_navigation_args.dart';
 import '../widgets/attendance_report_filter_dialog.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AttendanceReportController extends GetxController {
   AttendanceReportController({required this.getReport});
 
@@ -41,8 +43,10 @@ class AttendanceReportController extends GetxController {
 
     if (args.value == null) {
       Future.microtask(() {
-        Get.snackbar('error'.tr, 'attendanceReportMissingArgs'.tr,
-            snackPosition: SnackPosition.BOTTOM);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'attendanceReportMissingArgs'.tr,
+        );
         Get.back();
       });
     }
@@ -82,12 +86,18 @@ class AttendanceReportController extends GetxController {
     } on Failure catch (e) {
       result.value = null;
       errorMessage.value = e.errMessage;
-      Get.snackbar('error'.tr, e.errMessage, snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       result.value = null;
       final msg = e.toString();
       errorMessage.value = msg;
-      Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: msg,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -111,10 +121,9 @@ class AttendanceReportController extends GetxController {
       final name = AttendanceReportExportHelper.fileBaseName(r, 'pdf');
       await Printing.sharePdf(bytes: bytes, filename: name);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     }
   }
@@ -134,17 +143,15 @@ class AttendanceReportController extends GetxController {
         filters: a,
         simple: !showDetailedView.value,
       );
-      Get.snackbar(
-        'fileDownloadedSuccessfully'.tr,
-        file.path,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'fileDownloadedSuccessfully'.tr,
+        message: file.path,
       );
       await OpenFilex.open(file.path);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     }
   }
@@ -162,10 +169,9 @@ class AttendanceReportController extends GetxController {
         ),
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     }
   }
@@ -182,17 +188,15 @@ class AttendanceReportController extends GetxController {
       final file = await AttendanceReportExportHelper.saveCsvToFile(
         result: r,
       );
-      Get.snackbar(
-        'fileDownloadedSuccessfully'.tr,
-        file.path,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'fileDownloadedSuccessfully'.tr,
+        message: file.path,
       );
       await OpenFilex.open(file.path);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        '${'reportExportFailed'.tr}: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${'reportExportFailed'.tr}: $e',
       );
     }
   }

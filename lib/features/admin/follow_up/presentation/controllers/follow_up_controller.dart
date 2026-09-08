@@ -23,6 +23,7 @@ import '../../domain/usecases/delete_followup_usecase.dart';
 import '../../domain/usecases/followup_details_cancel_usecase.dart';
 import '../../domain/usecases/get_followup_usecase.dart';
 import 'gfollow_up_services.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class FollowUpController extends GetxController {
   static const followUpFilterAll = 'all';
@@ -298,10 +299,9 @@ class FollowUpController extends GetxController {
       );
       getAllFollowUps();
       Get.back();
-      Get.snackbar(
-        'success'.tr,
-        result['message'],
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: result['message'],
       );
       isLoading(false);
       update();
@@ -457,11 +457,9 @@ class FollowUpController extends GetxController {
           customerAndSellerIdController.clear();
           itemIdController.clear();
           AppNavigation.popToRoute(AppRoutes.CURRENTFOLLOWUPSCREEN);
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
           selectedStep.value = 1;
           return;
@@ -469,11 +467,9 @@ class FollowUpController extends GetxController {
         if (finishEdit) {
           AppNavigation.popToRoute(AppRoutes.CURRENTFOLLOWUPSCREEN);
         }
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -514,11 +510,9 @@ class FollowUpController extends GetxController {
       },
       (success) {
         getAllFollowUps();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );

@@ -10,6 +10,8 @@ import '../../domain/stock_movements_filters.dart';
 import '../utils/open_instant_sale_invoice.dart';
 import '../utils/stock_movements_pdf_helper.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockMovementSummaryBar extends StatelessWidget {
   const StockMovementSummaryBar({Key? key, required this.summary})
       : super(key: key);
@@ -419,10 +421,9 @@ Future<void> exportStockMovementsPdf({
       filename: StockMovementsPdfHelper.fileBaseName(productName),
     );
   } catch (e) {
-    Get.snackbar(
-      'error'.tr,
-      '${'reportExportFailed'.tr}: $e',
-      snackPosition: SnackPosition.BOTTOM,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: '${'reportExportFailed'.tr}: $e',
     );
   }
 }

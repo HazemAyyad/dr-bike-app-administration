@@ -4,7 +4,9 @@ import '../../data/datasources/employee_datasource.dart';
 import '../../domain/entities/employee_entity.dart';
 import '../../data/models/employee_point_rule_model.dart';
 import 'employee_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeePointRulesController extends GetxController {
   EmployeePointRulesController({
     required this.datasource,
@@ -32,7 +34,10 @@ class EmployeePointRulesController extends GetxController {
       isLoading.value = true;
       rules.assignAll(await datasource.getEmployeePointRules());
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -82,11 +87,16 @@ class EmployeePointRulesController extends GetxController {
         await datasource.updateEmployeePointRule(id, payload);
       }
       await loadRules();
-      Get.snackbar('تم', 'تم حفظ قاعدة النقاط',
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ قاعدة النقاط',
+      );
       return true;
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
       return false;
     } finally {
       isMutating.value = false;
@@ -117,9 +127,15 @@ class EmployeePointRulesController extends GetxController {
       isMutating.value = true;
       await datasource.deleteEmployeePointRule(id);
       rules.removeWhere((r) => r.id == id);
-      Get.snackbar('تم', 'تم حذف القاعدة', snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حذف القاعدة',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       isMutating.value = false;
     }
@@ -132,10 +148,15 @@ class EmployeePointRulesController extends GetxController {
         ruleId: ruleId,
         force: force,
       );
-      Get.snackbar('تم', 'تم تشغيل قواعد النقاط',
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم تشغيل قواعد النقاط',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       isMutating.value = false;
     }

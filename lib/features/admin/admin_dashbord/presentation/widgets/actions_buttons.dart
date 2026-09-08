@@ -20,6 +20,7 @@ class BuildActionButtons extends StatelessWidget {
     this.sectionTitle,
     this.sectionSubtitle,
     this.accentColor,
+    this.backgroundColor,
     this.reorderMode = false,
     this.onReorderStarted,
     this.onReorderFinished,
@@ -33,6 +34,7 @@ class BuildActionButtons extends StatelessWidget {
   final String? sectionTitle;
   final String? sectionSubtitle;
   final Color? accentColor;
+  final Color? backgroundColor;
   final bool reorderMode;
   final VoidCallback? onReorderStarted;
   final VoidCallback? onReorderFinished;
@@ -123,6 +125,7 @@ class BuildActionButtons extends StatelessWidget {
                   badgeDescriptors,
                   employeePurpleStyle: employeePurpleStyle,
                   accentColor: accentColor,
+                  backgroundColor: backgroundColor,
                 );
                 final animatedTile = _ReorderWiggle(
                   enabled: reorderMode,
@@ -313,6 +316,7 @@ Widget _buildActionButton(
   List<_ActionBadge> badgeDescriptors, {
   bool employeePurpleStyle = false,
   Color? accentColor,
+  Color? backgroundColor,
 }) {
   final effectiveAccent = accentColor ?? AppColors.operationalPurple;
   String desktopWindowTitle() {
@@ -342,7 +346,7 @@ Widget _buildActionButton(
             color: employeePurpleStyle
                 ? (ThemeService.isDark.value
                     ? AppColors.customGreyColor
-                    : Colors.white)
+                    : backgroundColor ?? Colors.white)
                 : AppColors.primaryColor,
             borderRadius: BorderRadius.circular(10.r),
             border: employeePurpleStyle

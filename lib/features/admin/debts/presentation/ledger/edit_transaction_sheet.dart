@@ -17,7 +17,9 @@ import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'ledger_currency_chips.dart';
 import 'receipt_media_thumb.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EditTransactionSheet extends StatefulWidget {
   final LedgerTransaction transaction;
 
@@ -162,7 +164,10 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   Future<void> _save() async {
     final amount = double.tryParse(amountController.text.trim());
     if (amount == null || amount <= 0) {
-      Get.snackbar('error'.tr, 'ledgerAmountRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'ledgerAmountRequired'.tr,
+      );
       return;
     }
 
@@ -187,7 +192,10 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     if (ok) {
       Get.back(result: true);
       Future.delayed(const Duration(milliseconds: 300), () {
-        Get.snackbar('success'.tr, 'ledgerUpdated'.tr);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'ledgerUpdated'.tr,
+        );
       });
     }
   }

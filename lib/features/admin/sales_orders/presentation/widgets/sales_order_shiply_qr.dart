@@ -16,7 +16,9 @@ import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_orders_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// عرض رمز QR الخاص بطرد Shiply داخل نافذة منبثقة مع إمكانية التكبير والتحميل والطباعة.
 class SalesOrderShiplyQr {
   static Future<void> show(BuildContext context, String code) {
@@ -69,8 +71,10 @@ class _ShiplyQrDialogState extends State<_ShiplyQrDialog> {
         name:
             'shiply_qr_${widget.code}_${DateTime.now().millisecondsSinceEpoch}',
       );
-      Get.snackbar('done'.tr, 'salesOrderShiplyQrSaved'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'done'.tr,
+        message: 'salesOrderShiplyQrSaved'.tr,
+      );
     } catch (_) {
       SalesOrderShiplyQrNotice.error();
     } finally {
@@ -223,12 +227,9 @@ class _ShiplyQrDialogState extends State<_ShiplyQrDialog> {
 
 class SalesOrderShiplyQrNotice {
   static void error() {
-    Get.snackbar(
-      'error'.tr,
-      'salesOrderShiplyQrSaveFailed'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade400,
-      colorText: Colors.white,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'salesOrderShiplyQrSaveFailed'.tr,
     );
   }
 }
@@ -325,12 +326,9 @@ class _SalesOrderShiplyLabelTileState extends State<SalesOrderShiplyLabelTile> {
       if (!mounted) return;
       await _showLabelDialog(bytes, options);
     } catch (_) {
-      Get.snackbar(
-        'error'.tr,
-        'salesOrderShiplyLabelPrintFailed'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade400,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'salesOrderShiplyLabelPrintFailed'.tr,
       );
     } finally {
       if (mounted) setState(() => _loading = false);

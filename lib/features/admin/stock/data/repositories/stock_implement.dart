@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/stock/data/models/product_details_model.dart';
 import 'package:doctorbike/features/admin/stock/presentation/controllers/stock_controller.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FormData;
 
 import '../../../../../../core/connection/network_info.dart';
@@ -15,6 +14,7 @@ import '../datasources/stock_datasource.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/stock_products_page_result.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockImplement implements StockRepository {
   final NetworkInfo networkInfo;
   final StockDatasource stockDataSource;
@@ -42,12 +42,9 @@ class StockImplement implements StockRepository {
       );
       return result;
     } on ServerException catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.errorModel.errorMessage,
       );
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

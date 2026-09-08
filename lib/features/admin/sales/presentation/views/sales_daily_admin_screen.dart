@@ -11,6 +11,8 @@ import '../controllers/sales_daily_admin_controller.dart';
 import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   const SalesDailyAdminScreen({Key? key}) : super(key: key);
 
@@ -348,9 +350,9 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                                           transfers[row.currency] == null,
                                     );
                                     if (missingTransfer) {
-                                      Get.snackbar(
-                                        'error'.tr,
-                                        'salesDailyTransferTargetRequired'.tr,
+                                      AppFailureNotice.show(
+                                        title: 'error'.tr,
+                                        message: 'salesDailyTransferTargetRequired'.tr,
                                       );
                                       return;
                                     }

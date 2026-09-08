@@ -31,7 +31,9 @@ import '../../domain/usecases/upload_task_image_usecase.dart';
 import '../models/employee_task_list_row.dart';
 import '../helpers/recurring_task_expander.dart';
 import 'employee_task_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeTasksController extends GetxController {
   static const String tasksViewDaily = 'daily';
   static const String tasksViewWeekly = 'weekly';
@@ -294,10 +296,16 @@ class EmployeeTasksController extends GetxController {
         Get.snackbar('تنبيه', 'تم إلغاء حفظ الملف');
         return;
       }
-      Get.snackbar('تم', 'تم حفظ ملف المهام المستقبلية');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ ملف المهام المستقبلية',
+      );
       await OpenFilex.open(savedPath);
     } catch (e) {
-      Get.snackbar('خطأ', 'فشل تصدير المهام: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'فشل تصدير المهام: $e',
+      );
     } finally {
       isExportingFutureTasks.value = false;
     }
@@ -422,7 +430,10 @@ class EmployeeTasksController extends GetxController {
       passwordController.dispose();
       confirmationController.dispose();
     } catch (e) {
-      Get.snackbar('خطأ', 'فشل تحميل ملخص التفريغ: $e');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'فشل تحميل ملخص التفريغ: $e',
+      );
     } finally {
       isClearingAllTasks.value = false;
     }
@@ -439,12 +450,21 @@ class EmployeeTasksController extends GetxController {
       if (res['status'] == 'success') {
         Get.back();
         await getEmployeeTasks(scrollToTodayb: false);
-        Get.snackbar('تم', '${res['message'] ?? 'تم التفريغ'}');
+        AppSuccessNotice.show(
+          title: 'تم',
+          message: '${res['message'] ?? 'تم التفريغ'}',
+        );
         return;
       }
-      Get.snackbar('خطأ', '${res['message'] ?? 'فشل التفريغ'}');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: '${res['message'] ?? 'فشل التفريغ'}',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString());
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       isClearingAllTasks.value = false;
     }
@@ -464,12 +484,21 @@ class EmployeeTasksController extends GetxController {
       );
       if (res['status'] == 'success') {
         Get.back();
-        Get.snackbar('تم', '${res['message'] ?? 'تم إرسال التذكير'}');
+        AppSuccessNotice.show(
+          title: 'تم',
+          message: '${res['message'] ?? 'تم إرسال التذكير'}',
+        );
         return;
       }
-      Get.snackbar('خطأ', '${res['message'] ?? 'فشل إرسال التذكير'}');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: '${res['message'] ?? 'فشل إرسال التذكير'}',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString());
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       isLoading(false);
     }
@@ -831,11 +860,9 @@ class EmployeeTasksController extends GetxController {
           'data=${failure.data}',
         );
         Get.back();
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) {
@@ -845,11 +872,9 @@ class EmployeeTasksController extends GetxController {
         Get.closeAllSnackbars();
         Get.back();
         getEmployeeTasks(scrollToTodayb: false);
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -930,7 +955,10 @@ class EmployeeTasksController extends GetxController {
         final msg = result is Map
             ? (result['message']?.toString() ?? 'uploadFailed'.tr)
             : 'uploadFailed'.tr;
-        Get.snackbar('error'.tr, msg);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: msg,
+        );
         return false;
       }
 
@@ -958,11 +986,17 @@ class EmployeeTasksController extends GetxController {
       return true;
     } on Failure catch (f) {
       lastProofUploadMeta = null;
-      Get.snackbar('error'.tr, f.errMessage);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: f.errMessage,
+      );
       return false;
     } catch (e) {
       lastProofUploadMeta = null;
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1005,11 +1039,9 @@ class EmployeeTasksController extends GetxController {
     final meta = lastProofUploadMeta;
     if (meta != null && metaTruthy(meta['subtask_completed'])) {
       _refreshEmployeeHomeAfterTaskChange();
-      Get.snackbar(
-        'success'.tr,
-        'subtaskCompletedSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'subtaskCompletedSuccess'.tr,
       );
       update(['taskDetails', 'subtasks']);
       return true;
@@ -1079,7 +1111,10 @@ class EmployeeTasksController extends GetxController {
           final msg = failure.data is Map
               ? (failure.data['message']?.toString() ?? failure.errMessage)
               : failure.errMessage;
-          Get.snackbar('error'.tr, msg);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: msg,
+          );
           return false;
         },
         (success) async {
@@ -1101,11 +1136,9 @@ class EmployeeTasksController extends GetxController {
               duration: const Duration(seconds: 5),
             );
           } else {
-            Get.snackbar(
-              'success'.tr,
-              'subtaskCompletedSuccess'.tr,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 2),
+            AppSuccessNotice.show(
+              title: 'success'.tr,
+              message: 'subtaskCompletedSuccess'.tr,
             );
           }
           update(['taskDetails', 'subtasks']);
@@ -1113,10 +1146,16 @@ class EmployeeTasksController extends GetxController {
         },
       );
     } on Failure catch (f) {
-      Get.snackbar('error'.tr, f.errMessage);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: f.errMessage,
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1154,10 +1193,16 @@ class EmployeeTasksController extends GetxController {
         lastRejectResponseMeta = res;
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1186,18 +1231,22 @@ class EmployeeTasksController extends GetxController {
         );
         _refreshEmployeeHomeAfterTaskChange();
         update(['taskDetails', 'subtasks']);
-        Get.snackbar(
-          'success'.tr,
-          'subtaskUndoSuccess'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'subtaskUndoSuccess'.tr,
         );
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1236,11 +1285,9 @@ class EmployeeTasksController extends GetxController {
       showFullScreenLoader: false,
     );
     update(['taskDetails', 'subtasks']);
-    Get.snackbar(
-      'success'.tr,
-      'subtaskProofReplaced'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: 'subtaskProofReplaced'.tr,
     );
     return true;
   }
@@ -1494,10 +1541,9 @@ class EmployeeTasksController extends GetxController {
       );
     } catch (e) {
       TaskDetailsDebug.fail('openTaskDetails_exception', detail: e.toString());
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return;
     }
@@ -1507,10 +1553,9 @@ class EmployeeTasksController extends GetxController {
         'openTaskDetails_null_after_load',
         detail: {'taskId': taskId, 'occurrenceId': occurrenceId},
       );
-      Get.snackbar(
-        'error'.tr,
-        'errorLoadingTaskDetails'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'errorLoadingTaskDetails'.tr,
       );
       return;
     }
@@ -1707,10 +1752,16 @@ class EmployeeTasksController extends GetxController {
         await getTaskDetails(taskId: taskId);
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1735,18 +1786,26 @@ class EmployeeTasksController extends GetxController {
       );
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
-        Get.snackbar(
-            'success'.tr, '${res['message'] ?? 'taskSubmittedForReview'.tr}');
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'taskSubmittedForReview'.tr}',
+        );
         if (Get.isRegistered<EmployeeDashbordController>()) {
           Get.find<EmployeeDashbordController>()
               .getEmployeeData(scrollToTodayb: false);
         }
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1770,13 +1829,22 @@ class EmployeeTasksController extends GetxController {
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
         await getEmployeeTasks();
-        Get.snackbar('success'.tr, '${res['message'] ?? 'taskCompleted'.tr}');
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'taskCompleted'.tr}',
+        );
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1802,13 +1870,22 @@ class EmployeeTasksController extends GetxController {
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
         await getEmployeeTasks();
-        Get.snackbar('success'.tr, '${res['message'] ?? 'taskRejected'.tr}');
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'taskRejected'.tr}',
+        );
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1837,14 +1914,22 @@ class EmployeeTasksController extends GetxController {
       if (res['status'] == 'success') {
         await getEmployeeTasks();
         Get.back();
-        Get.snackbar(
-            'success'.tr, '${res['message'] ?? 'reopenTaskSuccess'.tr}');
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'reopenTaskSuccess'.tr}',
+        );
         return true;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
       return false;
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       return false;
     } finally {
       isLoading(false);
@@ -1868,21 +1953,21 @@ class EmployeeTasksController extends GetxController {
               .getSpecialTasks(scrollToTodayb: false);
         }
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          '${res['message'] ?? 'taskConvertedToSpecial'.tr}',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'taskConvertedToSpecial'.tr}',
         );
         return;
       }
-      Get.snackbar(
-        'error'.tr,
-        '${res['message'] ?? ''}',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
       );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isLoading(false);
     }

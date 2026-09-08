@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/banks_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class BanksSettingsController extends GetxController {
   final nameController = TextEditingController();
   final RxnInt editingId = RxnInt();
@@ -35,7 +37,10 @@ class BanksSettingsController extends GetxController {
   Future<void> save() async {
     final name = nameController.text.trim();
     if (name.isEmpty) {
-      Get.snackbar('error'.tr, 'bankName'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'bankName'.tr,
+      );
       return;
     }
     final svc = Get.find<BanksService>();
@@ -44,7 +49,10 @@ class BanksSettingsController extends GetxController {
         : await svc.addBank(name: name);
     if (ok) {
       clearForm();
-      Get.snackbar('success'.tr, 'save'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'save'.tr,
+      );
     }
   }
 

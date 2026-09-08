@@ -9,7 +9,9 @@ import 'package:doctorbike/features/admin/create_tasks/presentation/widgets/hori
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CheckNotificationRulesScreen extends StatefulWidget {
   const CheckNotificationRulesScreen({Key? key}) : super(key: key);
 
@@ -52,16 +54,14 @@ class _CheckNotificationRulesScreenState
           ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : [];
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (mounted) setState(() => loading = false);
@@ -93,22 +93,19 @@ class _CheckNotificationRulesScreenState
     try {
       await api.delete(EndPoints.checkNotificationRule(id));
       await _load();
-      Get.snackbar(
-        'success'.tr,
-        'settingsUpdated'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
       );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     }
   }
@@ -323,7 +320,10 @@ class _CheckNotificationRuleSheetState
       final body = response.data;
       if (body is Map && body['status']?.toString() == 'error') {
         final message = body['message']?.toString() ?? 'error'.tr;
-        Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: message,
+        );
         return;
       }
 
@@ -333,18 +333,19 @@ class _CheckNotificationRuleSheetState
 
       await widget.onSaved();
       if (mounted) Navigator.of(context).pop(true);
-      Get.snackbar('success'.tr, message, snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
+      );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       if (mounted) setState(() => saving = false);

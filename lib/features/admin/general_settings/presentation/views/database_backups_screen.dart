@@ -8,8 +8,10 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class DatabaseBackupsScreen extends StatefulWidget {
   const DatabaseBackupsScreen({Key? key}) : super(key: key);
 
@@ -100,12 +102,18 @@ class _DatabaseBackupsScreenState extends State<DatabaseBackupsScreen> {
   }
 
   void _showMessage(String? message, {bool isError = false}) {
-    Get.snackbar(
-      isError ? 'تنبيه' : 'تم',
-      message?.trim().isNotEmpty == true ? message! : 'حدث خطأ غير معروف',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-      colorText: Colors.white,
+    final visibleMessage =
+        message?.trim().isNotEmpty == true ? message! : 'حدث خطأ غير معروف';
+    if (!isError) {
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: visibleMessage,
+      );
+      return;
+    }
+    AppFailureNotice.show(
+      title: 'تنبيه',
+      message: visibleMessage,
     );
   }
 

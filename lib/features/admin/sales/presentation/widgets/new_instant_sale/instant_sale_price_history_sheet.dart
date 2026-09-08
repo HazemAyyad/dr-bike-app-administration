@@ -9,6 +9,7 @@ import '../../controllers/sales_controller.dart';
 import '../../models/instant_sale_cart_line.dart';
 import '../../utils/sales_amount_format.dart';
 import '../../../../stock/presentation/utils/open_instant_sale_invoice.dart';
+import '../../../../../../core/helpers/app_success_notice.dart';
 
 Future<void> showInstantSalePriceHistorySheet(
   BuildContext context, {
@@ -167,7 +168,8 @@ class _PriceHistorySheet extends StatelessWidget {
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             tooltip: 'billDetails'.tr,
-                            icon: Icon(Icons.receipt_long_outlined, size: 20.sp),
+                            icon:
+                                Icon(Icons.receipt_long_outlined, size: 20.sp),
                             onPressed: () {
                               Navigator.pop(context);
                               openInstantSaleInvoiceFromStock(
@@ -185,10 +187,9 @@ class _PriceHistorySheet extends StatelessWidget {
                                 entry.cost,
                               );
                               Navigator.pop(context);
-                              Get.snackbar(
-                                'success'.tr,
-                                'instantSalePriceApplied'.tr,
-                                snackPosition: SnackPosition.BOTTOM,
+                              AppSuccessNotice.show(
+                                title: 'success'.tr,
+                                message: 'instantSalePriceApplied'.tr,
                               );
                             }
                           : () {

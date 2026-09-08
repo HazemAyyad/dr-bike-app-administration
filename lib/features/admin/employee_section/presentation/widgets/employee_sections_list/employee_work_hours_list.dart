@@ -23,6 +23,7 @@ import '../employee_card_swipe.dart';
 import '../employee_financial_details.dart';
 import '../employee_points_tab.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 enum _ShiftStatus {
   beforeShift,
   workingOnTime,
@@ -345,16 +346,20 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
             digits.length >= 11;
     if (!isSupportedNumber) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الموظف غير صالح للتواصل عبر واتساب')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'رقم الموظف غير صالح للتواصل عبر واتساب',
       );
       return;
     }
 
     final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'تعذر فتح واتساب على هذا الجهاز',
       );
     }
   }
@@ -695,7 +700,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
         borderRadius: BorderRadius.circular(12.r),
         onTap: _openDetails,
         child: Padding(
-          padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 82.w),
+          padding: EdgeInsetsDirectional.only(end: work == null ? 0 : 74.w),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -706,8 +711,8 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                     child: GestureDetector(
                       onTap: () => _openImageViewer(context),
                       child: SizedBox(
-                        height: 62.h,
-                        width: 62.w,
+                        height: 58.h,
+                        width: 58.w,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -809,7 +814,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
                 PositionedDirectional(
                   top: 0,
                   bottom: 0,
-                  end: -82.w,
+                  end: -74.w,
                   child: _ShiftTimerBox(
                     boxColor: _boxColor,
                     timerColor: _timerColor,
@@ -924,8 +929,8 @@ class _WifiStatusDot extends StatelessWidget {
     return Tooltip(
       message: message,
       child: Container(
-        width: 22.w,
-        height: 22.w,
+        width: 20.w,
+        height: 20.w,
         decoration: BoxDecoration(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor4
@@ -935,12 +940,12 @@ class _WifiStatusDot extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 4.r,
+              blurRadius: 3.r,
               offset: Offset(0, 1.h),
             ),
           ],
         ),
-        child: Icon(Icons.wifi_rounded, color: color, size: 13.sp),
+        child: Icon(Icons.wifi_rounded, color: color, size: 12.sp),
       ),
     );
   }
@@ -969,8 +974,8 @@ class _ShiftTimerBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     return Container(
-      width: 82.w,
-      height: 78.h,
+      width: 74.w,
+      height: 74.h,
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 5.h),
       decoration: BoxDecoration(
         color: boxColor,

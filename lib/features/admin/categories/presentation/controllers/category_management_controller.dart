@@ -7,7 +7,9 @@ import '../../data/models/sub_category_model.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
 import '../../domain/usecases/save_category_usecase.dart';
 import '../../domain/usecases/save_sub_category_usecase.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CategoryManagementController extends GetxController {
   final GetCategoriesUsecase getCategoriesUsecase;
   final SaveCategoryUsecase saveCategoryUsecase;
@@ -71,11 +73,9 @@ class CategoryManagementController extends GetxController {
       categories.assignAll(result);
       filteredCategories.assignAll(result);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLoading(false);
@@ -125,8 +125,10 @@ class CategoryManagementController extends GetxController {
     XFile? image,
   }) async {
     if (nameAr.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'catNameArRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'catNameArRequired'.tr,
+      );
       return;
     }
     isSaving(true);
@@ -143,21 +145,21 @@ class CategoryManagementController extends GetxController {
       if (result['status'] == 'success') {
         Get.back(); // close dialog
         await loadCategories(silent: true);
-        Get.snackbar(
-          'success'.tr,
-          result['message'] ?? 'success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withAlpha(200),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: result['message'] ?? 'success'.tr,
         );
       } else {
-        Get.snackbar('error'.tr, result['message'] ?? 'error'.tr,
-            snackPosition: SnackPosition.BOTTOM);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: result['message'] ?? 'error'.tr,
+        );
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isSaving(false);
       update();
@@ -168,7 +170,8 @@ class CategoryManagementController extends GetxController {
 
   Future<void> toggleCategoryStatus(int categoryId) async {
     try {
-      final result = await toggleCategoryStatusUsecase.call(categoryId: categoryId);
+      final result =
+          await toggleCategoryStatusUsecase.call(categoryId: categoryId);
       if (result['status'] == 'success') {
         final newStatus = result['isShow'] as bool;
         final idx = categories.indexWhere((c) => c.id == categoryId);
@@ -179,8 +182,10 @@ class CategoryManagementController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -196,8 +201,10 @@ class CategoryManagementController extends GetxController {
     XFile? image,
   }) async {
     if (nameAr.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'catNameArRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'catNameArRequired'.tr,
+      );
       return;
     }
     isSaving(true);
@@ -221,21 +228,21 @@ class CategoryManagementController extends GetxController {
         }
         // Update sub count in category list
         await loadCategories(silent: true);
-        Get.snackbar(
-          'success'.tr,
-          result['message'] ?? 'success'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withAlpha(200),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: result['message'] ?? 'success'.tr,
         );
       } else {
-        Get.snackbar('error'.tr, result['message'] ?? 'error'.tr,
-            snackPosition: SnackPosition.BOTTOM);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: result['message'] ?? 'error'.tr,
+        );
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isSaving(false);
       update();
@@ -244,10 +251,11 @@ class CategoryManagementController extends GetxController {
 
   // ── Toggle subcategory status ────────────────────────────────────────────────
 
-  Future<void> toggleSubCategoryStatus(int subCategoryId, int mainCategoryId) async {
+  Future<void> toggleSubCategoryStatus(
+      int subCategoryId, int mainCategoryId) async {
     try {
-      final result =
-          await toggleSubCategoryStatusUsecase.call(subCategoryId: subCategoryId);
+      final result = await toggleSubCategoryStatusUsecase.call(
+          subCategoryId: subCategoryId);
       if (result['status'] == 'success') {
         final newStatus = result['isShow'] as bool;
         final subs = subCategoriesMap[mainCategoryId];
@@ -260,8 +268,10 @@ class CategoryManagementController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 

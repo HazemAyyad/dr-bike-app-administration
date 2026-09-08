@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class CollectionReminderSheet extends StatelessWidget {
   const CollectionReminderSheet({Key? key}) : super(key: key);
@@ -15,7 +16,10 @@ class CollectionReminderSheet extends StatelessWidget {
       Get.back();
       final ok = await controller.setCollectionReminder(date);
       if (ok) {
-        Get.snackbar('success'.tr, 'ledgerReminderSet'.tr);
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'ledgerReminderSet'.tr,
+        );
       }
     }
 
@@ -78,7 +82,10 @@ class CollectionReminderSheet extends StatelessWidget {
                 Get.back();
                 final ok = await controller.clearCollectionReminder();
                 if (ok) {
-                  Get.snackbar('success'.tr, 'ledgerReminderCancelled'.tr);
+                  AppSuccessNotice.show(
+                    title: 'success'.tr,
+                    message: 'ledgerReminderCancelled'.tr,
+                  );
                 }
               },
             ),

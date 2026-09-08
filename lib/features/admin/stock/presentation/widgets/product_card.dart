@@ -16,6 +16,7 @@ import 'stock_product_grid_layout.dart';
 import 'stock_search_sheet.dart';
 import '../controllers/stock_controller.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 void _dismissBlockingOverlays() {
   if (Get.isSnackbarOpen) {
     Get.closeAllSnackbars();
@@ -128,12 +129,9 @@ class BuildProductCard extends GetView<StockController> {
               final raw = rawCostPrice.trim().replaceAll(',', '.');
               final parsed = raw.isEmpty ? 0.0 : double.tryParse(raw);
               if (parsed == null || parsed < 0) {
-                Get.snackbar(
-                  'error'.tr,
-                  'invalidCostPrice'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: AppColors.redColor,
-                  colorText: Colors.white,
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'invalidCostPrice'.tr,
                 );
                 return;
               }

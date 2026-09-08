@@ -21,7 +21,9 @@ import '../../domain/usecases/total_debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/total_debts_we_owe_usecase.dart';
 import '../../domain/usecases/user_debts_data_usecase.dart';
 import 'debts_data_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class DebtsController extends GetxController {
   final TotalDebtsOwedToUsUsecase totalDebtsOwedToUs;
   final TotalDebtsWeOweUsecase totalDebtsWeOwe;
@@ -259,10 +261,9 @@ class DebtsController extends GetxController {
     required String type,
   }) async {
     if (totalDebtController.text.isEmpty || dueDateController.text.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'pleaseFillAllFields'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'pleaseFillAllFields'.tr,
       );
       return;
     }
@@ -391,11 +392,9 @@ class DebtsController extends GetxController {
             ),
           );
         }
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
+        AppSuccessNotice.show(
+          title: "fileDownloadedSuccessfully".tr,
+          message: filePath,
         );
         if (isShared) {
           return;
@@ -403,7 +402,10 @@ class DebtsController extends GetxController {
         await OpenFilex.open(filePath);
       });
     } catch (e) {
-      Get.snackbar("error".tr, e.toString());
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
+      );
     }
     update();
   }

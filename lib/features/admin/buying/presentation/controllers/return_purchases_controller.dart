@@ -20,7 +20,9 @@ import '../../domain/usecases/purchase_workflow_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
 import 'bills_controller.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ReturnPurchasesController extends GetxController {
   ReturnPurchasesController({
     required this.getBillsUsecase,
@@ -413,7 +415,10 @@ class ReturnPurchasesController extends GetxController {
     if (!await base.exists()) await base.create(recursive: true);
     final file = File('${base.path}/مرتجع_$number.pdf');
     await file.writeAsBytes(bytes);
-    Get.snackbar('success'.tr, 'تم تنزيل ملف المرتجع');
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: 'تم تنزيل ملف المرتجع',
+    );
     await OpenFilex.open(file.path);
   }
 
@@ -424,7 +429,10 @@ class ReturnPurchasesController extends GetxController {
           bytes: Uint8List.fromList(bytes),
           filename: 'purchase_return_$number.pdf');
     } catch (error) {
-      Get.snackbar('error'.tr, error.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: error.toString(),
+      );
     }
   }
 
@@ -436,7 +444,10 @@ class ReturnPurchasesController extends GetxController {
         onLayout: (_) async => Uint8List.fromList(bytes),
       );
     } catch (error) {
-      Get.snackbar('error'.tr, error.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: error.toString(),
+      );
     }
   }
 

@@ -9,6 +9,8 @@ import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../controllers/project_controller.dart';
 import '../widgets/creat_project_widgets/first_step.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CreateProjectScreen extends GetView<ProjectController> {
   const CreateProjectScreen({Key? key}) : super(key: key);
 
@@ -41,11 +43,9 @@ class CreateProjectScreen extends GetView<ProjectController> {
                     if (controller.formKey.currentState!.validate()) {
                       if (controller.partnerId.value.isNotEmpty &&
                           controller.partnerShareController.text.isEmpty) {
-                        Get.snackbar(
-                          'error'.tr,
-                          'يجب تحديد نسبة الشريك',
-                          snackPosition: SnackPosition.BOTTOM,
-                          duration: const Duration(seconds: 2),
+                        AppFailureNotice.show(
+                          title: 'error'.tr,
+                          message: 'يجب تحديد نسبة الشريك',
                         );
                       } else {
                         Get.bottomSheet(

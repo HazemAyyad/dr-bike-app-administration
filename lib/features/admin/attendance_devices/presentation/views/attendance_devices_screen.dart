@@ -9,12 +9,15 @@ import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AttendanceDevicesScreen extends StatefulWidget {
   const AttendanceDevicesScreen({Key? key}) : super(key: key);
 
   @override
-  State<AttendanceDevicesScreen> createState() => _AttendanceDevicesScreenState();
+  State<AttendanceDevicesScreen> createState() =>
+      _AttendanceDevicesScreenState();
 }
 
 class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
@@ -84,8 +87,10 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
     final isEdit = device != null;
     final id = int.tryParse(device?['id']?.toString() ?? '') ?? 0;
 
-    final nameCtrl = TextEditingController(text: device?['name']?.toString() ?? '');
-    final modelCtrl = TextEditingController(text: device?['model']?.toString() ?? '');
+    final nameCtrl =
+        TextEditingController(text: device?['name']?.toString() ?? '');
+    final modelCtrl =
+        TextEditingController(text: device?['model']?.toString() ?? '');
     final serialCtrl =
         TextEditingController(text: device?['serial_number']?.toString() ?? '');
     final ipCtrl =
@@ -99,7 +104,8 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
       text: device?['communication_password']?.toString() ?? '',
     );
     bool active = device?['is_active'] == true;
-    String syncMode = (device?['sync_mode']?.toString() ?? 'disabled').toLowerCase();
+    String syncMode =
+        (device?['sync_mode']?.toString() ?? 'disabled').toLowerCase();
     if (syncMode != 'pull' && syncMode != 'push') syncMode = 'disabled';
 
     final busy = false.obs;
@@ -199,20 +205,15 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                                         if (!ctx.mounted) return;
                                         closedSheet = true;
                                         Navigator.pop(ctx);
-                                        Get.snackbar(
-                                          'success'.tr,
-                                          'settingsUpdated'.tr,
-                                          snackPosition: SnackPosition.BOTTOM,
-                                          backgroundColor:
-                                              Colors.green.shade700,
-                                          colorText: Colors.white,
+                                        AppSuccessNotice.show(
+                                          title: 'success'.tr,
+                                          message: 'settingsUpdated'.tr,
                                         );
                                         await _load();
                                       } catch (e) {
-                                        Get.snackbar(
-                                          'error'.tr,
-                                          e.toString(),
-                                          snackPosition: SnackPosition.BOTTOM,
+                                        AppFailureNotice.show(
+                                          title: 'error'.tr,
+                                          message: e.toString(),
                                         );
                                       } finally {
                                         if (!closedSheet) {
@@ -234,151 +235,162 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                       ),
                       SizedBox(height: 8.h),
                       _Field(
-                    label: 'الاسم',
-                    controller: nameCtrl,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  SizedBox(height: 8.h),
-                  _Field(
-                    label: 'الموديل (اختياري)',
-                    controller: modelCtrl,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  SizedBox(height: 8.h),
-                  _Field(
-                    label: 'السيريال (اختياري)',
-                    controller: serialCtrl,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  SizedBox(height: 8.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: _Field(
-                          label: 'IP',
-                          controller: ipCtrl,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                        ),
+                        label: 'الاسم',
+                        controller: nameCtrl,
+                        textInputAction: TextInputAction.next,
                       ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: _Field(
-                          label: 'Port',
-                          controller: portCtrl,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.next,
-                        ),
+                      SizedBox(height: 8.h),
+                      _Field(
+                        label: 'الموديل (اختياري)',
+                        controller: modelCtrl,
+                        textInputAction: TextInputAction.next,
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                  _Field(
-                    label: 'كلمة المرور (اختياري)',
-                    controller: passCtrl,
-                    textInputAction: TextInputAction.done,
-                  ),
-                  SizedBox(height: 10.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'نشط',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF111827),
+                      SizedBox(height: 8.h),
+                      _Field(
+                        label: 'السيريال (اختياري)',
+                        controller: serialCtrl,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: _Field(
+                              label: 'IP',
+                              controller: ipCtrl,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
                             ),
                           ),
-                        ),
-                        Switch(
-                          value: active,
-                          onChanged: (v) => setSheetState(() => active = v),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      initialValue: syncMode,
-                      items: const [
-                        DropdownMenuItem(value: 'disabled', child: Text('Disabled')),
-                        DropdownMenuItem(value: 'pull', child: Text('Pull')),
-                        DropdownMenuItem(value: 'push', child: Text('Push')),
-                      ],
-                      onChanged: (v) => setSheetState(() => syncMode = v ?? 'disabled'),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        labelText: 'Sync mode',
-                        border: OutlineInputBorder(),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _Field(
+                              label: 'Port',
+                              controller: portCtrl,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  if (isEdit && id > 0) ...[
-                    SizedBox(height: 12.h),
-                    OutlinedButton.icon(
-                      onPressed: busy.value
-                          ? null
-                          : () async {
-                              final ok = await showDialog<bool>(
-                                context: ctx,
-                                builder: (_) => AlertDialog(
-                                  title: Text('confirmDelete'.tr),
-                                  content: const Text('هل تريد حذف الجهاز؟'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
-                                      child: Text('cancel'.tr),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      child: Text('delete'.tr),
-                                    ),
-                                  ],
+                      SizedBox(height: 8.h),
+                      _Field(
+                        label: 'كلمة المرور (اختياري)',
+                        controller: passCtrl,
+                        textInputAction: TextInputAction.done,
+                      ),
+                      SizedBox(height: 10.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12.w, vertical: 10.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'نشط',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF111827),
                                 ),
-                              );
-                              if (ok != true) return;
-                              busy.value = true;
-                              var closedSheet = false;
-                              try {
-                                await _deleteDevice(id);
-                                if (!ctx.mounted) return;
-                                closedSheet = true;
-                                Navigator.pop(ctx);
-                                await _load();
-                              } catch (e) {
-                                Get.snackbar('error'.tr, e.toString(),
-                                    snackPosition: SnackPosition.BOTTOM);
-                              } finally {
-                                if (!closedSheet) {
-                                  busy.value = false;
-                                }
-                              }
-                            },
-                      icon: const Icon(Icons.delete_outline),
-                      label: Text('delete'.tr),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade700,
-                        side: BorderSide(color: Colors.red.shade200),
-                        backgroundColor: Colors.white,
+                              ),
+                            ),
+                            Switch(
+                              value: active,
+                              onChanged: (v) => setSheetState(() => active = v),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 10.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          initialValue: syncMode,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'disabled', child: Text('Disabled')),
+                            DropdownMenuItem(
+                                value: 'pull', child: Text('Pull')),
+                            DropdownMenuItem(
+                                value: 'push', child: Text('Push')),
+                          ],
+                          onChanged: (v) =>
+                              setSheetState(() => syncMode = v ?? 'disabled'),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            labelText: 'Sync mode',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      if (isEdit && id > 0) ...[
+                        SizedBox(height: 12.h),
+                        OutlinedButton.icon(
+                          onPressed: busy.value
+                              ? null
+                              : () async {
+                                  final ok = await showDialog<bool>(
+                                    context: ctx,
+                                    builder: (_) => AlertDialog(
+                                      title: Text('confirmDelete'.tr),
+                                      content:
+                                          const Text('هل تريد حذف الجهاز؟'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: Text('cancel'.tr),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: Text('delete'.tr),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (ok != true) return;
+                                  busy.value = true;
+                                  var closedSheet = false;
+                                  try {
+                                    await _deleteDevice(id);
+                                    if (!ctx.mounted) return;
+                                    closedSheet = true;
+                                    Navigator.pop(ctx);
+                                    await _load();
+                                  } catch (e) {
+                                    AppFailureNotice.show(
+                                      title: 'error'.tr,
+                                      message: e.toString(),
+                                    );
+                                  } finally {
+                                    if (!closedSheet) {
+                                      busy.value = false;
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.delete_outline),
+                          label: Text('delete'.tr),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red.shade700,
+                            side: BorderSide(color: Colors.red.shade200),
+                            backgroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -406,19 +418,22 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
       final data = res.data;
       final ok = data is Map && data['status']?.toString() == 'success';
       final msg = data is Map ? data['message']?.toString() : null;
-      Get.snackbar(
-        ok ? 'success'.tr : 'error'.tr,
-        msg ?? (ok ? 'تم الاتصال بنجاح' : 'فشل الاتصال'),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
-        colorText: Colors.white,
-      );
+      if (ok) {
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: msg ?? 'تم الاتصال بنجاح',
+        );
+      } else {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: msg ?? 'فشل الاتصال',
+        );
+      }
       await _load();
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       _busyDeviceId.value = 0;
@@ -434,16 +449,23 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
       final data = res.data;
       final ok = data is Map && data['status']?.toString() == 'success';
       final msg = data is Map ? data['message']?.toString() : null;
-      Get.snackbar(
-        ok ? 'success'.tr : 'error'.tr,
-        msg ?? (ok ? 'تمت المزامنة' : 'فشلت المزامنة'),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
-        colorText: Colors.white,
-      );
+      if (ok) {
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: msg ?? 'تمت المزامنة',
+        );
+      } else {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: msg ?? 'فشلت المزامنة',
+        );
+      }
       await _load();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       _busyDeviceId.value = 0;
     }
@@ -458,16 +480,23 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
       final data = res.data;
       final ok = data is Map && data['status']?.toString() == 'success';
       final msg = data is Map ? data['message']?.toString() : null;
-      Get.snackbar(
-        ok ? 'success'.tr : 'error'.tr,
-        msg ?? (ok ? 'تمت المزامنة' : 'فشلت المزامنة'),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
-        colorText: Colors.white,
-      );
+      if (ok) {
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: msg ?? 'تمت المزامنة',
+        );
+      } else {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: msg ?? 'فشلت المزامنة',
+        );
+      }
       await _load();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       _busyDeviceId.value = 0;
     }
@@ -484,8 +513,7 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
     final textSecondary =
         isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
 
-    final activeCount =
-        _devices.where((d) => d['is_active'] == true).length;
+    final activeCount = _devices.where((d) => d['is_active'] == true).length;
     final onlineCount = _devices.where((d) => d['is_online'] == true).length;
 
     return Scaffold(
@@ -516,7 +544,8 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: Text(
           'add'.tr,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
       ),
       body: Obx(() {
@@ -530,7 +559,8 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 40.sp, color: Colors.red.shade400),
+                  Icon(Icons.error_outline,
+                      size: 40.sp, color: Colors.red.shade400),
                   SizedBox(height: 12.h),
                   Text(_error.value, textAlign: TextAlign.center),
                   SizedBox(height: 12.h),
@@ -556,7 +586,8 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                         size: 56.sp, color: textSecondary),
                     SizedBox(height: 12.h),
                     Center(
-                      child: Text('noData'.tr, style: TextStyle(color: textSecondary)),
+                      child: Text('noData'.tr,
+                          style: TextStyle(color: textSecondary)),
                     ),
                   ],
                 )
@@ -972,7 +1003,8 @@ class _DeviceCard extends StatelessWidget {
                           ? SizedBox(
                               width: 16.w,
                               height: 16.w,
-                              child: const CircularProgressIndicator(strokeWidth: 2),
+                              child: const CircularProgressIndicator(
+                                  strokeWidth: 2),
                             )
                           : const Icon(Icons.wifi_tethering_rounded, size: 18),
                       label: Text('testConnection'.tr),
@@ -984,7 +1016,8 @@ class _DeviceCard extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: busy || deviceId <= 0 ? null : onSyncUsers,
-                          icon: const Icon(Icons.people_outline_rounded, size: 18),
+                          icon: const Icon(Icons.people_outline_rounded,
+                              size: 18),
                           label: Text('syncUsers'.tr),
                         ),
                       ),
@@ -992,7 +1025,8 @@ class _DeviceCard extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: busy || deviceId <= 0 ? null : onSyncLogs,
-                          icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                          icon:
+                              const Icon(Icons.receipt_long_outlined, size: 18),
                           label: Text('syncLogs'.tr),
                         ),
                       ),
@@ -1082,7 +1116,8 @@ class _StatChip extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.sp, color: const Color(0xFF9CA3AF)),
+                  style: TextStyle(
+                      fontSize: 10.sp, color: const Color(0xFF9CA3AF)),
                 ),
                 Text(
                   value,
@@ -1196,4 +1231,3 @@ class _Badge extends StatelessWidget {
     );
   }
 }
-

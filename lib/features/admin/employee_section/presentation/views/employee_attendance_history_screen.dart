@@ -9,6 +9,7 @@ import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 import '../widgets/attendance_history_body.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class _MonthNumberCalendarDelegate extends GregorianCalendarDelegate {
   const _MonthNumberCalendarDelegate();
 
@@ -516,16 +517,17 @@ Future<void> _showAddAdvanceDialog(
   if (ok != true) return;
   final box = selectedBox;
   if (amountController.text.trim().isEmpty) {
-    Get.snackbar('error'.tr, 'يرجى إدخال مبلغ السلفة',
-        snackPosition: SnackPosition.BOTTOM);
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'يرجى إدخال مبلغ السلفة',
+    );
     return;
   }
   final selectedBoxId = box == null ? null : boxId(box);
   if (box != null && (selectedBoxId == null || selectedBoxId <= 0)) {
-    Get.snackbar(
-      'error'.tr,
-      'تعذر قراءة رقم الصندوق المختار. أعد تحميل الصفحة وجرب مرة ثانية.',
-      snackPosition: SnackPosition.BOTTOM,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'تعذر قراءة رقم الصندوق المختار. أعد تحميل الصفحة وجرب مرة ثانية.',
     );
     return;
   }
@@ -584,8 +586,10 @@ Future<void> _showEditAdvanceDialog(
 
   if (ok != true) return;
   if (amountController.text.trim().isEmpty) {
-    Get.snackbar('error'.tr, 'يرجى إدخال مبلغ السلفة',
-        snackPosition: SnackPosition.BOTTOM);
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: 'يرجى إدخال مبلغ السلفة',
+    );
     return;
   }
 

@@ -22,6 +22,8 @@ import '../../domain/usecases/get_admin_ui_preferences_usecase.dart';
 import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../../domain/usecases/save_admin_ui_preferences_usecase.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AdminDashboardController extends GetxController
     with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
@@ -266,7 +268,10 @@ class AdminDashboardController extends GetxController
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
-      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
     } finally {
       isUiPreferencesSaving(false);
       update();
@@ -291,7 +296,10 @@ class AdminDashboardController extends GetxController
       dashboardQuickAccessCount.value = saved.quickAccessCount;
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
-      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
     } finally {
       isUiPreferencesSaving(false);
       update();
@@ -323,7 +331,10 @@ class AdminDashboardController extends GetxController
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
     } catch (_) {
       dashboardButtonOrderKeys.assignAll(previous);
-      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
     } finally {
       isUiPreferencesSaving(false);
       update();
@@ -701,7 +712,10 @@ class AdminDashboardController extends GetxController
       dashboardQuickAccessCount.value = saved.quickAccessCount;
     } catch (_) {
       dashboardQuickAccessCount.value = previous;
-      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
     } finally {
       isUiPreferencesSaving(false);
       update();

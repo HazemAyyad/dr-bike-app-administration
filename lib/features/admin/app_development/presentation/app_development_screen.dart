@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../../core/helpers/app_success_notice.dart';
 import '../../../../core/helpers/custom_app_bar.dart';
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/services/user_data.dart';
@@ -348,10 +349,12 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         note: noteController.text,
       );
       await _loadDetails(silent: true);
-      _snack(successMessage ??
-          (newStatus == 'done'
-              ? 'تم إنجاز المهمة بنجاح'
-              : 'تم تحديث حالة المهمة بنجاح'));
+      _success(
+        successMessage ??
+            (newStatus == 'done'
+                ? 'تم إنجاز المهمة بنجاح'
+                : 'تم تحديث حالة المهمة بنجاح'),
+      );
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -367,9 +370,11 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         status: done ? 'in_progress' : 'done',
       );
       await _loadDetails(silent: true);
-      _snack(done
-          ? 'تم إرجاع المهمة الفرعية لقيد العمل'
-          : 'تم إنجاز المهمة الفرعية بنجاح');
+      _success(
+        done
+            ? 'تم إرجاع المهمة الفرعية لقيد العمل'
+            : 'تم إنجاز المهمة الفرعية بنجاح',
+      );
     } catch (e) {
       _snack(e.toString());
     }
@@ -1415,6 +1420,13 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
 
   void _snack(String message) {
     Get.snackbar('تطوير التطبيق', message, snackPosition: SnackPosition.BOTTOM);
+  }
+
+  void _success(String message) {
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: message,
+    );
   }
 }
 

@@ -30,6 +30,7 @@ import '../models/product_assembly_model.dart';
 import '../models/product_stock_movement_model.dart';
 import '../models/store_section_model.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockDatasource {
   final ApiConsumer api;
 
@@ -786,12 +787,9 @@ class StockDatasource {
         (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
       );
     } on DioException catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.response?.data['message'] ?? 'Unknown error',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.response?.data['message'] ?? 'Unknown error',
       );
       final data = e.response?.data;
       throw ServerException(

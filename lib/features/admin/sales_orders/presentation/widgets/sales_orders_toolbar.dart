@@ -13,6 +13,7 @@ import '../../../sales/presentation/views/delivery_company_accounts_screen.dart'
 import '../controllers/sales_orders_controller.dart';
 
 import 'sales_order_status_ui.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 /// شريط فلتر الحالة + الإجراءات الجماعية.
 
@@ -254,7 +255,10 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
       controller.toggleBulkMode(false);
       await controller.loadOrders();
       if (completed == selectedGroups.length && completed > 1) {
-        Get.snackbar('اكتملت التسويات', 'تمت تسوية $completed شركات بنجاح');
+        AppSuccessNotice.show(
+          title: 'اكتملت التسويات',
+          message: 'تمت تسوية $completed شركات بنجاح',
+        );
       }
     }
   }

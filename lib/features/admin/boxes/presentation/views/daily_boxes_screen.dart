@@ -22,6 +22,7 @@ import '../controllers/boxes_serves.dart';
 import '../widgets/transfer_balance_widget.dart';
 import '../widgets/box_report_filter_sheet.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class DailyBoxesScreen extends StatefulWidget {
   const DailyBoxesScreen({Key? key}) : super(key: key);
 
@@ -380,13 +381,10 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
     if (!mounted) return;
 
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: AppColors.whiteColor,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }

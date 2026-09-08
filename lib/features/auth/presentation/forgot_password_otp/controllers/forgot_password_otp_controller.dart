@@ -3,11 +3,12 @@ import 'package:get/get.dart';
 import 'dart:async';
 
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../domain/usecases/verify_otp_usecase.dart';
 import '../../sgin_up_verify/controllers/sginup_verify_controller.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ForgotPasswordController extends GetxController {
   VerifyOtp verifyOtp;
 
@@ -93,12 +94,9 @@ class ForgotPasswordController extends GetxController {
         );
         isLoading(false);
       } else {
-        Get.snackbar(
-          'error'.tr,
-          'enterOtp'.tr,
-          backgroundColor: AppColors.primaryColor,
-          colorText: AppColors.whiteColor,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'enterOtp'.tr,
         );
       }
     }

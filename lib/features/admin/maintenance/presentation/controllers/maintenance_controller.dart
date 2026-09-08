@@ -41,7 +41,9 @@ import 'maintenance_serves.dart';
 import '../widgets/maintenance_activity_log_sheet.dart';
 import '../widgets/maintenance_delivery_dialog.dart';
 import '../widgets/maintenance_invoice_sheet.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MaintenanceController extends GetxController {
   static const _localDraftKey = 'maintenance_local_draft_v1';
   static const maintenanceFilterAll = 'all';
@@ -352,21 +354,17 @@ class MaintenanceController extends GetxController {
     var opened = false;
     result.fold(
       (failure) {
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (payload) {
         opened = true;
         dailyBoxPayload.assignAll(payload);
-        Get.snackbar(
-          'success'.tr,
-          'تم فتح صندوق الصيانة اليومي',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'تم فتح صندوق الصيانة اليومي',
         );
       },
     );
@@ -392,21 +390,17 @@ class MaintenanceController extends GetxController {
     var requested = false;
     result.fold(
       (failure) {
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (payload) {
         requested = true;
         dailyBoxPayload.assignAll(payload);
-        Get.snackbar(
-          'success'.tr,
-          'تم إرسال طلب إغلاق صندوق الصيانة',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'تم إرسال طلب إغلاق صندوق الصيانة',
         );
       },
     );
@@ -437,21 +431,15 @@ class MaintenanceController extends GetxController {
               : <Map<String, dynamic>>[],
         );
       } else {
-        Get.snackbar(
-          'error'.tr,
-          response['message']?.toString() ?? 'tryAgain'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: response['message']?.toString() ?? 'tryAgain'.tr,
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isDailyClosingReviewLoading(false);
@@ -500,12 +488,9 @@ class MaintenanceController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isDailyClosingReviewLoading(false);
@@ -556,30 +541,24 @@ class MaintenanceController extends GetxController {
         floatToKeep: floatToKeep,
       );
       if (response['status'] == 'success') {
-        Get.snackbar(
-          'success'.tr,
-          response['message']?.toString() ?? 'تم إغلاق صندوق الصيانة مباشرة',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: response['message']?.toString() ??
+              'تم إغلاق صندوق الصيانة مباشرة',
         );
         await loadMaintenanceDailyAdminData();
         await loadMaintenanceDailySession();
         return true;
       }
-      Get.snackbar(
-        'error'.tr,
-        response['message']?.toString() ?? 'tryAgain'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: response['message']?.toString() ?? 'tryAgain'.tr,
       );
       return false;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     } finally {
@@ -609,33 +588,26 @@ class MaintenanceController extends GetxController {
               reviewNote: note,
             );
       if (response['status'] == 'success') {
-        Get.snackbar(
-          'success'.tr,
-          response['message']?.toString() ??
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: response['message']?.toString() ??
               (approve
                   ? 'تم اعتماد إغلاق صندوق الصيانة'
                   : 'تم رفض طلب إغلاق صندوق الصيانة'),
-          snackPosition: SnackPosition.BOTTOM,
         );
         await loadMaintenanceDailyClosingRequests();
         await loadMaintenanceDailySession();
         return true;
       }
-      Get.snackbar(
-        'error'.tr,
-        response['message']?.toString() ?? 'tryAgain'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: response['message']?.toString() ?? 'tryAgain'.tr,
       );
       return false;
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
       return false;
     } finally {
@@ -762,9 +734,13 @@ class MaintenanceController extends GetxController {
         maintenanceProducts.isNotEmpty ||
         selectedMaintenanceServices.isNotEmpty ||
         additionalCharges.isNotEmpty ||
+        maintenancePayments.isNotEmpty ||
         laborCost > 0 ||
         discount > 0;
-    if (!hasContent) return;
+    if (!hasContent) {
+      await clearLocalMaintenanceDraft();
+      return;
+    }
     await GetStorage().write(
       _localDraftKey,
       jsonEncode({
@@ -807,6 +783,14 @@ class MaintenanceController extends GetxController {
           (key, value) => MapEntry(key.toString(), value),
         ),
         'additional_charges': additionalCharges.map(_chargeForStorage).toList(),
+        'pending_payments': maintenancePayments
+            .where((payment) => payment['is_pending'] == true)
+            .map((payment) => {
+                  'amount': SalesAmountFormat.parse('${payment['amount']}'),
+                  'note': '${payment['note'] ?? ''}',
+                  'created_at': '${payment['created_at'] ?? ''}',
+                })
+            .toList(),
         'selected_media': selectedMedia.map((file) => file.path).toList(),
       }),
     );
@@ -912,8 +896,6 @@ class MaintenanceController extends GetxController {
   }
 
   Future<void> openProductPicker(BuildContext context) async {
-    if (!formKey.currentState!.validate()) return;
-
     AppDependencyRegistry.ensureSales();
     if (!Get.isRegistered<SalesController>() &&
         !Get.isPrepared<SalesController>()) {
@@ -950,12 +932,9 @@ class MaintenanceController extends GetxController {
       final services = await datasource.getMaintenanceServices(search: search);
       maintenanceServices.assignAll(services);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isServicesLoading(false);
@@ -984,21 +963,38 @@ class MaintenanceController extends GetxController {
     return parts.isEmpty ? clean : parts.last.trim();
   }
 
-  void addMaintenanceServiceToDetails(MaintenanceServiceModel service) {
+  Future<void> addMaintenanceServiceToDetails(
+    MaintenanceServiceModel service,
+  ) async {
     final alreadySelected = selectedMaintenanceServices.any(
       (item) => item.id == service.id,
     );
-    if (!alreadySelected) {
-      selectedMaintenanceServices.add(service);
-      maintenanceServicePrices[service.id] = service.price;
+    if (alreadySelected) {
+      serviceSuggestions.clear();
+      update(['maintenanceServiceSuggestions']);
+      Get.snackbar(
+        'الخدمة مضافة مسبقًا',
+        service.name,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
     }
 
+    selectedMaintenanceServices.add(service);
+    maintenanceServicePrices[service.id] = service.price;
     serviceSuggestions.clear();
     recalculateTotals();
-    syncProductsIfPossible();
     scheduleAutoSave();
     update(['maintenanceServiceSuggestions']);
     update();
+
+    final saved = await syncProductsIfPossible();
+    AppSuccessNotice.show(
+      title: saved ? 'تمت إضافة الخدمة' : 'تمت إضافة الخدمة إلى المسودة',
+      message: saved
+          ? 'تم حفظ خدمة ${service.name} على طلب الصيانة.'
+          : 'خدمة ${service.name} ستُحفظ عند حفظ الطلب.',
+    );
   }
 
   void removeMaintenanceService(int index) {
@@ -1159,14 +1155,14 @@ class MaintenanceController extends GetxController {
     update();
   }
 
-  Future<void> syncProductsIfPossible({String? editReason}) async {
-    if (maintenanceId == null || maintenanceId!.isEmpty) return;
+  Future<bool> syncProductsIfPossible({String? editReason}) async {
+    if (maintenanceId == null || maintenanceId!.isEmpty) return false;
     if (isDelivered.value &&
         (editReason == null || editReason.trim().isEmpty)) {
-      return;
+      return false;
     }
 
-    await syncMaintenanceProductsUsecase.call(
+    final result = await syncMaintenanceProductsUsecase.call(
       maintenanceId: maintenanceId!,
       products: maintenanceProducts.toList(),
       laborCost: laborCost,
@@ -1181,6 +1177,7 @@ class MaintenanceController extends GetxController {
           .toList(),
       additionalCharges: additionalCharges.map(_chargeForStorage).toList(),
     );
+    return result.fold((_) => false, (_) => true);
   }
 
   Future<bool> deliverMaintenance({
@@ -1201,12 +1198,9 @@ class MaintenanceController extends GetxController {
     if (effectivePaid > 0 && !isMaintenanceDailyBoxOpen) {
       await loadMaintenanceDailySession();
       if (!isMaintenanceDailyBoxOpen) {
-        Get.snackbar(
-          'error'.tr,
-          'يجب فتح صندوق الصيانة اليومي قبل تسليم الصيانة',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'يجب فتح صندوق الصيانة اليومي قبل تسليم الصيانة',
         );
         return false;
       }
@@ -1228,12 +1222,9 @@ class MaintenanceController extends GetxController {
     result.fold(
       (failure) {
         if (!batchMode) {
-          Get.snackbar(
-            failure.data['message']?.toString() ?? 'error'.tr,
-            '',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,
+          AppFailureNotice.show(
+            title: failure.data['message']?.toString() ?? 'error'.tr,
+            message: '',
           );
         }
       },
@@ -1244,10 +1235,9 @@ class MaintenanceController extends GetxController {
         if (!batchMode) {
           getMaintenancesData();
           Get.back();
-          Get.snackbar(
-            'success'.tr,
-            success['message']?.toString() ?? '',
-            snackPosition: SnackPosition.BOTTOM,
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success['message']?.toString() ?? '',
           );
           if (maintenanceId != null &&
               maintenanceId!.isNotEmpty &&
@@ -1314,29 +1304,49 @@ class MaintenanceController extends GetxController {
     }
     toggleMaintenanceBulkMode(false);
     await getMaintenancesData();
-    Get.snackbar(
-      delivered == ids.length ? 'تم التسليم' : 'اكتمل التسليم جزئياً',
-      'تم تسليم $delivered من أصل ${ids.length}',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: delivered == ids.length ? Colors.green : Colors.orange,
-      colorText: Colors.white,
-    );
+    if (delivered == ids.length) {
+      AppSuccessNotice.show(
+        title: 'تم التسليم',
+        message: 'تم تسليم $delivered من أصل ${ids.length}',
+      );
+    } else {
+      Get.snackbar(
+        'اكتمل التسليم جزئياً',
+        'تم تسليم $delivered من أصل ${ids.length}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+    }
   }
 
   Future<bool> addMaintenancePayment({
     required double amount,
     String? note,
   }) async {
-    if (maintenanceId == null || maintenanceId!.isEmpty) return false;
+    if (maintenanceId == null || maintenanceId!.isEmpty) {
+      maintenancePayments.add({
+        'amount': amount,
+        'note': note?.trim() ?? '',
+        'created_by_name': 'معلّق حتى الحفظ',
+        'created_at': DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+        'is_pending': true,
+      });
+      maintenancePaidAmount.value += amount;
+      await saveLocalMaintenanceDraft();
+      update();
+      AppSuccessNotice.show(
+        title: 'تمت إضافة العربون للمسودة',
+        message: 'سيتم تثبيته على الطلب والصندوق عند حفظ طلب الصيانة.',
+      );
+      return true;
+    }
     if (!isMaintenanceDailyBoxOpen) {
       await loadMaintenanceDailySession();
       if (!isMaintenanceDailyBoxOpen) {
-        Get.snackbar(
-          'error'.tr,
-          'يجب فتح صندوق الصيانة اليومي قبل إضافة العربون',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'يجب فتح صندوق الصيانة اليومي قبل إضافة العربون',
         );
         return false;
       }
@@ -1352,12 +1362,9 @@ class MaintenanceController extends GetxController {
     var ok = false;
     await result.fold(
       (failure) async {
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (success) async {
@@ -1377,16 +1384,92 @@ class MaintenanceController extends GetxController {
         }
         await loadMaintenanceDailySession();
         await getMaintenancesData();
-        Get.snackbar(
-          'success'.tr,
-          success['message']?.toString() ?? 'تم تثبيت العربون',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success['message']?.toString() ?? 'تم تثبيت العربون',
         );
       },
     );
     isLoading(false);
     update();
     return ok;
+  }
+
+  Future<void> updatePendingMaintenancePayment(
+    Map<String, dynamic> payment, {
+    required double amount,
+    String? note,
+  }) async {
+    final index = maintenancePayments.indexOf(payment);
+    if (index < 0 || payment['is_pending'] != true || amount <= 0) return;
+    maintenancePayments[index] = {
+      ...payment,
+      'amount': amount,
+      'note': note?.trim() ?? '',
+    };
+    maintenancePaidAmount.value = maintenancePayments.fold<double>(
+      0,
+      (sum, item) => sum + SalesAmountFormat.parse('${item['amount']}'),
+    );
+    await saveLocalMaintenanceDraft();
+    update();
+  }
+
+  Future<void> removePendingMaintenancePayment(
+    Map<String, dynamic> payment,
+  ) async {
+    if (payment['is_pending'] != true) return;
+    maintenancePayments.remove(payment);
+    maintenancePaidAmount.value = maintenancePayments.fold<double>(
+      0,
+      (sum, item) => sum + SalesAmountFormat.parse('${item['amount']}'),
+    );
+    await saveLocalMaintenanceDraft();
+    update();
+  }
+
+  Future<bool> ensureDailySessionForPendingPayments() async {
+    final hasPending = maintenancePayments.any(
+      (payment) => payment['is_pending'] == true,
+    );
+    if (!hasPending) return true;
+
+    await loadMaintenanceDailySession();
+    if (isMaintenanceDailyBoxOpen) return true;
+
+    final openSession = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('صندوق الصيانة مغلق'),
+        content: const Text(
+          'يوجد عربون مضاف إلى الطلب. افتح جلسة صندوق الصيانة حتى يتم تثبيته عند الحفظ.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<bool>(result: false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Get.back<bool>(result: true),
+            icon: const Icon(Icons.lock_open_rounded),
+            label: const Text('فتح الجلسات اليومية'),
+          ),
+        ],
+      ),
+    );
+    if (openSession != true) return false;
+
+    await Get.toNamed(
+      AppRoutes.SALESDAILYHISTORYSCREEN,
+      arguments: {'sessionType': 'maintenance', 'openDrawer': true},
+    );
+    await loadMaintenanceDailySession();
+    if (isMaintenanceDailyBoxOpen) return true;
+
+    AppFailureNotice.show(
+      title: 'تعذر حفظ العربون',
+      message: 'يجب فتح صندوق الصيانة أولاً.',
+    );
+    return false;
   }
 
   Future<void> openActivityLog({
@@ -1397,13 +1480,10 @@ class MaintenanceController extends GetxController {
       maintenanceId: maintenanceId,
     );
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (logs) => showMaintenanceActivityLogSheet(context, logs),
     );
   }
@@ -1416,13 +1496,10 @@ class MaintenanceController extends GetxController {
       maintenanceId: maintenanceId,
     );
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }
@@ -1440,21 +1517,17 @@ class MaintenanceController extends GetxController {
     var deleted = false;
     await result.fold(
       (failure) async {
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (message) async {
         deleted = true;
         await getMaintenancesData();
-        Get.snackbar(
-          'success'.tr,
-          message,
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: message,
         );
       },
     );
@@ -1526,12 +1599,9 @@ class MaintenanceController extends GetxController {
       final maintenances = maintenancesData['maintenance'];
       if (maintenances == null) {
         Get.back();
-        Get.snackbar(
-          'error'.tr,
-          maintenancesData['message']?.toString() ?? 'tryAgain'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: maintenancesData['message']?.toString() ?? 'tryAgain'.tr,
         );
         return;
       }
@@ -1599,7 +1669,20 @@ class MaintenanceController extends GetxController {
           billing.laborCost > 0 ? billing.laborCost.toString() : '';
       discountController.text =
           billing.discount > 0 ? billing.discount.toString() : '';
-      await _hydrateSelectedServicesFromDescription();
+      selectedMaintenanceServices.assignAll(
+        billing.serviceLines
+            .map(
+              (line) => MaintenanceServiceModel(
+                id: int.tryParse('${line['service_id'] ?? ''}') ?? 0,
+                name: '${line['name'] ?? ''}',
+                description: '',
+                price: SalesAmountFormat.parse('${line['price'] ?? 0}'),
+                isActive: true,
+                media: const [],
+              ),
+            )
+            .where((service) => service.name.trim().isNotEmpty),
+      );
       maintenanceServicePrices.clear();
       for (final line in billing.serviceLines) {
         final serviceId = int.tryParse('${line['service_id'] ?? ''}');
@@ -1624,38 +1707,14 @@ class MaintenanceController extends GetxController {
       }
     } catch (e) {
       Get.back();
-      Get.snackbar(
-        'error'.tr,
-        'tryAgain'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'tryAgain'.tr,
       );
     } finally {
       _isHydratingMaintenanceForm = false;
       isEditLoading(false);
       update();
-    }
-  }
-
-  Future<void> _hydrateSelectedServicesFromDescription() async {
-    final description = descriptionController.text;
-    if (description.trim().isEmpty) {
-      selectedMaintenanceServices.clear();
-      return;
-    }
-
-    try {
-      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
-      final services = await datasource.getMaintenanceServices(
-        search: null,
-        activeOnly: false,
-      );
-      selectedMaintenanceServices.assignAll(
-        services.where((service) => description.contains(service.name)),
-      );
-    } catch (_) {
-      selectedMaintenanceServices.clear();
     }
   }
 
@@ -1772,6 +1831,21 @@ class MaintenanceController extends GetxController {
               (item) => _chargeWithUiKey(Map<String, dynamic>.from(item)),
             ),
       );
+      maintenancePayments.assignAll(
+        ((draft['pending_payments'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((payment) => {
+                  'amount': SalesAmountFormat.parse('${payment['amount']}'),
+                  'note': '${payment['note'] ?? ''}',
+                  'created_by_name': 'معلّق حتى الحفظ',
+                  'created_at': '${payment['created_at'] ?? ''}',
+                  'is_pending': true,
+                }),
+      );
+      maintenancePaidAmount.value = maintenancePayments.fold<double>(
+        0,
+        (sum, payment) => sum + SalesAmountFormat.parse('${payment['amount']}'),
+      );
       selectedMedia = ((draft['selected_media'] as List?) ?? const [])
           .map((path) => File('$path'))
           .where((file) => file.existsSync())
@@ -1807,6 +1881,11 @@ class MaintenanceController extends GetxController {
     final targetId = this.maintenanceId ?? maintenanceId;
     if ((targetId == null || targetId.isEmpty) && !allowCreate) {
       await saveLocalMaintenanceDraft();
+      return false;
+    }
+    if ((targetId == null || targetId.isEmpty) &&
+        allowCreate &&
+        !await ensureDailySessionForPendingPayments()) {
       return false;
     }
 
@@ -1858,32 +1937,62 @@ class MaintenanceController extends GetxController {
             errorMessage = errors?.toString() ?? '';
           }
           if (!silent) {
-            Get.snackbar(
-              failure.data['message'] ?? 'error'.tr,
-              errorMessage,
-              backgroundColor: Colors.red,
-              colorText: Colors.white,
-              snackPosition: SnackPosition.BOTTOM,
+            AppFailureNotice.show(
+              title: failure.data['message'] ?? 'error'.tr,
+              message: errorMessage,
             );
           }
         },
         (success) async {
-          final newId = success['maintenance_id'];
-          if (newId != null && newId.isNotEmpty) {
+          final newId = '${success['maintenance_id'] ?? ''}'.trim();
+          var productsSyncedAfterCreate = false;
+          if (newId.isNotEmpty) {
+            final pendingPayments = maintenancePayments
+                .where((payment) => payment['is_pending'] == true)
+                .map((payment) => Map<String, dynamic>.from(payment))
+                .toList();
             this.maintenanceId = newId;
             isEdit(true);
-            await clearLocalMaintenanceDraft();
+            await syncProductsIfPossible(editReason: deliveredEditReason);
+            productsSyncedAfterCreate = true;
+
+            final failedPendingPayments = <Map<String, dynamic>>[];
+            for (final payment in pendingPayments) {
+              final saved = await addMaintenancePayment(
+                amount: SalesAmountFormat.parse('${payment['amount']}'),
+                note: '${payment['note'] ?? ''}',
+              );
+              if (!saved) {
+                failedPendingPayments.add(payment);
+              }
+            }
+            if (failedPendingPayments.isEmpty) {
+              await clearLocalMaintenanceDraft();
+            } else {
+              maintenancePayments.addAll(failedPendingPayments);
+              maintenancePaidAmount.value = maintenancePayments.fold<double>(
+                0,
+                (sum, payment) =>
+                    sum + SalesAmountFormat.parse('${payment['amount']}'),
+              );
+              AppSuccessNotice.show(
+                title: 'تم حفظ الطلب ولم يثبت كامل العربون',
+                message:
+                    'بقيت الدفعات غير المثبتة ظاهرة لتتمكن من إعادة المحاولة.',
+              );
+            }
           }
-          await syncProductsIfPossible(editReason: deliveredEditReason);
+          if (!productsSyncedAfterCreate) {
+            await syncProductsIfPossible(editReason: deliveredEditReason);
+          }
           if (!silent) {
             getMaintenancesData();
           }
           if (isSave) Get.back();
           if (!silent) {
-            Get.snackbar(
-              'success'.tr,
-              success['message'] ?? '',
-              snackPosition: SnackPosition.BOTTOM,
+            AppSuccessNotice.show(
+              title: 'success'.tr,
+              message: success['message'] ?? '',
             );
           }
         },
@@ -1891,12 +2000,9 @@ class MaintenanceController extends GetxController {
       return result.isRight();
     } catch (e) {
       if (!silent) {
-        Get.snackbar(
-          'error'.tr,
-          e.toString(),
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: e.toString(),
         );
       }
       return false;
@@ -1937,7 +2043,10 @@ class MaintenanceController extends GetxController {
             onPressed: () {
               final value = controller.text.trim();
               if (value.isEmpty) {
-                Get.snackbar('error'.tr, 'يجب إدخال سبب التعديل');
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'يجب إدخال سبب التعديل',
+                );
                 return;
               }
               Get.back<String>(result: value);

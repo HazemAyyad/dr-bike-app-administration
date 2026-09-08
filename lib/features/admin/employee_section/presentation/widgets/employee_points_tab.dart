@@ -13,7 +13,9 @@ import '../controllers/employee_points_controller.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../../../whatsapp_center/presentation/widgets/whatsapp_camera_image_picker.dart';
 import 'employee_point_evidence_preview.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Points & Rewards tab body: monthly summary card, filters, logs, action buttons.
 class EmployeePointsTab extends StatelessWidget {
   const EmployeePointsTab({Key? key, required this.employeeId})
@@ -1396,7 +1398,10 @@ class _RuleOverridesDialogState extends State<_RuleOverridesDialog> {
       _overrides = results[1] as List<EmployeePointRuleOverrideModel>;
       _selectedRuleId = _rules.isEmpty ? null : _rules.first.id;
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1406,7 +1411,10 @@ class _RuleOverridesDialogState extends State<_RuleOverridesDialog> {
     if (_selectedRuleId == null) return;
     final points = int.tryParse(_pointsCtrl.text.trim());
     if (!_isExcluded && points == null) {
-      Get.snackbar('خطأ', 'اكتب عدد النقاط أو فعل خيار استثناء الموظف');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'اكتب عدد النقاط أو فعل خيار استثناء الموظف',
+      );
       return;
     }
     setState(() => _saving = true);
@@ -1423,9 +1431,15 @@ class _RuleOverridesDialogState extends State<_RuleOverridesDialog> {
       _pointsCtrl.clear();
       _notesCtrl.clear();
       await _load();
-      Get.snackbar('تم', 'تم حفظ تخصيص قاعدة الموظف');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ تخصيص قاعدة الموظف',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1440,7 +1454,10 @@ class _RuleOverridesDialogState extends State<_RuleOverridesDialog> {
       );
       await _load();
     } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }

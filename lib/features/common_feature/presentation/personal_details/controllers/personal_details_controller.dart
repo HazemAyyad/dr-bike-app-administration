@@ -13,6 +13,8 @@ import '../../../../auth/data/models/user_model.dart';
 import '../../../domain/usecases/get_user_data_usecase.dart';
 import '../../../domain/usecases/user_profile_usecase.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class PersonalDetailsController extends GetxController {
   final UserProfileUseCase userProfileUseCase;
   final GetUserDataUsecase getUserDataUsecase;
@@ -105,20 +107,18 @@ class PersonalDetailsController extends GetxController {
     }
 
     if (nameController.text.isEmpty || emailController.text.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'pleaseFillAllFields'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'pleaseFillAllFields'.tr,
       );
       return;
     }
 
     if (!isAdmin &&
         (phoneController.text.isEmpty || city.value.isEmpty)) {
-      Get.snackbar(
-        'error'.tr,
-        'pleaseFillAllFields'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'pleaseFillAllFields'.tr,
       );
       return;
     }
@@ -126,7 +126,10 @@ class PersonalDetailsController extends GetxController {
     final emailError =
         Validators.validateEmail(emailController.text, Get.locale!.languageCode);
     if (emailError != null) {
-      Get.snackbar('error'.tr, emailError, snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: emailError,
+      );
       return;
     }
 
@@ -134,18 +137,16 @@ class PersonalDetailsController extends GetxController {
     if (phoneController.text.trim().isNotEmpty) {
       phoneForApi = _compactPhone(phoneController.text, required: true);
       if (phoneForApi == null) {
-        Get.snackbar(
-          'error'.tr,
-          'invalidPhoneNumber'.tr,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'invalidPhoneNumber'.tr,
         );
         return;
       }
     } else if (!isAdmin) {
-      Get.snackbar(
-        'error'.tr,
-        'invalidPhoneNumber'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidPhoneNumber'.tr,
       );
       return;
     }
@@ -155,10 +156,9 @@ class PersonalDetailsController extends GetxController {
         : (_compactPhone(subPhoneController.text, required: false) ?? '');
 
     if (subPhoneController.text.trim().isNotEmpty && subPhoneForApi.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'invalidPhoneNumber'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidPhoneNumber'.tr,
       );
       return;
     }

@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 
 import 'sweet_success_dialog.dart';
 
+import 'app_failure_notice.dart';
 class VideoView extends StatefulWidget {
   const VideoView({
     Key? key,
@@ -274,11 +275,9 @@ class _VideoViewState extends State<VideoView> {
         throw Exception("فشل الحفظ في المعرض");
       }
     } catch (e) {
-      Get.snackbar(
-        "خطأ",
-        "فشل التحميل: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      AppFailureNotice.show(
+        title: "خطأ",
+        message: "فشل التحميل: $e",
       );
     }
   }

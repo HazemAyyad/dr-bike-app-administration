@@ -8,6 +8,8 @@ import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
 import 'sales_skeleton_widgets.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesDailyStatusBar extends GetView<SalesController> {
   const SalesDailyStatusBar({
     this.salesOrders = false,
@@ -533,7 +535,10 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       await onOpened?.call();
     } catch (e) {
       debugPrint('[SalesDailyOpenDebug][Dialog] error=$e');
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 300));
       for (final ctrl in controllers.values) {

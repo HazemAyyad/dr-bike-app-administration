@@ -19,7 +19,9 @@ import 'package:flutter_svg/flutter_svg.dart' as svg;
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class WhatsAppCenterController extends GetxController {
   final WhatsAppApiService api;
   WhatsAppCenterController(this.api);
@@ -155,8 +157,10 @@ class WhatsAppCenterController extends GetxController {
           selectedChannel.value == 'whatsapp' && _conversationPage < lastPage;
     } catch (e) {
       if (append) {
-        Get.snackbar('تعذر تحميل المزيد', _message(e),
-            snackPosition: SnackPosition.BOTTOM);
+        AppFailureNotice.show(
+          title: 'تعذر تحميل المزيد',
+          message: _message(e),
+        );
       } else {
         error.value = _message(e);
       }
@@ -366,9 +370,15 @@ class WhatsAppCenterController extends GetxController {
       whatsAppEmployees.assignAll(employees.whereType<Map>().map((item) =>
           WhatsAppEmployeeAccess.fromJson(Map<String, dynamic>.from(item))));
       _syncEmployeeChannelAccess();
-      Get.snackbar('تم', 'تم تحديث صلاحيات مركز التواصل');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم تحديث صلاحيات مركز التواصل',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
     } finally {
       actionLoading.value = false;
     }
@@ -448,12 +458,18 @@ class WhatsAppCenterController extends GetxController {
   Future<void> openChannel(SocialChannelSetting channel) async {
     final url = channel.url;
     if (url == null || url.trim().isEmpty) {
-      Get.snackbar('غير متاح', 'لا يوجد رابط لهذه القناة');
+      AppFailureNotice.show(
+        title: 'غير متاح',
+        message: 'لا يوجد رابط لهذه القناة',
+      );
       return;
     }
     final uri = Uri.tryParse(url.trim());
     if (uri == null) {
-      Get.snackbar('خطأ', 'الرابط غير صالح');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'الرابط غير صالح',
+      );
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -462,7 +478,10 @@ class WhatsAppCenterController extends GetxController {
   Future<void> shareChannel(SocialChannelSetting channel) async {
     final url = channel.url;
     if (url == null || url.trim().isEmpty) {
-      Get.snackbar('غير متاح', 'لا يوجد رابط للمشاركة');
+      AppFailureNotice.show(
+        title: 'غير متاح',
+        message: 'لا يوجد رابط للمشاركة',
+      );
       return;
     }
     await Share.share('${channel.name} دكتور بايك\n$url');
@@ -471,11 +490,17 @@ class WhatsAppCenterController extends GetxController {
   Future<void> copyChannelLink(SocialChannelSetting channel) async {
     final url = channel.url;
     if (url == null || url.trim().isEmpty) {
-      Get.snackbar('غير متاح', 'لا يوجد رابط للنسخ');
+      AppFailureNotice.show(
+        title: 'غير متاح',
+        message: 'لا يوجد رابط للنسخ',
+      );
       return;
     }
     await Clipboard.setData(ClipboardData(text: url.trim()));
-    Get.snackbar('تم', 'تم نسخ الرابط');
+    AppSuccessNotice.show(
+      title: 'تم',
+      message: 'تم نسخ الرابط',
+    );
   }
 
   Future<bool> sendDirect(String phone, String message,
@@ -491,11 +516,17 @@ class WhatsAppCenterController extends GetxController {
       if (result['status'] != 'success') {
         throw Exception(result['message'] ?? 'تعذر الإرسال');
       }
-      Get.snackbar('تم', 'تم إرسال الرسالة بنجاح');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم إرسال الرسالة بنجاح',
+      );
       await loadDashboard();
       return true;
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
       return false;
     } finally {
       actionLoading.value = false;
@@ -511,10 +542,16 @@ class WhatsAppCenterController extends GetxController {
         await api.updateWhatsAppTemplate(id, data);
       }
       await loadTemplates();
-      Get.snackbar('تم', 'تم حفظ القالب');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حفظ القالب',
+      );
       return true;
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
       return false;
     } finally {
       actionLoading.value = false;
@@ -526,9 +563,15 @@ class WhatsAppCenterController extends GetxController {
     try {
       await api.deleteWhatsAppTemplate(id);
       templates.removeWhere((item) => item.id == id);
-      Get.snackbar('تم', 'تم حذف القالب');
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: 'تم حذف القالب',
+      );
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
     } finally {
       actionLoading.value = false;
     }

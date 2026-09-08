@@ -4,7 +4,9 @@ import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesSettingsScreen extends StatefulWidget {
   const SalesSettingsScreen({Key? key}) : super(key: key);
 
@@ -46,7 +48,10 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
         setState(() => _settings = Map<String, dynamic>.from(raw));
       }
       Get.back();
-      Get.snackbar('تم الحفظ', 'تم تحديث إعدادات المبيعات بنجاح');
+      AppSuccessNotice.show(
+        title: 'تم الحفظ',
+        message: 'تم تحديث إعدادات المبيعات بنجاح',
+      );
     } catch (error) {
       _showError(error);
     }
@@ -332,7 +337,10 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
 
   void _showError(Object error) {
     if (!mounted) return;
-    Get.snackbar('تعذر إكمال العملية', error.toString());
+    AppFailureNotice.show(
+      title: 'تعذر إكمال العملية',
+      message: error.toString(),
+    );
   }
 
   @override

@@ -19,7 +19,9 @@ import '../../domain/usecases/completed_special_tasks_usecase.dart';
 import '../../domain/usecases/special_task_details_usecase.dart';
 import '../../domain/usecases/special_tasks_usecase.dart';
 import 'special_tasks_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SpecialTasksController extends GetxController {
   static const String tasksViewDaily = 'daily';
   static const String tasksViewWeekly = 'weekly';
@@ -312,11 +314,9 @@ class SpecialTasksController extends GetxController {
 
     result.fold(
       (failure) {
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
         checkedMap[specialTaskId]?.value = false;
       },
@@ -329,11 +329,9 @@ class SpecialTasksController extends GetxController {
           AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
         }
 
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -346,11 +344,9 @@ class SpecialTasksController extends GetxController {
   void cancelSpecialTasks({required String specialTaskId}) async {
     if (transferTask.value) {
       if (isPastTransferDay(selectedDay.value)) {
-        Get.snackbar(
-          'error'.tr,
-          'transferTaskError'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'transferTaskError'.tr,
         );
         return;
       }
@@ -367,20 +363,16 @@ class SpecialTasksController extends GetxController {
 
     result.fold(
       (failure) {
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) async {
         Get.back();
-        Get.snackbar(
-          success,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
         await getSpecialTasks(scrollToTodayb: false);
 
@@ -407,21 +399,21 @@ class SpecialTasksController extends GetxController {
         specialTasksService.specialTaskDetails.value = null;
         await getSpecialTasks(scrollToTodayb: false);
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          '${res['message'] ?? 'taskConvertedToEmployee'.tr}',
-          snackPosition: SnackPosition.BOTTOM,
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${res['message'] ?? 'taskConvertedToEmployee'.tr}',
         );
         return;
       }
-      Get.snackbar(
-        'error'.tr,
-        '${res['message'] ?? ''}',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
       );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       isConvertingTask(false);
     }
@@ -516,26 +508,20 @@ class SpecialTasksController extends GetxController {
         Get.back();
         await getSpecialTasksDetails(specialTaskId: specialTaskId);
         await getSpecialTasks(scrollToTodayb: false);
-        Get.snackbar(
-          'success'.tr,
-          '${result['message'] ?? 'task_canceled'.tr}',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${result['message'] ?? 'task_canceled'.tr}',
         );
       } else {
-        Get.snackbar(
-          'error'.tr,
-          '${result['message'] ?? ''}',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: '${result['message'] ?? ''}',
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1000),
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLoading(false);
@@ -557,26 +543,20 @@ class SpecialTasksController extends GetxController {
         Get.back();
         await getSpecialTasksDetails(specialTaskId: specialTaskId);
         await getSpecialTasks(scrollToTodayb: false);
-        Get.snackbar(
-          'success'.tr,
-          '${result['message'] ?? 'subtaskUndoSuccess'.tr}',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: '${result['message'] ?? 'subtaskUndoSuccess'.tr}',
         );
       } else {
-        Get.snackbar(
-          'error'.tr,
-          '${result['message'] ?? ''}',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: '${result['message'] ?? ''}',
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1000),
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLoading(false);

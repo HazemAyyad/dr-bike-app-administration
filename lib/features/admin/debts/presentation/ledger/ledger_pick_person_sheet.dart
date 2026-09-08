@@ -9,6 +9,7 @@ import '../../data/models/debt_ledger_models.dart';
 import '../../domain/repositories/debt_ledger_repository.dart';
 import 'ledger_colors.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class LedgerPickPersonSheet extends StatefulWidget {
   const LedgerPickPersonSheet({
     Key? key,
@@ -53,7 +54,10 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
     result.fold(
       (failure) {
         _people.clear();
-        Get.snackbar('error'.tr, failure.errMessage);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
       },
       (list) => _people.assignAll(list),
     );

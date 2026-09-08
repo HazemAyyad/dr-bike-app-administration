@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_reward_rule_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeRewardRulesController extends GetxController {
   EmployeeRewardRulesController({
     required this.fetchRulesUsecase,
@@ -36,8 +37,10 @@ class EmployeeRewardRulesController extends GetxController {
       rules.assignAll(await fetchRulesUsecase.call());
     } on Failure catch (e) {
       errorMessage.value = e.errMessage;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -65,18 +68,17 @@ class EmployeeRewardRulesController extends GetxController {
       );
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (_) {
           loadRules();
-          Get.snackbar(
-            'success'.tr,
-            'rewardRuleCreated'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'rewardRuleCreated'.tr,
           );
           return true;
         },
@@ -112,8 +114,10 @@ class EmployeeRewardRulesController extends GetxController {
       );
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (rule) {
@@ -123,12 +127,9 @@ class EmployeeRewardRulesController extends GetxController {
           } else {
             loadRules();
           }
-          Get.snackbar(
-            'success'.tr,
-            'rewardRuleUpdated'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'rewardRuleUpdated'.tr,
           );
           return true;
         },
@@ -148,18 +149,17 @@ class EmployeeRewardRulesController extends GetxController {
       final result = await deleteRuleUsecase.call(id: id);
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (_) {
           rules.removeWhere((r) => r.id == id);
-          Get.snackbar(
-            'success'.tr,
-            'rewardRuleDeleted'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'rewardRuleDeleted'.tr,
           );
           return true;
         },

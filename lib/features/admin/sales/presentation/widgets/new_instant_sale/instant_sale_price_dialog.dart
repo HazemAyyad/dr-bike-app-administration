@@ -7,6 +7,7 @@ import '../../../data/models/product_model.dart';
 import '../../utils/sales_amount_format.dart';
 import 'instant_sale_dialog_shell.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class InstantSalePriceDialogResult {
   final double retailPrice;
   final double wholesalePrice;
@@ -68,7 +69,10 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
   void _onSave() {
     final retail = SalesAmountFormat.parse(_retailCtrl.text);
     if (retail <= 0) {
-      Get.snackbar('error'.tr, 'instantSaleRetailPriceRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'instantSaleRetailPriceRequired'.tr,
+      );
       return;
     }
     _close(

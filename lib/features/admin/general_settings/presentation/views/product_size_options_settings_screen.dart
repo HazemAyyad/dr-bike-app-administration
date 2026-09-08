@@ -6,7 +6,9 @@ import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/outline_input_style.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Admin CRUD for product size dropdown presets.
 class ProductSizeOptionsSettingsScreen extends StatefulWidget {
   const ProductSizeOptionsSettingsScreen({Key? key}) : super(key: key);
@@ -38,8 +40,10 @@ class _ProductSizeOptionsSettingsScreenState
         ..clear()
         ..addAll(list);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -52,11 +56,15 @@ class _ProductSizeOptionsSettingsScreenState
       _sizes
         ..clear()
         ..addAll(saved);
-      Get.snackbar('success'.tr, 'settingsUpdated'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -79,8 +87,10 @@ class _ProductSizeOptionsSettingsScreenState
     }
 
     if (value.isEmpty) {
-      Get.snackbar('error'.tr, 'sizeRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'sizeRequired'.tr,
+      );
       return;
     }
 
@@ -90,8 +100,10 @@ class _ProductSizeOptionsSettingsScreenState
               e.value.trim().toLowerCase() == value.toLowerCase(),
         );
     if (duplicate) {
-      Get.snackbar('error'.tr, 'sizeOptionDuplicate'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'sizeOptionDuplicate'.tr,
+      );
       return;
     }
 
@@ -202,9 +214,8 @@ class _ProductSizeOptionsSettingsScreenState
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: _saving
-                                  ? null
-                                  : () => _confirmDelete(index),
+                              onPressed:
+                                  _saving ? null : () => _confirmDelete(index),
                             ),
                           ],
                         ),

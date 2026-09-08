@@ -12,6 +12,7 @@ import '../../data/models/maintenance_service_model.dart';
 import '../../data/repositories/maintenance_implement.dart';
 import '../widgets/maintenance_service_media.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MaintenanceServicesSettingsScreen extends StatefulWidget {
   const MaintenanceServicesSettingsScreen({Key? key}) : super(key: key);
 
@@ -46,12 +47,9 @@ class _MaintenanceServicesSettingsScreenState
       final rows = await datasource.getMaintenanceServices(search: search);
       _services.assignAll(rows);
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       _loading(false);
@@ -98,10 +96,16 @@ class _MaintenanceServicesSettingsScreenState
       if (response['status'] == 'success') {
         await _load(search: _searchController.text);
       } else {
-        Get.snackbar('error'.tr, response['message']?.toString() ?? '');
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: response['message']?.toString() ?? '',
+        );
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -400,16 +404,16 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
       if (response['status'] == 'success') {
         Get.back(result: true);
       } else {
-        Get.snackbar(
-          'error'.tr,
-          _responseErrorMessage(response),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: _responseErrorMessage(response),
         );
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }

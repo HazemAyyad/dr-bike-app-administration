@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../../data/meta_catalog_api_service.dart';
 import '../../data/meta_catalog_models.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MetaCatalogController extends GetxController {
   MetaCatalogController(this.api);
   final MetaCatalogApiService api;
@@ -166,7 +168,10 @@ class MetaCatalogController extends GetxController {
           ? _asInt(block['last_page'], fallback: _productsPage)
           : _productsPage;
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
     } finally {
       loadingMoreProducts.value = false;
     }
@@ -275,10 +280,15 @@ class MetaCatalogController extends GetxController {
       if (result['status'] != 'success') {
         throw Exception(result['message'] ?? 'تعذر تنفيذ العملية');
       }
-      Get.snackbar('تم', result['message']?.toString() ?? success,
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'تم',
+        message: result['message']?.toString() ?? success,
+      );
     } catch (e) {
-      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: _message(e),
+      );
     } finally {
       actionLoading.value = false;
     }

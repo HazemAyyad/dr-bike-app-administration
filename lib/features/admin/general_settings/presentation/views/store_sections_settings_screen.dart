@@ -9,7 +9,9 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
 import '../../../stock/presentation/controllers/stock_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StoreSectionsSettingsScreen extends StatefulWidget {
   const StoreSectionsSettingsScreen({Key? key}) : super(key: key);
 
@@ -47,8 +49,10 @@ class _StoreSectionsSettingsScreenState
         ..clear()
         ..addAll(list);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -69,8 +73,10 @@ class _StoreSectionsSettingsScreenState
     final name = result['name']?.trim() ?? '';
     final description = result['description']?.trim() ?? '';
     if (name.isEmpty) {
-      Get.snackbar('error'.tr, 'storeSectionName'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'storeSectionName'.tr,
+      );
       return;
     }
 
@@ -89,11 +95,15 @@ class _StoreSectionsSettingsScreenState
       }
       await _load();
       await _notifyStockProductsRefresh();
-      Get.snackbar('success'.tr, 'settingsUpdated'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -122,10 +132,15 @@ class _StoreSectionsSettingsScreenState
       await _ds.deleteStoreSection(id: section.id);
       await _load();
       await _notifyStockProductsRefresh();
-      Get.snackbar('success'.tr, 'OK', snackPosition: SnackPosition.BOTTOM);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'OK',
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 

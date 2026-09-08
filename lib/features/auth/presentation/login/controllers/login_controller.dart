@@ -23,6 +23,9 @@ import '../../../../admin/notifications/presentation/controllers/admin_notificat
 import '../../../../employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../domain/usecases/login_usecase.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 class LoginController extends GetxController {
   Login login;
   LoginController({required this.login});
@@ -300,12 +303,10 @@ class LoginController extends GetxController {
     required String message,
     bool isError = false,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
-      colorText: Colors.white,
-    );
+    if (isError) {
+      AppFailureNotice.show(title: title, message: message);
+      return;
+    }
+    AppSuccessNotice.show(title: title, message: message);
   }
 }

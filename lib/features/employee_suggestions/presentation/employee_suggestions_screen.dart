@@ -7,8 +7,11 @@ import 'package:doctorbike/features/employee_suggestions/data/employee_suggestio
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+
+import '../../../core/helpers/app_success_notice.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/helpers/app_failure_notice.dart';
 class _SuggestionPalette {
   static const page = Color(0xffeef0f2);
   static const sheet = Color(0xffe9ecef);
@@ -122,7 +125,10 @@ class _EmployeeSuggestionsScreenState extends State<EmployeeSuggestionsScreen> {
       editingSuggestionId = null;
       await _load();
       if (mounted) Navigator.pop(context);
-      _message((wasEditing ? 'suggestionUpdated' : 'suggestionSent').tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: (wasEditing ? 'suggestionUpdated' : 'suggestionSent').tr,
+      );
     } catch (e) {
       _message(e.toString());
     } finally {
@@ -167,7 +173,10 @@ class _EmployeeSuggestionsScreenState extends State<EmployeeSuggestionsScreen> {
     try {
       await service.deleteMySuggestion(item.id);
       await _load();
-      _message('suggestionDeleted'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'suggestionDeleted'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     } finally {
@@ -185,7 +194,10 @@ class _EmployeeSuggestionsScreenState extends State<EmployeeSuggestionsScreen> {
       adminNoteController.clear();
       await _load();
       if (mounted) Navigator.pop(context);
-      _message('suggestionUpdated'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'suggestionUpdated'.tr,
+      );
     } catch (e) {
       _message(e.toString());
     }
@@ -193,8 +205,10 @@ class _EmployeeSuggestionsScreenState extends State<EmployeeSuggestionsScreen> {
 
   void _message(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    AppFailureNotice.show(
+      context: context,
+      title: 'خطأ',
+      message: message,
     );
   }
 

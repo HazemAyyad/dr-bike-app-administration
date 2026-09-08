@@ -125,7 +125,7 @@ class _SwipeAction extends StatelessWidget {
         borderRadius: BorderRadius.circular(10.r),
         child: SizedBox(
           width: _EmployeeCardSwipeState._actionWidth.w,
-          height: 78.h,
+          height: 74.h,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

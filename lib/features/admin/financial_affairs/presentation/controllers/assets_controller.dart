@@ -19,7 +19,9 @@ import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
 import 'finacial_service.dart';
 import '../utils/financial_report_pdf_builder.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AssetsController extends GetxController {
   final GetAllFinancialUsecase getAllFinancialUsecase;
   final GetAssetsLogsUsecase getAssetsLogsUsecase;
@@ -120,7 +122,10 @@ class AssetsController extends GetxController {
     try {
       depreciationPreview.value = await getDepreciationPreviewUsecase.call();
     } catch (error) {
-      Get.snackbar('error'.tr, error.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: error.toString(),
+      );
     } finally {
       isLoadingDepreciationPreview.value = false;
     }
@@ -346,11 +351,9 @@ class AssetsController extends GetxController {
     final result = await depreciateOneAssetsUsecase.call(assetId: assetId);
     result.fold(
       (failure) {
-        Get.snackbar(
-          "error".tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: "error".tr,
+          message: failure.errMessage,
         );
       },
       (success) {
@@ -358,11 +361,9 @@ class AssetsController extends GetxController {
         final id = assetDetails.value?.id;
         if (id != null) getAssetsDetials(assetId: id.toString());
 
-        Get.snackbar(
-          "success".tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: "success".tr,
+          message: success,
         );
       },
     );
@@ -377,12 +378,9 @@ class AssetsController extends GetxController {
 
     result.fold(
       (failure) {
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          colorText: Colors.white,
-          backgroundColor: Colors.red,
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: failure.errMessage,
         );
       },
       (success) {
@@ -390,13 +388,9 @@ class AssetsController extends GetxController {
         getAssetsLogs();
         loadDepreciationPreview();
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          colorText: Colors.white,
-          backgroundColor: Colors.green,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -441,19 +435,15 @@ class AssetsController extends GetxController {
       await file.writeAsBytes(response);
       _closeReportProgress();
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      Get.snackbar(
-        "fileDownloadedSuccessfully".tr,
-        filePath,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2000),
+      AppSuccessNotice.show(
+        title: "fileDownloadedSuccessfully".tr,
+        message: filePath,
       );
       await OpenFilex.open(filePath);
     } catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 2500),
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
       );
     } finally {
       _closeReportProgress();

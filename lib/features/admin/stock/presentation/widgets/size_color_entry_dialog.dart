@@ -11,6 +11,7 @@ import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/stock_controller.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Modal for adding or editing a single size+color entry (Arabic color name only).
 class SizeColorEntryDialog extends StatefulWidget {
   const SizeColorEntryDialog({
@@ -98,23 +99,31 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
     final price = _priceCtrl.text.trim();
 
     if (size.isEmpty) {
-      Get.snackbar('error'.tr, 'sizeRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'sizeRequired'.tr,
+      );
       return;
     }
     if (colorAr.isEmpty) {
-      Get.snackbar('error'.tr, 'colorArRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'colorArRequired'.tr,
+      );
       return;
     }
     if (qty.isEmpty) {
-      Get.snackbar('error'.tr, 'quantityRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'quantityRequired'.tr,
+      );
       return;
     }
     if (price.isEmpty) {
-      Get.snackbar('error'.tr, 'priceRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'priceRequired'.tr,
+      );
       return;
     }
 
@@ -124,10 +133,9 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       excludeColorIdx: isEdit ? widget.colorIdx : null,
     );
     if (qtyErr != null) {
-      Get.snackbar(
-        'error'.tr,
-        qtyErr.trParams({'stock': '${c.productStockTotal}'}),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: qtyErr.trParams({'stock': '${c.productStockTotal}'}),
       );
       return;
     }

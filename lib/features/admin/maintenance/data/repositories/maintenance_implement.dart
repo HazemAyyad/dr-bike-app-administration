@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/connection/network_info.dart';
@@ -14,6 +13,7 @@ import '../models/maintenance_invoice_model.dart';
 import '../datasources/maintenance_datasource.dart';
 import '../models/maintenance_product_model.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MaintenanceImplement implements MaintenanceRepository {
   final MaintenanceDatasource maintenanceDatasource;
   final NetworkInfo networkInfo;
@@ -28,12 +28,9 @@ class MaintenanceImplement implements MaintenanceRepository {
         final result = await maintenanceDatasource.getMaintenances(tab: tab);
         return result;
       } on ServerException catch (e) {
-        Get.snackbar(
-          "error".tr,
-          e.errorModel.errorMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: "error".tr,
+          message: e.errorModel.errorMessage,
         );
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
@@ -88,12 +85,9 @@ class MaintenanceImplement implements MaintenanceRepository {
         );
       }
     } on DioException catch (e) {
-      Get.snackbar(
-        "error".tr,
-        e.message ?? 'error'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.message ?? 'error'.tr,
       );
       return Left(ServerFailure(e.message ?? 'error'.tr, {}));
     }
@@ -108,12 +102,9 @@ class MaintenanceImplement implements MaintenanceRepository {
         );
         return result;
       } on ServerException catch (e) {
-        Get.snackbar(
-          "error".tr,
-          e.errorModel.errorMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
+        AppFailureNotice.show(
+          title: "error".tr,
+          message: e.errorModel.errorMessage,
         );
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }

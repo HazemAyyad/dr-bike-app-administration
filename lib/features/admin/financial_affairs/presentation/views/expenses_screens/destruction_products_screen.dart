@@ -13,6 +13,8 @@ import '../../widgets/financial_media_camera.dart';
 import '../../widgets/financial_operational_ui.dart';
 import 'destruction_product_picker_screen.dart';
 
+
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class DestructionProductsScreen extends GetView<ExpensesController> {
   const DestructionProductsScreen({Key? key}) : super(key: key);
 
@@ -310,12 +312,12 @@ class _DestructionLineCard extends StatelessWidget {
   ) {
     final value = int.tryParse(input.text);
     if (value == null || value < 1 || (max != null && value > max)) {
-      ScaffoldMessenger.of(dialogContext).showSnackBar(
-        SnackBar(
-          content: Text(max == null
+      AppFailureNotice.show(
+        context: dialogContext,
+        title: 'خطأ',
+        message: max == null
               ? 'أدخل كمية صحيحة أكبر من صفر'
-              : 'الكمية يجب أن تكون بين 1 و $max'),
-        ),
+              : 'الكمية يجب أن تكون بين 1 و $max',
       );
       return;
     }

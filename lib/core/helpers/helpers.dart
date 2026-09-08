@@ -10,6 +10,8 @@ import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/assets_manger.dart';
 import '../utils/screen_util_new.dart';
+import 'app_failure_notice.dart';
+import 'app_success_notice.dart';
 
 class Helpers {
   //showCustomDialogError
@@ -18,89 +20,12 @@ class Helpers {
     required String title,
     required String message,
   }) {
-    showDialog(
+    AppFailureNotice.showBlocking(
       context: context,
+      title: title,
+      message: message,
       barrierDismissible: false,
-      barrierColor: const Color(0XFFD9D9D9).withOpacity(0.55),
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), // الزوايا المستديرة
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
-            decoration: BoxDecoration(
-              color: ThemeService.isDark.value
-                  ? AppColors.darkColor
-                  : AppColors.whiteColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 16.h,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SvgPicture.asset(
-                      AssetsManager.errorImage,
-                      height: 90.h,
-                      width: 90.w,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      title.tr,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: const Color(0XFFC01A1A),
-                            fontSize: 24.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      message,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: const Color(0XFF8C9191),
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                          ),
-                      // maxLines: 2,
-                      // overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 24.h),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0XFFC01A1A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        minimumSize: Size(
-                            double.infinity, 47.h), // عرض الزر 100% من الشاشة
-                      ),
-                      onPressed: () {
-                        Get.back(); // إغلاق الـ Dialog
-                      },
-                      child: Text(
-                        'tryAgain'.tr,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: Colors.white,
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+      actionLabel: 'tryAgain'.tr,
     );
   }
 
@@ -109,20 +34,13 @@ class Helpers {
     required BuildContext context,
     required String title,
     required String message,
-    Duration autoCloseAfter = const Duration(milliseconds: 500),
+    Duration autoCloseAfter = AppSuccessNotice.defaultDuration,
   }) {
-    showGeneralDialog(
+    AppSuccessNotice.show(
       context: context,
-      barrierDismissible: false,
-      barrierColor: const Color(0XFFD9D9D9).withOpacity(0.55),
-      transitionDuration: Duration.zero,
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        return _AutoCloseSuccessDialog(
-          title: title,
-          message: message,
-          autoCloseAfter: autoCloseAfter,
-        );
-      },
+      title: title,
+      message: message,
+      duration: AppSuccessNotice.defaultDuration,
     );
   }
 
@@ -198,185 +116,11 @@ class Helpers {
       {required BuildContext context,
       required String title,
       required String message}) {
-    showDialog(
+    AppFailureNotice.showBlocking(
       context: context,
+      title: title,
+      message: message,
       barrierDismissible: true,
-      barrierColor: const Color(0XFFD9D9D9).withOpacity(0.55),
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), // الزوايا المستديرة
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: ScreenUtilNew.width(16),
-                vertical: ScreenUtilNew.height(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(
-                    AssetsManager.errorImage,
-                    height: ScreenUtilNew.height(89),
-                    width: ScreenUtilNew.width(89),
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(height: ScreenUtilNew.height(4)),
-                  Text(
-                    title.tr,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cairo(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.blackColor,
-                    ),
-                  ),
-                  SizedBox(height: ScreenUtilNew.height(4)),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.cairo(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0XFF8C9191),
-                    ),
-                    // maxLines: 2,
-                    // overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Success dialog that closes itself after [autoCloseAfter].
-class _AutoCloseSuccessDialog extends StatefulWidget {
-  const _AutoCloseSuccessDialog({
-    required this.title,
-    required this.message,
-    required this.autoCloseAfter,
-  });
-
-  final String title;
-  final String message;
-  final Duration autoCloseAfter;
-
-  @override
-  State<_AutoCloseSuccessDialog> createState() =>
-      _AutoCloseSuccessDialogState();
-}
-
-class _AutoCloseSuccessDialogState extends State<_AutoCloseSuccessDialog> {
-  @override
-  void initState() {
-    super.initState();
-    if (widget.autoCloseAfter > Duration.zero) {
-      Future.delayed(widget.autoCloseAfter, _closeIfMounted);
-    }
-  }
-
-  void _closeIfMounted() {
-    if (!mounted) return;
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-    final cardColor = isDark ? AppColors.darkColor : AppColors.whiteColor;
-    final textColor = isDark ? AppColors.whiteColor : AppColors.blackColor;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22.r),
-      ),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.72,
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(22.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.14),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 18.w,
-            vertical: 18.h,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56.w,
-                height: 56.w,
-                decoration: BoxDecoration(
-                  color: const Color(0XFF39C67E).withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Container(
-                    width: 40.w,
-                    height: 40.w,
-                    decoration: const BoxDecoration(
-                      color: Color(0XFF39C67E),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 25.sp,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 9.h),
-              Text(
-                widget.title.tr,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0XFF39C67E),
-                ),
-              ),
-              if (widget.message.trim().isNotEmpty) ...[
-                SizedBox(height: 4.h),
-                Text(
-                  widget.message,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.cairo(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: textColor.withOpacity(0.55),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

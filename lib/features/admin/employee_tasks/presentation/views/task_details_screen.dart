@@ -20,6 +20,7 @@ import '../widgets/task_media_thumbnail_row.dart';
 import '../widgets/task_status_badge.dart';
 import '../widgets/task_timeline_section.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class TaskDetailsScreen extends GetView<EmployeeTasksController> {
   const TaskDetailsScreen({Key? key}) : super(key: key);
 
@@ -398,10 +399,9 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                       if (dashboardController == null) return;
 
                       if (!controller.canCompleteTask(data)) {
-                        Get.snackbar(
-                          'error'.tr,
-                          'employeeImageRequired'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
+                        AppFailureNotice.show(
+                          title: 'error'.tr,
+                          message: 'employeeImageRequired'.tr,
                         );
                         return;
                       }

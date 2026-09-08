@@ -18,6 +18,7 @@ import 'sweet_success_dialog.dart';
 import 'task_media_paths.dart';
 import 'video_view.dart';
 
+import 'app_failure_notice.dart';
 class FullScreenZoomImage extends StatelessWidget {
   final String imageUrl;
   final List<String>? imageUrls;
@@ -117,11 +118,9 @@ class FullScreenZoomImage extends StatelessWidget {
       return true;
     } catch (e) {
       if (showFeedback) {
-        Get.snackbar(
-          "خطأ",
-          "فشل التحميل: $e",
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
+        AppFailureNotice.show(
+          title: "خطأ",
+          message: "فشل التحميل: $e",
         );
       }
       return false;
@@ -164,11 +163,9 @@ class FullScreenZoomImage extends StatelessWidget {
         savedCount++;
       }
     } catch (e) {
-      Get.snackbar(
-        "خطأ",
-        "فشل تحميل بعض الملفات: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      AppFailureNotice.show(
+        title: "خطأ",
+        message: "فشل تحميل بعض الملفات: $e",
       );
     }
 
@@ -230,11 +227,9 @@ class FullScreenZoomImage extends StatelessWidget {
 
       await Printing.layoutPdf(onLayout: (_) async => doc.save());
     } catch (e) {
-      Get.snackbar(
-        "خطأ",
-        "فشل تجهيز الطباعة: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
+      AppFailureNotice.show(
+        title: "خطأ",
+        message: "فشل تجهيز الطباعة: $e",
       );
     }
   }

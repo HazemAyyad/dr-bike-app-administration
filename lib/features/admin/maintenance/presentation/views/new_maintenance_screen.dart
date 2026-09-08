@@ -20,6 +20,8 @@ import '../widgets/maintenance_service_media.dart';
 import '../widgets/maintenance_products_section.dart';
 import '../widgets/next_back_button.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class NewMaintenanceScreen extends StatelessWidget {
   const NewMaintenanceScreen({Key? key}) : super(key: key);
 
@@ -52,26 +54,45 @@ class NewMaintenanceScreen extends StatelessWidget {
                     if (controller.isEdit.value) ...[
                       _MaintenanceAutoSaveStatus(controller: controller),
                       SizedBox(height: 8.h),
+                    ] else ...[
+                      const _MaintenanceLocalDraftStatus(),
+                      SizedBox(height: 8.h),
                     ],
                     _MaintenanceStageTitle(controller: controller),
-                    SizedBox(height: 12.h),
-                    _MaintenancePartnerSearch(controller: controller),
-                    SizedBox(height: 10.h),
-                    _MaintenanceDeliveryDateTimeFields(controller: controller),
-                    SizedBox(height: 10.h),
-                    CustomTextField(
-                      validator: (value) => null,
-                      label: 'details',
-                      hintText: 'detailsExample',
-                      controller: controller.descriptionController,
-                      minLines: 2,
-                      maxLines: 4,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      onChanged: (value) {
-                        controller.scheduleAutoSave();
-                        controller.searchServiceSuggestions(value);
-                      },
+                    SizedBox(height: 8.h),
+                    Container(
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withValues(alpha: 0.025),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: AppColors.operationalCardBorder,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          _MaintenancePartnerSearch(controller: controller),
+                          SizedBox(height: 8.h),
+                          _MaintenanceDeliveryDateTimeFields(
+                            controller: controller,
+                          ),
+                          SizedBox(height: 8.h),
+                          CustomTextField(
+                            validator: (value) => null,
+                            label: 'details',
+                            hintText: 'detailsExample',
+                            controller: controller.descriptionController,
+                            minLines: 2,
+                            maxLines: 3,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            onChanged: (value) {
+                              controller.scheduleAutoSave();
+                              controller.searchServiceSuggestions(value);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     _MaintenanceServiceSuggestions(controller: controller),
                     SizedBox(height: 12.h),
@@ -134,22 +155,53 @@ class NewMaintenanceScreen extends StatelessWidget {
   }
 }
 
+class _MaintenanceLocalDraftStatus extends StatelessWidget {
+  const _MaintenanceLocalDraftStatus();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.edit_note_rounded, color: Colors.orange.shade800),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: Text(
+              'مسودة محلية — لم يتم حفظ الطلب في النظام بعد',
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.orange.shade900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MaintenancePaymentsSection extends StatelessWidget {
   const _MaintenancePaymentsSection({required this.controller});
 
   final MaintenanceController controller;
 
-  Future<void> _showAddPayment(BuildContext context) async {
-    if (controller.maintenanceId == null || controller.maintenanceId!.isEmpty) {
-      Get.snackbar(
-        'احفظ الطلب أولاً',
-        'بعد حفظ طلب الصيانة يمكنك إضافة العربون وتثبيته عليه.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
+  Future<void> _showAddPayment(
+    BuildContext context, {
+    Map<String, dynamic>? pendingPayment,
+  }) async {
+    final isSaved = controller.maintenanceId?.isNotEmpty ?? false;
+    if (isSaved) {
+      await controller.loadMaintenanceDailySession();
     }
-    await controller.loadMaintenanceDailySession();
-    if (!controller.isMaintenanceDailyBoxOpen) {
+    if (isSaved && !controller.isMaintenanceDailyBoxOpen) {
       if (!context.mounted) return;
       final openSession = await showDialog<bool>(
         context: context,
@@ -182,12 +234,16 @@ class _MaintenancePaymentsSection extends StatelessWidget {
     }
     if (!context.mounted) return;
 
-    final amountController = TextEditingController();
-    final noteController = TextEditingController();
+    final amountController = TextEditingController(
+      text: pendingPayment == null ? '' : '${pendingPayment['amount'] ?? ''}',
+    );
+    final noteController = TextEditingController(
+      text: pendingPayment == null ? '' : '${pendingPayment['note'] ?? ''}',
+    );
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إضافة عربون'),
+        title: Text(pendingPayment == null ? 'إضافة عربون' : 'تعديل العربون'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -214,7 +270,8 @@ class _MaintenancePaymentsSection extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('تثبيت العربون'),
+            child:
+                Text(pendingPayment == null ? 'إضافة العربون' : 'حفظ التعديل'),
           ),
         ],
       ),
@@ -222,13 +279,24 @@ class _MaintenancePaymentsSection extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     final amount = double.tryParse(amountController.text.trim()) ?? 0;
     if (amount <= 0) {
-      Get.snackbar('خطأ', 'أدخل قيمة عربون صحيحة');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'أدخل قيمة عربون صحيحة',
+      );
       return;
     }
-    await controller.addMaintenancePayment(
-      amount: amount,
-      note: noteController.text,
-    );
+    if (pendingPayment != null) {
+      await controller.updatePendingMaintenancePayment(
+        pendingPayment,
+        amount: amount,
+        note: noteController.text,
+      );
+    } else {
+      await controller.addMaintenancePayment(
+        amount: amount,
+        note: noteController.text,
+      );
+    }
   }
 
   @override
@@ -291,6 +359,25 @@ class _MaintenancePaymentsSection extends StatelessWidget {
                           style: TextStyle(fontSize: 10.5.sp),
                         ),
                       ),
+                      if (payment['is_pending'] == true) ...[
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'تعديل العربون',
+                          onPressed: () => _showAddPayment(
+                            context,
+                            pendingPayment: payment,
+                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'حذف العربون',
+                          color: Colors.red,
+                          onPressed: () => controller
+                              .removePendingMaintenancePayment(payment),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                        ),
+                      ],
                     ],
                   ),
                 ),

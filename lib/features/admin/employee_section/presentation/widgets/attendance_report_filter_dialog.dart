@@ -12,6 +12,7 @@ import '../../data/models/attendance_report_model.dart';
 import '../../domain/entities/working_times_entity.dart';
 import '../models/attendance_report_navigation_args.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// من تبويب الدوام: يفتح التقرير. من شاشة التقرير: [onApplyInPlace] يطبّق الفلتر بدون تنقل جديد.
 Future<void> showAttendanceReportFilterDialog(
   BuildContext context, {
@@ -152,19 +153,17 @@ class _AttendanceReportFilterDialogContentState
       return;
     }
     if (_reportType == 'daily' && (_day < 1 || _day > _daysInMonth())) {
-      Get.snackbar(
-        'error'.tr,
-        'attendanceReportInvalidDay'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'attendanceReportInvalidDay'.tr,
       );
       return;
     }
 
     if (_reportType == 'custom' && (_customFrom == null || _customTo == null)) {
-      Get.snackbar(
-        'error'.tr,
-        'attendanceReportCustomRangeRequired'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'attendanceReportCustomRangeRequired'.tr,
       );
       return;
     }

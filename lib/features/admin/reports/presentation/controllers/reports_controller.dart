@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../data/reports_api_service.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ReportsController extends GetxController {
   ReportsController({required this.service});
 
@@ -96,7 +97,10 @@ class ReportsController extends GetxController {
     } catch (e) {
       salesSummary = const {};
       salesRows = const [];
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       hasLoadedCurrentReport = true;
       isLoading(false);
@@ -138,7 +142,10 @@ class ReportsController extends GetxController {
       reportColumns = const [];
       reportRows = const [];
       reportPeriod = const {};
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       hasLoadedCurrentReport = true;
       isLoading(false);
@@ -152,7 +159,10 @@ class ReportsController extends GetxController {
       update();
     } catch (e) {
       reportPeople = const [];
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
       update();
     }
   }

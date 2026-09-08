@@ -13,6 +13,7 @@ import 'employee_attendance_persistent_notification_service.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
+import '../helpers/app_failure_notice.dart';
 const _loginRoutes = <String>{
   AppRoutes.LOGINORSIGNUPSCREEN,
   AppRoutes.LOGINSCREEN,
@@ -148,10 +149,9 @@ class SessionService {
       }
       Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
       if (showMessage) {
-        Get.snackbar(
-          'error'.tr,
-          'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
-          snackPosition: SnackPosition.BOTTOM,
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
         );
       }
     } finally {

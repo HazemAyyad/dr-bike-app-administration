@@ -44,7 +44,9 @@ import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
 import 'offer_packages_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class StockController extends GetxController with GetTickerProviderStateMixin {
   final GetAllStockUsecase getAllStockUsecase;
   final GetProductDetailsUsecase getProductDetailsUsecase;
@@ -422,31 +424,22 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       _deletedProductsPage = 1;
       _hasMoreDeletedProducts = true;
       exitDeleteSelection();
-      Get.snackbar(
-        'success'.tr,
-        'productsDeletedSuccessfully'.tr.replaceAll(
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productsDeletedSuccessfully'.tr.replaceAll(
               '@count',
               deleted.toString(),
             ),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
       );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isProductDeleteBusy(false);
@@ -520,12 +513,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final activeSections =
         storeSections.where((s) => s.isActive).toList(growable: false);
     if (activeSections.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'noData'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'noData'.tr,
       );
       return;
     }
@@ -559,22 +549,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         productIds: ids,
         sectionId: sectionId,
       );
-      Get.snackbar(
-        'success'.tr,
-        'productsLocationMoved'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productsLocationMoved'.tr,
       );
       exitLocationSelection();
       await refreshAfterStoreSectionsChanged();
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLocationActionBusy.value = false;
@@ -583,12 +567,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> executeSwapSelectedProducts({BuildContext? context}) async {
     if (!canExecuteSwap) {
-      Get.snackbar(
-        'error'.tr,
-        'swapNeedsTwoGroups'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'swapNeedsTwoGroups'.tr,
       );
       return;
     }
@@ -607,12 +588,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final activeSections =
         storeSections.where((s) => s.isActive).toList(growable: false);
     if (activeSections.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'noData'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'noData'.tr,
       );
       return;
     }
@@ -643,22 +621,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         groupATarget: swapTargets.groupA!,
         groupBTarget: swapTargets.groupB!,
       );
-      Get.snackbar(
-        'success'.tr,
-        'productsLocationSwapped'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productsLocationSwapped'.tr,
       );
       exitLocationSelection();
       await refreshAfterStoreSectionsChanged();
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isLocationActionBusy.value = false;
@@ -758,12 +730,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     } on ServerFailure {
       // Snackbar already shown in StockImplement.
     } on NoConnectionFailure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } finally {
       if (showLoader) {
@@ -881,12 +850,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     };
     const requiredTextFields = {'product_code', 'nameAr'};
     if (requiredTextFields.contains(field) && trimmed.isEmpty) {
-      Get.snackbar('error'.tr, 'invalidValue'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidValue'.tr,
+      );
       return;
     }
     if (numericFields.contains(field) &&
         (trimmed.isEmpty || double.tryParse(trimmed) == null)) {
-      Get.snackbar('error'.tr, 'invalidPrice'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'invalidPrice'.tr,
+      );
       return;
     }
 
@@ -905,14 +880,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (index != -1) {
         locationFilterProducts[index] = updated;
       }
-      Get.snackbar('success'.tr, 'productUpdatedSuccess'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productUpdatedSuccess'.tr,
+      );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } finally {
       locationPriceSavingKeys.remove(key);
@@ -1005,13 +980,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final name = f.name.toLowerCase();
     final ok = _allowedVideoSuffixes.any((e) => name.endsWith(e));
     if (!ok) {
-      Get.snackbar(
-        'error'.tr,
-        'videoFormatInvalid'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'videoFormatInvalid'.tr,
       );
       return;
     }
@@ -1708,13 +1679,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final dir = await _productsCsvExportDirectory();
       final file = File('${dir.path}/${_productsCsvFileName()}');
       await file.writeAsBytes(bytes, flush: true);
-      Get.snackbar(
-        'success'.tr,
-        '${'productsExported'.tr}\n${file.path}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: '${'productsExported'.tr}\n${file.path}',
       );
       await _showProductsCsvExportActions(file);
     } on ServerException catch (e) {
@@ -1789,13 +1756,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       }
       final filters = exportFilters.hasActiveFilters ? exportFilters : null;
       await stockDatasource.startProductsImagesZipExport(filters: filters);
-      Get.snackbar(
-        'success'.tr,
-        'stockImagesExportStarted'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'stockImagesExportStarted'.tr,
       );
     } on ServerException catch (e) {
       _showProductsCsvError(e.errorModel.errorMessage);
@@ -1827,13 +1790,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       await stockDatasource.startProductsImagesZipExport(
         filters: currentStockImagesExportFilters(),
       );
-      Get.snackbar(
-        'success'.tr,
-        'stockImagesExportStarted'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 5),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'stockImagesExportStarted'.tr,
       );
     } on ServerException catch (e) {
       _showProductsCsvError(e.errorModel.errorMessage);
@@ -1872,13 +1831,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         '${dir.path}/${name != null && name.isNotEmpty ? name : _productsImagesZipFileName()}',
       );
       await file.writeAsBytes(bytes, flush: true);
-      Get.snackbar(
-        'success'.tr,
-        '${'stockImagesExported'.tr}\n${file.path}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: '${'stockImagesExported'.tr}\n${file.path}',
       );
       await _showProductsZipExportActions(file);
     } on ServerException catch (e) {
@@ -2058,12 +2013,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       allProducts.clear();
       await getAllProducts();
 
-      Get.snackbar(
-        'success'.tr,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: message,
       );
     } on ServerException catch (e) {
       _showProductsCsvError(e.errorModel.errorMessage);
@@ -2081,12 +2033,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final errors = errorsRaw is List ? errorsRaw : const [];
 
     if (changes.isEmpty) {
-      Get.snackbar(
-        'success'.tr,
-        'productsImportNoChanges'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productsImportNoChanges'.tr,
       );
       return false;
     }
@@ -2210,12 +2159,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _showProductsCsvError(String message) {
-    Get.snackbar(
-      'error'.tr,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
+    AppFailureNotice.show(
+      title: 'error'.tr,
+      message: message,
     );
   }
 
@@ -2308,12 +2254,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (isRefresh) {
         quickEditHasMore = false;
       }
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } finally {
       isQuickEditLoading(false);
@@ -2337,14 +2280,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       row.replaceProduct(updated);
       row.isEditing(false);
       quickEditEditingProductId.value = null;
-      Get.snackbar('success'.tr, 'productUpdatedSuccess'.tr);
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productUpdatedSuccess'.tr,
+      );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } finally {
       row.isSaving(false);
@@ -2364,12 +2307,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       row.replaceProduct(updated);
     } on ServerException catch (e) {
       row.markedToday.value = !next;
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
     } finally {
       row.isSaving(false);
@@ -2439,12 +2379,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     } on ServerFailure {
       // Snackbar already shown in StockImplement.
     } on NoConnectionFailure catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
       );
     } finally {
       isLoadingMore(false);
@@ -2477,30 +2414,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         note: note,
       );
       await getProductDetails(productId: productId);
-      Get.snackbar(
-        'success'.tr,
-        'productUpdatedSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.secondaryColor,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productUpdatedSuccess'.tr,
       );
       return true;
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return false;
     } catch (_) {
-      Get.snackbar(
-        'error'.tr,
-        'somethingWrong'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'somethingWrong'.tr,
       );
       return false;
     }
@@ -2516,30 +2444,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         costPrice: costPrice,
       );
       await reloadProductsList();
-      Get.snackbar(
-        'success'.tr,
-        'productUpdatedSuccess'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.secondaryColor,
-        colorText: Colors.white,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'productUpdatedSuccess'.tr,
       );
       return true;
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return false;
     } catch (_) {
-      Get.snackbar(
-        'error'.tr,
-        'somethingWrong'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'somethingWrong'.tr,
       );
       return false;
     }
@@ -2563,21 +2482,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         type: type,
       );
     } on ServerException catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.errorModel.errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
       );
       return null;
     } catch (_) {
-      Get.snackbar(
-        'error'.tr,
-        'somethingWrong'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.redColor,
-        colorText: Colors.white,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'somethingWrong'.tr,
       );
       return null;
     }
@@ -2753,21 +2666,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         isLoading(false);
 
         Get.back();
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) async {
         getAllProducts();
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
         Future.delayed(
           const Duration(milliseconds: 1000),
@@ -2793,21 +2702,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         isLoading(false);
 
         Get.back();
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) async {
         getAllProducts();
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
         Future.delayed(
           const Duration(milliseconds: 1000),
@@ -3223,25 +3128,33 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> submitProduct() async {
     if (productNameController.text.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'productNameRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'productNameRequired'.tr,
+      );
       return;
     }
     if (productDetailsController.text.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'productDetailsRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'productDetailsRequired'.tr,
+      );
       return;
     }
     final mid = selectedMainCategoryId.value?.trim();
     if (mid == null || mid.isEmpty) {
-      Get.snackbar('error'.tr, 'mainCategoryRequired'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'mainCategoryRequired'.tr,
+      );
       return;
     }
     final sizeQtyErr = validateAllSizeColorQuantities();
     if (sizeQtyErr != null) {
-      Get.snackbar('error'.tr, sizeQtyErr.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: sizeQtyErr.tr,
+      );
       return;
     }
 
@@ -3249,8 +3162,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final knownIds = allSubCategories.map((s) => s.id).toSet();
       for (final id in selectedSubCategoryIds) {
         if (!knownIds.contains(id)) {
-          Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'invalidCategoryCombination'.tr,
+          );
           return;
         }
       }
@@ -3260,8 +3175,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           .toSet();
       for (final id in selectedSubCategoryIds) {
         if (!allowed.contains(id)) {
-          Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'invalidCategoryCombination'.tr,
+          );
           return;
         }
       }
@@ -3323,19 +3240,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
             : null,
       );
       final text = details.isEmpty ? e.errMessage : '${e.errMessage}\n$details';
-      Get.snackbar(
-        'validationErrorsTitle'.tr,
-        text,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade800,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 8),
+      AppFailureNotice.show(
+        title: 'validationErrorsTitle'.tr,
+        message: text,
       );
     } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
       );
     } finally {
       isSubmittingProduct(false);

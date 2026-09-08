@@ -14,6 +14,8 @@ import '../../data/models/daily_session_model.dart';
 import '../binding/sales_binding.dart';
 import '../controllers/sales_controller.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesDailySessionSalesLog extends StatelessWidget {
   const SalesDailySessionSalesLog({
     Key? key,
@@ -123,13 +125,10 @@ class _SalesList extends StatelessWidget {
         maintenanceRepository: Get.find<MaintenanceImplement>(),
       ).call(maintenanceId: sale.maintenanceId.toString());
       result.fold(
-        (failure) => Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        ),
+        (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
         (invoice) => showMaintenanceInvoiceSheet(context, invoice),
       );
       return;

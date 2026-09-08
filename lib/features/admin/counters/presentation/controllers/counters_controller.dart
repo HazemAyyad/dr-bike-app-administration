@@ -12,7 +12,9 @@ import '../../data/datasources/countrers_datasource.dart';
 import '../../domain/usecases/get_report_by_type_usecase.dart';
 import '../../domain/usecases/get_report_information_usecase.dart';
 import 'counters_serves.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CountersController extends GetxController {
   final GetReportInformationUsecase getReportInformationUsecase;
   final GetReportByTypeUsecase getReportByType;
@@ -142,17 +144,18 @@ class CountersController extends GetxController {
             "${directory.path}/_تقرير${p.basename(type.tr)}${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
-        Get.snackbar(
-          "fileDownloadedSuccessfully".tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 2000),
+        AppSuccessNotice.show(
+          title: "fileDownloadedSuccessfully".tr,
+          message: filePath,
         );
 
         await OpenFilex.open(filePath);
       });
     } catch (e) {
-      Get.snackbar("error".tr, e.toString());
+      AppFailureNotice.show(
+        title: "error".tr,
+        message: e.toString(),
+      );
     }
   }
 

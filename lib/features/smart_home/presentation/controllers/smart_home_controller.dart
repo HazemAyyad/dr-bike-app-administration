@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/helpers/app_success_notice.dart';
 import '../../../../core/services/final_classes.dart';
 import '../../../../core/services/initial_bindings.dart';
 import '../../data/smart_home_api_service.dart';
@@ -966,7 +967,10 @@ class SmartHomeController extends GetxController {
         context: pairing.device,
       );
       if (showSuccess) {
-        Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+        AppSuccessNotice.show(
+          title: 'addDevice'.tr,
+          message: 'smartHomeDevicePaired'.tr,
+        );
       }
       return true;
     } catch (e) {
@@ -1125,7 +1129,10 @@ class SmartHomeController extends GetxController {
         message: pairing.message,
         context: pairing.device,
       );
-      Get.snackbar('addDevice'.tr, 'smartHomeDevicePaired'.tr);
+      AppSuccessNotice.show(
+        title: 'addDevice'.tr,
+        message: 'smartHomeDevicePaired'.tr,
+      );
       return true;
     } catch (e) {
       final visible = e.toString();
@@ -1239,7 +1246,10 @@ class SmartHomeController extends GetxController {
         userId: selectedOwnerId.value,
       );
       _upsertDevice(updated);
-      Get.snackbar('smartHomeRenameDevice'.tr, 'smartHomeDeviceRenamed'.tr);
+      AppSuccessNotice.show(
+        title: 'smartHomeRenameDevice'.tr,
+        message: 'smartHomeDeviceRenamed'.tr,
+      );
       return true;
     } catch (e) {
       await _logDeviceControl(
@@ -1276,9 +1286,9 @@ class SmartHomeController extends GetxController {
         userId: selectedOwnerId.value,
       );
       _upsertDevice(_mergeDevicePreservingRuntimeData(device, updated));
-      Get.snackbar(
-        'smartHomeEditSwitchName'.tr,
-        'smartHomeSwitchNameUpdated'.tr,
+      AppSuccessNotice.show(
+        title: 'smartHomeEditSwitchName'.tr,
+        message: 'smartHomeSwitchNameUpdated'.tr,
       );
       return true;
     } catch (e) {
@@ -1337,7 +1347,10 @@ class SmartHomeController extends GetxController {
       selectedRoomId.value = smartRoomId;
       await _loadSelectedHomeData();
       _refreshLoadedDeviceStatusesInBackground();
-      Get.snackbar('smartHomeMoveDevice'.tr, 'smartHomeDeviceMoved'.tr);
+      AppSuccessNotice.show(
+        title: 'smartHomeMoveDevice'.tr,
+        message: 'smartHomeDeviceMoved'.tr,
+      );
       return true;
     } catch (e) {
       errorMessage(e.toString());
@@ -1443,7 +1456,10 @@ class SmartHomeController extends GetxController {
       unavailableDeviceIds.remove(device.id);
       _deviceStatusRetryAfter.remove(device.id);
       _deviceRefreshFailures.remove(device.id);
-      Get.snackbar('smartHomeDeleteDevice'.tr, 'smartHomeDeviceDeleted'.tr);
+      AppSuccessNotice.show(
+        title: 'smartHomeDeleteDevice'.tr,
+        message: 'smartHomeDeviceDeleted'.tr,
+      );
       return true;
     } catch (e) {
       await _logDeviceControl(
@@ -1856,9 +1872,9 @@ class SmartHomeController extends GetxController {
     if (added > 0) {
       pairingProgress(1);
       pairingStatus('smartHomePairingComplete'.tr);
-      Get.snackbar(
-        'addDevice'.tr,
-        'smartHomeDevicesPaired'.trParams({
+      AppSuccessNotice.show(
+        title: 'addDevice'.tr,
+        message: 'smartHomeDevicesPaired'.trParams({
           'added': '$added',
           'total': '${scanDevices.length}',
         }),

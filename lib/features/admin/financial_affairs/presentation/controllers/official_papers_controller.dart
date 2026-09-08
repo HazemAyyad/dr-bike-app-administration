@@ -18,7 +18,9 @@ import '../../domain/usecases/paper_usecase/delete_file.dart';
 import '../../domain/usecases/paper_usecase/get_file_papers_usecase.dart';
 import 'assets_controller.dart';
 import 'finacial_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class OfficialPapersController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllFinancialUsecase getAllFinancialUsecase;
@@ -282,11 +284,9 @@ class OfficialPapersController extends GetxController
       result.fold(
         (failure) {
           Get.back();
-          Get.snackbar(
-            failure.errMessage,
-            failure.data['message'],
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppFailureNotice.show(
+            title: failure.errMessage,
+            message: failure.data['message'],
           );
         },
         (success) async {
@@ -298,11 +298,9 @@ class OfficialPapersController extends GetxController
             Get.back();
           }
           Get.back();
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
         },
       );
@@ -329,11 +327,9 @@ class OfficialPapersController extends GetxController
       result.fold(
         (failure) {
           Get.back();
-          Get.snackbar(
-            failure.errMessage,
-            failure.data['message'] ?? 'Unknown error',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppFailureNotice.show(
+            title: failure.errMessage,
+            message: failure.data['message'] ?? 'Unknown error',
           );
         },
         (success) async {
@@ -346,11 +342,9 @@ class OfficialPapersController extends GetxController
             Get.back();
           }
           Get.back();
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
         },
       );
@@ -369,21 +363,17 @@ class OfficialPapersController extends GetxController
     result.fold(
       (failure) {
         Get.back();
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) async {
         getAllExpenses();
         Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );
@@ -405,11 +395,9 @@ class OfficialPapersController extends GetxController
       result.fold(
         (failure) {
           Get.back();
-          Get.snackbar(
-            failure.errMessage,
-            failure.data['message'],
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppFailureNotice.show(
+            title: failure.errMessage,
+            message: failure.data['message'],
           );
         },
         (success) async {
@@ -417,11 +405,9 @@ class OfficialPapersController extends GetxController
 
           Get.back();
           getTreasury();
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
         },
       );
@@ -448,11 +434,9 @@ class OfficialPapersController extends GetxController
     result.fold(
       (failure) {
         Get.back();
-        Get.snackbar(
-          failure.errMessage,
-          failure.data['message'],
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data['message'],
         );
       },
       (success) async {
@@ -463,11 +447,9 @@ class OfficialPapersController extends GetxController
           }
           getTreasury();
         });
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );

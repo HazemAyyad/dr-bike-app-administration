@@ -9,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../admin/financial_affairs/presentation/utils/salary_receipt_pdf_builder.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeSalaryReceiptController extends GetxController {
   EmployeeSalaryReceiptController(this.api);
 
@@ -64,9 +66,9 @@ class EmployeeSalaryReceiptController extends GetxController {
           ? list.whereType<Map>().map((row) => Map<String, dynamic>.from(row))
           : const []);
     } catch (error) {
-      Get.snackbar(
-        'تعذر تحميل سندات الرواتب',
-        error.toString().replaceFirst('Exception: ', ''),
+      AppFailureNotice.show(
+        title: 'تعذر تحميل سندات الرواتب',
+        message: error.toString().replaceFirst('Exception: ', ''),
       );
     } finally {
       historyLoading.value = false;
@@ -107,12 +109,15 @@ class EmployeeSalaryReceiptController extends GetxController {
       if (!await folder.exists()) await folder.create(recursive: true);
       final file = File('${folder.path}/my-salary-receipt-$id.pdf');
       await file.writeAsBytes(bytes, flush: true);
-      Get.snackbar('تم تجهيز السند', 'تم حفظ سند الراتب على جهازك');
+      AppSuccessNotice.show(
+        title: 'تم تجهيز السند',
+        message: 'تم حفظ سند الراتب على جهازك',
+      );
       await OpenFilex.open(file.path);
     } catch (error) {
-      Get.snackbar(
-        'تعذر تنزيل السند',
-        error.toString().replaceFirst('Exception: ', ''),
+      AppFailureNotice.show(
+        title: 'تعذر تنزيل السند',
+        message: error.toString().replaceFirst('Exception: ', ''),
       );
     } finally {
       downloadingReceiptId.value = null;
@@ -167,11 +172,16 @@ class EmployeeSalaryReceiptController extends GetxController {
       _ensureSuccess(response.data);
       receipts.removeWhere((row) => int.tryParse('${row['id']}') == id);
       await loadHistory();
-      Get.snackbar('تم توثيق الاستلام', 'تم حفظ توقيعك وإبلاغ الإدارة بنجاح');
+      AppSuccessNotice.show(
+        title: 'تم توثيق الاستلام',
+        message: 'تم حفظ توقيعك وإبلاغ الإدارة بنجاح',
+      );
       return true;
     } catch (error) {
-      Get.snackbar(
-          'تعذر حفظ التوقيع', error.toString().replaceFirst('Exception: ', ''));
+      AppFailureNotice.show(
+        title: 'تعذر حفظ التوقيع',
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
       return false;
     } finally {
       isSubmitting.value = false;
@@ -192,11 +202,16 @@ class EmployeeSalaryReceiptController extends GetxController {
       _ensureSuccess(response.data);
       receipts.removeWhere((row) => int.tryParse('${row['id']}') == id);
       await loadHistory();
-      Get.snackbar('تم إرسال الاعتراض', 'سيظهر الاعتراض مباشرة لدى الإدارة');
+      AppSuccessNotice.show(
+        title: 'تم إرسال الاعتراض',
+        message: 'سيظهر الاعتراض مباشرة لدى الإدارة',
+      );
       return true;
     } catch (error) {
-      Get.snackbar('تعذر إرسال الاعتراض',
-          error.toString().replaceFirst('Exception: ', ''));
+      AppFailureNotice.show(
+        title: 'تعذر إرسال الاعتراض',
+        message: error.toString().replaceFirst('Exception: ', ''),
+      );
       return false;
     } finally {
       isSubmitting.value = false;

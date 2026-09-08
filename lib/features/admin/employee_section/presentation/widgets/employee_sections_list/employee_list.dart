@@ -19,6 +19,7 @@ import '../employee_card_swipe.dart';
 import '../employee_financial_details.dart';
 import '../employee_points_tab.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeList extends GetView<EmployeeSectionController> {
   const EmployeeList({Key? key, required this.employee}) : super(key: key);
 
@@ -164,16 +165,20 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             digits.length >= 11;
     if (!isSupportedNumber) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رقم الموظف غير صالح للتواصل عبر واتساب')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'رقم الموظف غير صالح للتواصل عبر واتساب',
       );
       return;
     }
 
     final opened = await WhatsAppLauncher.openChat(digits);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح واتساب على هذا الجهاز')),
+      AppFailureNotice.show(
+        context: context,
+        title: 'خطأ',
+        message: 'تعذر فتح واتساب على هذا الجهاز',
       );
     }
   }

@@ -8,6 +8,8 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/search_widget.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class CloseoutsScreen extends GetView<StockController> {
   const CloseoutsScreen({Key? key}) : super(key: key);
 
@@ -58,11 +60,9 @@ class CloseoutsScreen extends GetView<StockController> {
                         );
                         controller.closeoutsProductsId = '';
                       } else {
-                        Get.snackbar(
-                          'error'.tr,
-                          'برجاء اختيار منتج'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
-                          duration: const Duration(milliseconds: 1500),
+                        AppFailureNotice.show(
+                          title: 'error'.tr,
+                          message: 'برجاء اختيار منتج'.tr,
                         );
                       }
                     },

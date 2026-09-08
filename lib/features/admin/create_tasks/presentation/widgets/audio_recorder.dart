@@ -13,6 +13,8 @@ import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 
+
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AudioRecorderButton extends StatefulWidget {
   const AudioRecorderButton({
     Key? key,
@@ -73,7 +75,10 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
       status = await Permission.microphone.request();
     }
     if (!status.isGranted) {
-      Get.snackbar('error'.tr, 'microphonePermissionRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'microphonePermissionRequired'.tr,
+      );
       return false;
     }
     return true;
@@ -93,7 +98,10 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
       await _recorderController.record(path: _activeRecordPath!);
       isRecording.value = true;
     } catch (e) {
-      Get.snackbar('error'.tr, 'audioRecordFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'audioRecordFailed'.tr,
+      );
     }
   }
 
@@ -128,7 +136,10 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
       await _previewPlayer.stop();
       final uri = resolveAudioPlaybackUri(path);
       if (uri.isEmpty) {
-        Get.snackbar('error'.tr, 'audioPlayFailed'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'audioPlayFailed'.tr,
+        );
         return;
       }
 
@@ -137,7 +148,10 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
       } else {
         final file = File(uri);
         if (!await file.exists()) {
-          Get.snackbar('error'.tr, 'audioPlayFailed'.tr);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'audioPlayFailed'.tr,
+          );
           return;
         }
         await _previewPlayer.setFilePath(uri);
@@ -148,7 +162,10 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
     } catch (e) {
       debugPrint('audio play error: $e');
       isPlaying.value = false;
-      Get.snackbar('error'.tr, 'audioPlayFailed'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'audioPlayFailed'.tr,
+      );
     } finally {
       isLoadingPlay.value = false;
     }

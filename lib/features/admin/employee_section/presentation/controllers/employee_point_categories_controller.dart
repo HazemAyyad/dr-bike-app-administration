@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_points_log_model.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Controller for the admin "Point Categories Settings" screen.
 class EmployeePointCategoriesController extends GetxController {
   EmployeePointCategoriesController({
@@ -43,8 +44,10 @@ class EmployeePointCategoriesController extends GetxController {
       );
     } on Failure catch (e) {
       errorMessage.value = e.errMessage;
-      Get.snackbar('error'.tr, e.errMessage,
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errMessage,
+      );
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -85,18 +88,17 @@ class EmployeePointCategoriesController extends GetxController {
       );
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (_) {
           loadCategories();
-          Get.snackbar(
-            'success'.tr,
-            'pointCategoryCreated'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'pointCategoryCreated'.tr,
           );
           return true;
         },
@@ -130,8 +132,10 @@ class EmployeePointCategoriesController extends GetxController {
       );
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (cat) {
@@ -141,12 +145,9 @@ class EmployeePointCategoriesController extends GetxController {
           } else {
             loadCategories();
           }
-          Get.snackbar(
-            'success'.tr,
-            'pointCategoryUpdated'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'pointCategoryUpdated'.tr,
           );
           return true;
         },
@@ -166,18 +167,17 @@ class EmployeePointCategoriesController extends GetxController {
       final result = await deleteUsecase.call(id: id);
       return result.fold(
         (failure) {
-          Get.snackbar('error'.tr, failure.errMessage,
-              snackPosition: SnackPosition.BOTTOM);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
           return false;
         },
         (_) {
           categories.removeWhere((c) => c.id == id);
-          Get.snackbar(
-            'success'.tr,
-            'pointCategoryDeleted'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFE8F5E9),
-            colorText: const Color(0xFF1B5E20),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: 'pointCategoryDeleted'.tr,
           );
           return true;
         },

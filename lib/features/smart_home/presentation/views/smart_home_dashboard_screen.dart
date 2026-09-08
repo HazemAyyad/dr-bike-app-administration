@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/helpers/app_failure_notice.dart';
+import '../../../../core/helpers/app_success_notice.dart';
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/services/app_home_widget_service.dart';
 import '../../../../core/utils/app_colors.dart';
@@ -1016,9 +1018,9 @@ class _AddDeviceFlowScreenState extends State<_AddDeviceFlowScreen> {
         SizedBox(height: 12.h),
         Center(
           child: TextButton(
-            onPressed: () => Get.snackbar(
-              'smartHomeReportIssue'.tr,
-              'smartHomeIssueLogged'.tr,
+            onPressed: () => AppSuccessNotice.show(
+              title: 'smartHomeReportIssue'.tr,
+              message: 'smartHomeIssueLogged'.tr,
             ),
             child: Text('smartHomeReportIssue'.tr),
           ),
@@ -2198,7 +2200,10 @@ class _ReorderableDeviceGrid extends StatelessWidget {
       reordered.map((device) => device.id).toList(growable: false),
     );
     if (!saved) {
-      Get.snackbar('ترتيب الأجهزة', 'تعذر حفظ الترتيب');
+      AppFailureNotice.show(
+        title: 'ترتيب الأجهزة',
+        message: 'تعذر حفظ الترتيب',
+      );
     }
   }
 
@@ -2428,12 +2433,17 @@ Future<void> _showPinDeviceWidgetSheet({
         )
         .toList(growable: false),
   );
-  Get.snackbar(
-    'تطبيق مصغر للجهاز',
-    pinned
-        ? 'تم إرسال طلب إضافة الجهاز إلى الشاشة الرئيسية'
-        : 'تعذر إضافة التطبيق المصغر على هذا الجهاز',
-  );
+  if (pinned) {
+    AppSuccessNotice.show(
+      title: 'تطبيق مصغر للجهاز',
+      message: 'تم إرسال طلب إضافة الجهاز إلى الشاشة الرئيسية',
+    );
+  } else {
+    AppFailureNotice.show(
+      title: 'تطبيق مصغر للجهاز',
+      message: 'تعذر إضافة التطبيق المصغر على هذا الجهاز',
+    );
+  }
 }
 
 Future<bool> _showFunctionOptions({

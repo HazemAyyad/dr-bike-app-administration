@@ -25,6 +25,7 @@ import '../../data/models/invoice_model.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/invoice_package_expandable_line.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class BillDetailsScreen extends GetView<SalesController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
 
@@ -1849,13 +1850,10 @@ class _MaintenanceInvoiceLinkCard extends StatelessWidget {
     ).call(maintenanceId: maintenanceId.toString());
 
     result.fold(
-      (failure) => Get.snackbar(
-        'error'.tr,
-        failure.errMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      ),
+      (failure) => AppFailureNotice.show(
+  title: 'error'.tr,
+  message: failure.errMessage,
+),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }

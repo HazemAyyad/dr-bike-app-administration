@@ -19,7 +19,9 @@ import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
+import '../../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../../core/helpers/app_failure_notice.dart';
 class BillDetailsScreen extends GetView<BillsController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
 
@@ -603,14 +605,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                         if (!sheetContext.mounted) return;
                         if (!ok) return;
                         Navigator.of(sheetContext).pop();
-                        Get.snackbar(
-                          'success'.tr,
-                          'تم اعتماد الفاتورة بنجاح',
-                          snackPosition: SnackPosition.TOP,
-                          backgroundColor: Colors.green.withValues(alpha: 0.12),
-                          colorText: Colors.green.shade900,
-                          margin: EdgeInsets.all(12.w),
-                          duration: const Duration(seconds: 2),
+                        AppSuccessNotice.show(
+                          title: 'success'.tr,
+                          message: 'تم اعتماد الفاتورة بنجاح',
                         );
                       },
               ),
@@ -832,10 +829,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       final result = await onSubmit();
                       if (result != false && sheetContext.mounted) {
                         Navigator.of(sheetContext).pop();
-                        Get.snackbar(
-                          'تمت العملية',
-                          'تم تسجيل الدفعة بنجاح',
-                          snackPosition: SnackPosition.BOTTOM,
+                        AppSuccessNotice.show(
+                          title: 'تمت العملية',
+                          message: 'تم تسجيل الدفعة بنجاح',
                         );
                       }
                     },
@@ -925,26 +921,14 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                                 .submitReviewedReceiving(context);
                             if (result && sheetContext.mounted) {
                               Navigator.of(sheetContext).pop();
-                              Get.snackbar(
-                                'success'.tr,
-                                'تم تسجيل الاستلام بنجاح',
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor:
-                                    Colors.green.withValues(alpha: 0.12),
-                                colorText: Colors.green.shade900,
-                                margin: EdgeInsets.all(12.w),
-                                duration: const Duration(seconds: 2),
+                              AppSuccessNotice.show(
+                                title: 'success'.tr,
+                                message: 'تم تسجيل الاستلام بنجاح',
                               );
                             } else {
-                              Get.snackbar(
-                                'error'.tr,
-                                'لم يتم تسجيل الاستلام، راجع الكميات أو رسالة الخطأ',
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor:
-                                    Colors.red.withValues(alpha: 0.12),
-                                colorText: Colors.red.shade900,
-                                margin: EdgeInsets.all(12.w),
-                                duration: const Duration(seconds: 3),
+                              AppFailureNotice.show(
+                                title: 'error'.tr,
+                                message: 'لم يتم تسجيل الاستلام، راجع الكميات أو رسالة الخطأ',
                               );
                             }
                           },
@@ -1083,16 +1067,11 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       if (!sheetContext.mounted) return;
                       if (ok) {
                         Navigator.of(sheetContext).pop();
-                        Get.snackbar(
-                          'success'.tr,
-                          isPurchase
+                        AppSuccessNotice.show(
+                          title: 'success'.tr,
+                          message: isPurchase
                               ? 'تم شراء الأمانة بنجاح'
                               : 'تم إرجاع الأمانة بنجاح',
-                          snackPosition: SnackPosition.TOP,
-                          backgroundColor: Colors.green.withValues(alpha: 0.12),
-                          colorText: Colors.green.shade900,
-                          margin: EdgeInsets.all(12.w),
-                          duration: const Duration(seconds: 2),
                         );
                       }
                     },
@@ -1256,15 +1235,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                         );
                         if (ok && sheetContext.mounted) {
                           Navigator.of(sheetContext).pop();
-                          Get.snackbar(
-                            'success'.tr,
-                            'تم تسجيل التسوية بنجاح',
-                            snackPosition: SnackPosition.TOP,
-                            backgroundColor:
-                                Colors.green.withValues(alpha: 0.12),
-                            colorText: Colors.green.shade900,
-                            margin: EdgeInsets.all(12.w),
-                            duration: const Duration(seconds: 2),
+                          AppSuccessNotice.show(
+                            title: 'success'.tr,
+                            message: 'تم تسجيل التسوية بنجاح',
                           );
                         }
                       },

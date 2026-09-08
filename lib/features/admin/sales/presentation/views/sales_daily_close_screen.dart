@@ -19,7 +19,9 @@ import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
 import '../utils/sales_amount_format.dart';
 import '../widgets/sales_skeleton_widgets.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class SalesDailyCloseScreen extends StatefulWidget {
   const SalesDailyCloseScreen({Key? key}) : super(key: key);
 
@@ -226,7 +228,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       );
       return;
     }
-    Get.snackbar('success'.tr, message);
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: message,
+    );
   }
 
   @override
@@ -1030,7 +1035,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
 
     if (payload.requiresLateCloseReason &&
         _lateReasonCtrl.text.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'salesDailyLateCloseReasonRequired'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'salesDailyLateCloseReasonRequired'.tr,
+      );
       return;
     }
 
@@ -1042,15 +1050,18 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       final note = _notes[row.currency]?.text.trim() ?? '';
 
       if (floatKeep > physical) {
-        Get.snackbar('error'.tr, 'salesDailyFloatExceedsCounted'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyFloatExceedsCounted'.tr,
+        );
         return;
       }
 
       final maxFloat = payload.config.maxFloat[row.currency] ?? 500;
       if (floatKeep > maxFloat) {
-        Get.snackbar(
-          'error'.tr,
-          'salesDailyFloatExceedsMax'.trParams({
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyFloatExceedsMax'.trParams({
             'max': '$maxFloat',
             'currency': row.currency,
           }),
@@ -1059,7 +1070,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       }
 
       if (variance.abs() > 0.01 && note.isEmpty) {
-        Get.snackbar('error'.tr, 'salesDailyVarianceNoteRequired'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyVarianceNoteRequired'.tr,
+        );
         return;
       }
 
@@ -1079,11 +1093,17 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       final variance = physical - row.systemBalance;
       final note = _ordersNotes[row.currency]?.text.trim() ?? '';
       if (floatKeep > physical) {
-        Get.snackbar('error'.tr, 'salesDailyFloatExceedsCounted'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyFloatExceedsCounted'.tr,
+        );
         return;
       }
       if (variance.abs() > 0.01 && note.isEmpty) {
-        Get.snackbar('error'.tr, 'salesDailyVarianceNoteRequired'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyVarianceNoteRequired'.tr,
+        );
         return;
       }
       ordersCounts.add(
@@ -1102,7 +1122,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         final transfer =
             (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
         if (transfer > 0 && _transferTargets[row.currency] == null) {
-          Get.snackbar('error'.tr, 'salesDailyTransferTargetRequired'.tr);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'salesDailyTransferTargetRequired'.tr,
+          );
           return;
         }
       }
@@ -1112,7 +1135,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         final transfer =
             (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
         if (transfer > 0 && _transferTargets[row.currency] == null) {
-          Get.snackbar('error'.tr, 'salesDailyTransferTargetRequired'.tr);
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'salesDailyTransferTargetRequired'.tr,
+          );
           return;
         }
       }
@@ -1153,7 +1179,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
           payload.requiresLateCloseReason ? _lateReasonCtrl.text.trim() : null;
       final sessionId = _targetSessionId ?? payload.session?.id;
       if (sessionId == null) {
-        Get.snackbar('error'.tr, 'salesDailyNoSessionOpen'.tr);
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'salesDailyNoSessionOpen'.tr,
+        );
         return;
       }
 

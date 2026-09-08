@@ -2716,8 +2716,6 @@ const Map<String, String> en = {
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'Points & Rewards Guide',
   'pointsSettings': 'Points and rewards settings',
-  'employeeCardSwipeHint':
-      'Swipe the employee card from left to right for contact, attendance, and more options',
   'pointsGuideEmpty': 'No data to display yet',
   'pointsGuidePositive': 'Add categories',
   'pointsGuideNegative': 'Deduct categories',

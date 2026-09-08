@@ -22,6 +22,7 @@ import 'package:get/get.dart';
 import 'person_product_settings_screen.dart';
 import 'partner_addresses_sheet.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class PersonProfileScreen extends StatefulWidget {
   const PersonProfileScreen({
     Key? key,
@@ -221,10 +222,9 @@ class _PersonProfileScreenState extends State<PersonProfileScreen> {
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     if (!context.mounted) return;
     if (error != null) {
-      Get.snackbar(
-        'error'.tr,
-        'تعذر تحميل سجل الأسعار',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر تحميل سجل الأسعار',
       );
       return;
     }

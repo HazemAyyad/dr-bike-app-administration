@@ -25,6 +25,7 @@ import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
 import 'product_assembly_operations_screen.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class _ProductDetailsHero extends StatelessWidget {
   const _ProductDetailsHero({required this.product});
 
@@ -427,19 +428,17 @@ class ProductDetailsScreen extends GetView<StockController> {
             icon: const Icon(Icons.edit_note_sharp),
             onPressed: () async {
               if (controller.productDetails.value == null) {
-                Get.snackbar(
-                  'error'.tr,
-                  'productDetailsMissing'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'productDetailsMissing'.tr,
                 );
                 return;
               }
               final ok = await controller.initProductDetails();
               if (!ok) {
-                Get.snackbar(
-                  'error'.tr,
-                  'productDetailsLoadFailed'.tr,
-                  snackPosition: SnackPosition.BOTTOM,
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'productDetailsLoadFailed'.tr,
                 );
                 return;
               }

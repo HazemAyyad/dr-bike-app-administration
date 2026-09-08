@@ -22,7 +22,9 @@ import '../widgets/subtask_voice_note_icon.dart';
 import '../widgets/subtask_voice_note_tile.dart';
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/proof_media_type.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 /// Admin/manager task details — compact layout.
 class EmployeeTaskDetailsOperationalScreen
     extends GetView<EmployeeTasksController> {
@@ -260,7 +262,10 @@ class EmployeeTaskDetailsOperationalScreen
       categories = await datasource.getPointCategoriesForReview();
       rewardRules = await datasource.getRewardRulesForReview();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
 
     final addCategories = categories.where((e) => e.isAdd).toList();
@@ -548,11 +553,17 @@ class EmployeeTaskDetailsOperationalScreen
   }) async {
     final employeeId = int.tryParse(task.employeeId);
     if (employeeId == null || employeeId <= 0) {
-      Get.snackbar('error'.tr, 'employee_not_found'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'employee_not_found'.tr,
+      );
       return;
     }
     if (points < 1) {
-      Get.snackbar('error'.tr, 'pointsValueMin'.tr);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'pointsValueMin'.tr,
+      );
       return;
     }
 
@@ -578,17 +589,21 @@ class EmployeeTaskDetailsOperationalScreen
           showFullScreenLoader: false,
         );
         controller.update(['taskDetails', 'subtasks']);
-        Get.snackbar(
-          'success'.tr,
-          'pointsUpdatedMessage'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'pointsUpdatedMessage'.tr,
         );
         return;
       }
-      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: '${res['message'] ?? ''}',
+      );
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       controller.isLoading(false);
     }
@@ -703,7 +718,10 @@ class EmployeeTaskDetailsOperationalScreen
           TextButton(
             onPressed: () {
               if (reasonController.text.trim().isEmpty) {
-                Get.snackbar('error'.tr, 'declineReasonRequired'.tr);
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'declineReasonRequired'.tr,
+                );
                 return;
               }
               Get.back(result: true);
@@ -743,11 +761,9 @@ class EmployeeTaskDetailsOperationalScreen
               'خصم نقاط بسبب رفض مهمة فرعية: ${subtask.name} - $reason',
         );
       } else {
-        Get.snackbar(
-          'success'.tr,
-          'subtaskDeclined'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'subtaskDeclined'.tr,
         );
       }
     }
@@ -1161,7 +1177,10 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
           TextButton(
             onPressed: () {
               if (notesController.text.trim().isEmpty) {
-                Get.snackbar('error'.tr, 'rejectionReasonRequired'.tr);
+                AppFailureNotice.show(
+                  title: 'error'.tr,
+                  message: 'rejectionReasonRequired'.tr,
+                );
                 return;
               }
               Get.back(result: true);
@@ -1207,10 +1226,16 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
         notes: notes,
       );
       if (res['status'] != 'success') {
-        Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: '${res['message'] ?? ''}',
+        );
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     } finally {
       controller.isLoading(false);
     }

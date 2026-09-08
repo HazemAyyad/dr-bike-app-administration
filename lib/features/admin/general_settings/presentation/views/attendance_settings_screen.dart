@@ -11,6 +11,7 @@ import '../../../../../core/services/attendance_settings_service.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class AttendanceSettingsScreen extends StatefulWidget {
   const AttendanceSettingsScreen({Key? key}) : super(key: key);
@@ -944,12 +945,9 @@ class _PushEndpointCard extends StatelessWidget {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: endpoint));
               if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-              Get.snackbar(
-                'success'.tr,
-                'copied'.tr,
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green.shade700,
-                colorText: Colors.white,
+              AppSuccessNotice.show(
+                title: 'success'.tr,
+                message: 'copied'.tr,
               );
             },
             icon: const Icon(Icons.copy_rounded, size: 18),

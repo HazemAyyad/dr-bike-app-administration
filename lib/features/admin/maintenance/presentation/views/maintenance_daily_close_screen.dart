@@ -12,7 +12,9 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../controllers/maintenance_controller.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class MaintenanceDailyCloseScreen extends StatefulWidget {
   const MaintenanceDailyCloseScreen({Key? key}) : super(key: key);
 
@@ -616,11 +618,17 @@ class _MaintenanceDailyCloseScreenState
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_floatToKeep > _physical) {
-      Get.snackbar('خطأ', 'فكة الغد لا يمكن أن تكون أكبر من المعدود فعلياً');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'فكة الغد لا يمكن أن تكون أكبر من المعدود فعلياً',
+      );
       return;
     }
     if (_isAdminFlow && _amountToTransfer > 0 && _selectedBox == null) {
-      Get.snackbar('خطأ', 'يجب اختيار صندوق الترحيل');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: 'يجب اختيار صندوق الترحيل',
+      );
       return;
     }
 
@@ -663,13 +671,9 @@ class _MaintenanceDailyCloseScreenState
               : 'تم إرسال طلب إغلاق صندوق الصيانة بنجاح';
       Get.back(result: true);
       Future<void>.delayed(const Duration(milliseconds: 150), () {
-        Get.snackbar(
-          'تمت العملية',
-          message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+        AppSuccessNotice.show(
+          title: 'تمت العملية',
+          message: message,
         );
       });
     }
@@ -688,13 +692,9 @@ class _MaintenanceDailyCloseScreenState
     if (ok) {
       Get.back(result: true);
       Future<void>.delayed(const Duration(milliseconds: 150), () {
-        Get.snackbar(
-          'تمت العملية',
-          'تم رفض طلب إغلاق صندوق الصيانة',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+        AppSuccessNotice.show(
+          title: 'تمت العملية',
+          message: 'تم رفض طلب إغلاق صندوق الصيانة',
         );
       });
     }

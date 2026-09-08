@@ -22,7 +22,9 @@ import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expense_report_usecase.dart';
 import '../utils/financial_report_pdf_builder.dart';
 import 'finacial_service.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class ExpensesController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllFinancialUsecase getAllFinancialUsecase;
@@ -228,10 +230,16 @@ class ExpensesController extends GetxController
       await file.writeAsBytes(bytes, flush: true);
       _closeReportProgress();
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      Get.snackbar('success'.tr, 'تم تنزيل التقرير: ${file.path}');
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تم تنزيل التقرير: ${file.path}',
+      );
       await OpenFilex.open(file.path);
     } catch (error) {
-      Get.snackbar('error'.tr, error.toString());
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: error.toString(),
+      );
     } finally {
       _closeReportProgress();
     }

@@ -17,6 +17,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/validator/validator.dart';
 import '../controllers/add_employee_controller.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
   const AddNewEmployeeScreen({Key? key}) : super(key: key);
 
@@ -1024,10 +1025,9 @@ class _FingerprintSettingsCard extends StatelessWidget {
       return;
     }
     if (api == null) {
-      Get.snackbar(
-        'error'.tr,
-        'تعذر الاتصال بالسيرفر',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر الاتصال بالسيرفر',
       );
       return;
     }
@@ -1039,11 +1039,10 @@ class _FingerprintSettingsCard extends StatelessWidget {
       );
       final data = res.data;
       if (data is! Map || data['status']?.toString() != 'success') {
-        Get.snackbar(
-          'error'.tr,
-          (data is Map ? data['message']?.toString() : null) ??
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: (data is Map ? data['message']?.toString() : null) ??
               'فشل تحميل مستخدمي الجهاز',
-          snackPosition: SnackPosition.BOTTOM,
         );
         return;
       }
@@ -1080,8 +1079,10 @@ class _FingerprintSettingsCard extends StatelessWidget {
         } catch (_) {}
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 

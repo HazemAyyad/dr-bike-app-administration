@@ -3,12 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/data/models/employee_model.dart';
 import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class FingerprintDeviceUsersScreen extends StatefulWidget {
   const FingerprintDeviceUsersScreen({Key? key}) : super(key: key);
 
@@ -31,8 +33,9 @@ class _FingerprintDeviceUsersScreenState
   DioConsumer? get _api =>
       Get.isRegistered<DioConsumer>() ? Get.find<DioConsumer>() : null;
 
-  EmployeeImplement? get _employeeRepo =>
-      Get.isRegistered<EmployeeImplement>() ? Get.find<EmployeeImplement>() : null;
+  EmployeeImplement? get _employeeRepo => Get.isRegistered<EmployeeImplement>()
+      ? Get.find<EmployeeImplement>()
+      : null;
 
   @override
   void initState() {
@@ -111,16 +114,23 @@ class _FingerprintDeviceUsersScreenState
       );
       final data = res.data;
       final ok = data is Map && data['status']?.toString() == 'success';
-      Get.snackbar(
-        ok ? 'success'.tr : 'error'.tr,
-        ok ? 'تم فك الربط' : (data is Map ? data['message']?.toString() : null) ?? 'فشل فك الربط',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
-        colorText: Colors.white,
-      );
+      if (ok) {
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'تم فك الربط',
+        );
+      } else {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: (data is Map ? data['message']?.toString() : null) ?? 'فشل فك الربط',
+        );
+      }
       await _load();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -128,7 +138,10 @@ class _FingerprintDeviceUsersScreenState
     final repo = _employeeRepo;
     final api = _api;
     if (repo == null || api == null) {
-      Get.snackbar('error'.tr, 'تعذر تحميل قائمة الموظفين', snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذر تحميل قائمة الموظفين',
+      );
       return;
     }
 
@@ -153,16 +166,23 @@ class _FingerprintDeviceUsersScreenState
       );
       final data = res.data;
       final ok = data is Map && data['status']?.toString() == 'success';
-      Get.snackbar(
-        ok ? 'success'.tr : 'error'.tr,
-        ok ? 'تم الربط' : (data is Map ? data['message']?.toString() : null) ?? 'فشل الربط',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
-        colorText: Colors.white,
-      );
+      if (ok) {
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: 'تم الربط',
+        );
+      } else {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: (data is Map ? data['message']?.toString() : null) ?? 'فشل الربط',
+        );
+      }
       await _load();
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.toString(),
+      );
     }
   }
 
@@ -202,7 +222,8 @@ class _FingerprintDeviceUsersScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 40.sp, color: Colors.red.shade400),
+                  Icon(Icons.error_outline,
+                      size: 40.sp, color: Colors.red.shade400),
                   SizedBox(height: 12.h),
                   Text(_error.value, textAlign: TextAlign.center),
                   SizedBox(height: 12.h),
@@ -343,9 +364,11 @@ class _FingerprintDeviceUsersScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.badge_outlined, size: 48.sp, color: textSecondary),
+                        Icon(Icons.badge_outlined,
+                            size: 48.sp, color: textSecondary),
                         SizedBox(height: 8.h),
-                        Text('noData'.tr, style: TextStyle(color: textSecondary)),
+                        Text('noData'.tr,
+                            style: TextStyle(color: textSecondary)),
                       ],
                     ),
                   ),
@@ -365,8 +388,10 @@ class _FingerprintDeviceUsersScreenState
                             borderColor: borderColor,
                             textPrimary: textPrimary,
                             textSecondary: textSecondary,
-                            onLink: () => _link(u['device_user_id']?.toString() ?? ''),
-                            onUnlink: () => _unlink(u['device_user_id']?.toString() ?? ''),
+                            onLink: () =>
+                                _link(u['device_user_id']?.toString() ?? ''),
+                            onUnlink: () =>
+                                _unlink(u['device_user_id']?.toString() ?? ''),
                           ),
                         );
                       },
@@ -459,7 +484,8 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AppColors.primaryColor : const Color(0xFFE5E7EB),
+              color:
+                  selected ? AppColors.primaryColor : const Color(0xFFE5E7EB),
             ),
           ),
           child: Text(
@@ -584,7 +610,9 @@ class _UserCard extends StatelessWidget {
                               Row(
                                 children: [
                                   Icon(
-                                    linked ? Icons.link_rounded : Icons.link_off_rounded,
+                                    linked
+                                        ? Icons.link_rounded
+                                        : Icons.link_off_rounded,
                                     size: 14.sp,
                                     color: statusColor,
                                   ),
@@ -597,7 +625,9 @@ class _UserCard extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 12.sp,
                                         fontWeight: FontWeight.w600,
-                                        color: linked ? statusColor : textSecondary,
+                                        color: linked
+                                            ? statusColor
+                                            : textSecondary,
                                       ),
                                     ),
                                   ),
@@ -616,7 +646,9 @@ class _UserCard extends StatelessWidget {
                           child: OutlinedButton.icon(
                             onPressed: onLink,
                             icon: Icon(
-                              linked ? Icons.swap_horiz_rounded : Icons.person_add_alt_1_rounded,
+                              linked
+                                  ? Icons.swap_horiz_rounded
+                                  : Icons.person_add_alt_1_rounded,
                               size: 18,
                             ),
                             label: Text(
@@ -807,4 +839,3 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
     );
   }
 }
-

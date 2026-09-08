@@ -138,23 +138,32 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
               ),
             ),
           if (userType == 'admin') SizedBox(width: 8.w),
-          ClipOval(
-            child: Container(
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : AppColors.whiteColor2,
-              child: IconButton(
-                highlightColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                icon: Icon(
-                  Icons.history_rounded,
-                  color: AppColors.primaryColor,
-                  size: 25.sp,
+          Obx(
+            () => ClipOval(
+              child: Material(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.whiteColor2,
+                child: IconButton(
+                  tooltip: ThemeService.isDark.value
+                      ? 'الوضع النهاري'
+                      : 'الوضع الليلي',
+                  highlightColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  icon: Icon(
+                    ThemeService.isDark.value
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    color: AppColors.primaryColor,
+                    size: 24.sp,
+                  ),
+                  onPressed: () {
+                    final dark = !ThemeService.isDark.value;
+                    ThemeService.isDark.value = dark;
+                    ThemeService.instance.themeMode =
+                        dark ? ThemeMode.dark : ThemeMode.light;
+                  },
                 ),
-                onPressed: () {
-                  controller.getLogs();
-                  Get.toNamed(AppRoutes.ADMINACTIVTILOGSCREEN);
-                },
               ),
             ),
           ),
@@ -202,6 +211,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                 sectionTitle: 'الوصول السريع',
                                 sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
                                 accentColor: const Color(0xFFF28C28),
+                                backgroundColor: const Color(0xFFFFF4E8),
                                 reorderMode:
                                     controller.isDashboardReorderMode.value,
                                 onReorderStarted:

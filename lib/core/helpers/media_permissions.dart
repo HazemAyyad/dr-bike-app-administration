@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'app_failure_notice.dart';
 /// Returns true when the user granted camera access (or it was already granted).
 Future<bool> ensureCameraPermission() async {
   var status = await Permission.camera.status;
@@ -32,10 +33,8 @@ Future<bool> ensurePhotosPermission() async {
 }
 
 void showMediaPermissionDeniedSnackbar() {
-  Get.snackbar(
-    'error'.tr,
-    'cameraPermissionDenied'.tr,
-    snackPosition: SnackPosition.BOTTOM,
-    duration: const Duration(seconds: 2),
+  AppFailureNotice.show(
+    title: 'error'.tr,
+    message: 'cameraPermissionDenied'.tr,
   );
 }

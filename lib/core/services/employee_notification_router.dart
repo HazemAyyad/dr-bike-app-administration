@@ -6,6 +6,7 @@ import '../../routes/app_routes.dart';
 import 'app_dependency_registry.dart';
 import 'initial_bindings.dart';
 import '../../features/employee/employee_dashbord/presentation/controllers/employee_salary_receipt_controller.dart';
+import '../helpers/app_success_notice.dart';
 
 /// Maps FCM / notification payloads to employee screens.
 class EmployeeNotificationRouter {
@@ -122,13 +123,9 @@ class EmployeeNotificationRouter {
       }
 
       if (successMessage != null && successMessage.isNotEmpty) {
-        Get.snackbar(
-          'success'.tr,
-          successMessage,
-          backgroundColor: Colors.green.shade700,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 4),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: successMessage,
         );
       } else if (infoMessage != null && infoMessage.isNotEmpty) {
         Get.snackbar(

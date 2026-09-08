@@ -17,7 +17,9 @@ import '../../domain/usecases/get_customers_usecase.dart';
 import '../../domain/usecases/get_person_data_usecase.dart';
 import '../../../debts/data/models/debt_ledger_models.dart';
 import 'general_data_serves.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class GeneralDataListController extends GetxController {
   final GeneralDataServes generalDataServes;
   final GetCustomersUseCase getCustomersUseCase;
@@ -192,17 +194,16 @@ class GeneralDataListController extends GetxController {
     isLoading(false);
     update();
     if (successCount > 0) {
-      Get.snackbar(
-        'success'.tr,
-        'importedContactsCount'.trParams({'count': successCount.toString()}),
-        snackPosition: SnackPosition.BOTTOM,
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'importedContactsCount'
+            .trParams({'count': successCount.toString()}),
       );
     }
     if (failCount > 0) {
-      Get.snackbar(
-        'error'.tr,
-        'importContactsFailed'.trParams({'count': failCount.toString()}),
-        snackPosition: SnackPosition.BOTTOM,
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'importContactsFailed'.trParams({'count': failCount.toString()}),
       );
     }
     if (successCount > 0) {
@@ -293,13 +294,9 @@ class GeneralDataListController extends GetxController {
             'added': true,
             'employeeType': _employeeTypeFromArguments,
           });
-          Get.snackbar(
-            'success'.tr,
-            success,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 2),
+          AppSuccessNotice.show(
+            title: 'success'.tr,
+            message: success,
           );
           return;
         }
@@ -378,11 +375,9 @@ class GeneralDataListController extends GetxController {
         } else {
           errorMessages = failure.data?['message'] ?? failure.errMessage;
         }
-        Get.snackbar(
-          'error'.tr,
-          errorMessages,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: errorMessages,
         );
       },
       (success) {
@@ -400,13 +395,9 @@ class GeneralDataListController extends GetxController {
             Get.back();
           },
         );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          colorText: Colors.white,
-          backgroundColor: Colors.green,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
+        AppSuccessNotice.show(
+          title: 'success'.tr,
+          message: success,
         );
       },
     );

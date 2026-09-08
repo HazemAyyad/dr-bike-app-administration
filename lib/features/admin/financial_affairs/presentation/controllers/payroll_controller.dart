@@ -10,7 +10,9 @@ import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../utils/salary_receipt_pdf_builder.dart';
 import '../utils/financial_report_pdf_builder.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
+import '../../../../../core/helpers/app_failure_notice.dart';
 class PayrollController extends GetxController {
   PayrollController(this.api);
 
@@ -228,8 +230,10 @@ class PayrollController extends GetxController {
         'items': items,
       });
       _ensureSuccess(response.data);
-      Get.snackbar(
-          'تم بنجاح', response.data['message']?.toString() ?? 'تم صرف الرواتب');
+      AppSuccessNotice.show(
+        title: 'تم بنجاح',
+        message: response.data['message']?.toString() ?? 'تم صرف الرواتب',
+      );
       previewRows.clear();
       selectedEmployeeIds.clear();
       selectedBoxId.value = null;
@@ -308,7 +312,10 @@ class PayrollController extends GetxController {
       if (!await root.exists()) await root.create(recursive: true);
       final file = File('${root.path}/salary-receipt-$itemId.pdf');
       await file.writeAsBytes(bytes, flush: true);
-      Get.snackbar('تم تجهيز السند', 'تم حفظ سند الراتب: ${file.path}');
+      AppSuccessNotice.show(
+        title: 'تم تجهيز السند',
+        message: 'تم حفظ سند الراتب: ${file.path}',
+      );
       await OpenFilex.open(file.path);
     } catch (error) {
       _error(error);
@@ -366,7 +373,10 @@ class PayrollController extends GetxController {
       final file = File('${root.path}/payroll-report-${month.value}.pdf');
       await file.writeAsBytes(bytes, flush: true);
       if (Get.isDialogOpen ?? false) Get.back();
-      Get.snackbar('تم تجهيز التقرير', 'تم حفظ تقرير الرواتب على جهازك');
+      AppSuccessNotice.show(
+        title: 'تم تجهيز التقرير',
+        message: 'تم حفظ تقرير الرواتب على جهازك',
+      );
       await OpenFilex.open(file.path);
     } catch (error) {
       if (Get.isDialogOpen ?? false) Get.back();
@@ -394,8 +404,10 @@ class PayrollController extends GetxController {
   }
 
   void _error(Object error) {
-    Get.snackbar(
-        'تعذر إتمام العملية', error.toString().replaceFirst('Exception: ', ''));
+    AppFailureNotice.show(
+      title: 'تعذر إتمام العملية',
+      message: error.toString().replaceFirst('Exception: ', ''),
+    );
   }
 
   static List<Map<String, dynamic>> _mapList(dynamic value) => value is List
