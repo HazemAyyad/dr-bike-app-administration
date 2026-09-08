@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -13,7 +14,6 @@ import 'package:printing/printing.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/reports_controller.dart';
 
@@ -978,6 +978,12 @@ Future<void> _printReport(
 }
 
 class _ReportsPdfBuilder {
+  static final PdfColor _brandColor = PdfColor.fromHex('#6B65BD');
+  static final PdfColor _borderColor = PdfColor.fromHex('#D1D5DB');
+  static final PdfColor _textColor = PdfColor.fromHex('#111827');
+  static final PdfColor _mutedColor = PdfColor.fromHex('#6B7280');
+  static final PdfColor _rowColor = PdfColor.fromHex('#F9FAFB');
+
   static Future<Uint8List> build(
     String title,
     ReportsController controller,
@@ -999,34 +1005,36 @@ class _ReportsPdfBuilder {
         : controller.activeSummaryCards();
     final from = controller.reportPeriod['from_date']?.toString() ?? '-';
     final to = controller.reportPeriod['to_date']?.toString() ?? '-';
+    final generatedAt = DateTime.now();
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(22),
+        margin: const pw.EdgeInsets.fromLTRB(28, 26, 28, 26),
         textDirection: pw.TextDirection.rtl,
-        theme: pw.ThemeData.withFont(base: regular, bold: bold),
+        theme: pw.ThemeData.withFont(base: regular, bold: bold).copyWith(
+          defaultTextStyle: pw.TextStyle(
+            font: regular,
+            fontSize: 11,
+            color: _textColor,
+          ),
+        ),
+        footer: (context) => _reportFooter(
+          context: context,
+          generatedAt: generatedAt,
+        ),
         build: (_) => [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'دكتور بايك - تقرير محاسبي',
-                  style: pw.TextStyle(
-                    font: bold,
-                    fontSize: 21,
-                    color: PdfColors.deepPurple600,
-                  ),
-                ),
-              ),
-              if (logo != null) pw.Image(logo, height: 78),
-            ],
+          _reportHeader(
+            title: title,
+            from: from,
+            to: to,
+            logo: logo,
+            bold: bold,
           ),
           pw.Container(
-            margin: const pw.EdgeInsets.only(top: 8, bottom: 10),
+            margin: const pw.EdgeInsets.only(top: 10, bottom: 10),
             height: 1.3,
-            color: PdfColors.deepPurple600,
+            color: _brandColor,
           ),
           pw.Center(
             child: pw.Text(
@@ -1035,32 +1043,34 @@ class _ReportsPdfBuilder {
             ),
           ),
           pw.SizedBox(height: 8),
-          pw.Align(
-            alignment: pw.Alignment.centerLeft,
-            child: pw.Text(
-              'من $from إلى $to',
-              style: pw.TextStyle(font: regular, fontSize: 10),
+          _reportMetaBox(
+            bold: bold,
+            title: title,
+            from: from,
+            to: to,
+            generatedAt: generatedAt,
+            recordsCount: rows.length,
+          ),
+          if (summary.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            _sectionTitle('ملخص التقرير', bold),
+            pw.SizedBox(height: 4),
+            _summaryCards(summary, bold: bold),
+          ],
+          pw.SizedBox(height: 12),
+          _sectionTitle('تفاصيل التقرير', bold),
+          pw.SizedBox(height: 4),
+          if (rows.isEmpty)
+            _emptyState()
+          else
+            _reportDataTable(
+              headers: columns.isEmpty ? const ['البيان'] : columns,
+              data: rows
+                  .map(controller.cellsForRow)
+                  .map((row) => row.reversed.toList(growable: false))
+                  .toList(growable: false),
+              bold: bold,
             ),
-          ),
-          pw.SizedBox(height: 10),
-          _headerBox(
-            regular: regular,
-            bold: bold,
-            rows: [
-              ['اسم التقرير', title],
-              ['الفترة', '$from - $to'],
-              ['تاريخ الطباعة', DateTime.now().toString().split('.').first],
-            ],
-          ),
-          pw.SizedBox(height: 10),
-          _summaryTable(summary, regular: regular, bold: bold),
-          pw.SizedBox(height: 10),
-          _dataTable(
-            columns: columns.isEmpty ? ['البيان'] : columns,
-            rows: rows.map(controller.cellsForRow).toList(growable: false),
-            regular: regular,
-            bold: bold,
-          ),
         ],
       ),
     );
@@ -1070,125 +1080,334 @@ class _ReportsPdfBuilder {
 
   static Future<pw.MemoryImage?> _logo() async {
     try {
-      final data = await rootBundle.load(AssetsManager.darkLogo);
+      final data =
+          await rootBundle.load('assets/images/purchase_invoice_logo.jpg');
       return pw.MemoryImage(data.buffer.asUint8List());
     } catch (_) {
       return null;
     }
   }
 
-  static pw.Widget _headerBox({
-    required pw.Font regular,
+  static pw.Widget _reportHeader({
+    required String title,
+    required String from,
+    required String to,
+    required pw.MemoryImage? logo,
     required pw.Font bold,
-    required List<List<String>> rows,
   }) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Wrap(
-        spacing: 12,
-        runSpacing: 6,
-        children: rows
-            .map(
-              (row) => pw.SizedBox(
-                width: 235,
-                child: pw.Row(
-                  children: [
-                    pw.Text(
-                      '${row[0]}: ',
-                      style: pw.TextStyle(font: bold, fontSize: 9.5),
-                    ),
-                    pw.Expanded(
-                      child: pw.Text(
-                        row[1],
-                        style: pw.TextStyle(font: regular, fontSize: 9.5),
-                      ),
-                    ),
-                  ],
+    final qrPayload = [
+      'Doctor Bike Report',
+      title,
+      '$from - $to',
+    ].join('\n');
+
+    return pw.Directionality(
+      textDirection: pw.TextDirection.ltr,
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.SizedBox(
+            width: 130,
+            height: 88,
+            child: logo == null
+                ? pw.SizedBox()
+                : pw.Align(
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Image(logo, height: 88),
+                  ),
+          ),
+          pw.Expanded(
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.BarcodeWidget(
+                  barcode: pw.Barcode.qrCode(),
+                  data: qrPayload,
+                  width: 64,
+                  height: 64,
+                  drawText: false,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '$from - $to',
+                  textDirection: pw.TextDirection.ltr,
+                  style: pw.TextStyle(fontSize: 8, color: _mutedColor),
+                ),
+              ],
+            ),
+          ),
+          pw.Expanded(
+            flex: 2,
+            child: pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'دكتور بايك - تقرير محاسبي',
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 21,
+                  color: _brandColor,
                 ),
               ),
-            )
-            .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  static pw.Widget _summaryTable(
-    List<Map<String, dynamic>> summary, {
-    required pw.Font regular,
+  static pw.Widget _reportMetaBox({
     required pw.Font bold,
-  }) {
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
-      children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
-          children: summary
-              .map((item) => _cell(
-                    item['title']?.toString() ?? '',
-                    font: bold,
-                    color: PdfColors.white,
-                  ))
-              .toList(),
-        ),
-        pw.TableRow(
-          children: summary
-              .map((item) => _cell(
-                    item['value']?.toString() ?? '0',
-                    font: regular,
-                  ))
-              .toList(),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _dataTable({
-    required List<String> columns,
-    required List<List<String>> rows,
-    required pw.Font regular,
-    required pw.Font bold,
-  }) {
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
-      children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
-          children: columns.reversed
-              .map((column) => _cell(
-                    column,
-                    font: bold,
-                    color: PdfColors.white,
-                  ))
-              .toList(),
-        ),
-        ...rows.map(
-          (row) => pw.TableRow(
-            children: row.reversed
-                .map((value) => _cell(value, font: regular))
-                .toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _cell(
-    String text, {
-    required pw.Font font,
-    PdfColor? color,
+    required String title,
+    required String from,
+    required String to,
+    required DateTime generatedAt,
+    required int recordsCount,
   }) {
     return pw.Container(
-      alignment: pw.Alignment.centerRight,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-      child: pw.Text(
-        text,
-        textDirection: pw.TextDirection.rtl,
-        style: pw.TextStyle(font: font, color: color, fontSize: 8.5),
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _borderColor),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.ltr,
+        child: pw.Table(
+          columnWidths: const {
+            0: pw.FlexColumnWidth(),
+            1: pw.FlexColumnWidth(),
+          },
+          children: [
+            _metaRow(
+              left: _metaLine(
+                'تاريخ الطباعة',
+                DateFormat('yyyy-MM-dd HH:mm').format(generatedAt),
+                bold,
+                valueLtr: true,
+              ),
+              right: _metaLine('اسم التقرير', title, bold),
+            ),
+            _metaRow(
+              left: _metaLine('إلى تاريخ', to, bold, valueLtr: true),
+              right: _metaLine('من تاريخ', from, bold, valueLtr: true),
+            ),
+            _metaRow(
+              left: _metaLine('النظام', 'دكتور بايك', bold),
+              right: _metaLine('عدد السجلات', '$recordsCount', bold,
+                  valueLtr: true),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  static pw.TableRow _metaRow({
+    required pw.Widget left,
+    required pw.Widget right,
+  }) {
+    return pw.TableRow(
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(right: 16, bottom: 5),
+          child: left,
+        ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(left: 16, bottom: 5),
+          child: right,
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _metaLine(
+    String label,
+    String value,
+    pw.Font bold, {
+    bool valueLtr = false,
+  }) {
+    return pw.Directionality(
+      textDirection: pw.TextDirection.rtl,
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text('$label:', style: pw.TextStyle(font: bold)),
+          pw.SizedBox(width: 7),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              textDirection:
+                  valueLtr ? pw.TextDirection.ltr : pw.TextDirection.rtl,
+              textAlign: pw.TextAlign.right,
+              style: pw.TextStyle(color: PdfColor.fromHex('#374151')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _summaryCards(
+    List<Map<String, dynamic>> summary, {
+    required pw.Font bold,
+  }) {
+    return pw.Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: summary
+          .map(
+            (item) => pw.Container(
+              width: 142,
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: _borderColor, width: 0.8),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  pw.Container(
+                    color: _brandColor,
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 5,
+                    ),
+                    child: pw.Text(
+                      item['title']?.toString() ?? '',
+                      textDirection: pw.TextDirection.rtl,
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(
+                        font: bold,
+                        fontSize: 9.5,
+                        color: PdfColors.white,
+                      ),
+                    ),
+                  ),
+                  pw.Container(
+                    color: _rowColor,
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 6,
+                    ),
+                    child: pw.Text(
+                      item['value']?.toString() ?? '0',
+                      textDirection: pw.TextDirection.rtl,
+                      textAlign: pw.TextAlign.center,
+                      style: pw.TextStyle(font: bold, fontSize: 10.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  static pw.Widget _reportDataTable({
+    required List<String> headers,
+    required List<List<String>> data,
+    required pw.Font bold,
+  }) {
+    final reversedHeaders = headers.reversed.toList(growable: false);
+    return pw.TableHelper.fromTextArray(
+      headers: reversedHeaders,
+      data: data,
+      tableDirection: pw.TextDirection.ltr,
+      headerDirection: pw.TextDirection.rtl,
+      border: pw.TableBorder.all(color: _borderColor, width: 0.8),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+      headerStyle: pw.TextStyle(
+        font: bold,
+        fontSize: 9,
+        color: PdfColors.white,
+      ),
+      headerDecoration: pw.BoxDecoration(color: _brandColor),
+      oddRowDecoration: pw.BoxDecoration(color: _rowColor),
+      headerAlignments: {
+        for (var i = 0; i < reversedHeaders.length; i++) i: pw.Alignment.center,
+      },
+      cellBuilder: (index, value, rowNum) {
+        final text = value.toString();
+        final isArabic = _containsArabic(text);
+        return pw.Text(
+          text,
+          textDirection: isArabic ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+          textAlign: isArabic ? pw.TextAlign.right : pw.TextAlign.center,
+          style: const pw.TextStyle(fontSize: 8.5),
+        );
+      },
+    );
+  }
+
+  static pw.Widget _emptyState() {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(vertical: 18),
+      decoration: pw.BoxDecoration(
+        color: _rowColor,
+        border: pw.Border.all(color: _borderColor),
+      ),
+      child: pw.Text(
+        'لا يوجد بيانات ضمن الفترة المحددة',
+        textDirection: pw.TextDirection.rtl,
+        textAlign: pw.TextAlign.center,
+        style: pw.TextStyle(color: _mutedColor),
+      ),
+    );
+  }
+
+  static pw.Widget _sectionTitle(String title, pw.Font bold) {
+    return pw.Align(
+      alignment: pw.Alignment.centerRight,
+      child: pw.Text(
+        title,
+        textDirection: pw.TextDirection.rtl,
+        style: pw.TextStyle(font: bold, fontSize: 12),
+      ),
+    );
+  }
+
+  static pw.Widget _reportFooter({
+    required pw.Context context,
+    required DateTime generatedAt,
+  }) {
+    return pw.Container(
+      margin: const pw.EdgeInsets.only(top: 14),
+      padding: const pw.EdgeInsets.only(top: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: _borderColor)),
+      ),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.ltr,
+        child: pw.Row(
+          children: [
+            pw.Text(
+              DateFormat('yyyy-MM-dd HH:mm').format(generatedAt),
+              textDirection: pw.TextDirection.ltr,
+              style: pw.TextStyle(fontSize: 9, color: _mutedColor),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Text(
+              '${context.pageNumber} / ${context.pagesCount}',
+              textDirection: pw.TextDirection.ltr,
+              style: pw.TextStyle(fontSize: 9, color: _mutedColor),
+            ),
+            pw.SizedBox(width: 8),
+            pw.Expanded(
+              child: pw.Text(
+                'هذه نسخة مطبوعة من تقرير نظام دكتور بايك تم إنشاؤها بتاريخ',
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(fontSize: 9, color: _mutedColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static bool _containsArabic(String value) =>
+      RegExp(r'[\u0600-\u06FF]').hasMatch(value);
 }

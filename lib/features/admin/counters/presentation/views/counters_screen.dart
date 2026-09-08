@@ -652,12 +652,15 @@ class _HorizontalBars extends StatelessWidget {
         1.0,
         data.fold<double>(
             0, (max, row) => math.max(max, _number(row['value']))));
-    return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return ListView(
+        padding: EdgeInsets.zero,
+        physics: data.length > 2
+            ? const BouncingScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
         children: List.generate(data.length, (i) {
           final value = _number(data[i]['value']);
           return Padding(
-              padding: EdgeInsets.symmetric(vertical: 11.h),
+              padding: EdgeInsets.symmetric(vertical: 5.h),
               child: Column(children: [
                 Row(children: [
                   Expanded(
@@ -672,7 +675,7 @@ class _HorizontalBars extends StatelessWidget {
                               ? AppColors.primaryColor
                               : const Color(0xffE05A47)))
                 ]),
-                SizedBox(height: 7.h),
+                SizedBox(height: 5.h),
                 ClipRRect(
                     borderRadius: BorderRadius.circular(5.r),
                     child: LinearProgressIndicator(

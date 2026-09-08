@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../data/reports_api_service.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ReportsController extends GetxController {
   ReportsController({required this.service});
 
@@ -353,6 +354,7 @@ class ReportsController extends GetxController {
           '${row['type'] ?? ''}',
           '${row['name'] ?? ''}',
           '${row['phone'] ?? ''}',
+          '${row['currency'] ?? ''}',
           money(row['balance_abs']),
           '${row['status'] ?? ''}',
         ];
@@ -360,7 +362,7 @@ class ReportsController extends GetxController {
         return [
           '${row['date'] ?? ''}',
           '${row['person'] ?? ''}',
-          '${row['person_type'] ?? ''}',
+          '${row['transaction_type_label'] ?? ''}',
           money(row['amount']),
           '${row['currency'] ?? ''}',
           money(row['balance_after']),
@@ -387,15 +389,16 @@ class ReportsController extends GetxController {
           '${row['to_box'] ?? ''}',
           '${row['type'] ?? ''}',
           money(row['amount']),
+          '${row['currency'] ?? ''}',
           '${row['description'] ?? ''}',
         ];
       case 'inventory':
         return [
           '${row['code'] ?? ''}',
           '${row['product'] ?? ''}',
+          money(row['opening_quantity']),
           money(row['quantity']),
           money(row['unit_cost']),
-          money(row['total_cost']),
           money(row['opening_value']),
           money(row['ending_value']),
         ];
