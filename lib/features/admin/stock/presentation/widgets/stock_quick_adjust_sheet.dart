@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockQuickAdjustResult {
   final int quantity;
   final String? note;
@@ -67,13 +67,19 @@ class _StockQuickAdjustSheetState extends State<_StockQuickAdjustSheet> {
       );
       return;
     }
+    final note = _noteController.text.trim();
+    if (note.isEmpty) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'stockAdjustmentReasonRequired'.tr,
+      );
+      return;
+    }
     final signed = _subtract ? -parsed : parsed;
     Navigator.of(context).pop(
       StockQuickAdjustResult(
         quantity: signed,
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
+        note: note,
       ),
     );
   }
@@ -102,7 +108,7 @@ class _StockQuickAdjustSheetState extends State<_StockQuickAdjustSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      'addStockQuick'.tr,
+                      'stockAdjustment'.tr,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                             color: cs.onSurface,
@@ -205,7 +211,7 @@ class _StockQuickAdjustSheetState extends State<_StockQuickAdjustSheet> {
                 controller: _noteController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  labelText: 'notes'.tr,
+                  labelText: 'stockDocumentReason'.tr,
                   filled: true,
                   fillColor: AdminUiColors.inputFill(context),
                   border: OutlineInputBorder(
@@ -227,7 +233,8 @@ class _StockQuickAdjustSheetState extends State<_StockQuickAdjustSheet> {
                 ),
                 child: Text(
                   'save'.tr,
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp),
+                  style:
+                      TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp),
                 ),
               ),
             ),

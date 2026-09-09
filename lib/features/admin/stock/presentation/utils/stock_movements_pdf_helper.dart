@@ -86,7 +86,7 @@ class StockMovementsPdfHelper {
         '${m.stockBefore}',
         '${m.stockAfter}',
         _costText(m),
-        m.hasInvoiceLink ? m.displayInvoiceNumber : '—',
+        m.document?.number ?? (m.hasInvoiceLink ? m.displayInvoiceNumber : '—'),
         m.note?.trim().isNotEmpty == true ? m.note! : '—',
         m.createdAt ?? '—',
         m.createdByName?.trim().isNotEmpty == true ? m.createdByName! : '—',

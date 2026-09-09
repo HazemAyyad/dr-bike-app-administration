@@ -32,6 +32,7 @@ import 'return_purchases_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 /// Resolves `bill_details` whether it is top-level or under `data`.
 Map<String, dynamic> _billDetailsMap(dynamic result) {
   final m = asMap(result);
@@ -165,10 +166,21 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       PurchaseLoadStatus.idle.obs;
   String purchaseProductsError = '';
   String purchaseSourcesError = '';
+  Future<void>? _productsLoadFuture;
 
-  Future<void> getAllProducts() async {
-    if (purchaseProductsStatus.value == PurchaseLoadStatus.loading) return;
+  Future<void> getAllProducts() {
+    final existing = _productsLoadFuture;
+    if (existing != null) return existing;
+    final load = _loadAllProducts();
+    _productsLoadFuture = load;
+    return load.whenComplete(() {
+      if (identical(_productsLoadFuture, load)) {
+        _productsLoadFuture = null;
+      }
+    });
+  }
 
+  Future<void> _loadAllProducts() async {
     purchaseProductsStatus.value = PurchaseLoadStatus.loading;
     purchaseProductsError = '';
     update();
@@ -1039,6 +1051,61 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     purchaseProductSearchController.clear();
     isaddNewBill = '1';
     update();
+  }
+
+  Future<bool> prepareNewPurchaseForProduct(
+    String productId, {
+    String? sizeColorId,
+  }) async {
+    prepareNewPurchaseForm();
+    if (products.isEmpty) await getAllProducts();
+
+    ProductModel? product;
+    for (final candidate in products) {
+      if (candidate.id == productId) {
+        product = candidate;
+        break;
+      }
+    }
+    if (product == null) return false;
+
+    if (sizeColorId != null && sizeColorId.isNotEmpty) {
+      ProductSizeVariant? selectedSize;
+      ProductColorVariant? selectedColor;
+      for (final size in product.sizes) {
+        for (final color in size.colorSizes) {
+          if (color.id == sizeColorId) {
+            selectedSize = size;
+            selectedColor = color;
+            break;
+          }
+        }
+        if (selectedColor != null) break;
+      }
+      if (selectedSize == null || selectedColor == null) return false;
+      syncPurchaseProductVariants(
+        product,
+        [
+          PurchaseVariantSelection(
+            size: selectedSize,
+            variant: selectedColor,
+            quantity: 1,
+            unitPriceText: product.purchaseCost > 0
+                ? product.purchaseCost.toStringAsFixed(2)
+                : '',
+          ),
+        ],
+      );
+    } else if (product.hasVariants) {
+      return false;
+    } else {
+      addProductToPurchaseCart(product);
+    }
+
+    purchaseProductSearchController.text = product.nameAr;
+    purchaseProductSearch.value = product.nameAr;
+    update();
+    return true;
   }
 
   Future<void> prepareShownPurchaseForEdit(BuildContext context) async {

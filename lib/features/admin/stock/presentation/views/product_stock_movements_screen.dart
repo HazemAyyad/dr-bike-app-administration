@@ -13,6 +13,7 @@ import '../widgets/stock_movements_filter_sheet.dart';
 import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_skeleton_widgets.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
+import '../utils/open_product_purchase.dart';
 
 class ProductStockMovementsArgs {
   const ProductStockMovementsArgs({
@@ -54,7 +55,8 @@ class ProductStockMovementsScreen extends StatefulWidget {
       _ProductStockMovementsScreenState();
 }
 
-class _ProductStockMovementsScreenState extends State<ProductStockMovementsScreen> {
+class _ProductStockMovementsScreenState
+    extends State<ProductStockMovementsScreen> {
   late final ProductStockMovementsArgs args;
   StockMovementsPageResult? data;
   var loading = true;
@@ -195,6 +197,27 @@ class _ProductStockMovementsScreenState extends State<ProductStockMovementsScree
     if (ok) await _load(pageNum: 1, refresh: true);
   }
 
+  Future<void> _openPurchase() async {
+    String? sizeColorId;
+    if (args.hasVariants) {
+      await c.getProductDetails(productId: args.productId);
+      final product = c.productDetails.value;
+      if (product == null || !mounted) return;
+      final target = await showStockVariantAdjustSheet(
+        context: context,
+        product: product,
+      );
+      if (target == null || !mounted) return;
+      sizeColorId = target.sizeColorId;
+    }
+    if (!mounted) return;
+    await openProductPurchase(
+      context: context,
+      productId: args.productId,
+      sizeColorId: sizeColorId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = data?.summary;
@@ -221,9 +244,15 @@ class _ProductStockMovementsScreenState extends State<ProductStockMovementsScree
               icon: const Icon(Icons.picture_as_pdf_outlined),
               onPressed: data == null ? null : _exportPdf,
             ),
+          if (canPurchaseProductFromStock)
+            IconButton(
+              tooltip: 'addStockQuick'.tr,
+              icon: const Icon(Icons.add_shopping_cart_outlined),
+              onPressed: _openPurchase,
+            ),
           IconButton(
-            tooltip: 'addStockQuick'.tr,
-            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'stockAdjustment'.tr,
+            icon: const Icon(Icons.tune_rounded),
             onPressed: _openQuickAdjust,
           ),
         ],

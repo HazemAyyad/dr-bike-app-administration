@@ -8,6 +8,7 @@ import '../controllers/stock_controller.dart';
 import '../views/product_stock_movements_screen.dart';
 import 'stock_quick_adjust_sheet.dart';
 import 'stock_variant_adjust_sheet.dart';
+import '../utils/open_product_purchase.dart';
 
 /// Entry row on product details → dedicated stock movements page + quick adjust.
 class ProductStockMovementsLink extends StatelessWidget {
@@ -35,6 +36,30 @@ class ProductStockMovementsLink extends StatelessWidget {
         currentStock: currentStock,
         hasVariants: hasVariants,
       ),
+    );
+  }
+
+  Future<void> _openPurchase(BuildContext context) async {
+    String? sizeColorId;
+    if (hasVariants) {
+      var product = _stock.productDetails.value;
+      if (product == null || product.id != productId) {
+        await _stock.getProductDetails(productId: productId);
+        product = _stock.productDetails.value;
+      }
+      if (product == null || !context.mounted) return;
+      final target = await showStockVariantAdjustSheet(
+        context: context,
+        product: product,
+      );
+      if (target == null || !context.mounted) return;
+      sizeColorId = target.sizeColorId;
+    }
+    if (!context.mounted) return;
+    await openProductPurchase(
+      context: context,
+      productId: productId,
+      sizeColorId: sizeColorId,
     );
   }
 
@@ -91,13 +116,23 @@ class ProductStockMovementsLink extends StatelessWidget {
         padding: EdgeInsets.all(14.w),
         child: Row(
           children: [
+            if (canPurchaseProductFromStock)
+              IconButton(
+                tooltip: 'addStockQuick'.tr,
+                onPressed: () => _openPurchase(context),
+                icon: Icon(
+                  Icons.add_shopping_cart_outlined,
+                  size: 24.sp,
+                  color: cs.primary,
+                ),
+              ),
             IconButton(
-              tooltip: 'addStockQuick'.tr,
+              tooltip: 'stockAdjustment'.tr,
               onPressed: () => _openQuickAdjust(context),
               icon: Icon(
-                Icons.add_circle_outline,
-                size: 24.sp,
-                color: cs.primary,
+                Icons.tune_rounded,
+                size: 22.sp,
+                color: cs.secondary,
               ),
             ),
             Expanded(
@@ -118,18 +153,22 @@ class ProductStockMovementsLink extends StatelessWidget {
                         children: [
                           Text(
                             'stockMovements'.tr,
-                            style:
-                                Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                    ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
                           ),
                           SizedBox(height: 2.h),
                           Text(
                             'stockMovementsPageHint'.tr,
-                            style:
-                                Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: cs.onSurface.withValues(alpha: 0.55),
-                                    ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: cs.onSurface.withValues(alpha: 0.55),
+                                ),
                           ),
                         ],
                       ),

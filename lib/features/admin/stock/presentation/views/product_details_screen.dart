@@ -23,9 +23,11 @@ import '../widgets/product_stock_movements_link.dart';
 import '../widgets/stock_skeleton_widgets.dart';
 import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
+import '../utils/open_product_purchase.dart';
 import 'product_assembly_operations_screen.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class _ProductDetailsHero extends StatelessWidget {
   const _ProductDetailsHero({required this.product});
 
@@ -366,6 +368,27 @@ class _CompactVideoCard extends StatelessWidget {
 class ProductDetailsScreen extends GetView<StockController> {
   const ProductDetailsScreen({Key? key}) : super(key: key);
 
+  Future<void> _openProductPurchase(
+    BuildContext context,
+    ProductDetailsModel product,
+  ) async {
+    String? sizeColorId;
+    if (_productHasVariants(product)) {
+      final target = await showStockVariantAdjustSheet(
+        context: context,
+        product: product,
+      );
+      if (target == null || !context.mounted) return;
+      sizeColorId = target.sizeColorId;
+    }
+    if (!context.mounted) return;
+    await openProductPurchase(
+      context: context,
+      productId: product.id,
+      sizeColorId: sizeColorId,
+    );
+  }
+
   Future<void> _openProductQuickAdjust(
     BuildContext context,
     ProductDetailsModel product,
@@ -417,10 +440,21 @@ class ProductDetailsScreen extends GetView<StockController> {
         actions: [
           Obx(() {
             final product = controller.productDetails.value;
-            if (product == null) return const SizedBox.shrink();
+            if (product == null || !canPurchaseProductFromStock) {
+              return const SizedBox.shrink();
+            }
             return IconButton(
               tooltip: 'addStockQuick'.tr,
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const Icon(Icons.add_shopping_cart_outlined),
+              onPressed: () => _openProductPurchase(context, product),
+            );
+          }),
+          Obx(() {
+            final product = controller.productDetails.value;
+            if (product == null) return const SizedBox.shrink();
+            return IconButton(
+              tooltip: 'stockAdjustment'.tr,
+              icon: const Icon(Icons.tune_rounded),
               onPressed: () => _openProductQuickAdjust(context, product),
             );
           }),
@@ -590,28 +624,6 @@ class _SizeColorDetailsTable extends StatefulWidget {
 class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
   bool expanded = false;
 
-  StockController get _stock => Get.find<StockController>();
-
-  Future<void> _openQuickAdjust(
-    BuildContext context, {
-    required String size,
-    required ColorSize color,
-  }) async {
-    final pick = await showStockQuickAdjustSheet(
-      context: context,
-      title: widget.product.nameAr,
-      subtitle: '$size / ${color.colorAr ?? '—'}',
-      currentStock: int.tryParse(color.stock ?? '0') ?? 0,
-    );
-    if (pick == null) return;
-    await _stock.adjustProductStock(
-      productId: widget.product.id,
-      sizeColorId: color.id,
-      quantity: pick.quantity,
-      note: pick.note,
-    );
-  }
-
   void _showColorLanguages(BuildContext context, ColorSize color) {
     Get.dialog(
       Dialog(
@@ -754,10 +766,10 @@ class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
                 size: entry.key,
                 colors: entry.value,
                 onTranslate: (color) => _showColorLanguages(context, color),
-                onAdjustStock: (color) => _openQuickAdjust(
-                  context,
-                  size: entry.key,
-                  color: color,
+                onPurchase: (color) => openProductPurchase(
+                  context: context,
+                  productId: product.id,
+                  sizeColorId: color.id,
                 ),
               ),
             )
@@ -772,13 +784,13 @@ class _SizeColorCard extends StatelessWidget {
     required this.size,
     required this.colors,
     required this.onTranslate,
-    required this.onAdjustStock,
+    required this.onPurchase,
   });
 
   final String size;
   final List<ColorSize> colors;
   final ValueChanged<ColorSize> onTranslate;
-  final ValueChanged<ColorSize> onAdjustStock;
+  final ValueChanged<ColorSize> onPurchase;
 
   @override
   Widget build(BuildContext context) {
@@ -830,7 +842,7 @@ class _SizeColorCard extends StatelessWidget {
             _ColorSizeLine(
               color: color,
               onTranslate: onTranslate,
-              onAdjustStock: () => onAdjustStock(color),
+              onPurchase: () => onPurchase(color),
             ),
             if (color != colors.last) SizedBox(height: 6.h),
           ],
@@ -844,12 +856,12 @@ class _ColorSizeLine extends StatelessWidget {
   const _ColorSizeLine({
     required this.color,
     required this.onTranslate,
-    required this.onAdjustStock,
+    required this.onPurchase,
   });
 
   final ColorSize color;
   final ValueChanged<ColorSize> onTranslate;
-  final VoidCallback onAdjustStock;
+  final VoidCallback onPurchase;
 
   @override
   Widget build(BuildContext context) {
@@ -888,16 +900,17 @@ class _ColorSizeLine extends StatelessWidget {
           ),
           ProductMiniStat(label: 'quantity'.tr, value: color.stock ?? '0'),
           ProductMiniStat(label: 'price'.tr, value: color.normailPrice ?? '—'),
-          IconButton(
-            tooltip: 'addStockQuick'.tr,
-            icon: Icon(
-              Icons.add_circle_outline,
-              size: 18.sp,
-              color: Theme.of(context).colorScheme.primary,
+          if (canPurchaseProductFromStock)
+            IconButton(
+              tooltip: 'addStockQuick'.tr,
+              icon: Icon(
+                Icons.add_shopping_cart_outlined,
+                size: 18.sp,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              visualDensity: VisualDensity.compact,
+              onPressed: onPurchase,
             ),
-            visualDensity: VisualDensity.compact,
-            onPressed: onAdjustStock,
-          ),
           IconButton(
             tooltip: 'اللغات الاخرى',
             icon: Icon(

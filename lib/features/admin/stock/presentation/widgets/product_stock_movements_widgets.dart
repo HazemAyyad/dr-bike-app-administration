@@ -8,10 +8,12 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../domain/stock_movements_filters.dart';
 import '../utils/open_instant_sale_invoice.dart';
+import '../utils/open_product_purchase.dart';
+import '../utils/open_purchase_invoice_from_stock.dart';
 import '../utils/stock_movements_pdf_helper.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockMovementSummaryBar extends StatelessWidget {
   const StockMovementSummaryBar({Key? key, required this.summary})
       : super(key: key);
@@ -27,33 +29,35 @@ class StockMovementSummaryBar extends StatelessWidget {
         color: AdminUiColors.subtleOverlay(context),
         borderRadius: BorderRadius.circular(12.r),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 8.w,
+        runSpacing: 12.h,
+        alignment: WrapAlignment.center,
         children: [
-          Expanded(
-            child: _SummaryChip(
-              label: 'stockTotalIn'.tr,
-              value: '+${summary.totalIn}',
-              color: Colors.green.shade700,
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: _SummaryChip(
-              label: 'stockTotalOut'.tr,
-              value: '-${summary.totalOut}',
-              color: AppColors.redColor,
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: _SummaryChip(
-              label: 'stock'.tr,
-              value: '${summary.currentStock}',
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
+          _summaryBox(context, 'stockPurchased'.tr, '${summary.purchased}',
+              Colors.green.shade700),
+          _summaryBox(
+              context, 'stockSold'.tr, '${summary.sold}', AppColors.redColor),
+          _summaryBox(context, 'stockSalesReturned'.tr,
+              '${summary.salesReturned}', Colors.teal.shade700),
+          _summaryBox(context, 'stockPurchaseReturned'.tr,
+              '${summary.purchaseReturned}', Colors.orange.shade800),
+          _summaryBox(context, 'stock'.tr, '${summary.currentStock}',
+              Theme.of(context).colorScheme.primary),
         ],
       ),
+    );
+  }
+
+  Widget _summaryBox(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
+    return SizedBox(
+      width: (MediaQuery.sizeOf(context).width - 76.w) / 3,
+      child: _SummaryChip(label: label, value: value, color: color),
     );
   }
 }
@@ -123,8 +127,8 @@ class StockMovementsToolbar extends StatelessWidget {
         children: [
           FilledButton.tonalIcon(
             onPressed: onQuickAdjust,
-            icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: Text('addStockQuick'.tr),
+            icon: const Icon(Icons.tune_rounded, size: 18),
+            label: Text('stockAdjustment'.tr),
           ),
           OutlinedButton.icon(
             onPressed: onFilter,
@@ -186,7 +190,7 @@ class StockMovementsTable extends StatelessWidget {
             DataColumn(label: Text('stockMoveColBefore'.tr)),
             DataColumn(label: Text('stockMoveColAfter'.tr)),
             DataColumn(label: Text('stockMoveColCost'.tr)),
-            DataColumn(label: Text('instantSaleInvoice'.tr)),
+            DataColumn(label: Text('stockMoveColDocument'.tr)),
             DataColumn(label: Text('notes'.tr)),
             DataColumn(label: Text('date'.tr)),
             DataColumn(label: Text('stockMoveColUser'.tr)),
@@ -226,24 +230,7 @@ class StockMovementsTable extends StatelessWidget {
         DataCell(Text('${m.stockBefore}')),
         DataCell(Text('${m.stockAfter}')),
         DataCell(Text(stockMovementCostText(m))),
-        DataCell(
-          m.hasInvoiceLink
-              ? InkWell(
-                  onTap: () => openInstantSaleInvoiceFromStock(
-                    context: context,
-                    saleId: m.referenceId!,
-                  ),
-                  child: Text(
-                    m.displayInvoiceNumber,
-                    style: TextStyle(
-                      color: cs.primary,
-                      fontWeight: FontWeight.w800,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                )
-              : const Text('—'),
-        ),
+        DataCell(_movementDocumentLink(context, m, cs)),
         DataCell(
           Text(
             m.note?.trim().isNotEmpty == true ? m.note! : '—',
@@ -307,23 +294,10 @@ class StockMovementListTile extends StatelessWidget {
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ),
-                if (movement.hasInvoiceLink)
+                if (movement.document != null || movement.hasInvoiceLink)
                   Padding(
                     padding: EdgeInsets.only(top: 4.h),
-                    child: InkWell(
-                      onTap: () => openInstantSaleInvoiceFromStock(
-                        context: context,
-                        saleId: movement.referenceId!,
-                      ),
-                      child: Text(
-                        '${'instantSaleInvoice'.tr} ${movement.displayInvoiceNumber}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w800,
-                              decoration: TextDecoration.underline,
-                            ),
-                      ),
-                    ),
+                    child: _movementDocumentLink(context, movement, cs),
                   ),
                 if (stockMovementCostText(movement) != '—')
                   Padding(
@@ -370,6 +344,119 @@ class StockMovementListTile extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _movementDocumentLink(
+  BuildContext context,
+  ProductStockMovementModel movement,
+  ColorScheme colors,
+) {
+  final document = movement.document;
+  final number = document?.number.trim().isNotEmpty == true
+      ? document!.number
+      : movement.displayInvoiceNumber;
+  if (number.isEmpty) return const Text('—');
+  return InkWell(
+    onTap: () {
+      if (movement.hasInvoiceLink) {
+        openInstantSaleInvoiceFromStock(
+          context: context,
+          saleId: movement.referenceId!,
+        );
+        return;
+      }
+      if (document?.type == 'purchase' && canPurchaseProductFromStock) {
+        openPurchaseInvoiceFromStock(
+          context: context,
+          billId: document!.id,
+        );
+        return;
+      }
+      if (document != null) {
+        showStockMovementDocumentDetails(context, document);
+      }
+    },
+    child: Text(
+      document?.sourceNumber?.trim().isNotEmpty == true
+          ? '$number\n${document!.sourceNumber}'
+          : number,
+      style: TextStyle(
+        color: colors.primary,
+        fontWeight: FontWeight.w800,
+        decoration: TextDecoration.underline,
+      ),
+    ),
+  );
+}
+
+Future<void> showStockMovementDocumentDetails(
+  BuildContext context,
+  StockMovementDocument document,
+) {
+  final rows = <MapEntry<String, String>>[
+    MapEntry('stockMoveColDocument'.tr, document.number),
+    if (document.sourceNumber?.trim().isNotEmpty == true)
+      MapEntry('stockDocumentSource'.tr, document.sourceNumber!),
+    if (document.partyName?.trim().isNotEmpty == true)
+      MapEntry('stockDocumentParty'.tr, document.partyName!),
+    if (document.status?.trim().isNotEmpty == true)
+      MapEntry('stockDocumentStatus'.tr, document.status!),
+    if (document.unitPrice != null)
+      MapEntry('price'.tr, _stockMovementMoney(document.unitPrice!)),
+    if (document.total != null)
+      MapEntry('total'.tr, _stockMovementMoney(document.total!)),
+    if (document.paid != null)
+      MapEntry('stockDocumentPaid'.tr, _stockMovementMoney(document.paid!)),
+    if (document.remaining != null)
+      MapEntry('stockDocumentRemaining'.tr,
+          _stockMovementMoney(document.remaining!)),
+    if (document.boxName?.trim().isNotEmpty == true)
+      MapEntry('stockDocumentBox'.tr, document.boxName!),
+    if (document.reason?.trim().isNotEmpty == true)
+      MapEntry('stockDocumentReason'.tr, document.reason!),
+    if (document.note?.trim().isNotEmpty == true)
+      MapEntry('notes'.tr, document.note!),
+  ];
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 24.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'stockDocumentDetails'.tr,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            SizedBox(height: 12.h),
+            for (final row in rows)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 110.w,
+                      child: Text(
+                        row.key,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Expanded(child: Text(row.value)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 String stockMovementCostText(ProductStockMovementModel m) {
