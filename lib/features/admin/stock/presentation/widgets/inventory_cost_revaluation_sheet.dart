@@ -22,6 +22,7 @@ Future<InventoryCostRevaluationResult?> showInventoryCostRevaluationSheet({
   String? subtitle,
   double? currentUnitCost,
   String currency = 'شيكل',
+  bool initializeMissingCost = false,
 }) {
   return showModalBottomSheet<InventoryCostRevaluationResult>(
     context: context,
@@ -32,6 +33,7 @@ Future<InventoryCostRevaluationResult?> showInventoryCostRevaluationSheet({
       subtitle: subtitle,
       currentUnitCost: currentUnitCost,
       currency: currency,
+      initializeMissingCost: initializeMissingCost,
     ),
   );
 }
@@ -42,12 +44,14 @@ class _InventoryCostRevaluationSheet extends StatefulWidget {
     this.subtitle,
     this.currentUnitCost,
     required this.currency,
+    required this.initializeMissingCost,
   });
 
   final String title;
   final String? subtitle;
   final double? currentUnitCost;
   final String currency;
+  final bool initializeMissingCost;
 
   @override
   State<_InventoryCostRevaluationSheet> createState() =>
@@ -81,12 +85,17 @@ class _InventoryCostRevaluationSheetState
     final cost =
         double.tryParse(costController.text.trim().replaceAll(',', '.'));
     final reason = reasonController.text.trim();
-    if (cost == null || cost < 0) {
+    if (cost == null || (widget.initializeMissingCost ? cost <= 0 : cost < 0)) {
       AppFailureNotice.show(title: 'خطأ', message: 'أدخل تكلفة وحدة صحيحة.');
       return;
     }
     if (reason.isEmpty) {
-      AppFailureNotice.show(title: 'خطأ', message: 'سبب إعادة التقييم مطلوب.');
+      AppFailureNotice.show(
+        title: 'خطأ',
+        message: widget.initializeMissingCost
+            ? 'سبب إدخال التكلفة مطلوب.'
+            : 'سبب إعادة التقييم مطلوب.',
+      );
       return;
     }
     Navigator.of(context).pop(
@@ -120,7 +129,9 @@ class _InventoryCostRevaluationSheetState
                 children: [
                   Expanded(
                     child: Text(
-                      'إعادة تقييم تكلفة المخزون',
+                      widget.initializeMissingCost
+                          ? 'إدخال تكلفة المخزون الناقصة'
+                          : 'إعادة تقييم تكلفة المخزون',
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
@@ -137,8 +148,10 @@ class _InventoryCostRevaluationSheetState
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               if (widget.subtitle?.isNotEmpty == true) Text(widget.subtitle!),
               const SizedBox(height: 8),
-              const Text(
-                'هذه العملية لا تغيّر الكمية؛ تسجل فرق القيمة وسجل التدقيق فقط.',
+              Text(
+                widget.initializeMissingCost
+                    ? 'سيتم إنشاء تغطية محاسبية للكمية الناقصة فقط، من دون تغيير كمية المخزون.'
+                    : 'هذه العملية لا تغيّر الكمية؛ تسجل فرق القيمة وسجل التدقيق فقط.',
               ),
               SizedBox(height: 12.h),
               TextField(
@@ -146,7 +159,9 @@ class _InventoryCostRevaluationSheetState
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'تكلفة الوحدة الجديدة',
+                  labelText: widget.initializeMissingCost
+                      ? 'تكلفة وحدة المخزون الناقص'
+                      : 'تكلفة الوحدة الجديدة',
                   suffixText: widget.currency,
                   border: const OutlineInputBorder(),
                 ),
@@ -154,9 +169,11 @@ class _InventoryCostRevaluationSheetState
               SizedBox(height: 10.h),
               TextField(
                 controller: reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'سبب إعادة التقييم',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: widget.initializeMissingCost
+                      ? 'سبب إدخال التكلفة'
+                      : 'سبب إعادة التقييم',
+                  border: const OutlineInputBorder(),
                 ),
               ),
               SizedBox(height: 10.h),
@@ -171,7 +188,9 @@ class _InventoryCostRevaluationSheetState
               SizedBox(height: 14.h),
               FilledButton(
                 onPressed: submit,
-                child: const Text('تسجيل إعادة التقييم'),
+                child: Text(widget.initializeMissingCost
+                    ? 'تسجيل تكلفة المخزون'
+                    : 'تسجيل إعادة التقييم'),
               ),
             ],
           ),

@@ -496,6 +496,8 @@ class EndPoints {
   static const String getProductsList = 'get/products/list';
   static const String getDeletedProducts = 'get/deleted/products';
   static const String productCostPrice = 'product/inventory/revalue';
+  static const String productInventoryInitializeCost =
+      'product/inventory/initialize-cost';
   static const String exportProductsCsv = 'products/export-csv';
   static const String quickEditProducts = 'products/quick-edit';
   static const String quickEditProductsUpdate = 'products/quick-edit/update';

@@ -2492,6 +2492,45 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
+  Future<bool> initializeProductInventoryCost({
+    required String productId,
+    String? sizeColorId,
+    required double unitCost,
+    required String reason,
+    String? notes,
+    String currency = 'شيكل',
+  }) async {
+    try {
+      await stockDatasource.initializeProductInventoryCost(
+        productId: productId,
+        sizeColorId: sizeColorId,
+        unitCost: unitCost,
+        reason: reason,
+        notes: notes,
+        currency: currency,
+      );
+      await getProductDetails(productId: productId);
+      await reloadProductsList();
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
+      );
+      return true;
+    } on ServerException catch (e) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
+      );
+      return false;
+    } catch (_) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'somethingWrong'.tr,
+      );
+      return false;
+    }
+  }
+
   Future<StockMovementsPageResult?> loadStockMovements({
     required String productId,
     int page = 1,

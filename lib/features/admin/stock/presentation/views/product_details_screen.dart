@@ -438,6 +438,9 @@ class ProductDetailsScreen extends GetView<StockController> {
     String? sizeColorId;
     String? subtitle;
     double? currentCost = product.inventory?.averageUnitCost;
+    var currency = product.inventory?.currency ?? 'شيكل';
+    var initializeMissingCost =
+        (product.inventory?.missingCostQuantity ?? 0) > 0.0001;
     if (_productHasVariants(product)) {
       final target = await showStockVariantAdjustSheet(
         context: context,
@@ -450,6 +453,8 @@ class ProductDetailsScreen extends GetView<StockController> {
           in product.inventory?.variants ?? <InventoryIdentitySummary>[]) {
         if (variant.sizeColorId == sizeColorId) {
           currentCost = variant.averageUnitCost;
+          currency = variant.currency;
+          initializeMissingCost = variant.missingCostQuantity > 0.0001;
           break;
         }
       }
@@ -459,18 +464,30 @@ class ProductDetailsScreen extends GetView<StockController> {
       context: context,
       title: product.nameAr,
       subtitle: subtitle,
-      currentUnitCost: currentCost,
-      currency: product.inventory?.currency ?? 'شيكل',
+      currentUnitCost: initializeMissingCost ? null : currentCost,
+      currency: currency,
+      initializeMissingCost: initializeMissingCost,
     );
     if (result == null) return;
-    await controller.updateProductCostPrice(
-      productId: product.id,
-      sizeColorId: sizeColorId,
-      costPrice: result.newUnitCost,
-      reason: result.reason,
-      notes: result.notes,
-      currency: product.inventory?.currency ?? 'شيكل',
-    );
+    if (initializeMissingCost) {
+      await controller.initializeProductInventoryCost(
+        productId: product.id,
+        sizeColorId: sizeColorId,
+        unitCost: result.newUnitCost,
+        reason: result.reason,
+        notes: result.notes,
+        currency: currency,
+      );
+    } else {
+      await controller.updateProductCostPrice(
+        productId: product.id,
+        sizeColorId: sizeColorId,
+        costPrice: result.newUnitCost,
+        reason: result.reason,
+        notes: result.notes,
+        currency: currency,
+      );
+    }
   }
 
   @override

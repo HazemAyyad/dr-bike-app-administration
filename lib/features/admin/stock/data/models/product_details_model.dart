@@ -304,6 +304,7 @@ class ProductDetailsModel {
 class InventorySummary {
   final double quantityOnHand;
   final double costedQuantity;
+  final double missingCostQuantity;
   final String costingMethod;
   final String currency;
   final double? inventoryValue;
@@ -319,6 +320,7 @@ class InventorySummary {
   const InventorySummary({
     required this.quantityOnHand,
     required this.costedQuantity,
+    required this.missingCostQuantity,
     required this.costingMethod,
     required this.currency,
     required this.inventoryValue,
@@ -336,6 +338,7 @@ class InventorySummary {
     return InventorySummary(
       quantityOnHand: asDouble(json['quantity_on_hand']),
       costedQuantity: asDouble(json['costed_quantity']),
+      missingCostQuantity: asDouble(json['missing_cost_quantity']),
       costingMethod: asString(json['costing_method'], 'fifo'),
       currency: asString(json['currency'], 'شيكل'),
       inventoryValue: json['inventory_value'] == null
@@ -371,6 +374,7 @@ class InventorySummary {
   Map<String, dynamic> toJson() => {
         'quantity_on_hand': quantityOnHand,
         'costed_quantity': costedQuantity,
+        'missing_cost_quantity': missingCostQuantity,
         'costing_method': costingMethod,
         'currency': currency,
         'inventory_value': inventoryValue,
@@ -464,6 +468,7 @@ class InventoryIdentitySummary {
   final String sizeLabel;
   final String colorLabel;
   final double quantityOnHand;
+  final double missingCostQuantity;
   final String currency;
   final double? inventoryValue;
   final double? averageUnitCost;
@@ -475,6 +480,7 @@ class InventoryIdentitySummary {
     required this.sizeLabel,
     required this.colorLabel,
     required this.quantityOnHand,
+    required this.missingCostQuantity,
     required this.currency,
     this.inventoryValue,
     this.averageUnitCost,
@@ -488,6 +494,7 @@ class InventoryIdentitySummary {
         sizeLabel: asString(json['size_label'], '—'),
         colorLabel: asString(json['color_label'], '—'),
         quantityOnHand: asDouble(json['quantity_on_hand']),
+        missingCostQuantity: asDouble(json['missing_cost_quantity']),
         currency: asString(json['currency'], 'شيكل'),
         inventoryValue: json['inventory_value'] == null
             ? null
@@ -506,6 +513,7 @@ class InventoryIdentitySummary {
         'size_label': sizeLabel,
         'color_label': colorLabel,
         'quantity_on_hand': quantityOnHand,
+        'missing_cost_quantity': missingCostQuantity,
         'currency': currency,
         'inventory_value': inventoryValue,
         'average_inventory_unit_cost': averageUnitCost,

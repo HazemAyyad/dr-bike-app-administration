@@ -1851,6 +1851,54 @@ class StockDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> initializeProductInventoryCost({
+    required String productId,
+    String? sizeColorId,
+    required double unitCost,
+    required String reason,
+    String? notes,
+    String currency = 'شيكل',
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productInventoryInitializeCost,
+        data: {
+          'product_id': productId,
+          if (sizeColorId != null && sizeColorId.isNotEmpty)
+            'size_color_id': sizeColorId,
+          'unit_cost': unitCost,
+          'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+          'currency': currency,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 422,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return Map<String, dynamic>.from(raw);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
   Future<StockMovementsPageResult> getProductStockMovements({
     required String productId,
     int page = 1,

@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/product_priority_image.dart';
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -63,13 +62,6 @@ class BuildProductCard extends GetView<StockController> {
         searchContext: searchContext!,
       );
     }
-  }
-
-  String _formatCostPrice() {
-    final value = product.costPrice;
-    if (value == null || value <= 0) return '-';
-    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
-    return value.toStringAsFixed(2);
   }
 
   @override
@@ -255,15 +247,6 @@ class BuildProductCard extends GetView<StockController> {
                                                     isLandscapePhone ? 2 : 2.h,
                                               ),
                                               _buildStockLine(context),
-                                              if (userType == 'admin' &&
-                                                  tab == 0) ...[
-                                                SizedBox(
-                                                  height: isLandscapePhone
-                                                      ? 1
-                                                      : 1.h,
-                                                ),
-                                                _buildCostPriceLine(context),
-                                              ],
                                             ],
                                           ),
                                         ),
@@ -354,13 +337,6 @@ class BuildProductCard extends GetView<StockController> {
     return _InfoPill(
       icon: Icons.sell_outlined,
       text: '${'instantSaleRetailPriceLabel'.tr} : ${_formatRetailPrice()}',
-    );
-  }
-
-  Widget _buildCostPriceLine(BuildContext context) {
-    return _InfoPill(
-      icon: Icons.payments_outlined,
-      text: '${'costPrice'.tr} : ${_formatCostPrice()}',
     );
   }
 

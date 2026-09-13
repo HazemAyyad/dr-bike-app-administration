@@ -75,6 +75,7 @@ class InventorySummarySection extends StatelessWidget {
     final inventory = product.inventory;
     if (inventory == null) return const SizedBox.shrink();
     final showCost = product.canViewInventoryCost || canViewCostPrice;
+    final hasMissingCost = inventory.missingCostQuantity > 0.0001;
     final method = inventory.costingMethod == 'moving_average'
         ? 'المتوسط المتحرك'
         : 'FIFO';
@@ -90,6 +91,8 @@ class InventorySummarySection extends StatelessWidget {
       if (showCost && inventory.costingMethod == 'fifo')
         MapEntry('تكلفة وحدة FIFO التالية',
             money(inventory.nextFifoUnitCost, inventory.currency)),
+      if (showCost && hasMissingCost)
+        MapEntry('كمية بلا تكلفة', qty(inventory.missingCostQuantity)),
     ];
 
     return Container(
@@ -219,11 +222,15 @@ class InventorySummarySection extends StatelessWidget {
                   icon: const Icon(Icons.layers_outlined),
                   label: const Text('تفاصيل التكلفة'),
                 ),
-              if (showCost && canAdjustInventoryCost)
+              if (showCost &&
+                  canAdjustInventoryCost &&
+                  inventory.quantityOnHand > 0.0001)
                 OutlinedButton.icon(
                   onPressed: onRevalue,
                   icon: const Icon(Icons.price_change_outlined),
-                  label: const Text('إعادة تقييم التكلفة'),
+                  label: Text(hasMissingCost
+                      ? 'إدخال سعر التكلفة'
+                      : 'إعادة تقييم التكلفة'),
                 ),
             ],
           ),
