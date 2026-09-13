@@ -128,13 +128,14 @@ class _InstantSaleTableRow extends StatelessWidget {
     final cancelled = sale.isCancelled;
     final fromMaintenance = sale.isFromMaintenance;
     final adjustment = sale.isAdjustmentSale;
+    final baseBg = isDark ? AppColors.customGreyColor4 : Colors.white;
     final bg = cancelled
-        ? Colors.red.withValues(alpha: 0.06)
+        ? Color.alphaBlend(Colors.red.withValues(alpha: 0.06), baseBg)
         : adjustment
             ? (isDark ? const Color(0xFF3A2513) : const Color(0xFFFFF7ED))
             : fromMaintenance
                 ? (isDark ? const Color(0xFF3B2A11) : const Color(0xFFFFF7E6))
-                : (isDark ? AppColors.customGreyColor4 : Colors.white);
+                : baseBg;
 
     final actions = <_SwipeSaleActionData>[
       _SwipeSaleActionData(
