@@ -106,6 +106,7 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                         EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
                     child: SearchBar(
                       controller: controller.searchController,
+                      focusNode: controller.searchFocusNode,
                       shadowColor: WidgetStateProperty.all(Colors.transparent),
                       leading: const Icon(Icons.search),
                       trailing: [

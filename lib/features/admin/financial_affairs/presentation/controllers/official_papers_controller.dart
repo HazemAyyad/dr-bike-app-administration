@@ -21,6 +21,7 @@ import 'finacial_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class OfficialPapersController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllFinancialUsecase getAllFinancialUsecase;
@@ -61,11 +62,19 @@ class OfficialPapersController extends GetxController
   final tabs = ['company_documents', 'important_images'].obs;
   final RxString archiveStatusFilter = 'active'.obs;
   final TextEditingController searchController = TextEditingController();
+  final FocusNode searchFocusNode = FocusNode();
   final RxBool isSearchVisible = false.obs;
 
   void toggleSearch() {
     isSearchVisible.toggle();
-    if (!isSearchVisible.value) {
+    if (isSearchVisible.value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (isSearchVisible.value && searchFocusNode.canRequestFocus) {
+          searchFocusNode.requestFocus();
+        }
+      });
+    } else {
+      searchFocusNode.unfocus();
       searchController.clear();
       searchBar('');
     }
@@ -73,6 +82,7 @@ class OfficialPapersController extends GetxController
 
   void closeSearch() {
     isSearchVisible.value = false;
+    searchFocusNode.unfocus();
     searchController.clear();
     searchBar('');
   }
@@ -196,7 +206,6 @@ class OfficialPapersController extends GetxController
     final sortedPapers = dartList(papersList)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     FinacialService().papers.assignAll(sortedPapers);
-    papersSearch = FinacialService().papers;
 
     // pictures
     final pictures =
@@ -214,7 +223,7 @@ class OfficialPapersController extends GetxController
     final sortedPictures = dartList(picturesList)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     FinacialService().pictures.assignAll(sortedPictures);
-    picturesSearch = FinacialService().pictures;
+    searchBar(searchController.text);
 
     // files
     final files =
@@ -493,6 +502,7 @@ class OfficialPapersController extends GetxController
     selectedFile.value = null;
     notesController.dispose();
     searchController.dispose();
+    searchFocusNode.dispose();
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;

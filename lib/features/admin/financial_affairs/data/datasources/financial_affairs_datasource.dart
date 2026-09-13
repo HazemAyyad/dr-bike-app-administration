@@ -470,12 +470,14 @@ class FinancialAffairsDatasource {
     try {
       // تجهيز قائمة الملفات اللي هترفعها
       final List filesToUpload = [];
+      final retainedImages = <String>[];
       for (var file in media) {
         if (file == null) continue;
 
-        // لو الـ path يحتوي "http"، يمكن ترسله كرابط مباشرة
+        // Existing remote images are sent separately so removing one from the
+        // edit preview also removes its reference from the paper record.
         if (file.path.contains('http')) {
-          filesToUpload.add(file.path);
+          retainedImages.add(file.path);
         } else {
           // نضغط الصورة أولاً باستخدام الـ compressImage (نفس الفانكشن اللي اعددناه)
           final compressed =
@@ -494,6 +496,7 @@ class FinancialAffairsDatasource {
           if (paperId.isNotEmpty) 'paper_id': paperId,
           'name': name,
           'file_id': fileId,
+          if (paperId.isNotEmpty) 'retained_img': jsonEncode(retainedImages),
           if (filesToUpload.isNotEmpty) 'img[]': filesToUpload,
           'notes': notes,
         },
