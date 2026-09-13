@@ -14,8 +14,8 @@ import '../models/check_model.dart';
 import '../models/general_checks_data_model.dart';
 import '../../domain/repositories/checks_repository.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ChecksDatasource {
   final ApiConsumer api;
 
@@ -316,6 +316,8 @@ class ChecksDatasource {
   Future<Map<String, dynamic>> editChecks({
     required bool isInComing,
     required String outgoingCheckId,
+    String? customerId,
+    String? sellerId,
     required DateTime dueDate,
     required String checkId,
     required String bankName,
@@ -345,6 +347,10 @@ class ChecksDatasource {
         data: {
           if (isInComing) 'incoming_check_id': outgoingCheckId,
           if (!isInComing) 'outgoing_check_id': outgoingCheckId,
+          if (isInComing && customerId != null) 'from_customer': customerId,
+          if (isInComing && sellerId != null) 'from_seller': sellerId,
+          if (!isInComing && customerId != null) 'customer_id': customerId,
+          if (!isInComing && sellerId != null) 'seller_id': sellerId,
           if (!isInComing && total != null) 'total': total,
           if (!isInComing && currency != null) 'currency': currency,
           'due_date': dueDate,

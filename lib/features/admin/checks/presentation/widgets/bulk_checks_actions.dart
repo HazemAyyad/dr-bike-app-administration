@@ -3,9 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../widgets/unified_partner_selector.dart';
+import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 
 class BulkChecksActionsDialog extends GetView<ChecksController> {
@@ -195,7 +197,8 @@ class BulkCashToPersonDialog extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedValue = RxnString();
+    final selectedPartner = Rxn<SellerModel>();
+    final selectedIsSeller = true.obs;
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
@@ -204,65 +207,51 @@ class BulkCashToPersonDialog extends GetView<ChecksController> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Obx(
-              () => Row(
-                children: [
-                  Expanded(
-                    child: CustomCheckBox(
-                      title: 'seller'.tr,
-                      value: RxBool(!controller.selectedCustomersSellers.value),
-                      onChanged: (_) {
-                        selectedValue.value = null;
-                        controller.selectedCustomersSellers.value = false;
+            Obx(() => UnifiedPartnerSelector<SellerModel>(
+                  customers: controller.allCustomersList,
+                  sellers: controller.allSellersList,
+                  selected: selectedPartner.value,
+                  selectedIsSeller: selectedIsSeller.value,
+                  idOf: (partner) => partner.id,
+                  nameOf: (partner) => partner.name,
+                  phoneOf: (partner) => partner.phone,
+                  onSelected: (partner, isSeller) {
+                    selectedIsSeller.value = isSeller;
+                    selectedPartner.value = partner;
+                  },
+                  onCleared: () => selectedPartner.value = null,
+                  onAddRequested: (isSeller) async {
+                    await Get.toNamed(
+                      AppRoutes.ADDNEWCUSTOMERSCREEN,
+                      arguments: {
+                        'sellerId': '',
+                        'employeeId': '',
+                        'employeeType': isSeller ? 'seller' : 'customer',
+                        'popOnceOnSuccess': true,
                       },
-                    ),
-                  ),
-                  Expanded(
-                    child: CustomCheckBox(
-                      title: 'customer'.tr,
-                      value: controller.selectedCustomersSellers,
-                      onChanged: (_) {
-                        selectedValue.value = null;
-                        controller.selectedCustomersSellers.value = true;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Obx(
-              () => CustomDropdownFieldWithSearch(
-                tital: 'beneficiary',
-                hint: 'customerNameExample',
-                items: controller.selectedCustomersSellers.value
-                    ? controller.allCustomersList
-                    : controller.allSellersList,
-                onChanged: (value) {
-                  if (value != null) selectedValue.value = value.id.toString();
-                },
-                itemAsString: (item) => item.name,
-                compareFn: (a, b) => a.id == b.id,
-                validator: (_) => null,
-              ),
-            ),
+                    );
+                    controller.getAllCustomersAndSellers();
+                  },
+                  requiredSelection: true,
+                  compact: true,
+                )),
             SizedBox(height: 12.h),
             AppButton(
               isSafeArea: false,
               isLoading: controller.isLoading,
               text: 'continue',
               onPressed: () {
-                if (selectedValue.value == null) return;
+                final partner = selectedPartner.value;
+                if (partner == null) return;
                 Get.back();
                 Get.dialog(
                   BulkCheckConfirmDialog(
                     actionTitle: 'endorseTheCheck',
                     onConfirm: () => controller.bulkCashedToPersonOrCashed(
-                      customerId: controller.selectedCustomersSellers.value
-                          ? selectedValue.value
-                          : null,
-                      sellerId: !controller.selectedCustomersSellers.value
-                          ? selectedValue.value
-                          : null,
+                      customerId:
+                          selectedIsSeller.value ? null : partner.id.toString(),
+                      sellerId:
+                          selectedIsSeller.value ? partner.id.toString() : null,
                     ),
                   ),
                 );

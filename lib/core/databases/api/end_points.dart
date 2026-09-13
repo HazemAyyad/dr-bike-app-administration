@@ -582,6 +582,7 @@ class EndPoints {
 
   static const String createProfitSale = 'create/profit/sale';
   static const String allProfitSales = 'all/profit/sales';
+  static const String editProfitSale = 'edit/profit/sale';
   static const String cancelProfitSale = 'cancel/profit/sale';
 
   static const String createInstantSale = 'create/instant/sale';

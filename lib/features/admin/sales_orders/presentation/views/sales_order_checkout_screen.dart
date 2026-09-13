@@ -61,6 +61,8 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
         if (orders.isEditingOrder &&
             sales.pickerSelectedPartner.value == null) {
           sales.resolvePartnerFromOrderSnapshot(
+            partnerType: orders.detail.value?.partnerType,
+            partnerId: orders.detail.value?.partnerId,
             customerId: orders.detail.value?.customerId,
             name: orders.customerNameController.text.trim().isNotEmpty
                 ? orders.customerNameController.text.trim()

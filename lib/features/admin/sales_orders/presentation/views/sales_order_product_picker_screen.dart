@@ -39,7 +39,8 @@ class _SalesOrderProductPickerScreenState
     super.initState();
     sales.enablePickerReservedStock(salesOrderFlow: true);
     final args = Get.arguments;
-    if (args is Map && args['editSalesOrder'] == true) {
+    final isEditing = args is Map && args['editSalesOrder'] == true;
+    if (isEditing) {
       // Cart and form already hydrated in openEditSalesOrderFlow.
     } else {
       if (!orders.hasSuspendedDraft.value) {
@@ -54,7 +55,7 @@ class _SalesOrderProductPickerScreenState
       }
     }
     _searchController.text = sales.instantSaleProductSearch.value;
-    if (sales.products.isEmpty) {
+    if (!isEditing || sales.products.isEmpty) {
       sales.getAllProducts();
     }
     sales.ensurePickerStoreSectionsLoaded();

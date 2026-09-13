@@ -61,6 +61,7 @@ import 'sales_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 /// GetX tag for payment fields on the new instant sale screen.
 const String kInstantSalePaymentTag = 'instant_sale_payment';
 const String kSalesOrderPaymentTag = 'sales_order_payment';
@@ -270,6 +271,8 @@ class SalesController extends GetxController
   final TextEditingController totalCostController = TextEditingController();
   final Rx<XFile?> profitSaleImage = Rx<XFile?>(null);
   final Rx<XFile?> profitSaleVideo = Rx<XFile?>(null);
+  final Rxn<ProfitSale> editingProfitSale = Rxn<ProfitSale>();
+  bool get isEditingProfitSale => editingProfitSale.value != null;
   final RxList<InstantSaleNoteLine> instantSaleNotes =
       <InstantSaleNoteLine>[].obs;
   bool _instantSaleSubmitInFlight = false;
@@ -844,9 +847,20 @@ class SalesController extends GetxController
         .toList();
   }
 
-  bool showSalesBlockedMessage() {
-    final payload = dailySessionPayload.value;
-    if (payload == null || payload.allowsSales) return false;
+  bool showSalesBlockedMessage({bool salesOrders = false}) {
+    final payload = salesOrders
+        ? salesOrdersDailySessionPayload.value
+        : dailySessionPayload.value;
+    if (payload == null) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: salesOrders
+            ? 'salesOrdersDailyNoSessionOpen'.tr
+            : 'salesDailyNoSessionOpen'.tr,
+      );
+      return true;
+    }
+    if (payload.allowsSales) return false;
 
     final message = payload.isBlockingPreviousDay
         ? 'salesDailyPreviousDayOpen'.tr
@@ -855,7 +869,9 @@ class SalesController extends GetxController
                 'employee': payload.blockedByEmployeeName ?? '',
               })
             : payload.needsManualOpen
-                ? 'salesDailyNoSessionOpen'.tr
+                ? (salesOrders
+                    ? 'salesOrdersDailyNoSessionOpen'.tr
+                    : 'salesDailyNoSessionOpen'.tr)
                 : payload.isClosingRequested
                     ? 'salesDailyClosingPending'.tr
                     : payload.isReopenPending
@@ -881,14 +897,8 @@ class SalesController extends GetxController
       return true;
     }
 
-    final dialogContext = Get.overlayContext ?? Get.context;
-    if (dialogContext == null) {
-      return false;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: dialogContext,
-      builder: (ctx) => AlertDialog(
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
@@ -900,11 +910,11 @@ class SalesController extends GetxController
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Get.back(result: false),
             child: Text('cancel'.tr),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () => Get.back(result: true),
             child: Text('continue'.tr),
           ),
         ],
@@ -919,17 +929,18 @@ class SalesController extends GetxController
       return true;
     }
     final salesOrders = item['freshSalesOrder'] == 'true';
+    if (salesOrders) {
+      return true;
+    }
     await loadDailySession();
-    final payload = salesOrders
-        ? salesOrdersDailySessionPayload.value
-        : dailySessionPayload.value;
+    final payload = dailySessionPayload.value;
     if (payload == null) return false;
 
     if (payload.canRequestOpen || payload.needsManualOpen) {
       await Get.toNamed(
         AppRoutes.SALESDAILYHISTORYSCREEN,
         arguments: {
-          'sessionType': salesOrders ? 'sales_orders' : 'instant_sales',
+          'sessionType': 'instant_sales',
           'openDrawer': true,
           'returnRoute': item['route'],
           'returnArguments': Map<String, String>.from(item),
@@ -943,30 +954,69 @@ class SalesController extends GetxController
       return false;
     }
 
-    if (payload.blockedByOtherSession) {
-      final owner = payload.blockedByEmployeeName ?? 'موظف آخر';
-      final confirmed = await Get.dialog<bool>(
-        AlertDialog(
-          title: const Text('تنبيه الصندوق اليومي'),
-          content: Text(
-            'سيتم تسجيل هذه العملية في صندوق $owner المفتوح حاليًا. هل تريد المتابعة؟',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(result: false),
-              child: Text('cancel'.tr),
-            ),
-            FilledButton(
-              onPressed: () => Get.back(result: true),
-              child: Text('continue'.tr),
-            ),
-          ],
-        ),
+    return _confirmUsingOtherOpenDrawer(payload);
+  }
+
+  Future<bool> ensureSalesOrderCanBeConfirmed() async {
+    await loadDailySession();
+    var payload = salesOrdersDailySessionPayload.value;
+
+    if (payload == null) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'salesOrdersDailyNoSessionOpen'.tr,
       );
-      return confirmed == true;
+      return false;
     }
 
-    return true;
+    if (payload.canRequestOpen || payload.needsManualOpen) {
+      final opened = await Get.toNamed<bool>(
+        AppRoutes.SALESDAILYHISTORYSCREEN,
+        arguments: {
+          'sessionType': 'sales_orders',
+          'openDrawer': true,
+          'returnResultOnOpen': true,
+        },
+      );
+      if (opened != true) return false;
+
+      await loadDailySession();
+      payload = salesOrdersDailySessionPayload.value;
+    }
+
+    if (payload == null || !payload.allowsSales) {
+      showSalesBlockedMessage(salesOrders: true);
+      return false;
+    }
+
+    return _confirmUsingOtherOpenDrawer(payload);
+  }
+
+  Future<bool> _confirmUsingOtherOpenDrawer(
+    DailySessionPayload payload,
+  ) async {
+    if (!payload.blockedByOtherSession) return true;
+
+    final owner = payload.blockedByEmployeeName ?? 'موظف آخر';
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('تنبيه الصندوق اليومي'),
+        content: Text(
+          'سيتم تسجيل هذه العملية في صندوق $owner المفتوح حاليًا. هل تريد المتابعة؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('continue'.tr),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   Future<bool> ensureInstantSaleCanBeFinalized() async {
@@ -1000,11 +1050,8 @@ class SalesController extends GetxController
       if (!payload.shouldWarnPreviousDaySale) {
         return true;
       }
-      final dialogContext = Get.overlayContext ?? Get.context;
-      if (dialogContext == null) return false;
-      final confirmed = await showDialog<bool>(
-        context: dialogContext,
-        builder: (ctx) => AlertDialog(
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
           title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
@@ -1016,11 +1063,11 @@ class SalesController extends GetxController
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
+              onPressed: () => Get.back(result: false),
               child: Text('cancel'.tr),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: () => Get.back(result: true),
               child: Text('continue'.tr),
             ),
           ],
@@ -1111,18 +1158,7 @@ class SalesController extends GetxController
       debugPrint(
         '[SalesDailyOpenDebug][Controller] afterLoad session=${dailySessionPayload.value?.session?.id}/${dailySessionPayload.value?.session?.status} canCreate=$canCreateSales',
       );
-      final overlayContext = Get.overlayContext ?? Get.context;
-      debugPrint(
-        '[SalesDailyOpenDebug][Controller] overlayContext=${overlayContext != null}',
-      );
-      if (overlayContext != null) {
-        Helpers.showCustomDialogSuccess(
-          context: overlayContext,
-          title: 'success'.tr,
-          message: message,
-          autoCloseAfter: const Duration(seconds: 2),
-        );
-      }
+      AppSuccessNotice.show(title: 'success'.tr, message: message);
     } catch (e) {
       debugPrint('[SalesDailyOpenDebug][Controller] error=$e');
       rethrow;
@@ -1133,15 +1169,7 @@ class SalesController extends GetxController
     final ds = Get.find<SalesDatasource>();
     final message = await ds.requestDailyReopen(reason: reason);
     await loadDailySession();
-    final overlayContext = Get.overlayContext ?? Get.context;
-    if (overlayContext != null) {
-      Helpers.showCustomDialogSuccess(
-        context: overlayContext,
-        title: 'success'.tr,
-        message: message,
-        autoCloseAfter: const Duration(seconds: 2),
-      );
-    }
+    AppSuccessNotice.show(title: 'success'.tr, message: message);
   }
 
   Future<String> submitDailyClosing({
@@ -1508,12 +1536,6 @@ class SalesController extends GetxController
     try {
       resetInstantSaleForm(renewFormKey: true);
       await loadOfferPackagesForSale();
-      if (products.isEmpty) {
-        final list = await getAllProductsUsecase.call();
-        products
-          ..clear()
-          ..addAll(list);
-      }
       await hydrateFromSuspendedPayload(payload);
       await clearLocalInstantSaleDraft();
       return true;
@@ -2414,12 +2436,10 @@ class SalesController extends GetxController
     Get.toNamed(AppRoutes.SALESORDERCHECKOUTSCREEN);
   }
 
-  void openInstantSaleProductPicker() {
+  Future<void> openInstantSaleProductPicker() async {
     setInstantSaleAdjustmentMode(false);
-    if (products.isEmpty) {
-      getAllProducts();
-    }
-    Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
+    await getAllProducts();
+    await Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
   }
 
   final RxInt suspendedInvoicesCount = 0.obs;
@@ -2812,12 +2832,6 @@ class SalesController extends GetxController
         sale.payload['sale_kind'] == kInstantSaleKindAdjustment,
       );
       await loadOfferPackagesForSale();
-      if (products.isEmpty) {
-        final list = await getAllProductsUsecase.call();
-        products
-          ..clear()
-          ..addAll(list);
-      }
       await hydrateFromSuspendedPayload(sale.payload);
 
       if (Get.currentRoute == AppRoutes.SUSPENDEDINVOICESSCREEN) {
@@ -2859,6 +2873,19 @@ class SalesController extends GetxController
         }
       }
     }
+
+    applyBuyerFromPayment({
+      'buyer_type': payload['buyer_type'] ?? 'unknown',
+      'buyer_id': payload['buyer_id'],
+      'seller_id': payload['seller_id'],
+      'buyer_name': payload['buyer_name'],
+      'payment_box_id': payload['payment_box_id'],
+      'payment_box_name': payload['payment_box_name'],
+      'payment_box_value': payload['payment_box_value'],
+    });
+    await ensurePickerPartnersLoaded();
+    syncPickerPartnerFromPayment();
+    await getAllProducts();
 
     final offerPackageId = payload['offer_package_id'];
     if (offerPackageId != null && '$offerPackageId'.isNotEmpty) {
@@ -2932,16 +2959,6 @@ class SalesController extends GetxController
         items.first.selectedValue.value = projectId;
       }
     }
-
-    applyBuyerFromPayment({
-      'buyer_type': payload['buyer_type'] ?? 'unknown',
-      'buyer_id': payload['buyer_id'],
-      'seller_id': payload['seller_id'],
-      'buyer_name': payload['buyer_name'],
-      'payment_box_id': payload['payment_box_id'],
-      'payment_box_name': payload['payment_box_name'],
-      'payment_box_value': payload['payment_box_value'],
-    });
 
     calculateGrandTotal();
     bumpCartRevision();
@@ -3036,16 +3053,19 @@ class SalesController extends GetxController
     clearActiveEditInstantSale();
     resetInstantSaleForm();
 
-    if (products.isEmpty) {
-      getAllProducts();
-    }
     await ensurePickerPartnersLoaded();
 
     discountController.text = SalesAmountFormat.display(order.discount);
 
+    final orderPartnerType =
+        order.partnerType ?? (order.customerId != null ? 'customer' : null);
+    final orderPartnerId = order.partnerId ?? order.customerId;
     applyBuyerFromPayment({
-      'buyer_type': order.customerId != null ? 'customer' : 'unknown',
-      if (order.customerId != null) 'buyer_id': order.customerId.toString(),
+      'buyer_type': orderPartnerType ?? 'unknown',
+      if (orderPartnerType == 'customer' && orderPartnerId != null)
+        'buyer_id': orderPartnerId.toString(),
+      if (orderPartnerType == 'seller' && orderPartnerId != null)
+        'seller_id': orderPartnerId.toString(),
       'buyer_name': order.customerName,
       if (order.paymentBoxId != null)
         'payment_box_id': order.paymentBoxId.toString(),
@@ -3054,10 +3074,13 @@ class SalesController extends GetxController
     });
 
     resolvePartnerFromOrderSnapshot(
+      partnerType: orderPartnerType,
+      partnerId: orderPartnerId,
       customerId: order.customerId,
       name: order.customerName,
       phone: order.customerPhone,
     );
+    await getAllProducts();
 
     clearCartLines(deferDispose: false);
     for (final item in order.items) {
@@ -3086,6 +3109,26 @@ class SalesController extends GetxController
       instantSaleNotes[idx].text.text = note.text;
       instantSaleNotes[idx].amount.text = note.amount;
     }
+
+    final isEditingInstantSale = activeEditInstantSaleId.value != null;
+    final buyerPayload = <String, dynamic>{
+      'buyer_type': invoice.buyerType,
+      'buyer_name': invoice.buyerName,
+      'payment_box_value': invoice.paymentBoxValue,
+    };
+    if (!isEditingInstantSale) {
+      buyerPayload['payment_box_id'] = invoice.paymentBoxId;
+      buyerPayload['payment_box_name'] = invoice.paymentBoxName;
+    }
+    if (invoice.sellerId != null) {
+      buyerPayload['seller_id'] = invoice.sellerId;
+    } else if (invoice.buyerId != null) {
+      buyerPayload['buyer_id'] = invoice.buyerId;
+    }
+    applyBuyerFromPayment(buyerPayload);
+    await ensurePickerPartnersLoaded();
+    syncPickerPartnerFromPayment();
+    await getAllProducts();
 
     if (invoice.isPackageSale && invoice.offerPackageId != null) {
       isPackageSale.value = true;
@@ -3158,25 +3201,6 @@ class SalesController extends GetxController
         items.first.selectedValue.value = projectId;
       }
     }
-
-    final isEditingInstantSale = activeEditInstantSaleId.value != null;
-    final buyerPayload = <String, dynamic>{
-      'buyer_type': invoice.buyerType,
-      'buyer_name': invoice.buyerName,
-      'payment_box_value': invoice.paymentBoxValue,
-    };
-    if (!isEditingInstantSale) {
-      buyerPayload['payment_box_id'] = invoice.paymentBoxId;
-      buyerPayload['payment_box_name'] = invoice.paymentBoxName;
-    }
-    if (invoice.sellerId != null) {
-      buyerPayload['seller_id'] = invoice.sellerId;
-    } else if (invoice.buyerId != null) {
-      buyerPayload['buyer_id'] = invoice.buyerId;
-    }
-    applyBuyerFromPayment(buyerPayload);
-    await ensurePickerPartnersLoaded();
-    syncPickerPartnerFromPayment();
 
     calculateGrandTotal();
     bumpCartRevision();
@@ -3354,9 +3378,6 @@ class SalesController extends GetxController
         return;
       }
 
-      if (products.isEmpty) {
-        getAllProducts();
-      }
       await loadOfferPackagesForSale();
 
       if (!await _prepareClosedDayEditDecision(invoice)) {
@@ -3402,7 +3423,6 @@ class SalesController extends GetxController
       clearActiveEditInstantSale();
       resetInstantSaleForm();
       setInstantSaleAdjustmentMode(invoice.isAdjustmentSale);
-      if (products.isEmpty) getAllProducts();
       await loadOfferPackagesForSale();
       if (!await _prepareClosedDayEditDecision(invoice)) return;
 
@@ -3456,7 +3476,7 @@ class SalesController extends GetxController
     clearActiveEditInstantSale();
     resetInstantSaleForm();
     isPackageSale.value = false;
-    openInstantSaleProductPicker();
+    await openInstantSaleProductPicker();
   }
 
   final RxBool isPackageSale = false.obs;
@@ -3810,18 +3830,40 @@ class SalesController extends GetxController
   void syncPickerPartnerFromPayment() {
     if (_paymentSellerId != null && _paymentSellerId!.isNotEmpty) {
       pickerPartnerIsCustomer.value = false;
-      final match = pickerSellersList.firstWhereOrNull(
+      var match = pickerSellersList.firstWhereOrNull(
         (e) => e.id.toString() == _paymentSellerId,
       );
+      final id = int.tryParse(_paymentSellerId!);
+      if (match == null && id != null) {
+        match = SellerModel(
+          id: id,
+          name: _paymentBuyerName?.trim().isNotEmpty == true
+              ? _paymentBuyerName!.trim()
+              : '#$id',
+          phone: '',
+        );
+        pickerSellersList.insert(0, match);
+      }
       pickerSelectedPartner.value = match;
       _syncPickerPartnerObservables();
       return;
     }
     if (_paymentBuyerId != null && _paymentBuyerId!.isNotEmpty) {
       pickerPartnerIsCustomer.value = true;
-      final match = pickerCustomersList.firstWhereOrNull(
+      var match = pickerCustomersList.firstWhereOrNull(
         (e) => e.id.toString() == _paymentBuyerId,
       );
+      final id = int.tryParse(_paymentBuyerId!);
+      if (match == null && id != null) {
+        match = SellerModel(
+          id: id,
+          name: _paymentBuyerName?.trim().isNotEmpty == true
+              ? _paymentBuyerName!.trim()
+              : '#$id',
+          phone: '',
+        );
+        pickerCustomersList.insert(0, match);
+      }
       pickerSelectedPartner.value = match;
       _syncPickerPartnerObservables();
       return;
@@ -3831,11 +3873,41 @@ class SalesController extends GetxController
   }
 
   void resolvePartnerFromOrderSnapshot({
+    String? partnerType,
+    int? partnerId,
     int? customerId,
     String? name,
     String? phone,
   }) {
     SellerModel? match;
+
+    final exactType = partnerType == 'seller'
+        ? 'seller'
+        : partnerType == 'customer' || customerId != null
+            ? 'customer'
+            : null;
+    final exactId = partnerId ?? customerId;
+    if (exactType != null && exactId != null) {
+      final isCustomer = exactType == 'customer';
+      final partners = isCustomer ? pickerCustomersList : pickerSellersList;
+      match = partners.firstWhereOrNull((e) => e.id == exactId);
+      match ??= SellerModel(
+        id: exactId,
+        name: name?.trim().isNotEmpty == true ? name!.trim() : '#$exactId',
+        phone: phone ?? '',
+      );
+      if (!partners.any((e) => e.id == exactId)) {
+        partners.insert(0, match);
+      }
+      pickerPartnerIsCustomer.value = isCustomer;
+      pickerSelectedPartner.value = match;
+      _paymentBuyerType = exactType;
+      _paymentBuyerId = isCustomer ? exactId.toString() : null;
+      _paymentSellerId = isCustomer ? null : exactId.toString();
+      _paymentBuyerName = match.name;
+      _syncPickerPartnerObservables();
+      return;
+    }
 
     if (customerId != null) {
       pickerPartnerIsCustomer.value = true;
@@ -4758,6 +4830,25 @@ class SalesController extends GetxController
   ];
 
   // add profit sale
+  void clearProfitSaleForm() {
+    editingProfitSale.value = null;
+    noteController.clear();
+    totalCostController.clear();
+    profitSaleImage.value = null;
+    profitSaleVideo.value = null;
+  }
+
+  Future<void> openEditProfitSale(ProfitSale sale) async {
+    if (sale.isCancelled) return;
+    editingProfitSale.value = sale;
+    noteController.text = sale.notes;
+    totalCostController.text =
+        SalesAmountFormat.display(SalesAmountFormat.parse(sale.totalCost));
+    profitSaleImage.value = null;
+    profitSaleVideo.value = null;
+    await Get.toNamed(AppRoutes.NEWCASHPROFITSCREEN);
+  }
+
   Future<bool> addProfitSale(
     BuildContext context, {
     Map<String, dynamic>? paymentPayload,
@@ -4815,10 +4906,7 @@ class SalesController extends GetxController
           return Future.value(false);
         },
         (success) async {
-          noteController.clear();
-          totalCostController.clear();
-          profitSaleImage.value = null;
-          profitSaleVideo.value = null;
+          clearProfitSaleForm();
           await refreshAllSalesData(showLoading: true);
           if (Get.currentRoute == AppRoutes.NEWCASHPROFITSCREEN) {
             Get.back();
@@ -4840,7 +4928,11 @@ class SalesController extends GetxController
 
   Future<bool> submitProfitSaleWithPayment(BuildContext context) async {
     if (!(formKey.currentState?.validate() ?? false)) return false;
-    if (!await confirmPreviousDaySaleIfNeeded()) return false;
+    if (!isEditingProfitSale && !await confirmPreviousDaySaleIfNeeded()) {
+      return false;
+    }
+    if (!context.mounted) return false;
+    final submitContext = context;
     if (!Get.isRegistered<PaymentController>(tag: kProfitSalePaymentTag)) {
       return false;
     }
@@ -4851,7 +4943,7 @@ class SalesController extends GetxController
         SalesAmountFormat.parse(payment.cashValueController.text);
     if (paidAmount > total + 0.0001) {
       Helpers.showCustomDialogError(
-        context: context,
+        context: submitContext,
         title: 'error'.tr,
         message: 'instantSalePaidExceedsTotal'.tr,
       );
@@ -4863,11 +4955,17 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final paymentPayload = payment.buildOptionalProfitSalePayload();
-      final saved = await addProfitSale(
-        context,
-        paymentPayload: paymentPayload,
-        previousDayWarningConfirmed: true,
-      );
+      final bool saved;
+      if (isEditingProfitSale) {
+        saved = await updateProfitSale(paymentPayload: paymentPayload);
+      } else {
+        if (!submitContext.mounted) return false;
+        saved = await addProfitSale(
+          submitContext,
+          paymentPayload: paymentPayload,
+          previousDayWarningConfirmed: true,
+        );
+      }
       if (saved) {
         payment.clearPaymentForm();
       }
@@ -4875,6 +4973,45 @@ class SalesController extends GetxController
     } finally {
       isLoading(false);
     }
+  }
+
+  Future<bool> updateProfitSale({
+    required Map<String, dynamic> paymentPayload,
+  }) async {
+    final sale = editingProfitSale.value;
+    if (sale == null) return false;
+
+    final result = await Get.find<SalesImplement>().editProfitSale(
+      profitSaleId: sale.id.toString(),
+      notes: noteController.text,
+      totalCost: totalCostController.text,
+      buyerType: paymentPayload['buyer_type']?.toString() ?? 'unknown',
+      buyerId: paymentPayload['buyer_id']?.toString(),
+      sellerId: paymentPayload['seller_id']?.toString(),
+      buyerName: paymentPayload['buyer_name']?.toString() ??
+          (sale.customerId == null && sale.sellerId == null
+              ? sale.buyerName
+              : null),
+      paymentBoxValue: paymentPayload['payment_box_value']?.toString(),
+      image: profitSaleImage.value,
+      video: profitSaleVideo.value,
+    );
+    return result.fold<Future<bool>>(
+      (failure) async {
+        AppFailureNotice.show(
+          title: failure.errMessage,
+          message: failure.data?['message']?.toString() ?? failure.errMessage,
+        );
+        return false;
+      },
+      (success) async {
+        clearProfitSaleForm();
+        await refreshAllSalesData(showLoading: true);
+        if (Get.currentRoute == AppRoutes.NEWCASHPROFITSCREEN) Get.back();
+        AppSuccessNotice.show(title: 'success'.tr, message: success);
+        return true;
+      },
+    );
   }
 
   Future<void> completeActiveSuspendedInstantSale(BuildContext context) async {
@@ -4982,6 +5119,7 @@ class SalesController extends GetxController
       _instantSaleDebug('addInstantSale redirected to complete suspended', {
         'activeSuspendedSaleId': activeSuspendedSaleId.value,
       });
+      if (!context.mounted) return;
       await completeActiveSuspendedInstantSale(context);
       return;
     }
@@ -5801,11 +5939,7 @@ class SalesController extends GetxController
           try {
             await openInstantSaleBillDetails(sale.id.toString());
           } catch (_) {
-            Helpers.showCustomDialogError(
-              context: context,
-              title: 'error'.tr,
-              message: 'failed'.tr,
-            );
+            AppFailureNotice.show(title: 'error'.tr, message: 'failed'.tr);
           }
         },
         onEdit: () {

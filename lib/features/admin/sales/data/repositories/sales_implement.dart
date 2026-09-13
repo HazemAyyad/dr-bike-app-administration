@@ -262,6 +262,47 @@ class SalesImplement implements SalesRepository {
   }
 
   @override
+  Future<Either<Failure, String>> editProfitSale({
+    required String profitSaleId,
+    required String notes,
+    required String totalCost,
+    required String buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.editProfitSale(
+        profitSaleId: profitSaleId,
+        notes: notes,
+        totalCost: totalCost,
+        buyerType: buyerType,
+        buyerId: buyerId,
+        sellerId: sellerId,
+        buyerName: buyerName,
+        paymentBoxValue: paymentBoxValue,
+        image: image,
+        video: video,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> editInstantSale({
     required String instantSaleId,
     required String cost,

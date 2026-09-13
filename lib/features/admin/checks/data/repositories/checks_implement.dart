@@ -10,8 +10,8 @@ import '../datasources/checks_datasource.dart';
 import '../models/check_model.dart';
 import '../models/general_checks_data_model.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ChecksImplement implements ChecksRepository {
   final NetworkInfo networkInfo;
   final ChecksDatasource checksDatasource;
@@ -255,6 +255,8 @@ class ChecksImplement implements ChecksRepository {
   Future<Either<Failure, String>> editChecks({
     required bool isInComing,
     required String outgoingCheckId,
+    String? customerId,
+    String? sellerId,
     required DateTime dueDate,
     required String checkId,
     required String bankName,
@@ -271,6 +273,8 @@ class ChecksImplement implements ChecksRepository {
       final result = await checksDatasource.editChecks(
         isInComing: isInComing,
         outgoingCheckId: outgoingCheckId,
+        customerId: customerId,
+        sellerId: sellerId,
         dueDate: dueDate,
         checkId: checkId,
         bankName: bankName,

@@ -80,6 +80,19 @@ abstract class SalesRepository {
   Future<Either<Failure, String>> cancelProfitSale(
       {required String profitSaleId});
 
+  Future<Either<Failure, String>> editProfitSale({
+    required String profitSaleId,
+    required String notes,
+    required String totalCost,
+    required String buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
+  });
+
   Future<Either<Failure, String>> editInstantSale({
     required String instantSaleId,
     required String cost,

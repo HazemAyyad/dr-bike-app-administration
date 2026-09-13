@@ -12,6 +12,8 @@ class EditChecksUsecase {
   Future<Either<Failure, String>> call({
     required bool isInComing,
     required String outgoingCheckId,
+    String? customerId,
+    String? sellerId,
     required DateTime dueDate,
     required String checkId,
     required String bankName,
@@ -24,6 +26,8 @@ class EditChecksUsecase {
     return checksRepository.editChecks(
       isInComing: isInComing,
       outgoingCheckId: outgoingCheckId,
+      customerId: customerId,
+      sellerId: sellerId,
       dueDate: dueDate,
       checkId: checkId,
       bankName: bankName,

@@ -398,6 +398,21 @@ class _ProfitSaleDetailsSheet extends StatelessWidget {
                     value: remaining,
                     color: remaining > 0 ? Colors.red.shade700 : null,
                   ),
+                  if (!sale.isCancelled) ...[
+                    SizedBox(height: 10.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await Get.find<SalesController>()
+                              .openEditProfitSale(sale);
+                        },
+                        icon: const Icon(Icons.edit_outlined),
+                        label: Text('edit'.tr),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

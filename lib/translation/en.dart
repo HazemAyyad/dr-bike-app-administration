@@ -2990,6 +2990,8 @@ const Map<String, String> en = {
   'salesDailySharedDrawerOpen': 'Sales will be posted to @employee\'s drawer',
   'salesDailyMovementBy': 'Movement by',
   'salesDailyNoSessionOpen': 'Open the sales drawer manually before selling',
+  'salesOrdersDailyNoSessionOpen':
+      'Open the sales-orders drawer before confirming the order',
   'salesDailyClosingPending': 'Closing request pending admin approval',
   'salesDailyClosingPendingHint':
       'Your closing request was sent. You cannot sell until it is approved.',

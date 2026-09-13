@@ -825,7 +825,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.SALESORDERDETAILSCREEN,
       page: () => const SalesOrderDetailScreen(),
-      binding: SalesOrdersBinding(),
+      binding: SalesBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

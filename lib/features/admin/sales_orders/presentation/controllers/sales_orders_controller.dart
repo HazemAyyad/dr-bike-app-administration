@@ -1554,7 +1554,6 @@ class SalesOrdersController extends GetxController {
     var customerPhone = customerPhoneController.text.trim();
     int? customerId;
     double paidAmount = 0;
-    int? paymentBoxId;
 
     final partner = sales.pickerSelectedPartner.value;
     if (partner != null) {
@@ -1578,10 +1577,9 @@ class SalesOrdersController extends GetxController {
         }
       }
 
-      // For sales orders we consider cash entered even if the UI hides box selection;
-      // the box is still applied from the daily session, but we don't want to drop paid amount.
+      // Keep the entered amount on the draft. Laravel resolves the currently
+      // open sales-orders drawer only when the order is confirmed.
       paidAmount = SalesAmountFormat.parse(payment.cashValueController.text);
-      paymentBoxId = int.tryParse(payment.boxIdController.text.trim());
     }
 
     final discount = SalesAmountFormat.parse(sales.discountController.text);
@@ -1631,7 +1629,6 @@ class SalesOrdersController extends GetxController {
             ?.name,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
-      if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
       'discount': discount,
       'customer_delivery_fee': selectedCityDeliveryFee,
       'price_includes_delivery': selectedCityDeliveryFee > 0,
@@ -1733,6 +1730,12 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> confirmOrder(int orderId) async {
+    if (Get.isRegistered<SalesController>()) {
+      final canConfirm =
+          await Get.find<SalesController>().ensureSalesOrderCanBeConfirmed();
+      if (!canConfirm) return;
+    }
+
     await withBlockingProgress(
       () => runAction(
         () => repository.confirmOrder(orderId),

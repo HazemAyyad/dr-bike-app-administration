@@ -2956,6 +2956,7 @@ const Map<String, String> ar = {
   'salesDailySharedDrawerOpen': 'سيتم البيع على صندوق @employee',
   'salesDailyMovementBy': 'منفذ الحركة',
   'salesDailyNoSessionOpen': 'يجب فتح صندوق المبيعات يدوياً قبل البيع',
+  'salesOrdersDailyNoSessionOpen': 'يجب فتح صندوق الطلبيات قبل تأكيد الطلبية',
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
   'salesDailyClosingPendingHint':
       'تم إرسال طلب الإغلاق. لا يمكنك البيع حتى تتم الموافقة.',

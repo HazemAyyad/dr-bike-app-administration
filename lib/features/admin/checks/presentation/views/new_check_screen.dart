@@ -21,10 +21,12 @@ import '../../../../../core/helpers/custom_calendar.dart';
 import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../employee_tasks/presentation/views/task_details_screen.dart';
+import '../../../widgets/unified_partner_selector.dart';
+import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class NewCheckScreen extends GetView<ChecksController> {
   const NewCheckScreen({Key? key}) : super(key: key);
 
@@ -130,83 +132,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                           Builder(builder: (context) {
                             return const SizedBox.shrink();
                           }),
-                          Obx(
-                            () => _PersonTypeSelector(
-                              isCustomer:
-                                  controller.selectedCustomersSellers.value,
-                              enabled: !controller.isEdit.value,
-                              onChanged: (isCustomer) {
-                                controller.getAllCustomersAndSellers();
-                                if (controller.isEdit.value) return;
-                                controller.selectedValue.value = null;
-                                controller.selectedCustomersSellers.value =
-                                    isCustomer;
-                              },
-                            ),
-                          ),
-                          Obx(
-                            () => Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Flexible(
-                                  child: CustomDropdownFieldWithSearch(
-                                    tital: 'beneficiaryName',
-                                    hint: 'customerNameExample',
-                                    items: controller
-                                            .selectedCustomersSellers.value
-                                        ? controller.allCustomersList
-                                        : controller.allSellersList,
-                                    onChanged: (val) {
-                                      controller.selectedValue.value =
-                                          val!.id.toString();
-                                    },
-                                    itemAsString: (f) => f.name,
-                                    compareFn: (a, b) => a.id == b.id,
-                                    value:
-                                        controller.selectedValue.value == null
-                                            ? null
-                                            : (!controller
-                                                    .selectedCustomersSellers
-                                                    .value
-                                                ? controller.allSellersList
-                                                    .firstWhereOrNull(
-                                                    (e) =>
-                                                        e.id ==
-                                                        int.tryParse(controller
-                                                            .selectedValue
-                                                            .value!),
-                                                  )
-                                                : controller.allCustomersList
-                                                    .firstWhereOrNull(
-                                                    (e) =>
-                                                        e.id ==
-                                                        int.tryParse(controller
-                                                            .selectedValue
-                                                            .value!),
-                                                  )),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => Get.toNamed(
-                                    AppRoutes.ADDNEWCUSTOMERSCREEN,
-                                    arguments: {
-                                      'employeeType': '',
-                                      'employeeId': '',
-                                      'sellerId': '',
-                                    },
-                                  )?.then((value) {
-                                    controller.getAllCustomersAndSellers();
-                                  }),
-                                  icon: Icon(
-                                    Icons.add_circle_sharp,
-                                    color: AppColors.primaryColor,
-                                    size: 35.sp,
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
+                          _UnifiedCheckPartnerSelector(controller: controller),
                         ],
                       ),
                     if (isIncomingBatch) ...[
@@ -615,14 +541,8 @@ class NewCheckScreen extends GetView<ChecksController> {
                         : controller.addChecks(
                             isInComing: !isNewCheck,
                             context: context,
-                            customerId: !isNewCheck &&
-                                    controller.selectedCustomersSellers.value
-                                ? controller.selectedValue.value
-                                : null,
-                            sellerId: !isNewCheck &&
-                                    !controller.selectedCustomersSellers.value
-                                ? controller.selectedValue.value
-                                : null,
+                            customerId: controller.selectedCheckCustomerId,
+                            sellerId: controller.selectedCheckSellerId,
                           );
                   },
                 ),
@@ -795,6 +715,8 @@ class _CompactEditCheckScaffoldState extends State<_CompactEditCheckScaffold> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _UnifiedCheckPartnerSelector(controller: c),
+        SizedBox(height: 10.h),
         _twoFieldRow(
           first: _DateTile(
             label: 'due_date'.tr,
@@ -1143,6 +1065,8 @@ class _CompactOutgoingCreateScaffoldState
                           c.addChecks(
                             context: context,
                             isInComing: false,
+                            customerId: c.selectedCheckCustomerId,
+                            sellerId: c.selectedCheckSellerId,
                           );
                         },
                   style: ElevatedButton.styleFrom(
@@ -1248,7 +1172,6 @@ class _IncomingBatchCreateScaffold extends StatefulWidget {
 class _IncomingBatchCreateScaffoldState
     extends State<_IncomingBatchCreateScaffold> {
   final _currencyKey = GlobalKey<DropdownSearchState<String>>();
-  final _beneficiaryKey = GlobalKey<DropdownSearchState<dynamic>>();
 
   ChecksController get controller => widget.controller;
 
@@ -1267,21 +1190,6 @@ class _IncomingBatchCreateScaffoldState
       if (!mounted) return;
       _currencyKey.currentState?.openDropDownSearch();
     });
-  }
-
-  void _openBeneficiaryDropdown() {
-    FocusScope.of(context).unfocus();
-    Future.delayed(const Duration(milliseconds: 120), () {
-      if (!mounted) return;
-      _beneficiaryKey.currentState?.openDropDownSearch();
-    });
-  }
-
-  void _changePersonType(bool isCustomer) {
-    controller.selectedValue.value = null;
-    controller.selectedCustomersSellers.value = isCustomer;
-    controller.getAllCustomersAndSellers();
-    _openBeneficiaryDropdown();
   }
 
   Future<void> _prepareRows() async {
@@ -1374,58 +1282,13 @@ class _IncomingBatchCreateScaffoldState
                           onChanged: (value) {
                             if (value == null) return;
                             controller.currencyController.text = value;
-                            _openBeneficiaryDropdown();
                           },
                         ),
                       ),
                     ],
                   ),
                   SizedBox(height: 12.h),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Obx(
-                          () => _CompactPersonTypeSelector(
-                            isCustomer:
-                                controller.selectedCustomersSellers.value,
-                            enabled: !controller.isEdit.value,
-                            onChanged: _changePersonType,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        flex: 3,
-                        child: Obx(() {
-                          final people =
-                              controller.selectedCustomersSellers.value
-                                  ? controller.allCustomersList
-                                  : controller.allSellersList;
-                          return _PlainBeneficiaryDropdown(
-                            dropdownKey: _beneficiaryKey,
-                            items: people,
-                            value: controller.selectedValue.value == null
-                                ? null
-                                : people.firstWhereOrNull(
-                                    (e) =>
-                                        e.id ==
-                                        int.tryParse(
-                                          controller.selectedValue.value!,
-                                        ),
-                                  ),
-                            onChanged: (val) {
-                              controller.selectedValue.value =
-                                  val!.id.toString();
-                            },
-                            itemAsString: (f) => f.name,
-                            compareFn: (a, b) => a.id == b.id,
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
+                  _UnifiedCheckPartnerSelector(controller: controller),
                   SizedBox(height: 12.h),
                   Row(
                     children: [
@@ -1764,6 +1627,8 @@ class _OutgoingCheckFormFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _UnifiedCheckPartnerSelector(controller: c),
+        SizedBox(height: 10.h),
         _twoFieldRow(
           firstFlex: 3,
           secondFlex: 2,
@@ -1835,6 +1700,49 @@ class _OutgoingCheckFormFields extends StatelessWidget {
   }
 }
 
+class _UnifiedCheckPartnerSelector extends StatelessWidget {
+  const _UnifiedCheckPartnerSelector({required this.controller});
+
+  final ChecksController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => UnifiedPartnerSelector<SellerModel>(
+        customers: controller.allCustomersList,
+        sellers: controller.allSellersList,
+        selected: controller.selectedCheckPartner,
+        selectedIsSeller: controller.selectedCheckPartnerIsSeller,
+        idOf: (partner) => partner.id,
+        nameOf: (partner) => partner.name,
+        phoneOf: (partner) => partner.phone,
+        onSelected: (partner, isSeller) => controller.selectCheckPartner(
+          partner,
+          isSeller: isSeller,
+        ),
+        onCleared: () => controller.selectCheckPartner(
+          null,
+          isSeller: controller.selectedCheckPartnerIsSeller,
+        ),
+        onAddRequested: (isSeller) async {
+          await Get.toNamed(
+            AppRoutes.ADDNEWCUSTOMERSCREEN,
+            arguments: {
+              'employeeType': isSeller ? 'seller' : 'customer',
+              'employeeId': '',
+              'sellerId': '',
+              'popOnceOnSuccess': true,
+            },
+          );
+          controller.getAllCustomersAndSellers();
+        },
+        requiredSelection: true,
+        compact: true,
+      ),
+    );
+  }
+}
+
 InputDecoration _plainInputDecoration(String label) {
   return InputDecoration(
     labelText: label,
@@ -1880,122 +1788,6 @@ class _InputPanel extends StatelessWidget {
         ],
       ),
       child: child,
-    );
-  }
-}
-
-class _CompactPersonTypeSelector extends StatelessWidget {
-  const _CompactPersonTypeSelector({
-    required this.isCustomer,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final bool isCustomer;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: _plainInputDecoration('beneficiaryType'.tr),
-      child: SegmentedButton<bool>(
-        showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0),
-          selectedBackgroundColor: AppColors.primaryColor.withAlpha(38),
-          selectedForegroundColor: AppColors.primaryColor,
-        ),
-        segments: [
-          ButtonSegment(
-            value: false,
-            label: Text('seller'.tr, style: TextStyle(fontSize: 11.sp)),
-          ),
-          ButtonSegment(
-            value: true,
-            label: Text('customer'.tr, style: TextStyle(fontSize: 11.sp)),
-          ),
-        ],
-        selected: {isCustomer},
-        onSelectionChanged: enabled ? (value) => onChanged(value.first) : null,
-      ),
-    );
-  }
-}
-
-class _PlainBeneficiaryDropdown extends StatelessWidget {
-  const _PlainBeneficiaryDropdown({
-    this.dropdownKey,
-    required this.items,
-    required this.value,
-    required this.onChanged,
-    required this.itemAsString,
-    required this.compareFn,
-  });
-
-  final GlobalKey<DropdownSearchState<dynamic>>? dropdownKey;
-  final List<dynamic> items;
-  final dynamic value;
-  final ValueChanged<dynamic> onChanged;
-  final String Function(dynamic) itemAsString;
-  final bool Function(dynamic, dynamic) compareFn;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownSearch<dynamic>(
-      key: dropdownKey,
-      selectedItem: value,
-      items: (filter, infiniteScrollProps) => items,
-      itemAsString: itemAsString,
-      compareFn: compareFn,
-      validator: (v) => v == null ? 'beneficiaryName'.tr : null,
-      popupProps: const PopupProps.menu(
-        showSearchBox: true,
-        searchFieldProps: TextFieldProps(
-          autofocus: true,
-        ),
-      ),
-      decoratorProps: DropDownDecoratorProps(
-        decoration: _plainInputDecoration('beneficiaryName'.tr).copyWith(
-          hintText: 'customerNameExample'.tr,
-        ),
-      ),
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _PersonTypeSelector extends StatelessWidget {
-  const _PersonTypeSelector({
-    required this.isCustomer,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final bool isCustomer;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<bool>(
-      showSelectedIcon: false,
-      segments: [
-        ButtonSegment(
-          value: false,
-          label: Text('seller'.tr),
-          icon: const Icon(Icons.storefront_outlined),
-        ),
-        ButtonSegment(
-          value: true,
-          label: Text('customer'.tr),
-          icon: const Icon(Icons.person_outline),
-        ),
-      ],
-      selected: {isCustomer},
-      onSelectionChanged: enabled ? (value) => onChanged(value.first) : null,
     );
   }
 }

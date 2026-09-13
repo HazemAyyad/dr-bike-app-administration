@@ -52,6 +52,8 @@ abstract class ChecksRepository {
   Future<Either<Failure, String>> editChecks({
     required bool isInComing,
     required String outgoingCheckId,
+    String? customerId,
+    String? sellerId,
     required DateTime dueDate,
     required String checkId,
     required String bankName,

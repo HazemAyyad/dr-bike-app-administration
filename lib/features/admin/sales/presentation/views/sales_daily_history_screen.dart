@@ -235,6 +235,10 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
     await _refresh();
     final args = Get.arguments;
     if (args is! Map) return;
+    if (args['returnResultOnOpen'] == true) {
+      Get.back(result: true);
+      return;
+    }
     final route = '${args['returnRoute'] ?? ''}';
     if (route.isEmpty) return;
     final raw = args['returnArguments'];
@@ -338,7 +342,7 @@ class _InlineClosingRequests extends StatelessWidget {
                         onPressed: () =>
                             sales.approveDailyClosingInline(request),
                         icon: const Icon(Icons.check_rounded),
-                        label: const Text('موافقة'),
+                        label: const Text('موافقة وإغلاق'),
                       ),
                       TextButton.icon(
                         style: TextButton.styleFrom(

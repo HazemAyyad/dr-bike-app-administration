@@ -1,5 +1,4 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../payment_method/presentation/views/payment_screen.dart';
+import '../../../widgets/unified_partner_selector.dart';
 import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 import 'view_checks_widget.dart';
@@ -288,51 +288,16 @@ class CashTheCheck extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
-    final RxnString selectedValue = RxnString();
+    final selectedPartner = Rxn<SellerModel>();
+    final selectedIsSeller = true.obs;
     return Dialog(
       backgroundColor: ThemeService.isDark.value
           ? AppColors.darkColor
           : AppColors.whiteColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.r),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 15.h),
-          Obx(
-            () => Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: CustomCheckBox(
-                    title: 'seller'.tr,
-                    value: RxBool(
-                        !controller.selectedCustomersSellers.value == true),
-                    onChanged: (val) {
-                      selectedValue.value = null;
-
-                      controller.selectedCustomersSellers.value = false;
-                    },
-                  ),
-                ),
-                Flexible(
-                  child: CustomCheckBox(
-                    title: 'customer'.tr,
-                    value: RxBool(
-                        !controller.selectedCustomersSellers.value == false),
-                    onChanged: (val) {
-                      selectedValue.value = null;
-                      controller.selectedCustomersSellers.value = true;
-                    },
-                  ),
-                )
-              ],
-            ),
-          ),
           Container(
             padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
@@ -344,46 +309,36 @@ class CashTheCheck extends GetView<ChecksController> {
                 topRight: Radius.circular(8.r),
               ),
             ),
-            child: Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: CustomDropdownFieldWithSearch(
-                      tital: label,
-                      hint: hint,
-                      items: controller.selectedCustomersSellers.value
-                          ? controller.allCustomersList
-                          : controller.allSellersList,
-                      onChanged: (value) {
-                        if (value != null) {
-                          selectedValue.value = value.id.toString();
-                        }
+            child: Obx(() => UnifiedPartnerSelector<SellerModel>(
+                  customers: controller.allCustomersList,
+                  sellers: controller.allSellersList,
+                  selected: selectedPartner.value,
+                  selectedIsSeller: selectedIsSeller.value,
+                  idOf: (partner) => partner.id,
+                  nameOf: (partner) => partner.name,
+                  phoneOf: (partner) => partner.phone,
+                  onSelected: (partner, isSeller) {
+                    selectedIsSeller.value = isSeller;
+                    selectedPartner.value = partner;
+                  },
+                  onCleared: () => selectedPartner.value = null,
+                  onAddRequested: (isSeller) async {
+                    await Get.toNamed(
+                      AppRoutes.ADDNEWCUSTOMERSCREEN,
+                      arguments: {
+                        'sellerId': '',
+                        'employeeId': '',
+                        'employeeType': isSeller ? 'seller' : 'customer',
+                        'popOnceOnSuccess': true,
                       },
-                      itemAsString: (item) => item.name,
-                      compareFn: (a, b) => a.id == b.id,
-                      validator: (value) => null,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () =>
-                        Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN, arguments: {
-                      'sellerId': '',
-                      'employeeId': '',
-                      'employeeType': '',
-                    }),
-                    icon: Icon(
-                      Icons.add_circle_sharp,
-                      color: ThemeService.isDark.value
-                          ? AppColors.primaryColor
-                          : AppColors.secondaryColor,
-                      size: 35.sp,
-                    ),
-                  )
-                ],
-              ),
-            ),
+                    );
+                    controller.getAllCustomersAndSellers();
+                  },
+                  title: label,
+                  hintText: hint,
+                  requiredSelection: true,
+                  compact: true,
+                )),
           ),
           AppButton(
             isSafeArea: false,
@@ -401,17 +356,14 @@ class CashTheCheck extends GetView<ChecksController> {
                   fontWeight: FontWeight.w700,
                 ),
             onPressed: () {
-              if (selectedValue.value != null) {
-                controller.cashedToPersonOrCashed(
-                  checkId: check.id.toString(),
-                  customerId: controller.selectedCustomersSellers.value
-                      ? selectedValue.value
-                      : null,
-                  sellerId: !controller.selectedCustomersSellers.value
-                      ? selectedValue.value
-                      : null,
-                );
-              }
+              final partner = selectedPartner.value;
+              if (partner == null) return;
+              controller.cashedToPersonOrCashed(
+                checkId: check.id.toString(),
+                customerId:
+                    selectedIsSeller.value ? null : partner.id.toString(),
+                sellerId: selectedIsSeller.value ? partner.id.toString() : null,
+              );
             },
           ),
         ],

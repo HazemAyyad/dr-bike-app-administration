@@ -820,6 +820,58 @@ class SalesDatasource {
     }
   }
 
+  Future<dynamic> editProfitSale({
+    required String profitSaleId,
+    required String notes,
+    required String totalCost,
+    required String buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.editProfitSale,
+        data: {
+          'profit_sale_id': profitSaleId,
+          'notes': notes,
+          'total_cost': _cleanAmount(totalCost),
+          'buyer_type': buyerType,
+          if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (buyerName != null && buyerName.isNotEmpty)
+            'buyer_name': buyerName,
+          if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
+            'payment_box_value': _cleanAmount(paymentBoxValue),
+          if (image != null)
+            'image': await MultipartFile.fromFile(
+              image.path,
+              filename: image.path.split('/').last,
+            ),
+          if (video != null)
+            'video': await MultipartFile.fromFile(
+              video.path,
+              filename: video.path.split('/').last,
+            ),
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> editInstantSale({
     required String instantSaleId,
     required String cost,

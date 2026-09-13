@@ -35,6 +35,7 @@ import 'checks_serves.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ChecksController extends GetxController
     with GetSingleTickerProviderStateMixin {
   static const _exchangeFromKey = 'checks_exchange_from_currency';
@@ -433,6 +434,37 @@ class ChecksController extends GetxController
 
   RxBool selectedCustomersSellers = false.obs;
 
+  bool get selectedCheckPartnerIsSeller => !selectedCustomersSellers.value;
+
+  SellerModel? get selectedCheckPartner {
+    final id = int.tryParse(selectedValue.value ?? '');
+    if (id == null) return null;
+    final partners =
+        selectedCustomersSellers.value ? allCustomersList : allSellersList;
+    return partners.firstWhereOrNull((partner) => partner.id == id) ??
+        (editBeneficiaryName.trim().isEmpty
+            ? null
+            : SellerModel(
+                id: id,
+                name: editBeneficiaryName.trim(),
+                phone: '',
+              ));
+  }
+
+  String? get selectedCheckCustomerId =>
+      selectedCustomersSellers.value ? selectedValue.value : null;
+
+  String? get selectedCheckSellerId =>
+      selectedCustomersSellers.value ? null : selectedValue.value;
+
+  void selectCheckPartner(SellerModel? partner, {required bool isSeller}) {
+    selectedCustomersSellers.value = !isSeller;
+    selectedValue.value = partner?.id.toString();
+    editBeneficiaryIsCustomer = !isSeller;
+    editBeneficiaryName = partner?.name ?? '';
+    update();
+  }
+
   bool isInComing = false;
 
   // الشيكات الصادرة
@@ -558,6 +590,8 @@ class ChecksController extends GetxController
     checkBackImage.value = null;
     selectedDay.value = DateTime.now();
     isCalendarVisible.value = false;
+    selectedValue.value = null;
+    editBeneficiaryName = '';
   }
 
   void _popToChecksListScreen() {
@@ -611,8 +645,8 @@ class ChecksController extends GetxController
         .toList();
 
     final result = await addIncomingChecksBatchUsecase.call(
-      customerId: customerId,
-      sellerId: sellerId,
+      customerId: customerId ?? selectedCheckCustomerId,
+      sellerId: sellerId ?? selectedCheckSellerId,
       receivedAt: receivedDay.value,
       checks: items,
     );
@@ -666,6 +700,8 @@ class ChecksController extends GetxController
       row.dispose();
     }
     incomingBatchRows.clear();
+    selectedValue.value = null;
+    selectedCustomersSellers.value = false;
     editBeneficiaryName = '';
     editBeneficiaryIsCustomer = true;
   }
@@ -766,10 +802,6 @@ class ChecksController extends GetxController
         arguments: {'isNewCheck': isOutgoing, 'isEdit': true},
       );
     } else {
-      Get.toNamed(
-        AppRoutes.NEWCHECKSCREEN,
-        arguments: {'isNewCheck': isOutgoing},
-      );
       selectedValue.value = null;
       // false = تاجر (seller) هو الافتراضي
       selectedCustomersSellers.value = false;
@@ -792,6 +824,10 @@ class ChecksController extends GetxController
         row.dispose();
       }
       incomingBatchRows.clear();
+      Get.toNamed(
+        AppRoutes.NEWCHECKSCREEN,
+        arguments: {'isNewCheck': isOutgoing},
+      );
     }
     update();
   }
@@ -811,6 +847,8 @@ class ChecksController extends GetxController
       final result = await editChecksUsecase.call(
         isInComing: isInComing,
         outgoingCheckId: checkId,
+        customerId: selectedCheckCustomerId,
+        sellerId: selectedCheckSellerId,
         dueDate: selectedDay.value,
         checkId: checkNumberController.text,
         bankName: bankNameController.text,
