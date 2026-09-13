@@ -849,7 +849,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     const numericFields = {
       'normailPrice',
       'wholesalePrice',
-      'cost_price',
       'price',
       'min_sale_price',
       'stock',

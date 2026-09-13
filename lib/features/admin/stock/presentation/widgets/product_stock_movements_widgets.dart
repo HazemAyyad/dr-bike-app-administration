@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../domain/stock_movements_filters.dart';
@@ -189,7 +190,8 @@ class StockMovementsTable extends StatelessWidget {
             DataColumn(label: Text('quantity'.tr)),
             DataColumn(label: Text('stockMoveColBefore'.tr)),
             DataColumn(label: Text('stockMoveColAfter'.tr)),
-            DataColumn(label: Text('stockMoveColCost'.tr)),
+            if (canViewCostPrice)
+              DataColumn(label: Text('stockMoveColCost'.tr)),
             DataColumn(label: Text('stockMoveColDocument'.tr)),
             DataColumn(label: Text('notes'.tr)),
             DataColumn(label: Text('date'.tr)),
@@ -229,7 +231,7 @@ class StockMovementsTable extends StatelessWidget {
         ),
         DataCell(Text('${m.stockBefore}')),
         DataCell(Text('${m.stockAfter}')),
-        DataCell(Text(stockMovementCostText(m))),
+        if (canViewCostPrice) DataCell(Text(stockMovementCostText(m))),
         DataCell(_movementDocumentLink(context, m, cs)),
         DataCell(
           Text(
@@ -299,7 +301,7 @@ class StockMovementListTile extends StatelessWidget {
                     padding: EdgeInsets.only(top: 4.h),
                     child: _movementDocumentLink(context, movement, cs),
                   ),
-                if (stockMovementCostText(movement) != '—')
+                if (canViewCostPrice && stockMovementCostText(movement) != '—')
                   Padding(
                     padding: EdgeInsets.only(top: 2.h),
                     child: Text(

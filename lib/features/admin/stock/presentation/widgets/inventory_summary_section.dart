@@ -165,46 +165,6 @@ class InventorySummarySection extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w900)),
                 )),
           ],
-          if (inventory.recentMovements.isNotEmpty) ...[
-            SizedBox(height: 10.h),
-            const Text('آخر حركات المخزون',
-                style: TextStyle(fontWeight: FontWeight.w800)),
-            ...inventory.recentMovements.take(3).map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      '${entry.type ?? 'حركة'} • ${qty(entry.quantity ?? 0)}',
-                    ),
-                    subtitle: Text(
-                      [entry.variantLabel, entry.reason, entry.createdAt]
-                          .where((value) => value?.isNotEmpty == true)
-                          .join(' • '),
-                    ),
-                    trailing: entry.stockAfter == null
-                        ? null
-                        : Text('بعد: ${qty(entry.stockAfter!)}'),
-                  ),
-                ),
-          ],
-          if (inventory.lastAdjustments.isNotEmpty) ...[
-            SizedBox(height: 8.h),
-            const Text('آخر التسويات',
-                style: TextStyle(fontWeight: FontWeight.w800)),
-            ...inventory.lastAdjustments.take(3).map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(entry.reason ?? entry.type ?? 'تسوية مخزون'),
-                    subtitle: Text(
-                      [entry.reference, entry.createdBy, entry.createdAt]
-                          .where((value) => value?.isNotEmpty == true)
-                          .join(' • '),
-                    ),
-                    trailing: Text(qty(entry.quantity ?? 0)),
-                  ),
-                ),
-          ],
           SizedBox(height: 10.h),
           Wrap(
             spacing: 8.w,

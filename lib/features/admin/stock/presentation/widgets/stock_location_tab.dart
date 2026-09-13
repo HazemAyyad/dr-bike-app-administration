@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../domain/product_location_utils.dart';
@@ -297,7 +298,8 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
   @override
   Widget build(BuildContext context) {
     final isLandscapePhone = StockProductGridLayout.isPhoneLandscape(context);
-    final tableWidth = isLandscapePhone ? 760.0 : 890.0;
+    final baseTableWidth = isLandscapePhone ? 760.0 : 890.0;
+    final tableWidth = baseTableWidth - (canViewCostPrice ? 0 : 64);
     final columnSpacing = isLandscapePhone ? 6.0 : 8.w;
     final horizontalMargin = isLandscapePhone ? 8.0 : 12.w;
     final headingFontSize = isLandscapePhone ? 9.0 : 10.sp;
@@ -422,15 +424,16 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
                                       width: isLandscapePhone ? 50 : 58,
                                       compact: isLandscapePhone,
                                     )),
-                                    DataCell(_EditablePriceCell(
-                                      product: p,
-                                      field: 'cost_price',
-                                      value: p.costPrice == null
-                                          ? ''
-                                          : _money(p.costPrice!),
-                                      width: isLandscapePhone ? 48 : 56,
-                                      compact: isLandscapePhone,
-                                    )),
+                                    if (canViewCostPrice)
+                                      DataCell(SizedBox(
+                                        width: isLandscapePhone ? 48 : 56,
+                                        child: Text(
+                                          p.costPrice == null
+                                              ? '—'
+                                              : _money(p.costPrice!),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      )),
                                     DataCell(_EditablePriceCell(
                                       product: p,
                                       field: 'stock',
@@ -519,7 +522,7 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
       DataColumn(label: label('retailPrice', width: 56)),
       DataColumn(label: label('minimumSale', width: 58)),
       DataColumn(label: label('wholesalePrice', width: 58)),
-      DataColumn(label: label('productCost', width: 56)),
+      if (canViewCostPrice) DataColumn(label: label('productCost', width: 56)),
       DataColumn(label: label('stock', width: 48)),
       DataColumn(label: label('stockLocationMinStock', width: 54)),
       DataColumn(label: label('rotationDateField', width: 58)),

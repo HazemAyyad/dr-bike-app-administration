@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../domain/stock_movements_filters.dart';
 
@@ -58,6 +59,7 @@ class StockMovementsPdfHelper {
     final regular = await _loadRegular();
     final bold = await _loadBold();
     final rtl = Get.locale?.languageCode == 'ar';
+    final includeCost = canViewCostPrice;
 
     final headers = [
       'stockMoveColType'.tr,
@@ -65,7 +67,7 @@ class StockMovementsPdfHelper {
       'quantity'.tr,
       'stockMoveColBefore'.tr,
       'stockMoveColAfter'.tr,
-      'stockMoveColCost'.tr,
+      if (includeCost) 'stockMoveColCost'.tr,
       'instantSaleInvoice'.tr,
       'notes'.tr,
       'date'.tr,
@@ -85,7 +87,7 @@ class StockMovementsPdfHelper {
         qtyText,
         '${m.stockBefore}',
         '${m.stockAfter}',
-        _costText(m),
+        if (includeCost) _costText(m),
         m.document?.number ?? (m.hasInvoiceLink ? m.displayInvoiceNumber : '—'),
         m.note?.trim().isNotEmpty == true ? m.note! : '—',
         m.createdAt ?? '—',
@@ -132,7 +134,7 @@ class StockMovementsPdfHelper {
             cellAlignment: pw.Alignment.centerRight,
             cellAlignments: {
               0: pw.Alignment.centerRight,
-              6: pw.Alignment.center,
+              (includeCost ? 6 : 5): pw.Alignment.center,
             },
           ),
         ],

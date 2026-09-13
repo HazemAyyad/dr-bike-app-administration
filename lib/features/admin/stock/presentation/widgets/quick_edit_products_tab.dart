@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../controllers/stock_controller.dart';
 import 'stock_product_grid_layout.dart';
@@ -136,11 +137,13 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
       );
       final isCompact =
           isLandscapePhone || MediaQuery.sizeOf(context).width < 700;
-      final tableWidth = isLandscapePhone
+      final showCost = canViewCostPrice;
+      final baseTableWidth = isLandscapePhone
           ? _landscapeTableWidth
           : isCompact
               ? _mobileTableWidth
               : _desktopTableWidth;
+      final tableWidth = baseTableWidth - (showCost ? 0 : 84);
 
       return Padding(
         padding: EdgeInsets.fromLTRB(
@@ -281,8 +284,9 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                           width: isLandscapePhone ? 58 : 72),
                                       _col('wholesalePrice',
                                           width: isLandscapePhone ? 62 : 76),
-                                      _col('productCost',
-                                          width: isLandscapePhone ? 58 : 72),
+                                      if (showCost)
+                                        _col('productCost',
+                                            width: isLandscapePhone ? 58 : 72),
                                       _col('minSalePrice',
                                           width: isLandscapePhone ? 62 : 76),
                                       _col('stock',
@@ -324,6 +328,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                               isCompact: isCompact,
                                               isLandscapePhone:
                                                   isLandscapePhone,
+                                              showCost: showCost,
                                             ))
                                         .toList(),
                                   ),
@@ -383,6 +388,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
     QuickEditProductRowState row, {
     required bool isCompact,
     required bool isLandscapePhone,
+    required bool showCost,
   }) {
     return DataRow(
       color: WidgetStateProperty.resolveWith((states) {
@@ -428,8 +434,9 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
             width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
         DataCell(_number(row, row.wholesalePriceController,
             width: isLandscapePhone ? 62 : 76, compact: isLandscapePhone)),
-        DataCell(_readonly(row.product.costPrice,
-            width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
+        if (showCost)
+          DataCell(_readonly(row.product.costPrice,
+              width: isLandscapePhone ? 58 : 72, compact: isLandscapePhone)),
         DataCell(_number(row, row.minSalePriceController,
             width: isLandscapePhone ? 62 : 76, compact: isLandscapePhone)),
         DataCell(_readonly(row.product.stock,
