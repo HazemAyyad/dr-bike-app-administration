@@ -13,7 +13,6 @@ import '../controllers/stock_controller.dart';
 import '../widgets/product_language_details_tabs.dart';
 import '../widgets/product_images_slider.dart';
 import '../widgets/product_inline_video.dart';
-import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
@@ -23,6 +22,8 @@ import '../widgets/product_stock_movements_link.dart';
 import '../widgets/stock_skeleton_widgets.dart';
 import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
+import '../widgets/inventory_summary_section.dart';
+import '../widgets/inventory_cost_revaluation_sheet.dart';
 import '../utils/open_product_purchase.dart';
 import 'product_assembly_operations_screen.dart';
 
@@ -115,11 +116,6 @@ class _ProductOverviewGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showCost = canViewCostPrice;
-    final cost =
-        product.purchasePrices != null && product.purchasePrices!.isNotEmpty
-            ? product.purchasePrices!.first.price.toString()
-            : '—';
     final items = [
       ProductMetricData(Icons.inventory_2_outlined, 'stock'.tr,
           product.stock?.toString() ?? '0'),
@@ -134,9 +130,6 @@ class _ProductOverviewGrid extends StatelessWidget {
           Icons.percent, 'discountPercentage'.tr, '${product.discount ?? 0}%'),
       ProductMetricData(Icons.price_change_outlined, 'minimumSalePrice'.tr,
           product.minSalePrice?.toString() ?? '—'),
-      if (showCost)
-        ProductMetricData(Icons.shopping_bag_outlined, 'ThePurchase'.tr, cost,
-            onTap: () => Get.dialog(ShowPurchasePrice(product: product))),
       ProductMetricData(Icons.price_check_outlined, 'listPriceField'.tr,
           product.price?.toString() ?? '—'),
       ProductMetricData(Icons.two_wheeler_outlined, 'productModel'.tr,
@@ -405,13 +398,17 @@ class ProductDetailsScreen extends GetView<StockController> {
         title: product.nameAr,
         subtitle: target.subtitle,
         currentStock: target.currentStock,
+        currency: product.inventory?.currency ?? 'شيكل',
       );
       if (pick == null) return;
       await controller.adjustProductStock(
         productId: product.id,
         sizeColorId: target.sizeColorId,
-        quantity: pick.quantity,
-        note: pick.note,
+        actualQuantity: pick.actualQuantity,
+        reason: pick.reason,
+        notes: pick.notes,
+        unitCost: pick.unitCost,
+        currency: product.inventory?.currency ?? 'شيكل',
       );
       return;
     }
@@ -421,12 +418,58 @@ class ProductDetailsScreen extends GetView<StockController> {
       context: context,
       title: product.nameAr,
       currentStock: stock,
+      currency: product.inventory?.currency ?? 'شيكل',
     );
     if (pick == null) return;
     await controller.adjustProductStock(
       productId: product.id,
-      quantity: pick.quantity,
-      note: pick.note,
+      actualQuantity: pick.actualQuantity,
+      reason: pick.reason,
+      notes: pick.notes,
+      unitCost: pick.unitCost,
+      currency: product.inventory?.currency ?? 'شيكل',
+    );
+  }
+
+  Future<void> _openInventoryCostRevaluation(
+    BuildContext context,
+    ProductDetailsModel product,
+  ) async {
+    String? sizeColorId;
+    String? subtitle;
+    double? currentCost = product.inventory?.averageUnitCost;
+    if (_productHasVariants(product)) {
+      final target = await showStockVariantAdjustSheet(
+        context: context,
+        product: product,
+      );
+      if (target == null || !context.mounted) return;
+      sizeColorId = target.sizeColorId;
+      subtitle = target.subtitle;
+      for (final variant
+          in product.inventory?.variants ?? <InventoryIdentitySummary>[]) {
+        if (variant.sizeColorId == sizeColorId) {
+          currentCost = variant.averageUnitCost;
+          break;
+        }
+      }
+    }
+    if (!context.mounted) return;
+    final result = await showInventoryCostRevaluationSheet(
+      context: context,
+      title: product.nameAr,
+      subtitle: subtitle,
+      currentUnitCost: currentCost,
+      currency: product.inventory?.currency ?? 'شيكل',
+    );
+    if (result == null) return;
+    await controller.updateProductCostPrice(
+      productId: product.id,
+      sizeColorId: sizeColorId,
+      costPrice: result.newUnitCost,
+      reason: result.reason,
+      notes: result.notes,
+      currency: product.inventory?.currency ?? 'شيكل',
     );
   }
 
@@ -451,7 +494,9 @@ class ProductDetailsScreen extends GetView<StockController> {
           }),
           Obx(() {
             final product = controller.productDetails.value;
-            if (product == null) return const SizedBox.shrink();
+            if (product == null || !canAdjustInventoryStock) {
+              return const SizedBox.shrink();
+            }
             return IconButton(
               tooltip: 'stockAdjustment'.tr,
               icon: const Icon(Icons.tune_rounded),
@@ -509,6 +554,14 @@ class ProductDetailsScreen extends GetView<StockController> {
                       _ProductDetailsHero(product: product),
                       SizedBox(height: 8.h),
                       _ProductOverviewGrid(product: product),
+                      SizedBox(height: 12.h),
+                      InventorySummarySection(
+                        product: product,
+                        onAdjust: () =>
+                            _openProductQuickAdjust(context, product),
+                        onRevalue: () =>
+                            _openInventoryCostRevaluation(context, product),
+                      ),
                       SizedBox(height: 12.h),
                       _SizeColorDetailsTable(product: product),
                       SizedBox(height: 12.h),

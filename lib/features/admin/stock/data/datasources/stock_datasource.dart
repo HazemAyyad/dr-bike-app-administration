@@ -31,6 +31,7 @@ import '../models/product_stock_movement_model.dart';
 import '../models/store_section_model.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockDatasource {
   final ApiConsumer api;
 
@@ -1755,8 +1756,11 @@ class StockDatasource {
   Future<int> adjustProductStock({
     required String productId,
     String? sizeColorId,
-    required int quantity,
-    String? note,
+    required int actualQuantity,
+    required String reason,
+    String? notes,
+    double? unitCost,
+    String currency = 'شيكل',
   }) async {
     try {
       final response = await api.post(
@@ -1765,8 +1769,11 @@ class StockDatasource {
           'product_id': productId,
           if (sizeColorId != null && sizeColorId.isNotEmpty)
             'size_color_id': sizeColorId,
-          'quantity': quantity,
-          if (note != null && note.isNotEmpty) 'note': note,
+          'actual_quantity': actualQuantity,
+          'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+          if (unitCost != null) 'unit_cost': unitCost,
+          'currency': currency,
         },
       );
       final raw = response.data;
@@ -1798,14 +1805,23 @@ class StockDatasource {
 
   Future<Map<String, dynamic>> updateProductCostPrice({
     required String productId,
+    String? sizeColorId,
     required double costPrice,
+    required String reason,
+    String? notes,
+    String currency = 'شيكل',
   }) async {
     try {
       final response = await api.post(
         EndPoints.productCostPrice,
         data: {
           'product_id': productId,
-          'cost_price': costPrice,
+          if (sizeColorId != null && sizeColorId.isNotEmpty)
+            'size_color_id': sizeColorId,
+          'new_unit_cost': costPrice,
+          'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+          'currency': currency,
         },
       );
       final raw = response.data;

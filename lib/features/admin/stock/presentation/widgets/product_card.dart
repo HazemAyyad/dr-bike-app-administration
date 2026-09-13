@@ -16,7 +16,6 @@ import 'stock_product_grid_layout.dart';
 import 'stock_search_sheet.dart';
 import '../controllers/stock_controller.dart';
 
-import '../../../../../core/helpers/app_failure_notice.dart';
 void _dismissBlockingOverlays() {
   if (Get.isSnackbarOpen) {
     Get.closeAllSnackbars();
@@ -71,87 +70,6 @@ class BuildProductCard extends GetView<StockController> {
     if (value == null || value <= 0) return '-';
     if (value == value.roundToDouble()) return value.toStringAsFixed(0);
     return value.toStringAsFixed(2);
-  }
-
-  Future<void> _showCostPriceDialog(BuildContext context) async {
-    var rawCostPrice = product.costPrice == null || product.costPrice! <= 0
-        ? ''
-        : _formatCostPrice();
-    const dialogBackground = Colors.white;
-    final textColor = AppColors.secondaryColor;
-    await Get.dialog(
-      AlertDialog(
-        backgroundColor: dialogBackground,
-        surfaceTintColor: dialogBackground,
-        title: Text(
-          'costPrice'.tr,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: TextFormField(
-          initialValue: rawCostPrice,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: TextStyle(color: textColor),
-          cursorColor: textColor,
-          decoration: InputDecoration(
-            labelText: 'costPrice'.tr,
-            labelStyle: TextStyle(color: textColor.withValues(alpha: 0.75)),
-            filled: true,
-            fillColor: Colors.white,
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColors.secondaryColor.withValues(alpha: 0.35),
-              ),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(
-                color: AppColors.secondaryColor,
-                width: 1.4,
-              ),
-            ),
-            border: const OutlineInputBorder(),
-          ),
-          autofocus: true,
-          onChanged: (value) => rawCostPrice = value,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text(
-              'cancel'.tr,
-              style: TextStyle(color: textColor.withValues(alpha: 0.75)),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final raw = rawCostPrice.trim().replaceAll(',', '.');
-              final parsed = raw.isEmpty ? 0.0 : double.tryParse(raw);
-              if (parsed == null || parsed < 0) {
-                AppFailureNotice.show(
-                  title: 'error'.tr,
-                  message: 'invalidCostPrice'.tr,
-                );
-                return;
-              }
-              Get.back();
-              await controller.updateProductCostPrice(
-                productId: product.productId,
-                costPrice: parsed,
-              );
-            },
-            child: Text(
-              'save'.tr,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -254,12 +172,6 @@ class BuildProductCard extends GetView<StockController> {
             return;
           }
           await handleCardTap();
-        },
-        onLongPress: () async {
-          if (isCloseouts || readOnly) return;
-          if (userType == 'admin') {
-            await _showCostPriceDialog(context);
-          }
         },
         child: ConstrainedBox(
           constraints: BoxConstraints(

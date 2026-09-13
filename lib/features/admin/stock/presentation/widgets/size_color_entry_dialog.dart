@@ -12,6 +12,7 @@ import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/stock_controller.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 /// Modal for adding or editing a single size+color entry (Arabic color name only).
 class SizeColorEntryDialog extends StatefulWidget {
   const SizeColorEntryDialog({
@@ -46,8 +47,9 @@ class SizeColorEntryDialog extends StatefulWidget {
 
 class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   late final TextEditingController _colorArCtrl;
-  late final TextEditingController _qtyCtrl;
   late final TextEditingController _priceCtrl;
+  late final TextEditingController _openingQtyCtrl;
+  late final TextEditingController _openingCostCtrl;
   late final TextEditingController _wholesaleCtrl;
   late final TextEditingController _discountCtrl;
 
@@ -56,6 +58,8 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   bool _clearImage = false;
 
   bool get isEdit => widget.sizeIdx != null && widget.colorIdx != null;
+  bool get allowsOpening =>
+      c.editingProductId.value == null && c.addOpeningStock.value;
 
   StockController get c => widget.controller;
 
@@ -67,16 +71,19 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       final col = sz.colors[widget.colorIdx!];
       _selectedSize = sz.sizeController.text.trim();
       _colorArCtrl = TextEditingController(text: col.colorController.text);
-      _qtyCtrl = TextEditingController(text: col.quantityController.text);
       _priceCtrl = TextEditingController(text: col.priceController.text);
+      _openingQtyCtrl =
+          TextEditingController(text: col.quantityController.text);
+      _openingCostCtrl =
+          TextEditingController(text: col.openingCostController.text);
       _wholesaleCtrl =
           TextEditingController(text: col.wholesalePriceController.text);
-      _discountCtrl =
-          TextEditingController(text: col.discountController.text);
+      _discountCtrl = TextEditingController(text: col.discountController.text);
     } else {
       _colorArCtrl = TextEditingController();
-      _qtyCtrl = TextEditingController();
       _priceCtrl = TextEditingController();
+      _openingQtyCtrl = TextEditingController();
+      _openingCostCtrl = TextEditingController();
       _wholesaleCtrl = TextEditingController();
       _discountCtrl = TextEditingController();
     }
@@ -85,8 +92,9 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   @override
   void dispose() {
     _colorArCtrl.dispose();
-    _qtyCtrl.dispose();
     _priceCtrl.dispose();
+    _openingQtyCtrl.dispose();
+    _openingCostCtrl.dispose();
     _wholesaleCtrl.dispose();
     _discountCtrl.dispose();
     super.dispose();
@@ -95,7 +103,14 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   void _save() {
     final size = (_selectedSize ?? '').trim();
     final colorAr = _colorArCtrl.text.trim();
-    final qty = _qtyCtrl.text.trim();
+    final qty = allowsOpening
+        ? (_openingQtyCtrl.text.trim().isEmpty
+            ? '0'
+            : _openingQtyCtrl.text.trim())
+        : (isEdit
+            ? c.items[widget.sizeIdx!].colors[widget.colorIdx!]
+                .quantityController.text
+            : '0');
     final price = _priceCtrl.text.trim();
 
     if (size.isEmpty) {
@@ -112,13 +127,6 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       );
       return;
     }
-    if (qty.isEmpty) {
-      AppFailureNotice.show(
-        title: 'error'.tr,
-        message: 'quantityRequired'.tr,
-      );
-      return;
-    }
     if (price.isEmpty) {
       AppFailureNotice.show(
         title: 'error'.tr,
@@ -126,16 +134,14 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       );
       return;
     }
-
-    final qtyErr = c.validateSizeColorQuantity(
-      qty,
-      excludeSizeIdx: isEdit ? widget.sizeIdx : null,
-      excludeColorIdx: isEdit ? widget.colorIdx : null,
-    );
-    if (qtyErr != null) {
+    final openingQty = int.tryParse(qty) ?? -1;
+    final openingCost = double.tryParse(_openingCostCtrl.text.trim());
+    if (allowsOpening &&
+        (openingQty < 0 ||
+            (openingQty > 0 && (openingCost == null || openingCost < 0)))) {
       AppFailureNotice.show(
         title: 'error'.tr,
-        message: qtyErr.trParams({'stock': '${c.productStockTotal}'}),
+        message: 'أدخل كمية افتتاح صحيحة وتكلفة لكل متغير لديه مخزون افتتاح.',
       );
       return;
     }
@@ -152,6 +158,7 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
         price: price,
         wholesalePrice: _wholesaleCtrl.text.trim(),
         discount: _discountCtrl.text.trim(),
+        openingCost: _openingCostCtrl.text.trim(),
       );
       _applyImageToEntry(
         sizeIdx: widget.sizeIdx!,
@@ -167,6 +174,7 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
         price: price,
         wholesalePrice: _wholesaleCtrl.text.trim(),
         discount: _discountCtrl.text.trim(),
+        openingCost: _openingCostCtrl.text.trim(),
       );
       final indices = _findEntryIndices(size, colorAr);
       if (indices != null) {
@@ -227,7 +235,8 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
     if (_pendingImage != null) return true;
     if (_clearImage) return false;
     if (!isEdit) return false;
-    final url = c.items[widget.sizeIdx!].colors[widget.colorIdx!].existingImageUrl;
+    final url =
+        c.items[widget.sizeIdx!].colors[widget.colorIdx!].existingImageUrl;
     return url != null && url.isNotEmpty;
   }
 
@@ -296,55 +305,38 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                   ),
                 ],
               ),
-              Builder(
-                builder: (context) {
-                  final stock = c.productStockTotal;
-                  final used = c.totalSizeColorQuantity(
-                    excludeSizeIdx: isEdit ? widget.sizeIdx : null,
-                    excludeColorIdx: isEdit ? widget.colorIdx : null,
-                  );
-                  final remaining = (stock - used).clamp(0, stock);
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: Text(
-                      'sizeColorQtyHint'.trParams({
-                        'stock': '$stock',
-                        'remaining': '$remaining',
-                      }),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).hintColor,
-                            fontSize: 11.sp,
-                          ),
-                    ),
-                  );
-                },
+              CustomTextField(
+                label: 'price',
+                hintText: 'price',
+                controller: _priceCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                isRequired: true,
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              if (allowsOpening) ...[
+                SizedBox(height: 12.h),
+                Row(children: [
                   Expanded(
                     child: CustomTextField(
-                      label: 'quantity',
-                      hintText: 'quantity',
-                      controller: _qtyCtrl,
+                      label: 'كمية الافتتاح',
+                      hintText: '0',
+                      controller: _openingQtyCtrl,
                       keyboardType: TextInputType.number,
-                      isRequired: true,
                     ),
                   ),
                   SizedBox(width: 10.w),
                   Expanded(
                     child: CustomTextField(
-                      label: 'price',
-                      hintText: 'price',
-                      controller: _priceCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      isRequired: true,
+                      label: 'تكلفة الافتتاح',
+                      hintText: '0.00',
+                      controller: _openingCostCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                     ),
                   ),
-                ],
-              ),
+                ]),
+              ],
               SizedBox(height: 12.h),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,9 +416,10 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                       children: [
                         Text(
                           'sizeColorImageOptional'.tr,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).hintColor,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).hintColor,
+                                  ),
                         ),
                         if (_hasImagePreview) ...[
                           SizedBox(height: 8.h),

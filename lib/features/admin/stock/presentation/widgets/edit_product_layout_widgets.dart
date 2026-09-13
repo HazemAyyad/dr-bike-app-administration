@@ -9,7 +9,6 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
 import '../controllers/stock_controller.dart';
@@ -224,15 +223,6 @@ class _EditProductOverviewSectionState
     final c = widget.controller;
     final allFields = <Widget>[
       EditMetricInputCard(
-        icon: Icons.inventory_2_outlined,
-        label: 'stock'.tr,
-        controller: c.stockController,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: false,
-          signed: false,
-        ),
-      ),
-      EditMetricInputCard(
         icon: Icons.warning_amber_rounded,
         label: 'minimumStock'.tr,
         controller: c.minimumStockController,
@@ -259,16 +249,6 @@ class _EditProductOverviewSectionState
           signed: false,
         ),
       ),
-      if (canViewCostPrice)
-        EditMetricInputCard(
-          icon: Icons.shopping_bag_outlined,
-          label: 'productCost'.tr,
-          controller: c.purchasePriceController,
-          keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
-            signed: false,
-          ),
-        ),
       EditMetricInputCard(
         icon: Icons.price_change_outlined,
         label: 'minimumSalePrice'.tr,

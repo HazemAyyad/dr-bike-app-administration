@@ -47,6 +47,7 @@ import 'offer_packages_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockController extends GetxController with GetTickerProviderStateMixin {
   final GetAllStockUsecase getAllStockUsecase;
   final GetProductDetailsUsecase getProductDetailsUsecase;
@@ -103,6 +104,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController minSalePriceController = TextEditingController();
   final TextEditingController listPriceController = TextEditingController();
   final TextEditingController rotationDateController = TextEditingController();
+  final TextEditingController openingQuantityController =
+      TextEditingController();
+  final TextEditingController openingUnitCostController =
+      TextEditingController();
+  final TextEditingController openingCurrencyController =
+      TextEditingController(text: 'NIS');
+  final TextEditingController openingNotesController = TextEditingController();
+  final RxBool addOpeningStock = false.obs;
 
   final RxBool isForcedSale = false.obs;
   final RxBool isShowProduct = true.obs;
@@ -1214,6 +1223,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required String price,
     String wholesalePrice = '',
     String discount = '',
+    String openingCost = '',
   }) {
     SizedModel? existingSized;
     for (final s in items) {
@@ -1230,6 +1240,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     c.priceController.text = price;
     c.wholesalePriceController.text = wholesalePrice;
     c.discountController.text = discount;
+    c.openingCostController.text = openingCost;
 
     if (existingSized != null) {
       existingSized.colors.add(c);
@@ -1255,6 +1266,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required String price,
     String wholesalePrice = '',
     String discount = '',
+    String openingCost = '',
   }) {
     if (sizeIdx < 0 || sizeIdx >= items.length) return;
     final sz = items[sizeIdx];
@@ -1268,6 +1280,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     c.priceController.text = price;
     c.wholesalePriceController.text = wholesalePrice;
     c.discountController.text = discount;
+    c.openingCostController.text = openingCost;
     update();
   }
 
@@ -2403,15 +2416,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   Future<bool> adjustProductStock({
     required String productId,
     String? sizeColorId,
-    required int quantity,
-    String? note,
+    required int actualQuantity,
+    required String reason,
+    String? notes,
+    double? unitCost,
+    String currency = 'شيكل',
   }) async {
     try {
       await stockDatasource.adjustProductStock(
         productId: productId,
         sizeColorId: sizeColorId,
-        quantity: quantity,
-        note: note,
+        actualQuantity: actualQuantity,
+        reason: reason,
+        notes: notes,
+        unitCost: unitCost,
+        currency: currency,
       );
       await getProductDetails(productId: productId);
       AppSuccessNotice.show(
@@ -2436,13 +2455,22 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<bool> updateProductCostPrice({
     required String productId,
+    String? sizeColorId,
     required double costPrice,
+    required String reason,
+    String? notes,
+    String currency = 'شيكل',
   }) async {
     try {
       await stockDatasource.updateProductCostPrice(
         productId: productId,
+        sizeColorId: sizeColorId,
         costPrice: costPrice,
+        reason: reason,
+        notes: notes,
+        currency: currency,
       );
+      await getProductDetails(productId: productId);
       await reloadProductsList();
       AppSuccessNotice.show(
         title: 'success'.tr,
@@ -2753,6 +2781,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     minSalePriceController.clear();
     listPriceController.clear();
     rotationDateController.clear();
+    addOpeningStock.value = false;
+    openingQuantityController.clear();
+    openingUnitCostController.clear();
+    openingCurrencyController.text = 'NIS';
+    openingNotesController.clear();
     isShowProduct.value = true;
     isNewItemProduct.value = true;
     isMoreSalesProduct.value = false;
@@ -2774,6 +2807,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (p == null) {
       return false;
     }
+    addOpeningStock.value = false;
+    openingQuantityController.clear();
+    openingUnitCostController.clear();
+    openingCurrencyController.text = 'NIS';
+    openingNotesController.clear();
     if (mainCategories.isEmpty || allSubCategories.isEmpty) {
       await getCategories();
     }
@@ -2974,9 +3012,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           : manufactureYearController.text.trim(),
     );
     addField('model', modelController.text.trim());
-    if (stockController.text.trim().isNotEmpty) {
-      addField('stock', stockController.text.trim());
-    }
     if (selectPurchaseController.text.trim().isNotEmpty) {
       addField('project_id', selectPurchaseController.text.trim());
     }
@@ -2986,11 +3021,29 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (listPriceController.text.trim().isNotEmpty) {
       addField('price', listPriceController.text.trim());
     }
-    if (purchasePriceController.text.trim().isNotEmpty) {
-      addField('purchase_price', purchasePriceController.text.trim());
-    }
     if (rotationDateController.text.trim().isNotEmpty) {
       addField('rotation_date', rotationDateController.text.trim());
+    }
+    final isCreating = editingProductId.value == null;
+    final hasVariantOpening = isCreating &&
+        addOpeningStock.value &&
+        items.any((size) => size.colors.any((color) =>
+            (int.tryParse(color.quantityController.text.trim()) ?? 0) > 0));
+    if (isCreating && (addOpeningStock.value || hasVariantOpening)) {
+      addField('opening_stock', '1');
+      addField(
+        'opening_currency',
+        openingCurrencyController.text.trim().isEmpty
+            ? 'NIS'
+            : openingCurrencyController.text.trim(),
+      );
+      if (openingNotesController.text.trim().isNotEmpty) {
+        addField('opening_notes', openingNotesController.text.trim());
+      }
+      if (!hasVariantOpening) {
+        addField('opening_quantity', openingQuantityController.text.trim());
+        addField('opening_unit_cost', openingUnitCostController.text.trim());
+      }
     }
     final mainCat = selectedMainCategoryId.value?.trim();
     if (mainCat != null && mainCat.isNotEmpty) {
@@ -3068,12 +3121,24 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
             c.discountController.text.trim(),
           );
         }
-        addField(
-          'sizes[$sizeIndex][color_sizes][$j][stock]',
-          c.quantityController.text.trim().isEmpty
-              ? '0'
-              : c.quantityController.text.trim(),
-        );
+        if (isCreating &&
+            addOpeningStock.value &&
+            (int.tryParse(c.quantityController.text.trim()) ?? 0) > 0) {
+          addField(
+            'sizes[$sizeIndex][color_sizes][$j][opening_quantity]',
+            c.quantityController.text.trim(),
+          );
+          addField(
+            'sizes[$sizeIndex][color_sizes][$j][opening_unit_cost]',
+            c.openingCostController.text.trim(),
+          );
+          addField(
+            'sizes[$sizeIndex][color_sizes][$j][opening_currency]',
+            openingCurrencyController.text.trim().isEmpty
+                ? 'NIS'
+                : openingCurrencyController.text.trim(),
+          );
+        }
         final cid = c.dbColorId;
         if (cid != null && cid.isNotEmpty && cid != '0') {
           addField('sizes[$sizeIndex][color_sizes][$j][id]', cid);
@@ -3337,6 +3402,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     minSalePriceController.dispose();
     listPriceController.dispose();
     rotationDateController.dispose();
+    openingQuantityController.dispose();
+    openingUnitCostController.dispose();
+    openingCurrencyController.dispose();
+    openingNotesController.dispose();
     closeoutsMinimumSaleController.dispose();
     closeoutsProductNameController.dispose();
     stockSearchQueryController.dispose();
@@ -3490,6 +3559,7 @@ class ColorModel {
   final TextEditingController colorEnController = TextEditingController();
   final TextEditingController colorAbbrController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
+  final TextEditingController openingCostController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController wholesalePriceController =
       TextEditingController();
@@ -3504,6 +3574,7 @@ class ColorModel {
     colorEnController.dispose();
     colorAbbrController.dispose();
     quantityController.dispose();
+    openingCostController.dispose();
     priceController.dispose();
     wholesalePriceController.dispose();
     discountController.dispose();

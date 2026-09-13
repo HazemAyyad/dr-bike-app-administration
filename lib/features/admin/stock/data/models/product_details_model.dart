@@ -35,12 +35,15 @@ class ProductDetailsModel {
   dynamic minSalePrice;
   dynamic isSoldWithPaper;
   dynamic projectId;
+
   /// Main category id from `products.category_id` (API).
   String? categoryId;
+
   /// Resolved main category label from API `category_name` (preferred over inferring from subs).
   String? categoryName;
   String? storeSectionId;
   String? storeSectionName;
+
   /// Flat list from API `sub_categories` when present.
   List<String>? subCategoryIds;
   List<ProductSubCategory>? productSubCategories;
@@ -54,6 +57,8 @@ class ProductDetailsModel {
   List<ProductMediaItem>? viewImageItems;
   List<ProductMediaItem>? image3dItems;
   dynamic purchase;
+  InventorySummary? inventory;
+  bool canViewInventoryCost;
 
   ProductDetailsModel({
     required this.id,
@@ -104,6 +109,8 @@ class ProductDetailsModel {
     this.viewImageItems,
     this.image3dItems,
     this.purchase,
+    this.inventory,
+    this.canViewInventoryCost = false,
   });
 
   static List<ProductMediaItem>? _parseMediaItems(dynamic v) {
@@ -177,7 +184,8 @@ class ProductDetailsModel {
       userIdAdd: j['userIdAdd'],
       dateAdd: j['dateAdd'] == null ? null : parseApiDateTime(j['dateAdd']),
       userIdUpdate: j['userIdUpdate'],
-      dateUpdate: j['dateUpdate'] == null ? null : parseApiDateTime(j['dateUpdate']),
+      dateUpdate:
+          j['dateUpdate'] == null ? null : parseApiDateTime(j['dateUpdate']),
       minStock: j['min_stock'],
       rotationDate: j['rotation_date'],
       minSalePrice: j['min_sale_price'],
@@ -216,6 +224,10 @@ class ProductDetailsModel {
       viewImageItems: _parseMediaItems(j['product_viewImages_items']),
       image3dItems: _parseMediaItems(j['product_image3d_items']),
       purchase: j['purchase'],
+      inventory: j['inventory'] is Map
+          ? InventorySummary.fromJson(asMap(j['inventory']))
+          : null,
+      canViewInventoryCost: j['can_view_inventory_cost'] == true,
     );
   }
 
@@ -282,9 +294,269 @@ class ProductDetailsModel {
       data['product_image3d'] = image3d!.toList();
     }
     data['purchase'] = purchase;
+    data['inventory'] = inventory?.toJson();
+    data['can_view_inventory_cost'] = canViewInventoryCost;
 
     return data;
   }
+}
+
+class InventorySummary {
+  final double quantityOnHand;
+  final double costedQuantity;
+  final String costingMethod;
+  final String currency;
+  final double? inventoryValue;
+  final double? averageUnitCost;
+  final double? nextFifoUnitCost;
+  final bool coverageComplete;
+  final bool hasVariants;
+  final List<InventoryIdentitySummary> variants;
+  final List<InventoryCostLayerDetails> costLayers;
+  final List<InventoryAuditEntry> recentMovements;
+  final List<InventoryAuditEntry> lastAdjustments;
+
+  const InventorySummary({
+    required this.quantityOnHand,
+    required this.costedQuantity,
+    required this.costingMethod,
+    required this.currency,
+    required this.inventoryValue,
+    required this.averageUnitCost,
+    required this.nextFifoUnitCost,
+    required this.coverageComplete,
+    required this.hasVariants,
+    required this.variants,
+    required this.costLayers,
+    required this.recentMovements,
+    required this.lastAdjustments,
+  });
+
+  factory InventorySummary.fromJson(Map<String, dynamic> json) {
+    return InventorySummary(
+      quantityOnHand: asDouble(json['quantity_on_hand']),
+      costedQuantity: asDouble(json['costed_quantity']),
+      costingMethod: asString(json['costing_method'], 'fifo'),
+      currency: asString(json['currency'], 'شيكل'),
+      inventoryValue: json['inventory_value'] == null
+          ? null
+          : asDouble(json['inventory_value']),
+      averageUnitCost: json['average_inventory_unit_cost'] == null
+          ? null
+          : asDouble(json['average_inventory_unit_cost']),
+      nextFifoUnitCost: json['next_fifo_unit_cost'] == null
+          ? null
+          : asDouble(json['next_fifo_unit_cost']),
+      coverageComplete: json['cost_coverage_complete'] == true,
+      hasVariants: json['has_variants'] == true,
+      variants: mapList(
+        json['variants'],
+        (item) => InventoryIdentitySummary.fromJson(item),
+      ),
+      costLayers: mapList(
+        json['cost_layers'],
+        (item) => InventoryCostLayerDetails.fromJson(item),
+      ),
+      recentMovements: mapList(
+        json['recent_movements'],
+        (item) => InventoryAuditEntry.fromJson(item),
+      ),
+      lastAdjustments: mapList(
+        json['last_adjustments'],
+        (item) => InventoryAuditEntry.fromJson(item),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'quantity_on_hand': quantityOnHand,
+        'costed_quantity': costedQuantity,
+        'costing_method': costingMethod,
+        'currency': currency,
+        'inventory_value': inventoryValue,
+        'average_inventory_unit_cost': averageUnitCost,
+        'next_fifo_unit_cost': nextFifoUnitCost,
+        'cost_coverage_complete': coverageComplete,
+        'has_variants': hasVariants,
+        'variants': variants.map((e) => e.toJson()).toList(),
+        'cost_layers': costLayers.map((e) => e.toJson()).toList(),
+        'recent_movements': recentMovements.map((e) => e.toJson()).toList(),
+        'last_adjustments': lastAdjustments.map((e) => e.toJson()).toList(),
+      };
+}
+
+class InventoryAuditEntry {
+  const InventoryAuditEntry({
+    required this.id,
+    this.type,
+    this.reference,
+    this.quantity,
+    this.stockBefore,
+    this.stockAfter,
+    this.valueDifference,
+    this.reason,
+    this.notes,
+    this.variantLabel,
+    this.createdBy,
+    this.createdAt,
+  });
+
+  final String id;
+  final String? type;
+  final String? reference;
+  final double? quantity;
+  final double? stockBefore;
+  final double? stockAfter;
+  final double? valueDifference;
+  final String? reason;
+  final String? notes;
+  final String? variantLabel;
+  final String? createdBy;
+  final String? createdAt;
+
+  factory InventoryAuditEntry.fromJson(Map<String, dynamic> json) {
+    final size = asNullableString(json['size']);
+    final color = asNullableString(json['color_ar']);
+    final labels = <String>[
+      if (size?.trim().isNotEmpty == true) size!,
+      if (color?.trim().isNotEmpty == true) color!,
+    ];
+    return InventoryAuditEntry(
+      id: asString(json['id']),
+      type: asNullableString(json['type'] ?? json['adjustment_type']),
+      reference: asNullableString(json['reference']),
+      quantity: json['quantity'] == null && json['quantity_difference'] == null
+          ? null
+          : asDouble(json['quantity'] ?? json['quantity_difference']),
+      stockBefore:
+          json['stock_before'] == null ? null : asDouble(json['stock_before']),
+      stockAfter:
+          json['stock_after'] == null ? null : asDouble(json['stock_after']),
+      valueDifference: json['value_difference'] == null
+          ? null
+          : asDouble(json['value_difference']),
+      reason: asNullableString(json['reason']),
+      notes: asNullableString(json['notes'] ?? json['note']),
+      variantLabel: labels.isEmpty ? null : labels.join(' / '),
+      createdBy: asNullableString(json['created_by_name']),
+      createdAt: asNullableString(json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'type': type,
+        'reference': reference,
+        'quantity': quantity,
+        'stock_before': stockBefore,
+        'stock_after': stockAfter,
+        'value_difference': valueDifference,
+        'reason': reason,
+        'notes': notes,
+        'variant_label': variantLabel,
+        'created_by_name': createdBy,
+        'created_at': createdAt,
+      };
+}
+
+class InventoryIdentitySummary {
+  final String? sizeColorId;
+  final String sizeLabel;
+  final String colorLabel;
+  final double quantityOnHand;
+  final String currency;
+  final double? inventoryValue;
+  final double? averageUnitCost;
+  final double? nextFifoUnitCost;
+  final bool coverageComplete;
+
+  const InventoryIdentitySummary({
+    this.sizeColorId,
+    required this.sizeLabel,
+    required this.colorLabel,
+    required this.quantityOnHand,
+    required this.currency,
+    this.inventoryValue,
+    this.averageUnitCost,
+    this.nextFifoUnitCost,
+    required this.coverageComplete,
+  });
+
+  factory InventoryIdentitySummary.fromJson(Map<String, dynamic> json) =>
+      InventoryIdentitySummary(
+        sizeColorId: asNullableString(json['size_color_id']),
+        sizeLabel: asString(json['size_label'], '—'),
+        colorLabel: asString(json['color_label'], '—'),
+        quantityOnHand: asDouble(json['quantity_on_hand']),
+        currency: asString(json['currency'], 'شيكل'),
+        inventoryValue: json['inventory_value'] == null
+            ? null
+            : asDouble(json['inventory_value']),
+        averageUnitCost: json['average_inventory_unit_cost'] == null
+            ? null
+            : asDouble(json['average_inventory_unit_cost']),
+        nextFifoUnitCost: json['next_fifo_unit_cost'] == null
+            ? null
+            : asDouble(json['next_fifo_unit_cost']),
+        coverageComplete: json['cost_coverage_complete'] == true,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'size_color_id': sizeColorId,
+        'size_label': sizeLabel,
+        'color_label': colorLabel,
+        'quantity_on_hand': quantityOnHand,
+        'currency': currency,
+        'inventory_value': inventoryValue,
+        'average_inventory_unit_cost': averageUnitCost,
+        'next_fifo_unit_cost': nextFifoUnitCost,
+        'cost_coverage_complete': coverageComplete,
+      };
+}
+
+class InventoryCostLayerDetails {
+  final String id;
+  final String sourceType;
+  final double remainingQuantity;
+  final double unitCost;
+  final double remainingValue;
+  final String currency;
+  final String? sizeColorId;
+  final String? effectiveAt;
+
+  const InventoryCostLayerDetails({
+    required this.id,
+    required this.sourceType,
+    required this.remainingQuantity,
+    required this.unitCost,
+    required this.remainingValue,
+    required this.currency,
+    this.sizeColorId,
+    this.effectiveAt,
+  });
+
+  factory InventoryCostLayerDetails.fromJson(Map<String, dynamic> json) =>
+      InventoryCostLayerDetails(
+        id: asString(json['id']),
+        sourceType: asString(json['source_type']),
+        remainingQuantity: asDouble(json['remaining_quantity']),
+        unitCost: asDouble(json['unit_cost']),
+        remainingValue: asDouble(json['remaining_value']),
+        currency: asString(json['currency'], 'NIS'),
+        sizeColorId: asNullableString(json['size_color_id']),
+        effectiveAt: asNullableString(json['effective_at']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'source_type': sourceType,
+        'remaining_quantity': remainingQuantity,
+        'unit_cost': unitCost,
+        'remaining_value': remainingValue,
+        'currency': currency,
+        'size_color_id': sizeColorId,
+        'effective_at': effectiveAt,
+      };
 }
 
 class ProductMediaItem {

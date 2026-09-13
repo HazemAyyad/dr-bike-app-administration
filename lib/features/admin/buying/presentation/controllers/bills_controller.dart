@@ -204,6 +204,34 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  Future<Map<String, dynamic>> loadPurchaseQuickCreateOptions() =>
+      purchaseWorkflowUsecase.quickCreateOptions();
+
+  Future<ProductModel?> quickCreatePurchaseProduct(
+      Map<String, dynamic> payload) async {
+    try {
+      final product = await purchaseWorkflowUsecase.quickCreateProduct(payload);
+      products.removeWhere((row) => row.id == product.id);
+      products.insert(0, product);
+      purchaseProductsStatus.value = PurchaseLoadStatus.success;
+      addProductToPurchaseCart(product);
+      purchaseProductSearchController.text = product.nameAr;
+      purchaseProductSearch.value = product.nameAr;
+      update();
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تم إنشاء المنتج واختياره. سيبقى مخزونه صفراً حتى الاستلام.',
+      );
+      return product;
+    } catch (error) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: error.toString(),
+      );
+      return null;
+    }
+  }
+
   // get all sellers
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
   final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;

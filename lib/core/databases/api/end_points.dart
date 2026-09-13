@@ -495,7 +495,7 @@ class EndPoints {
   // stock
   static const String getProductsList = 'get/products/list';
   static const String getDeletedProducts = 'get/deleted/products';
-  static const String productCostPrice = 'product/cost-price';
+  static const String productCostPrice = 'product/inventory/revalue';
   static const String exportProductsCsv = 'products/export-csv';
   static const String quickEditProducts = 'products/quick-edit';
   static const String quickEditProductsUpdate = 'products/quick-edit/update';
@@ -819,6 +819,10 @@ class EndPoints {
   static const String purchaseUpdateDraft = 'purchase/update-draft';
   static const String purchaseDeleteDraft = 'purchase/delete-draft';
   static const String purchaseReceive = 'purchase/receive';
+  static const String purchaseQuickCreateOptions =
+      'purchase/products/quick-create-options';
+  static const String purchaseQuickCreateProduct =
+      'purchase/products/quick-create';
   static const String purchaseFinalize = 'purchase/finalize';
   static const String purchasePayment = 'purchase/payment';
   static const String purchaseAccountPayment = 'purchase/account/payment';

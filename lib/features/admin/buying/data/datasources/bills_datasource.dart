@@ -7,11 +7,34 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../presentation/controllers/bills_controller.dart';
+import '../../../sales/data/models/product_model.dart';
 
 class BillsDatasource {
   final ApiConsumer api;
 
   BillsDatasource({required this.api});
+
+  Future<Map<String, dynamic>> purchaseQuickCreateOptions() async {
+    final response = await api.get(EndPoints.purchaseQuickCreateOptions);
+    return asMap(response.data);
+  }
+
+  Future<ProductModel> quickCreatePurchaseProduct(
+      Map<String, dynamic> payload) async {
+    final response = await api.post(
+      EndPoints.purchaseQuickCreateProduct,
+      data: payload,
+    );
+    final raw = asMap(response.data);
+    if (raw['status']?.toString() != 'success') {
+      throw ServerException(ErrorModel(
+        errorMessage: asString(raw['message'], 'تعذر إنشاء المنتج'),
+        status: 422,
+        data: raw,
+      ));
+    }
+    return ProductModel.fromJson(asMap(raw['product']));
+  }
 
   // get Bills
   Future<dynamic> getBills({required String page}) async {

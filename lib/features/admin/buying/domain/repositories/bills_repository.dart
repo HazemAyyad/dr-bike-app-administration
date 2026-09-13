@@ -3,8 +3,11 @@ import 'package:dio/dio.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../presentation/controllers/bills_controller.dart';
+import '../../../sales/data/models/product_model.dart';
 
 abstract class BillsRepository {
+  Future<Map<String, dynamic>> purchaseQuickCreateOptions();
+  Future<ProductModel> quickCreatePurchaseProduct(Map<String, dynamic> payload);
   Future<dynamic> getBills({required String page});
 
   Future<Either<Failure, String>> addBill({

@@ -8,12 +8,26 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/bills_repository.dart';
 import '../datasources/bills_datasource.dart';
+import '../../../sales/data/models/product_model.dart';
 
 class BillsImplement implements BillsRepository {
   final NetworkInfo networkInfo;
   final BillsDatasource billsDataSource;
 
   BillsImplement({required this.networkInfo, required this.billsDataSource});
+
+  @override
+  Future<Map<String, dynamic>> purchaseQuickCreateOptions() async {
+    if (!await networkInfo.isConnected) throw NoConnectionFailure();
+    return billsDataSource.purchaseQuickCreateOptions();
+  }
+
+  @override
+  Future<ProductModel> quickCreatePurchaseProduct(
+      Map<String, dynamic> payload) async {
+    if (!await networkInfo.isConnected) throw NoConnectionFailure();
+    return billsDataSource.quickCreatePurchaseProduct(payload);
+  }
 
   // get bills
   @override

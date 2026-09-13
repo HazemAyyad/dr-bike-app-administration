@@ -86,8 +86,10 @@ class ProductStockMovementsLink extends StatelessWidget {
       await _stock.adjustProductStock(
         productId: productId,
         sizeColorId: target.sizeColorId,
-        quantity: pick.quantity,
-        note: pick.note,
+        actualQuantity: pick.actualQuantity,
+        reason: pick.reason,
+        notes: pick.notes,
+        unitCost: pick.unitCost,
       );
       return;
     }
@@ -100,8 +102,10 @@ class ProductStockMovementsLink extends StatelessWidget {
     if (pick == null) return;
     await _stock.adjustProductStock(
       productId: productId,
-      quantity: pick.quantity,
-      note: pick.note,
+      actualQuantity: pick.actualQuantity,
+      reason: pick.reason,
+      notes: pick.notes,
+      unitCost: pick.unitCost,
     );
   }
 

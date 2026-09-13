@@ -48,6 +48,10 @@ String userName = '';
 
 /// اسم صلاحية رؤية/تعديل سعر التكلفة (يطابق name_en في الباك إند).
 const String costPricePermissionName = 'Cost Price';
+const String viewInventoryCostPermissionName = 'View Inventory Cost';
+const String adjustStockPermissionName = 'Adjust Stock';
+const String adjustInventoryCostPermissionName = 'Adjust Inventory Cost';
+const String managePurchasesPermissionName = 'Manage Purchases';
 
 /// اسم صلاحية إدارة خدمات الصيانة (يطابق name_en في الباك إند).
 const String maintenanceServicesSettingsPermissionName =
@@ -60,7 +64,22 @@ const String deliveryCompanyAccountsPermissionName =
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Cost Price".
 bool get canViewCostPrice =>
     userType == 'admin' ||
-    employeePermissionNames.contains(costPricePermissionName);
+    employeePermissionNames.contains(costPricePermissionName) ||
+    employeePermissionNames.contains(viewInventoryCostPermissionName);
+
+bool get canAdjustInventoryStock =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(adjustStockPermissionName) ||
+    employeePermissionNames.contains('Stock');
+
+bool get canAdjustInventoryCost =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(adjustInventoryCostPermissionName);
+
+bool get canManagePurchases =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(managePurchasesPermissionName) ||
+    employeePermissionNames.contains('Purchasing Section');
 
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية إعدادات خدمات الصيانة.
 bool get canManageMaintenanceServicesSettings =>

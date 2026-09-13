@@ -176,8 +176,10 @@ class _ProductStockMovementsScreenState
       final ok = await c.adjustProductStock(
         productId: args.productId,
         sizeColorId: target.sizeColorId,
-        quantity: pick.quantity,
-        note: pick.note,
+        actualQuantity: pick.actualQuantity,
+        reason: pick.reason,
+        notes: pick.notes,
+        unitCost: pick.unitCost,
       );
       if (ok) await _load(pageNum: 1, refresh: true);
       return;
@@ -191,8 +193,10 @@ class _ProductStockMovementsScreenState
     if (pick == null) return;
     final ok = await c.adjustProductStock(
       productId: args.productId,
-      quantity: pick.quantity,
-      note: pick.note,
+      actualQuantity: pick.actualQuantity,
+      reason: pick.reason,
+      notes: pick.notes,
+      unitCost: pick.unitCost,
     );
     if (ok) await _load(pageNum: 1, refresh: true);
   }
