@@ -222,6 +222,7 @@ enum SalesOrderActionId {
   share,
   uploadMedia,
   cancel,
+  delete,
   revertStatus,
   postpone,
   markStuck,
@@ -300,8 +301,8 @@ class SalesOrderActions {
             labelKey: 'salesOrderShare',
           ),
           SalesOrderActionDef(
-            id: SalesOrderActionId.cancel,
-            labelKey: 'cancel',
+            id: SalesOrderActionId.delete,
+            labelKey: 'delete',
             isDanger: true,
           ),
         ];

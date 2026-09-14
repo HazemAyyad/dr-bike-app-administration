@@ -2333,6 +2333,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         return Icons.photo_camera_outlined;
       case SalesOrderActionId.cancel:
         return Icons.cancel_outlined;
+      case SalesOrderActionId.delete:
+        return Icons.delete_outline_rounded;
       case SalesOrderActionId.revertStatus:
         return Icons.undo_outlined;
       case SalesOrderActionId.postpone:
@@ -2404,6 +2406,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       case SalesOrderActionId.cancel:
         _confirmCancellation(order);
         break;
+      case SalesOrderActionId.delete:
+        _confirmDeleteUnconfirmed(order);
+        break;
       case SalesOrderActionId.revertStatus:
         controller.revertOrderStatus(orderId);
         break;
@@ -2465,6 +2470,33 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     if (confirmed == true) {
       await controller.cancelOrder(order.id);
     }
+  }
+
+  Future<void> _confirmDeleteUnconfirmed(SalesOrderDetailModel order) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('حذف الطلبية غير المؤكدة؟'),
+        content: const Text(
+          'سيتم حذف الطلبية نهائيًا وتحرير الكمية المحجوزة. لا يمكن التراجع عن هذا الإجراء.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('تراجع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+            onPressed: () => Get.back(result: true),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final deleted = await controller.deleteUnconfirmedOrder(order.id);
+    if (deleted) Get.back();
   }
 
   void _showQtySheet(SalesOrderDetailModel order, String mode) {

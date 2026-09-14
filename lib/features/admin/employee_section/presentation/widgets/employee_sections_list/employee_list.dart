@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../../core/helpers/whatsapp_launcher.dart';
+import '../../../../../../core/helpers/whatsapp_number_picker.dart';
 import '../../../../../../core/services/impersonation_service.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
@@ -19,7 +19,6 @@ import '../employee_card_swipe.dart';
 import '../employee_financial_details.dart';
 import '../employee_points_tab.dart';
 
-import '../../../../../../core/helpers/app_failure_notice.dart';
 class EmployeeList extends GetView<EmployeeSectionController> {
   const EmployeeList({Key? key, required this.employee}) : super(key: key);
 
@@ -156,31 +155,12 @@ class EmployeeList extends GetView<EmployeeSectionController> {
     final primaryPhone = details.phone.replaceAll(' ', '');
     final alternatePhone = details.subPhone.replaceAll(' ', '');
     final rawPhone = primaryPhone.isNotEmpty ? primaryPhone : alternatePhone;
-    var digits = rawPhone.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('00')) digits = digits.substring(2);
-    if (digits.startsWith('0')) digits = '972${digits.substring(1)}';
-
-    final isSupportedNumber =
-        (digits.startsWith('970') || digits.startsWith('972')) &&
-            digits.length >= 11;
-    if (!isSupportedNumber) {
-      if (!context.mounted) return;
-      AppFailureNotice.show(
-        context: context,
-        title: 'خطأ',
-        message: 'رقم الموظف غير صالح للتواصل عبر واتساب',
-      );
-      return;
-    }
-
-    final opened = await WhatsAppLauncher.openChat(digits);
-    if (!opened && context.mounted) {
-      AppFailureNotice.show(
-        context: context,
-        title: 'خطأ',
-        message: 'تعذر فتح واتساب على هذا الجهاز',
-      );
-    }
+    if (!context.mounted) return;
+    await showWhatsAppNumberPicker(
+      context,
+      phone: rawPhone,
+      invalidMessage: 'رقم الموظف غير صالح للتواصل عبر واتساب',
+    );
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context) async {

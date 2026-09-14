@@ -15,6 +15,8 @@ import 'sales_order_status_ui.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/helpers/whatsapp_launcher.dart';
+
 /// عرض الطلبيات كبطاقات تشغيلية مضغوطة، بنفس لغة قسم الصيانة.
 class SalesOrdersTable extends GetView<SalesOrdersController> {
   const SalesOrdersTable({Key? key}) : super(key: key);
@@ -194,6 +196,21 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
                   action: () => controller.confirmOrder(order.id),
                 ),
               ),
+            if (order.status == 'unconfirmed')
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                title: const Text('حذف الطلبية نهائيًا'),
+                onTap: () => _runQuickAction(
+                  context,
+                  title: 'حذف الطلبية غير المؤكدة؟',
+                  message:
+                      'سيتم حذف الطلبية وتحرير الكمية المحجوزة. لا يمكن التراجع عن هذا الإجراء.',
+                  action: () async {
+                    await controller.deleteUnconfirmedOrder(order.id);
+                  },
+                ),
+              ),
             if (order.status == 'confirmed')
               ListTile(
                 leading:
@@ -220,6 +237,7 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
   Future<void> _runQuickAction(
     BuildContext context, {
     required String title,
+    String message = 'سيتم تحديث حالة الطلبية مباشرة.',
     required Future<void> Function() action,
   }) async {
     Get.back();
@@ -227,7 +245,7 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(title),
-        content: const Text('سيتم تحديث حالة الطلبية مباشرة.'),
+        content: Text(message),
         actions: [
           TextButton(
               onPressed: () => Get.back(result: false),
@@ -264,14 +282,7 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
   }
 
   List<String> _whatsAppNumbers(String raw) {
-    var digits = raw.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('00')) digits = digits.substring(2);
-    if (digits.startsWith('970') || digits.startsWith('972')) {
-      return [digits];
-    }
-    if (digits.startsWith('0')) digits = digits.substring(1);
-    if (digits.isEmpty) return const [];
-    return ['970$digits', '972$digits'];
+    return WhatsAppLauncher.numberCandidates(raw);
   }
 
   List<_OrderGroup> _groupByDate(List<SalesOrderListItemModel> orders) {

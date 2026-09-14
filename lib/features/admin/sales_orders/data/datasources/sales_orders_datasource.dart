@@ -185,6 +185,14 @@ class SalesOrdersDatasource {
     );
   }
 
+  Future<void> deleteOrder(int orderId) async {
+    final raw = await api.post(
+      EndPoints.salesOrderDelete,
+      data: {'sales_order_id': orderId},
+    );
+    _ensureSuccess(_asMap(raw));
+  }
+
   Future<SalesOrderDetailModel> uploadMedia(
     int orderId,
     List<MultipartFile> files, {

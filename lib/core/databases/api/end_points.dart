@@ -625,6 +625,7 @@ class EndPoints {
   static const String salesOrderConfirm = 'sales/order/confirm';
   static const String salesOrderReady = 'sales/order/ready';
   static const String salesOrderCancel = 'sales/order/cancel';
+  static const String salesOrderDelete = 'sales/order/delete';
   static const String salesOrderRevert = 'sales/order/revert';
   static const String salesOrderPostpone = 'sales/order/postpone';
   static const String salesOrderHandover = 'sales/order/handover';

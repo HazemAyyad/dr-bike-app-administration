@@ -208,28 +208,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                 SizedBox(height: 12.h),
                 const SalesOrderCheckoutTotals(),
                 SizedBox(height: 16.h),
-                Obx(() {
-                  if (orders.hasSuspendedDraft.value) {
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 10.h),
-                      child: Text(
-                        'salesOrderDraftResuming'.tr,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: const Color(0xFFE65100),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }),
-                OutlinedButton.icon(
-                  onPressed: orders.suspendOrderDraft,
-                  icon: const Icon(Icons.pause_circle_outline),
-                  label: Text('salesOrderSuspend'.tr),
-                ),
-                SizedBox(height: 12.h),
                 Obx(
                   () => AppButton(
                     isLoading: orders.isSubmitting,

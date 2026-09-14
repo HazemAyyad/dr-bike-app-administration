@@ -1947,6 +1947,30 @@ class SalesOrdersController extends GetxController {
     }
   }
 
+  Future<bool> deleteUnconfirmedOrder(int orderId) async {
+    isSubmitting.value = true;
+    try {
+      final result = await repository.deleteOrder(orderId);
+      return await result.fold(
+        (failure) async {
+          SalesOrderNotice.error(_humanizeFailure(failure));
+          return false;
+        },
+        (_) async {
+          detail.value = null;
+          await loadOrders();
+          SalesOrderNotice.success('تم حذف الطلبية غير المؤكدة');
+          return true;
+        },
+      );
+    } catch (e) {
+      SalesOrderNotice.error(e.toString());
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
   Future<void> partialDeliver(
       int orderId, List<Map<String, dynamic>> items) async {
     await runAction(() => repository.partialDeliver(orderId, items));

@@ -39,6 +39,8 @@ abstract class SalesOrdersRepository {
 
   Future<Either<Failure, SalesOrderDetailModel>> confirmOrder(int orderId);
 
+  Future<Either<Failure, void>> deleteOrder(int orderId);
+
   Future<Either<Failure, SalesOrderDetailModel>> markReady(int orderId);
 
   Future<Either<Failure, SalesOrderDetailModel>> handover(
@@ -226,6 +228,10 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   @override
   Future<Either<Failure, SalesOrderDetailModel>> confirmOrder(int orderId) =>
       _guard(() => datasource.postAction(EndPoints.salesOrderConfirm, orderId));
+
+  @override
+  Future<Either<Failure, void>> deleteOrder(int orderId) =>
+      _guard(() => datasource.deleteOrder(orderId));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> markReady(int orderId) =>

@@ -13,6 +13,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/open_apps.dart';
+import '../../../../../core/helpers/whatsapp_launcher.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/general_data_list_controller.dart';
@@ -66,31 +67,34 @@ class GlobalData extends GetView<GeneralDataListController> {
                     ),
                   ),
                   SizedBox(height: 20.h),
-                  GestureDetector(
-                    onTap: () {
-                      launchWhatsApp(phoneNumber: employee.phone);
-                    },
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          AssetsManager.whatsapp,
-                          height: 30.h,
-                          width: 30.w,
-                        ),
-                        SizedBox(width: 10.w),
-                        Text(
-                          'directContact'.tr,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.blackColor,
-                                  ),
-                        ),
-                      ],
+                  for (final candidate
+                      in WhatsAppLauncher.numberCandidates(employee.phone)) ...[
+                    GestureDetector(
+                      onTap: () => WhatsAppLauncher.openChat(candidate),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            AssetsManager.whatsapp,
+                            height: 30.h,
+                            width: 30.w,
+                          ),
+                          SizedBox(width: 10.w),
+                          Text(
+                            'واتساب +${candidate.substring(0, 3)}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.blackColor,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20.h),
+                    SizedBox(height: 20.h),
+                  ],
                   InkWell(
                     overlayColor: WidgetStateProperty.all(Colors.transparent),
                     onTap: () {

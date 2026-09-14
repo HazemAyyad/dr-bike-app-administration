@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../../core/helpers/whatsapp_launcher.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -89,12 +90,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
   }
 
   List<String> _whatsAppNumbers(String raw) {
-    var digits = raw.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('00')) digits = digits.substring(2);
-    if (digits.startsWith('970') || digits.startsWith('972')) return [digits];
-    if (digits.startsWith('0')) digits = digits.substring(1);
-    if (digits.isEmpty) return const [];
-    return ['970$digits', '972$digits'];
+    return WhatsAppLauncher.numberCandidates(raw);
   }
 
   Widget _compactActionButton({

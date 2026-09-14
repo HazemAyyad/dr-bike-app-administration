@@ -8,6 +8,17 @@ class WhatsAppLauncher {
 
   static const MethodChannel _channel = MethodChannel('dr_bike/app_launcher');
 
+  static List<String> numberCandidates(String rawPhone) {
+    var digits = rawPhone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('00')) digits = digits.substring(2);
+    if (digits.startsWith('970') || digits.startsWith('972')) {
+      digits = digits.substring(3);
+    }
+    if (digits.startsWith('0')) digits = digits.substring(1);
+    if (digits.isEmpty) return const [];
+    return ['972$digits', '970$digits'];
+  }
+
   static Future<bool> openChat(String phoneDigits) async {
     if (Platform.isAndroid) {
       try {
