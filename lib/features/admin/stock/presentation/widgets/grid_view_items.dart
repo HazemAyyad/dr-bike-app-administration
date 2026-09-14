@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../controllers/stock_controller.dart';
+import 'negative_stock_tab.dart';
 import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_location_tab.dart';
@@ -17,6 +18,10 @@ class GridViewItems extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      if (controller.isNegativeStockTab) {
+        return const SliverToBoxAdapter(child: NegativeStockTab());
+      }
+
       if (controller.currentTab.value == 4) {
         return const SliverToBoxAdapter(
           child: StockOfferPackagesTab(),

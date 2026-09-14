@@ -58,20 +58,23 @@ class InstantSaleProductCard extends StatelessWidget {
       final orderStock = ordersCtrl?.availabilityForProduct(product.id);
       final rawPhysicalStock =
           orderStock?.physicalStock ?? int.tryParse(product.stock) ?? 0;
-      final physicalStock = rawPhysicalStock < 0 ? 0 : rawPhysicalStock;
+      final physicalStock = rawPhysicalStock;
       final rawDisplayStock = orderStock?.availableQty ?? physicalStock;
-      final displayStock = rawDisplayStock < 0 ? 0 : rawDisplayStock;
+      final displayStock = rawDisplayStock;
       final badgeReserved =
           orderStock?.totalReservedQty ?? orderStock?.reservedQty ?? 0;
       final effectiveReserved = badgeReserved > 0
           ? badgeReserved
-          : (physicalStock - displayStock).clamp(0, physicalStock);
+          : physicalStock > 0
+              ? (physicalStock - displayStock).clamp(0, physicalStock)
+              : 0;
       final outOfStock =
           physicalStock < 1 && !controller.isAdjustmentInstantSale;
       final blockedOutOfStock =
           outOfStock && controller.salesOrderStockMode.value;
       final qty = controller.cartQtyForProduct(product.id);
       final inCart = qty > 0;
+      final projectedStock = physicalStock - qty;
       final simpleLineIdx = controller.cartLines.indexWhere(
         (l) =>
             l.productId == product.id &&
@@ -117,7 +120,7 @@ class InstantSaleProductCard extends StatelessWidget {
       }
 
       return Material(
-        color: hasMissingInventoryCost
+        color: physicalStock < 0 || hasMissingInventoryCost
             ? (Theme.of(context).brightness == Brightness.dark
                 ? const Color(0xFF45272B)
                 : const Color(0xFFFFEBEE))
@@ -217,6 +220,33 @@ class InstantSaleProductCard extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize: isDesktop ? 10.sp : 8.sp,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (inCart && projectedStock < 0)
+                        Positioned(
+                          right: 3.w,
+                          left: 3.w,
+                          bottom: 20.h,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 4.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade800,
+                              borderRadius: BorderRadius.circular(5.r),
+                            ),
+                            child: Text(
+                              'بيع سالب · سيصبح $projectedStock',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isDesktop ? 8.5.sp : 6.5.sp,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),

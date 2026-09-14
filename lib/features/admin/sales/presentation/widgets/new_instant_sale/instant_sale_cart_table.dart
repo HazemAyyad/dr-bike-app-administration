@@ -131,20 +131,33 @@ class InstantSaleCartTable extends GetView<SalesController> {
                                         context,
                                         line,
                                       ),
-                                      child: Text(
-                                        line.displayName,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11.sp,
-                                          fontWeight: FontWeight.w700,
-                                          height: 1.2,
-                                          color: AppColors.primaryColor,
-                                          decoration: TextDecoration.underline,
-                                          decorationColor: AppColors
-                                              .primaryColor
-                                              .withValues(alpha: 0.45),
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            line.displayName,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.2,
+                                              color: AppColors.primaryColor,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                          ),
+                                          if (line.isNegativeStockSale)
+                                            Text(
+                                              'بيع سالب · سيصبح ${line.projectedStock}',
+                                              style: TextStyle(
+                                                color: Colors.red.shade700,
+                                                fontSize: 9.sp,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
                                   ),

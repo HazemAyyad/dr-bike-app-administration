@@ -142,6 +142,7 @@ class StockScreen extends GetView<StockController> {
                     if (tab == 3 ||
                         tab == 4 ||
                         tab == 5 ||
+                        controller.isNegativeStockTab ||
                         controller.isQuickEditTab) {
                       return const SizedBox.shrink();
                     }
@@ -204,7 +205,9 @@ class StockScreen extends GetView<StockController> {
             child: const Icon(Icons.add),
           );
         }
-        if (controller.currentTab.value == 5 || controller.isQuickEditTab) {
+        if (controller.currentTab.value == 5 ||
+            controller.isNegativeStockTab ||
+            controller.isQuickEditTab) {
           return const SizedBox.shrink();
         }
         return StockProductsFab(

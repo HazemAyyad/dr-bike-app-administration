@@ -2272,6 +2272,14 @@ class SalesController extends GetxController
       )) {
         return;
       }
+      if (!await confirmInstantSaleNegativeStockIfNeeded(
+        productName:
+            '${resolved.nameAr} - ${pick.size.size} / ${pick.variant.colorAr}',
+        stock: pick.variant.stock,
+        requestedQty: pick.quantity,
+      )) {
+        return;
+      }
 
       addCartLine(
         InstantSaleCartLine.fromProduct(
@@ -2363,9 +2371,9 @@ class SalesController extends GetxController
     if (index < 0 || index >= cartLines.length) return;
     final line = cartLines[index];
     final stock = line.stock;
-    final safe = isAdjustmentInstantSale
-        ? qty.clamp(1, qty)
-        : qty.clamp(1, stock > 0 ? stock : qty);
+    final safe = salesOrderStockMode.value && !isAdjustmentInstantSale
+        ? qty.clamp(1, stock > 0 ? stock : 1)
+        : qty.clamp(1, 999999);
     line.quantityController.text = safe.toString();
     _refreshTierPriceForCartLine(line);
     line.recalculateTotal();

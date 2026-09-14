@@ -2051,6 +2051,7 @@ const Map<String, String> en = {
   'productComposition': 'Product Composition',
   'offerPackages': 'Offer packages',
   'deletedProducts': 'Deleted products',
+  'negativeStock': 'Negative stock',
   'activeOfferPackages': 'Active packages',
   'offerPackagesNeedAdjustment': 'Need adjustment',
   'addOfferPackage': 'Add offer package',

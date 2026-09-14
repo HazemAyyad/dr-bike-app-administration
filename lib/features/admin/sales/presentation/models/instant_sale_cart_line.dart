@@ -115,6 +115,12 @@ class InstantSaleCartLine {
 
   String get priceText => _disposed ? '' : priceController.text.trim();
 
+  int get quantityValue => int.tryParse(quantityText) ?? 0;
+
+  int get projectedStock => stock - quantityValue;
+
+  bool get isNegativeStockSale => projectedStock < 0;
+
   void dispose() {
     if (_disposed) return;
     _disposed = true;

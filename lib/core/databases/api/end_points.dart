@@ -556,6 +556,7 @@ class EndPoints {
   static const String deleteProducts = 'delete/products';
   static const String productStockAdjust = 'product/stock/adjust';
   static const String productStockMovements = 'product/stock/movements';
+  static const String negativeProductStock = 'product/stock/negative';
   static const String productAssemblyRecipes = 'product/assembly/recipes';
   static const String productAssemblyOperations = 'product/assembly/operations';
   static const String productAssemblyProducts = 'product/assembly/products';

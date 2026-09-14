@@ -53,15 +53,15 @@ class _InstantSaleCartSheet extends StatelessWidget {
                     Expanded(
                       child: Obx(
                         () {
-                          final _ = controller.selectedPackageId.value;
+                          controller.selectedPackageId.value;
                           return Text(
-                          '${'instantSaleCart'.tr} (${controller.pickerSelectionCount})',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryColor,
-                          ),
-                        );
+                            '${'instantSaleCart'.tr} (${controller.pickerSelectionCount})',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryColor,
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -81,8 +81,8 @@ class _InstantSaleCartSheet extends StatelessWidget {
               Divider(height: 1, color: Colors.grey.shade300),
               Flexible(
                 child: Obx(() {
-                  final _ = controller.cartRevision.value;
-                  final __ = controller.selectedPackageId.value;
+                  controller.cartRevision.value;
+                  controller.selectedPackageId.value;
                   final hasPackage = controller.hasSelectedPackage;
                   final lines = controller.cartLines;
 
@@ -237,6 +237,18 @@ class _CartLineEditor extends StatelessWidget {
               ),
             ],
           ),
+          if (line.isNegativeStockSale)
+            Padding(
+              padding: EdgeInsets.only(top: 3.h),
+              child: Text(
+                'بيع سالب · المخزون بعد الفاتورة ${line.projectedStock}',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           SizedBox(height: 4.h),
           Row(
             children: [

@@ -28,6 +28,7 @@ import '../models/products_by_tag_result.dart';
 import '../models/products_by_location_result.dart';
 import '../models/product_assembly_model.dart';
 import '../models/product_stock_movement_model.dart';
+import '../models/negative_stock_item_model.dart';
 import '../models/store_section_model.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -519,6 +520,44 @@ class StockDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<NegativeStockResultModel> getNegativeStock() async {
+    try {
+      final response = await api.get(EndPoints.negativeProductStock);
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final rows = map['negative_stock'];
+      final summaryRaw = map['summary'];
+      final summary = summaryRaw is Map
+          ? Map<String, dynamic>.from(summaryRaw)
+          : <String, dynamic>{};
+      return NegativeStockResultModel(
+        items: rows is List
+            ? rows
+                .whereType<Map>()
+                .map((row) => NegativeStockItemModel.fromJson(
+                      Map<String, dynamic>.from(row),
+                    ))
+                .toList(growable: false)
+            : const [],
+        identitiesCount: asInt(summary['identities_count']),
+        missingQuantity: asInt(summary['missing_quantity']),
+        pendingCostQuantity: asDouble(summary['pending_cost_quantity']),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: e.response?.statusCode ?? 500,
+          data: data is Map ? Map<String, dynamic>.from(data) : const {},
         ),
       );
     }

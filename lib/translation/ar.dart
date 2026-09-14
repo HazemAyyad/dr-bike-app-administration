@@ -2104,6 +2104,7 @@ const Map<String, String> ar = {
   'productComposition': 'تركيب منتج',
   'offerPackages': 'باكيجات العروض',
   'deletedProducts': 'المحذوفات',
+  'negativeStock': 'المخزون السالب',
   'activeOfferPackages': 'الباكيجات الفعالة',
   'offerPackagesNeedAdjustment': 'تحتاج تعديل',
   'addOfferPackage': 'إضافة باكيج عرض',

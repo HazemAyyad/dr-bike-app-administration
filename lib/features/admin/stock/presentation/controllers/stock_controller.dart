@@ -23,6 +23,7 @@ import '../../../../../core/utils/desktop_layout.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
+import '../../data/models/negative_stock_item_model.dart';
 import '../../data/models/product_details_model.dart';
 import '../../data/models/quick_edit_product_model.dart';
 import '../../data/models/stock_products_page_result.dart';
@@ -154,6 +155,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       'storeLocationTab',
       'offerPackages',
       'deletedProducts',
+      if (userType == 'admin') 'negativeStock',
     ],
     if (canQuickEditProducts) 'quickEditProducts',
   ].obs;
@@ -170,13 +172,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   bool get isQuickEditTab =>
       currentTab.value == tabs.indexOf('quickEditProducts');
 
+  bool get isNegativeStockTab =>
+      currentTab.value == tabs.indexOf('negativeStock') &&
+      tabs.contains('negativeStock');
+
   void changeTab(int index) {
     if (index != currentTab.value) {
       exitLocationSelection();
       exitDeleteSelection();
     }
     currentTab.value = index;
-    if (index == 3) {
+    if (isNegativeStockTab) {
+      if (negativeStockItems.isEmpty) {
+        Future<void>(() async => loadNegativeStock());
+      }
+    } else if (index == 3) {
       Future<void>(() async => ensureStoreSectionsLoaded());
       if (selectedLocationSectionId.value != null) {
         Future<void>(() async => selectLocationFilter(
@@ -1466,6 +1476,46 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   int _stockSearchRequestSerial = 0;
 
   final RxBool isLoadingMore = false.obs;
+  final RxBool isNegativeStockLoading = false.obs;
+  final RxList<NegativeStockItemModel> negativeStockItems =
+      <NegativeStockItemModel>[].obs;
+  final TextEditingController negativeStockSearchController =
+      TextEditingController();
+  final RxString negativeStockSearch = ''.obs;
+  final RxInt negativeStockMissingQuantity = 0.obs;
+  final RxDouble negativeStockPendingCostQuantity = 0.0.obs;
+
+  List<NegativeStockItemModel> get filteredNegativeStockItems {
+    final query = negativeStockSearch.value.trim().toLowerCase();
+    if (query.isEmpty) return negativeStockItems;
+    return negativeStockItems
+        .where((row) =>
+            row.productName.toLowerCase().contains(query) ||
+            row.productCode.toLowerCase().contains(query) ||
+            (row.variantLabel?.toLowerCase().contains(query) ?? false) ||
+            (row.lastCreatedByName?.toLowerCase().contains(query) ?? false) ||
+            (row.lastInvoiceNumber?.toLowerCase().contains(query) ?? false))
+        .toList(growable: false);
+  }
+
+  Future<void> loadNegativeStock() async {
+    if (userType != 'admin' || isNegativeStockLoading.value) return;
+    try {
+      isNegativeStockLoading(true);
+      final result = await stockDatasource.getNegativeStock();
+      negativeStockItems.assignAll(result.items);
+      negativeStockMissingQuantity.value = result.missingQuantity;
+      negativeStockPendingCostQuantity.value = result.pendingCostQuantity;
+    } on ServerException catch (e) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
+      );
+    } finally {
+      isNegativeStockLoading(false);
+      update();
+    }
+  }
 
   final RxBool isAddMenuOpen = false.obs;
 
@@ -1487,7 +1537,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (!scrollController.hasClients) {
       return;
     }
-    if (currentTab.value == 3 || currentTab.value == 4 || isQuickEditTab) {
+    if (currentTab.value == 3 ||
+        currentTab.value == 4 ||
+        isNegativeStockTab ||
+        isQuickEditTab) {
       if (currentTab.value == 3 &&
           scrollController.position.pixels >=
               scrollController.position.maxScrollExtent - 120) {
@@ -1662,6 +1715,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> pullToRefresh() async {
     _resetPaginationForCurrentTab();
+    if (isNegativeStockTab) {
+      await loadNegativeStock();
+      return;
+    }
     if (isQuickEditTab) {
       resetQuickEditPagination();
       await getQuickEditProducts();
@@ -2351,7 +2408,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   // Get stock list for the active tab only (avoids 3× API calls and rate limits).
   Future<void> getAllProducts({bool isRefresh = false}) async {
     final tab = currentTab.value;
-    if (tab == 3 || tab == 4) {
+    if (tab == 3 || tab == 4 || isNegativeStockTab) {
       isLoading(false);
       isLoadingMore(false);
       return;
@@ -3465,6 +3522,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     productDetailsController.dispose();
     subCategoryController.dispose();
     stockController.dispose();
+    negativeStockSearchController.dispose();
     minimumStockController.dispose();
     wholesalePricesController.dispose();
     retailPricesController.dispose();
