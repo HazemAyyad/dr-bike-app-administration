@@ -30,11 +30,19 @@ class _SalesDailySessionDetailScreenState
   String? _error;
   DailySessionDetailModel? _detail;
   bool _maintenanceMode = false;
+  final _searchController = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -90,14 +98,18 @@ class _SalesDailySessionDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final sessionType = _detail?.session.sessionType;
+    final title = _maintenanceMode
+        ? 'حركات صندوق الصيانة'
+        : sessionType == 'sales_orders'
+            ? 'حركات صندوق الطلبيات'
+            : 'حركات صندوق المبيعات';
     return Scaffold(
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF17171F)
           : const Color(0xFFF4F7F9),
       appBar: CustomAppBar(
-        title: _maintenanceMode
-            ? 'تفاصيل جلسة صندوق الصيانة'
-            : 'تفاصيل الجلسة اليومية',
+        title: title,
         action: false,
       ),
       body: _buildBody(),
@@ -131,13 +143,66 @@ class _SalesDailySessionDetailScreenState
     }
 
     final session = detail.session;
+    final query = _query.trim().toLowerCase();
+    final filteredInstant = detail.instantSales.where((row) {
+      if (query.isEmpty) return true;
+      return '${row.label} ${row.invoiceNumber ?? ''} ${row.serialNumber ?? ''} ${row.buyerName ?? ''} ${row.createdByName ?? ''}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
+    final filteredProfit = detail.profitSales.where((row) {
+      if (query.isEmpty) return true;
+      return '${row.label} ${row.invoiceNumber ?? ''} ${row.buyerName ?? ''} ${row.createdByName ?? ''}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
+    final filteredOrders = detail.salesOrders.where((row) {
+      if (query.isEmpty) return true;
+      return '${row.serialNumber ?? ''} ${row.customerName ?? ''} ${row.createdByName ?? ''}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
 
     return ListView(
       padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 16.h),
       children: [
         _SessionHero(detail: detail, maintenanceMode: _maintenanceMode),
         SizedBox(height: 10.h),
-        _SessionMetrics(detail: detail, maintenanceMode: _maintenanceMode),
+        _BoxMovementsScope(
+          label: _maintenanceMode
+              ? 'حركات صندوق الصيانة فقط'
+              : session.sessionType == 'sales_orders'
+                  ? 'حركات صندوق الطلبيات فقط'
+                  : 'حركات صندوق المبيعات فقط',
+        ),
+        SizedBox(height: 10.h),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _query = value),
+          decoration: InputDecoration(
+            hintText: 'ابحث في الحركات',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            filled: true,
+            fillColor: ThemeService.isDark.value
+                ? const Color(0xFF242430)
+                : Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        SizedBox(height: 10.h),
+        _SessionMetrics(detail: detail),
         if (session.status == 'open' ||
             session.status == 'closing_requested') ...[
           SizedBox(height: 10.h),
@@ -168,20 +233,16 @@ class _SalesDailySessionDetailScreenState
             },
           ),
         ],
-        const SalesDailySectionTitle(title: 'الأرصدة حسب العملة'),
-        SalesDailyCurrencyTable(currencies: detail.currencies),
         if (session.sessionType == 'sales_orders') ...[
-          const SalesDailySectionTitle(title: 'طلبيات الجلسة'),
-          SalesDailySessionOrdersLog(orders: detail.salesOrders),
+          const SalesDailySectionTitle(title: 'حركات الطلبيات'),
+          SalesDailySessionOrdersLog(orders: filteredOrders),
         ] else ...[
           SalesDailySectionTitle(
-            title: _maintenanceMode
-                ? 'طلبات وفواتير الصيانة في الجلسة'
-                : 'فواتير الجلسة',
+            title: _maintenanceMode ? 'حركات الصيانة' : 'حركات المبيعات',
           ),
           SalesDailySessionSalesLog(
-            instantSales: detail.instantSales,
-            profitSales: detail.profitSales,
+            instantSales: filteredInstant,
+            profitSales: filteredProfit,
             maintenanceMode: _maintenanceMode,
           ),
         ],
@@ -192,6 +253,36 @@ class _SalesDailySessionDetailScreenState
           ),
         ],
       ],
+    );
+  }
+}
+
+class _BoxMovementsScope extends StatelessWidget {
+  const _BoxMovementsScope({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.receipt_long_outlined,
+              color: AppColors.primaryColor, size: 21.sp),
+          SizedBox(width: 9.w),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -302,35 +393,27 @@ class _SessionHero extends StatelessWidget {
 }
 
 class _SessionMetrics extends StatelessWidget {
-  const _SessionMetrics({required this.detail, required this.maintenanceMode});
+  const _SessionMetrics({required this.detail});
   final DailySessionDetailModel detail;
-  final bool maintenanceMode;
 
   @override
   Widget build(BuildContext context) {
-    final orders = detail.session.sessionType == 'sales_orders';
     final primaryCurrency =
         detail.currencies.firstWhereOrNull((row) => row.currency == 'شيكل') ??
             (detail.currencies.isEmpty ? null : detail.currencies.first);
     final balance = primaryCurrency?.systemBalance ?? 0;
-    final currency = primaryCurrency?.currency ?? 'شيكل';
     final sales = primaryCurrency?.salesCollected ?? 0;
+    final outgoing = ((primaryCurrency?.openingFloat ?? 0) + sales - balance)
+        .clamp(0.0, double.infinity);
     return Row(children: [
-      _metric('الرصيد المتوقع', '${balance.toStringAsFixed(2)} $currency',
+      _metric('الرصيد الحالي', '${balance.toStringAsFixed(2)} ₪',
           Icons.wallet_outlined),
       SizedBox(width: 7.w),
-      _metric('المقبوض', '${sales.toStringAsFixed(2)} $currency',
-          Icons.payments_outlined),
-      SizedBox(width: 7.w),
       _metric(
-        maintenanceMode
-            ? 'طلبات الصيانة'
-            : orders
-                ? 'الطلبيات'
-                : 'الفواتير',
-        '${orders ? detail.salesOrdersCount : detail.instantSalesCount + detail.profitSalesCount}',
-        Icons.receipt_long_outlined,
-      ),
+          'الداخل', '${sales.toStringAsFixed(2)} ₪', Icons.payments_outlined),
+      SizedBox(width: 7.w),
+      _metric('الخارج', '${outgoing.toStringAsFixed(2)} ₪',
+          Icons.outbound_outlined),
     ]);
   }
 

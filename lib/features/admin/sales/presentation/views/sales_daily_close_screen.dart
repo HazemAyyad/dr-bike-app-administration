@@ -22,6 +22,7 @@ import '../widgets/sales_skeleton_widgets.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class SalesDailyCloseScreen extends StatefulWidget {
   const SalesDailyCloseScreen({Key? key}) : super(key: key);
 
@@ -341,34 +342,21 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             _closingStepsCard(),
             SizedBox(height: 8.h),
             _drawerTotals(payload),
-            if (!_isOrdersSession) ...[
-              SizedBox(height: 8.h),
-              _salesCountRow(payload),
-            ],
             if (payload.requiresLateCloseReason) ...[
               SizedBox(height: 8.h),
               _lateReasonCard(),
             ],
             SizedBox(height: 10.h),
-            if (payload.currencies.isNotEmpty) ...[
-              _sectionLabel('salesDailyBox'.tr),
-              SizedBox(height: 6.h),
-              ...payload.currencies.map(_currencySection),
-            ],
-            if (payload.salesOrdersCurrencies.isNotEmpty) ...[
-              SizedBox(height: 14.h),
-              _sectionLabel('صندوق الطلبيات اليومي'),
-              SizedBox(height: 6.h),
-              ...payload.salesOrdersCurrencies.map(
-                (row) => _currencySection(
-                  row,
-                  physicalMap: _ordersPhysical,
-                  floatMap: _ordersFloat,
-                  notesMap: _ordersNotes,
-                  expansionPrefix: 'orders_',
-                ),
+            if (_primaryRow(payload) != null)
+              _currencySection(
+                _primaryRow(payload)!,
+                physicalMap: _isOrdersSession ? _ordersPhysical : null,
+                floatMap: _isOrdersSession ? _ordersFloat : null,
+                notesMap: _isOrdersSession ? _ordersNotes : null,
+                expansionPrefix: _isOrdersSession ? 'orders_' : '',
+                showHeader: false,
+                showBalance: false,
               ),
-            ],
             SizedBox(height: 24.h),
             AppButton(
               text: _canFinalizeClosing
@@ -379,17 +367,6 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             SizedBox(height: 16.h),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 13.sp,
-        fontWeight: FontWeight.w800,
-        color: _titleColor,
       ),
     );
   }
@@ -500,7 +477,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                   arguments: session.id,
                 ),
                 icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('عرض الحركات وتفاصيل الصندوق'),
+                label: const Text('عرض الحركات'),
               ),
             ),
             SizedBox(height: 8.h),
@@ -537,7 +514,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     const labels = [
       'راجع المتوقع',
       'أدخل الموجود',
-      'راجع الفرق والعهدة',
+      'راجع وأغلق',
     ];
     return _surfaceCard(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -580,101 +557,29 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   }
 
   Widget _drawerTotals(DailySessionPayload payload) {
-    final rows =
-        _isOrdersSession ? payload.salesOrdersCurrencies : payload.currencies;
-    final primary = rows.firstWhereOrNull((row) => row.currency == 'شيكل') ??
-        (rows.isEmpty ? null : rows.first);
+    final primary = _primaryRow(payload);
     if (primary == null) return const SizedBox.shrink();
-    return Row(
-      children: [
-        Expanded(
-          child: _statChip(
-            icon: Icons.account_balance_outlined,
-            label: 'رصيد الافتتاح',
-            value:
-                '${primary.openingFloat.toStringAsFixed(2)} ${primary.currency}',
-          ),
-        ),
-        SizedBox(width: 6.w),
-        Expanded(
-          child: _statChip(
-            icon: Icons.add_card_outlined,
-            label: _isOrdersSession ? 'تحصيل الطلبيات' : 'المبيعات المقبوضة',
-            value:
-                '${primary.salesCollected.toStringAsFixed(2)} ${primary.currency}',
-          ),
-        ),
-        SizedBox(width: 6.w),
-        Expanded(
-          child: _statChip(
-            icon: Icons.account_balance_wallet_outlined,
-            label: 'المتوقع الآن',
-            value:
-                '${primary.systemBalance.toStringAsFixed(2)} ${primary.currency}',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _salesCountRow(DailySessionPayload payload) {
-    return Row(
-      children: [
-        Expanded(
-          child: _statChip(
-            icon: Icons.receipt_long_outlined,
-            label: 'instant_sales'.tr,
-            value: '${payload.instantSalesCount}',
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: _statChip(
-            icon: Icons.payments_outlined,
-            label: 'cashProfit'.tr,
-            value: '${payload.profitSalesCount}',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _statChip({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
     return _surfaceCard(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      child: Row(
+      child: Column(
         children: [
-          Icon(icon, size: 18.sp, color: _mutedColor),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.sp, color: _mutedColor),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: value.length > 8 ? 12.sp : 18.sp,
-                    fontWeight: FontWeight.w800,
-                    color: _titleColor,
-                  ),
-                ),
-              ],
-            ),
+          _infoRow('رصيد الافتتاح', primary.openingFloat),
+          SizedBox(height: 7.h),
+          _infoRow(
+            _isOrdersSession ? 'تحصيل الطلبيات' : 'مبيعات اليوم',
+            primary.salesCollected,
           ),
+          Divider(height: 16.h, color: _borderColor),
+          _infoRow('المتوقع الآن', primary.systemBalance, emphasize: true),
         ],
       ),
     );
+  }
+
+  DailyCurrencyRow? _primaryRow(DailySessionPayload payload) {
+    final rows =
+        _isOrdersSession ? payload.salesOrdersCurrencies : payload.currencies;
+    return rows.firstWhereOrNull((row) => row.currency == 'شيكل') ??
+        (rows.isEmpty ? null : rows.first);
   }
 
   Widget _lateReasonCard() {
@@ -730,6 +635,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     Map<String, TextEditingController>? floatMap,
     Map<String, TextEditingController>? notesMap,
     String expansionPrefix = '',
+    bool showHeader = true,
+    bool showBalance = true,
   }) {
     final physicalCtrl = (physicalMap ?? _physical)[row.currency]!;
     final floatCtrl = (floatMap ?? _float)[row.currency]!;
@@ -752,119 +659,123 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: isPrimary
-                    ? null
-                    : () => _toggleCurrencyExpanded(expansionKey),
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(14.r),
-                  bottom: isExpanded ? Radius.zero : Radius.circular(14.r),
-                ),
-                child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                  decoration: BoxDecoration(
-                    color: _isDark
-                        ? Colors.white.withValues(alpha: 0.04)
-                        : const Color(0xFFF3F4F6),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(14.r),
-                      bottom: isExpanded ? Radius.zero : Radius.circular(14.r),
-                    ),
-                    border: isExpanded
-                        ? Border(bottom: BorderSide(color: _borderColor))
-                        : null,
+            if (showHeader)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isPrimary
+                      ? null
+                      : () => _toggleCurrencyExpanded(expansionKey),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(14.r),
+                    bottom: isExpanded ? Radius.zero : Radius.circular(14.r),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        row.currency,
-                        style: TextStyle(
-                          fontSize: 17.sp,
-                          fontWeight: FontWeight.w800,
-                          color: _titleColor,
-                          letterSpacing: 0.5,
-                        ),
+                  child: Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                    decoration: BoxDecoration(
+                      color: _isDark
+                          ? Colors.white.withValues(alpha: 0.04)
+                          : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(14.r),
+                        bottom:
+                            isExpanded ? Radius.zero : Radius.circular(14.r),
                       ),
-                      if (isPrimary) ...[
-                        SizedBox(width: 8.w),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 3.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _isDark
-                                ? Colors.white12
-                                : AppColors.operationalNavy
-                                    .withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Text(
-                            'salesDailyPrimaryCurrency'.tr,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w700,
-                              color: _titleColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const Spacer(),
-                      if (!isExpanded)
+                      border: isExpanded
+                          ? Border(bottom: BorderSide(color: _borderColor))
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
                         Text(
-                          row.systemBalance.toStringAsFixed(2),
+                          row.currency,
                           style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            color: _mutedColor,
+                            fontSize: 17.sp,
+                            fontWeight: FontWeight.w800,
+                            color: _titleColor,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      if (alert && isExpanded)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 3.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(color: Colors.red.shade200),
-                          ),
-                          child: Text(
-                            'salesDailyVariance'.tr,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.red.shade800,
+                        if (isPrimary) ...[
+                          SizedBox(width: 8.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 3.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isDark
+                                  ? Colors.white12
+                                  : AppColors.operationalNavy
+                                      .withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Text(
+                              'salesDailyPrimaryCurrency'.tr,
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                                color: _titleColor,
+                              ),
                             ),
                           ),
-                        ),
-                      if (!isPrimary) ...[
-                        SizedBox(width: 6.w),
-                        Icon(
-                          isExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: _mutedColor,
-                          size: 22.sp,
-                        ),
+                        ],
+                        const Spacer(),
+                        if (!isExpanded)
+                          Text(
+                            row.systemBalance.toStringAsFixed(2),
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                              color: _mutedColor,
+                            ),
+                          ),
+                        if (alert && isExpanded)
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 3.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Text(
+                              'salesDailyVariance'.tr,
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.red.shade800,
+                              ),
+                            ),
+                          ),
+                        if (!isPrimary) ...[
+                          SizedBox(width: 6.w),
+                          Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: _mutedColor,
+                            size: 22.sp,
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
             if (isExpanded)
               Padding(
                 padding: EdgeInsets.all(10.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _balancePanel(row),
-                    SizedBox(height: 8.h),
+                    if (showBalance) ...[
+                      _balancePanel(row),
+                      SizedBox(height: 8.h),
+                    ],
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

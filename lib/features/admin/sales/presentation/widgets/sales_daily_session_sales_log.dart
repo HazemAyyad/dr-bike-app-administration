@@ -13,9 +13,8 @@ import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart
 import '../../data/models/daily_session_model.dart';
 import '../binding/sales_binding.dart';
 import '../controllers/sales_controller.dart';
-
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class SalesDailySessionSalesLog extends StatelessWidget {
   const SalesDailySessionSalesLog({
     Key? key,
@@ -47,37 +46,15 @@ class SalesDailySessionSalesLog extends StatelessWidget {
       );
     }
 
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TabBar(
-            labelColor: AppColors.primaryColor,
-            unselectedLabelColor: Colors.grey,
-            labelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
-            indicatorSize: TabBarIndicatorSize.label,
-            tabs: [
-              Tab(text: '${'instant_sales'.tr} (${instantSales.length})'),
-              Tab(text: '${'cashProfit'.tr} (${profitSales.length})'),
-            ],
-          ),
-          SizedBox(
-            height: 320.h,
-            child: TabBarView(
-              children: [
-                _SalesList(
-                  items: instantSales,
-                  emptyLabel: 'noData'.tr,
-                ),
-                _SalesList(
-                  items: profitSales,
-                  emptyLabel: 'noData'.tr,
-                ),
-              ],
-            ),
-          ),
-        ],
+    final movements = [...instantSales, ...profitSales]..sort(
+        (a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''),
+      );
+
+    return SizedBox(
+      height: 360.h,
+      child: _SalesList(
+        items: movements,
+        emptyLabel: 'noData'.tr,
       ),
     );
   }
@@ -126,9 +103,9 @@ class _SalesList extends StatelessWidget {
       ).call(maintenanceId: sale.maintenanceId.toString());
       result.fold(
         (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+          title: 'error'.tr,
+          message: failure.errMessage,
+        ),
         (invoice) => showMaintenanceInvoiceSheet(context, invoice),
       );
       return;

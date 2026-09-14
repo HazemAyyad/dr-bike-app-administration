@@ -15,6 +15,7 @@ import '../controllers/maintenance_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class MaintenanceDailyCloseScreen extends StatefulWidget {
   const MaintenanceDailyCloseScreen({Key? key}) : super(key: key);
 
@@ -125,10 +126,6 @@ class _MaintenanceDailyCloseScreenState
           controller.dailyBoxSession?['business_date'] ??
           '')
       .toString();
-  String get _boxName => (_source['box_name'] ??
-          _currencyRow['daily_box_name'] ??
-          controller.maintenanceDailyBoxName)
-      .toString();
   double get _opening =>
       _doubleFrom(_source['opening_balance'] ?? _currencyRow['opening_float']);
   double get _cashTotal =>
@@ -177,18 +174,7 @@ class _MaintenanceDailyCloseScreenState
                   _introCard(),
                   SizedBox(height: 8.h),
                   _closingStepsCard(),
-                  SizedBox(height: 8.h),
-                  _statsRow(),
                   SizedBox(height: 10.h),
-                  Text(
-                    'الصندوق اليومي',
-                    style: TextStyle(
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w800,
-                      color: _titleColor,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
                   _boxCard(),
                   SizedBox(height: 24.h),
                   if (_isReview)
@@ -233,6 +219,14 @@ class _MaintenanceDailyCloseScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
+                      'صندوق الصيانة اليومي',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    Text(
                       'المسؤول: $_employeeName',
                       style: TextStyle(
                         fontSize: 17.sp,
@@ -265,7 +259,7 @@ class _MaintenanceDailyCloseScreenState
                   },
                 ),
                 icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('عرض الحركات وتفاصيل الصندوق'),
+                label: const Text('عرض الحركات'),
               ),
             ),
             SizedBox(height: 8.h),
@@ -291,7 +285,7 @@ class _MaintenanceDailyCloseScreenState
       Icons.payments_outlined,
       Icons.compare_arrows_rounded,
     ];
-    const labels = ['راجع المتوقع', 'أدخل الموجود', 'راجع الفرق والعهدة'];
+    const labels = ['راجع المتوقع', 'أدخل الموجود', 'راجع وأغلق'];
     return _surfaceCard(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
       child: Row(
@@ -332,72 +326,12 @@ class _MaintenanceDailyCloseScreenState
     );
   }
 
-  Widget _statsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _statChip(
-            icon: Icons.receipt_long_outlined,
-            label: 'إجمالي الصيانة',
-            value:
-                '${_intFrom(_source['maintenances_count'] ?? _source['instant_sales_count']) ?? 0}',
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: _statChip(
-            icon: Icons.payments_outlined,
-            label: 'ربح نقدي',
-            value: _money(_cashTotal),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _boxCard() {
     return _surfaceCard(
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              color: _isDark ? Colors.white10 : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
-              border: Border(bottom: BorderSide(color: _borderColor)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _boxName,
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                      color: _titleColor,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.operationalNavy.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    _currency,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w800,
-                      color: _titleColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Padding(
             padding: EdgeInsets.all(12.w),
             child: Column(
@@ -524,44 +458,6 @@ class _MaintenanceDailyCloseScreenState
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
-      ),
-    );
-  }
-
-  Widget _statChip({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return _surfaceCard(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      child: Row(
-        children: [
-          Icon(icon, size: 18.sp, color: _mutedColor),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.sp, color: _mutedColor),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w800,
-                    color: _titleColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
