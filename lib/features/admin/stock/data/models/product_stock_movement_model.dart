@@ -163,6 +163,7 @@ class ProductStockMovementModel {
       'disassembly_output': 'stockMoveTypeDisassemblyOutput',
       'price_update': 'stockMoveTypePriceUpdate',
       'product_update': 'stockMoveTypeProductUpdate',
+      'product_create': 'stockMoveTypeProductCreate',
     };
     final key = keys[type];
     return key != null ? key.tr : type;
@@ -193,8 +194,37 @@ class ProductStockMovementModel {
   }
 }
 
+class ProductLifecycleAudit {
+  const ProductLifecycleAudit({
+    this.createdByName,
+    this.createdAt,
+    this.updatedByName,
+    this.updatedAt,
+  });
+
+  final String? createdByName;
+  final String? createdAt;
+  final String? updatedByName;
+  final String? updatedAt;
+
+  bool get hasAnyValue =>
+      createdByName?.trim().isNotEmpty == true ||
+      createdAt?.trim().isNotEmpty == true ||
+      updatedByName?.trim().isNotEmpty == true ||
+      updatedAt?.trim().isNotEmpty == true;
+
+  factory ProductLifecycleAudit.fromJson(Map<String, dynamic> json) =>
+      ProductLifecycleAudit(
+        createdByName: asNullableString(json['created_by_name']),
+        createdAt: asNullableString(json['created_at']),
+        updatedByName: asNullableString(json['updated_by_name']),
+        updatedAt: asNullableString(json['updated_at']),
+      );
+}
+
 class StockMovementsPageResult {
   final StockMovementSummary summary;
+  final ProductLifecycleAudit? productAudit;
   final List<ProductStockMovementModel> movements;
   final int currentPage;
   final int lastPage;
@@ -202,6 +232,7 @@ class StockMovementsPageResult {
 
   const StockMovementsPageResult({
     required this.summary,
+    this.productAudit,
     required this.movements,
     required this.currentPage,
     required this.lastPage,
@@ -213,6 +244,9 @@ class StockMovementsPageResult {
     final pagination = asMap(j['pagination']);
     return StockMovementsPageResult(
       summary: StockMovementSummary.fromJson(asMap(j['summary'])),
+      productAudit: j['product_audit'] is Map
+          ? ProductLifecycleAudit.fromJson(asMap(j['product_audit']))
+          : null,
       movements: mapList(
         j['movements'],
         (m) => ProductStockMovementModel.fromJson(m),

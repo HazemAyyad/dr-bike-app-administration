@@ -47,6 +47,7 @@ class ProductModel {
   final List<ProductPriceTier> priceTiers;
   final double rate;
   final double purchaseCost;
+  final bool? inventoryCostCoverageComplete;
   final String imageUrl;
   final List<String> viewImageUrls;
   final List<String> normalImageUrls;
@@ -73,6 +74,7 @@ class ProductModel {
     this.priceTiers = const [],
     this.rate = 0,
     this.purchaseCost = 0,
+    this.inventoryCostCoverageComplete,
     this.imageUrl = '',
     this.viewImageUrls = const [],
     this.normalImageUrls = const [],
@@ -159,6 +161,10 @@ class ProductModel {
             j['purchase_price'] ??
             0,
       ),
+      inventoryCostCoverageComplete:
+          j['inventory_cost_coverage_complete'] is bool
+              ? j['inventory_cost_coverage_complete'] as bool
+              : null,
       imageUrl: asString(
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
@@ -194,6 +200,7 @@ class ProductModel {
     bool? hasCustomPrice,
     List<ProductPriceTier>? priceTiers,
     double? purchaseCost,
+    bool? inventoryCostCoverageComplete,
     String? productCode,
     String? storeSectionId,
     String? storeSectionName,
@@ -210,6 +217,8 @@ class ProductModel {
       priceTiers: priceTiers ?? this.priceTiers,
       rate: rate,
       purchaseCost: purchaseCost ?? this.purchaseCost,
+      inventoryCostCoverageComplete:
+          inventoryCostCoverageComplete ?? this.inventoryCostCoverageComplete,
       imageUrl: imageUrl,
       viewImageUrls: viewImageUrls,
       normalImageUrls: normalImageUrls,
@@ -234,6 +243,8 @@ class ProductModel {
       'has_custom_price': hasCustomPrice,
       'price_tiers': priceTiers.map((tier) => tier.toJson()).toList(),
       'rate': rate,
+      if (inventoryCostCoverageComplete != null)
+        'inventory_cost_coverage_complete': inventoryCostCoverageComplete,
       'product_image': imageUrl,
       'product_viewImages': viewImageUrls,
       'product_normalImages': normalImageUrls,

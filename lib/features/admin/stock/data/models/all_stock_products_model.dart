@@ -25,6 +25,8 @@ class AllStockProductsModel {
   final String? storeSectionName;
   final double? costPrice;
   final bool hasCostPrice;
+  final bool? inventoryCostCoverageComplete;
+  final double? missingCostQuantity;
   final String minStock;
   final String rotationDate;
 
@@ -50,6 +52,8 @@ class AllStockProductsModel {
     this.storeSectionName,
     this.costPrice,
     this.hasCostPrice = false,
+    this.inventoryCostCoverageComplete,
+    this.missingCostQuantity,
     this.minStock = '',
     this.rotationDate = '',
   });
@@ -92,6 +96,13 @@ class AllStockProductsModel {
       costPrice:
           json['cost_price'] == null ? null : asDouble(json['cost_price']),
       hasCostPrice: json['has_cost_price'] == true,
+      inventoryCostCoverageComplete:
+          json['inventory_cost_coverage_complete'] is bool
+              ? json['inventory_cost_coverage_complete'] as bool
+              : null,
+      missingCostQuantity: json['missing_cost_quantity'] == null
+          ? null
+          : asDouble(json['missing_cost_quantity']),
       minStock: asString(json['product_min_stock'] ?? json['min_stock']),
       rotationDate: asString(json['rotation_date']),
     );
@@ -128,6 +139,8 @@ class AllStockProductsModel {
       storeSectionName: storeSectionName,
       costPrice: costPrice,
       hasCostPrice: hasCostPrice,
+      inventoryCostCoverageComplete: inventoryCostCoverageComplete,
+      missingCostQuantity: missingCostQuantity,
       minStock: minStock ?? this.minStock,
       rotationDate: rotationDate ?? this.rotationDate,
     );
@@ -155,6 +168,8 @@ class AllStockProductsModel {
       'store_section_name': storeSectionName,
       'cost_price': costPrice,
       'has_cost_price': hasCostPrice,
+      'inventory_cost_coverage_complete': inventoryCostCoverageComplete,
+      'missing_cost_quantity': missingCostQuantity,
       'product_min_stock': minStock,
       'rotation_date': rotationDate,
     };

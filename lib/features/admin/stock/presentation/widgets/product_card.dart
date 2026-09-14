@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/product_priority_image.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -10,6 +11,7 @@ import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../data/models/all_stock_products_model.dart';
+import 'product_inventory_cost_sheet.dart';
 import 'product_location_badge.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_search_sheet.dart';
@@ -100,6 +102,8 @@ class BuildProductCard extends GetView<StockController> {
               ? AppColors.customOrange3
               : AppColors.operationalPurple;
       final canZoom = product.allImageUrlsInPriority.isNotEmpty;
+      final hasMissingInventoryCost =
+          canViewCostPrice && product.inventoryCostCoverageComplete == false;
 
       Future<void> handleCardTap() async {
         if (isCloseouts) {
@@ -148,6 +152,15 @@ class BuildProductCard extends GetView<StockController> {
       }
 
       return GestureDetector(
+        onLongPress: canViewCostPrice && !readOnly
+            ? () => showProductInventoryCostSheet(
+                  context: context,
+                  productId: product.productId,
+                  productName: product.name,
+                  onCostChanged:
+                      controller.refreshVisibleProductsAfterCostChange,
+                )
+            : null,
         onTapUp: (details) async {
           if (isZoomTap(details.localPosition)) {
             openProductImageViewer(
@@ -174,9 +187,13 @@ class BuildProductCard extends GetView<StockController> {
           child: Stack(
             children: [
               Material(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : Colors.white,
+                color: hasMissingInventoryCost
+                    ? (ThemeService.isDark.value
+                        ? const Color(0xFF45272B)
+                        : const Color(0xFFFFEBEE))
+                    : (ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : Colors.white),
                 borderRadius: BorderRadius.circular(10.r),
                 clipBehavior: Clip.antiAlias,
                 child: Container(
@@ -184,7 +201,9 @@ class BuildProductCard extends GetView<StockController> {
                     border: Border.all(
                       color: isSelected
                           ? selectionColor
-                          : Colors.grey.withValues(alpha: 0.28),
+                          : hasMissingInventoryCost
+                              ? Colors.red.withValues(alpha: 0.48)
+                              : Colors.grey.withValues(alpha: 0.28),
                       width: isSelected ? 1.5 : 1,
                     ),
                     borderRadius: BorderRadius.circular(10.r),

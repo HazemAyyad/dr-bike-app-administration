@@ -2290,6 +2290,7 @@ const Map<String, String> ar = {
   'stockMoveTypeDisassemblyOutput': 'فك تركيب - خصم المنتج المركّب',
   'stockMoveTypePriceUpdate': 'تعديل سعر',
   'stockMoveTypeProductUpdate': 'تعديل بيانات المنتج',
+  'stockMoveTypeProductCreate': 'إنشاء المنتج',
   'stockMoveColCost': 'التكلفة',
   'stockMoveUnitCost': 'تكلفة الوحدة',
   'stockMoveTotalCost': 'الإجمالي',

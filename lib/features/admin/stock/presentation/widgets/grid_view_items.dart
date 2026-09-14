@@ -33,7 +33,11 @@ class GridViewItems extends GetView<StockController> {
         );
       }
 
-      if (controller.isLoading.value) {
+      final directSearchActive = controller.currentTab.value != 5 &&
+          controller.stockSearchActiveQuery.value.trim().isNotEmpty;
+
+      if ((directSearchActive && controller.isSearchLoading.value) ||
+          (!directSearchActive && controller.isLoading.value)) {
         return SliverToBoxAdapter(
           child: StockProductsGridSkeleton(
             aspectRatio: StockProductGridLayout.aspectRatioForTab(
@@ -44,13 +48,15 @@ class GridViewItems extends GetView<StockController> {
         );
       }
 
-      final isEmpty = controller.currentTab.value == 0
-          ? controller.allProducts.isEmpty
-          : controller.currentTab.value == 1
-              ? controller.allClearances.isEmpty
-              : controller.currentTab.value == 2
-                  ? controller.allCombinations.isEmpty
-                  : controller.deletedProducts.isEmpty;
+      final isEmpty = directSearchActive
+          ? controller.searchProducts.isEmpty
+          : controller.currentTab.value == 0
+              ? controller.allProducts.isEmpty
+              : controller.currentTab.value == 1
+                  ? controller.allClearances.isEmpty
+                  : controller.currentTab.value == 2
+                      ? controller.allCombinations.isEmpty
+                      : controller.deletedProducts.isEmpty;
 
       if (isEmpty) {
         if (controller.currentTab.value == 0 &&
@@ -96,13 +102,15 @@ class GridViewItems extends GetView<StockController> {
                     StockProductGridLayout.horizontalPaddingForContext(context),
               ),
               child: Obx(() {
-                final items = controller.currentTab.value == 0
-                    ? controller.allProducts
-                    : controller.currentTab.value == 1
-                        ? controller.allClearances
-                        : controller.currentTab.value == 2
-                            ? controller.allCombinations
-                            : controller.deletedProducts;
+                final items = directSearchActive
+                    ? controller.searchProducts
+                    : controller.currentTab.value == 0
+                        ? controller.allProducts
+                        : controller.currentTab.value == 1
+                            ? controller.allClearances
+                            : controller.currentTab.value == 2
+                                ? controller.allCombinations
+                                : controller.deletedProducts;
 
                 final aspectRatio = StockProductGridLayout.aspectRatioForTab(
                   controller.currentTab.value,
@@ -132,7 +140,7 @@ class GridViewItems extends GetView<StockController> {
                 );
               }),
             ),
-            if (controller.isLoadingMore.value)
+            if (!directSearchActive && controller.isLoadingMore.value)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 12.h),
                 child: StockProductsGridSkeleton(

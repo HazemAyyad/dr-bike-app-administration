@@ -6,7 +6,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'stock_search_sheet.dart';
 
-/// Search row that opens the stock search bottom sheet.
+/// Direct inventory search. Closeout selection keeps its dedicated picker.
 class SearchWidget extends GetView<StockController> {
   const SearchWidget({
     Key? key,
@@ -33,24 +33,46 @@ class SearchWidget extends GetView<StockController> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      readOnly: true,
-      decoration: InputDecoration(
-        hintText: 'search'.tr,
-        prefixIcon: const Icon(Icons.search),
-        border: OutlineInputBorder(
-          borderRadius: borderRadius ?? BorderRadius.circular(25),
-          borderSide: BorderSide.none,
+    return Obx(
+      () => TextField(
+        controller: isCloseouts ? null : controller.stockSearchQueryController,
+        readOnly: isCloseouts,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'search'.tr,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: !isCloseouts &&
+                  controller.stockSearchActiveQuery.value.trim().isNotEmpty
+              ? IconButton(
+                  tooltip: 'clear'.tr,
+                  onPressed: () {
+                    controller.stockSearchQueryController.clear();
+                    controller.onStockSearchQueryChanged('');
+                  },
+                  icon: const Icon(Icons.close),
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: borderRadius ?? BorderRadius.circular(25),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : AppColors.whiteColor2,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         ),
-        filled: true,
-        fillColor: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : AppColors.whiteColor2,
-        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-      ),
-      onTap: () => openStockSearchSheet(
-        controller: controller,
-        searchContext: _searchContext,
+        onChanged: isCloseouts ? null : controller.onStockSearchQueryChanged,
+        onSubmitted: isCloseouts
+            ? null
+            : (value) => controller.getSearchProducts(name: value),
+        onTap: isCloseouts
+            ? () => openStockSearchSheet(
+                  controller: controller,
+                  searchContext: _searchContext,
+                )
+            : null,
       ),
     );
   }

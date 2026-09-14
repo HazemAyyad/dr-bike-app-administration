@@ -2239,6 +2239,7 @@ const Map<String, String> en = {
   'stockMoveTypeDisassemblyOutput': 'Disassembly - assembled product deducted',
   'stockMoveTypePriceUpdate': 'Price update',
   'stockMoveTypeProductUpdate': 'Product data update',
+  'stockMoveTypeProductCreate': 'Product created',
   'stockMoveColCost': 'Cost',
   'stockMoveUnitCost': 'Unit cost',
   'stockMoveTotalCost': 'Total cost',

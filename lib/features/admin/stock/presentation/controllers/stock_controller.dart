@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -751,6 +752,23 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
+  Future<void> refreshVisibleProductsAfterCostChange() async {
+    final query = stockSearchActiveQuery.value.trim();
+    if (query.isNotEmpty) {
+      await getSearchProducts(name: query);
+      return;
+    }
+    if (currentTab.value == 3 && selectedLocationSectionId.value != null) {
+      await selectLocationFilter(selectedLocationSectionId.value);
+      return;
+    }
+    if (currentTab.value == 0) {
+      await reloadProductsList();
+      return;
+    }
+    await pullToRefresh();
+  }
+
   Future<void> ensureStoreSectionsLoaded() async {
     if (storeSections.isEmpty) {
       await refreshStoreSections();
@@ -1444,6 +1462,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       TextEditingController();
   final RxString stockSearchActiveQuery = ''.obs;
   final RxList<String> stockSearchHistory = <String>[].obs;
+  Timer? _stockSearchDebounce;
+  int _stockSearchRequestSerial = 0;
 
   final RxBool isLoadingMore = false.obs;
 
@@ -2572,7 +2592,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   // search products
-  List<AllStockProductsModel> searchProducts = [];
+  final RxList<AllStockProductsModel> searchProducts =
+      <AllStockProductsModel>[].obs;
 
   void loadStockSearchHistory() {
     stockSearchHistory.assignAll(StockSearchHistoryStorage.load());
@@ -2617,23 +2638,42 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   void onStockSearchQueryChanged(String value) {
     stockSearchActiveQuery.value = value;
-    if (value.trim().isEmpty) {
+    _stockSearchDebounce?.cancel();
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      _stockSearchRequestSerial++;
       searchProducts.clear();
+      isSearchLoading(false);
       update();
+      return;
     }
+    searchProducts.clear();
+    isSearchLoading(true);
+    _stockSearchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => getSearchProducts(name: trimmed),
+    );
   }
 
-  void getSearchProducts({required String name}) async {
-    searchProducts.clear();
-
+  Future<void> getSearchProducts({required String name}) async {
+    final query = name.trim();
+    if (query.isEmpty) return;
+    final requestId = ++_stockSearchRequestSerial;
     isSearchLoading(true);
-    searchProducts.clear();
-
-    final result = await searchProductsUsecase.call(name: name);
-    searchProducts.assignAll(result);
-    addStockSearchHistory(name);
-    isSearchLoading(false);
-    update();
+    try {
+      final result = await searchProductsUsecase.call(name: query);
+      if (requestId != _stockSearchRequestSerial ||
+          stockSearchActiveQuery.value.trim() != query) {
+        return;
+      }
+      searchProducts.assignAll(result);
+      addStockSearchHistory(query);
+    } finally {
+      if (requestId == _stockSearchRequestSerial) {
+        isSearchLoading(false);
+        update();
+      }
+    }
   }
 
   // get categories & projects
@@ -3407,6 +3447,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   @override
   void onClose() {
+    _stockSearchDebounce?.cancel();
     scrollController.removeListener(_onScroll);
     scrollController.removeListener(() {
       if (scrollController.offset > 100) {

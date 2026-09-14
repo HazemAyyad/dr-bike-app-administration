@@ -10,7 +10,6 @@ import '../../domain/stock_movements_filters.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/product_stock_movements_widgets.dart';
 import '../widgets/stock_movements_filter_sheet.dart';
-import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_skeleton_widgets.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
 import '../utils/open_product_purchase.dart';
@@ -156,51 +155,6 @@ class _ProductStockMovementsScreenState
     }
   }
 
-  Future<void> _openQuickAdjust() async {
-    if (args.hasVariants) {
-      await c.getProductDetails(productId: args.productId);
-      final product = c.productDetails.value;
-      if (product == null || !mounted) return;
-      final target = await showStockVariantAdjustSheet(
-        context: context,
-        product: product,
-      );
-      if (target == null || !mounted) return;
-      final pick = await showStockQuickAdjustSheet(
-        context: context,
-        title: args.productName,
-        subtitle: target.subtitle,
-        currentStock: target.currentStock,
-      );
-      if (pick == null) return;
-      final ok = await c.adjustProductStock(
-        productId: args.productId,
-        sizeColorId: target.sizeColorId,
-        actualQuantity: pick.actualQuantity,
-        reason: pick.reason,
-        notes: pick.notes,
-        unitCost: pick.unitCost,
-      );
-      if (ok) await _load(pageNum: 1, refresh: true);
-      return;
-    }
-
-    final pick = await showStockQuickAdjustSheet(
-      context: context,
-      title: args.productName,
-      currentStock: data?.summary.currentStock ?? args.currentStock,
-    );
-    if (pick == null) return;
-    final ok = await c.adjustProductStock(
-      productId: args.productId,
-      actualQuantity: pick.actualQuantity,
-      reason: pick.reason,
-      notes: pick.notes,
-      unitCost: pick.unitCost,
-    );
-    if (ok) await _load(pageNum: 1, refresh: true);
-  }
-
   Future<void> _openPurchase() async {
     String? sizeColorId;
     if (args.hasVariants) {
@@ -254,11 +208,6 @@ class _ProductStockMovementsScreenState
               icon: const Icon(Icons.add_shopping_cart_outlined),
               onPressed: _openPurchase,
             ),
-          IconButton(
-            tooltip: 'stockAdjustment'.tr,
-            icon: const Icon(Icons.tune_rounded),
-            onPressed: _openQuickAdjust,
-          ),
         ],
       ),
       body: loading && data == null
@@ -284,13 +233,16 @@ class _ProductStockMovementsScreenState
                           ),
                         ),
                       if (summary != null) ...[
+                        if (data!.productAudit?.hasAnyValue == true)
+                          ProductLifecycleAuditCard(
+                            audit: data!.productAudit!,
+                          ),
                         StockMovementSummaryBar(summary: summary),
                         StockMovementsToolbar(
                           filters: filters,
                           total: data!.total,
                           onFilter: _openFilter,
                           onPrint: _exportPdf,
-                          onQuickAdjust: _openQuickAdjust,
                         ),
                       ],
                       if (pageLoading)

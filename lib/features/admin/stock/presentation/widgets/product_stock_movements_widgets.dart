@@ -15,6 +15,68 @@ import '../utils/stock_movements_pdf_helper.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
+class ProductLifecycleAuditCard extends StatelessWidget {
+  const ProductLifecycleAuditCard({Key? key, required this.audit})
+      : super(key: key);
+
+  final ProductLifecycleAudit audit;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget row(IconData icon, String label, String? user, String? date) {
+      final actor = user?.trim().isNotEmpty == true
+          ? user!.trim()
+          : 'غير مسجل في البيانات القديمة';
+      final when = date?.trim().isNotEmpty == true ? date!.trim() : '—';
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text('$actor • $when'),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: AdminUiColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'سجل بيانات المنتج',
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(fontWeight: FontWeight.w900),
+          ),
+          SizedBox(height: 10.h),
+          row(Icons.add_box_outlined, 'إنشاء المنتج', audit.createdByName,
+              audit.createdAt),
+          SizedBox(height: 10.h),
+          row(Icons.edit_note_outlined, 'آخر تعديل للمنتج', audit.updatedByName,
+              audit.updatedAt),
+        ],
+      ),
+    );
+  }
+}
+
 class StockMovementSummaryBar extends StatelessWidget {
   const StockMovementSummaryBar({Key? key, required this.summary})
       : super(key: key);
@@ -106,14 +168,12 @@ class StockMovementsToolbar extends StatelessWidget {
     required this.total,
     required this.onFilter,
     required this.onPrint,
-    required this.onQuickAdjust,
   }) : super(key: key);
 
   final StockMovementsFilters filters;
   final int total;
   final VoidCallback onFilter;
   final VoidCallback onPrint;
-  final VoidCallback onQuickAdjust;
 
   @override
   Widget build(BuildContext context) {
@@ -126,11 +186,6 @@ class StockMovementsToolbar extends StatelessWidget {
         runSpacing: 8.h,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          FilledButton.tonalIcon(
-            onPressed: onQuickAdjust,
-            icon: const Icon(Icons.tune_rounded, size: 18),
-            label: Text('stockAdjustment'.tr),
-          ),
           OutlinedButton.icon(
             onPressed: onFilter,
             icon: Badge(
@@ -218,7 +273,25 @@ class StockMovementsTable extends StatelessWidget {
 
     return DataRow(
       cells: [
-        DataCell(Text(m.movementTypeLabel())),
+        DataCell(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(m.movementTypeLabel()),
+              Text(
+                [
+                  if (m.createdByName?.trim().isNotEmpty == true)
+                    m.createdByName!,
+                  if (m.createdAt?.trim().isNotEmpty == true) m.createdAt!,
+                ].join(' • '),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.55),
+                    ),
+              ),
+            ],
+          ),
+        ),
         DataCell(Text(variant.isEmpty ? '—' : variant)),
         DataCell(
           Text(

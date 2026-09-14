@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/services/initial_bindings.dart';
+import '../../../../stock/presentation/widgets/product_inventory_cost_sheet.dart';
 import '../../../../stock/presentation/widgets/product_location_badge.dart';
 import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
@@ -86,20 +88,42 @@ class InstantSaleProductCard extends StatelessWidget {
       final pastedLabel = controller.pastedRequestLabelForProduct(product);
       final pastedSelected = controller.pastedRequestSelectedProduct(product);
       final usePastedAction = pastedLabel != null;
-      final tapAction = () => usePastedAction
-          ? controller.addProductFromPastedSuggestion(
-              product,
-              context: context,
-            )
-          : controller.toggleProductInCart(
-              product,
-              context: context,
-            );
+      final hasMissingInventoryCost =
+          canViewCostPrice && product.inventoryCostCoverageComplete == false;
+      void tapAction() {
+        if (usePastedAction) {
+          controller.addProductFromPastedSuggestion(
+            product,
+            context: context,
+          );
+          return;
+        }
+        controller.toggleProductInCart(product, context: context);
+      }
+
+      Future<void> longPressAction() async {
+        if (canViewCostPrice) {
+          await showProductInventoryCostSheet(
+            context: context,
+            productId: product.id,
+            productName: product.nameAr,
+            onCostChanged: () => controller.getAllProducts(
+              showLoading: false,
+            ),
+          );
+          return;
+        }
+        await showInstantSaleProductDetailSheet(context, product);
+      }
 
       return Material(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF242430)
-            : Colors.white,
+        color: hasMissingInventoryCost
+            ? (Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF45272B)
+                : const Color(0xFFFFEBEE))
+            : (Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF242430)
+                : Colors.white),
         borderRadius: BorderRadius.circular(10.r),
         clipBehavior: Clip.antiAlias,
         child: Container(
@@ -121,8 +145,7 @@ class InstantSaleProductCard extends StatelessWidget {
                 flex: 5,
                 child: InkWell(
                   onTap: tapAction,
-                  onLongPress: () =>
-                      showInstantSaleProductDetailSheet(context, product),
+                  onLongPress: longPressAction,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -258,10 +281,7 @@ class InstantSaleProductCard extends StatelessWidget {
                       Expanded(
                         child: InkWell(
                           onTap: tapAction,
-                          onLongPress: () => showInstantSaleProductDetailSheet(
-                            context,
-                            product,
-                          ),
+                          onLongPress: longPressAction,
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               return ClipRect(

@@ -7,7 +7,6 @@ import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/product_language_details_tabs.dart';
@@ -507,17 +506,6 @@ class ProductDetailsScreen extends GetView<StockController> {
               tooltip: 'addStockQuick'.tr,
               icon: const Icon(Icons.add_shopping_cart_outlined),
               onPressed: () => _openProductPurchase(context, product),
-            );
-          }),
-          Obx(() {
-            final product = controller.productDetails.value;
-            if (product == null || !canAdjustInventoryStock) {
-              return const SizedBox.shrink();
-            }
-            return IconButton(
-              tooltip: 'stockAdjustment'.tr,
-              icon: const Icon(Icons.tune_rounded),
-              onPressed: () => _openProductQuickAdjust(context, product),
             );
           }),
           IconButton(

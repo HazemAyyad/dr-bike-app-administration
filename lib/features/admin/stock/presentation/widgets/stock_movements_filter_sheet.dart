@@ -47,6 +47,7 @@ class _StockMovementsFilterSheetState extends State<StockMovementsFilterSheet> {
     'import': 'stockMoveTypeImport',
     'price_update': 'stockMoveTypePriceUpdate',
     'product_update': 'stockMoveTypeProductUpdate',
+    'product_create': 'stockMoveTypeProductCreate',
   };
 
   @override

@@ -6,11 +6,10 @@ import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/stock_controller.dart';
 import '../views/product_stock_movements_screen.dart';
-import 'stock_quick_adjust_sheet.dart';
 import 'stock_variant_adjust_sheet.dart';
 import '../utils/open_product_purchase.dart';
 
-/// Entry row on product details → dedicated stock movements page + quick adjust.
+/// Entry row on product details → dedicated stock movements page.
 class ProductStockMovementsLink extends StatelessWidget {
   const ProductStockMovementsLink({
     Key? key,
@@ -63,52 +62,6 @@ class ProductStockMovementsLink extends StatelessWidget {
     );
   }
 
-  Future<void> _openQuickAdjust(BuildContext context) async {
-    if (hasVariants) {
-      final product = _stock.productDetails.value;
-      if (product == null) {
-        await _stock.getProductDetails(productId: productId);
-      }
-      final loaded = _stock.productDetails.value;
-      if (loaded == null || !context.mounted) return;
-      final target = await showStockVariantAdjustSheet(
-        context: context,
-        product: loaded,
-      );
-      if (target == null || !context.mounted) return;
-      final pick = await showStockQuickAdjustSheet(
-        context: context,
-        title: productName,
-        subtitle: target.subtitle,
-        currentStock: target.currentStock,
-      );
-      if (pick == null) return;
-      await _stock.adjustProductStock(
-        productId: productId,
-        sizeColorId: target.sizeColorId,
-        actualQuantity: pick.actualQuantity,
-        reason: pick.reason,
-        notes: pick.notes,
-        unitCost: pick.unitCost,
-      );
-      return;
-    }
-
-    final pick = await showStockQuickAdjustSheet(
-      context: context,
-      title: productName,
-      currentStock: currentStock,
-    );
-    if (pick == null) return;
-    await _stock.adjustProductStock(
-      productId: productId,
-      actualQuantity: pick.actualQuantity,
-      reason: pick.reason,
-      notes: pick.notes,
-      unitCost: pick.unitCost,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -130,15 +83,6 @@ class ProductStockMovementsLink extends StatelessWidget {
                   color: cs.primary,
                 ),
               ),
-            IconButton(
-              tooltip: 'stockAdjustment'.tr,
-              onPressed: () => _openQuickAdjust(context),
-              icon: Icon(
-                Icons.tune_rounded,
-                size: 22.sp,
-                color: cs.secondary,
-              ),
-            ),
             Expanded(
               child: InkWell(
                 onTap: _openMovements,
