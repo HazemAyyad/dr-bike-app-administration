@@ -1044,6 +1044,7 @@ class _CompactOutgoingCreateScaffoldState
               child: _OutgoingCheckFormFields(
                 controller: c,
                 onDateChanged: () => setState(() {}),
+                onPartnerSelected: () => c.checkValueFocus.requestFocus(),
               ),
             ),
             SizedBox(height: 10.h),
@@ -1172,6 +1173,7 @@ class _IncomingBatchCreateScaffold extends StatefulWidget {
 class _IncomingBatchCreateScaffoldState
     extends State<_IncomingBatchCreateScaffold> {
   final _currencyKey = GlobalKey<DropdownSearchState<String>>();
+  final _countFocus = FocusNode();
 
   ChecksController get controller => widget.controller;
 
@@ -1190,6 +1192,12 @@ class _IncomingBatchCreateScaffoldState
       if (!mounted) return;
       _currencyKey.currentState?.openDropDownSearch();
     });
+  }
+
+  @override
+  void dispose() {
+    _countFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _prepareRows() async {
@@ -1288,7 +1296,10 @@ class _IncomingBatchCreateScaffoldState
                     ],
                   ),
                   SizedBox(height: 12.h),
-                  _UnifiedCheckPartnerSelector(controller: controller),
+                  _UnifiedCheckPartnerSelector(
+                    controller: controller,
+                    onSelected: () => _countFocus.requestFocus(),
+                  ),
                   SizedBox(height: 12.h),
                   Row(
                     children: [
@@ -1322,7 +1333,10 @@ class _IncomingBatchCreateScaffoldState
                     label: 'numberOfChecks'.tr,
                     hint: 'numberOfChecks'.tr,
                     controller: controller.incomingBatchCountController,
+                    focusNode: _countFocus,
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
                     requiredField: true,
                   ),
                   SizedBox(height: 12.h),
@@ -1615,10 +1629,12 @@ class _OutgoingCheckFormFields extends StatelessWidget {
   const _OutgoingCheckFormFields({
     required this.controller,
     this.onDateChanged,
+    this.onPartnerSelected,
   });
 
   final ChecksController controller;
   final VoidCallback? onDateChanged;
+  final VoidCallback? onPartnerSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1627,7 +1643,10 @@ class _OutgoingCheckFormFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _UnifiedCheckPartnerSelector(controller: c),
+        _UnifiedCheckPartnerSelector(
+          controller: c,
+          onSelected: onPartnerSelected,
+        ),
         SizedBox(height: 10.h),
         _twoFieldRow(
           firstFlex: 3,
@@ -1636,7 +1655,10 @@ class _OutgoingCheckFormFields extends StatelessWidget {
             label: 'checkValue'.tr,
             hint: 'totalExample'.tr,
             controller: c.checkValueController,
+            focusNode: c.checkValueFocus,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => c.checkNumberFocus.requestFocus(),
             requiredField: true,
           ),
           second: DropdownButtonFormField<String>(
@@ -1676,7 +1698,10 @@ class _OutgoingCheckFormFields extends StatelessWidget {
             label: 'checkNumber'.tr,
             hint: 'checkNumberExample'.tr,
             controller: c.checkNumberController,
+            focusNode: c.checkNumberFocus,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => c.bankNameFocus.requestFocus(),
             requiredField: true,
           ),
         ),
@@ -1685,13 +1710,16 @@ class _OutgoingCheckFormFields extends StatelessWidget {
           plainStyle: true,
           controller: c.bankNameController,
           focusNode: c.bankNameFocus,
-          onSubmitted: () => c.checkNumberFocus.requestFocus(),
+          onSubmitted: () => c.notesFocus.requestFocus(),
         ),
         SizedBox(height: 10.h),
         _PlainTextField(
           label: 'notes'.tr,
           hint: 'notes'.tr,
           controller: c.notesController,
+          focusNode: c.notesFocus,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
           minLines: 2,
           maxLines: 3,
         ),
@@ -1701,9 +1729,13 @@ class _OutgoingCheckFormFields extends StatelessWidget {
 }
 
 class _UnifiedCheckPartnerSelector extends StatelessWidget {
-  const _UnifiedCheckPartnerSelector({required this.controller});
+  const _UnifiedCheckPartnerSelector({
+    required this.controller,
+    this.onSelected,
+  });
 
   final ChecksController controller;
+  final VoidCallback? onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1716,10 +1748,10 @@ class _UnifiedCheckPartnerSelector extends StatelessWidget {
         idOf: (partner) => partner.id,
         nameOf: (partner) => partner.name,
         phoneOf: (partner) => partner.phone,
-        onSelected: (partner, isSeller) => controller.selectCheckPartner(
-          partner,
-          isSeller: isSeller,
-        ),
+        onSelected: (partner, isSeller) {
+          controller.selectCheckPartner(partner, isSeller: isSeller);
+          onSelected?.call();
+        },
         onCleared: () => controller.selectCheckPartner(
           null,
           isSeller: controller.selectedCheckPartnerIsSeller,
@@ -1988,7 +2020,10 @@ class _IncomingBatchRowCard extends StatefulWidget {
 }
 
 class _IncomingBatchRowCardState extends State<_IncomingBatchRowCard> {
+  late final FocusNode _totalFocus;
   late final FocusNode _bankFocus;
+  late final FocusNode _checkNumberFocus;
+  late final FocusNode _notesFocus;
   late bool _expanded;
 
   ChecksController get c => widget.controller;
@@ -1997,13 +2032,19 @@ class _IncomingBatchRowCardState extends State<_IncomingBatchRowCard> {
   @override
   void initState() {
     super.initState();
+    _totalFocus = FocusNode();
     _bankFocus = FocusNode();
+    _checkNumberFocus = FocusNode();
+    _notesFocus = FocusNode();
     _expanded = widget.initiallyExpanded;
   }
 
   @override
   void dispose() {
+    _totalFocus.dispose();
     _bankFocus.dispose();
+    _checkNumberFocus.dispose();
+    _notesFocus.dispose();
     super.dispose();
   }
 
@@ -2088,7 +2129,10 @@ class _IncomingBatchRowCardState extends State<_IncomingBatchRowCard> {
                     label: 'checkValue'.tr,
                     hint: 'totalExample'.tr,
                     controller: row.total,
+                    focusNode: _totalFocus,
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => _bankFocus.requestFocus(),
                     requiredField: true,
                   ),
                 ),
@@ -2173,13 +2217,17 @@ class _IncomingBatchRowCardState extends State<_IncomingBatchRowCard> {
               plainStyle: true,
               controller: row.bankName,
               focusNode: _bankFocus,
+              onSubmitted: () => _checkNumberFocus.requestFocus(),
             ),
             SizedBox(height: 10.h),
             _PlainTextField(
               label: 'checkNumber'.tr,
               hint: 'checkNumberExample'.tr,
               controller: row.checkId,
+              focusNode: _checkNumberFocus,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_) => _notesFocus.requestFocus(),
               requiredField: true,
             ),
             SizedBox(height: 10.h),
@@ -2187,6 +2235,9 @@ class _IncomingBatchRowCardState extends State<_IncomingBatchRowCard> {
               label: 'notes'.tr,
               hint: 'notes'.tr,
               controller: row.notes,
+              focusNode: _notesFocus,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
               minLines: 2,
               maxLines: 3,
             ),
