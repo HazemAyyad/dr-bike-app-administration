@@ -343,18 +343,27 @@ class _SaleRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${sale.totalCost.toStringAsFixed(2)} ₪',
+                    'المقبوض للصندوق',
+                    style: TextStyle(
+                      fontSize: 9.sp,
+                      color: cancelled
+                          ? Colors.red.shade600
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    '${sale.paidAmount.toStringAsFixed(2)} ₪',
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
                       color: cancelled ? Colors.red.shade700 : null,
+                      decoration: cancelled ? TextDecoration.lineThrough : null,
                     ),
                   ),
-                  if (sale.paidAmount > 0)
-                    Text(
-                      'المدفوع: ${sale.paidAmount.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 9.sp, color: Colors.green),
-                    ),
+                  Text(
+                    'الإجمالي: ${sale.totalCost.toStringAsFixed(2)}',
+                    style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                  ),
                   if (sale.remainingAmount > 0.01)
                     Text(
                       'المتبقي: ${sale.remainingAmount.toStringAsFixed(2)}',

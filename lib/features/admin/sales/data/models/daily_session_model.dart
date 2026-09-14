@@ -833,6 +833,7 @@ class DailySessionOrderLogRow {
   final double total;
   final String paymentType;
   final double paymentAmount;
+  final double sessionCollectedAmount;
   final double remainingAmount;
   final int productsCount;
   final List<DailySessionSaleProductRow> products;
@@ -850,6 +851,7 @@ class DailySessionOrderLogRow {
     this.total = 0,
     this.paymentType = 'cash',
     this.paymentAmount = 0,
+    this.sessionCollectedAmount = 0,
     this.remainingAmount = 0,
     this.productsCount = 0,
     this.products = const [],
@@ -869,6 +871,7 @@ class DailySessionOrderLogRow {
       total: asDouble(json['total']),
       paymentType: asString(json['payment_type'], 'cash'),
       paymentAmount: asDouble(json['payment_amount']),
+      sessionCollectedAmount: asDouble(json['session_collected_amount']),
       remainingAmount: asDouble(json['remaining_amount']),
       productsCount: asInt(json['products_count']),
       products: mapList(

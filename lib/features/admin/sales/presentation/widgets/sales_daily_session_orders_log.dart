@@ -160,12 +160,34 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    '${order.total.toStringAsFixed(2)} ₪',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'المقبوض للصندوق',
+                        style: TextStyle(
+                          fontSize: 9.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        '${order.sessionCollectedAmount.toStringAsFixed(2)} ₪',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        'الإجمالي: ${order.total.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 9.sp, color: Colors.grey),
+                      ),
+                      if (order.remainingAmount > 0.01)
+                        Text(
+                          'المتبقي: ${order.remainingAmount.toStringAsFixed(2)}',
+                          style:
+                              TextStyle(fontSize: 9.sp, color: Colors.orange),
+                        ),
+                    ],
                   ),
                   SizedBox(width: 4.w),
                   Icon(

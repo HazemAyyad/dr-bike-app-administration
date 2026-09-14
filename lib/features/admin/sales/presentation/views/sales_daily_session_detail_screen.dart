@@ -162,6 +162,9 @@ class _SalesDailySessionDetailScreenState
           .toLowerCase()
           .contains(query);
     }).toList();
+    final movementCount = session.sessionType == 'sales_orders'
+        ? filteredOrders.length
+        : filteredInstant.length + filteredProfit.length;
 
     return ListView(
       padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 16.h),
@@ -203,6 +206,11 @@ class _SalesDailySessionDetailScreenState
         ),
         SizedBox(height: 10.h),
         _SessionMetrics(detail: detail),
+        if (session.status == 'closed' &&
+            detail.currencies.any((row) => row.hasClosingSnapshot)) ...[
+          SizedBox(height: 10.h),
+          _ClosingSummary(detail: detail),
+        ],
         if (session.status == 'open' ||
             session.status == 'closing_requested') ...[
           SizedBox(height: 10.h),
@@ -234,11 +242,12 @@ class _SalesDailySessionDetailScreenState
           ),
         ],
         if (session.sessionType == 'sales_orders') ...[
-          const SalesDailySectionTitle(title: 'حركات الطلبيات'),
+          SalesDailySectionTitle(title: 'حركات الطلبيات ($movementCount)'),
           SalesDailySessionOrdersLog(orders: filteredOrders),
         ] else ...[
           SalesDailySectionTitle(
-            title: _maintenanceMode ? 'حركات الصيانة' : 'حركات المبيعات',
+            title:
+                '${_maintenanceMode ? 'حركات الصيانة' : 'حركات المبيعات'} ($movementCount)',
           ),
           SalesDailySessionSalesLog(
             instantSales: filteredInstant,
@@ -401,19 +410,18 @@ class _SessionMetrics extends StatelessWidget {
     final primaryCurrency =
         detail.currencies.firstWhereOrNull((row) => row.currency == 'شيكل') ??
             (detail.currencies.isEmpty ? null : detail.currencies.first);
+    final opening = primaryCurrency?.openingFloat ?? 0;
     final balance = primaryCurrency?.systemBalance ?? 0;
     final sales = primaryCurrency?.salesCollected ?? 0;
-    final outgoing = ((primaryCurrency?.openingFloat ?? 0) + sales - balance)
-        .clamp(0.0, double.infinity);
     return Row(children: [
+      _metric('رصيد الافتتاح', '${opening.toStringAsFixed(2)} ₪',
+          Icons.account_balance_wallet_outlined),
+      SizedBox(width: 7.w),
+      _metric('المقبوض اليوم', '${sales.toStringAsFixed(2)} ₪',
+          Icons.payments_outlined),
+      SizedBox(width: 7.w),
       _metric('الرصيد الحالي', '${balance.toStringAsFixed(2)} ₪',
           Icons.wallet_outlined),
-      SizedBox(width: 7.w),
-      _metric(
-          'الداخل', '${sales.toStringAsFixed(2)} ₪', Icons.payments_outlined),
-      SizedBox(width: 7.w),
-      _metric('الخارج', '${outgoing.toStringAsFixed(2)} ₪',
-          Icons.outbound_outlined),
     ]);
   }
 
@@ -442,4 +450,119 @@ class _SessionMetrics extends StatelessWidget {
           ]),
         ),
       );
+}
+
+class _ClosingSummary extends StatelessWidget {
+  const _ClosingSummary({required this.detail});
+
+  final DailySessionDetailModel detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final currency =
+        detail.currencies.firstWhereOrNull((row) => row.currency == 'شيكل') ??
+            detail.currencies.firstWhereOrNull((row) => row.hasClosingSnapshot);
+    if (currency == null || !currency.hasClosingSnapshot) {
+      return const SizedBox.shrink();
+    }
+
+    final varianceColor = currency.closingVariance.abs() <= 0.01
+        ? const Color(0xFF059669)
+        : Colors.red.shade700;
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color:
+            ThemeService.isDark.value ? const Color(0xFF242430) : Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: ThemeService.isDark.value
+              ? const Color(0xFF3B3B49)
+              : const Color(0xFFDDE5EA),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fact_check_outlined,
+                  size: 19.sp, color: AppColors.primaryColor),
+              SizedBox(width: 7.w),
+              Text(
+                'ملخص الإغلاق',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(
+                child: _value(
+                  'المعدود فعليًا',
+                  currency.closingPhysicalCount,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: _value(
+                  'الفرق',
+                  currency.closingVariance,
+                  valueColor: varianceColor,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Expanded(
+                child: _value(
+                  'فكة اليوم التالي',
+                  currency.closingFloatToKeep,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: _value(
+                  'تم ترحيله',
+                  currency.closingAmountToTransfer,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _value(String label, double amount, {Color? valueColor}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? Colors.black12
+            : const Color(0xFFF7F9FA),
+        borderRadius: BorderRadius.circular(9.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(fontSize: 9.sp, color: Colors.grey.shade600)),
+          SizedBox(height: 3.h),
+          Text(
+            '${amount.toStringAsFixed(2)} ₪',
+            maxLines: 1,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w900,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
