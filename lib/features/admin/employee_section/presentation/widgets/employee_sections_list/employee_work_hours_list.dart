@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../../core/helpers/whatsapp_launcher.dart';
+import '../../../../../../core/helpers/whatsapp_number_picker.dart';
 import '../../../../../../core/services/impersonation_service.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
@@ -23,7 +23,6 @@ import '../employee_card_swipe.dart';
 import '../employee_financial_details.dart';
 import '../employee_points_tab.dart';
 
-import '../../../../../../core/helpers/app_failure_notice.dart';
 enum _ShiftStatus {
   beforeShift,
   workingOnTime,
@@ -337,31 +336,12 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
     final primaryPhone = details.phone.replaceAll(' ', '');
     final alternatePhone = details.subPhone.replaceAll(' ', '');
     final rawPhone = primaryPhone.isNotEmpty ? primaryPhone : alternatePhone;
-    var digits = rawPhone.replaceAll(RegExp(r'\D'), '');
-    if (digits.startsWith('00')) digits = digits.substring(2);
-    if (digits.startsWith('0')) digits = '972${digits.substring(1)}';
-
-    final isSupportedNumber =
-        (digits.startsWith('970') || digits.startsWith('972')) &&
-            digits.length >= 11;
-    if (!isSupportedNumber) {
-      if (!context.mounted) return;
-      AppFailureNotice.show(
-        context: context,
-        title: 'خطأ',
-        message: 'رقم الموظف غير صالح للتواصل عبر واتساب',
-      );
-      return;
-    }
-
-    final opened = await WhatsAppLauncher.openChat(digits);
-    if (!opened && context.mounted) {
-      AppFailureNotice.show(
-        context: context,
-        title: 'خطأ',
-        message: 'تعذر فتح واتساب على هذا الجهاز',
-      );
-    }
+    if (!context.mounted) return;
+    await showWhatsAppNumberPicker(
+      context,
+      phone: rawPhone,
+      invalidMessage: 'رقم الموظف غير صالح للتواصل عبر واتساب',
+    );
   }
 
   Future<bool> _confirmSuspend(BuildContext context) async {
@@ -985,53 +965,62 @@ class _ShiftTimerBox extends StatelessWidget {
         ),
       ),
       alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            status == _ShiftStatus.leftWork
-                ? Icons.logout
-                : status == _ShiftStatus.beforeShift
-                    ? Icons.access_time
-                    : status == _ShiftStatus.overtime
-                        ? Icons.alarm_add
-                        : status == _ShiftStatus.absentDuringShift
-                            ? Icons.warning_amber_rounded
-                            : Icons.check_circle,
-            color: timerColor,
-            size: 15.sp,
-          ),
-          SizedBox(height: 1.h),
-          Text(
-            statusLabel,
-            textAlign: TextAlign.center,
-            style: textStyle.copyWith(
-              fontSize: 9.sp,
-              fontWeight: FontWeight.bold,
-              color: timerColor,
+      child: LayoutBuilder(
+        builder: (context, constraints) => FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: constraints.maxWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  status == _ShiftStatus.leftWork
+                      ? Icons.logout
+                      : status == _ShiftStatus.beforeShift
+                          ? Icons.access_time
+                          : status == _ShiftStatus.overtime
+                              ? Icons.alarm_add
+                              : status == _ShiftStatus.absentDuringShift
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.check_circle,
+                  color: timerColor,
+                  size: 15.sp,
+                ),
+                SizedBox(height: 1.h),
+                Text(
+                  statusLabel,
+                  textAlign: TextAlign.center,
+                  style: textStyle.copyWith(
+                    fontSize: 9.sp,
+                    fontWeight: FontWeight.bold,
+                    color: timerColor,
+                  ),
+                ),
+                SizedBox(height: 1.h),
+                if (showTimer)
+                  Text(
+                    timerText,
+                    textAlign: TextAlign.center,
+                    style: textStyle.copyWith(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w700,
+                      color: timerColor,
+                    ),
+                  ),
+                if (timerLabel.isNotEmpty && showTimer)
+                  Text(
+                    timerLabel,
+                    textAlign: TextAlign.center,
+                    style: textStyle.copyWith(
+                      fontSize: 8.sp,
+                      color: timerColor.withValues(alpha: 0.85),
+                    ),
+                  ),
+              ],
             ),
           ),
-          SizedBox(height: 1.h),
-          if (showTimer)
-            Text(
-              timerText,
-              textAlign: TextAlign.center,
-              style: textStyle.copyWith(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w700,
-                color: timerColor,
-              ),
-            ),
-          if (timerLabel.isNotEmpty && showTimer)
-            Text(
-              timerLabel,
-              textAlign: TextAlign.center,
-              style: textStyle.copyWith(
-                fontSize: 8.sp,
-                color: timerColor.withValues(alpha: 0.85),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
