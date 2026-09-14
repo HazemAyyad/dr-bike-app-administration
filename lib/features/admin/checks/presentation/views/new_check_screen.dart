@@ -1625,7 +1625,7 @@ Widget _twoFieldRow({
   );
 }
 
-class _OutgoingCheckFormFields extends StatelessWidget {
+class _OutgoingCheckFormFields extends StatefulWidget {
   const _OutgoingCheckFormFields({
     required this.controller,
     this.onDateChanged,
@@ -1637,15 +1637,38 @@ class _OutgoingCheckFormFields extends StatelessWidget {
   final VoidCallback? onPartnerSelected;
 
   @override
-  Widget build(BuildContext context) {
-    final c = controller;
+  State<_OutgoingCheckFormFields> createState() =>
+      _OutgoingCheckFormFieldsState();
+}
 
+class _OutgoingCheckFormFieldsState extends State<_OutgoingCheckFormFields> {
+  final _currencyKey = GlobalKey<DropdownSearchState<String>>();
+
+  ChecksController get c => widget.controller;
+
+  void _openCurrencyDropdown() {
+    FocusScope.of(context).unfocus();
+    Future<void>.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted) return;
+      _currencyKey.currentState?.openDropDownSearch();
+    });
+  }
+
+  void _focusCheckNumber() {
+    Future<void>.delayed(const Duration(milliseconds: 80), () {
+      if (!mounted) return;
+      c.checkNumberFocus.requestFocus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _UnifiedCheckPartnerSelector(
           controller: c,
-          onSelected: onPartnerSelected,
+          onSelected: widget.onPartnerSelected,
         ),
         SizedBox(height: 10.h),
         _twoFieldRow(
@@ -1658,26 +1681,27 @@ class _OutgoingCheckFormFields extends StatelessWidget {
             focusNode: c.checkValueFocus,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => c.checkNumberFocus.requestFocus(),
+            onFieldSubmitted: (_) => _openCurrencyDropdown(),
             requiredField: true,
           ),
-          second: DropdownButtonFormField<String>(
-            initialValue: c.currencyController.text.isEmpty
+          second: DropdownSearch<String>(
+            key: _currencyKey,
+            selectedItem: c.currencyController.text.isEmpty
                 ? null
                 : c.currencyController.text,
-            isExpanded: true,
-            decoration: _plainInputDecoration('currencyy'.tr),
-            items: c.currency
-                .map(
-                  (item) => DropdownMenuItem<String>(
-                    value: item,
-                    child: Text(item.tr),
-                  ),
-                )
-                .toList(),
+            items: (filter, infiniteScrollProps) => c.currency,
+            itemAsString: (item) => item.tr,
+            popupProps: const PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: TextFieldProps(autofocus: true),
+            ),
+            decoratorProps: DropDownDecoratorProps(
+              decoration: _plainInputDecoration('currencyy'.tr),
+            ),
             onChanged: (value) {
               if (value != null) {
                 c.currencyController.text = value;
+                _focusCheckNumber();
               }
             },
             validator: (value) =>
@@ -1691,7 +1715,7 @@ class _OutgoingCheckFormFields extends StatelessWidget {
             value: c.selectedDay.value,
             onChanged: (picked) {
               c.selectedDay.value = picked;
-              onDateChanged?.call();
+              widget.onDateChanged?.call();
             },
           ),
           second: _PlainTextField(
