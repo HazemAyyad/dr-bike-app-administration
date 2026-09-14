@@ -587,6 +587,22 @@ class SalesOrdersController extends GetxController {
     isPreparingEdit.value = true;
     try {
       await sales.hydrateFromSalesOrder(order);
+      final partnerType =
+          order.partnerType ?? (order.customerId != null ? 'customer' : null);
+      final partnerId = order.partnerId ?? order.customerId;
+      if (partnerType != null && partnerId != null && partnerId > 0) {
+        await loadPartnerAddresses(
+          isCustomer: partnerType == 'customer',
+          partnerId: partnerId,
+        );
+        selectedPartnerAddressId.value = order.partnerAddressId;
+        final selectedAddress = partnerAddresses.firstWhereOrNull(
+          (address) => address.id == order.partnerAddressId,
+        );
+        if (selectedAddress != null) {
+          selectPartnerAddress(selectedAddress);
+        }
+      }
     } finally {
       isPreparingEdit.value = false;
     }

@@ -711,6 +711,18 @@ class SalesController extends GetxController
     }
   }
 
+  Future<DailySessionPayload?> loadSalesOrdersDailySession() async {
+    try {
+      final payload = await Get.find<SalesDatasource>()
+          .getDailySessionCurrent(sessionType: 'sales_orders');
+      salesOrdersDailySessionPayload.value = payload;
+      return payload;
+    } catch (_) {
+      salesOrdersDailySessionPayload.value = null;
+      return null;
+    }
+  }
+
   Future<void> reviewSalesCancellationInline(
     SalesCancellationRequestModel request, {
     required bool approve,
@@ -958,8 +970,7 @@ class SalesController extends GetxController
   }
 
   Future<bool> ensureSalesOrderCanBeConfirmed() async {
-    await loadDailySession();
-    var payload = salesOrdersDailySessionPayload.value;
+    var payload = await loadSalesOrdersDailySession();
 
     if (payload == null) {
       AppFailureNotice.show(
@@ -980,8 +991,7 @@ class SalesController extends GetxController
       );
       if (opened != true) return false;
 
-      await loadDailySession();
-      payload = salesOrdersDailySessionPayload.value;
+      payload = await loadSalesOrdersDailySession();
     }
 
     if (payload == null || !payload.allowsSales) {

@@ -180,153 +180,162 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
       if (partner != null && !focus.hasFocus && search.text != partner.name) {
         search.text = partner.name;
       }
-      return Container(
-        padding: EdgeInsets.all(widget.compact ? 10.r : 12.r),
-        decoration: BoxDecoration(
-          color: SalesOrdersController.cardGray,
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: SalesOrdersController.borderGray),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.people_alt_outlined,
-                size: 19.sp, color: AppColors.primaryColor),
-            SizedBox(width: 6.w),
-            Text('الزبون أو المورد',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
-            const Spacer(),
-            if (partner != null)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                child: Text(
-                  sales.pickerPartnerIsCustomer.value ? 'زبون' : 'مورد',
-                  style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryColor),
-                ),
-              ),
-          ]),
-          SizedBox(height: 8.h),
-          TextField(
-            controller: search,
-            focusNode: focus,
-            decoration: InputDecoration(
-              hintText: 'ابحث بالاسم أو رقم الهاتف',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: partner == null
-                  ? null
-                  : IconButton(
-                      tooltip: 'إلغاء الاختيار',
-                      onPressed: () async {
-                        await sales.clearPickerPartner();
-                        orders.partnerAddresses.clear();
-                        orders.selectedPartnerAddressId.value = null;
-                        search.clear();
-                        if (mounted) setState(() => showResults = true);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-              filled: true,
-              fillColor: Colors.white,
-              isDense: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11.r),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            onChanged: (_) => setState(() => showResults = true),
+      return TapRegion(
+        onTapOutside: (_) {
+          focus.unfocus();
+          if (mounted && showResults) setState(() => showResults = false);
+        },
+        child: Container(
+          padding: EdgeInsets.all(widget.compact ? 10.r : 12.r),
+          decoration: BoxDecoration(
+            color: SalesOrdersController.cardGray,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: SalesOrdersController.borderGray),
           ),
-          if (showResults && focus.hasFocus)
-            Container(
-              constraints: BoxConstraints(maxHeight: 220.h),
-              margin: EdgeInsets.only(top: 6.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: AppColors.operationalCardBorder),
-              ),
-              child: results.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(14), child: Text('لا توجد نتائج'))
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: results.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, index) {
-                        final entry = results[index];
-                        return ListTile(
-                          dense: true,
-                          leading: Icon(
-                            entry.isCustomer
-                                ? Icons.person_outline
-                                : Icons.storefront_outlined,
-                            color: AppColors.primaryColor,
-                          ),
-                          title: Text(entry.partner.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700)),
-                          subtitle: Text([
-                            entry.isCustomer ? 'زبون' : 'مورد',
-                            if (entry.partner.phone.trim().isNotEmpty)
-                              entry.partner.phone,
-                          ].join(' • ')),
-                          onTap: () => _select(entry),
-                        );
-                      },
-                    ),
-            ),
-          if (partner != null) ...[
-            SizedBox(height: 6.h),
-            InkWell(
-              onTap: _openAddresses,
-              borderRadius: BorderRadius.circular(8.r),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 5.h),
-                child: Row(children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 19.sp, color: AppColors.primaryColor),
-                  SizedBox(width: 6.w),
-                  Expanded(
-                    child: Text(
-                      selectedAddress == null
-                          ? 'العنوان اختياري — اضغط للاختيار'
-                          : _addressText(selectedAddress),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5.sp,
-                        fontWeight: selectedAddress == null
-                            ? FontWeight.w500
-                            : FontWeight.w700,
-                        color: selectedAddress == null
-                            ? Colors.grey.shade600
-                            : SalesOrdersController.textPrimary,
-                      ),
-                    ),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Icons.people_alt_outlined,
+                  size: 19.sp, color: AppColors.primaryColor),
+              SizedBox(width: 6.w),
+              Text('الزبون أو المورد',
+                  style:
+                      TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              if (partner != null)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(20.r),
                   ),
-                  if (selectedAddress != null)
-                    InkWell(
-                      onTap: orders.clearPartnerAddress,
-                      borderRadius: BorderRadius.circular(20.r),
-                      child: Padding(
-                        padding: EdgeInsets.all(4.r),
-                        child: Icon(Icons.close_rounded,
-                            size: 17.sp, color: Colors.grey.shade600),
+                  child: Text(
+                    sales.pickerPartnerIsCustomer.value ? 'زبون' : 'مورد',
+                    style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor),
+                  ),
+                ),
+            ]),
+            SizedBox(height: 8.h),
+            TextField(
+              controller: search,
+              focusNode: focus,
+              decoration: InputDecoration(
+                hintText: 'ابحث بالاسم أو رقم الهاتف',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: partner == null
+                    ? null
+                    : IconButton(
+                        tooltip: 'إلغاء الاختيار',
+                        onPressed: () async {
+                          await sales.clearPickerPartner();
+                          orders.partnerAddresses.clear();
+                          orders.selectedPartnerAddressId.value = null;
+                          search.clear();
+                          if (mounted) setState(() => showResults = true);
+                        },
+                        icon: const Icon(Icons.close_rounded),
                       ),
-                    )
-                  else
-                    Icon(Icons.chevron_left_rounded,
-                        size: 20.sp, color: Colors.grey.shade600),
-                ]),
+                filled: true,
+                fillColor: Colors.white,
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(11.r),
+                  borderSide: BorderSide.none,
+                ),
               ),
+              onChanged: (_) => setState(() => showResults = true),
             ),
-          ],
-        ]),
+            if (showResults && focus.hasFocus)
+              Container(
+                constraints: BoxConstraints(maxHeight: 220.h),
+                margin: EdgeInsets.only(top: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: AppColors.operationalCardBorder),
+                ),
+                child: results.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: Text('لا توجد نتائج'))
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: results.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final entry = results[index];
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              entry.isCustomer
+                                  ? Icons.person_outline
+                                  : Icons.storefront_outlined,
+                              color: AppColors.primaryColor,
+                            ),
+                            title: Text(entry.partner.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700)),
+                            subtitle: Text([
+                              entry.isCustomer ? 'زبون' : 'مورد',
+                              if (entry.partner.phone.trim().isNotEmpty)
+                                entry.partner.phone,
+                            ].join(' • ')),
+                            onTap: () => _select(entry),
+                          );
+                        },
+                      ),
+              ),
+            if (partner != null) ...[
+              SizedBox(height: 6.h),
+              InkWell(
+                onTap: _openAddresses,
+                borderRadius: BorderRadius.circular(8.r),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 5.h),
+                  child: Row(children: [
+                    Icon(Icons.location_on_outlined,
+                        size: 19.sp, color: AppColors.primaryColor),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        selectedAddress == null
+                            ? 'العنوان اختياري — اضغط للاختيار'
+                            : _addressText(selectedAddress),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5.sp,
+                          fontWeight: selectedAddress == null
+                              ? FontWeight.w500
+                              : FontWeight.w700,
+                          color: selectedAddress == null
+                              ? Colors.grey.shade600
+                              : SalesOrdersController.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (selectedAddress != null)
+                      InkWell(
+                        onTap: orders.clearPartnerAddress,
+                        borderRadius: BorderRadius.circular(20.r),
+                        child: Padding(
+                          padding: EdgeInsets.all(4.r),
+                          child: Icon(Icons.close_rounded,
+                              size: 17.sp, color: Colors.grey.shade600),
+                        ),
+                      )
+                    else
+                      Icon(Icons.chevron_left_rounded,
+                          size: 20.sp, color: Colors.grey.shade600),
+                  ]),
+                ),
+              ),
+            ],
+          ]),
+        ),
       );
     });
   }

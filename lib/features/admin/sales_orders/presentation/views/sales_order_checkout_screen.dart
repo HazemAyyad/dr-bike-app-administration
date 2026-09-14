@@ -31,6 +31,8 @@ class SalesOrderCheckoutScreen extends StatefulWidget {
 }
 
 class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
+  final _netPriceController = TextEditingController();
+
   SalesController get sales => Get.find<SalesController>();
   SalesOrdersController get orders => Get.find<SalesOrdersController>();
 
@@ -107,6 +109,12 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
     );
     pc.forInstantSale = true;
     Get.put(pc, tag: kSalesOrderPaymentTag);
+  }
+
+  @override
+  void dispose() {
+    _netPriceController.dispose();
+    super.dispose();
   }
 
   void _releasePaymentController() {
@@ -248,6 +256,12 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
     final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
     return Obx(() {
       final _ = sales.cartRevision.value;
+      _netPriceController.text =
+          '${SalesAmountFormat.display(sales.totalCost.value)} ₪';
+      final fieldDecoration = InputDecoration(
+        border: const OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
+      );
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -257,24 +271,15 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (_) => sales.calculateGrandTotal(),
-              decoration: const InputDecoration(
-                labelText: 'الخصم',
-                border: OutlineInputBorder(),
-              ),
+              decoration: fieldDecoration.copyWith(labelText: 'الخصم'),
             ),
           ),
           SizedBox(width: 7.w),
           Expanded(
-            child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'صافي سعر الطلب',
-                border: OutlineInputBorder(),
-              ),
-              child: Text(
-                '${SalesAmountFormat.display(sales.totalCost.value)} ₪',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            child: TextField(
+              readOnly: true,
+              controller: _netPriceController,
+              decoration: fieldDecoration.copyWith(labelText: 'صافي سعر الطلب'),
             ),
           ),
           SizedBox(width: 7.w),
@@ -285,10 +290,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (_) => sales.refreshInstantSalePaymentSummaryForTag(
                   kSalesOrderPaymentTag),
-              decoration: const InputDecoration(
-                labelText: 'المبلغ النقدي',
-                border: OutlineInputBorder(),
-              ),
+              decoration: fieldDecoration.copyWith(labelText: 'المبلغ النقدي'),
             ),
           ),
         ],
