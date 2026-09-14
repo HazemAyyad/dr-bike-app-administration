@@ -45,10 +45,12 @@ class WhatsAppApiService {
     String message, {
     String channel = 'whatsapp',
     int? replyToMessageId,
+    String? clientMessageId,
   }) =>
       _post('$_socialBase/conversations/$channel/$id/send', {
         'message': message,
         if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
+        if (clientMessageId != null) 'client_message_id': clientMessageId,
       });
 
   Future<Map<String, dynamic>> resendMessage(

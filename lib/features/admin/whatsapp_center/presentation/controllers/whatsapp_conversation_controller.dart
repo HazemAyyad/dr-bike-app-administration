@@ -19,6 +19,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class WhatsAppConversationController extends GetxController {
   static const _platformChannel = MethodChannel('dr_bike/platform_info');
   static final Map<String, Future<File>> _mediaFileRequests = {};
@@ -61,6 +62,7 @@ class WhatsAppConversationController extends GetxController {
   Timer? _refreshTimer;
   Timer? _typingDebounce;
   DateTime? _lastTypingSentAt;
+  int _nextLocalMessageId = -1;
   String? _recordingPath;
   bool _recordingIsVoiceNote = false;
   bool _openedAtLatestMessage = false;
@@ -131,7 +133,16 @@ class WhatsAppConversationController extends GetxController {
           .toList()
           .reversed
           .toList();
-      messages.assignAll(parsedMessages);
+      final remoteClientIds = parsedMessages
+          .map((message) => message.clientMessageId)
+          .whereType<String>()
+          .toSet();
+      final localMessages = messages
+          .where((message) =>
+              message.id < 0 &&
+              !remoteClientIds.contains(message.clientMessageId))
+          .toList();
+      messages.assignAll([...parsedMessages, ...localMessages]);
       _prefetchConversationMedia(parsedMessages);
       if (serviceWindow is! Map) {
         final inboundDates = messages
@@ -204,29 +215,83 @@ class WhatsAppConversationController extends GetxController {
 
   Future<void> send() async {
     final text = input.text.trim();
-    if (text.isEmpty || sending.value) return;
-    sending.value = true;
+    if (text.isEmpty) return;
+    final reply = replyingTo.value;
+    final localId = _nextLocalMessageId--;
+    final clientMessageId =
+        '$channel-$id-${DateTime.now().microsecondsSinceEpoch}-${-localId}';
+    final localMessage = WhatsAppMessage(
+      id: localId,
+      channel: channel,
+      direction: 'outbound',
+      type: 'text',
+      body: text,
+      status: 'pending',
+      clientMessageId: clientMessageId,
+      replyTo: reply,
+      createdAt: DateTime.now(),
+    );
+    messages.add(localMessage);
+    input.clear();
+    replyingTo.value = null;
+    _scrollToLatest();
     try {
-      await api.sendWhatsAppMessageToConversation(
+      final result = await api.sendWhatsAppMessageToConversation(
         id,
         text,
         channel: channel,
-        replyToMessageId: replyingTo.value?.id,
+        replyToMessageId: reply != null && reply.id > 0 ? reply.id : null,
+        clientMessageId: clientMessageId,
       );
-      input.clear();
-      replyingTo.value = null;
-      await load();
+      final rawMessage = result['message'];
+      if (rawMessage is Map) {
+        _replaceMessage(
+          localMessage.id,
+          WhatsAppMessage.fromJson(Map<String, dynamic>.from(rawMessage)),
+        );
+      } else {
+        await load(silent: true);
+        messages.removeWhere((message) => message.id == localMessage.id);
+      }
     } catch (e) {
-      AppFailureNotice.show(
-        title: 'خطأ',
-        message: e.toString(),
+      await load(silent: true);
+      if (!messages.any((message) => message.id == localMessage.id)) return;
+      _replaceMessage(
+        localMessage.id,
+        WhatsAppMessage(
+          id: localMessage.id,
+          channel: channel,
+          direction: 'outbound',
+          type: 'text',
+          body: text,
+          status: 'failed',
+          errorMessage: 'تعذر الإرسال. اضغط مطولًا لإعادة المحاولة.',
+          clientMessageId: clientMessageId,
+          replyTo: reply,
+          createdAt: localMessage.createdAt,
+        ),
       );
-    } finally {
-      sending.value = false;
     }
   }
 
+  void _replaceMessage(int id, WhatsAppMessage replacement) {
+    final index = messages.indexWhere((message) => message.id == id);
+    if (index == -1) {
+      messages.add(replacement);
+    } else {
+      messages[index] = replacement;
+    }
+    messages.refresh();
+  }
+
   Future<void> resendMessage(WhatsAppMessage message) async {
+    if (message.id < 0) {
+      messages.removeWhere((item) => item.id == message.id);
+      input.text = message.body ?? '';
+      replyingTo.value = message.replyTo;
+      await send();
+      return;
+    }
     if (sending.value) return;
     sending.value = true;
     try {
@@ -327,6 +392,11 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> hideMessage(WhatsAppMessage message) async {
+    if (message.id < 0) {
+      messages.removeWhere((item) => item.id == message.id);
+      if (replyingTo.value?.id == message.id) replyingTo.value = null;
+      return;
+    }
     try {
       await api.hideMessage(id, message.id);
       messages.removeWhere((item) => item.id == message.id);

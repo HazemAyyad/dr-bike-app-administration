@@ -220,7 +220,7 @@ class WhatsAppConversation {
 class WhatsAppMessage {
   final int id;
   final String direction, type, status, channel;
-  final String? body, errorMessage;
+  final String? body, errorMessage, clientMessageId;
   final String? mediaUrl;
   final String? linkUrl;
   final WhatsAppMessageMedia? media;
@@ -238,6 +238,7 @@ class WhatsAppMessage {
     this.body,
     required this.status,
     this.errorMessage,
+    this.clientMessageId,
     this.mediaUrl,
     this.linkUrl,
     this.media,
@@ -256,6 +257,7 @@ class WhatsAppMessage {
         body: j['body']?.toString(),
         status: j['status']?.toString() ?? 'pending',
         errorMessage: j['error_message']?.toString(),
+        clientMessageId: j['client_message_id']?.toString(),
         mediaUrl: j['media_url']?.toString(),
         linkUrl: j['link_url']?.toString(),
         media: j['media'] is Map
