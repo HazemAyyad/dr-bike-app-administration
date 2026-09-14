@@ -10,6 +10,7 @@ import '../../data/whatsapp_models.dart';
 import 'whatsapp_product_picker_screen.dart';
 import 'whatsapp_camera_screen.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class WhatsAppConversationScreen
     extends GetView<WhatsAppConversationController> {
@@ -199,6 +200,58 @@ class WhatsAppConversationScreen
                         return const SizedBox.shrink();
                       }
                       return _MetaUnpublishedBanner(status: status);
+                    }),
+                    Obx(() {
+                      final pinned = controller.messages
+                          .where((message) => message.pinned)
+                          .toList();
+                      if (pinned.isEmpty) return const SizedBox.shrink();
+                      final message = pinned.last;
+                      return Material(
+                        color: const Color(0xFFF7FAF9),
+                        child: InkWell(
+                          onTap: () => _showMessageActions(context, message),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Color(0x1F000000)),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.push_pin,
+                                    size: 18,
+                                    color: _channelColor(controller.channel)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('رسالة مثبتة',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700)),
+                                      Text(
+                                        _visibleBody(message) ??
+                                            _mediaLabel(message.type),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontSize: 12, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_left, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
                     }),
                     Expanded(child: Obx(() {
                       if (controller.loading.value) {
@@ -595,6 +648,9 @@ class WhatsAppConversationScreen
                               .join('\n');
                           if (text.isNotEmpty) {
                             await Clipboard.setData(ClipboardData(text: text));
+                            AppSuccessNotice.show(
+                                title: 'تم النسخ',
+                                message: 'تم نسخ الرسائل المحددة');
                           }
                           controller.clearMessageSelection();
                         },
@@ -633,132 +689,143 @@ class WhatsAppConversationScreen
       BuildContext context, WhatsAppMessage message) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (_) => SafeArea(
-        child: Wrap(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: ['👍', '❤️', '😂', '😮', '😢', '🙏']
-                    .map((emoji) => InkWell(
-                          borderRadius: BorderRadius.circular(22),
-                          onTap: () {
-                            Navigator.pop(context);
-                            controller.messageAction(message, 'react',
-                                reaction:
-                                    message.reaction == emoji ? '' : emoji);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(emoji,
-                                style: const TextStyle(fontSize: 24)),
-                          ),
-                        ))
-                    .toList(),
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .72,
+          minChildSize: .35,
+          maxChildSize: .94,
+          builder: (_, scrollController) => ListView(
+            controller: scrollController,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: ['👍', '❤️', '😂', '😮', '😢', '🙏']
+                      .map((emoji) => InkWell(
+                            borderRadius: BorderRadius.circular(22),
+                            onTap: () {
+                              Navigator.pop(context);
+                              controller.messageAction(message, 'react',
+                                  reaction:
+                                      message.reaction == emoji ? '' : emoji);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(emoji,
+                                  style: const TextStyle(fontSize: 24)),
+                            ),
+                          ))
+                      .toList(),
+                ),
               ),
-            ),
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showMoreReactions(context, message);
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('المزيد من التفاعلات'),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showMoreReactions(context, message);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('المزيد من التفاعلات'),
+                ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.reply, color: Color(0xFF008069)),
-              title: const Text('رد على الرسالة'),
-              onTap: () {
-                Navigator.pop(context);
-                controller.replyTo(message);
-              },
-            ),
-            if (message.body?.isNotEmpty == true)
               ListTile(
-                leading: const Icon(Icons.copy_outlined),
-                title: const Text('نسخ'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await Clipboard.setData(ClipboardData(text: message.body!));
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.forward),
-              title: const Text('تحويل'),
-              onTap: () {
-                Navigator.pop(context);
-                _showForwardDialog(context, [message]);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                  message.pinned ? Icons.push_pin : Icons.push_pin_outlined),
-              title: Text(message.pinned ? 'إلغاء التثبيت' : 'تثبيت'),
-              onTap: () {
-                Navigator.pop(context);
-                controller.messageAction(
-                    message, message.pinned ? 'unpin' : 'pin');
-              },
-            ),
-            ListTile(
-              leading: Icon(message.starred ? Icons.star : Icons.star_border),
-              title: Text(message.starred ? 'إزالة النجمة' : 'تمييز بنجمة'),
-              onTap: () {
-                Navigator.pop(context);
-                controller.messageAction(
-                    message, message.starred ? 'unstar' : 'star');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.check_box_outlined),
-              title: const Text('تحديد'),
-              onTap: () {
-                Navigator.pop(context);
-                controller.toggleMessageSelection(message);
-              },
-            ),
-            if (message.direction == 'inbound')
-              ListTile(
-                leading: const Icon(Icons.report_outlined),
-                title: Text(message.reported ? 'تم التبليغ' : 'تبليغ داخلي'),
-                enabled: !message.reported,
+                leading: const Icon(Icons.reply, color: Color(0xFF008069)),
+                title: const Text('رد على الرسالة'),
                 onTap: () {
                   Navigator.pop(context);
-                  controller.messageAction(message, 'report');
+                  controller.replyTo(message);
                 },
               ),
-            if (message.direction == 'outbound' &&
-                message.status == 'failed' &&
-                message.type == 'text')
+              if (message.body?.isNotEmpty == true)
+                ListTile(
+                  leading: const Icon(Icons.copy_outlined),
+                  title: const Text('نسخ'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await Clipboard.setData(ClipboardData(text: message.body!));
+                    AppSuccessNotice.show(
+                        title: 'تم النسخ', message: 'تم نسخ الرسالة');
+                  },
+                ),
               ListTile(
-                leading: const Icon(Icons.refresh, color: Color(0xFF1877F2)),
-                title: const Text('إعادة إرسال'),
+                leading: const Icon(Icons.forward),
+                title: const Text('تحويل'),
                 onTap: () {
                   Navigator.pop(context);
-                  controller.resendMessage(message);
+                  _showForwardDialog(context, [message]);
                 },
               ),
-            ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: Color(0xFFD93025)),
-              title: const Text('حذف من عرضي'),
-              subtitle: const Text('تبقى الرسالة محفوظة ولا تُحذف عند الزبون'),
-              onTap: () {
-                Navigator.pop(context);
-                controller.hideMessage(message);
-              },
-            ),
-            if (message.direction == 'outbound')
-              const ListTile(
-                enabled: false,
-                leading: Icon(Icons.phonelink_erase),
-                title: Text('حذف لدى الزبون'),
-                subtitle: Text('غير متاح حاليًا عبر WhatsApp Cloud API'),
+              ListTile(
+                leading: Icon(
+                    message.pinned ? Icons.push_pin : Icons.push_pin_outlined),
+                title: Text(message.pinned ? 'إلغاء التثبيت' : 'تثبيت'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.messageAction(
+                      message, message.pinned ? 'unpin' : 'pin');
+                },
               ),
-          ],
+              ListTile(
+                leading: Icon(message.starred ? Icons.star : Icons.star_border),
+                title: Text(message.starred ? 'إزالة النجمة' : 'تمييز بنجمة'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.messageAction(
+                      message, message.starred ? 'unstar' : 'star');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.check_box_outlined),
+                title: const Text('تحديد'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.toggleMessageSelection(message);
+                },
+              ),
+              if (message.direction == 'inbound')
+                ListTile(
+                  leading: const Icon(Icons.report_outlined),
+                  title: Text(message.reported ? 'تم التبليغ' : 'تبليغ داخلي'),
+                  enabled: !message.reported,
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.messageAction(message, 'report');
+                  },
+                ),
+              if (message.direction == 'outbound' &&
+                  message.status == 'failed' &&
+                  message.type == 'text')
+                ListTile(
+                  leading: const Icon(Icons.refresh, color: Color(0xFF1877F2)),
+                  title: const Text('إعادة إرسال'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.resendMessage(message);
+                  },
+                ),
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline, color: Color(0xFFD93025)),
+                title: const Text('حذف من عرضي'),
+                subtitle:
+                    const Text('تبقى الرسالة محفوظة ولا تُحذف عند الزبون'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.hideMessage(message);
+                },
+              ),
+              if (message.direction == 'outbound')
+                const ListTile(
+                  enabled: false,
+                  leading: Icon(Icons.phonelink_erase),
+                  title: Text('حذف لدى الزبون'),
+                  subtitle: Text('غير متاح حاليًا عبر WhatsApp Cloud API'),
+                ),
+            ],
+          ),
         ),
       ),
     );
