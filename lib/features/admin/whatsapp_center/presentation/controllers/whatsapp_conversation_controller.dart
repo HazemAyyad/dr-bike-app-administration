@@ -43,6 +43,7 @@ class WhatsAppConversationController extends GetxController {
   final customerServiceWindowOpen = true.obs;
   final customerServiceWindowExpiresAt = Rxn<DateTime>();
   final replyingTo = Rxn<WhatsAppMessage>();
+  final selectedMessageIds = <int>{}.obs;
   final assignees = <ConversationAssignee>[].obs;
   final availableTags = <ConversationTag>[].obs;
   final metaAppStatus = Rxn<MetaAppStatus>();
@@ -389,6 +390,88 @@ class WhatsAppConversationController extends GetxController {
 
   void cancelReply() {
     replyingTo.value = null;
+  }
+
+  void toggleMessageSelection(WhatsAppMessage message) {
+    if (selectedMessageIds.contains(message.id)) {
+      selectedMessageIds.remove(message.id);
+    } else {
+      selectedMessageIds.add(message.id);
+    }
+  }
+
+  void clearMessageSelection() => selectedMessageIds.clear();
+
+  List<WhatsAppMessage> get selectedMessages => messages
+      .where((message) => selectedMessageIds.contains(message.id))
+      .toList();
+
+  Future<void> messageAction(
+    WhatsAppMessage message,
+    String action, {
+    String? reaction,
+    String? reason,
+  }) async {
+    if (message.id < 0) return;
+    try {
+      await api.messageAction(
+        id,
+        message.id,
+        channel: channel,
+        action: action,
+        reaction: reaction,
+        reason: reason,
+      );
+      await load(silent: true);
+    } catch (e) {
+      AppFailureNotice.show(title: 'تعذر تنفيذ الإجراء', message: e.toString());
+    }
+  }
+
+  Future<List<WhatsAppConversation>> loadForwardTargets() async {
+    final result = await api.getWhatsAppConversations(
+      channel: 'all',
+      perPage: 50,
+    );
+    final block = result['conversations'];
+    final data = block is Map && block['data'] is List
+        ? block['data'] as List
+        : const [];
+    return data
+        .whereType<Map>()
+        .map((item) =>
+            WhatsAppConversation.fromJson(Map<String, dynamic>.from(item)))
+        .where((item) => item.id != id || item.channel != channel)
+        .toList();
+  }
+
+  Future<bool> forwardMessages(
+      List<WhatsAppMessage> source, WhatsAppConversation target) async {
+    try {
+      for (final message in source.where((message) => message.id > 0)) {
+        await api.forwardMessage(
+          id,
+          message.id,
+          channel: channel,
+          targetChannel: target.channel,
+          targetConversationId: target.id,
+        );
+      }
+      clearMessageSelection();
+      AppSuccessNotice.show(title: 'تم التحويل', message: 'تم تحويل الرسائل');
+      return true;
+    } catch (e) {
+      AppFailureNotice.show(title: 'تعذر التحويل', message: e.toString());
+      return false;
+    }
+  }
+
+  Future<void> hideSelectedMessages() async {
+    final selected = selectedMessages.toList();
+    for (final message in selected) {
+      await hideMessage(message);
+    }
+    clearMessageSelection();
   }
 
   Future<void> hideMessage(WhatsAppMessage message) async {

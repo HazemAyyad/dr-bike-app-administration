@@ -227,6 +227,8 @@ class WhatsAppMessage {
   final WhatsAppCommerceMessage? commerce;
   final String? senderName;
   final bool isAutomatic;
+  final bool pinned, starred, reported;
+  final String? reaction;
   final WhatsAppMessage? replyTo;
   final DateTime? createdAt;
   final DateTime? customerDeletedAt;
@@ -245,6 +247,10 @@ class WhatsAppMessage {
     this.commerce,
     this.senderName,
     this.isAutomatic = false,
+    this.pinned = false,
+    this.starred = false,
+    this.reported = false,
+    this.reaction,
     this.replyTo,
     this.createdAt,
     this.customerDeletedAt,
@@ -272,6 +278,10 @@ class WhatsAppMessage {
             ? (j['sender'] as Map)['name']?.toString()
             : null,
         isAutomatic: j['is_automatic'] == true || j['is_automatic'] == 1,
+        pinned: j['pinned'] == true || j['pinned'] == 1,
+        starred: j['starred'] == true || j['starred'] == 1,
+        reported: j['reported'] == true || j['reported'] == 1,
+        reaction: j['reaction']?.toString(),
         replyTo: j['reply_to'] is Map
             ? WhatsAppMessage.fromJson(
                 Map<String, dynamic>.from(j['reply_to'] as Map))

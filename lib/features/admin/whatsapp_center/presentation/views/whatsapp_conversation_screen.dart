@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:typed_data';
+import 'package:flutter/services.dart';
 
 import '../controllers/whatsapp_conversation_controller.dart';
 import '../utils/social_datetime_formatters.dart';
@@ -220,6 +220,8 @@ class WhatsAppConversationScreen
                           itemCount: controller.messages.length,
                           itemBuilder: (_, index) {
                             final message = controller.messages[index];
+                            final selected = controller.selectedMessageIds
+                                .contains(message.id);
                             final outbound = message.direction == 'outbound';
                             final previous = index > 0
                                 ? controller.messages[index - 1]
@@ -233,268 +235,346 @@ class WhatsAppConversationScreen
                                 alignment: outbound
                                     ? Alignment.centerRight
                                     : Alignment.centerLeft,
-                                child: GestureDetector(
-                                  onLongPress: () =>
-                                      _showMessageActions(context, message),
-                                  onHorizontalDragEnd: (details) {
-                                    if ((details.primaryVelocity ?? 0).abs() >
-                                        180) {
-                                      controller.replyTo(message);
-                                    }
+                                child: Dismissible(
+                                  key: ValueKey(
+                                      'message-${message.channel}-${message.id}'),
+                                  direction: DismissDirection.horizontal,
+                                  confirmDismiss: (_) async {
+                                    controller.replyTo(message);
+                                    return false;
                                   },
-                                  child: Container(
-                                    constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.sizeOf(context).width *
-                                                .78),
-                                    margin:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    padding:
-                                        const EdgeInsets.fromLTRB(12, 9, 12, 7),
-                                    decoration: BoxDecoration(
-                                      color: outbound
-                                          ? _outboundBubbleColor(
-                                              message.channel)
-                                          : message.customerDeletedAt != null
-                                              ? const Color(0xFFFFE8A3)
-                                              : Theme.of(context).cardColor,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(10),
-                                        topRight: const Radius.circular(10),
-                                        bottomLeft:
-                                            Radius.circular(outbound ? 10 : 2),
-                                        bottomRight:
-                                            Radius.circular(outbound ? 2 : 10),
-                                      ),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                            color: Color(0x18000000),
-                                            blurRadius: 4)
-                                      ],
+                                  background: const Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Padding(
+                                      padding: EdgeInsets.all(14),
+                                      child: Icon(Icons.reply,
+                                          color: Color(0xFF008069)),
                                     ),
-                                    child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          if (outbound &&
-                                              (message.senderName != null ||
-                                                  message.isAutomatic))
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 5),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    message.isAutomatic
-                                                        ? Icons
-                                                            .smart_toy_outlined
-                                                        : Icons.support_agent,
-                                                    size: 14,
-                                                    color:
-                                                        const Color(0xFF008069),
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    message.isAutomatic
-                                                        ? 'الرد التلقائي'
-                                                        : message.senderName!,
-                                                    style: const TextStyle(
-                                                      color: Color(0xFF008069),
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
+                                  ),
+                                  secondaryBackground: const Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Padding(
+                                      padding: EdgeInsets.all(14),
+                                      child: Icon(Icons.reply,
+                                          color: Color(0xFF008069)),
+                                    ),
+                                  ),
+                                  child: GestureDetector(
+                                    onLongPress: () =>
+                                        _showMessageActions(context, message),
+                                    onTap: controller.selectedMessageIds.isEmpty
+                                        ? null
+                                        : () => controller
+                                            .toggleMessageSelection(message),
+                                    child: Container(
+                                      constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.sizeOf(context).width *
+                                                  .78),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      padding: const EdgeInsets.fromLTRB(
+                                          12, 9, 12, 7),
+                                      decoration: BoxDecoration(
+                                        color: outbound
+                                            ? _outboundBubbleColor(
+                                                message.channel)
+                                            : message.customerDeletedAt != null
+                                                ? const Color(0xFFFFE8A3)
+                                                : Theme.of(context).cardColor,
+                                        border: selected
+                                            ? Border.all(
+                                                color: const Color(0xFF00A884),
+                                                width: 2)
+                                            : null,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(10),
+                                          topRight: const Radius.circular(10),
+                                          bottomLeft: Radius.circular(
+                                              outbound ? 10 : 2),
+                                          bottomRight: Radius.circular(
+                                              outbound ? 2 : 10),
+                                        ),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                              color: Color(0x18000000),
+                                              blurRadius: 4)
+                                        ],
+                                      ),
+                                      child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            if (outbound &&
+                                                (message.senderName != null ||
+                                                    message.isAutomatic))
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    bottom: 5),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      message.isAutomatic
+                                                          ? Icons
+                                                              .smart_toy_outlined
+                                                          : Icons.support_agent,
+                                                      size: 14,
+                                                      color: const Color(
+                                                          0xFF008069),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      message.isAutomatic
+                                                          ? 'الرد التلقائي'
+                                                          : message.senderName!,
+                                                      style: const TextStyle(
+                                                        color:
+                                                            Color(0xFF008069),
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          if (message.replyTo != null)
-                                            _ReplyPreview(
-                                              message: message.replyTo!,
-                                              controller: controller,
-                                            ),
-                                          if (message.linkUrl != null)
-                                            _LinkPreviewCard(
-                                              url: message.linkUrl!,
-                                              controller: controller,
-                                            ),
-                                          if (message.mediaUrl != null &&
-                                              message.type == 'image')
-                                            GestureDetector(
-                                              onTap: () =>
-                                                  controller.showMedia(message),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: FutureBuilder<Uint8List>(
-                                                  future: controller
-                                                      .getMediaBytes(message),
-                                                  builder: (context, snapshot) {
-                                                    if (snapshot.hasData) {
-                                                      return Image.memory(
-                                                        snapshot.data!,
-                                                        width: 260,
-                                                        fit: BoxFit.cover,
-                                                      );
-                                                    }
-                                                    if (snapshot.hasError) {
+                                            if (message.replyTo != null)
+                                              _ReplyPreview(
+                                                message: message.replyTo!,
+                                                controller: controller,
+                                              ),
+                                            if (message.linkUrl != null)
+                                              _LinkPreviewCard(
+                                                url: message.linkUrl!,
+                                                controller: controller,
+                                              ),
+                                            if (message.mediaUrl != null &&
+                                                message.type == 'image')
+                                              GestureDetector(
+                                                onTap: () => controller
+                                                    .showMedia(message),
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  child:
+                                                      FutureBuilder<Uint8List>(
+                                                    future: controller
+                                                        .getMediaBytes(message),
+                                                    builder:
+                                                        (context, snapshot) {
+                                                      if (snapshot.hasData) {
+                                                        return Image.memory(
+                                                          snapshot.data!,
+                                                          width: 260,
+                                                          fit: BoxFit.cover,
+                                                        );
+                                                      }
+                                                      if (snapshot.hasError) {
+                                                        return const SizedBox(
+                                                          width: 230,
+                                                          height: 90,
+                                                          child: Center(
+                                                              child: Icon(Icons
+                                                                  .broken_image_outlined)),
+                                                        );
+                                                      }
                                                       return const SizedBox(
                                                         width: 230,
-                                                        height: 90,
+                                                        height: 150,
                                                         child: Center(
-                                                            child: Icon(Icons
-                                                                .broken_image_outlined)),
+                                                            child:
+                                                                CircularProgressIndicator()),
                                                       );
-                                                    }
-                                                    return const SizedBox(
-                                                      width: 230,
-                                                      height: 150,
-                                                      child: Center(
-                                                          child:
-                                                              CircularProgressIndicator()),
-                                                    );
-                                                  },
+                                                    },
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          if (message.mediaUrl != null &&
-                                              message.type == 'audio')
-                                            WhatsAppAudioBubble(
-                                              message: message,
-                                              controller: controller,
-                                            ),
-                                          if (message.mediaUrl != null &&
-                                              message.type == 'video')
-                                            WhatsAppVideoBubble(
-                                              message: message,
-                                              controller: controller,
-                                            ),
-                                          if (message.mediaUrl != null &&
-                                              !['image', 'audio', 'video']
-                                                  .contains(message.type))
-                                            InkWell(
-                                              onTap: () =>
-                                                  controller.showMedia(message),
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.all(10),
-                                                margin: const EdgeInsets.only(
-                                                    bottom: 5),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                      color: const Color(
-                                                          0xFFB8CBC6)),
-                                                ),
-                                                child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const CircleAvatar(
-                                                        backgroundColor:
-                                                            Color(0xFFE7FCE8),
-                                                        foregroundColor:
-                                                            Color(0xFF008069),
-                                                        child: Icon(Icons
-                                                            .description_outlined),
-                                                      ),
-                                                      const SizedBox(width: 9),
-                                                      Flexible(
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                              message.media
-                                                                      ?.filename ??
-                                                                  'مستند',
-                                                              maxLines: 1,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                              style: const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600),
-                                                            ),
-                                                            Text(
-                                                              _fileDetails(
-                                                                  message
-                                                                      .media),
-                                                              style:
-                                                                  const TextStyle(
-                                                                color: Color(
-                                                                    0xFF667781),
-                                                                fontSize: 10,
-                                                              ),
-                                                            ),
-                                                          ],
+                                            if (message.mediaUrl != null &&
+                                                message.type == 'audio')
+                                              WhatsAppAudioBubble(
+                                                message: message,
+                                                controller: controller,
+                                              ),
+                                            if (message.mediaUrl != null &&
+                                                message.type == 'video')
+                                              WhatsAppVideoBubble(
+                                                message: message,
+                                                controller: controller,
+                                              ),
+                                            if (message.mediaUrl != null &&
+                                                !['image', 'audio', 'video']
+                                                    .contains(message.type))
+                                              InkWell(
+                                                onTap: () => controller
+                                                    .showMedia(message),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(10),
+                                                  margin: const EdgeInsets.only(
+                                                      bottom: 5),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFB8CBC6)),
+                                                  ),
+                                                  child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        const CircleAvatar(
+                                                          backgroundColor:
+                                                              Color(0xFFE7FCE8),
+                                                          foregroundColor:
+                                                              Color(0xFF008069),
+                                                          child: Icon(Icons
+                                                              .description_outlined),
                                                         ),
-                                                      ),
-                                                    ]),
+                                                        const SizedBox(
+                                                            width: 9),
+                                                        Flexible(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                message.media
+                                                                        ?.filename ??
+                                                                    'مستند',
+                                                                maxLines: 1,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600),
+                                                              ),
+                                                              Text(
+                                                                _fileDetails(
+                                                                    message
+                                                                        .media),
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Color(
+                                                                      0xFF667781),
+                                                                  fontSize: 10,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ]),
+                                                ),
                                               ),
-                                            ),
-                                          if (message.commerce != null)
-                                            _WhatsAppCommerceCard(
-                                              message: message,
-                                              controller: controller,
-                                            ),
-                                          if (_visibleBody(message) != null)
-                                            Text(_visibleBody(message)!),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(_time(message.createdAt),
-                                                    style: const TextStyle(
-                                                        fontSize: 10,
-                                                        color: Colors.grey)),
-                                                if (outbound) ...[
-                                                  const SizedBox(width: 5),
-                                                  Icon(
-                                                      _statusIcon(
-                                                          message.status),
-                                                      size: 15,
-                                                      color: _statusColor(
-                                                          message.status)),
-                                                ],
-                                              ]),
-                                          if (message.status == 'failed' &&
-                                              message.errorMessage != null)
-                                            Text(message.errorMessage!,
-                                                style: const TextStyle(
-                                                    fontSize: 10,
-                                                    color: Colors.red)),
-                                          if (message.customerDeletedAt != null)
-                                            const Padding(
-                                              padding: EdgeInsets.only(top: 5),
-                                              child: Row(
+                                            if (message.commerce != null)
+                                              _WhatsAppCommerceCard(
+                                                message: message,
+                                                controller: controller,
+                                              ),
+                                            if (_visibleBody(message) != null)
+                                              Text(_visibleBody(message)!),
+                                            const SizedBox(height: 4),
+                                            Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.history,
-                                                      size: 14,
-                                                      color: Color(0xFF8A5A00)),
-                                                  SizedBox(width: 4),
-                                                  Flexible(
-                                                    child: Text(
-                                                      'حذفها الزبون من واتساب — النسخة محفوظة لدينا',
-                                                      style: TextStyle(
-                                                        fontSize: 10,
+                                                  Text(_time(message.createdAt),
+                                                      style: const TextStyle(
+                                                          fontSize: 10,
+                                                          color: Colors.grey)),
+                                                  if (outbound) ...[
+                                                    const SizedBox(width: 5),
+                                                    Icon(
+                                                        _statusIcon(
+                                                            message.status),
+                                                        size: 15,
+                                                        color: _statusColor(
+                                                            message.status)),
+                                                  ],
+                                                  if (message.pinned) ...[
+                                                    const SizedBox(width: 4),
+                                                    const Icon(Icons.push_pin,
+                                                        size: 12,
+                                                        color: Colors.grey),
+                                                  ],
+                                                  if (message.starred) ...[
+                                                    const SizedBox(width: 3),
+                                                    const Icon(Icons.star,
+                                                        size: 13,
                                                         color:
-                                                            Color(0xFF8A5A00),
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                                            Color(0xFFFFB300)),
+                                                  ],
+                                                ]),
+                                            if (message.reaction != null)
+                                              Align(
+                                                alignment: AlignmentDirectional
+                                                    .centerEnd,
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(
+                                                      top: 3),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    boxShadow: const [
+                                                      BoxShadow(
+                                                          color:
+                                                              Color(0x18000000),
+                                                          blurRadius: 3)
+                                                    ],
+                                                  ),
+                                                  child:
+                                                      Text(message.reaction!),
+                                                ),
+                                              ),
+                                            if (message.status == 'failed' &&
+                                                message.errorMessage != null)
+                                              Text(message.errorMessage!,
+                                                  style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.red)),
+                                            if (message.customerDeletedAt !=
+                                                null)
+                                              const Padding(
+                                                padding:
+                                                    EdgeInsets.only(top: 5),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.history,
+                                                        size: 14,
+                                                        color:
+                                                            Color(0xFF8A5A00)),
+                                                    SizedBox(width: 4),
+                                                    Flexible(
+                                                      child: Text(
+                                                        'حذفها الزبون من واتساب — النسخة محفوظة لدينا',
+                                                        style: TextStyle(
+                                                          fontSize: 10,
+                                                          color:
+                                                              Color(0xFF8A5A00),
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                        ]),
+                                          ]),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -503,7 +583,27 @@ class WhatsAppConversationScreen
                         ),
                       );
                     })),
-                    _Composer(controller: controller),
+                    if (controller.selectedMessageIds.isNotEmpty)
+                      _SelectionBar(
+                        count: controller.selectedMessageIds.length,
+                        onClose: controller.clearMessageSelection,
+                        onCopy: () async {
+                          final text = controller.selectedMessages
+                              .map((message) => message.body)
+                              .whereType<String>()
+                              .where((text) => text.isNotEmpty)
+                              .join('\n');
+                          if (text.isNotEmpty) {
+                            await Clipboard.setData(ClipboardData(text: text));
+                          }
+                          controller.clearMessageSelection();
+                        },
+                        onForward: () => _showForwardDialog(
+                            context, controller.selectedMessages),
+                        onDelete: controller.hideSelectedMessages,
+                      )
+                    else
+                      _Composer(controller: controller),
                   ]),
                   PositionedDirectional(
                     end: 12,
@@ -536,6 +636,38 @@ class WhatsAppConversationScreen
       builder: (_) => SafeArea(
         child: Wrap(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['👍', '❤️', '😂', '😮', '😢', '🙏']
+                    .map((emoji) => InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () {
+                            Navigator.pop(context);
+                            controller.messageAction(message, 'react',
+                                reaction:
+                                    message.reaction == emoji ? '' : emoji);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(emoji,
+                                style: const TextStyle(fontSize: 24)),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showMoreReactions(context, message);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('المزيد من التفاعلات'),
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.reply, color: Color(0xFF008069)),
               title: const Text('رد على الرسالة'),
@@ -544,6 +676,60 @@ class WhatsAppConversationScreen
                 controller.replyTo(message);
               },
             ),
+            if (message.body?.isNotEmpty == true)
+              ListTile(
+                leading: const Icon(Icons.copy_outlined),
+                title: const Text('نسخ'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await Clipboard.setData(ClipboardData(text: message.body!));
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.forward),
+              title: const Text('تحويل'),
+              onTap: () {
+                Navigator.pop(context);
+                _showForwardDialog(context, [message]);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                  message.pinned ? Icons.push_pin : Icons.push_pin_outlined),
+              title: Text(message.pinned ? 'إلغاء التثبيت' : 'تثبيت'),
+              onTap: () {
+                Navigator.pop(context);
+                controller.messageAction(
+                    message, message.pinned ? 'unpin' : 'pin');
+              },
+            ),
+            ListTile(
+              leading: Icon(message.starred ? Icons.star : Icons.star_border),
+              title: Text(message.starred ? 'إزالة النجمة' : 'تمييز بنجمة'),
+              onTap: () {
+                Navigator.pop(context);
+                controller.messageAction(
+                    message, message.starred ? 'unstar' : 'star');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.check_box_outlined),
+              title: const Text('تحديد'),
+              onTap: () {
+                Navigator.pop(context);
+                controller.toggleMessageSelection(message);
+              },
+            ),
+            if (message.direction == 'inbound')
+              ListTile(
+                leading: const Icon(Icons.report_outlined),
+                title: Text(message.reported ? 'تم التبليغ' : 'تبليغ داخلي'),
+                enabled: !message.reported,
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.messageAction(message, 'report');
+                },
+              ),
             if (message.direction == 'outbound' &&
                 message.status == 'failed' &&
                 message.type == 'text')
@@ -573,6 +759,98 @@ class WhatsAppConversationScreen
                 subtitle: Text('غير متاح حاليًا عبر WhatsApp Cloud API'),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showForwardDialog(
+      BuildContext context, List<WhatsAppMessage> messages) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تحويل إلى'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 420,
+          child: FutureBuilder<List<WhatsAppConversation>>(
+            future: controller.loadForwardTargets(),
+            builder: (_, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.data!.isEmpty) {
+                return const Center(child: Text('لا توجد محادثات أخرى'));
+              }
+              return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (_, index) {
+                  final target = snapshot.data![index];
+                  final name = target.contact?.name?.trim();
+                  return ListTile(
+                    leading: CircleAvatar(
+                        child: Text(_avatarInitial(
+                            name?.isNotEmpty == true ? name! : target.phone))),
+                    title:
+                        Text(name?.isNotEmpty == true ? name! : target.phone),
+                    subtitle: Text(
+                        '${_channelLabel(target.channel)} • ${target.phone}'),
+                    onTap: () async {
+                      final success =
+                          await controller.forwardMessages(messages, target);
+                      if (success && dialogContext.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMoreReactions(
+      BuildContext context, WhatsAppMessage message) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: [
+              '😀',
+              '😍',
+              '🥰',
+              '😁',
+              '😅',
+              '😎',
+              '🤔',
+              '👏',
+              '🔥',
+              '🎉',
+              '✅',
+              '💯'
+            ]
+                .map((emoji) => InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () {
+                        Navigator.pop(context);
+                        controller.messageAction(message, 'react',
+                            reaction: message.reaction == emoji ? '' : emoji);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child:
+                            Text(emoji, style: const TextStyle(fontSize: 28)),
+                      ),
+                    ))
+                .toList(),
+          ),
         ),
       ),
     );
@@ -842,6 +1120,52 @@ class WhatsAppConversationScreen
   }
 }
 
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({
+    required this.count,
+    required this.onClose,
+    required this.onCopy,
+    required this.onForward,
+    required this.onDelete,
+  });
+
+  final int count;
+  final VoidCallback onClose;
+  final VoidCallback onCopy;
+  final VoidCallback onForward;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        child: Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          color: const Color(0xFFF7F8F8),
+          child: Row(
+            children: [
+              IconButton(onPressed: onClose, icon: const Icon(Icons.close)),
+              Text('$count محدد',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              IconButton(
+                  tooltip: 'نسخ',
+                  onPressed: onCopy,
+                  icon: const Icon(Icons.copy_outlined)),
+              IconButton(
+                  tooltip: 'تحويل',
+                  onPressed: onForward,
+                  icon: const Icon(Icons.forward)),
+              IconButton(
+                  tooltip: 'حذف من عرضي',
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline)),
+            ],
+          ),
+        ),
+      );
+}
+
 class _Composer extends StatefulWidget {
   const _Composer({required this.controller});
 
@@ -878,7 +1202,21 @@ class _ComposerState extends State<_Composer> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (controller.replyingTo.value != null) _replyBanner(),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, animation) => SizeTransition(
+                        sizeFactor: animation,
+                        axisAlignment: 1,
+                        child: FadeTransition(opacity: animation, child: child),
+                      ),
+                      child: controller.replyingTo.value == null
+                          ? const SizedBox(key: ValueKey('no-reply'))
+                          : KeyedSubtree(
+                              key: ValueKey(
+                                  'reply-${controller.replyingTo.value!.id}'),
+                              child: _replyBanner(),
+                            ),
+                    ),
                     if (!controller.customerServiceWindowOpen.value)
                       _closedWindowBanner()
                     else ...[

@@ -62,6 +62,38 @@ class WhatsAppApiService {
           '$_socialBase/conversations/$channel/$conversationId/messages/$messageId/resend',
           const {});
 
+  Future<Map<String, dynamic>> messageAction(
+    int conversationId,
+    int messageId, {
+    required String channel,
+    required String action,
+    String? reaction,
+    String? reason,
+  }) =>
+      _post(
+        '$_socialBase/conversations/$channel/$conversationId/messages/$messageId/action',
+        {
+          'action': action,
+          if (reaction != null) 'reaction': reaction,
+          if (reason != null) 'reason': reason,
+        },
+      );
+
+  Future<Map<String, dynamic>> forwardMessage(
+    int conversationId,
+    int messageId, {
+    required String channel,
+    required String targetChannel,
+    required int targetConversationId,
+  }) =>
+      _post(
+        '$_socialBase/conversations/$channel/$conversationId/messages/$messageId/forward',
+        {
+          'target_channel': targetChannel,
+          'target_conversation_id': targetConversationId,
+        },
+      );
+
   Future<Map<String, dynamic>> assignConversation(
     int conversationId, {
     required String channel,
