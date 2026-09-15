@@ -22,17 +22,34 @@ class EmployeeSmartDevicePermissionsScreen extends StatefulWidget {
 class _EmployeeSmartDevicePermissionsScreenState
     extends State<EmployeeSmartDevicePermissionsScreen> {
   final api = SmartHomeApiService();
+  final searchController = TextEditingController();
   var homes = <SmartEmployeeScopePermissionModel>[];
   var rooms = <SmartEmployeeScopePermissionModel>[];
   var devices = <SmartEmployeeDevicePermissionModel>[];
   var loading = true;
   var saving = false;
   String? error;
+  var searchQuery = '';
+  var homesExpanded = true;
+  var roomsExpanded = false;
+  var devicesExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  bool _matches(String name, String subtitle) {
+    final query = searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    return '$name $subtitle'.toLowerCase().contains(query);
   }
 
   Future<void> _load() async {
@@ -90,7 +107,25 @@ class _EmployeeSmartDevicePermissionsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final filteredHomes = homes.asMap().entries.where(
+          (entry) => _matches(entry.value.name, entry.value.subtitle),
+        );
+    final filteredRooms = rooms.asMap().entries.where(
+          (entry) => _matches(entry.value.name, entry.value.subtitle),
+        );
+    final filteredDevices = devices.asMap().entries.where((entry) {
+      final item = entry.value;
+      return _matches(
+        item.name,
+        [item.roomName, item.homeName, item.ownerName].join(' '),
+      );
+    });
+    final hasSearchResults = filteredHomes.isNotEmpty ||
+        filteredRooms.isNotEmpty ||
+        filteredDevices.isNotEmpty;
+
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         title: const Text('صلاحيات المنزل الذكي'),
         actions: [
@@ -125,95 +160,266 @@ class _EmployeeSmartDevicePermissionsScreenState
               : homes.isEmpty && rooms.isEmpty && devices.isEmpty
                   ? const Center(child: Text('لا توجد أماكن أو أجهزة متاحة.'))
                   : ListView(
-                      padding: const EdgeInsets.all(12),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 28),
                       children: [
-                        const Card(
-                          child: ListTile(
-                            leading: Icon(Icons.info_outline_rounded),
-                            title: Text('الصلاحيات تراكمية'),
-                            subtitle: Text(
-                              'صلاحية المكان تشمل كل غرفه وأجهزته، وصلاحية الغرفة تشمل كل أجهزتها.',
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: .55),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.shield_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'الصلاحيات تراكمية',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    SizedBox(height: 3),
+                                    Text(
+                                      'المكان يشمل غرفه وأجهزته، والغرفة تشمل جميع أجهزتها.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: searchController,
+                          onChanged: (value) => setState(() {
+                            searchQuery = value;
+                            if (value.trim().isNotEmpty) {
+                              homesExpanded = true;
+                              roomsExpanded = true;
+                              devicesExpanded = true;
+                            }
+                          }),
+                          decoration: InputDecoration(
+                            hintText: 'ابحث عن مكان، غرفة أو جهاز',
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: searchQuery.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: 'مسح البحث',
+                                    onPressed: () {
+                                      searchController.clear();
+                                      setState(() => searchQuery = '');
+                                    },
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
+                            filled: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
                             ),
                           ),
                         ),
-                        const _SectionTitle('أماكن وشركات'),
-                        ...homes.asMap().entries.map((entry) => _PermissionCard(
-                              name: entry.value.name,
-                              subtitle: entry.value.subtitle,
-                              icon: entry.value.type == 'company'
-                                  ? Icons.business_rounded
-                                  : Icons.home_rounded,
-                              canView: entry.value.canView,
-                              canControl: entry.value.canControl,
-                              canSchedule: entry.value.canSchedule,
-                              saving: saving,
-                              onChanged: (view, control, schedule) =>
-                                  _replaceScope(
-                                      true,
-                                      entry.key,
-                                      entry.value.copyWith(
-                                          canView: view,
-                                          canControl: control,
-                                          canSchedule: schedule)),
-                            )),
-                        const _SectionTitle('الغرف'),
-                        ...rooms.asMap().entries.map((entry) => _PermissionCard(
-                              name: entry.value.name,
-                              subtitle: entry.value.subtitle,
-                              icon: Icons.meeting_room_rounded,
-                              canView: entry.value.canView,
-                              canControl: entry.value.canControl,
-                              canSchedule: entry.value.canSchedule,
-                              saving: saving,
-                              onChanged: (view, control, schedule) =>
-                                  _replaceScope(
-                                      false,
-                                      entry.key,
-                                      entry.value.copyWith(
-                                          canView: view,
-                                          canControl: control,
-                                          canSchedule: schedule)),
-                            )),
-                        const _SectionTitle('أجهزة منفردة'),
-                        ...devices.asMap().entries.map((entry) {
-                          final item = entry.value;
-                          return _PermissionCard(
-                            name: item.name,
-                            subtitle: [
-                              item.roomName,
-                              item.homeName,
-                              item.ownerName
-                            ].where((value) => value.isNotEmpty).join(' • '),
-                            icon: Icons.devices_rounded,
-                            canView: item.canView,
-                            canControl: item.canControl,
-                            canSchedule: item.canSchedule,
-                            saving: saving,
-                            onChanged: (view, control, schedule) => _replace(
-                                entry.key,
-                                item.copyWith(
-                                    canView: view,
-                                    canControl: control,
-                                    canSchedule: schedule)),
-                          );
-                        }),
+                        const SizedBox(height: 12),
+                        if (!hasSearchResults)
+                          const _EmptySearchResult()
+                        else ...[
+                          if (searchQuery.isEmpty || filteredHomes.isNotEmpty)
+                            _PermissionSection(
+                              title: 'أماكن وشركات',
+                              icon: Icons.home_work_outlined,
+                              totalCount: filteredHomes.length,
+                              selectedCount: filteredHomes
+                                  .where((entry) => entry.value.canView)
+                                  .length,
+                              expanded: searchQuery.isNotEmpty || homesExpanded,
+                              onExpansionChanged: (value) =>
+                                  setState(() => homesExpanded = value),
+                              children: filteredHomes
+                                  .map((entry) => _PermissionCard(
+                                        name: entry.value.name,
+                                        subtitle: entry.value.subtitle,
+                                        icon: entry.value.type == 'company'
+                                            ? Icons.business_rounded
+                                            : Icons.home_rounded,
+                                        canView: entry.value.canView,
+                                        canControl: entry.value.canControl,
+                                        canSchedule: entry.value.canSchedule,
+                                        saving: saving,
+                                        onChanged: (view, control, schedule) =>
+                                            _replaceScope(
+                                                true,
+                                                entry.key,
+                                                entry.value.copyWith(
+                                                    canView: view,
+                                                    canControl: control,
+                                                    canSchedule: schedule)),
+                                      ))
+                                  .toList(growable: false),
+                            ),
+                          if (searchQuery.isEmpty || filteredRooms.isNotEmpty)
+                            _PermissionSection(
+                              title: 'الغرف',
+                              icon: Icons.meeting_room_outlined,
+                              totalCount: filteredRooms.length,
+                              selectedCount: filteredRooms
+                                  .where((entry) => entry.value.canView)
+                                  .length,
+                              expanded: searchQuery.isNotEmpty || roomsExpanded,
+                              onExpansionChanged: (value) =>
+                                  setState(() => roomsExpanded = value),
+                              children: filteredRooms
+                                  .map((entry) => _PermissionCard(
+                                        name: entry.value.name,
+                                        subtitle: entry.value.subtitle,
+                                        icon: Icons.meeting_room_rounded,
+                                        canView: entry.value.canView,
+                                        canControl: entry.value.canControl,
+                                        canSchedule: entry.value.canSchedule,
+                                        saving: saving,
+                                        onChanged: (view, control, schedule) =>
+                                            _replaceScope(
+                                                false,
+                                                entry.key,
+                                                entry.value.copyWith(
+                                                    canView: view,
+                                                    canControl: control,
+                                                    canSchedule: schedule)),
+                                      ))
+                                  .toList(growable: false),
+                            ),
+                          if (searchQuery.isEmpty || filteredDevices.isNotEmpty)
+                            _PermissionSection(
+                              title: 'أجهزة منفردة',
+                              icon: Icons.devices_other_outlined,
+                              totalCount: filteredDevices.length,
+                              selectedCount: filteredDevices
+                                  .where((entry) => entry.value.canView)
+                                  .length,
+                              expanded:
+                                  searchQuery.isNotEmpty || devicesExpanded,
+                              onExpansionChanged: (value) =>
+                                  setState(() => devicesExpanded = value),
+                              children: filteredDevices.map((entry) {
+                                final item = entry.value;
+                                return _PermissionCard(
+                                  name: item.name,
+                                  subtitle: [
+                                    item.roomName,
+                                    item.homeName,
+                                    item.ownerName
+                                  ]
+                                      .where((value) => value.isNotEmpty)
+                                      .join(' • '),
+                                  icon: Icons.devices_rounded,
+                                  canView: item.canView,
+                                  canControl: item.canControl,
+                                  canSchedule: item.canSchedule,
+                                  saving: saving,
+                                  onChanged: (view, control, schedule) =>
+                                      _replace(
+                                          entry.key,
+                                          item.copyWith(
+                                              canView: view,
+                                              canControl: control,
+                                              canSchedule: schedule)),
+                                );
+                              }).toList(growable: false),
+                            ),
+                        ],
                       ],
                     ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-  final String text;
+class _PermissionSection extends StatelessWidget {
+  const _PermissionSection({
+    required this.title,
+    required this.icon,
+    required this.totalCount,
+    required this.selectedCount,
+    required this.expanded,
+    required this.onExpansionChanged,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final int totalCount;
+  final int selectedCount;
+  final bool expanded;
+  final ValueChanged<bool> onExpansionChanged;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        elevation: 0,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: ExpansionTile(
+          key: ValueKey('$title:$expanded'),
+          initiallyExpanded: expanded,
+          onExpansionChanged: onExpansionChanged,
+          leading: CircleAvatar(child: Icon(icon, size: 20)),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          subtitle: Text(
+            selectedCount == 0
+                ? '$totalCount متاح'
+                : '$selectedCount محدد من $totalCount',
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          children: children.isEmpty
+              ? const [
+                  Padding(
+                    padding: EdgeInsets.all(18),
+                    child: Text('لا توجد نتائج في هذا التصنيف'),
+                  ),
+                ]
+              : children,
+        ),
+      );
+}
+
+class _EmptySearchResult extends StatelessWidget {
+  const _EmptySearchResult();
+
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-        child: Text(text,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold)),
+        padding: const EdgeInsets.symmetric(vertical: 44),
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 46,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'لا توجد نتائج مطابقة',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       );
 }
 
@@ -237,13 +443,32 @@ class _PermissionCard extends StatelessWidget {
   final void Function(bool, bool, bool) onChanged;
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(top: 8),
+        decoration: BoxDecoration(
+          color: canView
+              ? Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withValues(alpha: .22)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: canView
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: .25)
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
         child: Column(children: [
           CheckboxListTile(
             value: canView,
             title: Text(name),
             subtitle: subtitle.isEmpty ? null : Text(subtitle),
-            secondary: Icon(icon),
+            secondary: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              child: Icon(icon, size: 20),
+            ),
+            controlAffinity: ListTileControlAffinity.trailing,
             onChanged: saving
                 ? null
                 : (value) => onChanged(
@@ -253,7 +478,7 @@ class _PermissionCard extends StatelessWidget {
           ),
           if (canView)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
               child: Row(children: [
                 Expanded(
                     child: SwitchListTile(
