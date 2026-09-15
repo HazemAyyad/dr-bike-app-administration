@@ -39,6 +39,7 @@ import '../../domain/usecases/request_over_time_loan_usecase.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class EmployeeDashbordController extends GetxController
     with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
@@ -474,6 +475,11 @@ class EmployeeDashbordController extends GetxController
       'title': 'maintenance',
       'route': AppRoutes.MAINTENANCESCREEN,
       'badgeKey': 'maintenance',
+    },
+    {
+      'id': '72',
+      'title': 'smartHome',
+      'route': AppRoutes.SMARTHOMESCREEN,
     },
     if (!employeePermissions.contains(9))
       {

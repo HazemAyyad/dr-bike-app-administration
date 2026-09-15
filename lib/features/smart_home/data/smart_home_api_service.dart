@@ -419,6 +419,8 @@ class SmartEmployeeDevicePermissionModel {
   const SmartEmployeeDevicePermissionModel({
     required this.deviceId,
     required this.name,
+    required this.homeName,
+    required this.ownerName,
     required this.roomName,
     required this.canView,
     required this.canControl,
@@ -427,6 +429,8 @@ class SmartEmployeeDevicePermissionModel {
 
   final int deviceId;
   final String name;
+  final String homeName;
+  final String ownerName;
   final String roomName;
   final bool canView;
   final bool canControl;
@@ -437,6 +441,8 @@ class SmartEmployeeDevicePermissionModel {
       SmartEmployeeDevicePermissionModel(
         deviceId: int.tryParse(json['id']?.toString() ?? '') ?? 0,
         name: json['name']?.toString() ?? '',
+        homeName: json['home_name']?.toString() ?? '',
+        ownerName: json['owner_name']?.toString() ?? '',
         roomName: json['room_name']?.toString() ?? '',
         canView: json['can_view'] == true,
         canControl: json['can_control'] == true,
@@ -451,6 +457,8 @@ class SmartEmployeeDevicePermissionModel {
       SmartEmployeeDevicePermissionModel(
         deviceId: deviceId,
         name: name,
+        homeName: homeName,
+        ownerName: ownerName,
         roomName: roomName,
         canView: canView ?? this.canView,
         canControl: canControl ?? this.canControl,

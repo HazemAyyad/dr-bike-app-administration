@@ -338,9 +338,7 @@ class _EmployeeHeaderCard extends StatelessWidget {
                               employee.permissions,
                             ),
                           ),
-                        if (userType == 'admin' &&
-                            employee.permissions.any((permission) =>
-                                permission.permissionNameEn == 'Smart Home'))
+                        if (userType == 'admin')
                           _MetricChip(
                             icon: Icons.devices_other_rounded,
                             label: 'أجهزة البيت الذكي',

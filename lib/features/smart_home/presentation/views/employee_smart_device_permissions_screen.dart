@@ -124,8 +124,16 @@ class _EmployeeSmartDevicePermissionsScreenState
                                 value: item.canView,
                                 title: Text(item.name),
                                 subtitle: Text(item.roomName.isEmpty
-                                    ? 'بدون غرفة'
-                                    : item.roomName),
+                                    ? [item.homeName, item.ownerName]
+                                        .where((value) => value.isNotEmpty)
+                                        .join(' • ')
+                                    : [
+                                        item.roomName,
+                                        item.homeName,
+                                        item.ownerName,
+                                      ]
+                                        .where((value) => value.isNotEmpty)
+                                        .join(' • ')),
                                 secondary: const Icon(Icons.devices_rounded),
                                 onChanged: saving
                                     ? null
