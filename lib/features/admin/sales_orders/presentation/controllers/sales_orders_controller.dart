@@ -185,7 +185,7 @@ class SalesOrdersController extends GetxController {
           .toList();
 
   List<String> get availableDeliveryTypes {
-    const order = ['shiply', 'office', 'taxi', 'internal', 'pickup'];
+    const order = ['office', 'taxi', 'shiply', 'internal'];
     return order
         .where((type) => deliveryCompanies.any(
               (company) => company.deliveryType == type,
@@ -200,7 +200,7 @@ class SalesOrdersController extends GetxController {
       case 'taxi':
         return 'تكسي / سائق';
       case 'internal':
-        return 'توصيل داخلي';
+        return 'توصيل Doctor Bike الداخلي';
       case 'pickup':
         return 'استلام ذاتي';
       case 'shiply':

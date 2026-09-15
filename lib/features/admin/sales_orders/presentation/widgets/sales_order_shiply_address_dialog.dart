@@ -92,8 +92,8 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
                                 if (ok) Get.back(result: true);
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: SalesOrdersController.textPrimary,
-                          foregroundColor: SalesOrdersController.cardGray,
+                          backgroundColor: const Color(0xFFDBEAFE),
+                          foregroundColor: const Color(0xFF1E3A5F),
                           padding: EdgeInsets.symmetric(vertical: 12.h),
                         ),
                         child: busy
@@ -102,7 +102,7 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
                                 height: 20.w,
                                 child: const CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: SalesOrdersController.cardGray,
+                                  color: Color(0xFF1E3A5F),
                                 ),
                               )
                             : Text('saveAndContinue'.tr),

@@ -2693,6 +2693,16 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       if (keepCurrent == null) return false;
     }
 
+    return _choosePartnerAddressForHandover(order);
+  }
+
+  Future<bool> _choosePartnerAddressForHandover(
+    SalesOrderDetailModel order,
+  ) async {
+    final partnerType =
+        order.partnerType ?? (order.customerId != null ? 'customer' : null);
+    final partnerId = order.partnerId ?? order.customerId;
+    if (partnerType == null || partnerId == null) return false;
     if (!mounted) return false;
 
     final selected = await showPartnerAddressesSheet(
@@ -2928,6 +2938,57 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'رسوم التوصيل على الزبون',
+                              style: TextStyle(color: Color(0xFF4B5563)),
+                            ),
+                          ),
+                          Text(
+                            '${order.customerDeliveryFee.toStringAsFixed(2)} ₪',
+                            style: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 18),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'إجمالي الطلبية يبقى',
+                              style: TextStyle(
+                                color: Color(0xFF047857),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${order.total.toStringAsFixed(2)} ₪',
+                            style: const TextStyle(
+                              color: Color(0xFF047857),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             actions: [
@@ -2972,23 +3033,92 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           constraints: BoxConstraints(maxHeight: Get.height * 0.88),
           padding: EdgeInsets.all(20.r),
           decoration: BoxDecoration(
-            color: SalesOrdersController.surfaceGray,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
           ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'salesOrderHandover'.tr,
-                  style: TextStyle(
-                    color: SalesOrdersController.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
+                Center(
+                  child: Container(
+                    width: 44.w,
+                    height: 5.h,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7DCE3),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 14.h),
+                Text(
+                  'salesOrderHandover'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20.sp,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  'اختر الجهة، ثبّت العنوان، ثم راجع تكلفة التوصيل',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: SalesOrdersController.textSecondary,
+                    fontSize: 11.sp,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Row(
+                  children: [
+                    for (var index = 0; index < 3; index++) ...[
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 30.w,
+                              height: 30.w,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDBEAFE),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  color: const Color(0xFF1E3A5F),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12.sp,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              const ['الجهة', 'العنوان', 'التكلفة'][index],
+                              style: TextStyle(
+                                color: const Color(0xFF1E3A5F),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'جهة التوصيل',
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.sp,
+                  ),
+                ),
+                SizedBox(height: 8.h),
                 Obx(() {
                   final selectedType =
                       controller.selectedDeliveryCompany?.deliveryType;
@@ -2998,91 +3128,99 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      DropdownButtonFormField<String>(
-                        key: ValueKey('delivery-type-$selectedType'),
-                        initialValue: selectedType,
-                        dropdownColor: SalesOrdersController.cardGray,
-                        style: TextStyle(
-                          color: SalesOrdersController.textPrimary,
-                          fontSize: 14.sp,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'نوع التوصيل',
-                          filled: true,
-                          fillColor: SalesOrdersController.cardGray,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                        ),
-                        items: controller.availableDeliveryTypes
-                            .map(
-                              (type) => DropdownMenuItem(
-                                value: type,
-                                child: Text(
-                                  controller.deliveryTypeLabel(type),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (type) => controller.onDeliveryTypeChanged(
-                          type,
-                          shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
-                        ),
+                      Wrap(
+                        spacing: 7.w,
+                        runSpacing: 7.h,
+                        children: controller.availableDeliveryTypes.map((type) {
+                          final selected = type == selectedType;
+                          final icon = type == 'office'
+                              ? Icons.local_shipping_outlined
+                              : type == 'taxi'
+                                  ? Icons.local_taxi_outlined
+                                  : type == 'shiply'
+                                      ? Icons.inventory_2_outlined
+                                      : Icons.delivery_dining_outlined;
+                          return ChoiceChip(
+                            selected: selected,
+                            showCheckmark: false,
+                            avatar: Icon(
+                              icon,
+                              size: 17.sp,
+                              color: const Color(0xFF1E3A5F),
+                            ),
+                            label: Text(controller.deliveryTypeLabel(type)),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontWeight: FontWeight.w700,
+                            ),
+                            selectedColor: const Color(0xFFDBEAFE),
+                            backgroundColor: const Color(0xFFF8FAFC),
+                            side: BorderSide(
+                              color: selected
+                                  ? const Color(0xFF93C5FD)
+                                  : const Color(0xFFD7DCE3),
+                            ),
+                            onSelected: (_) => controller.onDeliveryTypeChanged(
+                              type,
+                              shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+                            ),
+                          );
+                        }).toList(),
                       ),
                       SizedBox(height: 10.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              key: ValueKey(
-                                'delivery-company-$selectedType-${controller.selectedDeliveryCompanyId.value}',
-                              ),
-                              initialValue: companies.any((c) =>
-                                      c.id ==
-                                      controller
-                                          .selectedDeliveryCompanyId.value)
-                                  ? controller.selectedDeliveryCompanyId.value
-                                  : null,
-                              dropdownColor: SalesOrdersController.cardGray,
-                              style: TextStyle(
-                                color: SalesOrdersController.textPrimary,
-                                fontSize: 14.sp,
-                              ),
-                              decoration: InputDecoration(
-                                labelText: selectedType == 'office'
-                                    ? 'المكتب المحفوظ'
-                                    : selectedType == 'taxi'
-                                        ? 'التكسي المحفوظ'
-                                        : 'جهة التوصيل',
-                                filled: true,
-                                fillColor: SalesOrdersController.cardGray,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  borderSide: const BorderSide(
-                                    color: SalesOrdersController.borderGray,
+                      if (selectedType == 'office' || selectedType == 'taxi')
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<int>(
+                                key: ValueKey(
+                                  'delivery-company-$selectedType-${controller.selectedDeliveryCompanyId.value}',
+                                ),
+                                initialValue: companies.any((c) =>
+                                        c.id ==
+                                        controller
+                                            .selectedDeliveryCompanyId.value)
+                                    ? controller.selectedDeliveryCompanyId.value
+                                    : null,
+                                dropdownColor: SalesOrdersController.cardGray,
+                                style: TextStyle(
+                                  color: SalesOrdersController.textPrimary,
+                                  fontSize: 14.sp,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: selectedType == 'office'
+                                      ? 'المكتب المحفوظ'
+                                      : selectedType == 'taxi'
+                                          ? 'التكسي المحفوظ'
+                                          : 'جهة التوصيل',
+                                  filled: true,
+                                  fillColor: SalesOrdersController.cardGray,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: const BorderSide(
+                                      color: SalesOrdersController.borderGray,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              items: companies
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c.id,
-                                      child: Text(
-                                        controller.deliveryCompanyLabel(c),
+                                items: companies
+                                    .map(
+                                      (c) => DropdownMenuItem(
+                                        value: c.id,
+                                        child: Text(
+                                          controller.deliveryCompanyLabel(c),
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (id) =>
-                                  controller.onDeliveryCompanyChanged(
-                                id,
-                                shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+                                    )
+                                    .toList(),
+                                onChanged: (id) =>
+                                    controller.onDeliveryCompanyChanged(
+                                  id,
+                                  shiplyOfficeFee:
+                                      order.shiplyQuotedDeliveryFee,
+                                ),
                               ),
                             ),
-                          ),
-                          if (selectedType == 'office' ||
-                              selectedType == 'taxi') ...[
                             SizedBox(width: 8.w),
                             IconButton.filledTonal(
                               tooltip: selectedType == 'office'
@@ -3105,8 +3243,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                               icon: const Icon(Icons.add),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
                     ],
                   );
                 }),
@@ -3149,75 +3286,43 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierVehicleNumberController,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: '${'salesOrderTaxiNumber'.tr} *',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
+                        if (controller
+                            .carrierContactNameController.text.isEmpty) ...[
+                          SizedBox(height: 10.h),
+                          TextField(
+                            controller: controller.carrierContactNameController,
+                            style: const TextStyle(
+                              color: SalesOrdersController.textPrimary,
                             ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierContactNameController,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: '${'salesOrderTaxiDriver'.tr} *',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
+                            decoration: InputDecoration(
+                              labelText: '${'salesOrderTaxiDriver'.tr} *',
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierContactPhoneController,
-                          keyboardType: TextInputType.phone,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText:
-                                '${'salesOrderTaxiPhone'.tr} (${'optional'.tr})',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
+                        ],
+                        if (controller
+                            .carrierVehicleNumberController.text.isEmpty) ...[
+                          SizedBox(height: 10.h),
+                          TextField(
+                            controller:
+                                controller.carrierVehicleNumberController,
+                            style: const TextStyle(
+                              color: SalesOrdersController.textPrimary,
                             ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
+                            decoration: InputDecoration(
+                              labelText: '${'salesOrderTaxiNumber'.tr} *',
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 6.h),
-                          child: Text(
-                            'salesOrderCarrierAddressHint'.tr,
-                            style: TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                        ),
+                        ],
                       ],
                     );
                   }
@@ -3226,95 +3331,27 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierOfficeNameController,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: '${'salesOrderOfficeName'.tr} *',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
+                        if (controller
+                            .carrierVehicleNumberController.text.isEmpty) ...[
+                          SizedBox(height: 10.h),
+                          TextField(
+                            controller:
+                                controller.carrierVehicleNumberController,
+                            style: const TextStyle(
+                              color: SalesOrdersController.textPrimary,
                             ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierContactNameController,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText:
-                                '${'salesOrderOfficeDriver'.tr} (${'optional'.tr})',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
+                            decoration: InputDecoration(
+                              labelText: '${'salesOrderOfficeVehicle'.tr} *',
+                              helperText:
+                                  'أدخلها مرة واحدة في إعدادات المكتب لتظهر تلقائيًا.',
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierContactPhoneController,
-                          keyboardType: TextInputType.phone,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText:
-                                '${'salesOrderOfficePhone'.tr} (${'optional'.tr})',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        TextField(
-                          controller: controller.carrierVehicleNumberController,
-                          style: TextStyle(
-                            color: SalesOrdersController.textPrimary,
-                            fontSize: 14.sp,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: '${'salesOrderOfficeVehicle'.tr} *',
-                            labelStyle: const TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 6.h),
-                          child: Text(
-                            'salesOrderCarrierAddressHint'.tr,
-                            style: TextStyle(
-                              color: SalesOrdersController.textSecondary,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                        ),
+                        ],
                       ],
                     );
                   }
@@ -3367,27 +3404,161 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ],
                   );
                 }),
-                Obx(() => controller.isSelectedCompanyTaxi
-                    ? Padding(
-                        padding: EdgeInsets.only(top: 10.h),
-                        child: TextField(
-                          controller: controller.carrierDeliveryCostController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                            labelText: 'أجرة شركة التوصيل على المحل',
-                            helperText:
-                                'هذه تكلفة الشركة، وليست رسوم التوصيل المحمّلة على الزبون.',
-                            suffixText: '₪',
-                            filled: true,
-                            fillColor: SalesOrdersController.cardGray,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.r),
+                SizedBox(height: 14.h),
+                Obx(() {
+                  final current = controller.detail.value ?? order;
+                  final address = (current.customerAddress ?? '').trim();
+                  final hasSavedAddress = current.partnerAddressId != null &&
+                      address.isNotEmpty &&
+                      address != '----';
+                  return Container(
+                    padding: EdgeInsets.all(12.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(color: const Color(0xFFD7DCE3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: Color(0xFF1E3A5F),
                             ),
+                            SizedBox(width: 7.w),
+                            Expanded(
+                              child: Text(
+                                'عنوان التوصيل',
+                                style: TextStyle(
+                                  color: SalesOrdersController.textPrimary,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 7.h),
+                        Text(
+                          hasSavedAddress
+                              ? address
+                              : 'سيُطلب منك اختيار عنوان محفوظ أو إضافة عنوان جديد.',
+                          style: TextStyle(
+                            color: hasSavedAddress
+                                ? SalesOrdersController.textPrimary
+                                : SalesOrdersController.textSecondary,
+                            fontSize: 12.sp,
+                            height: 1.4,
                           ),
                         ),
-                      )
-                    : const SizedBox.shrink()),
+                        if (hasSavedAddress) ...[
+                          SizedBox(height: 8.h),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              Get.back();
+                              final changed =
+                                  await _choosePartnerAddressForHandover(
+                                current,
+                              );
+                              if (!changed) return;
+                              await controller.loadDetail(orderId);
+                              final updated = controller.detail.value;
+                              if (updated != null && mounted) {
+                                _showHandoverSheet(orderId, updated);
+                              }
+                            },
+                            icon: const Icon(Icons.edit_location_alt_outlined),
+                            label: const Text('تغيير العنوان'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF1E3A5F),
+                              side: const BorderSide(
+                                color: Color(0xFF93C5FD),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+                SizedBox(height: 10.h),
+                Container(
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F7FF),
+                    borderRadius: BorderRadius.circular(14.r),
+                    border: Border.all(color: const Color(0xFFC6DAEE)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'رسوم التوصيل على الزبون',
+                              style: TextStyle(
+                                color: SalesOrdersController.textSecondary,
+                                fontSize: 11.sp,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${order.customerDeliveryFee.toStringAsFixed(2)} ₪',
+                            style: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 7.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'تكلفة جهة التوصيل',
+                              style: TextStyle(
+                                color: SalesOrdersController.textSecondary,
+                                fontSize: 11.sp,
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            'تُراجع بعد تثبيت العنوان',
+                            style: TextStyle(
+                              color: Color(0xFF1E3A5F),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'إجمالي الطلبية يبقى',
+                              style: TextStyle(
+                                color: const Color(0xFF047857),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${order.total.toStringAsFixed(2)} ₪',
+                            style: const TextStyle(
+                              color: Color(0xFF047857),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
                 SizedBox(height: 16.h),
                 ElevatedButton(
                   onPressed: () async {
@@ -3418,7 +3589,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     foregroundColor: const Color(0xFF1E3A5F),
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                   ),
-                  child: Text('confirm'.tr),
+                  child: const Text('متابعة لتأكيد العنوان والتكلفة'),
+                ),
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text(
+                    'إلغاء',
+                    style: TextStyle(color: Color(0xFF4B5563)),
+                  ),
                 ),
               ],
             ),
