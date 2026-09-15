@@ -1692,8 +1692,8 @@ class SmartHomeController extends GetxController {
     bool includeOffline = false,
   }) async {
     final failures = <SmartHomeBulkFailure>[];
+    final commands = <_QueuedSmartHomeCommand>[];
     var total = 0;
-    var succeeded = 0;
 
     for (final device in visibleDevices) {
       if (!device.canControl) continue;
@@ -1711,24 +1711,36 @@ class SmartHomeController extends GetxController {
           ));
           continue;
         }
-
-        final ok = await setDeviceDps(
+        commands.add(_QueuedSmartHomeCommand(
           device: device,
           commandCode: function.code,
           value: powerOn,
+        ));
+      }
+    }
+
+    final results = await Future.wait(
+      commands.map((command) async {
+        final ok = await setDeviceDps(
+          device: command.device,
+          commandCode: command.commandCode,
+          value: command.value,
         );
-        if (ok) {
-          succeeded++;
-        } else {
-          failures.add(SmartHomeBulkFailure(
-            deviceName: device.name,
-            commandName: function.code,
-            message: errorMessage.value.isEmpty
-                ? 'لم يستجب الجهاز'
-                : errorMessage.value,
-          ));
-        }
-        await Future<void>.delayed(const Duration(milliseconds: 120));
+        return MapEntry(command, ok);
+      }),
+    );
+
+    var succeeded = 0;
+    for (final result in results) {
+      if (result.value) {
+        succeeded++;
+      } else {
+        final command = result.key;
+        failures.add(SmartHomeBulkFailure(
+          deviceName: command.device.name,
+          commandName: command.commandCode,
+          message: 'لم يستجب الجهاز',
+        ));
       }
     }
 
