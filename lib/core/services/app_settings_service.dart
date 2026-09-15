@@ -23,6 +23,8 @@ class AppSettingsService {
   static const _salesMaxFloatCacheKey = 'app_settings_sales_daily_max_float';
   static const _inventoryCostingMethodCacheKey =
       'app_settings_inventory_costing_method';
+  static const _pendingClosingPromptCacheKey =
+      'app_settings_admin_pending_closing_prompt_enabled';
   static const defaultAdminFabOptions = <String>{
     'newInvoice',
     'newEmployee',
@@ -54,6 +56,7 @@ class AppSettingsService {
   final RxBool shiplyIsTestMode = true.obs;
   final RxString inventoryCostingMethod = 'fifo'.obs;
   final RxString inventoryCostingMethodEffectiveFrom = ''.obs;
+  final RxBool adminPendingClosingPromptEnabled = true.obs;
   final RxMap<String, AppUpdatePlatformSettings> appUpdateSettings =
       <String, AppUpdatePlatformSettings>{
     'android': AppUpdatePlatformSettings.defaults('android'),
@@ -105,6 +108,12 @@ class AppSettingsService {
     if (cachedCosting != null) {
       inventoryCostingMethod.value =
           _normalizeInventoryCostingMethod(cachedCosting.toString());
+    }
+    final cachedClosingPrompt =
+        FinalClasses.getStorage.read(_pendingClosingPromptCacheKey);
+    if (cachedClosingPrompt != null) {
+      adminPendingClosingPromptEnabled.value =
+          cachedClosingPrompt == true || cachedClosingPrompt.toString() == '1';
     }
 
     final api = _api;
@@ -189,6 +198,18 @@ class AppSettingsService {
           inventoryCostingMethodEffectiveFrom.value =
               settings['inventory_costing_method_effective_from']?.toString() ??
                   '';
+          final closingPrompt =
+              settings['admin_pending_closing_prompt_enabled'];
+          if (closingPrompt != null) {
+            final enabled = closingPrompt == true ||
+                closingPrompt.toString() == '1' ||
+                closingPrompt.toString().toLowerCase() == 'true';
+            adminPendingClosingPromptEnabled.value = enabled;
+            await FinalClasses.getStorage.write(
+              _pendingClosingPromptCacheKey,
+              enabled,
+            );
+          }
         }
       }
       _loaded = true;
@@ -210,6 +231,28 @@ class AppSettingsService {
       if (data is Map && data['status']?.toString() == 'success') {
         subtaskBonusDefault.value = value;
         await FinalClasses.getStorage.write(_cacheKey, value);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateAdminPendingClosingPrompt(bool enabled) async {
+    final api = _api;
+    if (api == null) return false;
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {'admin_pending_closing_prompt_enabled': enabled},
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        adminPendingClosingPromptEnabled.value = enabled;
+        await FinalClasses.getStorage.write(
+          _pendingClosingPromptCacheKey,
+          enabled,
+        );
         return true;
       }
     } catch (_) {}

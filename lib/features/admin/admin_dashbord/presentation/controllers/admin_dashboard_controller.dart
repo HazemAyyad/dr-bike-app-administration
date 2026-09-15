@@ -22,8 +22,8 @@ import '../../domain/usecases/get_admin_ui_preferences_usecase.dart';
 import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../../domain/usecases/save_admin_ui_preferences_usecase.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class AdminDashboardController extends GetxController
     with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
@@ -745,6 +745,10 @@ class AdminDashboardController extends GetxController
     }
     _checkingClosingRequests = true;
     try {
+      await AppSettingsService.instance.ensureLoaded();
+      if (!AppSettingsService.instance.adminPendingClosingPromptEnabled.value) {
+        return;
+      }
       var salesRequests = <DailyClosingRequestModel>[];
       var maintenanceRequests = <Map<String, dynamic>>[];
       try {
@@ -800,23 +804,73 @@ class AdminDashboardController extends GetxController
         if (maintenanceCount > 0) '$maintenanceCount صندوق صيانة',
       ].join('، ');
       final goToRequests = await Get.dialog<bool>(
-        AlertDialog(
-          title: const Text('طلبات إغلاق صناديق بانتظارك'),
-          content: Text(
-            'يوجد $typesText بانتظار المراجعة'
-            '${names.isEmpty ? '.' : ' من: $names.'}',
+        Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(result: false),
-              child: const Text('تجاهل الآن'),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: Get.theme.colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.lock_clock_rounded,
+                      size: 31,
+                      color: Get.theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'طلبات إغلاق بانتظارك',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'يوجد $typesText بانتظار المراجعة'
+                    '${names.isEmpty ? '.' : '\nمن: $names'}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      height: 1.55,
+                      fontSize: 15,
+                      color: Get.theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => Get.back(result: true),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('الانتقال للمراجعة والإغلاق'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: () => Get.back(result: false),
+                    child: const Text('لاحقًا'),
+                  ),
+                ],
+              ),
             ),
-            FilledButton.icon(
-              onPressed: () => Get.back(result: true),
-              icon: const Icon(Icons.lock_clock_outlined),
-              label: const Text('مراجعة وإغلاق'),
-            ),
-          ],
+          ),
         ),
         barrierDismissible: false,
       );

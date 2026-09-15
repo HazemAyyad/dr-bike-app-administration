@@ -206,6 +206,58 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editPendingClosingPromptSetting() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    var enabled = service.adminPendingClosingPromptEnabled.value;
+    if (!mounted) return;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('تنبيه طلبات إغلاق الصناديق'),
+          content: SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: enabled,
+            title: const Text('إظهار التنبيه في الصفحة الرئيسية'),
+            subtitle: const Text(
+              'يعرض نافذة عند وجود صندوق مبيعات أو طلبيات أو صيانة بانتظار المراجعة.',
+            ),
+            onChanged: (value) => setDialogState(() => enabled = value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('save'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true || !mounted) return;
+
+    final ok = await service.updateAdminPendingClosingPrompt(enabled);
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _editShiplySettings() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -1173,6 +1225,14 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               titleKey: 'salesDailySettingsTitle',
               descriptionKey: 'salesDailySettingsDesc',
               onTap: _editSalesDailySettings,
+            ),
+            _SettingsItem(
+              icon: Icons.notifications_active_outlined,
+              iconColor: const Color(0xFFEA580C),
+              titleKey: 'تنبيه إغلاق الصناديق',
+              descriptionKey:
+                  'التحكم بظهور التنبيه عند وجود طلبات بانتظار المراجعة',
+              onTap: _editPendingClosingPromptSetting,
             ),
             _SettingsItem(
               icon: Icons.home_repair_service_outlined,

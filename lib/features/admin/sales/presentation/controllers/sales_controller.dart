@@ -989,7 +989,13 @@ class SalesController extends GetxController
           'returnResultOnOpen': true,
         },
       );
-      if (opened != true) return false;
+      if (opened != true) {
+        AppFailureNotice.show(
+          title: 'تنبيه',
+          message: 'يجب فتح صندوق الطلبيات أولًا لإتمام تأكيد الطلبية.',
+        );
+        return false;
+      }
 
       payload = await loadSalesOrdersDailySession();
     }

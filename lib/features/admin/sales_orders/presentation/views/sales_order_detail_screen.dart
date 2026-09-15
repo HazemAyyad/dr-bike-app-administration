@@ -2348,14 +2348,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     }
   }
 
-  void _runAction(
+  Future<void> _runAction(
     int orderId,
     SalesOrderActionId actionId,
     SalesOrderDetailModel order,
-  ) {
+  ) async {
     switch (actionId) {
       case SalesOrderActionId.confirm:
-        controller.confirmOrder(orderId);
+        await controller.confirmOrder(orderId);
         break;
       case SalesOrderActionId.markReady:
         final missingReady = _missingMediaFor(order, 'mark_ready');

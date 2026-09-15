@@ -9,6 +9,7 @@ class SalesOrderNotice {
 
   /// نفس مدة إشعار إضافة مهمة الموظف — يظهر في المنتصف ثم يختفي.
   static const Duration flashDuration = Duration(milliseconds: 500);
+  static const Duration _afterLoaderDelay = Duration(milliseconds: 250);
 
   static BuildContext? get _context {
     final ctx = Get.overlayContext ?? Get.context;
@@ -29,7 +30,14 @@ class SalesOrderNotice {
 
   /// يُغلق لودر التقدّم أولاً ثم يعرض الإشعار (لا يُكدّس فوق الـ dialog).
   static void successDeferred(String message, {String title = 'success'}) {
-    Future.microtask(() => success(message, title: title));
+    // Blocking actions close their progress dialog immediately after returning.
+    // A microtask can run before that close and put this notice above the loader,
+    // causing the loader's pop to dismiss the notice instead. Wait briefly until
+    // the dialog is removed, then show the actual result to the user.
+    Future<void>.delayed(
+      _afterLoaderDelay,
+      () => success(message, title: title),
+    );
   }
 
   static void info(String message, {String title = 'info'}) {
@@ -51,7 +59,10 @@ class SalesOrderNotice {
   }
 
   static void errorDeferred(String message, {String title = 'error'}) {
-    Future.microtask(() => error(message, title: title));
+    Future<void>.delayed(
+      _afterLoaderDelay,
+      () => error(message, title: title),
+    );
   }
 
   static String _displayMessage(String raw) {
