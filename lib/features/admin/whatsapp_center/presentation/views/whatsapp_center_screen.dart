@@ -674,7 +674,7 @@ class _ConversationSearch extends StatelessWidget {
             controller: controller.searchController,
             elevation: const WidgetStatePropertyAll(0),
             backgroundColor: const WidgetStatePropertyAll(Color(0xFFF0F2F5)),
-            hintText: 'بحث...',
+            hintText: 'ابحث بالاسم، رقم الجوال أو نص أي رسالة...',
             leading: const Icon(Icons.search, color: Color(0xFF54656F)),
             trailing: [
               IconButton(
@@ -689,6 +689,7 @@ class _ConversationSearch extends StatelessWidget {
               ),
             ],
             onSubmitted: (_) => controller.loadConversations(),
+            onChanged: controller.onConversationSearchChanged,
           ),
         ),
       );
@@ -708,6 +709,7 @@ class _ConversationFilters extends StatelessWidget {
                 {'id': 'all', 'label': 'الكل'},
                 {'id': 'unread', 'label': 'غير مقروء'},
                 {'id': 'needs_reply', 'label': 'تحتاج رد'},
+                {'id': 'reply_overdue', 'label': 'مرّ 24 ساعة'},
                 {'id': 'assigned_me', 'label': 'مسندة لي'},
               ]
                   .map((item) => Padding(
@@ -837,7 +839,7 @@ class _ConversationCard extends StatelessWidget {
     final color = _channelColor(item.channel);
     final preview = _conversationPreview(item);
     return Material(
-      color: Colors.white,
+      color: item.replyOverdue ? const Color(0xFFFFF4F2) : Colors.white,
       child: InkWell(
         onTap: () => Get.toNamed(
           '/WhatsAppConversation/${item.id}',
@@ -893,7 +895,15 @@ class _ConversationCard extends StatelessWidget {
                                         : FontWeight.w600,
                                   )),
                             ),
-                            if (item.needsReply)
+                            if (item.replyOverdue)
+                              const Padding(
+                                padding: EdgeInsetsDirectional.only(start: 5),
+                                child: Icon(
+                                    Icons.notification_important_rounded,
+                                    size: 18,
+                                    color: Color(0xFFD32F2F)),
+                              )
+                            else if (item.needsReply)
                               const Padding(
                                 padding: EdgeInsetsDirectional.only(start: 5),
                                 child: Icon(Icons.priority_high_rounded,
@@ -930,6 +940,24 @@ class _ConversationCard extends StatelessWidget {
                                           fontSize: 14)),
                             ),
                           ]),
+                          if (item.replyOverdue)
+                            Container(
+                              margin: const EdgeInsets.only(top: 5),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFDDD8),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'مرّ 24 ساعة بدون رد موظف',
+                                style: TextStyle(
+                                  color: Color(0xFFB3261E),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
                           if (item.assignedEmployee != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),

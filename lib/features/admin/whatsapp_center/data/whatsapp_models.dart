@@ -156,6 +156,7 @@ class WhatsAppConversation {
   final WhatsAppContact? contact;
   final WhatsAppMessageMedia? lastMessageMedia;
   final bool needsReply;
+  final bool replyOverdue;
   final ConversationAssignee? assignedEmployee;
   final List<ConversationTag> tags;
 
@@ -175,6 +176,7 @@ class WhatsAppConversation {
     this.lastMessageMedia,
     this.contact,
     this.needsReply = false,
+    this.replyOverdue = false,
     this.assignedEmployee,
     this.tags = const [],
   });
@@ -199,6 +201,7 @@ class WhatsAppConversation {
                 Map<String, dynamic>.from(j['last_message_media'] as Map))
             : null,
         needsReply: j['needs_reply'] == true || j['needs_reply'] == 1,
+        replyOverdue: j['reply_overdue'] == true || j['reply_overdue'] == 1,
         assignedEmployee: j['assigned_employee'] is Map
             ? ConversationAssignee.fromJson(
                 Map<String, dynamic>.from(j['assigned_employee'] as Map))

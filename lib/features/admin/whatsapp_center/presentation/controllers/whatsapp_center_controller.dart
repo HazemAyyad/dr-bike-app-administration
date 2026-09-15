@@ -22,6 +22,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class WhatsAppCenterController extends GetxController {
   final WhatsAppApiService api;
   WhatsAppCenterController(this.api);
@@ -36,6 +37,7 @@ class WhatsAppCenterController extends GetxController {
   final loadingMoreConversations = false.obs;
   final hasMoreConversations = false.obs;
   Timer? _conversationsRefreshTimer;
+  Timer? _conversationSearchDebounce;
   bool _refreshingConversations = false;
   int _conversationPage = 1;
   final Map<int, Future<Uint8List?>> _conversationThumbnails = {};
@@ -274,6 +276,14 @@ class WhatsAppCenterController extends GetxController {
   Future<void> selectQuickFilter(String filter) async {
     selectedQuickFilter.value = filter;
     await loadConversations();
+  }
+
+  void onConversationSearchChanged(String value) {
+    _conversationSearchDebounce?.cancel();
+    _conversationSearchDebounce = Timer(
+      const Duration(milliseconds: 450),
+      loadConversations,
+    );
   }
 
   Future<void> clearConversationFilters() async {
@@ -598,6 +608,7 @@ class WhatsAppCenterController extends GetxController {
   @override
   void onClose() {
     _conversationsRefreshTimer?.cancel();
+    _conversationSearchDebounce?.cancel();
     conversationsScrollController.removeListener(_onConversationsScroll);
     conversationsScrollController.dispose();
     searchController.dispose();
