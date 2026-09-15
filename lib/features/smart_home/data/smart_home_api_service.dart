@@ -473,6 +473,87 @@ class SmartEmployeeDevicePermissionModel {
       };
 }
 
+class SmartEmployeeScopePermissionModel {
+  const SmartEmployeeScopePermissionModel({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.subtitle,
+    required this.canView,
+    required this.canControl,
+    required this.canSchedule,
+  });
+
+  final int id;
+  final String name;
+  final String type;
+  final String subtitle;
+  final bool canView;
+  final bool canControl;
+  final bool canSchedule;
+
+  factory SmartEmployeeScopePermissionModel.fromJson(
+          Map<String, dynamic> json) =>
+      SmartEmployeeScopePermissionModel(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        name: json['name']?.toString() ?? '',
+        type: json['type']?.toString() ?? '',
+        subtitle: json['subtitle']?.toString() ?? '',
+        canView: json['can_view'] == true,
+        canControl: json['can_control'] == true,
+        canSchedule: json['can_schedule'] == true,
+      );
+
+  SmartEmployeeScopePermissionModel copyWith({
+    bool? canView,
+    bool? canControl,
+    bool? canSchedule,
+  }) =>
+      SmartEmployeeScopePermissionModel(
+        id: id,
+        name: name,
+        type: type,
+        subtitle: subtitle,
+        canView: canView ?? this.canView,
+        canControl: canControl ?? this.canControl,
+        canSchedule: canSchedule ?? this.canSchedule,
+      );
+
+  Map<String, dynamic> toJson(String idKey) => {
+        idKey: id,
+        'can_view': canView,
+        'can_control': canControl,
+        'can_schedule': canSchedule,
+      };
+}
+
+class SmartEmployeeAccessBundle {
+  const SmartEmployeeAccessBundle(
+      {required this.homes, required this.rooms, required this.devices});
+
+  final List<SmartEmployeeScopePermissionModel> homes;
+  final List<SmartEmployeeScopePermissionModel> rooms;
+  final List<SmartEmployeeDevicePermissionModel> devices;
+
+  factory SmartEmployeeAccessBundle.fromJson(dynamic data) {
+    List<T> parse<T>(String key, T Function(Map<String, dynamic>) fromJson) =>
+        data is Map && data[key] is List
+            ? (data[key] as List)
+                .whereType<Map>()
+                .map((item) => fromJson(Map<String, dynamic>.from(item)))
+                .toList(growable: false)
+            : <T>[];
+    return SmartEmployeeAccessBundle(
+      homes: parse(
+          'homes', (json) => SmartEmployeeScopePermissionModel.fromJson(json)),
+      rooms: parse(
+          'rooms', (json) => SmartEmployeeScopePermissionModel.fromJson(json)),
+      devices: parse('devices',
+          (json) => SmartEmployeeDevicePermissionModel.fromJson(json)),
+    );
+  }
+}
+
 class SmartDeviceScheduleModel {
   const SmartDeviceScheduleModel({
     required this.id,
@@ -947,39 +1028,37 @@ class SmartHomeApiService {
         .toList(growable: false);
   }
 
-  Future<List<SmartEmployeeDevicePermissionModel>> getEmployeeDevices(
+  Future<SmartEmployeeAccessBundle> getEmployeeDevices(
     int employeeId,
   ) async {
     final response = await _api.get(EndPoints.smartEmployeeDevices(employeeId));
-    return _extractList(response.data, const ['devices'])
-        .whereType<Map>()
-        .map((item) => SmartEmployeeDevicePermissionModel.fromJson(
-              Map<String, dynamic>.from(item),
-            ))
-        .where((item) => item.deviceId > 0)
-        .toList(growable: false);
+    return SmartEmployeeAccessBundle.fromJson(response.data);
   }
 
-  Future<List<SmartEmployeeDevicePermissionModel>> saveEmployeeDevices({
+  Future<SmartEmployeeAccessBundle> saveEmployeeDevices({
     required int employeeId,
+    required List<SmartEmployeeScopePermissionModel> homes,
+    required List<SmartEmployeeScopePermissionModel> rooms,
     required List<SmartEmployeeDevicePermissionModel> devices,
   }) async {
     final response = await _api.put(
       EndPoints.smartEmployeeDevices(employeeId),
       data: {
+        'homes': homes
+            .where((item) => item.canView)
+            .map((item) => item.toJson('smart_home_id'))
+            .toList(growable: false),
+        'rooms': rooms
+            .where((item) => item.canView)
+            .map((item) => item.toJson('smart_room_id'))
+            .toList(growable: false),
         'devices': devices
             .where((item) => item.canView)
             .map((item) => item.toJson())
             .toList(growable: false),
       },
     );
-    return _extractList(response.data, const ['devices'])
-        .whereType<Map>()
-        .map((item) => SmartEmployeeDevicePermissionModel.fromJson(
-              Map<String, dynamic>.from(item),
-            ))
-        .where((item) => item.deviceId > 0)
-        .toList(growable: false);
+    return SmartEmployeeAccessBundle.fromJson(response.data);
   }
 
   Future<SmartDeviceModel> renameDevice({

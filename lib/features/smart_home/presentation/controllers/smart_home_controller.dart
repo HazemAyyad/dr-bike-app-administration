@@ -161,6 +161,7 @@ class SmartHomeController extends GetxController {
       devices.where((device) => !device.online).length;
   bool get isTuyaUserLinked => tuyaUser.value?.linked == true;
   bool get canViewSmartHomeOwners => userType == 'admin';
+  bool get canManageSmartHome => userType == 'admin';
   SmartHomeOwnerModel? get selectedOwner => selectedOwnerId.value == null
       ? null
       : owners.firstWhereOrNull((owner) => owner.id == selectedOwnerId.value);

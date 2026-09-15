@@ -23,10 +23,11 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
 
   @override
   Widget build(BuildContext context) {
+    final canManage = controller.canManageSmartHome;
     return Theme(
       data: smartHomeTheme(context),
       child: DefaultTabController(
-        length: 2,
+        length: canManage ? 2 : 1,
         child: Scaffold(
           appBar: AppBar(
             scrolledUnderElevation: 0,
@@ -40,44 +41,45 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                   ),
             ),
             actions: [
-              PopupMenuButton<String>(
-                tooltip: 'إضافة',
-                icon: const Icon(Icons.add_rounded),
-                onSelected: (value) {
-                  if (value == 'scene') {
-                    Get.to<void>(
-                      () => SmartSceneEditorScreen(controller: controller),
-                    );
-                  } else if (value == 'device') {
-                    _showAddDeviceDialog();
-                  } else if (value == 'location') {
-                    _showLocationDialog(controller: controller);
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'scene',
-                    child: ListTile(
-                      leading: Icon(Icons.auto_awesome_rounded),
-                      title: Text('إضافة مشهد'),
+              if (canManage)
+                PopupMenuButton<String>(
+                  tooltip: 'إضافة',
+                  icon: const Icon(Icons.add_rounded),
+                  onSelected: (value) {
+                    if (value == 'scene') {
+                      Get.to<void>(
+                        () => SmartSceneEditorScreen(controller: controller),
+                      );
+                    } else if (value == 'device') {
+                      _showAddDeviceDialog();
+                    } else if (value == 'location') {
+                      _showLocationDialog(controller: controller);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'scene',
+                      child: ListTile(
+                        leading: Icon(Icons.auto_awesome_rounded),
+                        title: Text('إضافة مشهد'),
+                      ),
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'device',
-                    child: ListTile(
-                      leading: Icon(Icons.add_to_home_screen_rounded),
-                      title: Text('إضافة جهاز'),
+                    PopupMenuItem(
+                      value: 'device',
+                      child: ListTile(
+                        leading: Icon(Icons.add_to_home_screen_rounded),
+                        title: Text('إضافة جهاز'),
+                      ),
                     ),
-                  ),
-                  PopupMenuItem(
-                    value: 'location',
-                    child: ListTile(
-                      leading: Icon(Icons.home_work_outlined),
-                      title: Text('إضافة مكان'),
+                    PopupMenuItem(
+                      value: 'location',
+                      child: ListTile(
+                        leading: Icon(Icons.home_work_outlined),
+                        title: Text('إضافة مكان'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               IconButton(
                 tooltip: 'smartHomeFilters'.tr,
                 onPressed: _showFilters,
@@ -99,13 +101,14 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                   fontWeight: FontWeight.w600,
                 ),
                 tabs: [
-                  Tab(
-                    height: 34.h,
-                    child: const _CompactTabLabel(
-                      icon: Icons.devices_other_rounded,
-                      label: 'الأجهزة',
+                  if (canManage)
+                    Tab(
+                      height: 34.h,
+                      child: const _CompactTabLabel(
+                        icon: Icons.devices_other_rounded,
+                        label: 'الأجهزة',
+                      ),
                     ),
-                  ),
                   Tab(
                     height: 34.h,
                     child: const _CompactTabLabel(
@@ -149,8 +152,8 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                         SizedBox(height: 8.h),
                         _SectionHeader(
                           title: 'devices'.tr,
-                          actionLabel: 'addDevice'.tr,
-                          onAction: _showAddDeviceDialog,
+                          actionLabel: canManage ? 'addDevice'.tr : null,
+                          onAction: canManage ? _showAddDeviceDialog : null,
                         ),
                         SizedBox(height: 5.h),
                         if (showDeviceSkeleton)
@@ -160,21 +163,23 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                       ],
                     ),
                   ),
-                  RefreshIndicator(
-                    onRefresh: controller.refreshData,
-                    child: ListView(
-                      padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
-                      children: [
-                        if (controller.errorMessage.value.isNotEmpty)
-                          _ErrorBanner(message: controller.errorMessage.value),
-                        SmartScenesSection(
-                          controller: controller,
-                          showAll: true,
-                          showHeader: false,
-                        ),
-                      ],
+                  if (canManage)
+                    RefreshIndicator(
+                      onRefresh: controller.refreshData,
+                      child: ListView(
+                        padding: EdgeInsets.fromLTRB(10.w, 7.h, 10.w, 20.h),
+                        children: [
+                          if (controller.errorMessage.value.isNotEmpty)
+                            _ErrorBanner(
+                                message: controller.errorMessage.value),
+                          SmartScenesSection(
+                            controller: controller,
+                            showAll: true,
+                            showHeader: false,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               );
             }),
@@ -1601,8 +1606,8 @@ class _SectionHeader extends StatelessWidget {
   });
 
   final String title;
-  final String actionLabel;
-  final VoidCallback onAction;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1617,15 +1622,16 @@ class _SectionHeader extends StatelessWidget {
                 ),
           ),
         ),
-        TextButton.icon(
-          onPressed: onAction,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+        if (onAction != null)
+          TextButton.icon(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+            ),
+            icon: Icon(Icons.add_rounded, size: 18.r),
+            label: Text(actionLabel!, style: TextStyle(fontSize: 12.sp)),
           ),
-          icon: Icon(Icons.add_rounded, size: 18.r),
-          label: Text(actionLabel, style: TextStyle(fontSize: 12.sp)),
-        ),
       ],
     );
   }
@@ -1658,15 +1664,15 @@ class _RoomsStrip extends StatelessWidget {
               label: room.name,
               selected: selectedRoomId == room.id,
               onTap: () => controller.selectRoom(room.id),
-              onLongPress: () => _showRoomActions(
-                controller: controller,
-                room: room,
-              ),
+              onLongPress: controller.canManageSmartHome
+                  ? () => _showRoomActions(controller: controller, room: room)
+                  : null,
             ),
-          _RoomAddChip(
-            key: const ValueKey('room:add'),
-            onTap: () => _showRoomDialog(controller: controller),
-          ),
+          if (controller.canManageSmartHome)
+            _RoomAddChip(
+              key: const ValueKey('room:add'),
+              onTap: () => _showRoomDialog(controller: controller),
+            ),
         ];
         return SizedBox(
           height: 36.h,
