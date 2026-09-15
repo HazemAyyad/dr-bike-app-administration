@@ -9,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../sales_orders/data/models/sales_order_model.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class _PartnerAddressOption {
   const _PartnerAddressOption({required this.city, required this.village});
   final ShiplyCityModel city;
@@ -183,16 +184,16 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
                   width: double.infinity,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-                  color: const Color(0xFF12304A),
+                  color: const Color(0xFFEAF2FB),
                   child: Row(children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .12),
+                        color: const Color(0xFFD6E6F5),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.add_location_alt_outlined,
-                          color: Colors.white),
+                          color: Color(0xFF1E3A5F)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -202,23 +203,23 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
                           Text(
                             row == null ? 'إضافة عنوان جديد' : 'تعديل العنوان',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF1F2937),
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const Text(
                             'احفظ موقع التوصيل لاستخدامه في الطلبيات',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 12),
+                            style: TextStyle(
+                                color: Color(0xFF64748B), fontSize: 12),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(dialogContext, false),
-                      icon:
-                          const Icon(Icons.close_rounded, color: Colors.white),
+                      icon: const Icon(Icons.close_rounded,
+                          color: Color(0xFF1F2937)),
                     ),
                   ]),
                 ),
@@ -375,7 +376,8 @@ class _PartnerAddressesSheetState extends State<_PartnerAddressesSheet> {
                       flex: 2,
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF12304A),
+                          backgroundColor: const Color(0xFFDBEAFE),
+                          foregroundColor: const Color(0xFF1E3A5F),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
                         onPressed: () {

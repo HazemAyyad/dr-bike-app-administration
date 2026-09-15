@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../sales/presentation/views/delivery_companies_management_screen.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
@@ -99,20 +98,17 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
                   onChanged: controller.onDeliveryCompanyChanged,
                 ),
               ),
-              if (canManageSalesSettings) ...[
-                SizedBox(width: 8.w),
-                IconButton.filledTonal(
-                  tooltip: 'إضافة جهة توصيل',
-                  onPressed: () async {
-                    final added =
-                        await showDeliveryCompanyEditorDialog(context);
-                    if (added == null) return;
-                    await controller.loadLookups();
-                    controller.onDeliveryCompanyChanged(added.id);
-                  },
-                  icon: const Icon(Icons.add),
-                ),
-              ],
+              SizedBox(width: 8.w),
+              IconButton.filledTonal(
+                tooltip: 'إضافة مكتب أو تكسي',
+                onPressed: () async {
+                  final added = await showDeliveryCompanyEditorDialog(context);
+                  if (added == null) return;
+                  await controller.loadLookups();
+                  controller.onDeliveryCompanyChanged(added.id);
+                },
+                icon: const Icon(Icons.add),
+              ),
             ],
           ),
           SizedBox(height: 12.h),

@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/video_view.dart';
 import 'package:doctorbike/core/services/app_dependency_registry.dart';
-import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
@@ -2656,6 +2655,44 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       return true;
     }
 
+    final currentAddress = (order.customerAddress ?? '').trim();
+    if (currentAddress.isNotEmpty && currentAddress != '----') {
+      final keepCurrent = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          title: const Text('عنوان التوصيل'),
+          content: Text(
+            'العنوان المختار في الطلبية:\n$currentAddress\n\n'
+            'هل تريد استخدامه للتوصيل؟',
+            style: const TextStyle(color: Color(0xFF1F2937), height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('اختيار عنوان آخر'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFDBEAFE),
+                foregroundColor: const Color(0xFF1E3A5F),
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('استخدام نفس العنوان'),
+            ),
+          ],
+        ),
+      );
+      if (keepCurrent == true) {
+        controller.preloadShiplyAddressFromOrder(order);
+        return true;
+      }
+      if (keepCurrent == null) return false;
+    }
+
+    if (!mounted) return false;
+
     final selected = await showPartnerAddressesSheet(
       context: context,
       partnerType: partnerType,
@@ -2728,6 +2765,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
 
     if (!await _selectPartnerAddressForHandover(current)) return false;
     current = controller.detail.value ?? current;
+
+    await controller.applyShiplyOfficeCostQuote(current);
 
     if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
       return true;
@@ -2843,13 +2882,13 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     controller.carrierContactPhoneController.clear();
     controller.carrierOfficeNameController.clear();
     controller.carrierVehicleNumberController.clear();
-    controller.applySelectedDeliveryCompanyDefaults();
-    final defaultCarrierCost = order.carrierDeliveryCost ??
-        order.shiplyQuotedDeliveryFee ??
-        controller.selectedDeliveryCompany?.defaultCarrierFee ??
-        0;
-    controller.carrierDeliveryCostController.text =
-        defaultCarrierCost.toStringAsFixed(2);
+    controller.applySelectedDeliveryCompanyDefaults(
+      shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+    );
+    if (order.carrierDeliveryCost != null) {
+      controller.carrierDeliveryCostController.text =
+          order.carrierDeliveryCost!.toStringAsFixed(2);
+    }
     Get.bottomSheet(
       Padding(
         padding: EdgeInsets.only(
@@ -2913,10 +2952,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                   ),
                                 )
                                 .toList(),
-                            onChanged: controller.onDeliveryCompanyChanged,
+                            onChanged: (id) =>
+                                controller.onDeliveryCompanyChanged(
+                              id,
+                              shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+                            ),
                           ),
                         ),
-                        if (canManageSalesSettings) ...[
+                        ...[
                           SizedBox(width: 8.w),
                           IconButton.filledTonal(
                             tooltip: 'إضافة جهة توصيل',
@@ -2927,7 +2970,10 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                               );
                               if (added == null) return;
                               await controller.loadLookups();
-                              controller.onDeliveryCompanyChanged(added.id);
+                              controller.onDeliveryCompanyChanged(
+                                added.id,
+                                shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+                              );
                             },
                             icon: const Icon(Icons.add),
                           ),
@@ -3233,8 +3279,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     controller.handover(orderId);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: SalesOrdersController.textPrimary,
-                    foregroundColor: SalesOrdersController.cardGray,
+                    backgroundColor: const Color(0xFFDBEAFE),
+                    foregroundColor: const Color(0xFF1E3A5F),
                     padding: EdgeInsets.symmetric(vertical: 14.h),
                   ),
                   child: Text('confirm'.tr),

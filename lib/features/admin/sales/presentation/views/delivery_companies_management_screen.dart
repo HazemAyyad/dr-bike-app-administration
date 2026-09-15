@@ -37,6 +37,8 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text(company == null ? 'إضافة جهة توصيل' : 'تعديل جهة التوصيل'),
         content: SizedBox(
           width: 480,
@@ -60,8 +62,9 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
                     border: OutlineInputBorder(),
                   ),
                   items: _deliveryTypeLabels.entries
-                      .where(
-                          (entry) => entry.key != 'shiply' || type == 'shiply')
+                      .where((entry) =>
+                          const ['office', 'taxi'].contains(entry.key) ||
+                          entry.key == type)
                       .map((entry) => DropdownMenuItem(
                             value: entry.key,
                             child: Text(entry.value),
@@ -71,17 +74,19 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
                       ? null
                       : (value) => setState(() => type = value ?? type),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: fee,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'أجرة الجهة الافتراضية',
-                    helperText: 'تكلفة الناقل، وليست سعر التوصيل على الزبون',
-                    border: OutlineInputBorder(),
+                if (type == 'taxi') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: fee,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'أجرة التكسي الافتراضية',
+                      helperText: 'يمكن للموظف تعديلها عند تسليم الطلبية',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 12),
                 TextField(
                   controller: contact,
@@ -133,6 +138,10 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
             child: const Text('إلغاء'),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDBEAFE),
+              foregroundColor: const Color(0xFF1E3A5F),
+            ),
             onPressed: saving
                 ? null
                 : () async {
@@ -142,9 +151,10 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
                       final data = <String, dynamic>{
                         'name': name.text.trim(),
                         'delivery_type': type,
-                        'default_carrier_fee': fee.text.trim().isEmpty
-                            ? null
-                            : double.tryParse(fee.text.trim()),
+                        'default_carrier_fee':
+                            type == 'office' || fee.text.trim().isEmpty
+                                ? null
+                                : double.tryParse(fee.text.trim()),
                         'contact_name': contact.text.trim().isEmpty
                             ? null
                             : contact.text.trim(),
@@ -195,6 +205,9 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
     ),
   );
 
+  // showDialog completes when pop starts, while the closing animation may still
+  // build its TextFields. Dispose only after that route has fully disappeared.
+  await Future<void>.delayed(kThemeAnimationDuration);
   name.dispose();
   fee.dispose();
   contact.dispose();
@@ -267,10 +280,38 @@ class _DeliveryCompaniesManagementScreenState
               onRefresh: _load,
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                itemCount: _companies.length,
+                itemCount: _companies.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
-                  final company = _companies[index];
+                  if (index == 0) {
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF2FB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFC6DAEE)),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.account_balance_wallet_outlined,
+                              color: Color(0xFF1E3A5F)),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'كل مكتب أو تكسي يُحفظ كجهة مستقلة. ترتبط به طلبياته وتكلفته وحسابه وتسوياته، لذلك لا تسجّل نفس الجهة بأكثر من اسم.',
+                              style: TextStyle(
+                                color: Color(0xFF1F2937),
+                                height: 1.45,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  final company = _companies[index - 1];
                   return Card(
                     child: ListTile(
                       leading: Icon(
@@ -286,12 +327,16 @@ class _DeliveryCompaniesManagementScreenState
                           'الأجرة الافتراضية: ${company.defaultCarrierFee!.toStringAsFixed(2)}',
                         if (!company.isActive) 'متوقفة',
                       ].join(' • ')),
-                      trailing: company.deliveryType == 'shiply'
-                          ? const Icon(Icons.lock_outline)
-                          : const Icon(Icons.edit_outlined),
-                      onTap: company.deliveryType == 'shiply'
-                          ? null
-                          : () => _edit(company),
+                      trailing:
+                          !(company.code?.toLowerCase().startsWith('custom-') ??
+                                  false)
+                              ? const Icon(Icons.lock_outline)
+                              : const Icon(Icons.edit_outlined),
+                      onTap:
+                          !(company.code?.toLowerCase().startsWith('custom-') ??
+                                  false)
+                              ? null
+                              : () => _edit(company),
                     ),
                   );
                 },

@@ -179,12 +179,15 @@ class SalesOrdersController extends GetxController {
     return null;
   }
 
-  void onDeliveryCompanyChanged(int? companyId) {
+  void onDeliveryCompanyChanged(
+    int? companyId, {
+    double? shiplyOfficeFee,
+  }) {
     selectedDeliveryCompanyId.value = companyId;
-    applySelectedDeliveryCompanyDefaults();
+    applySelectedDeliveryCompanyDefaults(shiplyOfficeFee: shiplyOfficeFee);
   }
 
-  void applySelectedDeliveryCompanyDefaults() {
+  void applySelectedDeliveryCompanyDefaults({double? shiplyOfficeFee}) {
     final company = selectedDeliveryCompany;
     if (company == null) return;
     carrierContactNameController.text = company.contactName ?? '';
@@ -192,8 +195,10 @@ class SalesOrdersController extends GetxController {
     carrierVehicleNumberController.text = company.vehicleNumber ?? '';
     carrierOfficeNameController.text =
         company.deliveryType == 'office' ? company.name : '';
-    carrierDeliveryCostController.text =
-        (company.defaultCarrierFee ?? 0).toStringAsFixed(2);
+    final fee = company.deliveryType == 'office' && shiplyOfficeFee != null
+        ? shiplyOfficeFee
+        : company.defaultCarrierFee ?? 0;
+    carrierDeliveryCostController.text = fee.toStringAsFixed(2);
   }
 
   void pickDefaultDeliveryCompany(SalesOrderDetailModel? order) {
@@ -901,6 +906,25 @@ class SalesOrdersController extends GetxController {
       deliveryFeeController.text = fee.toStringAsFixed(0);
       manualDeliveryFee.value = fee;
     });
+  }
+
+  Future<void> applyShiplyOfficeCostQuote(
+    SalesOrderDetailModel order,
+  ) async {
+    if (!isSelectedCompanyOffice || order.shiplyVillageId == null) return;
+    final parcelPrice = order.subtotal - order.discount;
+    final result = await repository.calculateShiplyDeliveryFee(
+      villageId: order.shiplyVillageId!,
+      price: parcelPrice > 0 ? parcelPrice : order.total,
+    );
+    result.fold(
+      (_) {},
+      (fee) {
+        if (fee == null) return;
+        shiplyQuotedDeliveryFee.value = fee;
+        carrierDeliveryCostController.text = fee.toStringAsFixed(2);
+      },
+    );
   }
 
   void preloadShiplyAddressFromOrder(SalesOrderDetailModel order) {
