@@ -83,6 +83,7 @@ class SmartHomeController extends GetxController {
   final selectedOwnerId = RxnInt();
   final selectedLocationKey = ''.obs;
   final selectedRoomId = RxnInt();
+  final hasUnassignedDevices = false.obs;
   final homes = <SmartHomeModel>[].obs;
   final rooms = <SmartRoomModel>[].obs;
   final devices = <SmartDeviceModel>[].obs;
@@ -219,7 +220,7 @@ class SmartHomeController extends GetxController {
       nativeStatus.value = await nativeService.getStatus();
       final bootstrapped = await _loadBootstrapOrLegacy();
       await ensureTuyaUserLinked();
-      if (homes.isEmpty) {
+      if (homes.isEmpty && canManageSmartHome) {
         if (selectedOwnerId.value == null) {
           final created =
               await apiService.createHome('smartHomeDefaultName'.tr);
@@ -277,6 +278,7 @@ class SmartHomeController extends GetxController {
           canViewSmartHomeOwners ? bootstrap.selectedOwnerId : null;
       tuyaUser.value = bootstrap.tuyaUser;
       homes.assignAll(bootstrap.homes);
+      hasUnassignedDevices.value = bootstrap.hasUnassignedDevices;
       if (bootstrap.unassigned) {
         selectedLocationKey.value = smartHomeUnassignedLocationKey;
       } else if (bootstrap.selectedHomeId != null) {

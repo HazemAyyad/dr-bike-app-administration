@@ -101,21 +101,21 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
                   fontWeight: FontWeight.w600,
                 ),
                 tabs: [
+                  Tab(
+                    height: 34.h,
+                    child: const _CompactTabLabel(
+                      icon: Icons.devices_other_rounded,
+                      label: 'الأجهزة',
+                    ),
+                  ),
                   if (canManage)
                     Tab(
                       height: 34.h,
                       child: const _CompactTabLabel(
-                        icon: Icons.devices_other_rounded,
-                        label: 'الأجهزة',
+                        icon: Icons.auto_awesome_rounded,
+                        label: 'المشاهد',
                       ),
                     ),
-                  Tab(
-                    height: 34.h,
-                    child: const _CompactTabLabel(
-                      icon: Icons.auto_awesome_rounded,
-                      label: 'المشاهد',
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -204,6 +204,7 @@ class SmartHomeDashboardScreen extends GetView<SmartHomeController> {
           controller.homes.length;
           controller.selectedOwnerId.value;
           controller.selectedLocationKey.value;
+          controller.hasUnassignedDevices.value;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -1359,21 +1360,25 @@ class _SmartLocationSelector extends StatelessWidget {
                   ),
                 ),
               ),
-              PopupMenuItem<String>(
-                value: smartHomeUnassignedLocationKey,
-                child: _LocationMenuRow(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'smartHomeUnassignedDevices'.tr,
+              if (controller.canManageSmartHome ||
+                  controller.hasUnassignedDevices.value)
+                PopupMenuItem<String>(
+                  value: smartHomeUnassignedLocationKey,
+                  child: _LocationMenuRow(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'smartHomeUnassignedDevices'.tr,
+                  ),
                 ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem<String>(
-                value: 'add',
-                child: _LocationMenuRow(
-                  icon: Icons.add_rounded,
-                  label: 'smartHomeAddLocation'.tr,
+              if (controller.canManageSmartHome) ...[
+                const PopupMenuDivider(),
+                PopupMenuItem<String>(
+                  value: 'add',
+                  child: _LocationMenuRow(
+                    icon: Icons.add_rounded,
+                    label: 'smartHomeAddLocation'.tr,
+                  ),
                 ),
-              ),
+              ],
             ],
             child: Container(
               height: 42.h,
@@ -1405,12 +1410,14 @@ class _SmartLocationSelector extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 8.w),
-        IconButton.filledTonal(
-          tooltip: 'smartHomeAddLocation'.tr,
-          onPressed: () => _showLocationDialog(controller: controller),
-          icon: const Icon(Icons.add_rounded),
-        ),
+        if (controller.canManageSmartHome) ...[
+          SizedBox(width: 8.w),
+          IconButton.filledTonal(
+            tooltip: 'smartHomeAddLocation'.tr,
+            onPressed: () => _showLocationDialog(controller: controller),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
       ],
     );
   }

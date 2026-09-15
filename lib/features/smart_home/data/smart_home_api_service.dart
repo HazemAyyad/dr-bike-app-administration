@@ -64,6 +64,7 @@ class SmartHomeBootstrapModel {
     required this.selectedOwnerId,
     required this.selectedHomeId,
     required this.unassigned,
+    required this.hasUnassignedDevices,
     required this.owners,
     required this.tuyaUser,
     required this.homes,
@@ -75,6 +76,7 @@ class SmartHomeBootstrapModel {
   final int? selectedOwnerId;
   final int? selectedHomeId;
   final bool unassigned;
+  final bool hasUnassignedDevices;
   final List<SmartHomeOwnerModel> owners;
   final SmartHomeTuyaUserModel tuyaUser;
   final List<SmartHomeModel> homes;
@@ -732,6 +734,7 @@ class SmartHomeApiService {
           int.tryParse(data['selected_owner_id']?.toString() ?? ''),
       selectedHomeId: int.tryParse(data['selected_home_id']?.toString() ?? ''),
       unassigned: data['unassigned'] == true,
+      hasUnassignedDevices: data['has_unassigned_devices'] == true,
       owners: models('owners', (json) => SmartHomeOwnerModel.fromJson(json)),
       tuyaUser: SmartHomeTuyaUserModel.fromJson(
         Map<String, dynamic>.from(data['tuya_user'] as Map),
