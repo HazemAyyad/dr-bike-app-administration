@@ -611,6 +611,22 @@ class _ConversationsTab extends StatelessWidget {
               child: _ConversationSearch(controller: controller),
             ),
           ),
+          SliverToBoxAdapter(
+            child: Obx(() => AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 160),
+                  child: controller.searchingConversations.value
+                      ? const LinearProgressIndicator(
+                          key: ValueKey('conversation-search-progress'),
+                          minHeight: 2,
+                          color: Color(0xFF00A884),
+                          backgroundColor: Colors.transparent,
+                        )
+                      : const SizedBox(
+                          key: ValueKey('conversation-search-idle'),
+                          height: 2,
+                        ),
+                )),
+          ),
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
           SliverToBoxAdapter(
               child: _ConversationFilters(controller: controller)),
@@ -688,7 +704,7 @@ class _ConversationSearch extends StatelessWidget {
                 icon: const Icon(Icons.close, color: Color(0xFF54656F)),
               ),
             ],
-            onSubmitted: (_) => controller.loadConversations(),
+            onSubmitted: (_) => controller.submitConversationSearch(),
             onChanged: controller.onConversationSearchChanged,
           ),
         ),

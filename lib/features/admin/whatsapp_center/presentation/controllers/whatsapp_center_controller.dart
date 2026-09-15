@@ -35,6 +35,7 @@ class WhatsAppCenterController extends GetxController {
   final conversations = <WhatsAppConversation>[].obs;
   final conversationsScrollController = ScrollController();
   final loadingMoreConversations = false.obs;
+  final searchingConversations = false.obs;
   final hasMoreConversations = false.obs;
   Timer? _conversationsRefreshTimer;
   Timer? _conversationSearchDebounce;
@@ -116,12 +117,17 @@ class WhatsAppCenterController extends GetxController {
             Map<String, dynamic>.from(result['dashboard'] as Map? ?? {}));
       });
 
-  Future<void> loadConversations({bool append = false}) async {
+  Future<void> loadConversations(
+      {bool append = false, bool silent = false}) async {
     if (append) {
       if (loadingMoreConversations.value || !hasMoreConversations.value) return;
       loadingMoreConversations.value = true;
     } else {
-      loading.value = true;
+      if (silent) {
+        searchingConversations.value = true;
+      } else {
+        loading.value = true;
+      }
       error.value = null;
       _conversationPage = 1;
       hasMoreConversations.value = false;
@@ -163,11 +169,22 @@ class WhatsAppCenterController extends GetxController {
           title: 'تعذر تحميل المزيد',
           message: _message(e),
         );
+      } else if (silent) {
+        AppFailureNotice.show(
+          title: 'تعذر البحث',
+          message: _message(e),
+        );
       } else {
         error.value = _message(e);
       }
     } finally {
-      append ? loadingMoreConversations.value = false : loading.value = false;
+      if (append) {
+        loadingMoreConversations.value = false;
+      } else if (silent) {
+        searchingConversations.value = false;
+      } else {
+        loading.value = false;
+      }
     }
   }
 
@@ -175,7 +192,8 @@ class WhatsAppCenterController extends GetxController {
     if (tabIndex.value != 1 ||
         loading.value ||
         loadingMoreConversations.value ||
-        _refreshingConversations) {
+        _refreshingConversations ||
+        _conversationListIsAwayFromTop) {
       return;
     }
 
@@ -213,6 +231,10 @@ class WhatsAppCenterController extends GetxController {
       _refreshingConversations = false;
     }
   }
+
+  bool get _conversationListIsAwayFromTop =>
+      conversationsScrollController.hasClients &&
+      conversationsScrollController.offset > 80;
 
   void _onConversationsScroll() {
     if (!conversationsScrollController.hasClients ||
@@ -282,8 +304,13 @@ class WhatsAppCenterController extends GetxController {
     _conversationSearchDebounce?.cancel();
     _conversationSearchDebounce = Timer(
       const Duration(milliseconds: 450),
-      loadConversations,
+      () => loadConversations(silent: true),
     );
+  }
+
+  Future<void> submitConversationSearch() async {
+    _conversationSearchDebounce?.cancel();
+    await loadConversations(silent: true);
   }
 
   Future<void> clearConversationFilters() async {
