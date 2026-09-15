@@ -131,6 +131,7 @@ class AddEmployeeController extends GetxController {
     '6', // Special Tasks
     '11', // Boxes Section
     '14', // Checks
+    '49', // Technical Support (admin_only in the reference database)
   };
 
   final RxList<Map<String, dynamic>> permissionsList = <Map<String, dynamic>>[
@@ -389,10 +390,122 @@ class AddEmployeeController extends GetxController {
       'permission': false.obs
     },
     {
+      'name': 'إدارة كلمات سر الموظفين',
+      'nameEn': 'Employees Password Manage',
+      'id': '66',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة الشيكات الواردة',
+      'nameEn': 'Checks Incoming View',
+      'id': '68',
+      'group': 'checks',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة الشيكات الصادرة',
+      'nameEn': 'Checks Outgoing View',
+      'id': '69',
+      'group': 'checks',
+      'permission': false.obs
+    },
+    {
+      'name': 'إضافة شيك وارد',
+      'nameEn': 'Checks Incoming Create',
+      'id': '70',
+      'group': 'checks',
+      'permission': false.obs
+    },
+    {
+      'name': 'إضافة شيك صادر',
+      'nameEn': 'Checks Outgoing Create',
+      'id': '71',
+      'group': 'checks',
+      'permission': false.obs
+    },
+    {
       'name': 'المنزل الذكي',
       'nameEn': 'Smart Home',
       'id': '72',
       'group': 'smart_home',
+      'permission': false.obs
+    },
+    {
+      'name': 'إعدادات خدمات الصيانة',
+      'nameEn': 'Maintenance Services Settings',
+      'id': '73',
+      'group': 'maintenance',
+      'permission': false.obs
+    },
+    {
+      'name': 'إعدادات المبيعات',
+      'nameEn': 'Sales Settings',
+      'id': '74',
+      'group': 'sales',
+      'permission': false.obs
+    },
+    {
+      'name': 'حسابات شركات التوصيل',
+      'nameEn': 'Delivery Company Accounts',
+      'id': '75',
+      'group': 'sales',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة مركز الإشعارات',
+      'nameEn': 'Notification Center Manage',
+      'id': '76',
+      'group': 'communication',
+      'permission': false.obs
+    },
+    {
+      'name': '↳ واتساب',
+      'nameEn': 'Social Center WhatsApp',
+      'id': '77',
+      'group': 'communication',
+      'permission': false.obs
+    },
+    {
+      'name': '↳ فيسبوك',
+      'nameEn': 'Social Center Facebook',
+      'id': '78',
+      'group': 'communication',
+      'permission': false.obs
+    },
+    {
+      'name': '↳ إنستغرام',
+      'nameEn': 'Social Center Instagram',
+      'id': '79',
+      'group': 'communication',
+      'permission': false.obs
+    },
+    {
+      'name': 'عرض تكلفة المخزون',
+      'nameEn': 'View Inventory Cost',
+      'id': '80',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
+      'name': 'تسوية كمية المخزون',
+      'nameEn': 'Adjust Stock',
+      'id': '81',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
+      'name': 'إعادة تقييم تكلفة المخزون',
+      'nameEn': 'Adjust Inventory Cost',
+      'id': '82',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة المشتريات',
+      'nameEn': 'Manage Purchases',
+      'id': '83',
+      'group': 'stock',
       'permission': false.obs
     },
   ].obs;
@@ -601,6 +714,10 @@ class AddEmployeeController extends GetxController {
       'Purchasing Section': 'stock',
       'Cost Price': 'stock',
       'Stock Inventory Settings': 'stock',
+      'View Inventory Cost': 'stock',
+      'Adjust Stock': 'stock',
+      'Adjust Inventory Cost': 'stock',
+      'Manage Purchases': 'stock',
       'Employees Section': 'employees',
       'Employee Tasks': 'employee_tasks',
       'Special Tasks': 'special_tasks',
@@ -640,6 +757,7 @@ class AddEmployeeController extends GetxController {
       'Social Center Facebook': 'communication',
       'Social Center Instagram': 'communication',
       'Technical Support': 'communication',
+      'Notification Center Manage': 'communication',
       'Smart Home': 'smart_home',
     };
     return groupsByName[nameEn?.toString()] ?? 'general';
