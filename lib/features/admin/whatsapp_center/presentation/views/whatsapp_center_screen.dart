@@ -1905,22 +1905,16 @@ class _StateMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         children: [
-          SizedBox(
-              height: 320,
-              child: Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, size: 52, color: Colors.grey),
-                const SizedBox(height: 12),
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(text, textAlign: TextAlign.center)),
-                if (action != null)
-                  TextButton.icon(
-                      onPressed: action,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('إعادة المحاولة')),
-              ])))
+          Icon(icon, size: 52, color: Colors.grey),
+          const SizedBox(height: 12),
+          SelectableText(text, textAlign: TextAlign.center),
+          if (action != null)
+            TextButton.icon(
+                onPressed: action,
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة')),
         ],
       );
 }
