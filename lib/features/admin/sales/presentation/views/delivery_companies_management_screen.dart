@@ -15,6 +15,7 @@ const Map<String, String> _deliveryTypeLabels = {
 Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
   BuildContext context, {
   DeliveryCompanyModel? company,
+  String? initialType,
 }) async {
   final api = Get.find<DioConsumer>();
   final name = TextEditingController(text: company?.name ?? '');
@@ -27,7 +28,10 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
   final notes = TextEditingController(text: company?.notes ?? '');
   var type = company?.deliveryType == 'shiply'
       ? 'shiply'
-      : (company?.deliveryType ?? 'office');
+      : (company?.deliveryType ??
+          (const ['office', 'taxi'].contains(initialType)
+              ? initialType!
+              : 'office'));
   var active = company?.isActive ?? true;
   var saving = false;
   final canChangeType = company == null ||

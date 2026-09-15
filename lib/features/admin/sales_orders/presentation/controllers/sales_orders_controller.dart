@@ -179,6 +179,53 @@ class SalesOrdersController extends GetxController {
     return null;
   }
 
+  List<DeliveryCompanyModel> deliveryCompaniesForType(String type) =>
+      deliveryCompanies
+          .where((company) => company.deliveryType == type)
+          .toList();
+
+  List<String> get availableDeliveryTypes {
+    const order = ['shiply', 'office', 'taxi', 'internal', 'pickup'];
+    return order
+        .where((type) => deliveryCompanies.any(
+              (company) => company.deliveryType == type,
+            ))
+        .toList();
+  }
+
+  String deliveryTypeLabel(String type) {
+    switch (type) {
+      case 'office':
+        return 'مكتب / شركة توصيل';
+      case 'taxi':
+        return 'تكسي / سائق';
+      case 'internal':
+        return 'توصيل داخلي';
+      case 'pickup':
+        return 'استلام ذاتي';
+      case 'shiply':
+        return 'Shiply';
+      default:
+        return type;
+    }
+  }
+
+  void onDeliveryTypeChanged(
+    String? type, {
+    double? shiplyOfficeFee,
+  }) {
+    if (type == null) return;
+    final companies = deliveryCompaniesForType(type);
+    if (companies.isEmpty) {
+      selectedDeliveryCompanyId.value = null;
+      return;
+    }
+    onDeliveryCompanyChanged(
+      companies.first.id,
+      shiplyOfficeFee: shiplyOfficeFee,
+    );
+  }
+
   void onDeliveryCompanyChanged(
     int? companyId, {
     double? shiplyOfficeFee,
@@ -908,21 +955,25 @@ class SalesOrdersController extends GetxController {
     });
   }
 
-  Future<void> applyShiplyOfficeCostQuote(
+  Future<double?> applyShiplyManualCarrierCostQuote(
     SalesOrderDetailModel order,
   ) async {
-    if (!isSelectedCompanyOffice || order.shiplyVillageId == null) return;
+    if (!(isSelectedCompanyOffice || isSelectedCompanyTaxi) ||
+        order.shiplyVillageId == null) {
+      return null;
+    }
     final parcelPrice = order.subtotal - order.discount;
     final result = await repository.calculateShiplyDeliveryFee(
       villageId: order.shiplyVillageId!,
       price: parcelPrice > 0 ? parcelPrice : order.total,
     );
-    result.fold(
-      (_) {},
+    return result.fold(
+      (_) => null,
       (fee) {
-        if (fee == null) return;
+        if (fee == null) return null;
         shiplyQuotedDeliveryFee.value = fee;
         carrierDeliveryCostController.text = fee.toStringAsFixed(2);
+        return fee;
       },
     );
   }
@@ -1251,9 +1302,16 @@ class SalesOrdersController extends GetxController {
       SalesOrderNotice.error(err);
       return false;
     }
+    final street = customerAddressController.text.trim();
+    final payload = <String, dynamic>{
+      'customer_address': street.isEmpty ? '----' : street,
+      'shiply_city_id': selectedShiplyCityId.value,
+      'shiply_village_id': selectedShiplyVillageId.value,
+      if (shiplyQuotedDeliveryFee.value != null)
+        'shiply_quoted_delivery_fee': shiplyQuotedDeliveryFee.value,
+    };
     isSubmitting.value = true;
-    final result =
-        await repository.updateOrder(orderId, buildShiplyAddressPayload());
+    final result = await repository.updateOrder(orderId, payload);
     isSubmitting.value = false;
     return result.fold(
       (f) {

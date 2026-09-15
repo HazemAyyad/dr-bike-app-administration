@@ -58,6 +58,10 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
       }
 
       final selectedId = controller.selectedDeliveryCompanyId.value;
+      final selectedType = controller.selectedDeliveryCompany?.deliveryType;
+      final typedCompanies = selectedType == null
+          ? <DeliveryCompanyModel>[]
+          : controller.deliveryCompaniesForType(selectedType);
       final isShiply = controller.isSelectedCompanyShiply;
       final isDoctorBike = controller.isSelectedCompanyDoctorBike;
 
@@ -73,12 +77,34 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
             ),
           ),
           SizedBox(height: 8.h),
+          DropdownButtonFormField<String>(
+            key: ValueKey('checkout-delivery-type-$selectedType'),
+            initialValue: selectedType,
+            dropdownColor: SalesOrdersController.cardGray,
+            style: TextStyle(
+              color: SalesOrdersController.textPrimary,
+              fontSize: 14.sp,
+            ),
+            decoration: _fieldDecoration('نوع التوصيل', floatingLabel: true),
+            items: controller.availableDeliveryTypes
+                .map(
+                  (type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(controller.deliveryTypeLabel(type)),
+                  ),
+                )
+                .toList(),
+            onChanged: controller.onDeliveryTypeChanged,
+          ),
+          SizedBox(height: 10.h),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  initialValue: companies.any((c) => c.id == selectedId)
+                  key: ValueKey(
+                      'checkout-delivery-company-$selectedType-$selectedId'),
+                  initialValue: typedCompanies.any((c) => c.id == selectedId)
                       ? selectedId
                       : null,
                   dropdownColor: SalesOrdersController.cardGray,
@@ -86,8 +112,15 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
                     color: SalesOrdersController.textPrimary,
                     fontSize: 14.sp,
                   ),
-                  decoration: _fieldDecoration('salesOrderDeliveryCompany'.tr),
-                  items: companies
+                  decoration: _fieldDecoration(
+                    selectedType == 'office'
+                        ? 'المكتب المحفوظ'
+                        : selectedType == 'taxi'
+                            ? 'التكسي المحفوظ'
+                            : 'salesOrderDeliveryCompany'.tr,
+                    floatingLabel: true,
+                  ),
+                  items: typedCompanies
                       .map(
                         (DeliveryCompanyModel c) => DropdownMenuItem(
                           value: c.id,
@@ -98,17 +131,24 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
                   onChanged: controller.onDeliveryCompanyChanged,
                 ),
               ),
-              SizedBox(width: 8.w),
-              IconButton.filledTonal(
-                tooltip: 'إضافة مكتب أو تكسي',
-                onPressed: () async {
-                  final added = await showDeliveryCompanyEditorDialog(context);
-                  if (added == null) return;
-                  await controller.loadLookups();
-                  controller.onDeliveryCompanyChanged(added.id);
-                },
-                icon: const Icon(Icons.add),
-              ),
+              if (selectedType == 'office' || selectedType == 'taxi') ...[
+                SizedBox(width: 8.w),
+                IconButton.filledTonal(
+                  tooltip: selectedType == 'office'
+                      ? 'إضافة مكتب جديد'
+                      : 'إضافة تكسي جديد',
+                  onPressed: () async {
+                    final added = await showDeliveryCompanyEditorDialog(
+                      context,
+                      initialType: selectedType,
+                    );
+                    if (added == null) return;
+                    await controller.loadLookups();
+                    controller.onDeliveryCompanyChanged(added.id);
+                  },
+                  icon: const Icon(Icons.add),
+                ),
+              ],
             ],
           ),
           SizedBox(height: 12.h),

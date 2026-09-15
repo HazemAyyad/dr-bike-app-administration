@@ -2656,7 +2656,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     }
 
     final currentAddress = (order.customerAddress ?? '').trim();
-    if (currentAddress.isNotEmpty && currentAddress != '----') {
+    if (order.partnerAddressId != null &&
+        currentAddress.isNotEmpty &&
+        currentAddress != '----') {
       final keepCurrent = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -2766,7 +2768,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     if (!await _selectPartnerAddressForHandover(current)) return false;
     current = controller.detail.value ?? current;
 
-    await controller.applyShiplyOfficeCostQuote(current);
+    await controller.applyShiplyManualCarrierCostQuote(current);
 
     if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
       return true;
@@ -2875,6 +2877,78 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     return true;
   }
 
+  Future<bool> _confirmManualCarrierEstimatedCost(
+    SalesOrderDetailModel order,
+  ) async {
+    if (!(controller.isSelectedCompanyOffice ||
+        controller.isSelectedCompanyTaxi)) {
+      return true;
+    }
+
+    final estimate = await controller.applyShiplyManualCarrierCostQuote(order);
+    if (!mounted) return false;
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            title: const Text(
+              'تكلفة التوصيل التقديرية',
+              style: TextStyle(color: Color(0xFF1F2937)),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  estimate == null
+                      ? 'تعذر جلب تسعيرة Shiply لهذا العنوان. أدخل تكلفة المكتب أو التكسي.'
+                      : 'حسب تسعيرة Shiply للمنطقة: ${estimate.toStringAsFixed(2)} ₪\nيمكنك تعديلها حسب السعر الفعلي للجهة.',
+                  style: const TextStyle(
+                    color: Color(0xFF4B5563),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller.carrierDeliveryCostController,
+                  autofocus: estimate == null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(color: Color(0xFF1F2937)),
+                  decoration: InputDecoration(
+                    labelText: 'تكلفة الجهة على المحل',
+                    helperText: 'تُسجل على حساب المكتب أو التكسي المختار',
+                    suffixText: '₪',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('رجوع'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFDBEAFE),
+                  foregroundColor: const Color(0xFF1E3A5F),
+                ),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('اعتماد التكلفة والمتابعة'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   void _showHandoverSheet(int orderId, SalesOrderDetailModel order) {
     controller.pickDefaultHandoverCompany(order);
     controller.trackingController.clear();
@@ -2915,71 +2989,127 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ),
                 ),
                 SizedBox(height: 12.h),
-                Obx(() => Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: controller.deliveryCompanies.any(
-                                    (c) =>
-                                        c.id ==
-                                        controller
-                                            .selectedDeliveryCompanyId.value)
-                                ? controller.selectedDeliveryCompanyId.value
-                                : null,
-                            dropdownColor: SalesOrdersController.cardGray,
-                            style: TextStyle(
-                              color: SalesOrdersController.textPrimary,
-                              fontSize: 14.sp,
-                            ),
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: SalesOrdersController.cardGray,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                                borderSide: const BorderSide(
-                                  color: SalesOrdersController.borderGray,
-                                ),
-                              ),
-                            ),
-                            items: controller.deliveryCompanies
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                    value: c.id,
-                                    child: Text(
-                                      controller.deliveryCompanyLabel(c),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (id) =>
-                                controller.onDeliveryCompanyChanged(
-                              id,
-                              shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
-                            ),
+                Obx(() {
+                  final selectedType =
+                      controller.selectedDeliveryCompany?.deliveryType;
+                  final companies = selectedType == null
+                      ? <DeliveryCompanyModel>[]
+                      : controller.deliveryCompaniesForType(selectedType);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('delivery-type-$selectedType'),
+                        initialValue: selectedType,
+                        dropdownColor: SalesOrdersController.cardGray,
+                        style: TextStyle(
+                          color: SalesOrdersController.textPrimary,
+                          fontSize: 14.sp,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'نوع التوصيل',
+                          filled: true,
+                          fillColor: SalesOrdersController.cardGray,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
                           ),
                         ),
-                        ...[
-                          SizedBox(width: 8.w),
-                          IconButton.filledTonal(
-                            tooltip: 'إضافة جهة توصيل',
-                            onPressed: () async {
-                              final added =
-                                  await showDeliveryCompanyEditorDialog(
-                                Get.context!,
-                              );
-                              if (added == null) return;
-                              await controller.loadLookups();
-                              controller.onDeliveryCompanyChanged(
-                                added.id,
+                        items: controller.availableDeliveryTypes
+                            .map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(
+                                  controller.deliveryTypeLabel(type),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (type) => controller.onDeliveryTypeChanged(
+                          type,
+                          shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              key: ValueKey(
+                                'delivery-company-$selectedType-${controller.selectedDeliveryCompanyId.value}',
+                              ),
+                              initialValue: companies.any((c) =>
+                                      c.id ==
+                                      controller
+                                          .selectedDeliveryCompanyId.value)
+                                  ? controller.selectedDeliveryCompanyId.value
+                                  : null,
+                              dropdownColor: SalesOrdersController.cardGray,
+                              style: TextStyle(
+                                color: SalesOrdersController.textPrimary,
+                                fontSize: 14.sp,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: selectedType == 'office'
+                                    ? 'المكتب المحفوظ'
+                                    : selectedType == 'taxi'
+                                        ? 'التكسي المحفوظ'
+                                        : 'جهة التوصيل',
+                                filled: true,
+                                fillColor: SalesOrdersController.cardGray,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  borderSide: const BorderSide(
+                                    color: SalesOrdersController.borderGray,
+                                  ),
+                                ),
+                              ),
+                              items: companies
+                                  .map(
+                                    (c) => DropdownMenuItem(
+                                      value: c.id,
+                                      child: Text(
+                                        controller.deliveryCompanyLabel(c),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (id) =>
+                                  controller.onDeliveryCompanyChanged(
+                                id,
                                 shiplyOfficeFee: order.shiplyQuotedDeliveryFee,
-                              );
-                            },
-                            icon: const Icon(Icons.add),
+                              ),
+                            ),
                           ),
+                          if (selectedType == 'office' ||
+                              selectedType == 'taxi') ...[
+                            SizedBox(width: 8.w),
+                            IconButton.filledTonal(
+                              tooltip: selectedType == 'office'
+                                  ? 'إضافة مكتب جديد'
+                                  : 'إضافة تكسي جديد',
+                              onPressed: () async {
+                                final added =
+                                    await showDeliveryCompanyEditorDialog(
+                                  Get.context!,
+                                  initialType: selectedType,
+                                );
+                                if (added == null) return;
+                                await controller.loadLookups();
+                                controller.onDeliveryCompanyChanged(
+                                  added.id,
+                                  shiplyOfficeFee:
+                                      order.shiplyQuotedDeliveryFee,
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                            ),
+                          ],
                         ],
-                      ],
-                    )),
+                      ),
+                    ],
+                  );
+                }),
                 Obx(() {
                   if (controller.isSelectedCompanyShiply) {
                     return Column(
@@ -3237,7 +3367,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ],
                   );
                 }),
-                Obx(() => controller.isSelectedCompanyExternalCarrier
+                Obx(() => controller.isSelectedCompanyTaxi
                     ? Padding(
                         padding: EdgeInsets.only(top: 10.h),
                         child: TextField(
@@ -3276,7 +3406,12 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     if (!ready) return;
 
                     await controller.loadDetail(orderId);
-                    controller.handover(orderId);
+                    final current = controller.detail.value ?? order;
+                    if (!isShiply &&
+                        !await _confirmManualCarrierEstimatedCost(current)) {
+                      return;
+                    }
+                    await controller.handover(orderId);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFDBEAFE),
