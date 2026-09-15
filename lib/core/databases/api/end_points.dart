@@ -183,6 +183,10 @@ class EndPoints {
   static String smartDeviceSchedule(int deviceId, int scheduleId) =>
       'smart-home/devices/$deviceId/schedules/$scheduleId';
   static String smartDeviceStatus(int id) => 'smart-home/devices/$id/status';
+  static String smartDevicePermissions(int id) =>
+      'smart-home/devices/$id/permissions';
+  static String smartEmployeeDevices(int employeeId) =>
+      'smart-home/employees/$employeeId/devices';
   static String smartDeviceControlLog(int id) =>
       'smart-home/devices/$id/control-log';
   static const String smartHomeEventLogs = 'smart-home/event-logs';

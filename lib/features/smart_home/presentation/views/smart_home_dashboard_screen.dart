@@ -3119,82 +3119,99 @@ class _SmartDeviceCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    PopupMenuButton<String>(
-                      enabled: !busy,
-                      tooltip: 'settings'.tr,
-                      padding: EdgeInsets.zero,
-                      style: IconButton.styleFrom(
-                        fixedSize: Size(30.r, 30.r),
+                    if (device.canManage || device.canSchedule)
+                      PopupMenuButton<String>(
+                        enabled: !busy,
+                        tooltip: 'settings'.tr,
                         padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        style: IconButton.styleFrom(
+                          fixedSize: Size(30.r, 30.r),
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onSelected: (value) {
+                          if (value == 'rename') {
+                            _showRenameDeviceDialog(
+                              controller: controller,
+                              device: device,
+                            );
+                          } else if (value == 'move') {
+                            _showMoveDeviceSheet(
+                              controller: controller,
+                              device: device,
+                            );
+                          } else if (value == 'channels') {
+                            _showManageChannelsSheet(
+                              controller: controller,
+                              device: device,
+                            );
+                          } else if (value == 'schedule') {
+                            Get.to<void>(() => _DeviceSchedulesScreen(
+                                  controller: controller,
+                                  device: device,
+                                ));
+                          } else if (value == 'permissions') {
+                            _showDevicePermissionsSheet(
+                              controller: controller,
+                              device: device,
+                            );
+                          } else if (value == 'widget') {
+                            _showPinDeviceWidgetSheet(
+                              controller: controller,
+                              device: device,
+                            );
+                          } else if (value == 'delete') {
+                            _showDeleteDeviceDialog(
+                              controller: controller,
+                              device: device,
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          if (device.canManage)
+                            PopupMenuItem(
+                              value: 'rename',
+                              child: Text('smartHomeRenameDevice'.tr),
+                            ),
+                          if (device.canManage)
+                            PopupMenuItem(
+                              value: 'move',
+                              child: Text('smartHomeMoveDevice'.tr),
+                            ),
+                          if (device.canManage)
+                            PopupMenuItem(
+                              value: 'channels',
+                              child: Text('smartHomeManageChannels'.tr),
+                            ),
+                          if (device.canSchedule)
+                            const PopupMenuItem(
+                              value: 'schedule',
+                              child: Text('إضافة جدولة'),
+                            ),
+                          if (device.canManage)
+                            const PopupMenuItem(
+                              value: 'permissions',
+                              child: Text('صلاحيات الموظفين'),
+                            ),
+                          if (device.canManage)
+                            const PopupMenuItem(
+                              value: 'widget',
+                              child: Text('إضافة إلى شاشة الجوال'),
+                            ),
+                          if (device.canManage)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('smartHomeDeleteDevice'.tr),
+                            ),
+                        ],
+                        icon: Icon(Icons.more_vert_rounded, size: 18.r),
                       ),
-                      onSelected: (value) {
-                        if (value == 'rename') {
-                          _showRenameDeviceDialog(
-                            controller: controller,
-                            device: device,
-                          );
-                        } else if (value == 'move') {
-                          _showMoveDeviceSheet(
-                            controller: controller,
-                            device: device,
-                          );
-                        } else if (value == 'channels') {
-                          _showManageChannelsSheet(
-                            controller: controller,
-                            device: device,
-                          );
-                        } else if (value == 'schedule') {
-                          Get.to<void>(() => _DeviceSchedulesScreen(
-                                controller: controller,
-                                device: device,
-                              ));
-                        } else if (value == 'widget') {
-                          _showPinDeviceWidgetSheet(
-                            controller: controller,
-                            device: device,
-                          );
-                        } else if (value == 'delete') {
-                          _showDeleteDeviceDialog(
-                            controller: controller,
-                            device: device,
-                          );
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'rename',
-                          child: Text('smartHomeRenameDevice'.tr),
-                        ),
-                        PopupMenuItem(
-                          value: 'move',
-                          child: Text('smartHomeMoveDevice'.tr),
-                        ),
-                        PopupMenuItem(
-                          value: 'channels',
-                          child: Text('smartHomeManageChannels'.tr),
-                        ),
-                        const PopupMenuItem(
-                          value: 'schedule',
-                          child: Text('إضافة جدولة'),
-                        ),
-                        const PopupMenuItem(
-                          value: 'widget',
-                          child: Text('إضافة إلى شاشة الجوال'),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text('smartHomeDeleteDevice'.tr),
-                        ),
-                      ],
-                      icon: Icon(Icons.more_vert_rounded, size: 18.r),
-                    ),
                   ],
                 ),
                 SizedBox(height: 12.h),
                 if (curtainCommand != null) ...[
                   _CurtainMiniControls(
-                    enabled: !busy,
+                    enabled: !busy && device.canControl,
                     currentCommand: DeviceCapabilityResolver.statusValue(
                       device,
                       curtainCommand,
@@ -3229,7 +3246,7 @@ class _SmartDeviceCard extends StatelessWidget {
                                 device.id,
                                 function.code,
                               ),
-                              onTap: function.isBool
+                              onTap: function.isBool && device.canControl
                                   ? () => controller.setDeviceDps(
                                         device: device,
                                         commandCode: function.code,
@@ -3249,10 +3266,12 @@ class _SmartDeviceCard extends StatelessWidget {
                         : 'smartHomeAllOn'.tr,
                     active: powerActive,
                     busy: busy,
-                    onTap: () => controller.setDevicePower(
-                      device: device,
-                      powerOn: !powerActive,
-                    ),
+                    onTap: device.canControl
+                        ? () => controller.setDevicePower(
+                              device: device,
+                              powerOn: !powerActive,
+                            )
+                        : null,
                   ),
                 ],
               ],
@@ -3262,37 +3281,291 @@ class _SmartDeviceCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _deviceSubtitle(SmartDeviceModel device) {
-    if (device.roomName.trim().isNotEmpty) return device.roomName;
-    if (device.smartHomeId == null) return 'smartHomeUnassignedDevices'.tr;
-    if (device.category.isNotEmpty) return device.category;
-    if (device.protocol.isNotEmpty) return device.protocol.toUpperCase();
-    if (device.productName.isNotEmpty &&
-        !_looksLikeTuyaIdentifier(device.productName)) {
-      return device.productName;
-    }
-    return 'smartDevice'.tr;
+Future<void> _showDevicePermissionsSheet({
+  required SmartHomeController controller,
+  required SmartDeviceModel device,
+}) async {
+  await showModalBottomSheet<void>(
+    context: Get.context!,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _DevicePermissionsSheet(
+      controller: controller,
+      device: device,
+    ),
+  );
+}
+
+class _DevicePermissionsSheet extends StatefulWidget {
+  const _DevicePermissionsSheet({
+    required this.controller,
+    required this.device,
+  });
+
+  final SmartHomeController controller;
+  final SmartDeviceModel device;
+
+  @override
+  State<_DevicePermissionsSheet> createState() =>
+      _DevicePermissionsSheetState();
+}
+
+class _DevicePermissionsSheetState extends State<_DevicePermissionsSheet> {
+  var employees = <SmartDeviceEmployeePermissionModel>[];
+  var loading = true;
+  var saving = false;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  bool _looksLikeTuyaIdentifier(String value) {
-    final clean = value.trim();
-    if (clean.length < 10) return false;
-    return RegExp(r'^[a-z0-9_-]+$').hasMatch(clean);
+  Future<void> _load() async {
+    try {
+      final result = await widget.controller.apiService.getDevicePermissions(
+        deviceId: widget.device.id,
+        userId: widget.controller.selectedOwnerId.value,
+      );
+      if (!mounted) return;
+      setState(() => employees = result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
-  IconData _iconForCategory(String category) {
-    final value = category.toLowerCase();
-    if (value.contains('light') || value.contains('switch')) {
-      return Icons.lightbulb_outline_rounded;
-    }
-    if (value.contains('curtain') || value.contains('blind')) {
-      return Icons.curtains_rounded;
-    }
-    if (value.contains('lock')) return Icons.lock_outline_rounded;
-    if (value.contains('sensor')) return Icons.sensors_rounded;
-    return Icons.devices_other_rounded;
+  void _replace(
+    int index,
+    SmartDeviceEmployeePermissionModel permission,
+  ) {
+    setState(() => employees[index] = permission);
   }
+
+  Future<void> _save() async {
+    setState(() => saving = true);
+    try {
+      await widget.controller.apiService.saveDevicePermissions(
+        deviceId: widget.device.id,
+        employees: employees,
+        userId: widget.controller.selectedOwnerId.value,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      AppSuccessNotice.show(
+        title: 'تم الحفظ',
+        message: 'تم تحديث صلاحيات ${widget.device.name}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => saving = false);
+      AppFailureNotice.show(
+        title: 'تعذر حفظ الصلاحيات',
+        message: e.toString(),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * .78,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 8.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'صلاحيات الموظفين',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                        ),
+                        Text(widget.device.name),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : error != null
+                      ? Center(child: Text(error!))
+                      : employees.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Text(
+                                  'لا يوجد موظفون لديهم صلاحية المنزل الذكي العامة.',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: EdgeInsets.all(12.w),
+                              itemCount: employees.length,
+                              separatorBuilder: (_, __) =>
+                                  SizedBox(height: 8.h),
+                              itemBuilder: (context, index) {
+                                final item = employees[index];
+                                return Card(
+                                  margin: EdgeInsets.zero,
+                                  child: Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 4.h),
+                                    child: Column(
+                                      children: [
+                                        CheckboxListTile(
+                                          value: item.canView,
+                                          title: Text(item.name),
+                                          subtitle: item.phone.isEmpty
+                                              ? const Text(
+                                                  'السماح بمشاهدة الجهاز')
+                                              : Text(item.phone),
+                                          onChanged: saving
+                                              ? null
+                                              : (value) => _replace(
+                                                    index,
+                                                    item.copyWith(
+                                                      canView: value == true,
+                                                      canControl: value == true
+                                                          ? item.canControl
+                                                          : false,
+                                                      canSchedule: value == true
+                                                          ? item.canSchedule
+                                                          : false,
+                                                    ),
+                                                  ),
+                                        ),
+                                        if (item.canView)
+                                          Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12.w,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: SwitchListTile(
+                                                    dense: true,
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    title: const Text('تحكم'),
+                                                    value: item.canControl,
+                                                    onChanged: saving
+                                                        ? null
+                                                        : (value) => _replace(
+                                                              index,
+                                                              item.copyWith(
+                                                                canControl:
+                                                                    value,
+                                                              ),
+                                                            ),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 12.w),
+                                                Expanded(
+                                                  child: SwitchListTile(
+                                                    dense: true,
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    title: const Text('جدولة'),
+                                                    value: item.canSchedule,
+                                                    onChanged: saving
+                                                        ? null
+                                                        : (value) => _replace(
+                                                              index,
+                                                              item.copyWith(
+                                                                canSchedule:
+                                                                    value,
+                                                              ),
+                                                            ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: saving || loading || error != null ? null : _save,
+                  icon: saving
+                      ? SizedBox.square(
+                          dimension: 18.r,
+                          child:
+                              const CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_rounded),
+                  label: const Text('حفظ الصلاحيات'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _deviceSubtitle(SmartDeviceModel device) {
+  if (device.roomName.trim().isNotEmpty) return device.roomName;
+  if (device.smartHomeId == null) return 'smartHomeUnassignedDevices'.tr;
+  if (device.category.isNotEmpty) return device.category;
+  if (device.protocol.isNotEmpty) return device.protocol.toUpperCase();
+  if (device.productName.isNotEmpty &&
+      !_looksLikeTuyaIdentifier(device.productName)) {
+    return device.productName;
+  }
+  return 'smartDevice'.tr;
+}
+
+bool _looksLikeTuyaIdentifier(String value) {
+  final clean = value.trim();
+  if (clean.length < 10) return false;
+  return RegExp(r'^[a-z0-9_-]+$').hasMatch(clean);
+}
+
+IconData _iconForCategory(String category) {
+  final value = category.toLowerCase();
+  if (value.contains('light') || value.contains('switch')) {
+    return Icons.lightbulb_outline_rounded;
+  }
+  if (value.contains('curtain') || value.contains('blind')) {
+    return Icons.curtains_rounded;
+  }
+  if (value.contains('lock')) return Icons.lock_outline_rounded;
+  if (value.contains('sensor')) return Icons.sensors_rounded;
+  return Icons.devices_other_rounded;
 }
 
 bool _looksLikeCurtainDevice(SmartDeviceModel device) {

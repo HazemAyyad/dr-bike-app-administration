@@ -21,6 +21,7 @@ import '../../../employee_tasks/presentation/binding/employee_tasks_binding.dart
 import '../../../maintenance/presentation/binding/maintenance_binding.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
 import '../../../stock/presentation/utils/open_instant_sale_invoice.dart';
+import '../../../../smart_home/presentation/views/employee_smart_device_permissions_screen.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../data/models/employee_activity_log_model.dart';
 import '../controllers/employee_section_controller.dart';
@@ -335,6 +336,20 @@ class _EmployeeHeaderCard extends StatelessWidget {
                             onTap: () => _showPermissionsDialog(
                               context,
                               employee.permissions,
+                            ),
+                          ),
+                        if (userType == 'admin' &&
+                            employee.permissions.any((permission) =>
+                                permission.permissionNameEn == 'Smart Home'))
+                          _MetricChip(
+                            icon: Icons.devices_other_rounded,
+                            label: 'أجهزة البيت الذكي',
+                            color: const Color(0xFF0F766E),
+                            onTap: () => Get.to<void>(
+                              () => EmployeeSmartDevicePermissionsScreen(
+                                employeeId: employee.id,
+                                employeeName: employee.name,
+                              ),
                             ),
                           ),
                       ],

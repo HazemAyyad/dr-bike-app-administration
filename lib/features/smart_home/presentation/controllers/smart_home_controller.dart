@@ -758,7 +758,8 @@ class SmartHomeController extends GetxController {
       }
       _activeNativeTuyaUid =
           result.uid.isNotEmpty ? result.uid : credentials.uid;
-      if (tuyaUser.value?.tuyaUid != _activeNativeTuyaUid) {
+      if (userType == 'admin' &&
+          tuyaUser.value?.tuyaUid != _activeNativeTuyaUid) {
         tuyaUser.value = await apiService.updateTuyaUser(
           tuyaUid: _activeNativeTuyaUid,
           region: tuyaUser.value?.region,
@@ -1485,6 +1486,10 @@ class SmartHomeController extends GetxController {
     required String commandCode,
     required dynamic value,
   }) async {
+    if (!device.canControl) {
+      errorMessage('ليس لديك صلاحية التحكم بهذا الجهاز');
+      return false;
+    }
     if (commandCode.trim().isEmpty) {
       errorMessage('smartHomeNoPowerDps'.tr);
       return false;
@@ -1691,6 +1696,7 @@ class SmartHomeController extends GetxController {
     var succeeded = 0;
 
     for (final device in visibleDevices) {
+      if (!device.canControl) continue;
       final functions = DeviceCapabilityResolver.boolSwitches(device);
       if (functions.isEmpty) continue;
 
