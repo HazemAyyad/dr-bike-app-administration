@@ -388,6 +388,13 @@ class AddEmployeeController extends GetxController {
       'group': 'employees',
       'permission': false.obs
     },
+    {
+      'name': 'المنزل الذكي',
+      'nameEn': 'Smart Home',
+      'id': '72',
+      'group': 'smart_home',
+      'permission': false.obs
+    },
   ].obs;
 
   final RxBool isAllPermissionsSelected = false.obs;
@@ -633,6 +640,7 @@ class AddEmployeeController extends GetxController {
       'Social Center Facebook': 'communication',
       'Social Center Instagram': 'communication',
       'Technical Support': 'communication',
+      'Smart Home': 'smart_home',
     };
     return groupsByName[nameEn?.toString()] ?? 'general';
   }
@@ -714,6 +722,11 @@ class AddEmployeeController extends GetxController {
       key: 'communication',
       title: 'التواصل والدعم',
       icon: Icons.support_agent_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'smart_home',
+      title: 'المنزل الذكي',
+      icon: Icons.home_work_outlined,
     ),
     _PermissionGroupMeta(
       key: 'general',
