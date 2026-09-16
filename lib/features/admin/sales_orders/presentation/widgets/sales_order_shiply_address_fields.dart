@@ -42,12 +42,14 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
     this.showDeliveryFee = true,
     this.parcelPriceForFee = 0,
     this.showShiplyBranding = true,
+    this.applyQuoteToCustomerFee = true,
   }) : super(key: key);
 
   final SalesOrdersController controller;
   final bool showDeliveryFee;
   final double parcelPriceForFee;
   final bool showShiplyBranding;
+  final bool applyQuoteToCustomerFee;
 
   /// قائمة موحّدة بكل المدن والقرى للبحث السريع.
   List<_ShiplyAddressSearchEntry> _allAddressEntries() {
@@ -217,6 +219,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
                   cityId: entry.cityId,
                   villageId: entry.villageId,
                   parcelPrice: parcelPriceForFee,
+                  applyToCustomerFee: applyQuoteToCustomerFee,
                 );
               } else {
                 controller.onShiplyCityChanged(entry.cityId);

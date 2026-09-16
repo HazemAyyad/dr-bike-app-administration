@@ -941,6 +941,7 @@ class SalesOrdersController extends GetxController {
     required int cityId,
     int? villageId,
     double parcelPrice = 0,
+    bool applyToCustomerFee = true,
   }) async {
     selectedShiplyCityId.value = cityId;
     selectedShiplyVillageId.value = villageId;
@@ -957,7 +958,11 @@ class SalesOrdersController extends GetxController {
       }
       break;
     }
-    await _applyShiplyDeliveryFeeQuote(villageId, parcelPrice: parcelPrice);
+    await _applyShiplyDeliveryFeeQuote(
+      villageId,
+      parcelPrice: parcelPrice,
+      applyToCustomerFee: applyToCustomerFee,
+    );
   }
 
   Future<void> _applyShiplyDeliveryFeeQuote(
@@ -1286,13 +1291,11 @@ class SalesOrdersController extends GetxController {
   }
 
   Map<String, dynamic> buildShiplyAddressPayload() {
-    onDeliveryFeeChanged();
     final street = customerAddressController.text.trim();
     return {
       'customer_address': street.isEmpty ? '----' : street,
       'shiply_city_id': selectedShiplyCityId.value,
       'shiply_village_id': selectedShiplyVillageId.value,
-      'customer_delivery_fee': manualDeliveryFee.value,
       if (shiplyQuotedDeliveryFee.value != null)
         'shiply_quoted_delivery_fee': shiplyQuotedDeliveryFee.value,
     };

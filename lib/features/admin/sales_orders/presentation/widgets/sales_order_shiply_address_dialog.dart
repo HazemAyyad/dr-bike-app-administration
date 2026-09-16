@@ -58,6 +58,8 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
                 controller: controller,
                 parcelPriceForFee: parcelPrice,
                 showShiplyBranding: showShiplyBranding,
+                showDeliveryFee: false,
+                applyQuoteToCustomerFee: false,
               ),
               SizedBox(height: 20.h),
               Obx(() {

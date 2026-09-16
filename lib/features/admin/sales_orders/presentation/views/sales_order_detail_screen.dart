@@ -2642,7 +2642,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     if (controller.deliveryCompanies.isEmpty) {
       await controller.loadLookups();
     }
-    _showHandoverSheet(order.id, order);
+    await controller.loadDetail(order.id);
+    final current = controller.detail.value ?? order;
+    _showHandoverSheet(current.id, current);
   }
 
   Future<bool> _selectPartnerAddressForHandover(
@@ -3493,69 +3495,52 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
+                      Obx(() {
+                        final current = controller.detail.value ?? order;
+                        final productsTotal =
+                            current.subtotal - current.discount;
+                        return Column(
+                          children: [
+                            _handoverAmountRow(
+                              'قيمة المنتجات',
+                              productsTotal,
+                            ),
+                            SizedBox(height: 7.h),
+                            _handoverAmountRow(
                               'رسوم التوصيل على الزبون',
-                              style: TextStyle(
-                                color: SalesOrdersController.textSecondary,
-                                fontSize: 11.sp,
-                              ),
+                              current.customerDeliveryFee,
                             ),
-                          ),
-                          Text(
-                            '${order.customerDeliveryFee.toStringAsFixed(2)} ₪',
-                            style: const TextStyle(
-                              color: Color(0xFF1F2937),
-                              fontWeight: FontWeight.w800,
+                            SizedBox(height: 7.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'تكلفة جهة التوصيل',
+                                    style: TextStyle(
+                                      color:
+                                          SalesOrdersController.textSecondary,
+                                      fontSize: 11.sp,
+                                    ),
+                                  ),
+                                ),
+                                const Text(
+                                  'تُحدد في الخطوة التالية',
+                                  style: TextStyle(
+                                    color: Color(0xFF1E3A5F),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 7.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'تكلفة جهة التوصيل',
-                              style: TextStyle(
-                                color: SalesOrdersController.textSecondary,
-                                fontSize: 11.sp,
-                              ),
+                            const Divider(height: 18),
+                            _handoverAmountRow(
+                              'الإجمالي المطلوب من الزبون',
+                              current.total,
+                              emphasized: true,
                             ),
-                          ),
-                          const Text(
-                            'تُراجع بعد تثبيت العنوان',
-                            style: TextStyle(
-                              color: Color(0xFF1E3A5F),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'إجمالي الطلبية يبقى',
-                              style: TextStyle(
-                                color: const Color(0xFF047857),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '${order.total.toStringAsFixed(2)} ₪',
-                            style: const TextStyle(
-                              color: Color(0xFF047857),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -3604,6 +3589,37 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         ),
       ),
       isScrollControlled: true,
+    );
+  }
+
+  Widget _handoverAmountRow(
+    String label,
+    double amount, {
+    bool emphasized = false,
+  }) {
+    final color = emphasized
+        ? const Color(0xFF047857)
+        : SalesOrdersController.textPrimary;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: emphasized ? color : SalesOrdersController.textSecondary,
+              fontSize: emphasized ? 12.sp : 11.sp,
+              fontWeight: emphasized ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          '${amount.toStringAsFixed(2)} ₪',
+          style: TextStyle(
+            color: color,
+            fontWeight: emphasized ? FontWeight.w900 : FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 
