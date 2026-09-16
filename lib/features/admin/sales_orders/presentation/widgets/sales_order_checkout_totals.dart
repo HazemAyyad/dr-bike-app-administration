@@ -22,6 +22,7 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
       final discount = SalesAmountFormat.parse(sales.discountController.text);
       final subtotal = itemsTotal + discount;
       final grandTotal = itemsTotal + deliveryFee;
+      final quotedDeliveryFee = orders.shiplyQuotedDeliveryFee.value;
 
       return Container(
         padding: EdgeInsets.all(12.w),
@@ -48,6 +49,82 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
                     'تُضاف إلى صافي سعر الطلب لتكوين المبلغ المطلوب من الزبون.',
                 suffixText: '₪',
                 border: OutlineInputBorder(),
+              ),
+            ),
+            if (quotedDeliveryFee != null) ...[
+              SizedBox(height: 8.h),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 9.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18.sp,
+                      color: const Color(0xFF1E3A5F),
+                    ),
+                    SizedBox(width: 7.w),
+                    Expanded(
+                      child: Text(
+                        'السعر التقديري حسب Shiply للعنوان المختار',
+                        style: TextStyle(
+                          color: const Color(0xFF1E3A5F),
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${quotedDeliveryFee.toStringAsFixed(2)} ₪',
+                      style: TextStyle(
+                        color: const Color(0xFF1E3A5F),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: 8.h),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: SalesOrdersController.borderGray),
+              ),
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 10.w),
+                dense: true,
+                value: orders.priceIncludesDelivery.value,
+                onChanged: deliveryFee > 0
+                    ? (value) =>
+                        orders.priceIncludesDelivery.value = value ?? false
+                    : null,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: const Color(0xFF2563EB),
+                title: Text(
+                  'salesOrderPriceIncludesDelivery'.tr,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  deliveryFee > 0
+                      ? 'salesOrderPriceIncludesDeliveryHint'.tr
+                      : 'أدخل رسوم التوصيل أولاً لتفعيل هذا الخيار.',
+                  style: TextStyle(
+                    color: SalesOrdersController.textSecondary,
+                    fontSize: 10.sp,
+                  ),
+                ),
               ),
             ),
             SizedBox(height: 10.h),

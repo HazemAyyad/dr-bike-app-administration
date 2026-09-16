@@ -157,7 +157,10 @@ class _SalesOrderPartnerSelectorState extends State<SalesOrderPartnerSelector> {
       } else {
         orders.partnerAddresses.add(address);
       }
-      orders.selectPartnerAddress(address);
+      orders.selectPartnerAddress(
+        address,
+        parcelPrice: sales.totalCost.value,
+      );
     }
   }
 

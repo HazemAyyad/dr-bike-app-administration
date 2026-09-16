@@ -531,9 +531,13 @@ class SalesOrdersController extends GetxController {
     selectedCityId.value = null;
     selectedShiplyCityId.value = null;
     selectedShiplyVillageId.value = null;
+    shiplyQuotedDeliveryFee.value = null;
   }
 
-  void selectPartnerAddress(PartnerAddressModel address) {
+  void selectPartnerAddress(
+    PartnerAddressModel address, {
+    double parcelPrice = 0,
+  }) {
     selectedPartnerAddressId.value = address.id;
     customerAddressController.text = address.streetAddress;
     if ((address.phone ?? '').trim().isNotEmpty) {
@@ -542,6 +546,15 @@ class SalesOrdersController extends GetxController {
     selectedCityId.value = address.cityId;
     selectedShiplyCityId.value = address.shiplyCityId;
     selectedShiplyVillageId.value = address.shiplyVillageId;
+    shiplyQuotedDeliveryFee.value = null;
+    final villageId = address.shiplyVillageId;
+    if (villageId != null) {
+      _applyShiplyDeliveryFeeQuote(
+        villageId,
+        parcelPrice: parcelPrice,
+        applyToCustomerFee: false,
+      );
+    }
   }
 
   Future<bool> applyPartnerAddressToOrder(
@@ -567,7 +580,11 @@ class SalesOrdersController extends GetxController {
       },
       (updatedOrder) {
         detail.value = updatedOrder;
-        selectPartnerAddress(address);
+        final parcelPrice = updatedOrder.subtotal - updatedOrder.discount;
+        selectPartnerAddress(
+          address,
+          parcelPrice: parcelPrice > 0 ? parcelPrice : updatedOrder.total,
+        );
         return true;
       },
     );
@@ -652,7 +669,11 @@ class SalesOrdersController extends GetxController {
           (address) => address.id == order.partnerAddressId,
         );
         if (selectedAddress != null) {
-          selectPartnerAddress(selectedAddress);
+          final parcelPrice = order.subtotal - order.discount;
+          selectPartnerAddress(
+            selectedAddress,
+            parcelPrice: parcelPrice > 0 ? parcelPrice : order.total,
+          );
         }
       }
     } finally {
@@ -942,6 +963,7 @@ class SalesOrdersController extends GetxController {
   Future<void> _applyShiplyDeliveryFeeQuote(
     int villageId, {
     double parcelPrice = 0,
+    bool applyToCustomerFee = true,
   }) async {
     final result = await repository.calculateShiplyDeliveryFee(
       villageId: villageId,
@@ -950,8 +972,10 @@ class SalesOrdersController extends GetxController {
     result.fold((_) {}, (fee) {
       if (fee == null) return;
       shiplyQuotedDeliveryFee.value = fee;
-      deliveryFeeController.text = fee.toStringAsFixed(0);
-      manualDeliveryFee.value = fee;
+      if (applyToCustomerFee) {
+        deliveryFeeController.text = fee.toStringAsFixed(0);
+        manualDeliveryFee.value = fee;
+      }
     });
   }
 
@@ -1328,6 +1352,9 @@ class SalesOrdersController extends GetxController {
   void onDeliveryFeeChanged() {
     manualDeliveryFee.value =
         double.tryParse(deliveryFeeController.text.trim()) ?? 0;
+    if (manualDeliveryFee.value <= 0) {
+      priceIncludesDelivery.value = false;
+    }
     manualTotal.value = null;
   }
 
@@ -1729,7 +1756,7 @@ class SalesOrdersController extends GetxController {
       'payment_amount': paidAmount,
       'discount': discount,
       'customer_delivery_fee': selectedCityDeliveryFee,
-      'price_includes_delivery': selectedCityDeliveryFee > 0,
+      'price_includes_delivery': priceIncludesDelivery.value,
       'total': total,
       'notes': notesController.text.trim(),
       'items': items,
