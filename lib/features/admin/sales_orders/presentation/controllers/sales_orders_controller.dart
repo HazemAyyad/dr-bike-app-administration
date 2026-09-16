@@ -327,7 +327,12 @@ class SalesOrdersController extends GetxController {
   }
 
   int get totalOrdersCount => statusCounts.entries
-      .where((entry) => entry.key != 'all' && entry.key != 'settlement')
+      .where((entry) => !const {
+            'all',
+            'settlement',
+            'canceled',
+            'archived',
+          }.contains(entry.key))
       .fold<int>(0, (total, entry) => total + entry.value);
 
   @override
@@ -389,11 +394,17 @@ class SalesOrdersController extends GetxController {
         statusCounts.clear();
       },
       (data) {
-        orders.assignAll(data.orders);
+        orders.assignAll(
+          statusFilter.value == 'all'
+              ? data.orders.where((order) => order.status != 'canceled')
+              : data.orders,
+        );
         statusCounts.assignAll(data.statusCounts);
         statusCounts['all'] = data.statusCounts.entries
-            .where(
-                (entry) => entry.key != 'archived' && entry.key != 'settlement')
+            .where((entry) =>
+                entry.key != 'archived' &&
+                entry.key != 'settlement' &&
+                entry.key != 'canceled')
             .fold<int>(0, (sum, entry) => sum + entry.value);
         if (statusFilter.value != 'all' &&
             statusFilter.value != 'archived' &&
