@@ -19,50 +19,7 @@ class BuildStatisticsCards extends StatelessWidget {
       final data = controller.mainDashboardDataModel;
       final badges = data?.dashboardBadges ?? const <String, int>{};
       int badge(String key) => badges[key] ?? 0;
-      final attentionItems = <_AttentionItem>[
-        _AttentionItem(
-          title: 'مهام بحاجة مراجعة',
-          count: badge('employee_tasks_waiting_review'),
-          icon: Icons.fact_check_outlined,
-          route: AppRoutes.EMPLOYEETASKSSCREEN,
-        ),
-        _AttentionItem(
-          title: 'طلبات السلف',
-          count: badge('employee_loan_orders_pending'),
-          icon: Icons.payments_outlined,
-          route: AppRoutes.EMPLOYEESECTIONSCREEN,
-        ),
-        _AttentionItem(
-          title: 'طلبات الأوفر تايم',
-          count: badge('employee_overtime_orders_pending'),
-          icon: Icons.more_time_rounded,
-          route: AppRoutes.EMPLOYEESECTIONSCREEN,
-        ),
-        _AttentionItem(
-          title: 'إغلاق صندوق المبيعات',
-          count: badge('sales_daily_closing_pending'),
-          icon: Icons.point_of_sale_outlined,
-          route: AppRoutes.SALESDAILYHISTORYSCREEN,
-        ),
-        _AttentionItem(
-          title: 'إغلاق صندوق الصيانة',
-          count: badge('maintenance_daily_closing_pending'),
-          icon: Icons.home_repair_service_outlined,
-          route: AppRoutes.MAINTENANCESCREEN,
-        ),
-        _AttentionItem(
-          title: 'شيكات واردة مستحقة',
-          count: badge('checks_incoming_red') + badge('checks_incoming_yellow'),
-          icon: Icons.south_west_rounded,
-          route: AppRoutes.CHECKSSCREEN,
-        ),
-        _AttentionItem(
-          title: 'شيكات صادرة مستحقة',
-          count: badge('checks_outgoing_red') + badge('checks_outgoing_yellow'),
-          icon: Icons.north_east_rounded,
-          route: AppRoutes.CHECKSSCREEN,
-        ),
-      ].where((item) => item.count > 0).toList(growable: false);
+      final attentionItems = _buildAttentionItems(badges);
       final alertsCount = attentionItems.fold<int>(
         0,
         (total, item) => total + item.count,
@@ -70,21 +27,29 @@ class BuildStatisticsCards extends StatelessWidget {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (alertsCount > 0) ...[
           InkWell(
-            borderRadius: BorderRadius.circular(12.r),
+            borderRadius: BorderRadius.circular(16.r),
             onTap: () => _showAttentionSheet(context, attentionItems),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
                     ? AppColors.customGreyColor
-                    : const Color(0xFFFFF8F2),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: const Color(0xFFFFD8C2)),
+                    : const Color(0xFFFFF3F4),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: const Color(0xFFFFCDD2)),
               ),
               child: Row(children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Color(0xFFF36C21)),
-                SizedBox(width: 8.w),
+                Container(
+                  width: 38.r,
+                  height: 38.r,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF5A67),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.priority_high_rounded,
+                      color: Colors.white, size: 22.sp),
+                ),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,64 +68,149 @@ class BuildStatisticsCards extends StatelessWidget {
               ]),
             ),
           ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 8.h),
         ],
-        Text('نظرة سريعة',
-            style: TextStyle(
-                fontSize: 17.sp,
-                fontWeight: FontWeight.w800,
-                color: ThemeService.isDark.value
-                    ? Colors.white
-                    : AppColors.operationalNavy)),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.symmetric(vertical: 8.h),
-          decoration: BoxDecoration(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor
-                : const Color(0xFFFAF8FF),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-                color: AppColors.operationalPurple.withValues(alpha: .16)),
-          ),
-          child: Row(children: [
-            _OverviewItem(
-                title: 'لنا',
-                value: data?.totalDebtsOwedToUs ?? '0',
-                icon: Icons.account_balance_wallet_outlined,
-                onTap: () => _showDebtSummary(context,
-                    data?.debtSummary ?? const DashboardDebtSummary())),
-            _OverviewDivider(),
-            _OverviewItem(
-                title: 'علينا',
-                value: data?.totalDebtsWeOwe ?? '0',
-                icon: Icons.call_received_rounded,
-                onTap: () => _showDebtSummary(context,
-                    data?.debtSummary ?? const DashboardDebtSummary())),
-            _OverviewDivider(),
-            _OverviewItem(
-                title: 'المصاريف',
-                value: data?.totalExpenses ?? '0',
-                icon: Icons.receipt_long_outlined),
-            _OverviewDivider(),
-            _OverviewItem(
-                title: 'المنتجات',
-                value: data?.totalProducts ?? '0',
-                icon: Icons.inventory_2_outlined,
-                showCurrency: false),
-          ]),
+        const _SectionHeading(
+          title: 'نظرة سريعة',
+          subtitle: 'أهم الأرقام في عملك',
+        ),
+        SizedBox(height: 4.h),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 320 ? 4 : 2;
+            return GridView.count(
+              crossAxisCount: columns,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 7.h,
+              crossAxisSpacing: 7.w,
+              childAspectRatio: columns == 4 ? .88 : 1.72,
+              children: [
+                _OverviewItem(
+                  title: 'لنا',
+                  value: data?.totalDebtsOwedToUs ?? '0',
+                  icon: Icons.account_balance_wallet_outlined,
+                  accent: const Color(0xFF1677F2),
+                  surface: const Color(0xFFEAF3FF),
+                  onTap: () => _showDebtSummary(context,
+                      data?.debtSummary ?? const DashboardDebtSummary()),
+                ),
+                _OverviewItem(
+                  title: 'علينا',
+                  value: data?.totalDebtsWeOwe ?? '0',
+                  icon: Icons.south_west_rounded,
+                  accent: const Color(0xFFE53945),
+                  surface: const Color(0xFFFFEFF0),
+                  onTap: () => _showDebtSummary(context,
+                      data?.debtSummary ?? const DashboardDebtSummary()),
+                ),
+                _OverviewItem(
+                  title: 'المصاريف',
+                  value: data?.totalExpenses ?? '0',
+                  icon: Icons.receipt_long_outlined,
+                  accent: const Color(0xFF6750E8),
+                  surface: const Color(0xFFF2EFFF),
+                ),
+                _OverviewItem(
+                  title: 'المنتجات',
+                  value: data?.totalProducts ?? '0',
+                  icon: Icons.inventory_2_outlined,
+                  accent: const Color(0xFF16A464),
+                  surface: const Color(0xFFEBFAF2),
+                  showCurrency: false,
+                ),
+              ],
+            );
+          },
         ),
       ]);
     });
   }
 }
 
-class _OverviewDivider extends StatelessWidget {
+class DashboardAttentionSection extends StatelessWidget {
+  const DashboardAttentionSection({Key? key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) => Container(
-      width: 1,
-      height: 45.h,
-      color: AppColors.operationalPurple.withValues(alpha: .14));
+  Widget build(BuildContext context) {
+    return GetBuilder<AdminDashboardController>(builder: (controller) {
+      final badges = controller.mainDashboardDataModel?.dashboardBadges ??
+          const <String, int>{};
+      final attentionItems = _buildAttentionItems(badges);
+      if (attentionItems.isEmpty) return const SizedBox.shrink();
+      return Column(
+        children: [
+          _SectionHeading(
+            title: 'أهم ما ينتظر المتابعة',
+            subtitle: 'حالات تحتاج إلى إجراء',
+            trailing: TextButton(
+              onPressed: () => _showAttentionSheet(context, attentionItems),
+              child: const Text('عرض الكل'),
+            ),
+          ),
+          SizedBox(height: 3.h),
+          SizedBox(
+            height: 68.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: attentionItems.length,
+              separatorBuilder: (_, __) => SizedBox(width: 8.w),
+              itemBuilder: (context, index) =>
+                  _AttentionCard(item: attentionItems[index]),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+List<_AttentionItem> _buildAttentionItems(Map<String, int> badges) {
+  int badge(String key) => badges[key] ?? 0;
+  return <_AttentionItem>[
+    _AttentionItem(
+      title: 'مهام بحاجة مراجعة',
+      count: badge('employee_tasks_waiting_review'),
+      icon: Icons.fact_check_outlined,
+      route: AppRoutes.EMPLOYEETASKSSCREEN,
+    ),
+    _AttentionItem(
+      title: 'طلبات السلف',
+      count: badge('employee_loan_orders_pending'),
+      icon: Icons.payments_outlined,
+      route: AppRoutes.EMPLOYEESECTIONSCREEN,
+    ),
+    _AttentionItem(
+      title: 'طلبات الأوفر تايم',
+      count: badge('employee_overtime_orders_pending'),
+      icon: Icons.more_time_rounded,
+      route: AppRoutes.EMPLOYEESECTIONSCREEN,
+    ),
+    _AttentionItem(
+      title: 'إغلاق صندوق المبيعات',
+      count: badge('sales_daily_closing_pending'),
+      icon: Icons.point_of_sale_outlined,
+      route: AppRoutes.SALESDAILYHISTORYSCREEN,
+    ),
+    _AttentionItem(
+      title: 'إغلاق صندوق الصيانة',
+      count: badge('maintenance_daily_closing_pending'),
+      icon: Icons.home_repair_service_outlined,
+      route: AppRoutes.MAINTENANCESCREEN,
+    ),
+    _AttentionItem(
+      title: 'شيكات واردة مستحقة',
+      count: badge('checks_incoming_red') + badge('checks_incoming_yellow'),
+      icon: Icons.south_west_rounded,
+      route: AppRoutes.CHECKSSCREEN,
+    ),
+    _AttentionItem(
+      title: 'شيكات صادرة مستحقة',
+      count: badge('checks_outgoing_red') + badge('checks_outgoing_yellow'),
+      icon: Icons.north_east_rounded,
+      route: AppRoutes.CHECKSSCREEN,
+    ),
+  ].where((item) => item.count > 0).toList(growable: false);
 }
 
 class _OverviewItem extends StatelessWidget {
@@ -168,39 +218,155 @@ class _OverviewItem extends StatelessWidget {
       {required this.title,
       required this.value,
       required this.icon,
+      required this.accent,
+      required this.surface,
       this.onTap,
       this.showCurrency = true});
   final String title;
   final String value;
   final IconData icon;
+  final Color accent;
+  final Color surface;
   final VoidCallback? onTap;
   final bool showCurrency;
 
   @override
-  Widget build(BuildContext context) => Expanded(
+  Widget build(BuildContext context) => Material(
+        color: ThemeService.isDark.value ? AppColors.customGreyColor : surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.r),
+          side: BorderSide(color: accent.withValues(alpha: .22)),
+        ),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(15.r),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 3.w),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, size: 18.sp, color: AppColors.operationalPurple),
-              SizedBox(height: 3.h),
-              Text(title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      TextStyle(fontSize: 9.sp, fontWeight: FontWeight.w700)),
-              Text(
-                  '${NumberFormat('#,##0.##').format(double.tryParse(value) ?? 0)}${showCurrency ? ' ₪' : ''}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w900,
-                      color: ThemeService.isDark.value
-                          ? Colors.white
-                          : AppColors.operationalNavy)),
-            ]),
+            padding: EdgeInsets.all(8.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Icon(icon, size: 21.sp, color: accent),
+                ),
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        TextStyle(fontSize: 9.sp, fontWeight: FontWeight.w700)),
+                Text(
+                    '${NumberFormat('#,##0.##').format(double.tryParse(value) ?? 0)}${showCurrency ? ' ₪' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w900,
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.operationalNavy)),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w900,
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.operationalNavy)),
+                Text(subtitle,
+                    style: TextStyle(
+                        fontSize: 10.sp, color: AppColors.customGreyColor5)),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      );
+}
+
+class _AttentionCard extends StatelessWidget {
+  const _AttentionCard({required this.item});
+
+  final _AttentionItem item;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 142.w,
+        child: Material(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+            side: BorderSide(
+              color: AppColors.operationalPurple.withValues(alpha: .13),
+            ),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14.r),
+            onTap: () => Get.toNamed(item.route),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34.r,
+                    height: 34.r,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F1),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Icon(item.icon,
+                        color: const Color(0xFFE53945), size: 19.sp),
+                  ),
+                  SizedBox(width: 9.w),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${item.count}',
+                            style: TextStyle(
+                                color: const Color(0xFFE53945),
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w900)),
+                        Text(item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 9.sp, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 12.sp, color: AppColors.customGreyColor5),
+                ],
+              ),
+            ),
           ),
         ),
       );

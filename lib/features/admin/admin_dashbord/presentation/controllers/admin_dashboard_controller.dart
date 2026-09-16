@@ -206,6 +206,26 @@ class AdminDashboardController extends GetxController
   final RxInt dashboardQuickAccessCount = 6.obs;
   final RxBool isDashboardReorderMode = false.obs;
   final RxBool isDashboardPreparing = true.obs;
+  final RxBool showDashboardAttentionSection = true.obs;
+  final RxString dashboardSectionsSearch = ''.obs;
+
+  void setDashboardSectionsSearch(String value) {
+    dashboardSectionsSearch.value = value.trim().toLowerCase();
+    update();
+  }
+
+  List<Map<String, dynamic>> filterDashboardButtons(
+    Iterable<Map<String, dynamic>> source,
+  ) {
+    final query = dashboardSectionsSearch.value;
+    if (query.isEmpty) return source.toList(growable: false);
+    return source.where((button) {
+      final rawTitle = button['title']?.toString() ?? '';
+      final translatedTitle = rawTitle.tr;
+      return rawTitle.toLowerCase().contains(query) ||
+          translatedTitle.toLowerCase().contains(query);
+    }).toList(growable: false);
+  }
 
   List<Map<String, dynamic>> get visibleDashboardButtons {
     final visible = buttons
@@ -236,6 +256,7 @@ class AdminDashboardController extends GetxController
       hiddenDashboardButtonKeys.assignAll(preferences.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(preferences.buttonOrderKeys);
       dashboardQuickAccessCount.value = preferences.quickAccessCount;
+      showDashboardAttentionSection.value = preferences.showAttentionSection;
       update();
     } catch (_) {
       hiddenDashboardButtonKeys.clear();
@@ -290,12 +311,40 @@ class AdminDashboardController extends GetxController
         const [],
         buttonOrderKeys: const [],
         quickAccessCount: 6,
+        showAttentionSection: true,
       );
       hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
       dashboardQuickAccessCount.value = saved.quickAccessCount;
+      showDashboardAttentionSection.value = saved.showAttentionSection;
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'dashboardCustomizeSaveFailed'.tr,
+      );
+    } finally {
+      isUiPreferencesSaving(false);
+      update();
+    }
+  }
+
+  Future<void> setDashboardAttentionSectionVisible(bool visible) async {
+    if (isUiPreferencesSaving.value) return;
+    final previous = showDashboardAttentionSection.value;
+    showDashboardAttentionSection.value = visible;
+    update();
+
+    isUiPreferencesSaving(true);
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        hiddenDashboardButtonKeys.toList(growable: false),
+        buttonOrderKeys: dashboardButtonOrderKeys.toList(growable: false),
+        showAttentionSection: visible,
+      );
+      showDashboardAttentionSection.value = saved.showAttentionSection;
+    } catch (_) {
+      showDashboardAttentionSection.value = previous;
       AppFailureNotice.show(
         title: 'error'.tr,
         message: 'dashboardCustomizeSaveFailed'.tr,

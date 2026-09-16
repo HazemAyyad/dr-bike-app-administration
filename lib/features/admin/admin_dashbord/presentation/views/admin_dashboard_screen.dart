@@ -20,244 +20,293 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'welcome'.tr,
-              style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    fontSize: userName.isEmpty ? 18.sp : 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: userName.isEmpty ? null : AppColors.customGreyColor5,
-                  ),
-            ),
-            if (userName.isNotEmpty)
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: Text(
-                  userName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w800,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            pinned: false,
+            floating: false,
+            scrolledUnderElevation: 0,
+            title: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'welcome'.tr,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        fontSize: userName.isEmpty ? 18.sp : 11.sp,
+                        fontWeight: FontWeight.w700,
+                        color: userName.isEmpty
+                            ? null
+                            : AppColors.customGreyColor5,
                       ),
                 ),
-              ),
-          ],
-        ),
-        actions: [
-          if (userType == 'admin')
-            Obx(() {
-              final c = Get.isRegistered<AdminNotificationBadgeController>()
-                  ? Get.find<AdminNotificationBadgeController>()
-                  : null;
-              final n = c?.unreadCount.value ?? 0;
-              return Padding(
-                padding: EdgeInsets.only(right: 4.w),
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.center,
-                    children: [
-                      ClipOval(
-                        child: Material(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.whiteColor2,
-                          child: InkWell(
-                            onTap: () async {
-                              await Get.toNamed(AppRoutes.NOTIFICATIONCENTER);
-                              c?.refresh();
-                            },
-                            customBorder: const CircleBorder(),
-                            child: SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: Icon(
-                                Icons.notifications_none_rounded,
-                                color: AppColors.primaryColor,
-                                size: 25.sp,
+                if (userName.isNotEmpty)
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text(
+                      userName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              if (userType == 'admin')
+                Obx(() {
+                  final c = Get.isRegistered<AdminNotificationBadgeController>()
+                      ? Get.find<AdminNotificationBadgeController>()
+                      : null;
+                  final n = c?.unreadCount.value ?? 0;
+                  return Padding(
+                    padding: EdgeInsets.only(right: 4.w),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          ClipOval(
+                            child: Material(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.whiteColor2,
+                              child: InkWell(
+                                onTap: () async {
+                                  await Get.toNamed(
+                                      AppRoutes.NOTIFICATIONCENTER);
+                                  c?.refresh();
+                                },
+                                customBorder: const CircleBorder(),
+                                child: SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: Icon(
+                                    Icons.notifications_none_rounded,
+                                    color: AppColors.primaryColor,
+                                    size: 25.sp,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      if (n > 0)
-                        Positioned(
-                          right: 2,
-                          top: 2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(minWidth: 18),
-                            child: Text(
-                              n > 99 ? '99+' : '$n',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w700,
+                          if (n > 0)
+                            Positioned(
+                              right: 2,
+                              top: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                constraints: const BoxConstraints(minWidth: 18),
+                                child: Text(
+                                  n > 99 ? '99+' : '$n',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              if (userType == 'admin')
+                ClipOval(
+                  child: Container(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    child: IconButton(
+                      tooltip: 'customizeDashboard'.tr,
+                      highlightColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.primaryColor,
+                        size: 24.sp,
+                      ),
+                      onPressed: () => _showCustomizeDashboardDialog(context),
+                    ),
                   ),
                 ),
-              );
-            }),
-          if (userType == 'admin')
-            ClipOval(
-              child: Container(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : AppColors.whiteColor2,
-                child: IconButton(
-                  tooltip: 'customizeDashboard'.tr,
-                  highlightColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    color: AppColors.primaryColor,
-                    size: 24.sp,
+              if (userType == 'admin') SizedBox(width: 8.w),
+              Obx(
+                () => ClipOval(
+                  child: Material(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    child: IconButton(
+                      tooltip: ThemeService.isDark.value
+                          ? 'الوضع النهاري'
+                          : 'الوضع الليلي',
+                      highlightColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      icon: Icon(
+                        ThemeService.isDark.value
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        color: AppColors.primaryColor,
+                        size: 24.sp,
+                      ),
+                      onPressed: () {
+                        final dark = !ThemeService.isDark.value;
+                        ThemeService.isDark.value = dark;
+                        ThemeService.instance.themeMode =
+                            dark ? ThemeMode.dark : ThemeMode.light;
+                      },
+                    ),
                   ),
-                  onPressed: () => _showCustomizeDashboardDialog(context),
                 ),
               ),
-            ),
-          if (userType == 'admin') SizedBox(width: 8.w),
-          Obx(
-            () => ClipOval(
-              child: Material(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : AppColors.whiteColor2,
-                child: IconButton(
-                  tooltip: ThemeService.isDark.value
-                      ? 'الوضع النهاري'
-                      : 'الوضع الليلي',
-                  highlightColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  icon: Icon(
-                    ThemeService.isDark.value
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                    color: AppColors.primaryColor,
-                    size: 24.sp,
-                  ),
-                  onPressed: () {
-                    final dark = !ThemeService.isDark.value;
-                    ThemeService.isDark.value = dark;
-                    ThemeService.instance.themeMode =
-                        dark ? ThemeMode.dark : ThemeMode.light;
-                  },
-                ),
-              ),
-            ),
+              SizedBox(width: 10.w),
+            ],
           ),
-          SizedBox(width: 10.w),
         ],
-      ),
-      body: Obx(
-        () => controller.isDashboardPreparing.value
-            ? const _AdminDashboardSkeleton()
-            : RefreshIndicator(
-                onRefresh: controller.refreshDashboard,
-                color: AppColors.primaryColor,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: 18.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // const CustomSearchBar(),
-                      SizedBox(height: 12.h),
-                      // بطاقات الإحصائيات
-                      const BuildStatisticsCards(),
-                      SizedBox(height: 14.h),
-                      GetBuilder<AdminDashboardController>(
-                        builder: (controller) {
-                          final buttons = controller.visibleDashboardButtons;
-                          final preferredQuickCount =
-                              controller.dashboardQuickAccessCount.value;
-                          final quickCount =
-                              buttons.length > preferredQuickCount
-                                  ? preferredQuickCount
-                                  : buttons.length;
-                          final quick = buttons.take(quickCount).toList();
-                          final remaining = buttons.skip(quickCount).toList();
-                          final badges = controller
-                                  .mainDashboardDataModel?.dashboardBadges ??
-                              {};
-                          return Column(
-                            children: [
-                              BuildActionButtons(
-                                buttons: quick,
-                                badges: badges,
-                                onReorder: controller.reorderDashboardButton,
-                                employeePurpleStyle: true,
-                                sectionTitle: 'الوصول السريع',
-                                sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
-                                accentColor: const Color(0xFFF28C28),
-                                backgroundColor: const Color(0xFFFFF4E8),
-                                reorderMode:
-                                    controller.isDashboardReorderMode.value,
-                                onReorderStarted:
-                                    controller.startDashboardReorder,
-                                onReorderFinished:
-                                    controller.finishDashboardReorder,
-                              ),
-                              if (remaining.isNotEmpty) ...[
-                                SizedBox(height: 16.h),
+        body: Obx(
+          () => controller.isDashboardPreparing.value
+              ? const _AdminDashboardSkeleton()
+              : RefreshIndicator(
+                  onRefresh: controller.refreshDashboard,
+                  color: AppColors.primaryColor,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 18.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // const CustomSearchBar(),
+                        SizedBox(height: 6.h),
+                        // بطاقات الإحصائيات
+                        const BuildStatisticsCards(),
+                        SizedBox(height: 7.h),
+                        GetBuilder<AdminDashboardController>(
+                          builder: (controller) {
+                            final buttons = controller.visibleDashboardButtons;
+                            final preferredQuickCount =
+                                controller.dashboardQuickAccessCount.value;
+                            final quickCount =
+                                buttons.length > preferredQuickCount
+                                    ? preferredQuickCount
+                                    : buttons.length;
+                            final quick = buttons.take(quickCount).toList()
+                              ..add({
+                                'id': 'add_shortcut',
+                                'title': 'إضافة اختصار',
+                                'route': '',
+                              });
+                            final remaining = controller.filterDashboardButtons(
+                              buttons.skip(quickCount),
+                            );
+                            final badges = controller
+                                    .mainDashboardDataModel?.dashboardBadges ??
+                                {};
+                            return Column(
+                              children: [
                                 BuildActionButtons(
-                                  buttons: remaining,
+                                  buttons: quick,
                                   badges: badges,
                                   onReorder: controller.reorderDashboardButton,
                                   employeePurpleStyle: true,
-                                  sectionTitle: 'كل الأقسام',
-                                  sectionSubtitle: 'الأقسام المتاحة للأدمن',
-                                  backgroundColor: const Color(0xFFFAF8FF),
+                                  sectionTitle: 'الوصول السريع',
+                                  sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
                                   reorderMode:
                                       controller.isDashboardReorderMode.value,
                                   onReorderStarted:
                                       controller.startDashboardReorder,
                                   onReorderFinished:
                                       controller.finishDashboardReorder,
+                                  onAddShortcut: () =>
+                                      _showCustomizeDashboardDialog(context),
                                 ),
+                                if (controller
+                                    .showDashboardAttentionSection.value) ...[
+                                  SizedBox(height: 8.h),
+                                  const DashboardAttentionSection(),
+                                ],
+                                if (remaining.isNotEmpty) ...[
+                                  SizedBox(height: 8.h),
+                                  _DashboardSectionsSearch(
+                                    onChanged:
+                                        controller.setDashboardSectionsSearch,
+                                  ),
+                                  SizedBox(height: 6.h),
+                                  BuildActionButtons(
+                                    buttons: remaining,
+                                    badges: badges,
+                                    onReorder:
+                                        controller.reorderDashboardButton,
+                                    employeePurpleStyle: true,
+                                    sectionTitle: 'كل الأقسام',
+                                    sectionSubtitle: 'اختر القسم المناسب لك',
+                                    backgroundColor: const Color(0xFFFAF8FF),
+                                    reorderMode:
+                                        controller.isDashboardReorderMode.value,
+                                    onReorderStarted:
+                                        controller.startDashboardReorder,
+                                    onReorderFinished:
+                                        controller.finishDashboardReorder,
+                                  ),
+                                ],
+                                if (remaining.isEmpty &&
+                                    controller.dashboardSectionsSearch.value
+                                        .isNotEmpty) ...[
+                                  SizedBox(height: 8.h),
+                                  _DashboardSectionsSearch(
+                                    onChanged:
+                                        controller.setDashboardSectionsSearch,
+                                  ),
+                                  SizedBox(height: 10.h),
+                                  Center(
+                                    child: Text(
+                                      'لا توجد أقسام مطابقة للبحث',
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        color: AppColors.customGreyColor5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          );
-                        },
-                      ),
-                      SizedBox(height: 70.h),
-                    ],
+                            );
+                          },
+                        ),
+                        SizedBox(height: 125.h),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+        ),
       ),
       floatingActionButton: Obx(
         () => controller.isDashboardPreparing.value
             ? const SizedBox.shrink()
-            : CustomFloatingActionButton(
-                isAddMenuOpen: controller.isAddMenuOpen,
-                onTap: () => controller.toggleAddMenu(),
-                opacityAnimation: controller.sizeAnimation,
-                sizeAnimation: controller.opacityAnimation,
-                addList: controller.visibleAdminAddList,
-                useGrid: true,
-                backgroundColor: AppColors.operationalPurple,
+            : Padding(
+                padding: EdgeInsets.only(bottom: 18.h),
+                child: CustomFloatingActionButton(
+                  isAddMenuOpen: controller.isAddMenuOpen,
+                  onTap: () => controller.toggleAddMenu(),
+                  opacityAnimation: controller.sizeAnimation,
+                  sizeAnimation: controller.opacityAnimation,
+                  addList: controller.visibleAdminAddList,
+                  useGrid: true,
+                  backgroundColor: AppColors.operationalPurple,
+                ),
               ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -368,7 +417,32 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                     ),
                   ),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 6.h),
+                GetBuilder<AdminDashboardController>(
+                  builder: (controller) => SwitchListTile.adaptive(
+                    value: controller.showDashboardAttentionSection.value,
+                    onChanged: controller.isUiPreferencesSaving.value
+                        ? null
+                        : controller.setDashboardAttentionSectionVisible,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 4.w),
+                    activeThumbColor: AppColors.primaryColor,
+                    title: Text(
+                      'أهم ما ينتظر المتابعة',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'إظهار القسم في الصفحة الرئيسية',
+                      style: TextStyle(
+                        fontSize: 9.sp,
+                        color: AppColors.customGreyColor5,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
                 Flexible(
                   child: GetBuilder<AdminDashboardController>(
                     builder: (controller) => ListView.separated(
@@ -430,6 +504,72 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardSectionsSearch extends StatefulWidget {
+  const _DashboardSectionsSearch({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_DashboardSectionsSearch> createState() =>
+      _DashboardSectionsSearchState();
+}
+
+class _DashboardSectionsSearchState extends State<_DashboardSectionsSearch> {
+  late final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      onChanged: widget.onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'ابحث عن قسم...',
+        hintStyle: TextStyle(
+          fontSize: 11.sp,
+          color: AppColors.customGreyColor5,
+        ),
+        prefixIcon: Icon(Icons.search_rounded, size: 21.sp),
+        suffixIcon: GetBuilder<AdminDashboardController>(
+          builder: (controller) =>
+              controller.dashboardSectionsSearch.value.isEmpty
+                  ? const SizedBox.shrink()
+                  : IconButton(
+                      tooltip: 'مسح البحث',
+                      onPressed: () {
+                        FocusScope.of(context).unfocus();
+                        _controller.clear();
+                        controller.setDashboardSectionsSearch('');
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+        ),
+        filled: true,
+        fillColor: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : const Color(0xFFFAF9FF),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(
+            color: AppColors.operationalPurple.withValues(alpha: .14),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: const BorderSide(color: AppColors.operationalPurple),
         ),
       ),
     );

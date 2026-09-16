@@ -24,6 +24,7 @@ class BuildActionButtons extends StatelessWidget {
     this.reorderMode = false,
     this.onReorderStarted,
     this.onReorderFinished,
+    this.onAddShortcut,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
@@ -38,6 +39,7 @@ class BuildActionButtons extends StatelessWidget {
   final bool reorderMode;
   final VoidCallback? onReorderStarted;
   final VoidCallback? onReorderFinished;
+  final VoidCallback? onAddShortcut;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -54,7 +56,7 @@ class BuildActionButtons extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(height: 5.h),
+        SizedBox(height: 2.h),
         Row(
           children: [
             Column(
@@ -85,23 +87,16 @@ class BuildActionButtons extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 4.h),
 
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = DesktopLayout.gridColumnsForWidth(
-              constraints.maxWidth,
-              minTileWidth: DesktopLayout.isDesktop(context) ? 170 : 105,
-              min: DesktopLayout.isDesktop(context) ? 5 : 3,
-              max: 10,
-              gap: 8.w,
-            );
+            final columns = constraints.maxWidth >= 320 ? 4 : 3;
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
-                childAspectRatio: DesktopLayout.isDesktop(context)
-                    ? 3
-                    : (employeePurpleStyle ? 2.25.h : 2.h),
+                childAspectRatio:
+                    DesktopLayout.isDesktop(context) ? 1.65 : 1.05,
                 crossAxisSpacing: 8.w,
                 mainAxisSpacing: employeePurpleStyle ? 7.h : 13.h,
               ),
@@ -110,7 +105,18 @@ class BuildActionButtons extends StatelessWidget {
               itemCount: filteredButtons.length,
               itemBuilder: (context, index) {
                 final button = filteredButtons[index];
+                final isAddShortcut = button['id'] == 'add_shortcut';
                 final buttonKey = _buttonKey(button);
+                const tileAccents = [
+                  Color(0xFFE9445B),
+                  Color(0xFF16A464),
+                  Color(0xFF6750E8),
+                  Color(0xFFF28C28),
+                  Color(0xFF1677F2),
+                  Color(0xFF52617A),
+                ];
+                final tileAccent =
+                    accentColor ?? tileAccents[index % tileAccents.length];
                 final badgeDescriptors = (button['badgeDescriptors'] as List?)
                         ?.whereType<Map>()
                         .map((item) => _ActionBadge.fromMap(item, badges))
@@ -124,15 +130,17 @@ class BuildActionButtons extends StatelessWidget {
                   badges[button['badgeKey']?.toString() ?? ''] ?? 0,
                   badgeDescriptors,
                   employeePurpleStyle: employeePurpleStyle,
-                  accentColor: accentColor,
-                  backgroundColor: backgroundColor,
+                  accentColor: tileAccent,
+                  backgroundColor:
+                      backgroundColor ?? tileAccent.withValues(alpha: .075),
+                  onTapOverride: isAddShortcut ? onAddShortcut : null,
                 );
                 final animatedTile = _ReorderWiggle(
                   enabled: reorderMode,
                   reverse: index.isOdd,
                   child: tile,
                 );
-                if (onReorder == null || buttonKey.isEmpty) {
+                if (onReorder == null || buttonKey.isEmpty || isAddShortcut) {
                   return animatedTile;
                 }
                 final tileWidth =
@@ -153,7 +161,7 @@ class BuildActionButtons extends StatelessWidget {
                       color: Colors.transparent,
                       child: SizedBox(
                         width: tileWidth,
-                        height: DesktopLayout.isDesktop(context) ? 65 : 52.h,
+                        height: DesktopLayout.isDesktop(context) ? 76 : 78.h,
                         child: Opacity(opacity: .92, child: tile),
                       ),
                     ),
@@ -317,6 +325,7 @@ Widget _buildActionButton(
   bool employeePurpleStyle = false,
   Color? accentColor,
   Color? backgroundColor,
+  VoidCallback? onTapOverride,
 }) {
   final effectiveAccent = accentColor ?? AppColors.operationalPurple;
   String desktopWindowTitle() {
@@ -331,7 +340,11 @@ Widget _buildActionButton(
   }
 
   void openCurrent() {
-    route == '' ? null : Get.toNamed(route);
+    if (onTapOverride != null) {
+      onTapOverride();
+    } else if (route.isNotEmpty) {
+      Get.toNamed(route);
+    }
   }
 
   return GestureDetector(
@@ -371,7 +384,7 @@ Widget _buildActionButton(
                 Icon(
                   _actionIcon(title),
                   color: effectiveAccent,
-                  size: 23.sp,
+                  size: 20.sp,
                 ),
                 SizedBox(height: 3.h),
               ],
@@ -409,7 +422,7 @@ Widget _buildActionButton(
                                 ? Colors.white
                                 : AppColors.operationalNavy)
                             : Colors.white,
-                        fontSize: employeePurpleStyle ? 13.sp : 14.sp,
+                        fontSize: employeePurpleStyle ? 10.sp : 12.sp,
                         fontWeight: FontWeight.w700,
                       ),
                   maxLines: 2,
@@ -460,6 +473,8 @@ Widget _buildActionButton(
 
 IconData _actionIcon(String title) {
   switch (title) {
+    case 'إضافة اختصار':
+      return Icons.add_rounded;
     case 'employeeTasks':
       return Icons.assignment_ind_outlined;
     case 'employeeDepartment':
