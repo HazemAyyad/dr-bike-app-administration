@@ -2797,6 +2797,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           orderId: order.id,
           controller: controller,
           parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
+          customerDeliveryFee: current.customerDeliveryFee,
           showShiplyBranding: false,
         ),
         barrierDismissible: false,
@@ -2879,6 +2880,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           orderId: order.id,
           controller: controller,
           parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
+          customerDeliveryFee: current.customerDeliveryFee,
         ),
         barrierDismissible: false,
       );

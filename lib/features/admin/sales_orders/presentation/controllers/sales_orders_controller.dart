@@ -571,6 +571,7 @@ class SalesOrdersController extends GetxController {
       'partner_type': partnerType,
       'partner_id': partnerId,
       'partner_address_id': address.id,
+      'customer_delivery_fee': order.customerDeliveryFee,
     });
     isSubmitting.value = false;
     final succeeded = result.fold(
@@ -1290,26 +1291,36 @@ class SalesOrdersController extends GetxController {
     return null;
   }
 
-  Map<String, dynamic> buildShiplyAddressPayload() {
+  Map<String, dynamic> buildShiplyAddressPayload({
+    required double customerDeliveryFee,
+  }) {
     final street = customerAddressController.text.trim();
     return {
       'customer_address': street.isEmpty ? '----' : street,
       'shiply_city_id': selectedShiplyCityId.value,
       'shiply_village_id': selectedShiplyVillageId.value,
+      'customer_delivery_fee': customerDeliveryFee,
       if (shiplyQuotedDeliveryFee.value != null)
         'shiply_quoted_delivery_fee': shiplyQuotedDeliveryFee.value,
     };
   }
 
-  Future<bool> saveShiplyAddressForOrder(int orderId) async {
+  Future<bool> saveShiplyAddressForOrder(
+    int orderId, {
+    required double customerDeliveryFee,
+  }) async {
     final err = validateShiplyAddressForm();
     if (err != null) {
       SalesOrderNotice.error(err);
       return false;
     }
     isSubmitting.value = true;
-    final result =
-        await repository.updateOrder(orderId, buildShiplyAddressPayload());
+    final result = await repository.updateOrder(
+      orderId,
+      buildShiplyAddressPayload(
+        customerDeliveryFee: customerDeliveryFee,
+      ),
+    );
     isSubmitting.value = false;
     return result.fold(
       (f) {
@@ -1323,7 +1334,10 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<bool> saveCarrierAddressForOrder(int orderId) async {
+  Future<bool> saveCarrierAddressForOrder(
+    int orderId, {
+    required double customerDeliveryFee,
+  }) async {
     final err = validateCarrierAddressForm();
     if (err != null) {
       SalesOrderNotice.error(err);
@@ -1334,6 +1348,7 @@ class SalesOrdersController extends GetxController {
       'customer_address': street.isEmpty ? '----' : street,
       'shiply_city_id': selectedShiplyCityId.value,
       'shiply_village_id': selectedShiplyVillageId.value,
+      'customer_delivery_fee': customerDeliveryFee,
       if (shiplyQuotedDeliveryFee.value != null)
         'shiply_quoted_delivery_fee': shiplyQuotedDeliveryFee.value,
     };

@@ -12,12 +12,14 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
     required this.orderId,
     required this.controller,
     required this.parcelPrice,
+    required this.customerDeliveryFee,
     this.showShiplyBranding = true,
   }) : super(key: key);
 
   final int orderId;
   final SalesOrdersController controller;
   final double parcelPrice;
+  final double customerDeliveryFee;
   final bool showShiplyBranding;
 
   @override
@@ -88,9 +90,17 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
                             : () async {
                                 final ok = showShiplyBranding
                                     ? await controller
-                                        .saveShiplyAddressForOrder(orderId)
+                                        .saveShiplyAddressForOrder(
+                                        orderId,
+                                        customerDeliveryFee:
+                                            customerDeliveryFee,
+                                      )
                                     : await controller
-                                        .saveCarrierAddressForOrder(orderId);
+                                        .saveCarrierAddressForOrder(
+                                        orderId,
+                                        customerDeliveryFee:
+                                            customerDeliveryFee,
+                                      );
                                 if (ok) Get.back(result: true);
                               },
                         style: ElevatedButton.styleFrom(
