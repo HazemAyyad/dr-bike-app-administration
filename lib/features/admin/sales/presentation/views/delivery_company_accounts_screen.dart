@@ -71,7 +71,7 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
                         Center(child: Text('لا توجد حسابات شركات توصيل بعد')),
                       ])
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                         itemCount: accounts.length + 1,
                         itemBuilder: (_, i) {
                           if (i == 0) {
@@ -88,7 +88,7 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
                                       .toInt(),
                             );
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.only(bottom: 6),
                               child: _AccountsOverview(
                                 companies: accounts.length,
                                 orders: orderCount,
@@ -104,22 +104,23 @@ class _AccountsState extends State<DeliveryCompanyAccountsScreen> {
                                   .toInt();
                           return Card(
                             elevation: 0,
+                            margin: const EdgeInsets.only(bottom: 6),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(11),
                               side: const BorderSide(color: _border),
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9,
+                                horizontal: 12,
+                                vertical: 3,
                               ),
                               leading: Container(
-                                width: 44,
-                                height: 44,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
                                   color: (balance > 0 ? _warning : Colors.green)
                                       .withValues(alpha: .1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   Icons.local_shipping_outlined,
@@ -180,23 +181,23 @@ class _AccountsOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: _navy,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('المبالغ المنتظرة من شركات التوصيل',
                 style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text('${balance.toStringAsFixed(2)} ₪',
                 style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(children: [
               Expanded(child: _overviewValue('الشركات', '$companies')),
               Expanded(child: _overviewValue('طلبيات معلقة', '$orders')),
@@ -207,10 +208,10 @@ class _AccountsOverview extends StatelessWidget {
 
   Widget _overviewValue(String label, String value) => Container(
         margin: const EdgeInsetsDirectional.only(end: 7),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: .1),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text('$label  $value',
             style: const TextStyle(
@@ -296,7 +297,8 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                     backgroundColor: _navy,
-                    padding: const EdgeInsets.symmetric(vertical: 14)),
+                    minimumSize: const Size.fromHeight(46),
+                    padding: const EdgeInsets.symmetric(vertical: 10)),
                 onPressed: settle,
                 icon: const Icon(Icons.payments_outlined),
                 label: Text(
@@ -307,97 +309,103 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: load,
-              child: ListView(padding: const EdgeInsets.all(16), children: [
-                Card(
-                  elevation: 0,
-                  color: const Color(0xFFEAF3FA),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: Color(0xFFC6DAE8)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Expanded(
-                              child: Text('إجمالي المبلغ المطلوب من الشركة',
-                                  style: TextStyle(
-                                      color: Color(0xFF526475),
-                                      fontWeight: FontWeight.w700))),
-                          Text(
-                              '${number(account['outstanding_balance']).toStringAsFixed(2)} ₪',
-                              style: const TextStyle(
-                                  color: _navy,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900)),
-                        ]),
-                  ),
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(children: [
-                    _sectionChip(0, 'بانتظار التسوية', outstanding.length),
-                    _sectionChip(1, 'كل الطلبيات', orders.length),
-                    _sectionChip(2, 'سجل التسويات', batches.length),
-                  ]),
-                ),
-                if (section == 0) ...[
-                  Row(children: [
-                    const Expanded(
-                        child: Text('الطلبيات غير المسددة',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold))),
-                    TextButton(
-                      onPressed: outstanding.isEmpty
-                          ? null
-                          : () => setState(() {
-                                if (selected.length == outstanding.length) {
-                                  selected.clear();
-                                } else {
-                                  selected
-                                    ..clear()
-                                    ..addAll(outstanding
-                                        .map((o) => (o['id'] as num).toInt()));
-                                }
-                              }),
-                      child: Text(selected.length == outstanding.length &&
-                              outstanding.isNotEmpty
-                          ? 'إلغاء تحديد الكل'
-                          : 'تحديد الكل'),
+              child: ListView(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 13, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.account_balance_wallet_outlined,
+                            size: 20, color: _navy),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text('المطلوب من الشركة',
+                              style: TextStyle(
+                                  color: Color(0xFF526475),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                        Text(
+                          '${number(account['outstanding_balance']).toStringAsFixed(2)} ₪',
+                          style: const TextStyle(
+                              color: _navy,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900),
+                        ),
+                      ]),
                     ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(children: [
+                        _sectionChip(0, 'بانتظار التسوية', outstanding.length),
+                        _sectionChip(1, 'كل الطلبيات', orders.length),
+                        _sectionChip(2, 'سجل التسويات', batches.length),
+                      ]),
+                    ),
+                    if (section == 0) ...[
+                      Row(children: [
+                        const Expanded(
+                            child: Text('الطلبيات غير المسددة',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold))),
+                        TextButton(
+                          onPressed: outstanding.isEmpty
+                              ? null
+                              : () => setState(() {
+                                    if (selected.length == outstanding.length) {
+                                      selected.clear();
+                                    } else {
+                                      selected
+                                        ..clear()
+                                        ..addAll(outstanding.map(
+                                            (o) => (o['id'] as num).toInt()));
+                                    }
+                                  }),
+                          child: Text(selected.length == outstanding.length &&
+                                  outstanding.isNotEmpty
+                              ? 'إلغاء تحديد الكل'
+                              : 'تحديد الكل'),
+                        ),
+                      ]),
+                      if (outstanding.isEmpty)
+                        const Card(
+                            child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Center(
+                                    child: Text('الحساب مسدد بالكامل')))),
+                      for (final o in outstanding)
+                        _orderAccountCard(o, selectable: true),
+                    ],
+                    if (section == 1) ...[
+                      const SizedBox(height: 20),
+                      const Text('سجل طلبيات الشركة',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      for (final o in orders) _orderAccountCard(o),
+                    ],
+                    if (section == 2) ...[
+                      const SizedBox(height: 20),
+                      const Text('سجل التسويات الجماعية',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      if (batches.isEmpty)
+                        const Card(
+                            child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Center(
+                                    child: Text('لا توجد تسويات مسجلة')))),
+                      for (final b in batches) batchCard(b),
+                    ],
+                    const SizedBox(height: 72),
                   ]),
-                  if (outstanding.isEmpty)
-                    const Card(
-                        child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Center(child: Text('الحساب مسدد بالكامل')))),
-                  for (final o in outstanding)
-                    _orderAccountCard(o, selectable: true),
-                ],
-                if (section == 1) ...[
-                  const SizedBox(height: 20),
-                  const Text('سجل طلبيات الشركة',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  for (final o in orders) _orderAccountCard(o),
-                ],
-                if (section == 2) ...[
-                  const SizedBox(height: 20),
-                  const Text('سجل التسويات الجماعية',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  if (batches.isEmpty)
-                    const Card(
-                        child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child:
-                                Center(child: Text('لا توجد تسويات مسجلة')))),
-                  for (final b in batches) batchCard(b),
-                ],
-                const SizedBox(height: 90),
-              ]),
             ),
     );
   }
@@ -414,11 +422,11 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
         isSettled ? const Color(0xFF15803D) : const Color(0xFFB42318);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Material(
         color: isSelected ? const Color(0xFFF2F7FF) : Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(11),
           side: BorderSide(
             color: isSelected ? const Color(0xFF8EB8DA) : _border,
             width: isSelected ? 1.4 : 1,
@@ -428,7 +436,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
         child: InkWell(
           onTap: selectable ? () => _toggleOrderSelection(id) : null,
           child: Padding(
-            padding: const EdgeInsets.all(13),
+            padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -438,6 +446,8 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                       Checkbox(
                         value: isSelected,
                         activeColor: _navy,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         onChanged: (_) => _toggleOrderSelection(id),
                       ),
                       const SizedBox(width: 4),
@@ -450,7 +460,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                             '${order['serial_number'] ?? '#$id'}',
                             style: const TextStyle(
                               color: _navy,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -470,11 +480,11 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 9,
-                        vertical: 6,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: .09),
-                        borderRadius: BorderRadius.circular(9),
+                        borderRadius: BorderRadius.circular(7),
                       ),
                       child: Text(
                         isSettled
@@ -489,7 +499,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
                 Row(
                   children: [
                     const Icon(
@@ -507,11 +517,11 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 7),
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: IntrinsicHeight(
@@ -570,7 +580,7 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
 
   Widget _orderMetric(String label, double amount) => Expanded(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Column(
             children: [
               Text(
@@ -582,14 +592,14 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   '${amount.toStringAsFixed(2)} ₪',
                   style: const TextStyle(
                     color: _navy,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -629,11 +639,12 @@ class _AccountDetailState extends State<DeliveryCompanyAccountDetailScreen> {
   Widget _sectionChip(int value, String label, int count) {
     final active = section == value;
     return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 7, top: 6),
+      padding: const EdgeInsetsDirectional.only(end: 5, top: 5, bottom: 2),
       child: ChoiceChip(
         selected: active,
         showCheckmark: false,
         selectedColor: _navy,
+        visualDensity: VisualDensity.compact,
         side: const BorderSide(color: _border),
         labelStyle: TextStyle(
             color: active ? Colors.white : _navy, fontWeight: FontWeight.w700),
@@ -1228,6 +1239,9 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
 
   Widget _allocationRow(Map<String, dynamic> order) {
     final id = (order['id'] as num).toInt();
+    final balance = number(order['carrier_receivable_balance']);
+    final allocated = double.tryParse(allocations[id]?.text.trim() ?? '') ?? 0;
+    final remaining = (balance - allocated).clamp(0, balance).toDouble();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       child: Row(
@@ -1244,13 +1258,40 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
                   ),
                 ),
                 Text(
-                  '${order['customer_name'] ?? 'زبون'} • الرصيد ${number(order['carrier_receivable_balance']).toStringAsFixed(2)} ₪',
+                  '${order['customer_name'] ?? 'زبون'} • الرصيد قبل التسوية ${balance.toStringAsFixed(2)} ₪',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
                     fontSize: 11,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 3,
+                  children: [
+                    Text(
+                      'يُغلق الآن ${allocated.toStringAsFixed(2)} ₪',
+                      style: const TextStyle(
+                        color: Color(0xFF047857),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      remaining > .001
+                          ? 'يتبقى ${remaining.toStringAsFixed(2)} ₪'
+                          : 'مغلقة بالكامل',
+                      style: TextStyle(
+                        color: remaining > .001
+                            ? const Color(0xFFB45309)
+                            : const Color(0xFF047857),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1260,6 +1301,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
             width: 112,
             child: TextField(
               controller: allocations[id],
+              onChanged: (_) => setState(() {}),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
