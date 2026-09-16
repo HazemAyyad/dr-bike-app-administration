@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/auth/data/models/user_model.dart';
+import 'dart:io';
 
 import '../../../../core/connection/network_info.dart';
 import '../../../../core/errors/expentions.dart';
@@ -21,6 +22,7 @@ class CommonImplement implements CommonRepository {
     required String subPhone,
     required String city,
     required String address,
+    File? employeeImage,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -33,6 +35,7 @@ class CommonImplement implements CommonRepository {
         subPhone: subPhone,
         city: city,
         address: address,
+        employeeImage: employeeImage,
       );
       if (result is Map && result['status'] == 'success') {
         return const Right(true);

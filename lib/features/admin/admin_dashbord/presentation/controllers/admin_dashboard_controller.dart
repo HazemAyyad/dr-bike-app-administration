@@ -208,6 +208,15 @@ class AdminDashboardController extends GetxController
   final RxBool isDashboardPreparing = true.obs;
   final RxBool showDashboardAttentionSection = true.obs;
   final RxString dashboardSectionsSearch = ''.obs;
+  final RxBool isDashboardSectionsSearchOpen = false.obs;
+
+  void toggleDashboardSectionsSearch() {
+    isDashboardSectionsSearchOpen.toggle();
+    if (!isDashboardSectionsSearchOpen.value) {
+      dashboardSectionsSearch.value = '';
+    }
+    update();
+  }
 
   void setDashboardSectionsSearch(String value) {
     dashboardSectionsSearch.value = value.trim().toLowerCase();

@@ -68,23 +68,23 @@ class BuildStatisticsCards extends StatelessWidget {
               ]),
             ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
         ],
         const _SectionHeading(
           title: 'نظرة سريعة',
-          subtitle: 'أهم الأرقام في عملك',
         ),
-        SizedBox(height: 4.h),
+        SizedBox(height: 5.h),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 320 ? 4 : 2;
             return GridView.count(
+              padding: EdgeInsets.zero,
               crossAxisCount: columns,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 7.h,
               crossAxisSpacing: 7.w,
-              childAspectRatio: columns == 4 ? .88 : 1.72,
+              childAspectRatio: columns == 4 ? 1.22 : 2.1,
               children: [
                 _OverviewItem(
                   title: 'لنا',
@@ -142,13 +142,12 @@ class DashboardAttentionSection extends StatelessWidget {
         children: [
           _SectionHeading(
             title: 'أهم ما ينتظر المتابعة',
-            subtitle: 'حالات تحتاج إلى إجراء',
             trailing: TextButton(
               onPressed: () => _showAttentionSheet(context, attentionItems),
               child: const Text('عرض الكل'),
             ),
           ),
-          SizedBox(height: 3.h),
+          SizedBox(height: 5.h),
           SizedBox(
             height: 68.h,
             child: ListView.separated(
@@ -241,20 +240,24 @@ class _OverviewItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(15.r),
           child: Padding(
-            padding: EdgeInsets.all(8.r),
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: Icon(icon, size: 21.sp, color: accent),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 9.sp, fontWeight: FontWeight.w700)),
+                    ),
+                    SizedBox(width: 3.w),
+                    Icon(icon, size: 18.sp, color: accent),
+                  ],
                 ),
-                Text(title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        TextStyle(fontSize: 9.sp, fontWeight: FontWeight.w700)),
                 Text(
                     '${NumberFormat('#,##0.##').format(double.tryParse(value) ?? 0)}${showCurrency ? ' ₪' : ''}',
                     maxLines: 1,
@@ -275,12 +278,10 @@ class _OverviewItem extends StatelessWidget {
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({
     required this.title,
-    required this.subtitle,
     this.trailing,
   });
 
   final String title;
-  final String subtitle;
   final Widget? trailing;
 
   @override
@@ -297,9 +298,6 @@ class _SectionHeading extends StatelessWidget {
                         color: ThemeService.isDark.value
                             ? Colors.white
                             : AppColors.operationalNavy)),
-                Text(subtitle,
-                    style: TextStyle(
-                        fontSize: 10.sp, color: AppColors.customGreyColor5)),
               ],
             ),
           ),

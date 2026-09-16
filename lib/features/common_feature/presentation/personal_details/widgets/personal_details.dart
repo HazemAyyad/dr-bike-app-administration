@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_phone_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../core/widgets/person_avatar_image.dart';
 import '../../../../../core/validator/validator.dart';
 import '../controllers/personal_details_controller.dart';
 import 'address_field.dart';
@@ -26,6 +27,42 @@ class BuildPersonalDetails extends GetView<PersonalDetailsController> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: 10.h),
+              if (!controller.isAdmin) ...[
+                InkWell(
+                  onTap: controller.pickEmployeeImage,
+                  borderRadius: BorderRadius.circular(50),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      controller.selectedEmployeeImage.value != null
+                          ? CircleAvatar(
+                              radius: 42.r,
+                              backgroundImage: FileImage(
+                                controller.selectedEmployeeImage.value!,
+                              ),
+                            )
+                          : PersonAvatarImage(
+                              imageUrl: controller.currentEmployeeImage,
+                              width: 84.r,
+                              height: 84.r,
+                              circular: true,
+                            ),
+                      PositionedDirectional(
+                        end: -2,
+                        bottom: -2,
+                        child: CircleAvatar(
+                          radius: 14.r,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          child: Icon(Icons.camera_alt_rounded,
+                              color: Colors.white, size: 15.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
               CustomTextField(
                 label: 'name',
                 hintText: 'name'.tr,

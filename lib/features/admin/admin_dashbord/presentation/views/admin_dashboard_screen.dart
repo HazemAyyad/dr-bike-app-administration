@@ -194,7 +194,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                         SizedBox(height: 6.h),
                         // بطاقات الإحصائيات
                         const BuildStatisticsCards(),
-                        SizedBox(height: 7.h),
+                        SizedBox(height: 6.h),
                         GetBuilder<AdminDashboardController>(
                           builder: (controller) {
                             final buttons = controller.visibleDashboardButtons;
@@ -224,7 +224,6 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                   onReorder: controller.reorderDashboardButton,
                                   employeePurpleStyle: true,
                                   sectionTitle: 'الوصول السريع',
-                                  sectionSubtitle: 'اضغط مطولاً لتغيير الترتيب',
                                   reorderMode:
                                       controller.isDashboardReorderMode.value,
                                   onReorderStarted:
@@ -236,15 +235,12 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                 ),
                                 if (controller
                                     .showDashboardAttentionSection.value) ...[
-                                  SizedBox(height: 8.h),
+                                  SizedBox(height: 6.h),
                                   const DashboardAttentionSection(),
                                 ],
-                                if (remaining.isNotEmpty) ...[
-                                  SizedBox(height: 8.h),
-                                  _DashboardSectionsSearch(
-                                    onChanged:
-                                        controller.setDashboardSectionsSearch,
-                                  ),
+                                if (remaining.isNotEmpty ||
+                                    controller.isDashboardSectionsSearchOpen
+                                        .value) ...[
                                   SizedBox(height: 6.h),
                                   BuildActionButtons(
                                     buttons: remaining,
@@ -253,7 +249,30 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                         controller.reorderDashboardButton,
                                     employeePurpleStyle: true,
                                     sectionTitle: 'كل الأقسام',
-                                    sectionSubtitle: 'اختر القسم المناسب لك',
+                                    headerAction: IconButton(
+                                      tooltip: controller
+                                              .isDashboardSectionsSearchOpen
+                                              .value
+                                          ? 'إغلاق البحث'
+                                          : 'البحث في الأقسام',
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: controller
+                                          .toggleDashboardSectionsSearch,
+                                      icon: Icon(
+                                        controller.isDashboardSectionsSearchOpen
+                                                .value
+                                            ? Icons.close_rounded
+                                            : Icons.search_rounded,
+                                        color: AppColors.operationalPurple,
+                                      ),
+                                    ),
+                                    sectionLead: controller
+                                            .isDashboardSectionsSearchOpen.value
+                                        ? _DashboardSectionsSearch(
+                                            onChanged: controller
+                                                .setDashboardSectionsSearch,
+                                          )
+                                        : null,
                                     backgroundColor: const Color(0xFFFAF8FF),
                                     reorderMode:
                                         controller.isDashboardReorderMode.value,
@@ -262,25 +281,17 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                     onReorderFinished:
                                         controller.finishDashboardReorder,
                                   ),
-                                ],
-                                if (remaining.isEmpty &&
-                                    controller.dashboardSectionsSearch.value
-                                        .isNotEmpty) ...[
-                                  SizedBox(height: 8.h),
-                                  _DashboardSectionsSearch(
-                                    onChanged:
-                                        controller.setDashboardSectionsSearch,
-                                  ),
-                                  SizedBox(height: 10.h),
-                                  Center(
-                                    child: Text(
-                                      'لا توجد أقسام مطابقة للبحث',
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        color: AppColors.customGreyColor5,
+                                  if (remaining.isEmpty)
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 6.h),
+                                      child: Text(
+                                        'لا توجد أقسام مطابقة للبحث',
+                                        style: TextStyle(
+                                          fontSize: 11.sp,
+                                          color: AppColors.customGreyColor5,
+                                        ),
                                       ),
                                     ),
-                                  ),
                                 ],
                               ],
                             );
@@ -306,6 +317,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                   addList: controller.visibleAdminAddList,
                   useGrid: true,
                   backgroundColor: AppColors.operationalPurple,
+                  compact: true,
                 ),
               ),
       ),

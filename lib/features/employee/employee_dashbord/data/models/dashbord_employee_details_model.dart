@@ -1,6 +1,7 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/proof_media_type.dart';
 import 'package:doctorbike/core/helpers/task_recurrence_rules.dart';
+import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class DashbordEmployeeDetailsModel {
   final int id;
@@ -20,6 +21,7 @@ class DashbordEmployeeDetailsModel {
   final List<EmployeeSharedGoal> sharedGoals;
   final List<String> weeklyDaysOff;
   final Map<String, int> dashboardBadges;
+  final String employeeImage;
 
   DashbordEmployeeDetailsModel({
     required this.id,
@@ -39,9 +41,11 @@ class DashbordEmployeeDetailsModel {
     this.sharedGoals = const [],
     this.weeklyDaysOff = const [],
     this.dashboardBadges = const {},
+    this.employeeImage = '',
   });
 
   factory DashbordEmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
+    final rawEmployeeImage = asNullableString(json['employee_image']);
     return DashbordEmployeeDetailsModel(
       id: asInt(json['id']),
       userId: asString(json['user_id'], '0'),
@@ -71,6 +75,9 @@ class DashbordEmployeeDetailsModel {
       ),
       weeklyDaysOff: asStringList(json['weekly_days_off']),
       dashboardBadges: _parseDashboardBadges(json['dashboard_badges']),
+      employeeImage: rawEmployeeImage == null
+          ? ''
+          : ShowNetImage.getPhoto(rawEmployeeImage),
     );
   }
 }

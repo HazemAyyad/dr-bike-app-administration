@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failure.dart';
 import '../repositories/common_repositorie.dart';
+import 'dart:io';
 
 class UserProfileUseCase {
   final CommonRepository commonRepository;
@@ -14,6 +15,7 @@ class UserProfileUseCase {
     required String subPhone,
     required String city,
     required String address,
+    File? employeeImage,
   }) {
     return commonRepository.userProfile(
       name: name,
@@ -22,6 +24,7 @@ class UserProfileUseCase {
       subPhone: subPhone,
       city: city,
       address: address,
+      employeeImage: employeeImage,
     );
   }
 }

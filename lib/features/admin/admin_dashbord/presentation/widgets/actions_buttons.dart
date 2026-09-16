@@ -18,13 +18,14 @@ class BuildActionButtons extends StatelessWidget {
     this.onReorder,
     this.employeePurpleStyle = false,
     this.sectionTitle,
-    this.sectionSubtitle,
     this.accentColor,
     this.backgroundColor,
     this.reorderMode = false,
     this.onReorderStarted,
     this.onReorderFinished,
     this.onAddShortcut,
+    this.headerAction,
+    this.sectionLead,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
@@ -33,13 +34,14 @@ class BuildActionButtons extends StatelessWidget {
   final Future<void> Function(String draggedKey, String targetKey)? onReorder;
   final bool employeePurpleStyle;
   final String? sectionTitle;
-  final String? sectionSubtitle;
   final Color? accentColor;
   final Color? backgroundColor;
   final bool reorderMode;
   final VoidCallback? onReorderStarted;
   final VoidCallback? onReorderFinished;
   final VoidCallback? onAddShortcut;
+  final Widget? headerAction;
+  final Widget? sectionLead;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -56,43 +58,41 @@ class BuildActionButtons extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(height: 2.h),
         Row(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  sectionTitle ??
-                      (employeePurpleStyle
-                          ? 'الأقسام المتاحة'
-                          : 'permissions'.tr),
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.secondaryColor,
-                      ),
-                ),
-                if (sectionSubtitle != null)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    sectionSubtitle!,
-                    style: TextStyle(
-                      fontSize: 9.sp,
-                      color: AppColors.customGreyColor5,
-                    ),
+                    sectionTitle ??
+                        (employeePurpleStyle
+                            ? 'الأقسام المتاحة'
+                            : 'permissions'.tr),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w800,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.secondaryColor,
+                        ),
                   ),
-              ],
+                ],
+              ),
             ),
+            if (headerAction != null) headerAction!,
           ],
         ),
-        SizedBox(height: 4.h),
-
+        if (sectionLead != null) ...[
+          SizedBox(height: 3.h),
+          sectionLead!,
+        ],
+        SizedBox(height: 5.h),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 320 ? 4 : 3;
             return GridView.builder(
+              padding: EdgeInsets.zero,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: columns,
                 childAspectRatio:

@@ -904,6 +904,7 @@ class EmployeeDashbordController extends GetxController
       sharedGoals: result.sharedGoals,
       weeklyDaysOff: result.weeklyDaysOff,
       dashboardBadges: result.dashboardBadges,
+      employeeImage: result.employeeImage,
     );
     isLoading(false);
     _allTasksRaw

@@ -2,6 +2,8 @@ import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/api_error_message.dart';
@@ -12,9 +14,10 @@ import '../../../../../core/validator/validator.dart';
 import '../../../../auth/data/models/user_model.dart';
 import '../../../domain/usecases/get_user_data_usecase.dart';
 import '../../../domain/usecases/user_profile_usecase.dart';
-
+import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class PersonalDetailsController extends GetxController {
   final UserProfileUseCase userProfileUseCase;
   final GetUserDataUsecase getUserDataUsecase;
@@ -39,9 +42,29 @@ class PersonalDetailsController extends GetxController {
   RxBool isProfileLoaded = false.obs;
 
   UserModel? userData;
+  final Rxn<File> selectedEmployeeImage = Rxn<File>();
 
-  bool get isAdmin =>
-      userData?.user.type == 'admin' || userType == 'admin';
+  String get currentEmployeeImage =>
+      Get.isRegistered<EmployeeDashbordController>()
+          ? Get.find<EmployeeDashbordController>()
+                  .employeeData
+                  .value
+                  ?.employeeImage ??
+              ''
+          : '';
+
+  Future<void> pickEmployeeImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 88,
+      maxWidth: 1600,
+    );
+    if (picked == null) return;
+    selectedEmployeeImage.value = File(picked.path);
+    update();
+  }
+
+  bool get isAdmin => userData?.user.type == 'admin' || userType == 'admin';
 
   String? _compactPhone(String raw, {required bool required}) {
     final compact = PhoneFormatHelper.forApi(raw).replaceAll(' ', '');
@@ -114,8 +137,7 @@ class PersonalDetailsController extends GetxController {
       return;
     }
 
-    if (!isAdmin &&
-        (phoneController.text.isEmpty || city.value.isEmpty)) {
+    if (!isAdmin && (phoneController.text.isEmpty || city.value.isEmpty)) {
       AppFailureNotice.show(
         title: 'error'.tr,
         message: 'pleaseFillAllFields'.tr,
@@ -123,8 +145,8 @@ class PersonalDetailsController extends GetxController {
       return;
     }
 
-    final emailError =
-        Validators.validateEmail(emailController.text, Get.locale!.languageCode);
+    final emailError = Validators.validateEmail(
+        emailController.text, Get.locale!.languageCode);
     if (emailError != null) {
       AppFailureNotice.show(
         title: 'error'.tr,
@@ -172,6 +194,8 @@ class PersonalDetailsController extends GetxController {
       subPhone: subPhoneForApi,
       city: city.value.trim(),
       address: addressController.text.trim(),
+      employeeImage:
+          userType == 'employee' ? selectedEmployeeImage.value : null,
     );
     result.fold(
       (failure) {
@@ -189,6 +213,10 @@ class PersonalDetailsController extends GetxController {
         );
       },
       (success) {
+        if (Get.isRegistered<EmployeeDashbordController>()) {
+          Get.find<EmployeeDashbordController>()
+              .getEmployeeData(scrollToTodayb: false);
+        }
         _loadProfile();
         Get.back();
         Helpers.showCustomDialogSuccess(

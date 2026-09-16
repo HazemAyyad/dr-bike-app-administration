@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 import '../../../../core/databases/api/api_consumer.dart';
 import '../../../../core/databases/api/end_points.dart';
@@ -21,8 +22,9 @@ class CommonDatasource {
     required String subPhone,
     required String city,
     required String address,
+    File? employeeImage,
   }) async {
-    final payload = {
+    final payload = <String, dynamic>{
       'name': name,
       'email': email,
       'phone': phone.isEmpty ? null : phone,
@@ -30,6 +32,12 @@ class CommonDatasource {
       'city': city.isEmpty ? null : city,
       'address': address.isEmpty ? null : address,
     };
+    if (employeeImage != null) {
+      payload['employee_img'] = await MultipartFile.fromFile(
+        employeeImage.path,
+        filename: employeeImage.uri.pathSegments.last,
+      );
+    }
 
     if (kDebugMode) {
       debugPrint('[ProfileUpdate] POST ${EndPoints.updateProfile}');
@@ -39,7 +47,7 @@ class CommonDatasource {
     try {
       final response = await api.post(
         EndPoints.updateProfile,
-        data: payload,
+        data: employeeImage == null ? payload : FormData.fromMap(payload),
       );
 
       if (kDebugMode) {

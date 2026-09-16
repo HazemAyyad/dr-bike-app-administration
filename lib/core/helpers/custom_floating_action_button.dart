@@ -20,6 +20,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     this.useGrid = false,
     this.beforeNavigate,
     this.backgroundColor,
+    this.compact = false,
   }) : super(key: key);
 
   final RxBool isAddMenuOpen;
@@ -31,6 +32,7 @@ class CustomFloatingActionButton extends StatelessWidget {
   final bool useGrid;
   final Future<bool> Function(Map<String, String> item)? beforeNavigate;
   final Color? backgroundColor;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -148,15 +150,19 @@ class CustomFloatingActionButton extends StatelessWidget {
             Positioned(
               right: Get.locale!.languageCode == 'ar' ? 30.w : 0.w,
               bottom: 10.h,
-              child: FloatingActionButton(
-                onPressed: onTap,
-                backgroundColor: backgroundColor ?? AppColors.secondaryColor,
-                elevation: 2.0,
-                shape: const CircleBorder(),
-                child: Icon(
-                  Icons.add,
-                  color: AppColors.whiteColor,
-                  size: 42.sp,
+              child: SizedBox(
+                width: compact ? 46.r : 56.r,
+                height: compact ? 46.r : 56.r,
+                child: FloatingActionButton(
+                  onPressed: onTap,
+                  backgroundColor: backgroundColor ?? AppColors.secondaryColor,
+                  elevation: 2.0,
+                  shape: const CircleBorder(),
+                  child: Icon(
+                    Icons.add,
+                    color: AppColors.whiteColor,
+                    size: compact ? 29.sp : 42.sp,
+                  ),
                 ),
               ),
             ),

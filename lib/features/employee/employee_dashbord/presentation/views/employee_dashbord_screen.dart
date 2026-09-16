@@ -7,6 +7,8 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
+import '../../../../../core/widgets/person_avatar_image.dart';
+import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../features/bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../../../routes/app_routes.dart';
@@ -48,6 +50,11 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             controller.wifiPermissionsChecked.value &&
             !controller.wifiPermissionsReady.value) {
           return const _RequiredWifiPermissionsGate();
+        }
+
+        if (controller.isLoading.value &&
+            controller.employeeData.value == null) {
+          return const _EmployeeDashboardSkeleton();
         }
 
         return AppPullToRefresh(
@@ -237,14 +244,66 @@ class _EmployeeHomeHeader extends GetView<EmployeeDashbordController> {
           padding: EdgeInsetsDirectional.fromSTEB(20.w, 7.h, 14.w, 7.h),
           child: Row(children: [
             Expanded(
-              child: Text(
-                userName.isEmpty ? 'مرحباً' : 'مرحباً، $userName',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w900,
-                  color: dark ? Colors.white : AppColors.operationalNavy,
+              child: InkWell(
+                onTap: () => Get.toNamed(AppRoutes.PROFILESCREEN),
+                borderRadius: BorderRadius.circular(28.r),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Obx(() {
+                      final image =
+                          controller.employeeData.value?.employeeImage;
+                      if (image != null && image.isNotEmpty) {
+                        return PersonAvatarImage(
+                          imageUrl: image,
+                          width: 44.r,
+                          height: 44.r,
+                          circular: true,
+                        );
+                      }
+                      return CircleAvatar(
+                        radius: 22.r,
+                        backgroundColor: AppColors.operationalPurple,
+                        child: Text(
+                          _userInitials(userName),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      );
+                    }),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'مرحباً',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.customGreyColor5,
+                            ),
+                          ),
+                          Text(
+                            userName.isEmpty ? 'الموظف' : userName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w900,
+                              color: dark
+                                  ? Colors.white
+                                  : AppColors.operationalNavy,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -290,6 +349,52 @@ class _EmployeeHomeHeader extends GetView<EmployeeDashbordController> {
             ],
           ]),
         ),
+      ),
+    );
+  }
+
+  String _userInitials(String name) {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) return 'م';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+        .toUpperCase();
+  }
+}
+
+class _EmployeeDashboardSkeleton extends StatelessWidget {
+  const _EmployeeDashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 90.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonBlock(width: double.infinity, height: 112.h, radius: 16),
+          SizedBox(height: 10.h),
+          SkeletonBlock(width: double.infinity, height: 58.h, radius: 14),
+          SizedBox(height: 10.h),
+          SkeletonBlock(width: 115.w, height: 22.h, radius: 6),
+          SizedBox(height: 5.h),
+          ...List.generate(
+            3,
+            (_) => Padding(
+              padding: EdgeInsets.only(bottom: 7.h),
+              child: SkeletonBlock(
+                width: double.infinity,
+                height: 64.h,
+                radius: 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
