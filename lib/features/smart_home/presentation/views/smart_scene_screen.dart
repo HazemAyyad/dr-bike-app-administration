@@ -10,6 +10,7 @@ import '../smart_home_theme.dart';
 import '../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../core/helpers/app_failure_notice.dart';
+
 class SmartScenesSection extends StatelessWidget {
   const SmartScenesSection({
     Key? key,
@@ -183,17 +184,21 @@ class _FeaturedSceneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final busy = controller.sceneBusyIds.contains(scene.id);
-    final accent = scene.triggerType == 'schedule'
-        ? const Color(0xFF176B87)
-        : smartHomeAccent;
-    final subtitle = scene.isManual
-        ? '${scene.actions.length} أوامر'
-        : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
+    final accent = scene.pendingCloudCleanup
+        ? const Color(0xFFB42318)
+        : scene.triggerType == 'schedule'
+            ? const Color(0xFF176B87)
+            : smartHomeAccent;
+    final subtitle = scene.pendingCloudCleanup
+        ? 'محذوف من التطبيق وقد يبقى فعالًا في Tuya'
+        : scene.isManual
+            ? '${scene.actions.length} أوامر'
+            : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
     return Material(
       color: smartHomeSurface,
       borderRadius: BorderRadius.circular(12.r),
       child: InkWell(
-        onTap: scene.isManual && !busy
+        onTap: scene.isManual && !scene.pendingCloudCleanup && !busy
             ? () => controller.executeScene(scene)
             : null,
         borderRadius: BorderRadius.circular(12.r),
@@ -231,9 +236,20 @@ class _FeaturedSceneCard extends StatelessWidget {
                     ),
                     onSelected: (value) =>
                         _handleSceneMenu(controller, scene, value),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('تعديل')),
-                      PopupMenuItem(value: 'delete', child: Text('حذف')),
+                    itemBuilder: (_) => [
+                      if (!scene.pendingCloudCleanup)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('تعديل'),
+                        ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          scene.pendingCloudCleanup
+                              ? 'حذف نهائي من Tuya'
+                              : 'حذف',
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -272,20 +288,26 @@ class _FeaturedSceneCard extends StatelessWidget {
                         dimension: 24.r,
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : scene.isManual
+                    : scene.pendingCloudCleanup
                         ? Icon(
-                            Icons.play_circle_fill_rounded,
+                            Icons.cloud_off_rounded,
                             color: accent,
-                            size: 29.r,
+                            size: 27.r,
                           )
-                        : Transform.scale(
-                            scale: .82,
-                            child: Switch.adaptive(
-                              value: scene.enabled,
-                              onChanged: (value) =>
-                                  controller.setSceneEnabled(scene, value),
-                            ),
-                          ),
+                        : scene.isManual
+                            ? Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: accent,
+                                size: 29.r,
+                              )
+                            : Transform.scale(
+                                scale: .82,
+                                child: Switch.adaptive(
+                                  value: scene.enabled,
+                                  onChanged: (value) =>
+                                      controller.setSceneEnabled(scene, value),
+                                ),
+                              ),
               ),
             ],
           ),
@@ -310,7 +332,9 @@ Future<void> _handleSceneMenu(
   if (value != 'delete') return;
   final confirmed = await Get.dialog<bool>(AlertDialog(
     title: const Text('حذف المشهد؟'),
-    content: Text('سيتم حذف ${scene.name} من التطبيق وTuya.'),
+    content: Text(scene.pendingCloudCleanup
+        ? 'سيتم حذف ${scene.name} نهائيًا من Tuya وإزالة السجل المؤرشف.'
+        : 'سيتم حذف ${scene.name} من التطبيق وTuya.'),
     actions: [
       TextButton(
         onPressed: () => Get.back(result: false),
@@ -333,18 +357,22 @@ class _SceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = scene.triggerType == 'schedule'
-        ? const Color(0xFF176B87)
-        : smartHomeAccent;
-    final subtitle = scene.isManual
-        ? '${scene.actions.length} أوامر • تشغيل يدوي'
-        : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
+    final color = scene.pendingCloudCleanup
+        ? const Color(0xFFB42318)
+        : scene.triggerType == 'schedule'
+            ? const Color(0xFF176B87)
+            : smartHomeAccent;
+    final subtitle = scene.pendingCloudCleanup
+        ? 'محذوف من التطبيق وقد يبقى فعالًا في Tuya'
+        : scene.isManual
+            ? '${scene.actions.length} أوامر • تشغيل يدوي'
+            : '${scene.conditions.length} شروط • ${scene.actions.length} أوامر';
     final busy = controller.sceneBusyIds.contains(scene.id);
     return Card(
       margin: EdgeInsets.only(bottom: 9.h),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: scene.isManual && !busy
+        onTap: scene.isManual && !scene.pendingCloudCleanup && !busy
             ? () async {
                 final ok = await controller.executeScene(scene);
                 if (ok) {
@@ -405,6 +433,8 @@ class _SceneCard extends StatelessWidget {
                   height: 24.w,
                   child: const CircularProgressIndicator(strokeWidth: 2),
                 )
+              else if (scene.pendingCloudCleanup)
+                Icon(Icons.cloud_off_rounded, color: color)
               else if (scene.isManual)
                 IconButton(
                   tooltip: 'تشغيل',
@@ -421,9 +451,15 @@ class _SceneCard extends StatelessWidget {
               PopupMenuButton<String>(
                 onSelected: (value) =>
                     _handleSceneMenu(controller, scene, value),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('تعديل')),
-                  PopupMenuItem(value: 'delete', child: Text('حذف')),
+                itemBuilder: (_) => [
+                  if (!scene.pendingCloudCleanup)
+                    const PopupMenuItem(value: 'edit', child: Text('تعديل')),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      scene.pendingCloudCleanup ? 'حذف نهائي من Tuya' : 'حذف',
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -447,6 +483,27 @@ class _SceneExecutionLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (scene.pendingCloudCleanup) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 15, color: Color(0xFFB42318)),
+          SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'بانتظار التنظيف من Tuya',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Color(0xFFB42318),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Obx(() {
       final nativeLog = controller.executionLogForScene(scene);
       final storedAt = scene.lastExecutedAt;

@@ -144,7 +144,9 @@ class SmartHomeController extends GetxController {
   List<SmartSceneModel> get visibleScenes {
     final roomId = selectedRoomId.value;
     if (roomId == null) {
-      return scenes.where((scene) => scene.showOnHome).toList(growable: false);
+      return scenes
+          .where((scene) => scene.pendingCloudCleanup || scene.showOnHome)
+          .toList(growable: false);
     }
     return scenes
         .where(
@@ -472,7 +474,9 @@ class SmartHomeController extends GetxController {
   }
 
   Future<bool> executeScene(SmartSceneModel scene) async {
-    if (scene.tuyaSceneId.isEmpty || sceneBusyIds.contains(scene.id)) {
+    if (scene.pendingCloudCleanup ||
+        scene.tuyaSceneId.isEmpty ||
+        sceneBusyIds.contains(scene.id)) {
       return false;
     }
     sceneBusyIds.add(scene.id);
@@ -508,7 +512,7 @@ class SmartHomeController extends GetxController {
   }
 
   Future<bool> setSceneEnabled(SmartSceneModel scene, bool enabled) async {
-    if (scene.isManual) return true;
+    if (scene.isManual || scene.pendingCloudCleanup) return false;
     sceneBusyIds.add(scene.id);
     try {
       final native = await nativeService.setSceneEnabled(

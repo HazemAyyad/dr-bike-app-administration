@@ -630,6 +630,7 @@ class SmartSceneModel {
     required this.showInRoom,
     required this.lastExecutedAt,
     required this.lastExecutionStatus,
+    required this.pendingCloudCleanup,
   });
 
   final int id;
@@ -648,6 +649,7 @@ class SmartSceneModel {
   final bool showInRoom;
   final DateTime? lastExecutedAt;
   final String lastExecutionStatus;
+  final bool pendingCloudCleanup;
 
   bool get isManual => triggerType == 'manual';
 
@@ -671,6 +673,7 @@ class SmartSceneModel {
             DateTime.tryParse(json['last_executed_at']?.toString() ?? '')
                 ?.toLocal(),
         lastExecutionStatus: json['last_execution_status']?.toString() ?? '',
+        pendingCloudCleanup: json['pending_cloud_cleanup'] == true,
       );
 }
 
