@@ -511,8 +511,14 @@ class SmartHomeNativeService {
     }
   }
 
-  Future<SmartHomeNativeSceneResult> deleteScene(String sceneId) =>
-      _sceneCall('deleteScene', {'sceneId': sceneId});
+  Future<SmartHomeNativeSceneResult> deleteScene({
+    required String sceneId,
+    required String tuyaHomeId,
+  }) =>
+      _sceneCall('deleteScene', {
+        'sceneId': sceneId,
+        'tuyaHomeId': tuyaHomeId,
+      });
 
   Future<SmartHomeNativeSceneResult> setSceneEnabled({
     required String sceneId,

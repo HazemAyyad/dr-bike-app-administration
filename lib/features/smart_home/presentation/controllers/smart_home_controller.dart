@@ -428,7 +428,10 @@ class SmartHomeController extends GetxController {
         enabled: enabled,
       );
       if (!activation.success) {
-        await nativeService.deleteScene(native.sceneId);
+        await nativeService.deleteScene(
+          sceneId: native.sceneId,
+          tuyaHomeId: home.tuyaHomeId,
+        );
         errorMessage(formatVisibleError(
           enabled
               ? 'تم إنشاء المشهد لكن تعذر تفعيل الأتمتة في Tuya'
@@ -462,12 +465,18 @@ class SmartHomeController extends GetxController {
       );
       final oldTuyaId = existing?.tuyaSceneId ?? '';
       if (oldTuyaId.isNotEmpty && oldTuyaId != native.sceneId) {
-        await nativeService.deleteScene(oldTuyaId);
+        await nativeService.deleteScene(
+          sceneId: oldTuyaId,
+          tuyaHomeId: home.tuyaHomeId,
+        );
       }
       _upsertScene(saved);
       return true;
     } catch (error) {
-      await nativeService.deleteScene(native.sceneId);
+      await nativeService.deleteScene(
+        sceneId: native.sceneId,
+        tuyaHomeId: home.tuyaHomeId,
+      );
       errorMessage(error.toString());
       return false;
     }
@@ -542,7 +551,17 @@ class SmartHomeController extends GetxController {
     sceneBusyIds.add(scene.id);
     try {
       if (scene.tuyaSceneId.isNotEmpty) {
-        final native = await nativeService.deleteScene(scene.tuyaSceneId);
+        final home = homes.firstWhereOrNull(
+          (item) => item.id == scene.smartHomeId,
+        );
+        if (home == null || home.tuyaHomeId.isEmpty) {
+          errorMessage('تعذر تحديد منزل Tuya المرتبط بالمشهد');
+          return false;
+        }
+        final native = await nativeService.deleteScene(
+          sceneId: scene.tuyaSceneId,
+          tuyaHomeId: home.tuyaHomeId,
+        );
         if (!native.success) {
           errorMessage(native.message);
           return false;

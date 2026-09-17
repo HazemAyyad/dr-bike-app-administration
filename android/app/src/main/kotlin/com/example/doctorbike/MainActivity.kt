@@ -1087,11 +1087,35 @@ class MainActivity : FlutterFragmentActivity() {
 
     private fun deleteTuyaScene(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
         val sceneId = call.argument<String>("sceneId").orEmpty()
-        if (sceneId.isBlank()) {
-            result.success(sceneResult(false, "", "missing_scene_id", "Missing Tuya scene id"))
+        val homeId = call.argument<String>("tuyaHomeId")?.toLongOrNull() ?: 0L
+        if (sceneId.isBlank() || homeId <= 0L) {
+            result.success(sceneResult(false, "", "missing_scene_arguments", "Missing Tuya scene or home id"))
             return
         }
-        ThingHomeSdk.newSceneInstance(sceneId).deleteScene(sceneCallback(result, sceneId, "Tuya scene deleted"))
+        ThingHomeSdk.getSceneServiceInstance().baseService().deleteSceneWithHomeId(
+            homeId,
+            sceneId,
+            object : ISceneResultCallback<Boolean> {
+                override fun onSuccess(deleted: Boolean) {
+                    if (!deleted) {
+                        result.success(sceneResult(false, sceneId, "scene_delete_rejected", "Tuya did not delete the scene"))
+                    } else {
+                        result.success(sceneResult(true, sceneId, "", "Tuya scene deleted"))
+                    }
+                }
+
+                override fun onError(errorCode: String?, errorMessage: String?) {
+                    result.success(
+                        sceneResult(
+                            false,
+                            sceneId,
+                            safeTuyaErrorCode(errorCode),
+                            safeTuyaErrorMessage(errorCode, errorMessage),
+                        ),
+                    )
+                }
+            },
+        )
     }
 
     private fun setTuyaSceneEnabled(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
