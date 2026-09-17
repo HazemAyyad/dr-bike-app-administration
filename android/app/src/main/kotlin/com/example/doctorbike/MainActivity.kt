@@ -1105,14 +1105,59 @@ class MainActivity : FlutterFragmentActivity() {
                 }
 
                 override fun onError(errorCode: String?, errorMessage: String?) {
-                    result.success(
-                        sceneResult(
-                            false,
-                            sceneId,
-                            safeTuyaErrorCode(errorCode),
-                            safeTuyaErrorMessage(errorCode, errorMessage),
-                        ),
-                    )
+                    if (errorCode.equals("PERMISSION_DENIED", ignoreCase = true)) {
+                        verifyTuyaSceneAbsent(homeId, sceneId) { absent ->
+                            if (absent) {
+                                result.success(
+                                    sceneResult(
+                                        true,
+                                        sceneId,
+                                        "scene_already_absent",
+                                        "Tuya scene is already absent",
+                                    ),
+                                )
+                            } else {
+                                result.success(
+                                    sceneResult(
+                                        false,
+                                        sceneId,
+                                        safeTuyaErrorCode(errorCode),
+                                        safeTuyaErrorMessage(errorCode, errorMessage),
+                                    ),
+                                )
+                            }
+                        }
+                    } else {
+                        result.success(
+                            sceneResult(
+                                false,
+                                sceneId,
+                                safeTuyaErrorCode(errorCode),
+                                safeTuyaErrorMessage(errorCode, errorMessage),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+    }
+
+    private fun verifyTuyaSceneAbsent(
+        homeId: Long,
+        sceneId: String,
+        onComplete: (Boolean) -> Unit,
+    ) {
+        ThingHomeSdk.getSceneServiceInstance().baseService().getSimpleSceneAll(
+            homeId,
+            object : ISceneResultCallback<List<NormalScene>?> {
+                override fun onSuccess(scenes: List<NormalScene>?) {
+                    val availableScenes = scenes.orEmpty()
+                    val target = availableScenes.firstOrNull { it.id == sceneId }
+                    onComplete(target == null)
+                }
+
+                override fun onError(errorCode: String?, errorMessage: String?) {
+                    onComplete(false)
                 }
             },
         )
