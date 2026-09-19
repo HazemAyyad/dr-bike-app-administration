@@ -362,6 +362,66 @@ class SalesOrdersDatasource {
     return response;
   }
 
+  Future<Map<String, dynamic>> fetchPurgePreview(
+    String before,
+    String mode,
+  ) async {
+    final raw = await api.get(
+      EndPoints.salesOrdersPurgePreview,
+      queryParameters: {'before': before, 'mode': mode},
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return Map<String, dynamic>.from(response['data'] as Map? ?? const {});
+  }
+
+  Future<Map<String, dynamic>> purgeOrders({
+    required String before,
+    required int maxOrderId,
+    required String password,
+    required String mode,
+  }) async {
+    final raw = await api.post(
+      EndPoints.salesOrdersPurge,
+      data: {
+        'before': before,
+        'max_order_id': maxOrderId,
+        'password': password,
+        'confirmation': 'DELETE',
+        'mode': mode,
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return response;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchPurgeBackups() async {
+    final raw = await api.get(EndPoints.salesOrdersPurgeBackups);
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return (response['data'] as List? ?? const [])
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> restorePurgeBackup({
+    required int backupId,
+    required String password,
+  }) async {
+    final raw = await api.post(
+      '${EndPoints.salesOrdersPurgeBackups}/$backupId/restore',
+      data: {
+        'password': password,
+        'confirmation': 'RESTORE',
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return response;
+  }
+
   void _ensureSuccess(Map<String, dynamic> response) {
     if (response['status'] != 'success') {
       throw ServerException(

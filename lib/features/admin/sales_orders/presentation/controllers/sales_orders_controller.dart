@@ -2074,6 +2074,97 @@ class SalesOrdersController extends GetxController {
     );
   }
 
+  final RxBool isPurgingOrders = false.obs;
+
+  Future<Map<String, dynamic>?> loadPurgePreview(
+    String before,
+    String mode,
+  ) async {
+    final result = await repository.getPurgePreview(before, mode);
+    return result.fold(
+      (failure) {
+        SalesOrderNotice.error(_humanizeFailure(failure));
+        return null;
+      },
+      (data) => data,
+    );
+  }
+
+  Future<bool> purgeTestOrders({
+    required String before,
+    required int maxOrderId,
+    required String password,
+    required String mode,
+  }) async {
+    if (isPurgingOrders.value) return false;
+    isPurgingOrders.value = true;
+    try {
+      final result = await repository.purgeOrders(
+        before: before,
+        maxOrderId: maxOrderId,
+        password: password,
+        mode: mode,
+      );
+      return await result.fold(
+        (failure) async {
+          SalesOrderNotice.error(_humanizeFailure(failure));
+          return false;
+        },
+        (response) async {
+          final data = Map<String, dynamic>.from(
+            response['data'] as Map? ?? const {},
+          );
+          final count = (data['orders_count'] as num?)?.toInt() ?? 0;
+          toggleBulkMode(false);
+          detail.value = null;
+          await loadOrders();
+          SalesOrderNotice.success('تم حذف $count طلبية تجريبية');
+          return true;
+        },
+      );
+    } finally {
+      isPurgingOrders.value = false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> loadPurgeBackups() async {
+    final result = await repository.getPurgeBackups();
+    return result.fold(
+      (failure) {
+        SalesOrderNotice.error(_humanizeFailure(failure));
+        return null;
+      },
+      (data) => data,
+    );
+  }
+
+  Future<bool> restorePurgeBackup({
+    required int backupId,
+    required String password,
+  }) async {
+    if (isPurgingOrders.value) return false;
+    isPurgingOrders.value = true;
+    try {
+      final result = await repository.restorePurgeBackup(
+        backupId: backupId,
+        password: password,
+      );
+      return await result.fold(
+        (failure) async {
+          SalesOrderNotice.error(_humanizeFailure(failure));
+          return false;
+        },
+        (_) async {
+          await loadOrders();
+          SalesOrderNotice.success('تم استرجاع نسخة الطلبيات بنجاح');
+          return true;
+        },
+      );
+    } finally {
+      isPurgingOrders.value = false;
+    }
+  }
+
   Future<void> archive(int orderId) async {
     await runAction(() => repository.archive(orderId));
   }

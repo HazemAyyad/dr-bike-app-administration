@@ -95,6 +95,25 @@ abstract class SalesOrdersRepository {
     required String action,
   });
 
+  Future<Either<Failure, Map<String, dynamic>>> getPurgePreview(
+    String before,
+    String mode,
+  );
+
+  Future<Either<Failure, Map<String, dynamic>>> purgeOrders({
+    required String before,
+    required int maxOrderId,
+    required String password,
+    required String mode,
+  });
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getPurgeBackups();
+
+  Future<Either<Failure, Map<String, dynamic>>> restorePurgeBackup({
+    required int backupId,
+    required String password,
+  });
+
   Future<Either<Failure, SalesOrderDetailModel>> partialDeliver(
     int orderId,
     List<Map<String, dynamic>> items,
@@ -345,6 +364,41 @@ class SalesOrdersImplement implements SalesOrdersRepository {
     required String action,
   }) =>
       _guard(() => datasource.bulkStatus(orderIds: orderIds, action: action));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getPurgePreview(
+    String before,
+    String mode,
+  ) =>
+      _guard(() => datasource.fetchPurgePreview(before, mode));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> purgeOrders({
+    required String before,
+    required int maxOrderId,
+    required String password,
+    required String mode,
+  }) =>
+      _guard(() => datasource.purgeOrders(
+            before: before,
+            maxOrderId: maxOrderId,
+            password: password,
+            mode: mode,
+          ));
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getPurgeBackups() =>
+      _guard(() => datasource.fetchPurgeBackups());
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> restorePurgeBackup({
+    required int backupId,
+    required String password,
+  }) =>
+      _guard(() => datasource.restorePurgeBackup(
+            backupId: backupId,
+            password: password,
+          ));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> partialDeliver(

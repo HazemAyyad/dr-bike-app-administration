@@ -646,6 +646,9 @@ class EndPoints {
   static const String salesOrderMarkStuck = 'sales/order/mark-stuck';
   static const String salesOrderResolveStuck = 'sales/order/resolve-stuck';
   static const String salesOrdersBulkStatus = 'sales/orders/bulk-status';
+  static const String salesOrdersPurgePreview = 'sales/orders/purge/preview';
+  static const String salesOrdersPurge = 'sales/orders/purge';
+  static const String salesOrdersPurgeBackups = 'sales/orders/purge/backups';
   static const String salesOrderStatement = 'sales/order/statement';
   static const String partnerAddresses = 'partner/addresses';
   static const String partnerAddress = 'partner/address';

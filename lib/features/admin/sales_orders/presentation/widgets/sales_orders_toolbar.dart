@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
@@ -13,6 +14,7 @@ import '../../../sales/presentation/views/delivery_company_accounts_screen.dart'
 import '../controllers/sales_orders_controller.dart';
 
 import 'sales_order_status_ui.dart';
+import 'sales_orders_purge_dialog.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 /// شريط فلتر الحالة + الإجراءات الجماعية.
@@ -27,6 +29,22 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (userType == 'admin')
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => SalesOrdersPurgeDialog.show(
+                  context,
+                  controller,
+                ),
+                icon:
+                    const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+                label: const Text(
+                  'تنظيف الطلبيات التجريبية',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
           Obx(() {
             final active = controller.statusFilter.value;
 
