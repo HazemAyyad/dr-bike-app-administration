@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
@@ -12,6 +13,7 @@ import '../../controllers/assets_controller.dart';
 import '../../widgets/assets_widget/asset_logs.dart';
 import '../../widgets/financial_media_camera.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
+import '../../../../../../core/utils/app_colors.dart';
 
 class AddNewAssetsScreen extends GetView<AssetsController> {
   const AddNewAssetsScreen({Key? key}) : super(key: key);
@@ -72,6 +74,32 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                       ],
                     ),
                     SizedBox(height: 10.h),
+                    if (!controller.isEditing.value) ...[
+                      CustomDropdownFieldWithSearch(
+                        tital: 'box',
+                        hint: 'box',
+                        titalTextStyle:
+                            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: AppColors.primaryColor,
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                        items: controller.purchaseBoxes,
+                        value: controller.purchaseBoxes.firstWhereOrNull(
+                          (box) =>
+                              box.boxId.toString() ==
+                              controller.assetBoxIdController.text,
+                        ),
+                        onChanged: (box) {
+                          controller.assetBoxIdController.text =
+                              box?.boxId.toString() ?? '';
+                        },
+                        itemAsString: (box) =>
+                            '${box.boxName} - (${box.totalBalance.toStringAsFixed(2)} ${box.currency})',
+                        compareFn: (a, b) => a.boxId == b.boxId,
+                      ),
+                      SizedBox(height: 10.h),
+                    ],
                     CustomTextField(
                       controller: controller.noteController,
                       label: 'notes',

@@ -36,5 +36,7 @@ abstract class ProjectRepository {
     required String projectId,
     required String expenses,
     required String notes,
+    String? boxId,
+    String? expenseDate,
   });
 }

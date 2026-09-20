@@ -10,12 +10,16 @@ class GetProjectExpensesSalesUsecase {
     required String projectId,
     required String expenses,
     required String notes,
+    String? boxId,
+    String? expenseDate,
   }) {
     return projectRepository.getProjectExpensesAndSales(
       projectId: projectId,
       isSales: isSales,
       expenses: expenses,
       notes: notes,
+      boxId: boxId,
+      expenseDate: expenseDate,
     );
   }
 }

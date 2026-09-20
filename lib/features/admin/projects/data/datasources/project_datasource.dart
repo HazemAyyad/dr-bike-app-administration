@@ -170,6 +170,8 @@ class ProjectDatasource {
     required String projectId,
     required String expenses,
     required String notes,
+    String? boxId,
+    String? expenseDate,
   }) async {
     try {
       final response = await api.post(
@@ -182,6 +184,9 @@ class ProjectDatasource {
           'project_id': projectId,
           if (expenses.isNotEmpty) 'expenses': expenses,
           if (notes.isNotEmpty) 'notes': notes,
+          if (expenses.isNotEmpty && boxId != null) 'box_id': boxId,
+          if (expenses.isNotEmpty && expenseDate != null)
+            'expense_date': expenseDate,
         },
       );
       return response.data;

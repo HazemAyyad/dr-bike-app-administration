@@ -28,6 +28,7 @@ abstract class FinancialAffairsRepository {
 
   Future<Either<Failure, String>> addNewAssets({
     String? assetId,
+    String? boxId,
     required String assetName,
     required double price,
     required String note,

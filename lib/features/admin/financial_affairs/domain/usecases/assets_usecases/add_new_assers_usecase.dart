@@ -12,6 +12,7 @@ class AddNewAssetsUsecase {
 
   Future<Either<Failure, String>> call({
     String? assetId,
+    String? boxId,
     required String assetName,
     required double price,
     required String note,
@@ -22,6 +23,7 @@ class AddNewAssetsUsecase {
   }) {
     return financialAffairsRepository.addNewAssets(
       assetId: assetId,
+      boxId: boxId,
       assetName: assetName,
       price: price,
       note: note,

@@ -131,6 +131,8 @@ class ProjectImplement implements ProjectRepository {
     required String projectId,
     required String expenses,
     required String notes,
+    String? boxId,
+    String? expenseDate,
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
@@ -141,6 +143,8 @@ class ProjectImplement implements ProjectRepository {
         projectId: projectId,
         expenses: expenses,
         notes: notes,
+        boxId: boxId,
+        expenseDate: expenseDate,
       );
       return result;
     } on ServerException catch (e) {

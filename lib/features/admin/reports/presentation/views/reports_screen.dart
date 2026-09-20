@@ -82,6 +82,19 @@ class ReportsScreen extends GetView<ReportsController> {
         return Icons.inventory_2_outlined;
       case 'income':
         return Icons.stacked_line_chart_outlined;
+      case 'trial_balance':
+        return Icons.balance_outlined;
+      case 'general_ledger':
+        return Icons.menu_book_outlined;
+      case 'balance_sheet':
+        return Icons.account_balance_wallet_outlined;
+      case 'cash_flow':
+        return Icons.swap_vert_circle_outlined;
+      case 'aging_receivable':
+      case 'aging_payable':
+        return Icons.timelapse_outlined;
+      case 'journal':
+        return Icons.library_books_outlined;
       case 'sales_returns':
         return Icons.assignment_return_outlined;
       default:
@@ -340,6 +353,30 @@ class _FiltersBar extends StatelessWidget {
               ),
             ),
           ],
+          if (controller.isAccountingReport) ...[
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'العملة',
+              child: _DropdownChip(
+                value: controller.selectedCurrency.value,
+                items: controller.currencies,
+                onChanged: controller.selectCurrency,
+                fullWidth: true,
+              ),
+            ),
+          ],
+          if (controller.selectedReport.value == 'general_ledger') ...[
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'الحساب المحاسبي',
+              child: _DropdownChip(
+                value: controller.selectedAccountId.value,
+                items: controller.accountItems(),
+                onChanged: controller.selectAccount,
+                fullWidth: true,
+              ),
+            ),
+          ],
           SizedBox(height: 10.h),
           if (controller.selectedReport.value == 'sales') ...[
             _FilterField(
@@ -358,6 +395,18 @@ class _FiltersBar extends StatelessWidget {
                 value: controller.selectedPaymentType.value,
                 items: controller.paymentTypes,
                 onChanged: controller.selectPaymentType,
+                fullWidth: true,
+              ),
+            ),
+          ],
+          if ({'sales', 'boxes'}.contains(controller.selectedReport.value)) ...[
+            SizedBox(height: 10.h),
+            _FilterField(
+              label: 'الصندوق',
+              child: _DropdownChip(
+                value: controller.selectedBoxId.value,
+                items: controller.boxItems(),
+                onChanged: controller.selectBox,
                 fullWidth: true,
               ),
             ),
@@ -421,6 +470,18 @@ class _FiltersBar extends StatelessWidget {
               ),
             ),
           ),
+        if (controller.isAccountingReport)
+          _DropdownChip(
+            value: controller.selectedCurrency.value,
+            items: controller.currencies,
+            onChanged: controller.selectCurrency,
+          ),
+        if (controller.selectedReport.value == 'general_ledger')
+          _DropdownChip(
+            value: controller.selectedAccountId.value,
+            items: controller.accountItems(),
+            onChanged: controller.selectAccount,
+          ),
         if (controller.selectedReport.value == 'sales') ...[
           _DropdownChip(
             value: controller.selectedStatus.value,
@@ -433,6 +494,12 @@ class _FiltersBar extends StatelessWidget {
             onChanged: controller.selectPaymentType,
           ),
         ],
+        if ({'sales', 'boxes'}.contains(controller.selectedReport.value))
+          _DropdownChip(
+            value: controller.selectedBoxId.value,
+            items: controller.boxItems(),
+            onChanged: controller.selectBox,
+          ),
         if (controller.selectedReport.value == 'checks')
           _DropdownChip(
             value: controller.selectedCheckDirection.value,
@@ -700,6 +767,7 @@ class _ReportContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final qualityMessage = controller.accountingQualityMessage();
     if (controller.isLoading.value && controller.activeRows().isEmpty) {
       return SizedBox(
         height: 360.h,
@@ -710,6 +778,25 @@ class _ReportContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (qualityMessage != null) ...[
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(6.r),
+              border: Border.all(color: Colors.orange.withValues(alpha: .45)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                SizedBox(width: 8.w),
+                Expanded(child: Text(qualityMessage)),
+              ],
+            ),
+          ),
+          SizedBox(height: 10.h),
+        ],
         _SummaryGrid(controller: controller),
         SizedBox(height: 12.h),
         _ReportTable(controller: controller),
@@ -1006,6 +1093,7 @@ class _ReportsPdfBuilder {
     final from = controller.reportPeriod['from_date']?.toString() ?? '-';
     final to = controller.reportPeriod['to_date']?.toString() ?? '-';
     final generatedAt = DateTime.now();
+    final qualityMessage = controller.accountingQualityMessage();
 
     doc.addPage(
       pw.MultiPage(
@@ -1051,6 +1139,24 @@ class _ReportsPdfBuilder {
             generatedAt: generatedAt,
             recordsCount: rows.length,
           ),
+          if (qualityMessage != null) ...[
+            pw.SizedBox(height: 8),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#FFF7ED'),
+                border: pw.Border.all(color: PdfColor.fromHex('#F59E0B')),
+              ),
+              child: pw.Text(
+                qualityMessage,
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                    font: bold, color: PdfColor.fromHex('#9A3412')),
+              ),
+            ),
+          ],
           if (summary.isNotEmpty) ...[
             pw.SizedBox(height: 12),
             _sectionTitle('ملخص التقرير', bold),

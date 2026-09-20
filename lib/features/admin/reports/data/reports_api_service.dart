@@ -16,6 +16,7 @@ class ReportsApiService {
     DateTime? toDate,
     String status = 'all',
     String paymentType = 'all',
+    String? boxId,
   }) async {
     try {
       final response = await api.get(
@@ -24,6 +25,7 @@ class ReportsApiService {
           'period': period,
           'status': status,
           'payment_type': paymentType,
+          if (boxId != null && boxId.isNotEmpty) 'box_id': boxId,
           if (fromDate != null) 'from_date': _formatDate(fromDate),
           if (toDate != null) 'to_date': _formatDate(toDate),
         },
@@ -50,6 +52,9 @@ class ReportsApiService {
     String checkDirection = 'all',
     String? personType,
     String? personId,
+    String? boxId,
+    String currency = 'شيكل',
+    String? accountId,
   }) async {
     try {
       final response = await api.get(
@@ -61,6 +66,10 @@ class ReportsApiService {
           if (personType != null && personType.isNotEmpty)
             'person_type': personType,
           if (personId != null && personId.isNotEmpty) 'person_id': personId,
+          if (boxId != null && boxId.isNotEmpty) 'box_id': boxId,
+          'currency': currency,
+          if (accountId != null && accountId.isNotEmpty)
+            'account_id': accountId,
           if (fromDate != null) 'from_date': _formatDate(fromDate),
           if (toDate != null) 'to_date': _formatDate(toDate),
         },
@@ -79,15 +88,12 @@ class ReportsApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> reportPeople() async {
+  Future<Map<String, dynamic>> reportOptions() async {
     try {
       final response = await api.get(EndPoints.adminReportsPeople);
       _throwIfError(response.data);
       final data = Map<String, dynamic>.from(response.data['data'] ?? {});
-      return (data['people'] as List? ?? const [])
-          .whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
-          .toList(growable: false);
+      return data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

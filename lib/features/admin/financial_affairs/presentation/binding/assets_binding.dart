@@ -1,5 +1,7 @@
 import 'package:doctorbike/features/admin/financial_affairs/data/repositories/financial_affairs_implement.dart';
 import 'package:get/get.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 
 import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
 import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
@@ -36,6 +38,9 @@ class AssetsBinding extends Bindings {
         ),
         getDepreciationPreviewUsecase: GetDepreciationPreviewUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        getShownBoxUsecase: GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
         ),
         assetsDetialsUsecase: AssetsDetialsUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),

@@ -91,6 +91,7 @@ class FinancialAffairsDatasource {
   // add new assets
   Future<Map<String, dynamic>> addNewAssets({
     String? assetId,
+    String? boxId,
     required String assetName,
     required double price,
     required String note,
@@ -125,6 +126,7 @@ class FinancialAffairsDatasource {
         assetId != null ? EndPoints.editAsset : EndPoints.addNewAsset,
         data: {
           if (assetId != null) 'asset_id': assetId,
+          if (assetId == null && boxId != null) 'box_id': boxId,
           'name': assetName,
           'price': price,
           'notes': note,

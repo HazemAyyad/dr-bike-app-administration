@@ -12,6 +12,8 @@ import '../../domain/usecases/get_project_details_usecase.dart';
 import '../../domain/usecases/get_project_expenses_sales_usecase.dart';
 import '../../domain/usecases/get_usecase.dart';
 import '../controllers/project_controller.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 
 class ProjectBinding extends Bindings {
   @override
@@ -40,6 +42,9 @@ class ProjectBinding extends Bindings {
         ),
         getProjectExpensesSalesUsecase: GetProjectExpensesSalesUsecase(
           projectRepository: Get.find<ProjectImplement>(),
+        ),
+        getShownBoxUsecase: GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
         ),
       ),
     );

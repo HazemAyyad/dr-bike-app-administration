@@ -22,6 +22,9 @@ import '../utils/financial_report_pdf_builder.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+
 class AssetsController extends GetxController {
   final GetAllFinancialUsecase getAllFinancialUsecase;
   final GetAssetsLogsUsecase getAssetsLogsUsecase;
@@ -30,6 +33,7 @@ class AssetsController extends GetxController {
   final AssetsDetialsUsecase assetsDetialsUsecase;
   final DepreciateOneAssetsUsecase depreciateOneAssetsUsecase;
   final GetDepreciationPreviewUsecase getDepreciationPreviewUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   AssetsController({
     required this.getAllFinancialUsecase,
@@ -39,6 +43,7 @@ class AssetsController extends GetxController {
     required this.assetsDetialsUsecase,
     required this.depreciateOneAssetsUsecase,
     required this.getDepreciationPreviewUsecase,
+    required this.getShownBoxUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -88,6 +93,13 @@ class AssetsController extends GetxController {
   final TextEditingController depreciationRateController =
       TextEditingController();
   final TextEditingController monthsNumberController = TextEditingController();
+  final TextEditingController assetBoxIdController = TextEditingController();
+  final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
+
+  Future<void> getPurchaseBoxes() async {
+    purchaseBoxes.assignAll(await getShownBoxUsecase.call(screen: 3));
+    update();
+  }
 
   RxList<String> list = <String>['delete', 'destruction'].obs;
 
@@ -293,12 +305,20 @@ class AssetsController extends GetxController {
 
   // add new assets
   void addNewAssets(BuildContext context) async {
+    if (!isEditing.value && assetBoxIdController.text.isEmpty) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'اختر صندوق الدفع أولًا.',
+      );
+      return;
+    }
     if (formKey.currentState!.validate()) {
       final wasEditing = isEditing.value;
       isLoading(true);
       assetUploadProgress.value = 0;
       final result = await addNewAssetsUsecase.call(
         assetId: isEditing.value ? assetDetails.value?.id.toString() : null,
+        boxId: isEditing.value ? null : assetBoxIdController.text,
         assetName: assetNameController.text,
         price: double.parse(priceController.text),
         note: noteController.text,
@@ -322,6 +342,7 @@ class AssetsController extends GetxController {
           depreciationRateController.clear();
           monthsNumberController.clear();
           selectedFile.clear();
+          assetBoxIdController.clear();
           isEditing.value = false;
           getAllAssets();
           Future.delayed(
@@ -491,6 +512,7 @@ class AssetsController extends GetxController {
   @override
   void onInit() {
     getAllAssets();
+    getPurchaseBoxes();
     assetsFilter.value = FinacialService().assetsTasks;
     super.onInit();
   }
@@ -505,6 +527,7 @@ class AssetsController extends GetxController {
     noteController.dispose();
     depreciationRateController.dispose();
     monthsNumberController.dispose();
+    assetBoxIdController.dispose();
     super.onClose();
   }
 }

@@ -21,6 +21,10 @@ import '../../domain/usecases/get_project_expenses_sales_usecase.dart';
 import '../../domain/usecases/get_usecase.dart';
 import 'project_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
+import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import 'package:intl/intl.dart';
 
 class ProjectController extends GetxController {
   final GetProjectsUsecase getProjectsUsecase;
@@ -30,6 +34,7 @@ class ProjectController extends GetxController {
   final GetProjectDetailsUsecase getProjectDetailsUsecase;
   final AddProductToProjectUsecase addProductToProjectUsecase;
   final GetProjectExpensesSalesUsecase getProjectExpensesSalesUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   ProjectController({
     required this.getProjectsUsecase,
@@ -39,6 +44,7 @@ class ProjectController extends GetxController {
     required this.getProjectDetailsUsecase,
     required this.addProductToProjectUsecase,
     required this.getProjectExpensesSalesUsecase,
+    required this.getShownBoxUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -55,6 +61,16 @@ class ProjectController extends GetxController {
   final TextEditingController paymentNoteController = TextEditingController();
   final TextEditingController itemIdController = TextEditingController();
   final TextEditingController expensesController = TextEditingController();
+  final TextEditingController projectExpenseBoxIdController =
+      TextEditingController();
+  final TextEditingController projectExpenseDateController =
+      TextEditingController();
+  final RxList<ShownBoxesModel> projectExpenseBoxes = <ShownBoxesModel>[].obs;
+
+  Future<void> getProjectExpenseBoxes() async {
+    projectExpenseBoxes.assignAll(await getShownBoxUsecase.call(screen: 3));
+    update();
+  }
 
   final List<ProjectProductModel> productsIds = [];
 
@@ -179,6 +195,15 @@ class ProjectController extends GetxController {
     String expenses = '',
     String notes = '',
   }) async {
+    if (!isSales &&
+        expenses.isNotEmpty &&
+        projectExpenseBoxIdController.text.isEmpty) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'اختر صندوق الدفع أولًا.',
+      );
+      return;
+    }
     isLoading(true);
 
     final result = await getProjectExpensesSalesUsecase.call(
@@ -186,8 +211,10 @@ class ProjectController extends GetxController {
       projectId: ProjectService().projectDetails.value!.id.toString(),
       expenses: expenses,
       notes: notes,
+      boxId: expenses.isEmpty ? null : projectExpenseBoxIdController.text,
+      expenseDate: expenses.isEmpty ? null : projectExpenseDateController.text,
     );
-    if ((expenses.isEmpty || notes.isEmpty) && !isSales) {
+    if (expenses.isEmpty && !isSales) {
       ProjectService().projectExpenses.value =
           ProjectExpensesModel.fromJson(result);
     } else if (isSales) {
@@ -197,6 +224,9 @@ class ProjectController extends GetxController {
         title: 'success'.tr,
         message: result['message'],
       );
+      projectExpenseBoxIdController.clear();
+      projectExpenseDateController.text =
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
     }
     expensesController.clear();
     notesController.clear();
@@ -426,6 +456,9 @@ class ProjectController extends GetxController {
     getProjects();
     getAllProducts();
     getAllCustomersAndSellers();
+    getProjectExpenseBoxes();
+    projectExpenseDateController.text =
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
     completedProjectsSearch.assignAll(ProjectService().completedProjects);
     ongoingProjectsSearch.assignAll(ProjectService().ongoingProjects);
   }
@@ -441,6 +474,9 @@ class ProjectController extends GetxController {
     paymentNoteController.dispose();
     itemIdController.dispose();
     employeeNameController.dispose();
+    expensesController.dispose();
+    projectExpenseBoxIdController.dispose();
+    projectExpenseDateController.dispose();
     super.onClose();
   }
 }

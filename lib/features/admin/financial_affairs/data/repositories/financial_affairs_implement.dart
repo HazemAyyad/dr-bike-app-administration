@@ -65,6 +65,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
   @override
   Future<Either<Failure, String>> addNewAssets({
     String? assetId,
+    String? boxId,
     required String assetName,
     required double price,
     required String note,
@@ -79,6 +80,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     try {
       final result = await financialAffairsDatasource.addNewAssets(
         assetId: assetId,
+        boxId: boxId,
         assetName: assetName,
         price: price,
         note: note,

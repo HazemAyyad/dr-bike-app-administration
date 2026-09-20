@@ -20,6 +20,9 @@ class ReportsController extends GetxController {
   final RxString selectedCheckDirection = 'all'.obs;
   final RxString selectedPersonType = 'customer'.obs;
   final RxString selectedPersonId = ''.obs;
+  final RxString selectedBoxId = ''.obs;
+  final RxString selectedCurrency = 'شيكل'.obs;
+  final RxString selectedAccountId = ''.obs;
 
   DateTime? fromDate;
   DateTime? toDate;
@@ -29,7 +32,10 @@ class ReportsController extends GetxController {
   List<String> reportColumns = const [];
   List<Map<String, dynamic>> reportRows = const [];
   List<Map<String, dynamic>> reportPeople = const [];
+  List<Map<String, dynamic>> reportBoxes = const [];
+  List<Map<String, dynamic>> reportAccounts = const [];
   Map<String, dynamic> reportPeriod = const {};
+  Map<String, dynamic> reportQuality = const {};
 
   final reports = const [
     {'key': 'sales', 'title': 'تقرير المبيعات'},
@@ -39,6 +45,13 @@ class ReportsController extends GetxController {
     {'key': 'boxes', 'title': 'كشف حساب الصناديق'},
     {'key': 'inventory', 'title': 'كميات وقيمة المخزون'},
     {'key': 'income', 'title': 'قائمة الدخل'},
+    {'key': 'trial_balance', 'title': 'ميزان المراجعة'},
+    {'key': 'general_ledger', 'title': 'دفتر الأستاذ العام'},
+    {'key': 'balance_sheet', 'title': 'الميزانية العمومية'},
+    {'key': 'cash_flow', 'title': 'التدفقات النقدية'},
+    {'key': 'aging_receivable', 'title': 'أعمار الذمم المدينة'},
+    {'key': 'aging_payable', 'title': 'أعمار الذمم الدائنة'},
+    {'key': 'journal', 'title': 'دفتر اليومية'},
     {'key': 'sales_returns', 'title': 'مردودات المبيعات'},
     {'key': 'product_profit', 'title': 'نسبة ربح المنتجات'},
   ];
@@ -77,6 +90,23 @@ class ReportsController extends GetxController {
     {'key': 'seller', 'title': 'مورد'},
   ];
 
+  final currencies = const [
+    {'key': 'شيكل', 'title': 'شيكل'},
+    {'key': 'دولار', 'title': 'دولار'},
+    {'key': 'دينار', 'title': 'دينار'},
+  ];
+
+  bool get isAccountingReport => {
+        'income',
+        'trial_balance',
+        'general_ledger',
+        'balance_sheet',
+        'cash_flow',
+        'aging_receivable',
+        'aging_payable',
+        'journal',
+      }.contains(selectedReport.value);
+
   Future<void> loadSalesReport() async {
     hasLoadedCurrentReport = false;
     isLoading(true);
@@ -88,6 +118,7 @@ class ReportsController extends GetxController {
         toDate: selectedPeriod.value == 'custom' ? toDate : null,
         status: selectedStatus.value,
         paymentType: selectedPaymentType.value,
+        boxId: selectedBoxId.value,
       );
       salesSummary = Map<String, dynamic>.from(data['summary'] ?? {});
       salesRows = (data['rows'] as List? ?? const [])
@@ -125,6 +156,9 @@ class ReportsController extends GetxController {
         checkDirection: selectedCheckDirection.value,
         personType: type == 'statement' ? selectedPersonType.value : null,
         personId: type == 'statement' ? selectedPersonId.value : null,
+        boxId: type == 'boxes' ? selectedBoxId.value : null,
+        currency: selectedCurrency.value,
+        accountId: type == 'general_ledger' ? selectedAccountId.value : null,
       );
       reportSummary = (data['summary'] as List? ?? const [])
           .whereType<Map>()
@@ -138,11 +172,13 @@ class ReportsController extends GetxController {
           .map((row) => Map<String, dynamic>.from(row))
           .toList(growable: false);
       reportPeriod = Map<String, dynamic>.from(data['period'] ?? {});
+      reportQuality = Map<String, dynamic>.from(data['quality'] ?? {});
     } catch (e) {
       reportSummary = const [];
       reportColumns = const [];
       reportRows = const [];
       reportPeriod = const {};
+      reportQuality = const {};
       AppFailureNotice.show(
         title: 'error'.tr,
         message: e.toString(),
@@ -156,10 +192,24 @@ class ReportsController extends GetxController {
 
   Future<void> loadReportPeople() async {
     try {
-      reportPeople = await service.reportPeople();
+      final options = await service.reportOptions();
+      reportPeople = (options['people'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false);
+      reportBoxes = (options['boxes'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false);
+      reportAccounts = (options['accounts'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(growable: false);
       update();
     } catch (e) {
       reportPeople = const [];
+      reportBoxes = const [];
+      reportAccounts = const [];
       AppFailureNotice.show(
         title: 'error'.tr,
         message: e.toString(),
@@ -178,12 +228,20 @@ class ReportsController extends GetxController {
     resetFiltersForReport(key);
     selectedReport.value = key;
     update();
+    if ({'sales', 'statement', 'boxes', 'general_ledger'}.contains(key) &&
+        (reportPeople.isEmpty ||
+            reportBoxes.isEmpty ||
+            (key == 'general_ledger' && reportAccounts.isEmpty))) {
+      await loadReportPeople();
+    }
+    if (key == 'general_ledger' &&
+        selectedAccountId.value.isEmpty &&
+        reportAccounts.isNotEmpty) {
+      selectedAccountId.value = reportAccounts.first['id']?.toString() ?? '';
+    }
     if (key == 'sales') {
       await loadSalesReport();
     } else {
-      if (key == 'statement' && reportPeople.isEmpty) {
-        await loadReportPeople();
-      }
       await loadGenericReport();
     }
   }
@@ -201,6 +259,9 @@ class ReportsController extends GetxController {
     selectedCheckDirection.value = 'all';
     selectedPersonType.value = 'customer';
     selectedPersonId.value = '';
+    selectedBoxId.value = '';
+    selectedCurrency.value = 'شيكل';
+    selectedAccountId.value = '';
     fromDate = null;
     toDate = null;
     salesSummary = const {};
@@ -209,6 +270,7 @@ class ReportsController extends GetxController {
     reportColumns = const [];
     reportRows = const [];
     reportPeriod = const {};
+    reportQuality = const {};
     hasLoadedCurrentReport = false;
     didPromptStatementFilter = false;
   }
@@ -247,6 +309,21 @@ class ReportsController extends GetxController {
 
   void selectPerson(String key) {
     selectedPersonId.value = key;
+    loadGenericReport();
+  }
+
+  void selectBox(String key) {
+    selectedBoxId.value = key;
+    loadCurrentReport();
+  }
+
+  void selectCurrency(String key) {
+    selectedCurrency.value = key;
+    loadCurrentReport();
+  }
+
+  void selectAccount(String key) {
+    selectedAccountId.value = key;
     loadGenericReport();
   }
 
@@ -334,6 +411,71 @@ class ReportsController extends GetxController {
     ];
   }
 
+  List<Map<String, String>> boxItems() {
+    return [
+      {'key': '', 'title': 'كل الصناديق'},
+      ...reportBoxes.map((box) => {
+            'key': box['id']?.toString() ?? '',
+            'title': [box['name'], box['currency']]
+                .where((value) => value != null && value.toString().isNotEmpty)
+                .join(' - '),
+          }),
+    ];
+  }
+
+  List<Map<String, String>> accountItems() {
+    return [
+      {'key': '', 'title': 'اختر الحساب'},
+      ...reportAccounts.map((account) => {
+            'key': account['id']?.toString() ?? '',
+            'title': '${account['code'] ?? ''} - ${account['name_ar'] ?? ''}',
+          }),
+    ];
+  }
+
+  String? accountingQualityMessage() {
+    if (reportQuality.isEmpty || reportQuality['complete'] == true) return null;
+    if (reportQuality['ledger_not_initialized'] == true) {
+      return 'دفتر الأستاذ غير مهيأ بعد. شغّل ترحيلات المحاسبة ثم التهيئة والمطابقة.';
+    }
+    if (reportQuality['coverage_incomplete'] == true) {
+      return 'الفترة المختارة تبدأ قبل تاريخ التهيئة المحاسبية؛ المعروض تقديري من البيانات التشغيلية وليس قائمة نهائية.';
+    }
+    if (reportQuality['ledger_empty'] == true) {
+      return 'دفتر الأستاذ فارغ؛ الأرقام المحاسبية غير مكتملة حتى تنفيذ التهيئة.';
+    }
+    final issues = <String>[];
+    final failures =
+        int.tryParse('${reportQuality['open_failures'] ?? 0}') ?? 0;
+    final clearing = reportQuality['has_unallocated_clearing'] == true;
+    final cash = int.tryParse(
+          '${reportQuality['cash_lines_without_box'] ?? 0}',
+        ) ??
+        0;
+    final parties = int.tryParse(
+          '${reportQuality['receivable_payable_lines_without_party'] ?? 0}',
+        ) ??
+        0;
+    final mismatches = int.tryParse(
+          '${reportQuality['reconciliation_mismatches'] ?? 0}',
+        ) ??
+        0;
+    if (reportQuality['cutover_applied'] == false) {
+      issues.add('الأرصدة الافتتاحية غير مطبقة');
+    }
+    if (reportQuality['cost_coverage_incomplete'] == true) {
+      issues.add('توجد مبيعات بلا تكلفة مخزون مكتملة');
+    }
+    if (failures > 0) issues.add('$failures حركات لم تُرحّل');
+    if (clearing) issues.add('يوجد رصيد بحساب التسوية');
+    if (cash > 0) issues.add('$cash أسطر نقد دون صندوق');
+    if (parties > 0) issues.add('$parties أسطر ذمم دون شخص');
+    if (mismatches > 0) issues.add('$mismatches فروق مطابقة تشغيلية');
+    return issues.isEmpty
+        ? 'جودة البيانات المحاسبية تحتاج مراجعة.'
+        : 'التقرير غير مكتمل: ${issues.join('، ')}.';
+  }
+
   List<String> cellsForRow(Map<String, dynamic> row) {
     switch (selectedReport.value) {
       case 'sales':
@@ -403,10 +545,75 @@ class ReportsController extends GetxController {
           money(row['ending_value']),
         ];
       case 'income':
+        if (row.containsKey('code')) {
+          return [
+            '${row['code'] ?? ''}',
+            '${row['account'] ?? ''}',
+            money(row['debit']),
+            money(row['credit']),
+            money(row['balance']),
+          ];
+        }
         return [
           '${row['account'] ?? ''}',
           money(row['debit']),
           money(row['credit']),
+        ];
+      case 'trial_balance':
+        return [
+          '${row['code'] ?? ''}',
+          '${row['account'] ?? ''}',
+          money(row['opening_debit']),
+          money(row['opening_credit']),
+          money(row['movement_debit']),
+          money(row['movement_credit']),
+          money(row['closing_debit']),
+          money(row['closing_credit']),
+        ];
+      case 'general_ledger':
+        return [
+          '${row['date'] ?? ''}',
+          '${row['entry_number'] ?? ''}',
+          '${row['description'] ?? ''}',
+          money(row['debit']),
+          money(row['credit']),
+          money(row['balance']),
+        ];
+      case 'balance_sheet':
+        return [
+          '${row['section'] ?? ''}',
+          '${row['code'] ?? ''}',
+          '${row['account'] ?? ''}',
+          money(row['balance']),
+        ];
+      case 'cash_flow':
+        return [
+          '${row['section_label'] ?? ''}',
+          '${row['source_type'] ?? ''}',
+          money(row['cash_in']),
+          money(row['cash_out']),
+          money(row['net']),
+        ];
+      case 'aging_receivable':
+      case 'aging_payable':
+        return [
+          '${row['person_name'] ?? ''}',
+          money(row['current']),
+          money(row['days_1_30']),
+          money(row['days_31_60']),
+          money(row['days_61_90']),
+          money(row['over_90']),
+          money(row['balance']),
+        ];
+      case 'journal':
+        return [
+          '${row['date'] ?? ''}',
+          '${row['entry_number'] ?? ''}',
+          '${row['account'] ?? ''}',
+          '${row['description'] ?? ''}',
+          money(row['debit']),
+          money(row['credit']),
+          '${row['source'] ?? ''}',
         ];
       case 'sales_returns':
         return [

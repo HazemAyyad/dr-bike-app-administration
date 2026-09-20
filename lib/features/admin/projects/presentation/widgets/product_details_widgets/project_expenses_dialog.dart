@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
@@ -195,23 +196,64 @@ class ProjectExpensesDialog extends GetView<ProjectController> {
               SizedBox(height: 20.h),
               Form(
                 key: controller.formKey,
-                child: Row(
+                child: Column(
                   children: [
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'projectExpenses',
-                        hintText: 'projectExpenses',
-                        controller: controller.expensesController,
-                        keyboardType: TextInputType.number,
+                    Row(children: [
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'projectExpenses',
+                          hintText: 'projectExpenses',
+                          controller: controller.expensesController,
+                          keyboardType: TextInputType.number,
+                        ),
                       ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: CustomTextField(
+                          label: 'notes',
+                          hintText: 'notes',
+                          controller: controller.notesController,
+                        ),
+                      ),
+                    ]),
+                    SizedBox(height: 10.h),
+                    CustomDropdownFieldWithSearch(
+                      tital: 'box',
+                      hint: 'box',
+                      items: controller.projectExpenseBoxes,
+                      value: controller.projectExpenseBoxes.firstWhereOrNull(
+                        (box) =>
+                            box.boxId.toString() ==
+                            controller.projectExpenseBoxIdController.text,
+                      ),
+                      onChanged: (box) {
+                        controller.projectExpenseBoxIdController.text =
+                            box?.boxId.toString() ?? '';
+                      },
+                      itemAsString: (box) =>
+                          '${box.boxName} - (${box.totalBalance.toStringAsFixed(2)} ${box.currency})',
+                      compareFn: (a, b) => a.boxId == b.boxId,
                     ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'notes',
-                        hintText: 'notes',
-                        controller: controller.notesController,
-                      ),
+                    SizedBox(height: 10.h),
+                    CustomTextField(
+                      controller: controller.projectExpenseDateController,
+                      label: 'date',
+                      hintText: 'date',
+                      readOnly: true,
+                      onTap: () async {
+                        final selected = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.tryParse(controller
+                                  .projectExpenseDateController.text) ??
+                              DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (selected != null) {
+                          controller.projectExpenseDateController.text =
+                              '${selected.year.toString().padLeft(4, '0')}-${selected.month.toString().padLeft(2, '0')}-${selected.day.toString().padLeft(2, '0')}';
+                        }
+                      },
                     ),
                   ],
                 ),
