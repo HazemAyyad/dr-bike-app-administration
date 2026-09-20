@@ -20,7 +20,7 @@ class EmployeeWifiPresenceService {
   static final EmployeeWifiPresenceService instance =
       EmployeeWifiPresenceService._();
 
-  static const Duration _interval = Duration(seconds: 45);
+  static const Duration _interval = Duration(seconds: 60);
   static const MethodChannel _nativeChannel =
       MethodChannel('dr_bike/employee_wifi_presence');
 
@@ -76,15 +76,14 @@ class EmployeeWifiPresenceService {
       return;
     }
     _running = true;
-    _startAfterInitialSend();
+    if (!kIsWeb && Platform.isAndroid) {
+      _startNativeForegroundService();
+      return;
+    }
+    sendOnce();
     _timer = Timer.periodic(_interval, (_) {
       sendOnce();
     });
-  }
-
-  Future<void> _startAfterInitialSend() async {
-    await sendOnce();
-    await _startNativeForegroundService();
   }
 
   void stop() {

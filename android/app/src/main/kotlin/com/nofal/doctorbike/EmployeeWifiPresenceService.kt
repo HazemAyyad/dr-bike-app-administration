@@ -218,7 +218,7 @@ class EmployeeWifiPresenceService : Service() {
         private const val PREFS = "employee_wifi_presence"
         private const val CHANNEL_ID = "dr_bike_employee_attendance_status"
         private const val NOTIFICATION_ID = 2409
-        private const val INTERVAL_MS = 45_000L
+        private const val INTERVAL_MS = 60_000L
         private const val EXTRA_BASE_URL = "base_url"
         private const val EXTRA_TOKEN = "token"
         private const val ACTION_STOP = "com.application.doctorbike.STOP_WIFI_PRESENCE"

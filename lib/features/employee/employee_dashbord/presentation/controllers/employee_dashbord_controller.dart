@@ -64,6 +64,7 @@ class EmployeeDashbordController extends GetxController
   final RxBool wifiPermissionsReady = true.obs;
   final RxBool wifiPermissionsBusy = false.obs;
   final Rxn<WifiPresencePermissionState> wifiPermissionState = Rxn();
+  bool _attendanceRefreshRunning = false;
 
   Future<void> refreshWifiPresencePermissions({
     bool request = false,
@@ -105,6 +106,8 @@ class EmployeeDashbordController extends GetxController
   }
 
   Future<void> refreshTodayAttendance({bool silent = false}) async {
+    if (_attendanceRefreshRunning) return;
+    _attendanceRefreshRunning = true;
     final previous = todayAttendance.value;
     try {
       if (!silent) todayAttendanceLoading.value = true;
@@ -131,6 +134,7 @@ class EmployeeDashbordController extends GetxController
       todayAttendance.value = null;
       _clearStaleWorkSessionIfNeeded();
     } finally {
+      _attendanceRefreshRunning = false;
       if (!silent) todayAttendanceLoading.value = false;
       _syncPersistentAttendanceNotification();
     }
@@ -157,7 +161,7 @@ class EmployeeDashbordController extends GetxController
 
   void _startAttendanceLiveRefresh() {
     _attendanceLiveTimer?.cancel();
-    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       refreshTodayAttendance(silent: true);
     });
   }
