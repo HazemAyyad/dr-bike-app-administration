@@ -24,7 +24,7 @@ void main() {
     await _pump(tester, const ReportsScreen());
 
     expect(controller.reportGroups, hasLength(4));
-    expect(controller.reports, hasLength(16));
+    expect(controller.reports, hasLength(17));
     expect(find.text('تقارير أساسية'), findsOneWidget);
     expect(find.text('تقرير المبيعات'), findsOneWidget);
 
@@ -37,11 +37,12 @@ void main() {
 
     const description =
         'يعرض أرصدة الحسابات المدينة والدائنة للتأكد من توازن القيود.';
+    expect(find.text(description), findsNothing);
     await tester.tap(find.byTooltip(description));
     await tester.pumpAndSettle();
 
     expect(find.text('فهمت'), findsOneWidget);
-    expect(find.text(description), findsNWidgets(2));
+    expect(find.text(description), findsOneWidget);
   });
 
   testWidgets('detail app bar keeps report actions under one menu',

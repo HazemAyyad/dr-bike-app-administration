@@ -131,8 +131,16 @@ class ReportsController extends GetxController {
     },
     {
       'key': 'boxes',
-      'title': 'كشف حساب الصناديق',
-      'description': 'يعرض حركات القبض والصرف والتحويل لكل صندوق.',
+      'title': 'كشف حساب صندوق',
+      'description':
+          'يعرض رصيد البداية وحركات القبض والصرف والرصيد التراكمي لصندوق دائم محدد.',
+      'group': 'operations',
+    },
+    {
+      'key': 'daily_boxes',
+      'title': 'جلسات الصناديق اليومية',
+      'description':
+          'يعرض فتح وإغلاق صناديق المبيعات والطلبيات والصيانة والجرد والفروقات والترحيل.',
       'group': 'operations',
     },
     {
@@ -351,6 +359,11 @@ class ReportsController extends GetxController {
     if (_needsReportOptions(key)) {
       await loadReportOptions(key);
     }
+    if (key == 'boxes' &&
+        selectedBoxId.value.isEmpty &&
+        reportBoxes.isNotEmpty) {
+      selectedBoxId.value = reportBoxes.first['id']?.toString() ?? '';
+    }
     if (key == 'general_ledger' &&
         selectedAccountId.value.isEmpty &&
         reportAccounts.isNotEmpty) {
@@ -560,14 +573,25 @@ class ReportsController extends GetxController {
   }
 
   List<Map<String, String>> boxItems() {
+    final boxes = reportBoxes
+        .map((box) => {
+              'key': box['id']?.toString() ?? '',
+              'title': [box['name'], box['currency']]
+                  .where(
+                      (value) => value != null && value.toString().isNotEmpty)
+                  .join(' - '),
+            })
+        .toList(growable: false);
+    if (selectedReport.value == 'boxes') {
+      return boxes.isEmpty
+          ? const [
+              {'key': '', 'title': 'لا توجد صناديق دائمة'}
+            ]
+          : boxes;
+    }
     return [
       {'key': '', 'title': 'كل الصناديق'},
-      ...reportBoxes.map((box) => {
-            'key': box['id']?.toString() ?? '',
-            'title': [box['name'], box['currency']]
-                .where((value) => value != null && value.toString().isNotEmpty)
-                .join(' - '),
-          }),
+      ...boxes,
     ];
   }
 
@@ -677,13 +701,30 @@ class ReportsController extends GetxController {
       case 'boxes':
         return [
           '${row['date'] ?? ''}',
-          '${row['box'] ?? ''}',
-          '${row['from_box'] ?? ''}',
-          '${row['to_box'] ?? ''}',
+          '${row['reference'] ?? ''}',
           '${row['type'] ?? ''}',
-          money(row['amount']),
-          '${row['currency'] ?? ''}',
           '${row['description'] ?? ''}',
+          money(row['incoming']),
+          money(row['outgoing']),
+          money(row['balance']),
+          '${row['currency'] ?? ''}',
+          '${row['counterparty_box'] ?? ''}',
+        ];
+      case 'daily_boxes':
+        return [
+          '${row['business_date'] ?? ''}',
+          '${row['session_type'] ?? ''}',
+          '${row['employee'] ?? ''}',
+          '${row['box'] ?? ''}',
+          '${row['currency'] ?? ''}',
+          money(row['opening']),
+          money(row['collected']),
+          money(row['expected']),
+          row['physical'] == null ? '-' : money(row['physical']),
+          row['variance'] == null ? '-' : money(row['variance']),
+          money(row['transferred']),
+          '${row['transfer_to'] ?? ''}',
+          '${row['status'] ?? ''}',
         ];
       case 'inventory':
         return [

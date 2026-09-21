@@ -102,6 +102,8 @@ class ReportsScreen extends GetView<ReportsController> {
         return Icons.fact_check_outlined;
       case 'boxes':
         return Icons.account_balance_outlined;
+      case 'daily_boxes':
+        return Icons.point_of_sale_rounded;
       case 'inventory':
         return Icons.inventory_2_outlined;
       case 'income':
@@ -581,51 +583,33 @@ class _ReportCard extends StatelessWidget {
             ),
             SizedBox(width: 10.w),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
                       ),
-                      SizedBox(width: 3.w),
-                      IconButton(
-                        tooltip: description,
-                        onPressed: onInfo,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints.tightFor(
-                          width: 27.w,
-                          height: 27.w,
-                        ),
-                        icon: Icon(
-                          Icons.info_outline_rounded,
-                          size: 17.sp,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5.sp,
-                      height: 1.35,
-                      color: ThemeService.isDark.value
-                          ? Colors.white70
-                          : Colors.blueGrey.shade600,
+                  SizedBox(width: 3.w),
+                  IconButton(
+                    tooltip: description,
+                    onPressed: onInfo,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints.tightFor(
+                      width: 27.w,
+                      height: 27.w,
+                    ),
+                    icon: Icon(
+                      Icons.info_outline_rounded,
+                      size: 17.sp,
+                      color: AppColors.primaryColor,
                     ),
                   ),
                 ],
