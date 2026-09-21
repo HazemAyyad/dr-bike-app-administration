@@ -36,25 +36,139 @@ class ReportsController extends GetxController {
   List<Map<String, dynamic>> reportAccounts = const [];
   Map<String, dynamic> reportPeriod = const {};
   Map<String, dynamic> reportQuality = const {};
+  String? reportError;
+  String reportSearchQuery = '';
 
-  final reports = const [
-    {'key': 'sales', 'title': 'تقرير المبيعات'},
-    {'key': 'balances', 'title': 'أرصدة الزبائن والموردين'},
-    {'key': 'statement', 'title': 'كشف حساب شخص'},
-    {'key': 'checks', 'title': 'الشيكات الصادرة والواردة'},
-    {'key': 'boxes', 'title': 'كشف حساب الصناديق'},
-    {'key': 'inventory', 'title': 'كميات وقيمة المخزون'},
-    {'key': 'income', 'title': 'قائمة الدخل'},
-    {'key': 'trial_balance', 'title': 'ميزان المراجعة'},
-    {'key': 'general_ledger', 'title': 'دفتر الأستاذ العام'},
-    {'key': 'balance_sheet', 'title': 'الميزانية العمومية'},
-    {'key': 'cash_flow', 'title': 'التدفقات النقدية'},
-    {'key': 'aging_receivable', 'title': 'أعمار الذمم المدينة'},
-    {'key': 'aging_payable', 'title': 'أعمار الذمم الدائنة'},
-    {'key': 'journal', 'title': 'دفتر اليومية'},
-    {'key': 'sales_returns', 'title': 'مردودات المبيعات'},
-    {'key': 'product_profit', 'title': 'نسبة ربح المنتجات'},
+  final List<Map<String, String>> reportGroups = const [
+    {'key': 'core', 'title': 'تقارير أساسية'},
+    {'key': 'ledger', 'title': 'الدفاتر والقيود'},
+    {'key': 'position', 'title': 'الذمم والمركز المالي'},
+    {'key': 'operations', 'title': 'المخزون والرقابة التشغيلية'},
   ];
+
+  final List<Map<String, String>> reports = const [
+    {
+      'key': 'sales',
+      'title': 'تقرير المبيعات',
+      'description': 'يعرض الفواتير والمبالغ المدفوعة والمتبقية خلال الفترة.',
+      'group': 'core',
+    },
+    {
+      'key': 'income',
+      'title': 'قائمة الدخل',
+      'description': 'توضح الإيرادات وتكلفة المبيعات والمصاريف وصافي الربح.',
+      'group': 'core',
+    },
+    {
+      'key': 'cash_flow',
+      'title': 'التدفقات النقدية',
+      'description': 'توضح حركة النقد الداخلة والخارجة ورصيد أول وآخر الفترة.',
+      'group': 'core',
+    },
+    {
+      'key': 'product_profit',
+      'title': 'نسبة ربح المنتجات',
+      'description': 'يقارن إيراد كل منتج بتكلفته ويعرض هامش الربح.',
+      'group': 'core',
+    },
+    {
+      'key': 'trial_balance',
+      'title': 'ميزان المراجعة',
+      'description':
+          'يعرض أرصدة الحسابات المدينة والدائنة للتأكد من توازن القيود.',
+      'group': 'ledger',
+    },
+    {
+      'key': 'general_ledger',
+      'title': 'دفتر الأستاذ العام',
+      'description': 'يعرض حركات حساب محدد ورصيده الافتتاحي والختامي بالتفصيل.',
+      'group': 'ledger',
+    },
+    {
+      'key': 'journal',
+      'title': 'دفتر اليومية',
+      'description':
+          'يعرض جميع القيود المحاسبية مرتبة حسب التاريخ ومصدر الحركة.',
+      'group': 'ledger',
+    },
+    {
+      'key': 'balance_sheet',
+      'title': 'الميزانية العمومية',
+      'description': 'تعرض الأصول والالتزامات وحقوق الملكية في تاريخ محدد.',
+      'group': 'position',
+    },
+    {
+      'key': 'aging_receivable',
+      'title': 'أعمار الذمم المدينة',
+      'description':
+          'تصنف المبالغ المستحقة للمحل على الزبائن حسب مدة الاستحقاق.',
+      'group': 'position',
+    },
+    {
+      'key': 'aging_payable',
+      'title': 'أعمار الذمم الدائنة',
+      'description':
+          'تصنف المبالغ المستحقة على المحل للموردين حسب مدة الاستحقاق.',
+      'group': 'position',
+    },
+    {
+      'key': 'balances',
+      'title': 'أرصدة الزبائن والموردين',
+      'description': 'يعرض صافي رصيد كل زبون ومورد بشكل منفصل لكل عملة.',
+      'group': 'position',
+    },
+    {
+      'key': 'statement',
+      'title': 'كشف حساب شخص',
+      'description': 'يعرض حركات ورصيد زبون أو مورد خلال الفترة المختارة.',
+      'group': 'position',
+    },
+    {
+      'key': 'checks',
+      'title': 'الشيكات الصادرة والواردة',
+      'description': 'يعرض قيمة الشيكات وحالتها وأطرافها وتواريخ استحقاقها.',
+      'group': 'operations',
+    },
+    {
+      'key': 'boxes',
+      'title': 'كشف حساب الصناديق',
+      'description': 'يعرض حركات القبض والصرف والتحويل لكل صندوق.',
+      'group': 'operations',
+    },
+    {
+      'key': 'inventory',
+      'title': 'كميات وقيمة المخزون',
+      'description': 'يعرض كميات المنتجات وتكلفتها وقيمة المخزون الحالية.',
+      'group': 'operations',
+    },
+    {
+      'key': 'sales_returns',
+      'title': 'مردودات المبيعات',
+      'description': 'يعرض عمليات الإرجاع وقيم الاسترداد وتأثيرها المالي.',
+      'group': 'operations',
+    },
+  ];
+
+  void setReportSearch(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (reportSearchQuery == normalized) return;
+    reportSearchQuery = normalized;
+    update();
+  }
+
+  List<Map<String, String>> reportsForGroup(String groupKey) {
+    return reports.where((report) {
+      if (report['group'] != groupKey) return false;
+      if (reportSearchQuery.isEmpty) return true;
+      return '${report['title']} ${report['description']}'
+          .toLowerCase()
+          .contains(reportSearchQuery);
+    }).toList(growable: false);
+  }
+
+  bool get hasVisibleReports => reportGroups.any(
+        (group) => reportsForGroup(group['key']!).isNotEmpty,
+      );
 
   final periods = const [
     {'key': 'today', 'title': 'يومي'},
@@ -109,6 +223,7 @@ class ReportsController extends GetxController {
 
   Future<void> loadSalesReport() async {
     hasLoadedCurrentReport = false;
+    reportError = null;
     isLoading(true);
     update();
     try {
@@ -129,9 +244,10 @@ class ReportsController extends GetxController {
     } catch (e) {
       salesSummary = const {};
       salesRows = const [];
+      reportError = _readableError(e);
       AppFailureNotice.show(
         title: 'error'.tr,
-        message: e.toString(),
+        message: reportError!,
       );
     } finally {
       hasLoadedCurrentReport = true;
@@ -145,6 +261,7 @@ class ReportsController extends GetxController {
     if (type.isEmpty || type == 'sales') return;
 
     hasLoadedCurrentReport = false;
+    reportError = null;
     isLoading(true);
     update();
     try {
@@ -179,9 +296,10 @@ class ReportsController extends GetxController {
       reportRows = const [];
       reportPeriod = const {};
       reportQuality = const {};
+      reportError = _readableError(e);
       AppFailureNotice.show(
         title: 'error'.tr,
-        message: e.toString(),
+        message: reportError!,
       );
     } finally {
       hasLoadedCurrentReport = true;
@@ -190,26 +308,34 @@ class ReportsController extends GetxController {
     }
   }
 
-  Future<void> loadReportPeople() async {
+  Future<void> loadReportOptions(String key) async {
     try {
-      final options = await service.reportOptions();
-      reportPeople = (options['people'] as List? ?? const [])
-          .whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
-          .toList(growable: false);
-      reportBoxes = (options['boxes'] as List? ?? const [])
-          .whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
-          .toList(growable: false);
-      reportAccounts = (options['accounts'] as List? ?? const [])
-          .whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
-          .toList(growable: false);
+      final scope = key == 'general_ledger'
+          ? 'accounts'
+          : key == 'statement'
+              ? 'people'
+              : 'boxes';
+      final options = await service.reportOptions(scope: scope);
+      if (options.containsKey('people')) {
+        reportPeople = (options['people'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList(growable: false);
+      }
+      if (options.containsKey('boxes')) {
+        reportBoxes = (options['boxes'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList(growable: false);
+      }
+      if (options.containsKey('accounts')) {
+        reportAccounts = (options['accounts'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList(growable: false);
+      }
       update();
     } catch (e) {
-      reportPeople = const [];
-      reportBoxes = const [];
-      reportAccounts = const [];
       AppFailureNotice.show(
         title: 'error'.tr,
         message: e.toString(),
@@ -218,31 +344,44 @@ class ReportsController extends GetxController {
     }
   }
 
-  Future<void> loadCurrentReport() {
-    return selectedReport.value == 'sales'
-        ? loadSalesReport()
-        : loadGenericReport();
-  }
+  Future<void> loadCurrentReport() async {
+    final key = selectedReport.value;
+    if (key.isEmpty) return;
 
-  Future<void> openReport(String key) async {
-    resetFiltersForReport(key);
-    selectedReport.value = key;
-    update();
-    if ({'sales', 'statement', 'boxes', 'general_ledger'}.contains(key) &&
-        (reportPeople.isEmpty ||
-            reportBoxes.isEmpty ||
-            (key == 'general_ledger' && reportAccounts.isEmpty))) {
-      await loadReportPeople();
+    if (_needsReportOptions(key)) {
+      await loadReportOptions(key);
     }
     if (key == 'general_ledger' &&
         selectedAccountId.value.isEmpty &&
         reportAccounts.isNotEmpty) {
       selectedAccountId.value = reportAccounts.first['id']?.toString() ?? '';
     }
+
     if (key == 'sales') {
       await loadSalesReport();
     } else {
       await loadGenericReport();
+    }
+  }
+
+  Future<void> openReport(String key) async {
+    resetFiltersForReport(key);
+    selectedReport.value = key;
+    update();
+    await loadCurrentReport();
+  }
+
+  bool _needsReportOptions(String key) {
+    switch (key) {
+      case 'statement':
+        return reportPeople.isEmpty;
+      case 'sales':
+      case 'boxes':
+        return reportBoxes.isEmpty;
+      case 'general_ledger':
+        return reportAccounts.isEmpty;
+      default:
+        return false;
     }
   }
 
@@ -271,8 +410,17 @@ class ReportsController extends GetxController {
     reportRows = const [];
     reportPeriod = const {};
     reportQuality = const {};
+    reportError = null;
     hasLoadedCurrentReport = false;
     didPromptStatementFilter = false;
+  }
+
+  String _readableError(Object error) {
+    final text = error.toString().replaceFirst('Exception: ', '').trim();
+    if (text.isEmpty || text == 'null' || text.contains('Unknown error')) {
+      return 'تعذر تحميل التقرير. تحقق من الاتصال وتحديثات الخادم ثم حاول مجددًا.';
+    }
+    return text;
   }
 
   void selectPeriod(String key) {
@@ -435,6 +583,9 @@ class ReportsController extends GetxController {
 
   String? accountingQualityMessage() {
     if (reportQuality.isEmpty || reportQuality['complete'] == true) return null;
+    if (reportQuality['quality_check_failed'] == true) {
+      return 'تم تحميل التقرير، لكن تعذر تنفيذ فحص المطابقة المحاسبية. راجع سجل الخادم قبل اعتماد الأرقام.';
+    }
     if (reportQuality['ledger_not_initialized'] == true) {
       return 'دفتر الأستاذ غير مهيأ بعد. شغّل ترحيلات المحاسبة ثم التهيئة والمطابقة.';
     }

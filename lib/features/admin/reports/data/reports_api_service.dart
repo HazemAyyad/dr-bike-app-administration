@@ -33,14 +33,7 @@ class ReportsApiService {
       _throwIfError(response.data);
       return Map<String, dynamic>.from(response.data['data'] ?? {});
     } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
+      throw _serverException(e);
     }
   }
 
@@ -77,32 +70,21 @@ class ReportsApiService {
       _throwIfError(response.data);
       return Map<String, dynamic>.from(response.data['data'] ?? {});
     } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
+      throw _serverException(e);
     }
   }
 
-  Future<Map<String, dynamic>> reportOptions() async {
+  Future<Map<String, dynamic>> reportOptions({String scope = 'all'}) async {
     try {
-      final response = await api.get(EndPoints.adminReportsPeople);
+      final response = await api.get(
+        EndPoints.adminReportsPeople,
+        queryParameters: {'scope': scope},
+      );
       _throwIfError(response.data);
       final data = Map<String, dynamic>.from(response.data['data'] ?? {});
       return data;
     } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
+      throw _serverException(e);
     }
   }
 
@@ -125,5 +107,24 @@ class ReportsApiService {
         ),
       );
     }
+  }
+
+  ServerException _serverException(DioException error) {
+    final responseData = error.response?.data;
+    final data = responseData is Map
+        ? Map<String, dynamic>.from(responseData)
+        : const <String, dynamic>{};
+    final status = data['status'];
+    return ServerException(
+      ErrorModel(
+        errorMessage: data['message']?.toString() ??
+            error.message ??
+            'تعذر الاتصال بالخادم',
+        status: status is int ? status : error.response?.statusCode ?? 500,
+        data: data['data'] is Map
+            ? Map<String, dynamic>.from(data['data'] as Map)
+            : const <String, dynamic>{},
+      ),
+    );
   }
 }

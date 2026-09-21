@@ -24,43 +24,67 @@ class ReportsScreen extends GetView<ReportsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-        title: 'التقارير',
+        title: 'التقارير المالية',
         action: false,
       ),
       body: GetBuilder<ReportsController>(
-        builder: (_) => LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth > 1100
-                ? 4
-                : constraints.maxWidth < 340
-                    ? 2
-                    : 3;
-            return GridView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: 7.w,
-                mainAxisSpacing: 7.h,
-                childAspectRatio: constraints.maxWidth > 420 ? 2.75 : 1.62,
+        builder: (_) => CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 6.h),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    _ReportSearchField(
+                      onChanged: controller.setReportSearch,
+                    ),
+                    SizedBox(height: 10.h),
+                    const _ReportsIntroBanner(),
+                  ],
+                ),
               ),
-              itemCount: controller.reports.length,
-              itemBuilder: (context, index) {
-                final report = controller.reports[index];
-                return _ReportCard(
-                  title: report['title']!,
-                  icon: _iconForReport(report['key']!),
-                  enabled: true,
-                  onTap: () async {
-                    await controller.openReport(report['key']!);
-                    await Get.toNamed(
-                      AppRoutes.REPORTDETAILSCREEN,
-                      arguments: report,
-                    );
-                  },
-                );
-              },
-            );
-          },
+            ),
+            for (final group in controller.reportGroups)
+              if (controller.reportsForGroup(group['key']!).isNotEmpty) ...[
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 7.h),
+                  sliver: SliverToBoxAdapter(
+                    child: _ReportSectionTitle(title: group['title']!),
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  sliver: SliverList.separated(
+                    itemCount: controller.reportsForGroup(group['key']!).length,
+                    separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                    itemBuilder: (context, index) {
+                      final report =
+                          controller.reportsForGroup(group['key']!)[index];
+                      return _ReportCard(
+                        title: report['title']!,
+                        description: report['description']!,
+                        icon: _iconForReport(report['key']!),
+                        onInfo: () => _showReportInfo(context, report),
+                        onTap: () {
+                          controller.selectReport(report['key']!);
+                          Get.toNamed(
+                            AppRoutes.REPORTDETAILSCREEN,
+                            arguments: report,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            if (!controller.hasVisibleReports)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyReportSearch(query: controller.reportSearchQuery),
+              ),
+            SliverToBoxAdapter(child: SizedBox(height: 24.h)),
+          ],
         ),
       ),
     );
@@ -103,6 +127,247 @@ class ReportsScreen extends GetView<ReportsController> {
   }
 }
 
+class _ReportSearchField extends StatelessWidget {
+  const _ReportSearchField({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'ابحث عن تقرير...',
+        prefixIcon: const Icon(Icons.search_rounded),
+        filled: true,
+        fillColor: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : AppColors.whiteColor2,
+        contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.r),
+          borderSide: BorderSide(
+            color: AppColors.primaryColor.withValues(alpha: .15),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.r),
+          borderSide: BorderSide(
+            color: AppColors.primaryColor.withValues(alpha: .15),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.r),
+          borderSide: const BorderSide(
+            color: AppColors.primaryColor,
+            width: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportsIntroBanner extends StatelessWidget {
+  const _ReportsIntroBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 11.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: .09),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: AppColors.primaryColor.withValues(alpha: .20),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34.w,
+            height: 34.w,
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withValues(alpha: .14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'دليل التقارير',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  'اضغط على أيقونة المعلومات بجانب أي تقرير لمعرفة محتواه وطريقة استخدامه.',
+                  style: TextStyle(
+                    fontSize: 10.5.sp,
+                    height: 1.4,
+                    color: ThemeService.isDark.value
+                        ? Colors.white70
+                        : Colors.blueGrey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportSectionTitle extends StatelessWidget {
+  const _ReportSectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 4.w,
+          height: 20.h,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+        ),
+        SizedBox(width: 7.w),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w900,
+            color: ThemeService.isDark.value
+                ? AppColors.primaryColor
+                : AppColors.secondaryColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyReportSearch extends StatelessWidget {
+  const _EmptyReportSearch({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 44.sp,
+              color: AppColors.primaryColor.withValues(alpha: .65),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'لا يوجد تقرير مطابق لـ "$query"',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showReportInfo(
+  BuildContext context,
+  Map<String, String> report,
+) {
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      icon: const Icon(
+        Icons.info_outline_rounded,
+        color: AppColors.primaryColor,
+      ),
+      title: Text(
+        report['title'] ?? 'معلومات التقرير',
+        textAlign: TextAlign.center,
+      ),
+      content: Text(
+        report['description'] ?? '',
+        textAlign: TextAlign.center,
+        style: const TextStyle(height: 1.6),
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('فهمت'),
+        ),
+      ],
+    ),
+  );
+}
+
+enum _ReportMenuAction { filters, downloadPdf, sharePdf, print }
+
+class _ReportMenuItem extends StatelessWidget {
+  const _ReportMenuItem({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20.sp, color: AppColors.primaryColor),
+        SizedBox(width: 10.w),
+        Text(title),
+      ],
+    );
+  }
+}
+
+Future<void> _handleReportMenuAction({
+  required BuildContext context,
+  required _ReportMenuAction action,
+  required String title,
+  required ReportsController controller,
+}) async {
+  switch (action) {
+    case _ReportMenuAction.filters:
+      _showFiltersSheet(context, controller);
+      return;
+    case _ReportMenuAction.downloadPdf:
+      await _downloadReportPdf(title, controller);
+      return;
+    case _ReportMenuAction.sharePdf:
+      await _shareReportPdf(title, controller);
+      return;
+    case _ReportMenuAction.print:
+      await _printReport(title, controller);
+      return;
+  }
+}
+
 class ReportsDetailScreen extends GetView<ReportsController> {
   const ReportsDetailScreen({Key? key}) : super(key: key);
 
@@ -132,45 +397,50 @@ class ReportsDetailScreen extends GetView<ReportsController> {
         title: title,
         action: false,
         actions: [
-          IconButton(
-            tooltip: 'الفلاتر',
-            onPressed: () => _showFiltersSheet(context, controller),
+          PopupMenuButton<_ReportMenuAction>(
+            tooltip: 'خيارات التقرير',
+            onSelected: (action) => _handleReportMenuAction(
+              context: context,
+              action: action,
+              title: title,
+              controller: controller,
+            ),
             icon: Icon(
-              Icons.tune_rounded,
+              Icons.more_vert_rounded,
               color: ThemeService.isDark.value
                   ? AppColors.primaryColor
                   : AppColors.secondaryColor,
             ),
-          ),
-          IconButton(
-            tooltip: 'PDF',
-            onPressed: () => _downloadReportPdf(title, controller),
-            icon: Icon(
-              Icons.file_download_outlined,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
-          ),
-          IconButton(
-            tooltip: 'مشاركة PDF',
-            onPressed: () => _shareReportPdf(title, controller),
-            icon: Icon(
-              Icons.ios_share_outlined,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
-          ),
-          IconButton(
-            tooltip: 'طباعة',
-            onPressed: () => _printReport(title, controller),
-            icon: Icon(
-              Icons.print_outlined,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _ReportMenuAction.filters,
+                child: _ReportMenuItem(
+                  icon: Icons.tune_rounded,
+                  title: 'الفلاتر',
+                ),
+              ),
+              PopupMenuItem(
+                value: _ReportMenuAction.downloadPdf,
+                child: _ReportMenuItem(
+                  icon: Icons.file_download_outlined,
+                  title: 'تنزيل PDF',
+                ),
+              ),
+              PopupMenuItem(
+                value: _ReportMenuAction.sharePdf,
+                child: _ReportMenuItem(
+                  icon: Icons.ios_share_outlined,
+                  title: 'مشاركة PDF',
+                ),
+              ),
+              PopupMenuItem(
+                value: _ReportMenuAction.print,
+                child: _ReportMenuItem(
+                  icon: Icons.print_outlined,
+                  title: 'طباعة',
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -200,6 +470,9 @@ void _showFiltersSheet(BuildContext context, ReportsController controller) {
   Get.bottomSheet(
     GetBuilder<ReportsController>(
       builder: (_) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * .88,
+        ),
         padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
@@ -207,40 +480,45 @@ void _showFiltersSheet(BuildContext context, ReportsController controller) {
         ),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.tune_rounded, color: AppColors.primaryColor),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'فلاتر التقرير',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w900,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.tune_rounded,
+                      color: AppColors.primaryColor,
                     ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: Get.back,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              _FiltersBar(controller: controller, fullWidth: true),
-              SizedBox(height: 12.h),
-              FilledButton.icon(
-                onPressed: () async {
-                  await controller.loadCurrentReport();
-                  Get.back();
-                },
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('تطبيق'),
-              ),
-            ],
+                    SizedBox(width: 8.w),
+                    Text(
+                      'فلاتر التقرير',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: Get.back,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                _FiltersBar(controller: controller, fullWidth: true),
+                SizedBox(height: 12.h),
+                FilledButton.icon(
+                  onPressed: () async {
+                    await controller.loadCurrentReport();
+                    Get.back();
+                  },
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('تطبيق'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -252,14 +530,16 @@ void _showFiltersSheet(BuildContext context, ReportsController controller) {
 class _ReportCard extends StatelessWidget {
   const _ReportCard({
     required this.title,
+    required this.description,
     required this.icon,
-    required this.enabled,
+    required this.onInfo,
     required this.onTap,
   });
 
   final String title;
+  final String description;
   final IconData icon;
-  final bool enabled;
+  final VoidCallback onInfo;
   final VoidCallback onTap;
 
   @override
@@ -271,42 +551,91 @@ class _ReportCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(6.r),
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 7.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(6.r),
+          borderRadius: BorderRadius.circular(10.r),
           border: Border.all(
-            color:
-                AppColors.primaryColor.withValues(alpha: enabled ? .24 : .10),
+            color: AppColors.primaryColor.withValues(alpha: .16),
           ),
+          boxShadow: ThemeService.isDark.value
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .035),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Row(
           children: [
             Container(
-              width: 28.w,
-              height: 28.w,
+              width: 42.w,
+              height: 42.w,
               decoration: BoxDecoration(
                 color: AppColors.primaryColor.withValues(alpha: .10),
-                borderRadius: BorderRadius.circular(6.r),
+                borderRadius: BorderRadius.circular(9.r),
               ),
-              child: Icon(icon, color: AppColors.primaryColor, size: 16.sp),
+              child: Icon(icon, color: AppColors.primaryColor, size: 21.sp),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 3.w),
+                      IconButton(
+                        tooltip: description,
+                        onPressed: onInfo,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints.tightFor(
+                          width: 27.w,
+                          height: 27.w,
+                        ),
+                        icon: Icon(
+                          Icons.info_outline_rounded,
+                          size: 17.sp,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5.sp,
+                      height: 1.35,
+                      color: ThemeService.isDark.value
+                          ? Colors.white70
+                          : Colors.blueGrey.shade600,
+                    ),
+                  ),
+                ],
+              ),
             ),
             SizedBox(width: 6.w),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11.5.sp,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
             Icon(
               Icons.chevron_left_rounded,
               color: AppColors.primaryColor,
-              size: 18.sp,
+              size: 21.sp,
             ),
           ],
         ),
@@ -775,6 +1104,13 @@ class _ReportContent extends StatelessWidget {
       );
     }
 
+    if (controller.reportError != null) {
+      return _ReportError(
+        message: controller.reportError!,
+        onRetry: controller.loadCurrentReport,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -834,7 +1170,7 @@ class _SummaryGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final item = cards[index];
             return Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
                     ? AppColors.customGreyColor4
@@ -847,10 +1183,12 @@ class _SummaryGrid extends StatelessWidget {
                 children: [
                   Text(
                     item['title'].toString(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 10.5.sp, fontWeight: FontWeight.w700),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
                     '${item['value'] ?? 0}',
                     maxLines: 1,
@@ -867,6 +1205,48 @@ class _SummaryGrid extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _ReportError extends StatelessWidget {
+  const _ReportError({required this.message, required this.onRetry});
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: 280.h),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.red.withValues(alpha: .28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.red),
+              SizedBox(height: 8.h),
+              SelectableText(
+                message,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 12.h),
+              FilledButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
