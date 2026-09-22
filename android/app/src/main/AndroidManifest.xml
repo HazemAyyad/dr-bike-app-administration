@@ -123,6 +123,14 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/smart_device_widget_info" />
         </receiver>
+        <activity
+            android:name=".SmartDeviceWidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
         <service
             android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
             android:exported="false"

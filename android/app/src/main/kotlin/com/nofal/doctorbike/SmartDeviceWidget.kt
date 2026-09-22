@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import com.thingclips.smart.android.user.api.ILoginCallback
@@ -27,27 +28,17 @@ class SmartDeviceWidget : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        appWidgetIds.forEach { updateWidget(context, appWidgetManager, it) }
+        Log.d(TAG, "onUpdate widgetIds=${appWidgetIds.joinToString()}")
+        appWidgetIds.forEach { widgetId ->
+            if (readWidgetData(context, widgetId) == null) {
+                configurePendingWidget(context, widgetId, updateNow = false)
+            }
+            updateWidget(context, appWidgetManager, widgetId)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (intent.action == ACTION_WIDGET_PINNED) {
-            val widgetId = intent.getIntExtra(
-                AppWidgetManager.EXTRA_APPWIDGET_ID,
-                AppWidgetManager.INVALID_APPWIDGET_ID,
-            )
-            val token = intent.getStringExtra(EXTRA_CONFIG_TOKEN).orEmpty()
-            val pendingData = pendingPreferences(context).getString(token, null)
-            if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID && pendingData != null) {
-                widgetPreferences(context).edit()
-                    .putString(widgetKey(widgetId), pendingData)
-                    .apply()
-                pendingPreferences(context).edit().remove(token).apply()
-                updateWidget(context, AppWidgetManager.getInstance(context), widgetId)
-            }
-            return
-        }
         if (intent.action != ACTION_TOGGLE_SWITCH) return
 
         val index = intent.getIntExtra(EXTRA_SWITCH_INDEX, -1)
@@ -56,6 +47,10 @@ class SmartDeviceWidget : AppWidgetProvider() {
             AppWidgetManager.INVALID_APPWIDGET_ID,
         )
         val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context) ?: return
+        Log.d(
+            TAG,
+            "toggle widgetId=$widgetId deviceId=${data.optInt(KEY_DEVICE_ID)} index=$index",
+        )
         val tuyaDeviceId = data.optString(KEY_TUYA_DEVICE_ID)
         val switches = data.optJSONArray(KEY_SWITCHES) ?: JSONArray()
         val toggleAll = index == ALL_SWITCHES_INDEX
@@ -178,6 +173,11 @@ class SmartDeviceWidget : AppWidgetProvider() {
         widgetId: Int,
     ) {
         val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context)
+        Log.d(
+            TAG,
+            "render widgetId=$widgetId source=${if (readWidgetData(context, widgetId) != null) "instance" else "legacy"} " +
+                "deviceId=${data?.optInt(KEY_DEVICE_ID)} name=${data?.optString(KEY_NAME)}",
+        )
         val name = data?.optString(KEY_NAME)?.takeIf { it.isNotBlank() } ?: "جهاز ذكي"
         val room = data?.optString(KEY_ROOM).orEmpty()
         val status = data?.optString(KEY_STATUS)?.takeIf { it.isNotBlank() } ?: "غير معروف"
@@ -264,11 +264,9 @@ class SmartDeviceWidget : AppWidgetProvider() {
     }
 
     companion object {
-        private const val ACTION_WIDGET_PINNED =
-            "com.application.doctorbike.SMART_DEVICE_WIDGET_PINNED"
+        private const val TAG = "SmartDeviceWidgetFlow"
         private const val ACTION_TOGGLE_SWITCH =
             "com.application.doctorbike.SMART_DEVICE_WIDGET_TOGGLE"
-        private const val EXTRA_CONFIG_TOKEN = "config_token"
         private const val EXTRA_SWITCH_INDEX = "switch_index"
         private const val ALL_SWITCHES_INDEX = -2
         private const val WIDGET_PREFS = "smart_device_widget_instances"
@@ -293,28 +291,79 @@ class SmartDeviceWidget : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             if (!manager.isRequestPinAppWidgetSupported) return false
             val token = UUID.randomUUID().toString()
-            pendingPreferences(context).edit().clear().putString(token, config).apply()
-            val callbackIntent = Intent(context, SmartDeviceWidget::class.java).apply {
-                action = ACTION_WIDGET_PINNED
-                data = Uri.parse("doctorbike://smart_device/pinned/$token")
-                putExtra(EXTRA_CONFIG_TOKEN, token)
-            }
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    PendingIntent.FLAG_MUTABLE
-                } else {
-                    0
-                }
-            val callback = PendingIntent.getBroadcast(
-                context,
-                token.hashCode(),
-                callbackIntent,
-                flags,
-            )
             val provider = ComponentName(context, SmartDeviceWidget::class.java)
-            val requested = manager.requestPinAppWidget(provider, null, callback)
+            val knownWidgetIds = manager.getAppWidgetIds(provider)
+            val pendingRecord = JSONObject().apply {
+                put("config", JSONObject(config))
+                put("known_widget_ids", JSONArray(knownWidgetIds.toList()))
+            }
+            pendingPreferences(context).edit()
+                .clear()
+                .putString(token, pendingRecord.toString())
+                .apply()
+            val device = JSONObject(config)
+            Log.d(
+                TAG,
+                "requestPin token=$token deviceId=${device.optInt(KEY_DEVICE_ID)} " +
+                    "name=${device.optString(KEY_NAME)} knownWidgetIds=${knownWidgetIds.joinToString()}",
+            )
+            val requested = manager.requestPinAppWidget(provider, null, null)
+            Log.d(TAG, "requestPin result=$requested token=$token")
             if (!requested) pendingPreferences(context).edit().remove(token).apply()
             return requested
+        }
+
+        fun configurePendingWidget(
+            context: Context,
+            widgetId: Int,
+            updateNow: Boolean = true,
+        ): Boolean {
+            if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return false
+            val preferences = pendingPreferences(context)
+            val entry = preferences.all.entries.firstOrNull()
+            if (entry == null) {
+                Log.e(TAG, "configure widgetId=$widgetId failed: no pending config")
+                return false
+            }
+            val pendingRaw = entry.value as? String
+            if (pendingRaw == null) {
+                Log.e(TAG, "configure widgetId=$widgetId failed: pending config is not text")
+                return false
+            }
+            val pendingRecord = try {
+                JSONObject(pendingRaw)
+            } catch (_: Exception) {
+                Log.e(TAG, "configure widgetId=$widgetId failed: invalid pending data")
+                return false
+            }
+            val knownWidgetIds = pendingRecord.optJSONArray("known_widget_ids") ?: JSONArray()
+            if ((0 until knownWidgetIds.length()).any { knownWidgetIds.optInt(it) == widgetId }) {
+                Log.d(TAG, "configure widgetId=$widgetId skipped: widget existed before request")
+                return false
+            }
+            val device = pendingRecord.optJSONObject("config")
+            if (device == null) {
+                Log.e(TAG, "configure widgetId=$widgetId failed: config missing")
+                return false
+            }
+            val config = device.toString()
+            Log.d(
+                TAG,
+                "configure widgetId=$widgetId deviceId=${device.optInt(KEY_DEVICE_ID)} " +
+                    "name=${device.optString(KEY_NAME)} token=${entry.key}",
+            )
+            widgetPreferences(context).edit()
+                .putString(widgetKey(widgetId), config)
+                .apply()
+            preferences.edit().remove(entry.key).apply()
+            if (updateNow) {
+                SmartDeviceWidget().updateWidget(
+                    context,
+                    AppWidgetManager.getInstance(context),
+                    widgetId,
+                )
+            }
+            return true
         }
 
         private fun widgetPreferences(context: Context) =
