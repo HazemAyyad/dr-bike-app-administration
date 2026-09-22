@@ -2425,12 +2425,17 @@ Future<void> _showPinDeviceWidgetSheet({
     isScrollControlled: true,
   );
   if (confirmed != true) return;
+  final tuyaHomeId = controller.homes
+          .firstWhereOrNull((home) => home.id == device.smartHomeId)
+          ?.tuyaHomeId ??
+      '';
   final pinned = await AppHomeWidgetService.instance.pinSmartDeviceWidget(
     deviceId: device.id,
     deviceName: device.name,
     roomName: device.roomName,
     online: device.online,
     tuyaDeviceId: device.tuyaDeviceId,
+    tuyaHomeId: tuyaHomeId,
     tuyaCountryCode: uidLogin?.countryCode ?? '',
     tuyaUid: uidLogin?.uid ?? '',
     tuyaPassword: uidLogin?.password ?? '',

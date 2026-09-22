@@ -15,6 +15,8 @@ import android.widget.RemoteViews
 import com.thingclips.smart.android.user.api.ILoginCallback
 import com.thingclips.smart.android.user.bean.User
 import com.thingclips.smart.home.sdk.ThingHomeSdk
+import com.thingclips.smart.home.sdk.bean.HomeBean
+import com.thingclips.smart.home.sdk.callback.IThingHomeResultCallback
 import com.thingclips.smart.sdk.api.IResultCallback
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
@@ -52,6 +54,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
             "toggle widgetId=$widgetId deviceId=${data.optInt(KEY_DEVICE_ID)} index=$index",
         )
         val tuyaDeviceId = data.optString(KEY_TUYA_DEVICE_ID)
+        val tuyaHomeId = data.optString(KEY_TUYA_HOME_ID)
         val switches = data.optJSONArray(KEY_SWITCHES) ?: JSONArray()
         val toggleAll = index == ALL_SWITCHES_INDEX
         if (switches.length() == 0 || tuyaDeviceId.isBlank()) return
@@ -89,6 +92,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
             publishToggle(
                 context,
                 tuyaDeviceId,
+                tuyaHomeId,
                 payload.toString(),
                 nextValue,
                 switches,
@@ -105,9 +109,11 @@ class SmartDeviceWidget : AppWidgetProvider() {
             password,
             object : ILoginCallback {
                 override fun onSuccess(user: User) {
+                    Log.d(TAG, "Tuya login succeeded widgetId=$widgetId")
                     publishToggle(
                         context,
                         tuyaDeviceId,
+                        tuyaHomeId,
                         payload.toString(),
                         nextValue,
                         switches,
@@ -118,6 +124,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 }
 
                 override fun onError(code: String?, error: String?) {
+                    Log.e(TAG, "Tuya login failed widgetId=$widgetId code=$code error=$error")
                     data.put(KEY_STATUS, "تعذر تسجيل Tuya")
                     saveWidgetData(context, widgetId, data)
                     refreshWidget(context, widgetId)
@@ -130,6 +137,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
     private fun publishToggle(
         context: Context,
         tuyaDeviceId: String,
+        tuyaHomeId: String,
         payload: String,
         nextValue: Boolean,
         switches: JSONArray,
@@ -137,10 +145,68 @@ class SmartDeviceWidget : AppWidgetProvider() {
         widgetId: Int,
         onDone: () -> Unit,
     ) {
-        ThingHomeSdk.newDeviceInstance(tuyaDeviceId).publishDps(
+        val publish = {
+            publishToggleToDevice(
+                context,
+                tuyaDeviceId,
+                payload,
+                nextValue,
+                switches,
+                switchIndex,
+                widgetId,
+                onDone,
+            )
+        }
+        if (ThingHomeSdk.getDataInstance().getDeviceBean(tuyaDeviceId) != null) {
+            publish()
+            return
+        }
+        val homeId = tuyaHomeId.toLongOrNull()
+        if (homeId == null || homeId <= 0L) {
+            Log.e(TAG, "publish failed widgetId=$widgetId: device cache empty and homeId missing")
+            markToggleFailure(context, widgetId)
+            onDone()
+            return
+        }
+        val home = ThingHomeSdk.newHomeInstance(homeId)
+        home.getHomeDetail(object : IThingHomeResultCallback {
+            override fun onSuccess(bean: HomeBean) {
+                Log.d(TAG, "home refresh succeeded widgetId=$widgetId homeId=$homeId")
+                if (ThingHomeSdk.getDataInstance().getDeviceBean(tuyaDeviceId) == null) {
+                    Log.e(TAG, "publish failed widgetId=$widgetId: device absent after home refresh")
+                    markToggleFailure(context, widgetId)
+                    onDone()
+                } else {
+                    publish()
+                }
+                home.onDestroy()
+            }
+
+            override fun onError(code: String?, error: String?) {
+                Log.e(TAG, "home refresh failed widgetId=$widgetId homeId=$homeId code=$code error=$error")
+                markToggleFailure(context, widgetId)
+                onDone()
+                home.onDestroy()
+            }
+        })
+    }
+
+    private fun publishToggleToDevice(
+        context: Context,
+        tuyaDeviceId: String,
+        payload: String,
+        nextValue: Boolean,
+        switches: JSONArray,
+        switchIndex: Int?,
+        widgetId: Int,
+        onDone: () -> Unit,
+    ) {
+        val device = ThingHomeSdk.newDeviceInstance(tuyaDeviceId)
+        device.publishDps(
             payload,
             object : IResultCallback {
                 override fun onSuccess() {
+                    Log.d(TAG, "publish succeeded widgetId=$widgetId deviceId=$tuyaDeviceId")
                     if (switchIndex == null) {
                         for (index in 0 until switches.length()) {
                             switches.optJSONObject(index)?.put("active", nextValue)
@@ -153,18 +219,25 @@ class SmartDeviceWidget : AppWidgetProvider() {
                     data.put(KEY_STATUS, "متصل")
                     saveWidgetData(context, widgetId, data)
                     refreshWidget(context, widgetId)
+                    device.onDestroy()
                     onDone()
                 }
 
                 override fun onError(code: String?, error: String?) {
-                    val data = readWidgetData(context, widgetId) ?: JSONObject()
-                    data.put(KEY_STATUS, "تعذر التنفيذ")
-                    saveWidgetData(context, widgetId, data)
-                    refreshWidget(context, widgetId)
+                    Log.e(TAG, "publish failed widgetId=$widgetId deviceId=$tuyaDeviceId code=$code error=$error")
+                    markToggleFailure(context, widgetId)
+                    device.onDestroy()
                     onDone()
                 }
             },
         )
+    }
+
+    private fun markToggleFailure(context: Context, widgetId: Int) {
+        val data = readWidgetData(context, widgetId) ?: JSONObject()
+        data.put(KEY_STATUS, "تعذر التنفيذ")
+        saveWidgetData(context, widgetId, data)
+        refreshWidget(context, widgetId)
     }
 
     private fun updateWidget(
@@ -276,6 +349,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
         private const val KEY_ROOM = "room"
         private const val KEY_STATUS = "status"
         private const val KEY_TUYA_DEVICE_ID = "tuya_device_id"
+        private const val KEY_TUYA_HOME_ID = "tuya_home_id"
         private const val KEY_TUYA_COUNTRY_CODE = "tuya_country_code"
         private const val KEY_TUYA_UID = "tuya_uid"
         private const val KEY_TUYA_PASSWORD = "tuya_password"
@@ -399,6 +473,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 put(KEY_ROOM, data.getString("smart_device_widget_room", null).orEmpty())
                 put(KEY_STATUS, data.getString("smart_device_widget_status", null).orEmpty())
                 put(KEY_TUYA_DEVICE_ID, data.getString("smart_device_widget_tuya_id", null).orEmpty())
+                put(KEY_TUYA_HOME_ID, "")
                 put(KEY_TUYA_COUNTRY_CODE, data.getString("smart_device_widget_tuya_country_code", null).orEmpty())
                 put(KEY_TUYA_UID, data.getString("smart_device_widget_tuya_uid", null).orEmpty())
                 put(KEY_TUYA_PASSWORD, data.getString("smart_device_widget_tuya_password", null).orEmpty())
