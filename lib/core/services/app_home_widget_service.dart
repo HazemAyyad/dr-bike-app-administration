@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -20,6 +21,7 @@ class AppHomeWidgetService {
   static const androidWidgetName = 'AddSpecialTaskWidget';
   static const iosWidgetName = 'AddSpecialTaskWidget';
   static const androidSmartDeviceWidgetName = 'SmartDeviceWidget';
+  static const _smartHomeChannel = MethodChannel('dr_bike/smart_home');
   static const widgetLaunchUri =
       'doctorbike://add_special_task?homeWidget=true';
 
@@ -85,45 +87,22 @@ class AppHomeWidgetService {
       return false;
     }
     try {
-      await HomeWidget.setAppGroupId(appGroupId);
-      await HomeWidget.saveWidgetData<int>('smart_device_widget_id', deviceId);
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_name',
-        deviceName,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_room',
-        roomName,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_status',
-        online ? 'متصل' : 'غير متصل',
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_tuya_id',
-        tuyaDeviceId,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_tuya_country_code',
-        tuyaCountryCode,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_tuya_uid',
-        tuyaUid,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_tuya_password',
-        tuyaPassword,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'smart_device_widget_switches',
-        jsonEncode(switches.take(4).toList(growable: false)),
-      );
-      await HomeWidget.updateWidget(androidName: androidSmartDeviceWidgetName);
-      await HomeWidget.requestPinWidget(
-        androidName: androidSmartDeviceWidgetName,
-      );
-      return true;
+      final config = jsonEncode(<String, dynamic>{
+        'device_id': deviceId,
+        'name': deviceName,
+        'room': roomName,
+        'status': online ? 'متصل' : 'غير متصل',
+        'tuya_device_id': tuyaDeviceId,
+        'tuya_country_code': tuyaCountryCode,
+        'tuya_uid': tuyaUid,
+        'tuya_password': tuyaPassword,
+        'switches': switches.take(4).toList(growable: false),
+      });
+      return await _smartHomeChannel.invokeMethod<bool>(
+            'pinDeviceWidget',
+            <String, dynamic>{'config': config},
+          ) ??
+          false;
     } catch (e, st) {
       debugPrint('[AppHomeWidget] device widget pin failed: $e\n$st');
       return false;

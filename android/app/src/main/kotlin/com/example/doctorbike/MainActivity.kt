@@ -221,6 +221,12 @@ class MainActivity : FlutterFragmentActivity() {
                     "getSceneLogs" -> getTuyaSceneLogs(call, result)
                     "deleteScene" -> deleteTuyaScene(call, result)
                     "setSceneEnabled" -> setTuyaSceneEnabled(call, result)
+                    "pinDeviceWidget" -> result.success(
+                        SmartDeviceWidget.requestPin(
+                            applicationContext,
+                            call.argument<String>("config").orEmpty(),
+                        )
+                    )
                     "stopPairing" -> {
                         stopSmartHomeActivator()
                         result.success(true)

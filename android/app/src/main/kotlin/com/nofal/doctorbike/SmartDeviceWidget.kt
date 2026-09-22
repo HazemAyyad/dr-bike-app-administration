@@ -3,6 +3,7 @@ package com.application.doctorbike
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.os.Build
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -18,6 +19,7 @@ import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 
 class SmartDeviceWidget : AppWidgetProvider() {
     override fun onUpdate(
@@ -30,12 +32,32 @@ class SmartDeviceWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        if (intent.action == ACTION_WIDGET_PINNED) {
+            val widgetId = intent.getIntExtra(
+                AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID,
+            )
+            val token = intent.getStringExtra(EXTRA_CONFIG_TOKEN).orEmpty()
+            val pendingData = pendingPreferences(context).getString(token, null)
+            if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID && pendingData != null) {
+                widgetPreferences(context).edit()
+                    .putString(widgetKey(widgetId), pendingData)
+                    .apply()
+                pendingPreferences(context).edit().remove(token).apply()
+                updateWidget(context, AppWidgetManager.getInstance(context), widgetId)
+            }
+            return
+        }
         if (intent.action != ACTION_TOGGLE_SWITCH) return
 
         val index = intent.getIntExtra(EXTRA_SWITCH_INDEX, -1)
-        val data = HomeWidgetPlugin.getData(context)
-        val tuyaDeviceId = data.getString(KEY_TUYA_DEVICE_ID, null).orEmpty()
-        val switches = readSwitches(data.getString(KEY_SWITCHES, null))
+        val widgetId = intent.getIntExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID,
+        )
+        val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context) ?: return
+        val tuyaDeviceId = data.optString(KEY_TUYA_DEVICE_ID)
+        val switches = data.optJSONArray(KEY_SWITCHES) ?: JSONArray()
         val toggleAll = index == ALL_SWITCHES_INDEX
         if (switches.length() == 0 || tuyaDeviceId.isBlank()) return
         if (!toggleAll && index !in 0 until switches.length()) return
@@ -61,12 +83,13 @@ class SmartDeviceWidget : AppWidgetProvider() {
         if (payload.length() == 0) return
         val pendingResult = goAsync()
 
-        data.edit().putString(KEY_STATUS, "جاري التنفيذ...").apply()
-        refreshAll(context)
+        data.put(KEY_STATUS, "جاري التنفيذ...")
+        saveWidgetData(context, widgetId, data)
+        refreshWidget(context, widgetId)
 
-        val countryCode = data.getString(KEY_TUYA_COUNTRY_CODE, null).orEmpty()
-        val uid = data.getString(KEY_TUYA_UID, null).orEmpty()
-        val password = data.getString(KEY_TUYA_PASSWORD, null).orEmpty()
+        val countryCode = data.optString(KEY_TUYA_COUNTRY_CODE)
+        val uid = data.optString(KEY_TUYA_UID)
+        val password = data.optString(KEY_TUYA_PASSWORD)
         if (countryCode.isBlank() || uid.isBlank() || password.isBlank()) {
             publishToggle(
                 context,
@@ -75,6 +98,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 nextValue,
                 switches,
                 if (toggleAll) null else index,
+                widgetId,
                 pendingResult::finish,
             )
             return
@@ -93,13 +117,15 @@ class SmartDeviceWidget : AppWidgetProvider() {
                         nextValue,
                         switches,
                         if (toggleAll) null else index,
+                        widgetId,
                         pendingResult::finish,
                     )
                 }
 
                 override fun onError(code: String?, error: String?) {
-                    data.edit().putString(KEY_STATUS, "تعذر تسجيل Tuya").apply()
-                    refreshAll(context)
+                    data.put(KEY_STATUS, "تعذر تسجيل Tuya")
+                    saveWidgetData(context, widgetId, data)
+                    refreshWidget(context, widgetId)
                     pendingResult.finish()
                 }
             },
@@ -113,9 +139,9 @@ class SmartDeviceWidget : AppWidgetProvider() {
         nextValue: Boolean,
         switches: JSONArray,
         switchIndex: Int?,
+        widgetId: Int,
         onDone: () -> Unit,
     ) {
-        val data = HomeWidgetPlugin.getData(context)
         ThingHomeSdk.newDeviceInstance(tuyaDeviceId).publishDps(
             payload,
             object : IResultCallback {
@@ -127,17 +153,19 @@ class SmartDeviceWidget : AppWidgetProvider() {
                     } else {
                         switches.optJSONObject(switchIndex)?.put("active", nextValue)
                     }
-                    data.edit()
-                        .putString(KEY_SWITCHES, switches.toString())
-                        .putString(KEY_STATUS, "متصل")
-                        .apply()
-                    refreshAll(context)
+                    val data = readWidgetData(context, widgetId) ?: JSONObject()
+                    data.put(KEY_SWITCHES, switches)
+                    data.put(KEY_STATUS, "متصل")
+                    saveWidgetData(context, widgetId, data)
+                    refreshWidget(context, widgetId)
                     onDone()
                 }
 
                 override fun onError(code: String?, error: String?) {
-                    data.edit().putString(KEY_STATUS, "تعذر التنفيذ").apply()
-                    refreshAll(context)
+                    val data = readWidgetData(context, widgetId) ?: JSONObject()
+                    data.put(KEY_STATUS, "تعذر التنفيذ")
+                    saveWidgetData(context, widgetId, data)
+                    refreshWidget(context, widgetId)
                     onDone()
                 }
             },
@@ -149,12 +177,12 @@ class SmartDeviceWidget : AppWidgetProvider() {
         manager: AppWidgetManager,
         widgetId: Int,
     ) {
-        val data = HomeWidgetPlugin.getData(context)
-        val name = data.getString(KEY_NAME, null) ?: "جهاز ذكي"
-        val room = data.getString(KEY_ROOM, null).orEmpty()
-        val status = data.getString(KEY_STATUS, null) ?: "غير معروف"
-        val deviceId = data.getInt(KEY_DEVICE_ID, 0)
-        val switches = readSwitches(data.getString(KEY_SWITCHES, null))
+        val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context)
+        val name = data?.optString(KEY_NAME)?.takeIf { it.isNotBlank() } ?: "جهاز ذكي"
+        val room = data?.optString(KEY_ROOM).orEmpty()
+        val status = data?.optString(KEY_STATUS)?.takeIf { it.isNotBlank() } ?: "غير معروف"
+        val deviceId = data?.optInt(KEY_DEVICE_ID) ?: 0
+        val switches = data?.optJSONArray(KEY_SWITCHES) ?: JSONArray()
         val switchViewIds = intArrayOf(
             R.id.smart_device_widget_switch_1,
             R.id.smart_device_widget_switch_2,
@@ -177,7 +205,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
             if (switches.length() > 0) {
                 setOnClickPendingIntent(
                     R.id.smart_device_widget_power,
-                    toggleIntent(context, ALL_SWITCHES_INDEX),
+                    toggleIntent(context, widgetId, ALL_SWITCHES_INDEX),
                 )
             }
 
@@ -195,31 +223,38 @@ class SmartDeviceWidget : AppWidgetProvider() {
                         "setBackgroundResource",
                         if (active) R.drawable.widget_smart_switch_on else R.drawable.widget_smart_switch_off,
                     )
-                    setOnClickPendingIntent(viewId, toggleIntent(context, index))
+                    setOnClickPendingIntent(viewId, toggleIntent(context, widgetId, index))
                 }
             }
         }
         manager.updateAppWidget(widgetId, views)
     }
 
-    private fun toggleIntent(context: Context, index: Int): PendingIntent {
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        val editor = widgetPreferences(context).edit()
+        appWidgetIds.forEach { editor.remove(widgetKey(it)) }
+        editor.apply()
+        super.onDeleted(context, appWidgetIds)
+    }
+
+    private fun toggleIntent(context: Context, widgetId: Int, index: Int): PendingIntent {
         val intent = Intent(context, SmartDeviceWidget::class.java).apply {
             action = ACTION_TOGGLE_SWITCH
-            data = Uri.parse("doctorbike://smart_device/toggle/$index")
+            data = Uri.parse("doctorbike://smart_device/$widgetId/toggle/$index")
             putExtra(EXTRA_SWITCH_INDEX, index)
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         }
         return PendingIntent.getBroadcast(
             context,
-            4100 + index,
+            widgetId * 10 + index + 2,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
-    private fun refreshAll(context: Context) {
+    private fun refreshWidget(context: Context, widgetId: Int) {
         val manager = AppWidgetManager.getInstance(context)
-        val component = ComponentName(context, SmartDeviceWidget::class.java)
-        manager.getAppWidgetIds(component).forEach { updateWidget(context, manager, it) }
+        updateWidget(context, manager, widgetId)
     }
 
     private fun readSwitches(raw: String?): JSONArray = try {
@@ -229,19 +264,102 @@ class SmartDeviceWidget : AppWidgetProvider() {
     }
 
     companion object {
+        private const val ACTION_WIDGET_PINNED =
+            "com.application.doctorbike.SMART_DEVICE_WIDGET_PINNED"
         private const val ACTION_TOGGLE_SWITCH =
             "com.application.doctorbike.SMART_DEVICE_WIDGET_TOGGLE"
+        private const val EXTRA_CONFIG_TOKEN = "config_token"
         private const val EXTRA_SWITCH_INDEX = "switch_index"
         private const val ALL_SWITCHES_INDEX = -2
-        private const val KEY_DEVICE_ID = "smart_device_widget_id"
-        private const val KEY_NAME = "smart_device_widget_name"
-        private const val KEY_ROOM = "smart_device_widget_room"
-        private const val KEY_STATUS = "smart_device_widget_status"
-        private const val KEY_TUYA_DEVICE_ID = "smart_device_widget_tuya_id"
-        private const val KEY_TUYA_COUNTRY_CODE =
-            "smart_device_widget_tuya_country_code"
-        private const val KEY_TUYA_UID = "smart_device_widget_tuya_uid"
-        private const val KEY_TUYA_PASSWORD = "smart_device_widget_tuya_password"
-        private const val KEY_SWITCHES = "smart_device_widget_switches"
+        private const val WIDGET_PREFS = "smart_device_widget_instances"
+        private const val PENDING_PREFS = "smart_device_widget_pending"
+        private const val KEY_DEVICE_ID = "device_id"
+        private const val KEY_NAME = "name"
+        private const val KEY_ROOM = "room"
+        private const val KEY_STATUS = "status"
+        private const val KEY_TUYA_DEVICE_ID = "tuya_device_id"
+        private const val KEY_TUYA_COUNTRY_CODE = "tuya_country_code"
+        private const val KEY_TUYA_UID = "tuya_uid"
+        private const val KEY_TUYA_PASSWORD = "tuya_password"
+        private const val KEY_SWITCHES = "switches"
+
+        fun requestPin(context: Context, config: String): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || config.isBlank()) return false
+            try {
+                JSONObject(config)
+            } catch (_: Exception) {
+                return false
+            }
+            val manager = AppWidgetManager.getInstance(context)
+            if (!manager.isRequestPinAppWidgetSupported) return false
+            val token = UUID.randomUUID().toString()
+            pendingPreferences(context).edit().clear().putString(token, config).apply()
+            val callbackIntent = Intent(context, SmartDeviceWidget::class.java).apply {
+                action = ACTION_WIDGET_PINNED
+                data = Uri.parse("doctorbike://smart_device/pinned/$token")
+                putExtra(EXTRA_CONFIG_TOKEN, token)
+            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_MUTABLE
+                } else {
+                    0
+                }
+            val callback = PendingIntent.getBroadcast(
+                context,
+                token.hashCode(),
+                callbackIntent,
+                flags,
+            )
+            val provider = ComponentName(context, SmartDeviceWidget::class.java)
+            val requested = manager.requestPinAppWidget(provider, null, callback)
+            if (!requested) pendingPreferences(context).edit().remove(token).apply()
+            return requested
+        }
+
+        private fun widgetPreferences(context: Context) =
+            context.getSharedPreferences(WIDGET_PREFS, Context.MODE_PRIVATE)
+
+        private fun pendingPreferences(context: Context) =
+            context.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
+
+        private fun widgetKey(widgetId: Int) = "widget_$widgetId"
+
+        private fun readWidgetData(context: Context, widgetId: Int): JSONObject? {
+            if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return null
+            val raw = widgetPreferences(context).getString(widgetKey(widgetId), null) ?: return null
+            return try {
+                JSONObject(raw)
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        private fun saveWidgetData(context: Context, widgetId: Int, data: JSONObject) {
+            if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+            widgetPreferences(context).edit().putString(widgetKey(widgetId), data.toString()).apply()
+        }
+
+        private fun legacyWidgetData(context: Context): JSONObject? {
+            val data = HomeWidgetPlugin.getData(context)
+            val legacyDeviceId = data.getInt("smart_device_widget_id", 0)
+            if (legacyDeviceId == 0) return null
+            return JSONObject().apply {
+                put(KEY_DEVICE_ID, legacyDeviceId)
+                put(KEY_NAME, data.getString("smart_device_widget_name", null).orEmpty())
+                put(KEY_ROOM, data.getString("smart_device_widget_room", null).orEmpty())
+                put(KEY_STATUS, data.getString("smart_device_widget_status", null).orEmpty())
+                put(KEY_TUYA_DEVICE_ID, data.getString("smart_device_widget_tuya_id", null).orEmpty())
+                put(KEY_TUYA_COUNTRY_CODE, data.getString("smart_device_widget_tuya_country_code", null).orEmpty())
+                put(KEY_TUYA_UID, data.getString("smart_device_widget_tuya_uid", null).orEmpty())
+                put(KEY_TUYA_PASSWORD, data.getString("smart_device_widget_tuya_password", null).orEmpty())
+                val legacySwitches = try {
+                    JSONArray(data.getString("smart_device_widget_switches", null) ?: "[]")
+                } catch (_: Exception) {
+                    JSONArray()
+                }
+                put(KEY_SWITCHES, legacySwitches)
+            }
+        }
     }
 }
