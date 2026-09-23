@@ -41,7 +41,7 @@ class PointsRewardsGuideScreen extends StatelessWidget {
         action: false,
         backgroundColor: pageBg,
         actions: [
-          if (userType == 'admin')
+          if (canAccessEmployeePointsSettings)
             Tooltip(
               message: 'pointsSettings'.tr,
               child: IconButton(

@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/app_settings_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -17,42 +18,48 @@ class EmployeePointsSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F6F8);
-    final items = [
-      _PointSettingsItem(
-        icon: Icons.rule_rounded,
-        color: const Color(0xFF7C3AED),
-        title: 'قواعد النقاط التلقائية',
-        subtitle: 'إضافة قواعد يومية وأسبوعية وشهرية للنقاط',
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTRULESSCREEN),
-      ),
-      _PointSettingsItem(
-        icon: Icons.tune_rounded,
-        color: const Color(0xFF2563EB),
-        title: 'pointCategoriesSetting'.tr,
-        subtitle: 'pointCategoriesSettingDesc'.tr,
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
-      ),
-      _PointSettingsItem(
-        icon: Icons.emoji_events_outlined,
-        color: const Color(0xFFB45309),
-        title: 'rewardRulesSetting'.tr,
-        subtitle: 'rewardRulesSettingDesc'.tr,
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
-      ),
-      _PointSettingsItem(
-        icon: Icons.query_stats_rounded,
-        color: const Color(0xFF0F766E),
-        title: 'pointsReportTitle'.tr,
-        subtitle: 'تقرير إجمالي النقاط والخصومات والمكافآت حسب الفترة',
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTSREPORTSCREEN),
-      ),
-      _PointSettingsItem(
-        icon: Icons.stars_rounded,
-        color: const Color(0xFFEA580C),
-        title: 'subtaskBonusDefaultSetting'.tr,
-        subtitle: 'subtaskBonusDefaultSettingDesc'.tr,
-        onTap: () => _editSubtaskBonusDefault(context),
-      ),
+    final canAccessSettings = canAccessEmployeePointsSettings;
+    final items = <_PointSettingsItem>[
+      if (canManageEmployeesPoints) ...[
+        _PointSettingsItem(
+          icon: Icons.rule_rounded,
+          color: const Color(0xFF7C3AED),
+          title: 'قواعد النقاط التلقائية',
+          subtitle: 'إضافة قواعد يومية وأسبوعية وشهرية للنقاط',
+          onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTRULESSCREEN),
+        ),
+        _PointSettingsItem(
+          icon: Icons.tune_rounded,
+          color: const Color(0xFF2563EB),
+          title: 'pointCategoriesSetting'.tr,
+          subtitle: 'pointCategoriesSettingDesc'.tr,
+          onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
+        ),
+      ],
+      if (canManageEmployeesRewardsRules)
+        _PointSettingsItem(
+          icon: Icons.emoji_events_outlined,
+          color: const Color(0xFFB45309),
+          title: 'rewardRulesSetting'.tr,
+          subtitle: 'rewardRulesSettingDesc'.tr,
+          onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
+        ),
+      if (canManageEmployeesPoints)
+        _PointSettingsItem(
+          icon: Icons.query_stats_rounded,
+          color: const Color(0xFF0F766E),
+          title: 'pointsReportTitle'.tr,
+          subtitle: 'تقرير إجمالي النقاط والخصومات والمكافآت حسب الفترة',
+          onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTSREPORTSCREEN),
+        ),
+      if (userType == 'admin')
+        _PointSettingsItem(
+          icon: Icons.stars_rounded,
+          color: const Color(0xFFEA580C),
+          title: 'subtaskBonusDefaultSetting'.tr,
+          subtitle: 'subtaskBonusDefaultSettingDesc'.tr,
+          onTap: () => _editSubtaskBonusDefault(context),
+        ),
     ];
 
     return Scaffold(
@@ -62,12 +69,22 @@ class EmployeePointsSettingsScreen extends StatelessWidget {
         action: false,
         backgroundColor: pageBg,
       ),
-      body: ListView.separated(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => SizedBox(height: 10.h),
-        itemBuilder: (_, i) => _PointSettingsCard(item: items[i]),
-      ),
+      body: !canAccessSettings
+          ? Center(
+              child: Text(
+                'لا تملك صلاحية الوصول إلى إعدادات النقاط',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => SizedBox(height: 10.h),
+              itemBuilder: (_, i) => _PointSettingsCard(item: items[i]),
+            ),
     );
   }
 

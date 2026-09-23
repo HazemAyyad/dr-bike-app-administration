@@ -299,6 +299,10 @@ bool get canManageEmployeesRewardsRules =>
         .contains(employeesRewardsRulesManagePermissionName) ||
     employeePermissions.contains(employeesRewardsRulesManagePermissionId);
 
+/// إعدادات النقاط جزء من إدارة نقاط الموظفين، بينما تُصفّى الخيارات داخل
+/// الشاشة حسب الصلاحيات الأكثر تحديدًا مثل إدارة قواعد المكافآت.
+bool get canAccessEmployeePointsSettings => canManageEmployeesPoints;
+
 bool get canAccessChecks =>
     userType == 'admin' ||
     employeePermissionNames.contains(checksPermissionName) ||
