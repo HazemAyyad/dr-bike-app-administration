@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
@@ -26,66 +27,69 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
       onTap: () {
         Get.to(() => PaperDetailsScreen(paper: data));
       },
-      onLongPress: () {
-        Get.dialog(
-          Dialog(
-            backgroundColor: ThemeService.isDark.value
-                ? AppColors.darkColor
-                : AppColors.whiteColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'delete_document'.tr,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? AppColors.whiteColor
-                              : AppColors.blackColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 20.sp,
-                        ),
+      onLongPress: !canDeleteFinancialOfficialPapers
+          ? null
+          : () {
+              Get.dialog(
+                Dialog(
+                  backgroundColor: ThemeService.isDark.value
+                      ? AppColors.darkColor
+                      : AppColors.whiteColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  SizedBox(height: 20.h),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          isSafeArea: false,
-                          onPressed: () {
-                            Get.back();
-                          },
-                          text: 'cancel'.tr,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'delete_document'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.whiteColor
+                                        : AppColors.blackColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 20.sp,
+                                  ),
                         ),
-                      ),
-                      SizedBox(width: 20.w),
-                      Expanded(
-                        child: AppButton(
-                          isLoading: controller.isLoading,
-                          isSafeArea: false,
-                          onPressed: () {
-                            controller.cancelPaper(
-                              paperId: data.paperId.toString(),
-                            );
-                          },
-                          text: 'yes'.tr,
-                          color: Colors.red,
+                        SizedBox(height: 20.h),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: AppButton(
+                                isSafeArea: false,
+                                onPressed: () {
+                                  Get.back();
+                                },
+                                text: 'cancel'.tr,
+                              ),
+                            ),
+                            SizedBox(width: 20.w),
+                            Expanded(
+                              child: AppButton(
+                                isLoading: controller.isLoading,
+                                isSafeArea: false,
+                                onPressed: () {
+                                  controller.cancelPaper(
+                                    paperId: data.paperId.toString(),
+                                  );
+                                },
+                                text: 'yes'.tr,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+                ),
+              );
+            },
       child: FinancialOperationalCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

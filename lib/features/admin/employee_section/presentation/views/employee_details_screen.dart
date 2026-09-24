@@ -27,6 +27,7 @@ import '../../data/models/employee_activity_log_model.dart';
 import '../controllers/employee_section_controller.dart';
 import '../../domain/entities/employee_details_entity.dart';
 import '../widgets/employee_points_tab.dart';
+import 'employee_permission_management_screen.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
@@ -335,7 +336,7 @@ class _EmployeeHeaderCard extends StatelessWidget {
                             color: AppColors.primaryColor,
                             onTap: () => _showPermissionsDialog(
                               context,
-                              employee.permissions,
+                              employee,
                             ),
                           ),
                         if (userType == 'admin')
@@ -413,7 +414,7 @@ class _EmployeeHeaderCard extends StatelessWidget {
 
   void _showPermissionsDialog(
     BuildContext context,
-    List<PermissionEntity> permissions,
+    EmployeeDetailsEntity employee,
   ) {
     showDialog<void>(
       context: context,
@@ -423,13 +424,13 @@ class _EmployeeHeaderCard extends StatelessWidget {
           title: Text('permissions'.tr),
           content: SizedBox(
             width: double.maxFinite,
-            child: permissions.isEmpty
+            child: employee.permissions.isEmpty
                 ? Text('noData'.tr)
                 : SingleChildScrollView(
                     child: Wrap(
                       spacing: 7.w,
                       runSpacing: 7.h,
-                      children: permissions
+                      children: employee.permissions
                           .map(
                             (permission) => _PermissionChip(
                               label: permission.permissionName,
@@ -441,6 +442,24 @@ class _EmployeeHeaderCard extends StatelessWidget {
           ),
           backgroundColor: isDark ? AppColors.customGreyColor4 : Colors.white,
           actions: [
+            if (canDelegateEmployeePermissions)
+              FilledButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  final changed = await Get.to<bool>(
+                    () => EmployeePermissionManagementScreen(
+                      employeeId: employee.id,
+                      employeeName: employee.name,
+                    ),
+                  );
+                  if (changed == true) {
+                    await Get.find<EmployeeSectionController>()
+                        .getEmployeeDetails('${employee.id}');
+                  }
+                },
+                icon: const Icon(Icons.manage_accounts_outlined),
+                label: const Text('إدارة الصلاحيات'),
+              ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('close'.tr),

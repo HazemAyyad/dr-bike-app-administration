@@ -10,6 +10,7 @@ import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
@@ -115,11 +116,12 @@ class DestructionDetailsScreen extends GetView<ExpensesController> {
         title: 'تفاصيل البضاعة المتلفة',
         action: false,
         actions: [
-          IconButton(
-            tooltip: 'تعديل السبب والمرفقات',
-            onPressed: () => _showEditDialog(context),
-            icon: const Icon(Icons.edit_outlined),
-          ),
+          if (canManageFinancialDestructions)
+            IconButton(
+              tooltip: 'تعديل السبب والمرفقات',
+              onPressed: () => _showEditDialog(context),
+              icon: const Icon(Icons.edit_outlined),
+            ),
           SizedBox(width: 7.w),
         ],
       ),

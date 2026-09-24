@@ -34,6 +34,7 @@ final RxInt sessionEpoch = 0.obs;
 RxBool startApp = true.obs;
 bool supabase = true;
 List<int> employeePermissions = [];
+bool employeeCanDelegatePermissions = false;
 
 bool get isDesktopRuntime {
   if (kIsWeb) return false;
@@ -185,6 +186,9 @@ const List<int> employeeSectionDetailedPermissionIds = [
 bool hasEmployeePermissionName(String name) =>
     userType == 'admin' || employeePermissionNames.contains(name);
 
+bool get canDelegateEmployeePermissions =>
+    userType == 'admin' || employeeCanDelegatePermissions;
+
 bool get hasAnyEmployeeSectionDetailedPermission =>
     employeePermissionNames
         .any(employeeSectionDetailedPermissionNames.contains) ||
@@ -231,6 +235,7 @@ bool get canManageEmployeesPasswords =>
 
 bool get canViewEmployeesPermissions =>
     userType == 'admin' ||
+    employeeCanDelegatePermissions ||
     employeePermissionNames.contains(employeesPermissionsViewPermissionName) ||
     employeePermissionNames
         .contains(employeesPermissionsManagePermissionName) ||
@@ -238,10 +243,96 @@ bool get canViewEmployeesPermissions =>
     employeePermissions.contains(employeesPermissionsManagePermissionId);
 
 bool get canManageEmployeesPermissions =>
+    userType == 'admin' || employeeCanDelegatePermissions;
+
+const String financialExpensesViewPermissionName = 'Financial Expenses View';
+const String financialExpensesCreatePermissionName =
+    'Financial Expenses Create';
+const String financialExpensesEditPermissionName = 'Financial Expenses Edit';
+const String financialExpensesReportsPermissionName =
+    'Financial Expenses Reports';
+const String financialDestructionsViewPermissionName =
+    'Financial Destructions View';
+const String financialDestructionsManagePermissionName =
+    'Financial Destructions Manage';
+const String financialAssetsViewPermissionName = 'Financial Assets View';
+const String financialAssetsManagePermissionName = 'Financial Assets Manage';
+const String financialAssetsDeletePermissionName = 'Financial Assets Delete';
+const String financialAssetsDepreciatePermissionName =
+    'Financial Assets Depreciate';
+const String financialAssetsReportsPermissionName = 'Financial Assets Reports';
+const String financialOfficialPapersViewPermissionName =
+    'Financial Official Papers View';
+const String financialOfficialPapersManagePermissionName =
+    'Financial Official Papers Manage';
+const String financialOfficialPapersDeletePermissionName =
+    'Financial Official Papers Delete';
+
+bool get canViewFinancialExpenses =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialExpensesViewPermissionName);
+bool get canCreateFinancialExpenses =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialExpensesCreatePermissionName);
+bool get canEditFinancialExpenses =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialExpensesEditPermissionName);
+bool get canExportFinancialExpenses =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialExpensesReportsPermissionName);
+bool get canViewFinancialDestructions =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialDestructionsViewPermissionName);
+bool get canManageFinancialDestructions =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialDestructionsManagePermissionName);
+bool get canViewFinancialAssets =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialAssetsViewPermissionName);
+bool get canManageFinancialAssets =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialAssetsManagePermissionName);
+bool get canDeleteFinancialAssets =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialAssetsDeletePermissionName);
+bool get canDepreciateFinancialAssets =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialAssetsDepreciatePermissionName);
+bool get canExportFinancialAssets =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialAssetsReportsPermissionName);
+bool get canViewFinancialOfficialPapers =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(financialOfficialPapersViewPermissionName);
+bool get canManageFinancialOfficialPapers =>
     userType == 'admin' ||
     employeePermissionNames
-        .contains(employeesPermissionsManagePermissionName) ||
-    employeePermissions.contains(employeesPermissionsManagePermissionId);
+        .contains(financialOfficialPapersManagePermissionName);
+bool get canDeleteFinancialOfficialPapers =>
+    userType == 'admin' ||
+    employeePermissionNames
+        .contains(financialOfficialPapersDeletePermissionName);
+
+bool get canAccessFinancialExpensesTab =>
+    canViewFinancialExpenses ||
+    canCreateFinancialExpenses ||
+    canEditFinancialExpenses ||
+    canExportFinancialExpenses ||
+    canViewFinancialDestructions ||
+    canManageFinancialDestructions ||
+    canViewEmployeesFinancial ||
+    canPayEmployeesSalary;
+
+bool get canAccessFinancialAffairs =>
+    canAccessFinancialExpensesTab ||
+    canViewFinancialAssets ||
+    canManageFinancialAssets ||
+    canDeleteFinancialAssets ||
+    canDepreciateFinancialAssets ||
+    canExportFinancialAssets ||
+    canViewFinancialOfficialPapers ||
+    canManageFinancialOfficialPapers ||
+    canDeleteFinancialOfficialPapers;
 
 bool get canViewEmployeesFinancial =>
     userType == 'admin' ||
@@ -401,7 +492,13 @@ void syncSessionIdentity({
   String? name,
   List<int>? permissionIds,
   List<String>? permissionNamesEn,
+  bool? canDelegatePermissions,
 }) {
+  final previousType = userType;
+  final previousPermissionIds = List<int>.from(employeePermissions);
+  final previousPermissionNames = List<String>.from(employeePermissionNames);
+  final previousCanDelegate = employeeCanDelegatePermissions;
+
   if (type != null) {
     userType = type;
     sessionUserType.value = type;
@@ -418,6 +515,20 @@ void syncSessionIdentity({
     employeePermissionNames
       ..clear()
       ..addAll(permissionNamesEn);
+  }
+  if (canDelegatePermissions != null) {
+    employeeCanDelegatePermissions = canDelegatePermissions;
+  }
+
+  final permissionsChanged =
+      previousPermissionIds.length != employeePermissions.length ||
+          !previousPermissionIds.every(employeePermissions.contains) ||
+          previousPermissionNames.length != employeePermissionNames.length ||
+          !previousPermissionNames.every(employeePermissionNames.contains);
+  if (previousType != userType ||
+      permissionsChanged ||
+      previousCanDelegate != employeeCanDelegatePermissions) {
+    sessionEpoch.value++;
   }
 }
 
@@ -522,6 +633,7 @@ class InitialBindings implements Bindings {
         permissionNamesEn: userdata.employeePermissions
             .map((p) => p.permissionNameEn)
             .toList(),
+        canDelegatePermissions: userdata.user.employee.canDelegatePermissions,
       );
 
       if (userdata.user.type == 'admin') {

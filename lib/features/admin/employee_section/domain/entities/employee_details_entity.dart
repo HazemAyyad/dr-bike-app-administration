@@ -10,6 +10,7 @@ class EmployeeDetailsEntity {
   final String startWorkTime;
   final String endWorkTime;
   final bool fingerprintEnabled;
+  final bool canDelegatePermissions;
   final String? deviceUserId;
   final String? lastFingerprintScanAt;
   final String? lastFingerprintAttendanceAt;
@@ -32,6 +33,7 @@ class EmployeeDetailsEntity {
     required this.startWorkTime,
     required this.endWorkTime,
     this.fingerprintEnabled = false,
+    this.canDelegatePermissions = false,
     this.deviceUserId,
     this.lastFingerprintScanAt,
     this.lastFingerprintAttendanceAt,

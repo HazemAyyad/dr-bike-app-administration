@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
@@ -14,6 +15,7 @@ import '../../widgets/financial_operational_ui.dart';
 import '../../widgets/financial_skeletons.dart';
 
 import '../../../../../../core/helpers/app_failure_notice.dart';
+
 class ExpenseDetailsScreen extends GetView<ExpensesController> {
   const ExpenseDetailsScreen({Key? key}) : super(key: key);
 
@@ -28,6 +30,11 @@ class ExpenseDetailsScreen extends GetView<ExpensesController> {
             final expense = controller.selectedExpense.value;
             if (expense == null) return const SizedBox.shrink();
             final salary = expense.expenseType == 'salary';
+            if (salary
+                ? !(canViewEmployeesFinancial || canPayEmployeesSalary)
+                : !canEditFinancialExpenses) {
+              return const SizedBox.shrink();
+            }
             return IconButton(
               tooltip: salary ? 'فتح ملف الراتب' : 'تعديل المصروف',
               onPressed: () {
@@ -36,7 +43,8 @@ class ExpenseDetailsScreen extends GetView<ExpensesController> {
                   if (periodId == null) {
                     AppFailureNotice.show(
                       title: 'ملف الراتب غير متاح',
-                      message: 'لم يتم العثور على دورة الراتب المرتبطة بهذا القيد',
+                      message:
+                          'لم يتم العثور على دورة الراتب المرتبطة بهذا القيد',
                     );
                     return;
                   }

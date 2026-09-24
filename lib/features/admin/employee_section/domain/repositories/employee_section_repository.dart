@@ -86,6 +86,7 @@ abstract class EmployeeRepository {
     required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
+    required bool canDelegatePermissions,
     String? deviceUserId,
   });
 

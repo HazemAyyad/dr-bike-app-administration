@@ -7,6 +7,7 @@ import '../financial_image_cache.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
@@ -53,18 +54,19 @@ class PaperDetails extends GetView<OfficialPapersController> {
                           fontSize: 20.sp,
                         ),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.edit_document,
-                      color: AppColors.primaryColor,
-                      size: 30,
+                  if (canManageFinancialOfficialPapers)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_document,
+                        color: AppColors.primaryColor,
+                        size: 30,
+                      ),
+                      onPressed: () {
+                        controller.isEdit = true;
+                        controller.getPaperData(paper: paper);
+                        Get.dialog(const AddPaper());
+                      },
                     ),
-                    onPressed: () {
-                      controller.isEdit = true;
-                      controller.getPaperData(paper: paper);
-                      Get.dialog(const AddPaper());
-                    },
-                  ),
                 ],
               ),
               SizedBox(height: 10.h),

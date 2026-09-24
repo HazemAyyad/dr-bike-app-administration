@@ -91,6 +91,8 @@ class AddEmployeeController extends GetxController {
       // Fingerprint
       fingerprintEnabled.value =
           employeeService.employeeDetails.value!.fingerprintEnabled;
+      canDelegatePermissions.value =
+          employeeService.employeeDetails.value!.canDelegatePermissions;
       deviceUserIdController.text =
           employeeService.employeeDetails.value!.deviceUserId ?? '';
       if (userType == 'employee') {
@@ -121,6 +123,7 @@ class AddEmployeeController extends GetxController {
 
   // Fingerprint settings
   final RxBool fingerprintEnabled = false.obs;
+  final RxBool canDelegatePermissions = false.obs;
   final TextEditingController deviceUserIdController = TextEditingController();
 
   final List<File> documentsImageList = [];
@@ -1002,6 +1005,7 @@ class AddEmployeeController extends GetxController {
           visibleBoxIds: selectedBoxIds,
           weeklyDaysOff: selectedWeeklyDaysOff,
           fingerprintEnabled: fingerprintEnabled.value,
+          canDelegatePermissions: canDelegatePermissions.value,
           deviceUserId: deviceUserIdController.text.trim().isEmpty
               ? null
               : deviceUserIdController.text.trim(),

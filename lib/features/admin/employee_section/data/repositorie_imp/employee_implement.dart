@@ -96,6 +96,7 @@ class EmployeeImplement implements EmployeeRepository {
     required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
+    required bool canDelegatePermissions,
     String? deviceUserId,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -120,6 +121,7 @@ class EmployeeImplement implements EmployeeRepository {
         visibleBoxIds: visibleBoxIds,
         weeklyDaysOff: weeklyDaysOff,
         fingerprintEnabled: fingerprintEnabled,
+        canDelegatePermissions: canDelegatePermissions,
         deviceUserId: deviceUserId,
       );
       if (result['status'] == 'success') {

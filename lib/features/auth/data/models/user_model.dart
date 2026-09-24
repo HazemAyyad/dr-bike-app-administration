@@ -135,6 +135,7 @@ class EmployeeModel {
   final String employeeImg;
   final String documentImg;
   final String totalWorkHours;
+  final bool canDelegatePermissions;
 
   EmployeeModel({
     required this.id,
@@ -154,6 +155,7 @@ class EmployeeModel {
     required this.employeeImg,
     required this.documentImg,
     required this.totalWorkHours,
+    this.canDelegatePermissions = false,
   });
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -175,6 +177,7 @@ class EmployeeModel {
       employeeImg: asString(json['employee_img']),
       documentImg: asString(json['document_img']),
       totalWorkHours: asString(json['total_work_hours']),
+      canDelegatePermissions: asBool(json['can_delegate_permissions']),
     );
   }
 
@@ -197,6 +200,7 @@ class EmployeeModel {
       'employee_img': employeeImg,
       'document_img': documentImg,
       'total_work_hours': totalWorkHours,
+      'can_delegate_permissions': canDelegatePermissions,
     };
   }
 }

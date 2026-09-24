@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
@@ -25,6 +26,7 @@ import 'finacial_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ExpensesController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllFinancialUsecase getAllFinancialUsecase;
@@ -141,7 +143,16 @@ class ExpensesController extends GetxController
   }
 
   final RxInt currentTab = 0.obs;
-  final tabs = ['generalAdministrativeExpenses', 'DestructionProducts'].obs;
+  final tabs = <String>[].obs;
+  final tabKinds = <String>[].obs;
+
+  bool get showingExpenses =>
+      tabKinds.isEmpty || tabKinds[currentTab.value] == 'expenses';
+
+  void selectTabKind(String kind) {
+    final index = tabKinds.indexOf(kind);
+    if (index >= 0) currentTab.value = index;
+  }
 
   final RxBool isLoading = false.obs;
   final RxString expenseTypeFilter = ''.obs;
@@ -162,23 +173,7 @@ class ExpensesController extends GetxController
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
 
-  List<Map<String, String>> addList = [
-    {
-      'title': 'addExpense',
-      'icon': AssetsManager.moneyIcon,
-      'route': AppRoutes.ADDEXPENSESCREEN,
-    },
-    {
-      'title': 'دفع الرواتب',
-      'icon': AssetsManager.moneyIcon,
-      'route': AppRoutes.PAYROLLSCREEN,
-    },
-    {
-      'title': 'DestructionProducts',
-      'icon': AssetsManager.invoiceIcon,
-      'route': AppRoutes.DESTRUCTIONPRODUCTSSCREEN,
-    },
-  ];
+  List<Map<String, String>> addList = [];
 
   // filter assets by date
   final expensesFilter = <String, List<ExpenseModel>>{}.obs;
@@ -358,67 +353,77 @@ class ExpensesController extends GetxController
         ? isLoading(true)
         : isLoading(false);
     update();
-    // expenses
-    final expenses = await getAllFinancialUsecase.call(
-      page: '2',
-      filters: applyFilters
-          ? {
-              if (fromController.text.isNotEmpty) 'from': fromController.text,
-              if (toController.text.isNotEmpty) 'to': toController.text,
-              if (expenseTypeFilter.value.isNotEmpty)
-                'expense_type': expenseTypeFilter.value,
-              'per_page': 100,
-            }
-          : const {'per_page': 100},
-    );
-    final expensesJson = expenses['expenses'] as List;
-    final expensesList = expensesJson
-        .map((e) => ExpenseModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-    FinacialService().expensesTasks.clear();
-    FinacialService().expenses.assignAll(expensesList);
-    expensesFilter.value = FinacialService().expensesTasks;
-    for (var task in FinacialService().expenses) {
-      String dayName =
-          DateFormat.EEEE(Get.locale!.languageCode).format(task.createdAt);
-      String dateKey =
-          "$dayName ${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
+    if (canViewFinancialExpenses) {
+      final expenses = await getAllFinancialUsecase.call(
+        page: '2',
+        filters: applyFilters
+            ? {
+                if (fromController.text.isNotEmpty) 'from': fromController.text,
+                if (toController.text.isNotEmpty) 'to': toController.text,
+                if (expenseTypeFilter.value.isNotEmpty)
+                  'expense_type': expenseTypeFilter.value,
+                'per_page': 100,
+              }
+            : const {'per_page': 100},
+      );
+      final expensesJson = expenses['expenses'] as List;
+      final expensesList = expensesJson
+          .map((e) => ExpenseModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      FinacialService().expensesTasks.clear();
+      FinacialService().expenses.assignAll(expensesList);
+      expensesFilter.value = FinacialService().expensesTasks;
+      for (var task in FinacialService().expenses) {
+        String dayName =
+            DateFormat.EEEE(Get.locale!.languageCode).format(task.createdAt);
+        String dateKey =
+            "$dayName ${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
 
-      if (FinacialService().expensesTasks.containsKey(dateKey)) {
-        if (!FinacialService()
-            .expensesTasks[dateKey]!
-            .any((a) => a.id == task.id)) {
-          FinacialService().expensesTasks[dateKey]!.add(task);
+        if (FinacialService().expensesTasks.containsKey(dateKey)) {
+          if (!FinacialService()
+              .expensesTasks[dateKey]!
+              .any((a) => a.id == task.id)) {
+            FinacialService().expensesTasks[dateKey]!.add(task);
+          }
+        } else {
+          FinacialService().expensesTasks[dateKey] = [task];
         }
-      } else {
-        FinacialService().expensesTasks[dateKey] = [task];
       }
+    } else {
+      FinacialService().expenses.clear();
+      FinacialService().expensesTasks.clear();
+      expensesFilter.clear();
     }
 
-    // destructions
-    final destructions = await getAllFinancialUsecase.call(page: '3');
-    final destructionsJson = destructions['destructions'] as List;
-    final destructionsList = destructionsJson
-        .map((e) => DestructionModel.fromJson(e as Map<String, dynamic>))
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    FinacialService().destructionsTasks.clear();
-    FinacialService().destructions.assignAll(destructionsList);
-    destructionsFilter.value = FinacialService().destructionsTasks;
-    for (var task in FinacialService().destructions) {
-      String dayName =
-          DateFormat.EEEE(Get.locale!.languageCode).format(task.createdAt);
-      String dateKey =
-          "$dayName ${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
-      if (FinacialService().destructionsTasks.containsKey(dateKey)) {
-        if (!FinacialService()
-            .destructionsTasks[dateKey]!
-            .any((a) => a.destructionId == task.destructionId)) {
-          FinacialService().destructionsTasks[dateKey]!.add(task);
+    if (canViewFinancialDestructions) {
+      final destructions = await getAllFinancialUsecase.call(page: '3');
+      final destructionsJson = destructions['destructions'] as List;
+      final destructionsList = destructionsJson
+          .map((e) => DestructionModel.fromJson(e as Map<String, dynamic>))
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      FinacialService().destructionsTasks.clear();
+      FinacialService().destructions.assignAll(destructionsList);
+      destructionsFilter.value = FinacialService().destructionsTasks;
+      for (var task in FinacialService().destructions) {
+        String dayName =
+            DateFormat.EEEE(Get.locale!.languageCode).format(task.createdAt);
+        String dateKey =
+            "$dayName ${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
+        if (FinacialService().destructionsTasks.containsKey(dateKey)) {
+          if (!FinacialService()
+              .destructionsTasks[dateKey]!
+              .any((a) => a.destructionId == task.destructionId)) {
+            FinacialService().destructionsTasks[dateKey]!.add(task);
+          }
+        } else {
+          FinacialService().destructionsTasks[dateKey] = [task];
         }
-      } else {
-        FinacialService().destructionsTasks[dateKey] = [task];
       }
+    } else {
+      FinacialService().destructions.clear();
+      FinacialService().destructionsTasks.clear();
+      destructionsFilter.clear();
     }
     isLoading(false);
     update();
@@ -492,7 +497,7 @@ class ExpensesController extends GetxController
           damageReasonController.clear();
           assetsFile.clear();
           getAllExpenses();
-          currentTab.value = 1;
+          selectTabKind('destructions');
           isEditing.value = false;
           expenseId = '';
           update();
@@ -584,7 +589,7 @@ class ExpensesController extends GetxController
           expenseType.value = 'general';
           invoiceFile.clear();
           expensesFile.clear();
-          currentTab.value = 0;
+          selectTabKind('expenses');
           isEditing.value = false;
           update();
           Future.delayed(
@@ -659,10 +664,43 @@ class ExpensesController extends GetxController
 
   @override
   void onInit() {
+    if (canViewFinancialExpenses ||
+        canCreateFinancialExpenses ||
+        canEditFinancialExpenses ||
+        canExportFinancialExpenses ||
+        canViewEmployeesFinancial ||
+        canPayEmployeesSalary) {
+      tabs.add('generalAdministrativeExpenses');
+      tabKinds.add('expenses');
+    }
+    if (canViewFinancialDestructions || canManageFinancialDestructions) {
+      tabs.add('DestructionProducts');
+      tabKinds.add('destructions');
+    }
+    addList = [
+      if (canCreateFinancialExpenses)
+        {
+          'title': 'addExpense',
+          'icon': AssetsManager.moneyIcon,
+          'route': AppRoutes.ADDEXPENSESCREEN,
+        },
+      if (canPayEmployeesSalary || canViewEmployeesFinancial)
+        {
+          'title': 'دفع الرواتب',
+          'icon': AssetsManager.moneyIcon,
+          'route': AppRoutes.PAYROLLSCREEN,
+        },
+      if (canManageFinancialDestructions)
+        {
+          'title': 'DestructionProducts',
+          'icon': AssetsManager.invoiceIcon,
+          'route': AppRoutes.DESTRUCTIONPRODUCTSSCREEN,
+        },
+    ];
     expenseDateController.text =
         DateFormat('yyyy-MM-dd').format(DateTime.now());
     getAllExpenses();
-    getShowBoxes();
+    if (canCreateFinancialExpenses) getShowBoxes();
     expensesFilter.assignAll(FinacialService().expensesTasks);
     destructionsFilter.assignAll(FinacialService().destructionsTasks);
     animController = AnimationController(

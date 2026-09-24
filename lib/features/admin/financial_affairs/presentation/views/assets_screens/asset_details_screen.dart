@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -23,15 +24,16 @@ class AssetDetailsScreen extends GetView<AssetsController> {
         title: 'تفاصيل الأصل',
         action: false,
         actions: [
-          IconButton(
-            tooltip: 'تعديل الأصل',
-            onPressed: () {
-              controller.isEditing.value = true;
-              controller.editAsset();
-              Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
-            },
-            icon: const Icon(Icons.edit_outlined),
-          ),
+          if (canManageFinancialAssets)
+            IconButton(
+              tooltip: 'تعديل الأصل',
+              onPressed: () {
+                controller.isEditing.value = true;
+                controller.editAsset();
+                Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
+              },
+              icon: const Icon(Icons.edit_outlined),
+            ),
           SizedBox(width: 8.w),
         ],
       ),
@@ -143,45 +145,47 @@ class AssetDetailsScreen extends GetView<AssetsController> {
                     ]),
                   ),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  child: Obx(() => FilledButton.icon(
-                        onPressed:
-                            controller.isLoading.value || depreciatedThisMonth
-                                ? null
-                                : () => controller
-                                    .destructionOneAssets(asset.id.toString()),
-                        icon: controller.isLoading.value
-                            ? SizedBox(
-                                width: 17.w,
-                                height: 17.w,
-                                child: const CircularProgressIndicator(
-                                    strokeWidth: 2))
-                            : Icon(depreciatedThisMonth
-                                ? Icons.check_circle_rounded
-                                : Icons.trending_down_rounded),
-                        label: Text(depreciatedThisMonth
-                            ? 'تم الإهلاك لهذا الشهر'
-                            : 'تنفيذ إهلاك هذا الشهر يدويًا'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.operationalPurple,
-                          disabledBackgroundColor: depreciatedThisMonth
-                              ? AppColors.customGreen1
-                              : null,
-                          disabledForegroundColor:
-                              depreciatedThisMonth ? Colors.white : null,
-                        ),
-                      )),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 6.h),
-                  child: Text(
-                    'يسمح النظام بعملية واحدة فقط لكل أصل في الشهر.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 9.sp, color: AppColors.customGreyColor5),
+                if (canDepreciateFinancialAssets)
+                  SizedBox(
+                    width: double.infinity,
+                    child: Obx(() => FilledButton.icon(
+                          onPressed: controller.isLoading.value ||
+                                  depreciatedThisMonth
+                              ? null
+                              : () => controller
+                                  .destructionOneAssets(asset.id.toString()),
+                          icon: controller.isLoading.value
+                              ? SizedBox(
+                                  width: 17.w,
+                                  height: 17.w,
+                                  child: const CircularProgressIndicator(
+                                      strokeWidth: 2))
+                              : Icon(depreciatedThisMonth
+                                  ? Icons.check_circle_rounded
+                                  : Icons.trending_down_rounded),
+                          label: Text(depreciatedThisMonth
+                              ? 'تم الإهلاك لهذا الشهر'
+                              : 'تنفيذ إهلاك هذا الشهر يدويًا'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.operationalPurple,
+                            disabledBackgroundColor: depreciatedThisMonth
+                                ? AppColors.customGreen1
+                                : null,
+                            disabledForegroundColor:
+                                depreciatedThisMonth ? Colors.white : null,
+                          ),
+                        )),
                   ),
-                ),
+                if (canDepreciateFinancialAssets)
+                  Padding(
+                    padding: EdgeInsets.only(top: 6.h),
+                    child: Text(
+                      'يسمح النظام بعملية واحدة فقط لكل أصل في الشهر.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 9.sp, color: AppColors.customGreyColor5),
+                    ),
+                  ),
               ]),
             ),
             if ((asset.notes ?? '').trim().isNotEmpty) ...[

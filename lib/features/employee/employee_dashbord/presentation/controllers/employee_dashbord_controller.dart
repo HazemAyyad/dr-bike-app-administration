@@ -6,6 +6,7 @@ import '../../../../../core/services/employee_attendance_persistent_notification
 import '../../../../../core/services/employee_wifi_presence_service.dart';
 import '../../../../../core/services/impersonation_state.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -254,6 +255,7 @@ class EmployeeDashbordController extends GetxController
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      SessionService.validateAndRefreshSession();
       refreshWifiPresencePermissions();
       refreshTodayAttendance(silent: true);
       _syncPersistentAttendanceNotification();

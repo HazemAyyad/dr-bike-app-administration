@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/assets_controller.dart';
 import '../../controllers/finacial_service.dart';
@@ -40,12 +41,13 @@ class _AssetsLogScreenState extends State<AssetsLogScreen> {
             onPressed: _showPeriodFilter,
             icon: const Icon(Icons.tune_rounded, color: AppColors.primaryColor),
           ),
-          IconButton(
-            tooltip: 'تنزيل PDF',
-            onPressed: () => controller.downloadReport(),
-            icon: const Icon(Icons.picture_as_pdf_outlined,
-                color: AppColors.primaryColor),
-          ),
+          if (canExportFinancialAssets)
+            IconButton(
+              tooltip: 'تنزيل PDF',
+              onPressed: () => controller.downloadReport(),
+              icon: const Icon(Icons.picture_as_pdf_outlined,
+                  color: AppColors.primaryColor),
+            ),
           SizedBox(width: 8.w),
         ],
       ),

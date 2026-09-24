@@ -286,6 +286,12 @@ class EndPoints {
   static const String allPermissions = 'all/permissions';
   static const String updatePermissionGrantPolicy = 'permissions/grant-policy';
   static const String employeePermissions = 'employee/permissions';
+  static String employeePermissionContext(int employeeId) =>
+      'employees/$employeeId/permission-context';
+  static String syncEmployeePermissions(int employeeId) =>
+      'employees/$employeeId/permissions';
+  static String employeePermissionDelegation(int employeeId) =>
+      'admin/employees/$employeeId/permission-delegation';
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
   static const String employeeAttendanceHistory = 'employee/attendance/history';

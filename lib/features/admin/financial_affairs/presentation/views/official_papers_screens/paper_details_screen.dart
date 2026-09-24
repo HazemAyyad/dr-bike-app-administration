@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
 import '../../controllers/official_papers_controller.dart';
@@ -25,15 +26,16 @@ class PaperDetailsScreen extends GetView<OfficialPapersController> {
         title: 'تفاصيل الورقة الرسمية',
         action: false,
         actions: [
-          IconButton(
-            tooltip: 'تعديل الورقة',
-            onPressed: () {
-              controller.isEdit = true;
-              controller.getPaperData(paper: paper);
-              Get.dialog(const AddPaper());
-            },
-            icon: const Icon(Icons.edit_document),
-          ),
+          if (canManageFinancialOfficialPapers)
+            IconButton(
+              tooltip: 'تعديل الورقة',
+              onPressed: () {
+                controller.isEdit = true;
+                controller.getPaperData(paper: paper);
+                Get.dialog(const AddPaper());
+              },
+              icon: const Icon(Icons.edit_document),
+            ),
           SizedBox(width: 8.w),
         ],
       ),

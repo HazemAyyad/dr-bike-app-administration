@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/files_model.dart';
 import '../../controllers/finacial_service.dart';
@@ -43,21 +44,22 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                           fontWeight: FontWeight.w800,
                         ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      Get.back();
-                      controller.isEdit = false;
-                      controller.pictureNameController.clear();
-                      controller.pictureDescriptionController.clear();
-                      controller.selectedFile.value = null;
-                      controller.getPaperData();
-                      Get.dialog(AddPaper(fileId: data.id.toString()));
-                    },
-                    icon: const Icon(
-                      Icons.playlist_add,
-                      color: AppColors.primaryColor,
+                  if (canManageFinancialOfficialPapers)
+                    IconButton(
+                      onPressed: () {
+                        Get.back();
+                        controller.isEdit = false;
+                        controller.pictureNameController.clear();
+                        controller.pictureDescriptionController.clear();
+                        controller.selectedFile.value = null;
+                        controller.getPaperData();
+                        Get.dialog(AddPaper(fileId: data.id.toString()));
+                      },
+                      icon: const Icon(
+                        Icons.playlist_add,
+                        color: AppColors.primaryColor,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

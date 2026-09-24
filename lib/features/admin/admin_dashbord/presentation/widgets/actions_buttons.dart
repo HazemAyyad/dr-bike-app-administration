@@ -211,6 +211,9 @@ class BuildActionButtons extends StatelessWidget {
     if (route == AppRoutes.CHECKSSCREEN) {
       return canAccessChecks;
     }
+    if (route == AppRoutes.FINANCIALAFFAIRSSCREEN) {
+      return canAccessFinancialAffairs;
+    }
     if (route == AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN) {
       return true;
     }

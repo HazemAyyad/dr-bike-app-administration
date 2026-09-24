@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../../core/services/theme_service.dart';
 import '../../../../../../../core/utils/app_colors.dart';
 import '../../../../../../../core/widgets/skeleton_loading.dart';
@@ -14,67 +15,71 @@ class PayrollScreen extends GetView<PayrollController> {
   const PayrollScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          appBar: CustomAppBar(
-            title: 'دفع الرواتب',
-            action: false,
-            actions: [
-              IconButton(
-                tooltip: 'تقرير الرواتب',
-                onPressed: () => _showReportModal(context),
-                icon: const Icon(Icons.assessment_outlined),
+  Widget build(BuildContext context) {
+    final canPay = canPayEmployeesSalary;
+    return DefaultTabController(
+      length: canPay ? 2 : 1,
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: 'دفع الرواتب',
+          action: false,
+          actions: [
+            IconButton(
+              tooltip: 'تقرير الرواتب',
+              onPressed: () => _showReportModal(context),
+              icon: const Icon(Icons.assessment_outlined),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(55.h),
+            child: Container(
+              height: 47.h,
+              margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
+              padding: EdgeInsets.all(4.r),
+              decoration: BoxDecoration(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.operationalSurface,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: AppColors.operationalCardBorder),
               ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: Size.fromHeight(55.h),
-              child: Container(
-                height: 47.h,
-                margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
-                padding: EdgeInsets.all(4.r),
-                decoration: BoxDecoration(
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.operationalSurface,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: AppColors.operationalCardBorder),
+              child: TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.r),
+                  gradient: const LinearGradient(colors: [
+                    AppColors.operationalPurple,
+                    AppColors.secondaryColor,
+                  ]),
                 ),
-                child: TabBar(
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.r),
-                    gradient: const LinearGradient(colors: [
-                      AppColors.operationalPurple,
-                      AppColors.secondaryColor,
-                    ]),
-                  ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: ThemeService.isDark.value
-                      ? Colors.white70
-                      : AppColors.operationalNavy,
-                  labelPadding: EdgeInsets.zero,
-                  tabs: const [
-                    _PayrollTab(
+                labelColor: Colors.white,
+                unselectedLabelColor: ThemeService.isDark.value
+                    ? Colors.white70
+                    : AppColors.operationalNavy,
+                labelPadding: EdgeInsets.zero,
+                tabs: [
+                  if (canPay)
+                    const _PayrollTab(
                       icon: Icons.payments_rounded,
                       label: 'صرف جديد',
                     ),
-                    _PayrollTab(
-                      icon: Icons.receipt_long_rounded,
-                      label: 'السجل',
-                    ),
-                  ],
-                ),
+                  const _PayrollTab(
+                    icon: Icons.receipt_long_rounded,
+                    label: 'السجل',
+                  ),
+                ],
               ),
             ),
           ),
-          body: const TabBarView(children: [
-            _NewPaymentTab(),
-            _HistoryTab(),
-          ]),
         ),
-      );
+        body: TabBarView(children: [
+          if (canPay) const _NewPaymentTab(),
+          const _HistoryTab(),
+        ]),
+      ),
+    );
+  }
 
   void _showReportModal(BuildContext context) {
     final controller = Get.find<PayrollController>();

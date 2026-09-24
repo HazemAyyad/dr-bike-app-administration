@@ -28,6 +28,7 @@ class AddEmployeeUsecase {
     required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
+    required bool canDelegatePermissions,
     String? deviceUserId,
   }) {
     return employeeRepository.creatEmployee(
@@ -48,6 +49,7 @@ class AddEmployeeUsecase {
       visibleBoxIds: visibleBoxIds,
       weeklyDaysOff: weeklyDaysOff,
       fingerprintEnabled: fingerprintEnabled,
+      canDelegatePermissions: canDelegatePermissions,
       deviceUserId: deviceUserId,
     );
   }

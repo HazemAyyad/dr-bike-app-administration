@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../../core/helpers/showtime.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -37,8 +38,10 @@ class AssetsCard extends GetView<AssetsController> {
         controller.getAssetsDetials(assetId: asset.assetId.toString());
         Get.toNamed(AppRoutes.ASSETDETAILSSCREEN);
       },
-      onLongPress: () => Get.dialog(CancelFileDialog(
-          fileName: asset.name, assetId: asset.assetId.toString())),
+      onLongPress: !canDeleteFinancialAssets
+          ? null
+          : () => Get.dialog(CancelFileDialog(
+              fileName: asset.name, assetId: asset.assetId.toString())),
       child: Column(children: [
         Row(children: [
           ClipRRect(

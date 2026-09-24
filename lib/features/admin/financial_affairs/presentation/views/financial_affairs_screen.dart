@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/assets_controller.dart';
@@ -26,38 +27,77 @@ class FinancialAffairsScreen extends StatefulWidget {
 class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
   int selectedTab = 0;
 
+  List<_FinancialTab> get _tabs => [
+        if (canAccessFinancialExpensesTab)
+          const _FinancialTab(
+            kind: _FinancialTabKind.expenses,
+            label: 'المصاريف',
+            icon: Icons.receipt_long_outlined,
+            child: ExpensesScreen(embedded: true),
+          ),
+        if (canViewFinancialAssets ||
+            canManageFinancialAssets ||
+            canDeleteFinancialAssets ||
+            canDepreciateFinancialAssets ||
+            canExportFinancialAssets)
+          const _FinancialTab(
+            kind: _FinancialTabKind.assets,
+            label: 'الأصول',
+            icon: Icons.inventory_2_outlined,
+            child: AssetsScreen(embedded: true),
+          ),
+        if (canViewFinancialOfficialPapers ||
+            canManageFinancialOfficialPapers ||
+            canDeleteFinancialOfficialPapers)
+          const _FinancialTab(
+            kind: _FinancialTabKind.officialPapers,
+            label: 'الأوراق الرسمية',
+            icon: Icons.folder_copy_outlined,
+            child: OfficialPapersScreen(embedded: true),
+          ),
+      ];
+
   @override
   Widget build(BuildContext context) {
+    final tabs = _tabs;
+    if (tabs.isEmpty) {
+      return const Scaffold(
+        appBar: CustomAppBar(title: 'الشؤون المالية', action: false),
+        body: Center(child: Text('لا توجد صلاحية للوصول لهذا القسم')),
+      );
+    }
+    if (selectedTab >= tabs.length) selectedTab = 0;
+    final activeTab = tabs[selectedTab];
     return DefaultTabController(
-      length: 3,
+      key: ValueKey(tabs.map((tab) => tab.kind.index).join('-')),
+      length: tabs.length,
       child: Scaffold(
         appBar: CustomAppBar(
-          title: selectedTab == 0
-              ? 'المصاريف'
-              : selectedTab == 1
-                  ? 'الأصول'
-                  : 'الأوراق الرسمية',
+          title: activeTab.label,
           action: false,
           actions: [
-            _searchAction(),
+            _searchAction(activeTab.kind),
             _appBarAction(
               tooltip: 'الفلاتر',
               onPressed: () => _openFilters(context),
               icon: Icons.tune_rounded,
             ),
-            if (selectedTab == 0)
+            if (activeTab.kind == _FinancialTabKind.expenses &&
+                (canViewEmployeesFinancial || canPayEmployeesSalary))
               _appBarAction(
                 tooltip: 'دفع الرواتب',
                 onPressed: () => Get.toNamed(AppRoutes.PAYROLLSCREEN),
                 icon: Icons.payments_rounded,
               ),
-            if (selectedTab == 1)
+            if (activeTab.kind == _FinancialTabKind.assets &&
+                canDepreciateFinancialAssets)
               _appBarAction(
                 tooltip: 'تنفيذ إهلاك أصول الشهر',
                 onPressed: () => Get.dialog(const AssetsConsumption()),
                 icon: Icons.trending_down_rounded,
               ),
-            if (selectedTab == 1)
+            if (activeTab.kind == _FinancialTabKind.assets &&
+                canViewFinancialAssets)
               _appBarAction(
                 tooltip: 'سجل إهلاك الأصول',
                 onPressed: () {
@@ -67,18 +107,22 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
                 },
                 icon: Icons.history_rounded,
               ),
-            if (selectedTab != 2)
+            if ((activeTab.kind == _FinancialTabKind.expenses &&
+                    canExportFinancialExpenses) ||
+                (activeTab.kind == _FinancialTabKind.assets &&
+                    canExportFinancialAssets))
               _appBarAction(
                 tooltip: 'التقارير',
                 onPressed: () => showFinancialReportsModal(
                   context,
-                  kind: selectedTab == 0
+                  kind: activeTab.kind == _FinancialTabKind.expenses
                       ? FinancialReportsKind.expenses
                       : FinancialReportsKind.assets,
                 ),
                 icon: Icons.assessment_outlined,
               ),
-            if (selectedTab == 2)
+            if (activeTab.kind == _FinancialTabKind.officialPapers &&
+                canViewFinancialOfficialPapers)
               _appBarAction(
                 tooltip: 'الخزن والملفات',
                 onPressed: () {
@@ -135,21 +179,16 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
                     : AppColors.operationalNavy,
                 labelPadding: EdgeInsets.zero,
                 tabs: [
-                  _tab(Icons.receipt_long_outlined, 'المصاريف', 0),
-                  _tab(Icons.inventory_2_outlined, 'الأصول', 1),
-                  _tab(Icons.folder_copy_outlined, 'الأوراق', 2),
+                  for (var index = 0; index < tabs.length; index++)
+                    _tab(tabs[index].icon, tabs[index].label, index),
                 ],
               ),
             ),
           ),
         ),
-        body: const TabBarView(
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            ExpensesScreen(embedded: true),
-            AssetsScreen(embedded: true),
-            OfficialPapersScreen(embedded: true),
-          ],
+        body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
+          children: tabs.map((tab) => tab.child).toList(),
         ),
       ),
     );
@@ -178,8 +217,8 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
         ),
       );
 
-  Widget _searchAction() {
-    if (selectedTab == 0) {
+  Widget _searchAction(_FinancialTabKind kind) {
+    if (kind == _FinancialTabKind.expenses) {
       final controller = Get.find<ExpensesController>();
       return Obx(() => _appBarAction(
             tooltip: 'search'.tr,
@@ -189,7 +228,7 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
                 : Icons.search_rounded,
           ));
     }
-    if (selectedTab == 1) {
+    if (kind == _FinancialTabKind.assets) {
       final controller = Get.find<AssetsController>();
       return Obx(() => _appBarAction(
             tooltip: 'search'.tr,
@@ -224,12 +263,15 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
       );
 
   void _openFilters(BuildContext context) {
-    if (selectedTab == 0) {
+    final tabs = _tabs;
+    if (tabs.isEmpty) return;
+    final kind = tabs[selectedTab.clamp(0, tabs.length - 1)].kind;
+    if (kind == _FinancialTabKind.expenses) {
       final controller = Get.find<ExpensesController>();
       showExpenseFiltersModal(context, controller);
       return;
     }
-    if (selectedTab == 1) {
+    if (kind == _FinancialTabKind.assets) {
       final controller = Get.find<AssetsController>();
       showAssetFiltersModal(context, controller);
       return;
@@ -239,4 +281,20 @@ class _FinancialAffairsScreenState extends State<FinancialAffairsScreen> {
       Get.find<OfficialPapersController>(),
     );
   }
+}
+
+enum _FinancialTabKind { expenses, assets, officialPapers }
+
+class _FinancialTab {
+  const _FinancialTab({
+    required this.kind,
+    required this.label,
+    required this.icon,
+    required this.child,
+  });
+
+  final _FinancialTabKind kind;
+  final String label;
+  final IconData icon;
+  final Widget child;
 }

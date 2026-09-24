@@ -23,9 +23,9 @@ import '../../../../admin/notifications/presentation/controllers/admin_notificat
 import '../../../../employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../domain/usecases/login_usecase.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
+
 class LoginController extends GetxController {
   Login login;
   LoginController({required this.login});
@@ -295,6 +295,7 @@ class LoginController extends GetxController {
           userdata.employeePermissions.map((p) => p.permissionId).toList(),
       permissionNamesEn:
           userdata.employeePermissions.map((p) => p.permissionNameEn).toList(),
+      canDelegatePermissions: userdata.user.employee.canDelegatePermissions,
     );
   }
 

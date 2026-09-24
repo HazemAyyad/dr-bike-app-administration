@@ -120,6 +120,7 @@ class EmployeeDatasource {
     required List<String> visibleBoxIds,
     required List<String> weeklyDaysOff,
     required bool fingerprintEnabled,
+    required bool canDelegatePermissions,
     String? deviceUserId,
   }) async {
     try {
@@ -182,6 +183,7 @@ class EmployeeDatasource {
           'number_of_work_hours': numberOfWorkHours,
           'start_work_time': startWorkTime,
           'fingerprint_enabled': fingerprintEnabled ? 1 : 0,
+          'can_delegate_permissions': canDelegatePermissions ? 1 : 0,
           if (deviceUserId != null && deviceUserId.trim().isNotEmpty)
             'device_user_id': deviceUserId.trim(),
           ...employeeImgList,

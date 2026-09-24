@@ -7,6 +7,7 @@ import '../financial_image_cache.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/showtime.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../../../data/models/official_papers_models/pictures_model.dart';
@@ -56,18 +57,19 @@ class PictureDetails extends GetView<OfficialPapersController> {
                           fontSize: 20.sp,
                         ),
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.edit_document,
-                      color: AppColors.primaryColor,
-                      size: 30,
+                  if (canManageFinancialOfficialPapers)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit_document,
+                        color: AppColors.primaryColor,
+                        size: 30,
+                      ),
+                      onPressed: () {
+                        controller.isEdit = true;
+                        controller.getPictureData(picture: picture);
+                        Get.dialog(const AddPicture());
+                      },
                     ),
-                    onPressed: () {
-                      controller.isEdit = true;
-                      controller.getPictureData(picture: picture);
-                      Get.dialog(const AddPicture());
-                    },
-                  ),
                 ],
               ),
               SizedBox(height: 10.h),

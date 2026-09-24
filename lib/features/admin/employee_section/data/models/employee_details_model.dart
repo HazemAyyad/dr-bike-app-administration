@@ -24,6 +24,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required String startWorkTime,
     required String endWorkTime,
     required bool fingerprintEnabled,
+    required bool canDelegatePermissions,
     required String? deviceUserId,
     required String? lastFingerprintScanAt,
     required String? lastFingerprintAttendanceAt,
@@ -45,6 +46,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           startWorkTime: startWorkTime,
           endWorkTime: endWorkTime,
           fingerprintEnabled: fingerprintEnabled,
+          canDelegatePermissions: canDelegatePermissions,
           deviceUserId: deviceUserId,
           lastFingerprintScanAt: lastFingerprintScanAt,
           lastFingerprintAttendanceAt: lastFingerprintAttendanceAt,
@@ -75,6 +77,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       startWorkTime: asString(details[ApiKey.start_work_time]),
       endWorkTime: asString(details[ApiKey.end_work_time]),
       fingerprintEnabled: asBool(details['fingerprint_enabled']),
+      canDelegatePermissions: asBool(details['can_delegate_permissions']),
       deviceUserId: asNullableString(details['device_user_id']),
       lastFingerprintScanAt:
           asNullableString(details['last_fingerprint_scan_at']),

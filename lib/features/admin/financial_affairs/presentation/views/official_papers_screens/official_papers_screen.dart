@@ -7,6 +7,7 @@ import '../../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -42,19 +43,20 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                             : AppColors.secondaryColor,
                       ),
                     )),
-                IconButton(
-                  icon: Icon(
-                    Icons.inventory,
-                    size: 25.sp,
+                if (canViewFinancialOfficialPapers)
+                  IconButton(
+                    icon: Icon(
+                      Icons.inventory,
+                      size: 25.sp,
+                    ),
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                    onPressed: () {
+                      controller.getTreasury();
+                      Get.toNamed(AppRoutes.SAFESSCREEN);
+                    },
                   ),
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                  onPressed: () {
-                    controller.getTreasury();
-                    Get.toNamed(AppRoutes.SAFESSCREEN);
-                  },
-                ),
                 SizedBox(width: 15.w),
               ],
             ),
@@ -187,32 +189,34 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
           SliverToBoxAdapter(child: SizedBox(height: 80.h)),
         ],
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: () {
-          controller.toggleAddMenu();
-        },
-        opacityAnimation: controller.sizeAnimation,
-        sizeAnimation: controller.opacityAnimation,
-        customWidget: Column(
-          children: [
-            BuildAddMenuItem(
-              title: 'add_important_images',
-              iconAsset: AssetsManager.invoiceIcon,
-              route: '',
+      floatingActionButton: !canManageFinancialOfficialPapers
+          ? null
+          : CustomFloatingActionButton(
+              isAddMenuOpen: controller.isAddMenuOpen,
               onTap: () {
-                controller.isEdit = false;
-                controller.fileController.clear();
-                controller.paperFiles.clear();
-                controller.notesController.clear();
                 controller.toggleAddMenu();
-                controller.getPictureData();
-                Get.dialog(const AddPicture());
               },
+              opacityAnimation: controller.sizeAnimation,
+              sizeAnimation: controller.opacityAnimation,
+              customWidget: Column(
+                children: [
+                  BuildAddMenuItem(
+                    title: 'add_important_images',
+                    iconAsset: AssetsManager.invoiceIcon,
+                    route: '',
+                    onTap: () {
+                      controller.isEdit = false;
+                      controller.fileController.clear();
+                      controller.paperFiles.clear();
+                      controller.notesController.clear();
+                      controller.toggleAddMenu();
+                      controller.getPictureData();
+                      Get.dialog(const AddPicture());
+                    },
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

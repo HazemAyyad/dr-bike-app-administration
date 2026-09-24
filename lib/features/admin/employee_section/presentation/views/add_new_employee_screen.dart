@@ -18,6 +18,7 @@ import '../../../../../core/validator/validator.dart';
 import '../controllers/add_employee_controller.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
   const AddNewEmployeeScreen({Key? key}) : super(key: key);
 
@@ -248,6 +249,33 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                     : const SizedBox.shrink(),
               ),
               children: [
+                if (userType == 'admin')
+                  Obx(
+                    () => Container(
+                      margin: EdgeInsets.only(bottom: 8.h),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withValues(alpha: .06),
+                        borderRadius: BorderRadius.circular(10.r),
+                        border: Border.all(
+                          color: AppColors.primaryColor.withValues(alpha: .2),
+                        ),
+                      ),
+                      child: SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: controller.canDelegatePermissions.value,
+                        onChanged: (value) =>
+                            controller.canDelegatePermissions.value = value,
+                        title: const Text(
+                          'السماح بتفويض الصلاحيات',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        subtitle: const Text(
+                          'يستطيع الموظف منح أو سحب الصلاحيات الموجودة لديه فقط لموظف آخر متاح له.',
+                        ),
+                      ),
+                    ),
+                  ),
                 Obx(
                   () {
                     if (!controller.canEditPermissionAssignments.value) {

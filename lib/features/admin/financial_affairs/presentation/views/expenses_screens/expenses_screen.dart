@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 import '../../../data/models/expenses_models/destruction_model.dart';
@@ -44,15 +45,16 @@ class ExpensesScreen extends GetView<ExpensesController> {
                             : AppColors.secondaryColor,
                       ),
                     )),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.download_rounded),
-                  onSelected: controller.downloadExpenseReport,
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'pdf', child: Text('تنزيل PDF')),
-                    PopupMenuItem(value: 'xlsx', child: Text('تنزيل Excel')),
-                    PopupMenuItem(value: 'csv', child: Text('تنزيل CSV')),
-                  ],
-                ),
+                if (canExportFinancialExpenses)
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.download_rounded),
+                    onSelected: controller.downloadExpenseReport,
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(value: 'pdf', child: Text('تنزيل PDF')),
+                      PopupMenuItem(value: 'xlsx', child: Text('تنزيل Excel')),
+                      PopupMenuItem(value: 'csv', child: Text('تنزيل CSV')),
+                    ],
+                  ),
                 SizedBox(width: 8.w),
               ],
               onPressedFilter: () {
@@ -70,39 +72,45 @@ class ExpensesScreen extends GetView<ExpensesController> {
           ),
           SliverToBoxAdapter(
             child: Obx(
-              () => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
-                child: Row(
-                  children: [
-                    _ExpenseTypeChip(
-                      label: 'الكل',
-                      value: '',
-                      selected: controller.expenseTypeFilter.value.isEmpty,
-                      onSelected: controller.setExpenseTypeFilter,
+              () => !controller.showingExpenses
+                  ? const SizedBox.shrink()
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
+                      child: Row(
+                        children: [
+                          _ExpenseTypeChip(
+                            label: 'الكل',
+                            value: '',
+                            selected:
+                                controller.expenseTypeFilter.value.isEmpty,
+                            onSelected: controller.setExpenseTypeFilter,
+                          ),
+                          _ExpenseTypeChip(
+                            label: 'عمومية',
+                            value: 'general',
+                            selected:
+                                controller.expenseTypeFilter.value == 'general',
+                            onSelected: controller.setExpenseTypeFilter,
+                          ),
+                          _ExpenseTypeChip(
+                            label: 'رواتب',
+                            value: 'salary',
+                            selected:
+                                controller.expenseTypeFilter.value == 'salary',
+                            onSelected: controller.setExpenseTypeFilter,
+                          ),
+                          _ExpenseTypeChip(
+                            label: 'إتلاف',
+                            value: 'destruction',
+                            selected: controller.expenseTypeFilter.value ==
+                                'destruction',
+                            onSelected: controller.setExpenseTypeFilter,
+                          ),
+                        ],
+                      ),
                     ),
-                    _ExpenseTypeChip(
-                      label: 'عمومية',
-                      value: 'general',
-                      selected: controller.expenseTypeFilter.value == 'general',
-                      onSelected: controller.setExpenseTypeFilter,
-                    ),
-                    _ExpenseTypeChip(
-                      label: 'رواتب',
-                      value: 'salary',
-                      selected: controller.expenseTypeFilter.value == 'salary',
-                      onSelected: controller.setExpenseTypeFilter,
-                    ),
-                    _ExpenseTypeChip(
-                      label: 'إتلاف',
-                      value: 'destruction',
-                      selected:
-                          controller.expenseTypeFilter.value == 'destruction',
-                      onSelected: controller.setExpenseTypeFilter,
-                    ),
-                  ],
-                ),
-              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -138,7 +146,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
                 return const _ExpensesSkeletonSliver();
               }
 
-              if (controller.currentTab.value == 0
+              if (controller.showingExpenses
                   ? controller.expensesFilter.isEmpty
                   : controller.destructionsFilter.isEmpty) {
                 return const SliverFillRemaining(
@@ -150,11 +158,11 @@ class ExpensesScreen extends GetView<ExpensesController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final month = controller.currentTab.value == 0
+                    final month = controller.showingExpenses
                         ? controller.expensesFilter.keys.toList()[index]
                         : controller.destructionsFilter.keys.toList()[index];
 
-                    final data = controller.currentTab.value == 0
+                    final data = controller.showingExpenses
                         ? (controller.expensesFilter[month]!.toList()
                           ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
                         : (controller.destructionsFilter[month]!.toList()
@@ -168,7 +176,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
                           SizedBox(height: index == 0 ? 10 : 0.h),
                           FinancialGroupTitle(title: month, count: data.length),
                           ...data.map(
-                            (expense) => controller.currentTab.value == 0
+                            (expense) => controller.showingExpenses
                                 ? ExpensesCard(expense: expense as ExpenseModel)
                                 : DestructionCard(
                                     data: expense as DestructionModel,
@@ -178,7 +186,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
                       ),
                     );
                   },
-                  childCount: controller.currentTab.value == 0
+                  childCount: controller.showingExpenses
                       ? controller.expensesFilter.length
                       : controller.destructionsFilter.length,
                 ),
@@ -188,26 +196,28 @@ class ExpensesScreen extends GetView<ExpensesController> {
           SliverToBoxAdapter(child: SizedBox(height: 80.h)),
         ],
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: () {
-          controller.toggleAddMenu();
-          controller.isEditing.value = false;
-          controller.isExpenseReadOnly.value = false;
-          controller.expenseNameController.clear();
-          controller.expensePriceController.clear();
-          controller.expenseNoteController.clear();
-          controller.boxIdController.clear();
-          controller.expenseDateController.text =
-              DateTime.now().toIso8601String().split('T').first;
-          controller.expenseType.value = 'general';
-          controller.invoiceFile.clear();
-          controller.expensesFile.clear();
-        },
-        opacityAnimation: controller.sizeAnimation,
-        sizeAnimation: controller.opacityAnimation,
-        addList: controller.addList,
-      ),
+      floatingActionButton: controller.addList.isEmpty
+          ? null
+          : CustomFloatingActionButton(
+              isAddMenuOpen: controller.isAddMenuOpen,
+              onTap: () {
+                controller.toggleAddMenu();
+                controller.isEditing.value = false;
+                controller.isExpenseReadOnly.value = false;
+                controller.expenseNameController.clear();
+                controller.expensePriceController.clear();
+                controller.expenseNoteController.clear();
+                controller.boxIdController.clear();
+                controller.expenseDateController.text =
+                    DateTime.now().toIso8601String().split('T').first;
+                controller.expenseType.value = 'general';
+                controller.invoiceFile.clear();
+                controller.expensesFile.clear();
+              },
+              opacityAnimation: controller.sizeAnimation,
+              sizeAnimation: controller.opacityAnimation,
+              addList: controller.addList,
+            ),
     );
   }
 }

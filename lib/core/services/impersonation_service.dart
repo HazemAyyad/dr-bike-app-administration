@@ -131,6 +131,7 @@ class ImpersonationService {
           userModel.employeePermissions.map((p) => p.permissionId).toList(),
       permissionNamesEn:
           userModel.employeePermissions.map((p) => p.permissionNameEn).toList(),
+      canDelegatePermissions: userModel.user.employee.canDelegatePermissions,
     );
     await _stopEmployeeRuntimeServicesForImpersonation();
     debugPrint(
@@ -213,6 +214,7 @@ class ImpersonationService {
         permissionNamesEn: userdata.employeePermissions
             .map((p) => p.permissionNameEn)
             .toList(),
+        canDelegatePermissions: userdata.user.employee.canDelegatePermissions,
       );
     }
     UserData.userToken = originalToken;

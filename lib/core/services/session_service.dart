@@ -14,6 +14,7 @@ import 'initial_bindings.dart';
 import 'user_data.dart';
 
 import '../helpers/app_failure_notice.dart';
+
 const _loginRoutes = <String>{
   AppRoutes.LOGINORSIGNUPSCREEN,
   AppRoutes.LOGINSCREEN,
@@ -70,6 +71,7 @@ class SessionService {
           userdata.employeePermissions.map((p) => p.permissionId).toList(),
       permissionNamesEn:
           userdata.employeePermissions.map((p) => p.permissionNameEn).toList(),
+      canDelegatePermissions: userdata.user.employee.canDelegatePermissions,
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/assets_controller.dart';
@@ -160,25 +161,27 @@ class AssetsScreen extends GetView<AssetsController> {
           SliverToBoxAdapter(child: SizedBox(height: 80.h)),
         ],
       ),
-      floatingActionButton: SizedBox(
-        height: 55.h,
-        width: 55.w,
-        child: FloatingActionButton(
-          onPressed: () {
-            controller.isEditing(false);
-            controller.editAsset();
-            Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
-          },
-          backgroundColor: AppColors.secondaryColor,
-          elevation: 2.0,
-          shape: const CircleBorder(),
-          child: Icon(
-            Icons.add,
-            color: AppColors.whiteColor,
-            size: 42.sp,
-          ),
-        ),
-      ),
+      floatingActionButton: !canManageFinancialAssets
+          ? null
+          : SizedBox(
+              height: 55.h,
+              width: 55.w,
+              child: FloatingActionButton(
+                onPressed: () {
+                  controller.isEditing(false);
+                  controller.editAsset();
+                  Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
+                },
+                backgroundColor: AppColors.secondaryColor,
+                elevation: 2.0,
+                shape: const CircleBorder(),
+                child: Icon(
+                  Icons.add,
+                  color: AppColors.whiteColor,
+                  size: 42.sp,
+                ),
+              ),
+            ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,

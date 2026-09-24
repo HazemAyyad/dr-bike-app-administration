@@ -8,11 +8,13 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../utils/salary_receipt_pdf_builder.dart';
 import '../utils/financial_report_pdf_builder.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class PayrollController extends GetxController {
   PayrollController(this.api);
 
@@ -67,15 +69,27 @@ class PayrollController extends GetxController {
   Future<void> loadInitial() async {
     isLoading.value = true;
     try {
-      final results = await Future.wait([
-        api.get(EndPoints.payrollEmployees),
-        api.get(EndPoints.payrollBoxes),
-        api.get(EndPoints.payrollPeriods,
-            queryParameters: {'month': month.value}),
-      ]);
-      employees.assignAll(_mapList(results[0].data['employees']));
-      boxes.assignAll(_mapList(results[1].data['boxes']));
-      _setPeriods(results[2].data);
+      if (canPayEmployeesSalary) {
+        final results = await Future.wait([
+          api.get(EndPoints.payrollEmployees),
+          api.get(EndPoints.payrollBoxes),
+          api.get(
+            EndPoints.payrollPeriods,
+            queryParameters: {'month': month.value},
+          ),
+        ]);
+        employees.assignAll(_mapList(results[0].data['employees']));
+        boxes.assignAll(_mapList(results[1].data['boxes']));
+        _setPeriods(results[2].data);
+      } else {
+        employees.clear();
+        boxes.clear();
+        final response = await api.get(
+          EndPoints.payrollPeriods,
+          queryParameters: {'month': month.value},
+        );
+        _setPeriods(response.data);
+      }
       if (selectedBoxId.value != null &&
           !boxes.any((box) => _toInt(box['id']) == selectedBoxId.value)) {
         selectedBoxId.value = null;

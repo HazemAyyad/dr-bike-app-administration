@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
@@ -468,7 +469,12 @@ class OfficialPapersController extends GetxController
 
   @override
   void onInit() {
-    getAllExpenses();
+    if (canViewFinancialOfficialPapers) {
+      getAllExpenses();
+    } else {
+      FinacialService().papers.clear();
+      FinacialService().pictures.clear();
+    }
     papersSearch = FinacialService().papers;
     picturesSearch = FinacialService().pictures;
 

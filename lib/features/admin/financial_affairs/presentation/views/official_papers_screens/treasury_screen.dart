@@ -6,6 +6,7 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/core/utils/app_colors.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
@@ -47,14 +48,16 @@ class TreasuryScreen extends GetView<OfficialPapersController> {
                     (context, index) {
                       final safe = FinacialService().safes[index];
                       return CustomDataWidget(
-                        onLongPress: () {
-                          Get.dialog(
-                            CancelFileDialog(
-                              treasuryId: safe.id.toString(),
-                              fileName: safe.name,
-                            ),
-                          );
-                        },
+                        onLongPress: !canDeleteFinancialOfficialPapers
+                            ? null
+                            : () {
+                                Get.dialog(
+                                  CancelFileDialog(
+                                    treasuryId: safe.id.toString(),
+                                    fileName: safe.name,
+                                  ),
+                                );
+                              },
                         onTap: () {
                           Get.toNamed(
                             AppRoutes.FILEBOXSCREEN,
@@ -76,32 +79,34 @@ class TreasuryScreen extends GetView<OfficialPapersController> {
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,
-      floatingActionButton: SizedBox(
-        height: 55.h,
-        width: 55.w,
-        child: FloatingActionButton(
-          onPressed: () {
-            Get.dialog(
-              AddFilesDialog(
-                title: 'create_safe',
-                label: 'safe_name',
-                hintText: 'safe_name',
+      floatingActionButton: !canManageFinancialOfficialPapers
+          ? null
+          : SizedBox(
+              height: 55.h,
+              width: 55.w,
+              child: FloatingActionButton(
                 onPressed: () {
-                  controller.addSafe();
+                  Get.dialog(
+                    AddFilesDialog(
+                      title: 'create_safe',
+                      label: 'safe_name',
+                      hintText: 'safe_name',
+                      onPressed: () {
+                        controller.addSafe();
+                      },
+                    ),
+                  );
                 },
+                backgroundColor: AppColors.secondaryColor,
+                elevation: 2.0,
+                shape: const CircleBorder(),
+                child: Icon(
+                  Icons.add,
+                  color: AppColors.whiteColor,
+                  size: 42.sp,
+                ),
               ),
-            );
-          },
-          backgroundColor: AppColors.secondaryColor,
-          elevation: 2.0,
-          shape: const CircleBorder(),
-          child: Icon(
-            Icons.add,
-            color: AppColors.whiteColor,
-            size: 42.sp,
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

@@ -136,6 +136,7 @@ class CommonDatasource {
           permissionNamesEn: userdata.employeePermissions
               .map((p) => p.permissionNameEn)
               .toList(),
+          canDelegatePermissions: userdata.user.employee.canDelegatePermissions,
         );
       }
       return user;

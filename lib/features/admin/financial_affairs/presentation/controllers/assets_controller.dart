@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -530,8 +531,14 @@ class AssetsController extends GetxController {
 
   @override
   void onInit() {
-    getAllAssets();
-    getPurchaseBoxes();
+    if (canViewFinancialAssets) {
+      getAllAssets();
+    } else {
+      FinacialService().assets.value = null;
+      FinacialService().assetsTasks.clear();
+      assetsFilter.clear();
+    }
+    if (canManageFinancialAssets) getPurchaseBoxes();
     assetsFilter.value = FinacialService().assetsTasks;
     super.onInit();
   }

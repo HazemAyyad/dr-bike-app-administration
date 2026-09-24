@@ -117,6 +117,7 @@ class UserData {
     userToken = '';
     employeePermissions = [];
     employeePermissionNames = [];
+    employeeCanDelegatePermissions = false;
     userType = '';
     sessionUserType.value = '';
   }
