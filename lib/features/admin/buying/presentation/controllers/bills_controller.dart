@@ -1254,7 +1254,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         editingPurchaseBillId.value = null;
         _clearPurchaseEditor();
         getBills();
-        Get.offNamed(AppRoutes.BILLSSCREEN);
+        Get.offNamed(AppRoutes.BUYINGSCREEN);
         Helpers.showCustomDialogSuccess(
           context: context,
           title: 'success'.tr,
@@ -1282,7 +1282,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       ),
       (success) {
         getBills();
-        Get.offNamed(AppRoutes.BILLSSCREEN);
+        Get.offNamed(AppRoutes.BUYINGSCREEN);
         Helpers.showCustomDialogSuccess(
           context: context,
           title: 'success'.tr,
@@ -1346,7 +1346,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         billModel.map((e) => e.productIdController.clear()).toList();
         billModel.map((e) => e.quantityController.clear()).toList();
         billModel.map((e) => e.priceController.clear()).toList();
-        Get.offNamed(AppRoutes.BILLSSCREEN);
+        Get.offNamed(AppRoutes.BUYINGSCREEN);
       });
       getBills();
       Get.find<ReturnPurchasesController>().getReturnBills();
@@ -1942,6 +1942,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     isWorkflowLoading(true);
     update();
     final result = await future;
+    if (!context.mounted) {
+      isWorkflowLoading(false);
+      update();
+      return result.isRight();
+    }
     result.fold((failure) {
       Helpers.showCustomDialogError(
         context: context,
@@ -1956,14 +1961,16 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
           message: success,
         );
       }
+    });
+    if (result.isRight()) {
       if (billDetails != null) {
-        getBillDetails(
+        await getBillDetails(
           context: context,
           billId: billDetails!.billId.toString(),
         );
       }
-      getBills();
-    });
+      await getBills();
+    }
     isWorkflowLoading(false);
     update();
     return result.isRight();
@@ -2077,6 +2084,10 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _applyPurchaseBillFilters() {
+    if (purchaseBillStateCount(purchaseBillStateFilter.value) == 0 &&
+        purchaseBillStateCount('all') > 0) {
+      purchaseBillStateFilter.value = 'all';
+    }
     allBillsSearch.assignAll(_filterBillGroups(BuyingServes().allBillsTasks));
     allBillsArchiveSearch
         .assignAll(_filterBillGroups(BuyingServes().allBillsArchiveTasks));

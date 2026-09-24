@@ -59,70 +59,35 @@ class PurchaseOrdersScreen extends GetView<PurchaseOrdersController> {
                   );
                 }
 
-                if (controller.currentTab.value == 0 &&
-                    controller.unprocessedSearch.isEmpty) {
-                  return const SliverFillRemaining(
-                      child: Center(child: ShowNoData()));
-                }
-                if (controller.currentTab.value == 1 &&
-                    controller.notMatchedSearch.isEmpty) {
+                final current = controller.currentTab.value;
+                final source = controller.currentSearch;
+                if (source.isEmpty) {
                   return const SliverFillRemaining(
                     child: Center(child: ShowNoData()),
                   );
                 }
-                if (controller.currentTab.value == 2 &&
-                    controller.completedSearch.isEmpty) {
-                  return const SliverFillRemaining(
-                    child: Center(child: ShowNoData()),
-                  );
-                }
-                if (controller.currentTab.value == 3 &&
-                    controller.depositsSearch.isEmpty) {
-                  return const SliverFillRemaining(
-                    child: Center(child: ShowNoData()),
-                  );
-                }
+
+                final months = source.keys.toList();
 
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, section) {
-                      final month = controller.currentTab.value == 0
-                          ? controller.unprocessedSearch.keys.toList()[section]
-                          : controller.currentTab.value == 1
-                              ? controller.notMatchedSearch.keys
-                                  .toList()[section]
-                              : controller.currentTab.value == 2
-                                  ? controller.completedSearch.keys
-                                      .toList()[section]
-                                  : controller.depositsSearch.keys
-                                      .toList()[section];
-                      final bills = controller.currentTab.value == 0
-                          ? controller.unprocessedSearch[month]!
-                          : controller.currentTab.value == 1
-                              ? controller.notMatchedSearch[month]!
-                              : controller.currentTab.value == 2
-                                  ? controller.completedSearch[month]!
-                                  : controller.depositsSearch[month]!;
+                      final month = months[section];
+                      final bills = source[month]!;
 
                       return BillsList(
                         month: month,
                         bills: bills,
-                        page: controller.currentTab.value == 0
+                        page: current <= 1
                             ? '2'
-                            : controller.currentTab.value == 2
+                            : current == 3
                                 ? '1'
-                                : controller.currentTab.value == 1
+                                : current == 2
                                     ? '3'
                                     : '4',
                       );
                     },
-                    childCount: controller.currentTab.value == 0
-                        ? controller.unprocessedSearch.length
-                        : controller.currentTab.value == 1
-                            ? controller.notMatchedSearch.length
-                            : controller.currentTab.value == 2
-                                ? controller.completedSearch.length
-                                : controller.depositsSearch.length,
+                    childCount: months.length,
                   ),
                 );
               },

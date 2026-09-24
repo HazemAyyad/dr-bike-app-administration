@@ -36,6 +36,7 @@ class ReturnPurchasesController extends GetxController {
   final PurchaseWorkflowUsecase purchaseWorkflowUsecase;
 
   final tabs = const [
+    'الكل',
     'مسودات',
     'بانتظار التسليم',
     'بانتظار التسوية',
@@ -86,12 +87,12 @@ class ReturnPurchasesController extends GetxController {
   final deliveredPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
 
   int tabCount(int index) {
-    if (index < 0 || index >= statuses.length) return 0;
-    final status = statuses[index];
+    if (index < 0 || index > statuses.length) return 0;
     final query = search.value;
     return allReturns.where((row) {
-      final matchesStatus = row.status == status ||
-          (status == 'confirmed' && row.status == 'pending');
+      final matchesStatus = index == 0
+          ? _isVisibleStatus(row.status)
+          : _matchesStatus(row.status, statuses[index - 1]);
       final matchesSearch = query.isEmpty ||
           row.number.toLowerCase().contains(query) ||
           row.billId.contains(query) ||
@@ -100,7 +101,13 @@ class ReturnPurchasesController extends GetxController {
     }).length;
   }
 
-  int get totalCount => allReturns.length;
+  int get totalCount => tabCount(0);
+
+  bool _isVisibleStatus(String status) =>
+      statuses.contains(status) || status == 'pending';
+
+  bool _matchesStatus(String rowStatus, String status) =>
+      rowStatus == status || (status == 'confirmed' && rowStatus == 'pending');
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -524,10 +531,10 @@ class ReturnPurchasesController extends GetxController {
 
   int _tabIndexAfterAction(String action) {
     const indexes = {
-      'confirm': 1,
-      'deliver': 2,
-      'settle': 3,
-      'cancel': 4,
+      'confirm': 2,
+      'deliver': 3,
+      'settle': 4,
+      'cancel': 5,
     };
     return indexes[action] ?? currentTab.value;
   }
@@ -668,10 +675,18 @@ class ReturnPurchasesController extends GetxController {
   }
 
   void _rebuildGroups() {
-    final status = statuses[currentTab.value];
+    if (tabCount(currentTab.value) == 0) {
+      for (var index = 0; index < tabs.length; index++) {
+        if (tabCount(index) > 0) {
+          currentTab.value = index;
+          break;
+        }
+      }
+    }
     final rows = allReturns.where((row) {
-      final matchesStatus = row.status == status ||
-          (status == 'confirmed' && row.status == 'pending');
+      final matchesStatus = currentTab.value == 0
+          ? _isVisibleStatus(row.status)
+          : _matchesStatus(row.status, statuses[currentTab.value - 1]);
       final query = search.value;
       return matchesStatus &&
           (query.isEmpty ||

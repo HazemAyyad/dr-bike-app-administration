@@ -28,7 +28,13 @@ class PurchaseOrdersController extends GetxController {
 
   final formKey = GlobalKey<FormState>();
 
-  List<String> tabs = ['unprocessed', 'not_matched', 'completed', 'deposits'];
+  List<String> tabs = [
+    'all',
+    'unprocessed',
+    'not_matched',
+    'completed',
+    'deposits',
+  ];
 
   RxInt currentTab = 0.obs;
   final RxBool isSearchVisible = false.obs;
@@ -157,6 +163,7 @@ class PurchaseOrdersController extends GetxController {
       );
       BuyingServes().depositsTasks.value = groupByDate(depositsList);
       depositsSearch.assignAll(BuyingServes().depositsTasks);
+      _selectFirstNonEmptyTab();
     } catch (error, stackTrace) {
       if (kDebugMode) {
         debugPrint('PurchaseOrdersController.getBills failed: $error');
@@ -403,14 +410,61 @@ class PurchaseOrdersController extends GetxController {
   final completedSearch = <String, List<BillDataModel>>{}.obs;
   final depositsSearch = <String, List<BillDataModel>>{}.obs;
 
+  Map<String, List<BillDataModel>> get allSearch {
+    final merged = <String, List<BillDataModel>>{};
+    final seenIds = <int>{};
+    for (final groups in [
+      unprocessedSearch,
+      notMatchedSearch,
+      completedSearch,
+      depositsSearch,
+    ]) {
+      for (final entry in groups.entries) {
+        for (final bill in entry.value) {
+          if (seenIds.add(bill.id)) {
+            merged.putIfAbsent(entry.key, () => <BillDataModel>[]).add(bill);
+          }
+        }
+      }
+    }
+    for (final bills in merged.values) {
+      bills.sort((a, b) {
+        final dateCompare =
+            DateTime.parse(b.createdAt).compareTo(DateTime.parse(a.createdAt));
+        return dateCompare != 0 ? dateCompare : b.id.compareTo(a.id);
+      });
+    }
+    final entries = merged.entries.toList()
+      ..sort((a, b) => DateTime.parse(b.value.first.createdAt)
+          .compareTo(DateTime.parse(a.value.first.createdAt)));
+    return Map.fromEntries(entries);
+  }
+
+  Map<String, List<BillDataModel>> get currentSearch {
+    switch (currentTab.value) {
+      case 0:
+        return allSearch;
+      case 1:
+        return unprocessedSearch;
+      case 2:
+        return notMatchedSearch;
+      case 3:
+        return completedSearch;
+      default:
+        return depositsSearch;
+    }
+  }
+
   int tabCount(int index) {
     final groups = index == 0
-        ? unprocessedSearch
+        ? allSearch
         : index == 1
-            ? notMatchedSearch
+            ? unprocessedSearch
             : index == 2
-                ? completedSearch
-                : depositsSearch;
+                ? notMatchedSearch
+                : index == 3
+                    ? completedSearch
+                    : depositsSearch;
     return groups.values
         .expand((bills) => bills)
         .map((bill) => bill.id)
@@ -429,6 +483,16 @@ class PurchaseOrdersController extends GetxController {
       ids.addAll(groups.values.expand((bills) => bills).map((bill) => bill.id));
     }
     return ids.length;
+  }
+
+  void _selectFirstNonEmptyTab() {
+    if (tabCount(currentTab.value) > 0) return;
+    for (var index = 0; index < tabs.length; index++) {
+      if (tabCount(index) > 0) {
+        currentTab.value = index;
+        return;
+      }
+    }
   }
 
   void searchBar(String value) {

@@ -59,38 +59,27 @@ class ReturnPurchasesScreen extends GetView<ReturnPurchasesController> {
                   );
                 }
 
-                if (controller.currentTab.value == 0 &&
-                    controller.returnPurchasesSearch.isEmpty) {
-                  return const SliverFillRemaining(
-                      child: Center(child: ShowNoData()));
-                }
-                if (controller.currentTab.value == 1 &&
-                    controller.deliveredPurchasesSearch.isEmpty) {
+                final source = controller.returnPurchasesSearch;
+                if (source.isEmpty) {
                   return const SliverFillRemaining(
                     child: Center(child: ShowNoData()),
                   );
                 }
 
+                final months = source.keys.toList();
+
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, section) {
-                      final month = controller.currentTab.value == 0
-                          ? controller.returnPurchasesSearch.keys
-                              .toList()[section]
-                          : controller.deliveredPurchasesSearch.keys
-                              .toList()[section];
-                      final bills = controller.currentTab.value == 0
-                          ? controller.returnPurchasesSearch[month]!
-                          : controller.deliveredPurchasesSearch[month]!;
+                      final month = months[section];
+                      final bills = source[month]!;
 
                       return ReturnPurchasesList(
                         month: month,
                         bills: bills,
                       );
                     },
-                    childCount: controller.currentTab.value == 0
-                        ? controller.returnPurchasesSearch.length
-                        : controller.deliveredPurchasesSearch.length,
+                    childCount: months.length,
                   ),
                 );
               },

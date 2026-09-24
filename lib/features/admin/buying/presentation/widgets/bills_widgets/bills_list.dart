@@ -284,7 +284,7 @@ class _PurchaseBillCard extends GetView<BillsController> {
 
   String _formatMoney(String value) {
     final amount = double.tryParse(value) ?? 0;
-    return '${intl.NumberFormat('#,##0.##').format(amount)} ${bill.currency}';
+    return intl.NumberFormat('#,##0.##').format(amount);
   }
 
   String _formatQty(num value) {

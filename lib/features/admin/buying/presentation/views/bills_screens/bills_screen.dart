@@ -216,15 +216,20 @@ class _PurchaseBillStateFilters extends GetView<BillsController> {
     return GetBuilder<BillsController>(
       builder: (controller) {
         final selectedState = controller.purchaseBillStateFilter.value;
+        final visibleStates = _states
+            .where(
+              (state) => controller.purchaseBillStateCount(state.value) > 0,
+            )
+            .toList(growable: false);
         return SizedBox(
           height: 44.h,
           child: ListView.separated(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             scrollDirection: Axis.horizontal,
-            itemCount: _states.length,
+            itemCount: visibleStates.length,
             separatorBuilder: (_, __) => SizedBox(width: 8.w),
             itemBuilder: (_, index) {
-              final state = _states[index];
+              final state = visibleStates[index];
               final selected = selectedState == state.value;
               return FilterChip(
                 selected: selected,

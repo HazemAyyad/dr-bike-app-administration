@@ -19,6 +19,7 @@ import '../../../../debts/presentation/controllers/debt_ledger_controller.dart';
 import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../controllers/bills_controller.dart';
+import '../../controllers/purchase_orders_controller.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
 import '../../../../../../core/helpers/app_success_notice.dart';
 
@@ -230,11 +231,12 @@ class _CompactReceivingPanel extends GetView<BillsController> {
 
   Future<void> _receiveAll(BuildContext context) async {
     final ok = await controller.receiveAllShownItems(context);
-    if (!ok) return;
+    if (!ok || !context.mounted) return;
     AppSuccessNotice.show(
       title: 'تم الاستلام',
       message: 'تم استلام جميع الكميات المتبقية في الفاتورة',
     );
+    await _moveToReceivedTabIfComplete(context);
   }
 
   Future<void> _receiveProduct(
@@ -242,11 +244,12 @@ class _CompactReceivingPanel extends GetView<BillsController> {
     BillProductModel product,
   ) async {
     final ok = await controller.receiveShownItem(context, product);
-    if (!ok) return;
+    if (!ok || !context.mounted) return;
     AppSuccessNotice.show(
       title: 'تم استلام المنتج',
       message: product.displayName,
     );
+    await _moveToReceivedTabIfComplete(context);
   }
 
   Future<void> _reviewProduct(
@@ -276,11 +279,26 @@ class _CompactReceivingPanel extends GetView<BillsController> {
     }
     final ok = await controller.receiveReviewedShownItem(context, row);
     row.dispose();
-    if (!ok) return;
+    if (!ok || !context.mounted) return;
     AppSuccessNotice.show(
       title: 'تم تسجيل الاستلام',
       message: product.displayName,
     );
+    await _moveToReceivedTabIfComplete(context);
+  }
+
+  Future<void> _moveToReceivedTabIfComplete(BuildContext context) async {
+    final details = controller.billDetails;
+    if (details == null ||
+        details.products.any((product) => product.remainingQuantity > 0) ||
+        !Get.isRegistered<PurchaseOrdersController>()) {
+      return;
+    }
+    final purchaseOrders = Get.find<PurchaseOrdersController>();
+    purchaseOrders.changeTab(3);
+    final reload = purchaseOrders.getBills();
+    if (context.mounted) Navigator.of(context).pop();
+    await reload;
   }
 
   Future<void> _finalize(BuildContext context) async {
