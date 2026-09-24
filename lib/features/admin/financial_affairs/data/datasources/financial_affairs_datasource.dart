@@ -96,7 +96,7 @@ class FinancialAffairsDatasource {
     required double price,
     required String note,
     required int numberOfMonths,
-    required String acquiredAt,
+    String? acquiredAt,
     required List<File?> selectedFile,
     void Function(double progress)? onUploadProgress,
   }) async {
@@ -131,7 +131,8 @@ class FinancialAffairsDatasource {
           'price': price,
           'notes': note,
           'months_number': numberOfMonths,
-          'acquired_at': acquiredAt,
+          if (acquiredAt != null && acquiredAt.trim().isNotEmpty)
+            'acquired_at': acquiredAt,
           ...formData,
         },
         isFormData: true,
@@ -155,7 +156,7 @@ class FinancialAffairsDatasource {
   // depreciate assets
   Future<Map<String, dynamic>> depreciateAssets() async {
     try {
-      final response = await api.get(EndPoints.depreciateAssets);
+      final response = await api.post(EndPoints.depreciateAssets);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

@@ -17,7 +17,7 @@ class AddNewAssetsUsecase {
     required double price,
     required String note,
     required int numberOfMonths,
-    required String acquiredAt,
+    String? acquiredAt,
     required List<File?> selectedFile,
     void Function(double progress)? onUploadProgress,
   }) {

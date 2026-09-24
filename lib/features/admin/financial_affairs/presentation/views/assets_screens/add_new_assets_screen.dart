@@ -68,7 +68,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                             label: 'assetValue',
                             hintText: 'assetValueExample',
                             keyboardType: TextInputType.number,
-                            enabled: !controller.isEditing.value,
+                            readOnly: controller.isEditing.value,
                           ),
                         ),
                       ],
@@ -136,10 +136,19 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                     CustomTextField(
                       controller: controller.acquiredAtController,
                       label: 'تاريخ الاقتناء',
-                      hintText: 'YYYY-MM-DD',
+                      hintText: controller.isEditing.value &&
+                              controller.acquiredAtController.text.isEmpty
+                          ? 'غير محدد'
+                          : 'YYYY-MM-DD',
                       readOnly: true,
-                      suffixIcon: const Icon(Icons.calendar_month_rounded),
-                      onTap: () => controller.pickAcquiredDate(context),
+                      suffixIcon: Icon(
+                        controller.isAcquiredAtLocked
+                            ? Icons.lock_outline_rounded
+                            : Icons.calendar_month_rounded,
+                      ),
+                      onTap: controller.isAcquiredAtLocked
+                          ? null
+                          : () => controller.pickAcquiredDate(context),
                     ),
                     const EditImagesWidget(),
                     SizedBox(height: 10.h),

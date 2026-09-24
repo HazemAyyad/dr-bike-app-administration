@@ -118,6 +118,8 @@ class AssetsController extends GetxController {
   }
 
   Future<void> pickAcquiredDate(BuildContext context) async {
+    if (isAcquiredAtLocked) return;
+
     final initial =
         DateTime.tryParse(acquiredAtController.text) ?? DateTime.now();
     final picked = await showDatePicker(
@@ -275,6 +277,11 @@ class AssetsController extends GetxController {
   }
 
   final RxBool isEditing = false.obs;
+  bool get isAcquiredAtLocked =>
+      isEditing.value &&
+      (assetDetails.value?.logs.any((log) => log.type == 'depreciate') ??
+          false);
+
   // get assets details
   final Rxn<AssetDetailsModel> assetDetails = Rxn();
   void getAssetsDetials({required String assetId}) async {
@@ -300,12 +307,7 @@ class AssetsController extends GetxController {
           assetDetails.value?.depreciationRate ?? '';
       monthsNumberController.text =
           assetDetails.value?.monthsNumber.split('.').first ?? '';
-      final details = assetDetails.value;
-      acquiredAtController.text = details == null
-          ? ''
-          : details.acquiredAt.isNotEmpty
-              ? details.acquiredAt
-              : DateFormat('yyyy-MM-dd').format(details.createdAt);
+      acquiredAtController.text = assetDetails.value?.acquiredAt ?? '';
       selectedFile =
           assetDetails.value?.media.map((e) => File(e)).toList() ?? [];
     } else {
@@ -342,7 +344,9 @@ class AssetsController extends GetxController {
         price: double.parse(priceController.text),
         note: noteController.text,
         numberOfMonths: int.parse(monthsNumberController.text),
-        acquiredAt: acquiredAtController.text,
+        acquiredAt: acquiredAtController.text.trim().isEmpty
+            ? null
+            : acquiredAtController.text.trim(),
         selectedFile: selectedFile,
         onUploadProgress: (progress) => assetUploadProgress.value = progress,
       );
