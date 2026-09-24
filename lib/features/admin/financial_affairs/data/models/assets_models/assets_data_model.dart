@@ -5,7 +5,7 @@ class AssetsModel {
   final List<Asset> assets;
   final String totalAssetsOriginalPrices;
   final String totalAssetsDepreciatePrices;
-  final dynamic averageDepreciationRate;
+  final double averageDepreciationRate;
 
   AssetsModel({
     required this.assets,
@@ -24,7 +24,10 @@ class AssetsModel {
       totalAssetsOriginalPrices: asString(j['total_assets_original_prices']),
       totalAssetsDepreciatePrices:
           asString(j['total_assets_depreciate_prices']),
-      averageDepreciationRate: j['average_depreciation_rate'] ?? '0.0',
+      averageDepreciationRate:
+          j.containsKey('average_depreciation_rate_percent')
+              ? asDouble(j['average_depreciation_rate_percent'])
+              : asDouble(j['average_depreciation_rate']) * 100,
     );
   }
 
@@ -67,7 +70,10 @@ class Asset {
       assetId: asInt(j['asset_id']),
       name: asString(j['name']),
       originalPrice: asString(j['original_price'], '0.0'),
-      depreciationRate: asString(j['depreciation_rate'], '0.0'),
+      depreciationRate: (j.containsKey('depreciation_rate_percent')
+              ? asDouble(j['depreciation_rate_percent'])
+              : asDouble(j['depreciation_rate']) * 100)
+          .toString(),
       depreciationPrice: asString(j['depreciation_price'], '0.0'),
       depreciatedThisMonth: asBool(j['depreciated_this_month']),
       depreciationPeriod: asString(j['depreciation_period']),

@@ -112,26 +112,34 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                         Flexible(
                           child: CustomTextField(
                             controller: controller.depreciationRateController,
-                            label: 'averageConsumptionRatio',
-                            hintText: 'partnerPercentageExample',
+                            label: 'نسبة الإهلاك الشهرية (محسوبة)',
+                            hintText: 'تُحسب من العمر الإنتاجي',
                             keyboardType: TextInputType.number,
-                            onChanged: controller.onDepreciationChanged,
-                            enabled: !controller.isEditing.value,
+                            readOnly: true,
+                            enabled: false,
+                            validator: (_) => null,
                           ),
                         ),
                         SizedBox(width: 10.w),
-                        controller.isEditing.value
-                            ? const SizedBox.shrink()
-                            : Flexible(
-                                child: CustomTextField(
-                                  controller: controller.monthsNumberController,
-                                  label: 'numberOfMonths',
-                                  hintText: 'numberOfMonths',
-                                  keyboardType: TextInputType.number,
-                                  onChanged: controller.onMonthsChanged,
-                                ),
-                              ),
+                        Flexible(
+                          child: CustomTextField(
+                            controller: controller.monthsNumberController,
+                            label: 'العمر الإنتاجي بالأشهر',
+                            hintText: 'مثال: 24',
+                            keyboardType: TextInputType.number,
+                            onChanged: controller.onMonthsChanged,
+                          ),
+                        ),
                       ],
+                    ),
+                    SizedBox(height: 10.h),
+                    CustomTextField(
+                      controller: controller.acquiredAtController,
+                      label: 'تاريخ الاقتناء',
+                      hintText: 'YYYY-MM-DD',
+                      readOnly: true,
+                      suffixIcon: const Icon(Icons.calendar_month_rounded),
+                      onTap: () => controller.pickAcquiredDate(context),
                     ),
                     const EditImagesWidget(),
                     SizedBox(height: 10.h),

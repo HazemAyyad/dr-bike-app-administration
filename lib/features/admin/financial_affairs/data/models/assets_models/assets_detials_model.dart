@@ -8,6 +8,7 @@ class AssetDetailsModel {
   final String? notes;
   final String depreciationRate;
   final String monthsNumber;
+  final String acquiredAt;
   final List<String> media;
   final List<AssetLog> logs;
   final bool depreciatedThisMonth;
@@ -22,6 +23,7 @@ class AssetDetailsModel {
     this.notes,
     required this.depreciationRate,
     required this.monthsNumber,
+    required this.acquiredAt,
     required this.media,
     required this.logs,
     required this.depreciatedThisMonth,
@@ -49,8 +51,12 @@ class AssetDetailsModel {
       name: asString(asset['name']),
       price: asString(asset['price']),
       notes: asNullableString(asset['notes']),
-      depreciationRate: asString(asset['depreciation_rate']),
+      depreciationRate: (asset.containsKey('depreciation_rate_percent')
+              ? asDouble(asset['depreciation_rate_percent'])
+              : asDouble(asset['depreciation_rate']) * 100)
+          .toString(),
       monthsNumber: asString(asset['months_number']),
+      acquiredAt: asString(asset['acquired_at']),
       media: mapMedia(asset['media']),
       logs: mapList(
         asset['logs'],
@@ -71,6 +77,7 @@ class AssetDetailsModel {
       'notes': notes,
       'depreciation_rate': depreciationRate,
       'months_number': monthsNumber,
+      'acquired_at': acquiredAt,
       'media': media,
       'logs': logs.map((e) => e.toJson()).toList(),
       'depreciated_this_month': depreciatedThisMonth,

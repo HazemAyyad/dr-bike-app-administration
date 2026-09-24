@@ -16,8 +16,8 @@ class AddNewAssetsUsecase {
     required String assetName,
     required double price,
     required String note,
-    required double depreciationRate,
     required int numberOfMonths,
+    required String acquiredAt,
     required List<File?> selectedFile,
     void Function(double progress)? onUploadProgress,
   }) {
@@ -27,8 +27,8 @@ class AddNewAssetsUsecase {
       assetName: assetName,
       price: price,
       note: note,
-      depreciationRate: depreciationRate,
       numberOfMonths: numberOfMonths,
+      acquiredAt: acquiredAt,
       selectedFile: selectedFile,
       onUploadProgress: onUploadProgress,
     );

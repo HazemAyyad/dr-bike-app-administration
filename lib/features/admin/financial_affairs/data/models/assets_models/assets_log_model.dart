@@ -29,7 +29,10 @@ class AssetLogModel {
       assetId: asString(j['asset_id']),
       assetName: asString(j['asset_name']),
       depreciationDate: parseApiDateTime(j['date']),
-      depreciationRate: asString(j['depreciation_rate'], '0'),
+      depreciationRate: (j.containsKey('depreciation_rate_percent')
+              ? asDouble(j['depreciation_rate_percent'])
+              : asDouble(j['depreciation_rate']) * 100)
+          .toString(),
       total: asString(j['total'], '0'),
       type: asString(j['type']),
       depreciationPeriod: asString(j['depreciation_period']),

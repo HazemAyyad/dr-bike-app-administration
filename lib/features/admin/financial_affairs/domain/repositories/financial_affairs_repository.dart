@@ -32,8 +32,8 @@ abstract class FinancialAffairsRepository {
     required String assetName,
     required double price,
     required String note,
-    required double depreciationRate,
     required int numberOfMonths,
+    required String acquiredAt,
     required List<File?> selectedFile,
     void Function(double progress)? onUploadProgress,
   });

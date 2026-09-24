@@ -93,6 +93,7 @@ class AssetsController extends GetxController {
   final TextEditingController depreciationRateController =
       TextEditingController();
   final TextEditingController monthsNumberController = TextEditingController();
+  final TextEditingController acquiredAtController = TextEditingController();
   final TextEditingController assetBoxIdController = TextEditingController();
   final RxList<ShownBoxesModel> purchaseBoxes = <ShownBoxesModel>[].obs;
 
@@ -104,7 +105,10 @@ class AssetsController extends GetxController {
   RxList<String> list = <String>['delete', 'destruction'].obs;
 
   void onMonthsChanged(String value) {
-    if (value.isEmpty) return;
+    if (value.isEmpty) {
+      depreciationRateController.clear();
+      return;
+    }
     final months = double.tryParse(value);
     if (months != null && months > 0) {
       final percent = 100 / months;
@@ -112,12 +116,18 @@ class AssetsController extends GetxController {
     }
   }
 
-  void onDepreciationChanged(String value) {
-    if (value.isEmpty) return;
-    final percent = double.tryParse(value);
-    if (percent != null && percent > 0) {
-      final months = 100 / percent;
-      monthsNumberController.text = months.toStringAsFixed(0);
+  Future<void> pickAcquiredDate(BuildContext context) async {
+    final initial =
+        DateTime.tryParse(acquiredAtController.text) ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      acquiredAtController.text = DateFormat('yyyy-MM-dd').format(picked);
+      update();
     }
   }
 
@@ -289,6 +299,12 @@ class AssetsController extends GetxController {
           assetDetails.value?.depreciationRate ?? '';
       monthsNumberController.text =
           assetDetails.value?.monthsNumber.split('.').first ?? '';
+      final details = assetDetails.value;
+      acquiredAtController.text = details == null
+          ? ''
+          : details.acquiredAt.isNotEmpty
+              ? details.acquiredAt
+              : DateFormat('yyyy-MM-dd').format(details.createdAt);
       selectedFile =
           assetDetails.value?.media.map((e) => File(e)).toList() ?? [];
     } else {
@@ -297,6 +313,8 @@ class AssetsController extends GetxController {
       noteController.clear();
       depreciationRateController.clear();
       monthsNumberController.clear();
+      acquiredAtController.text =
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
       selectedFile.clear();
     }
     isLoadingDepreciate(false);
@@ -322,8 +340,8 @@ class AssetsController extends GetxController {
         assetName: assetNameController.text,
         price: double.parse(priceController.text),
         note: noteController.text,
-        depreciationRate: double.parse(depreciationRateController.text),
         numberOfMonths: int.parse(monthsNumberController.text),
+        acquiredAt: acquiredAtController.text,
         selectedFile: selectedFile,
         onUploadProgress: (progress) => assetUploadProgress.value = progress,
       );
@@ -341,6 +359,7 @@ class AssetsController extends GetxController {
           noteController.clear();
           depreciationRateController.clear();
           monthsNumberController.clear();
+          acquiredAtController.clear();
           selectedFile.clear();
           assetBoxIdController.clear();
           isEditing.value = false;
@@ -527,6 +546,7 @@ class AssetsController extends GetxController {
     noteController.dispose();
     depreciationRateController.dispose();
     monthsNumberController.dispose();
+    acquiredAtController.dispose();
     assetBoxIdController.dispose();
     super.onClose();
   }

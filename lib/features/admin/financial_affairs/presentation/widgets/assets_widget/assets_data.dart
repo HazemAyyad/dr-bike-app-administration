@@ -124,6 +124,10 @@ class _AssetsConsumptionState extends State<AssetsConsumption> {
             );
           }
           final summary = preview.summary;
+          final previewRows = [
+            ...preview.assets,
+            ...preview.skippedAssets,
+          ];
           return Column(children: [
             Container(
               padding: EdgeInsets.all(16.r),
@@ -194,16 +198,15 @@ class _AssetsConsumptionState extends State<AssetsConsumption> {
             ),
             SizedBox(height: 8.h),
             Expanded(
-              child: preview.assets.isEmpty
-                  ? const Center(
-                      child: Text('لا توجد أصول مستحقة للإهلاك هذا الشهر'))
+              child: previewRows.isEmpty
+                  ? const Center(child: Text('لا توجد أصول لعرضها'))
                   : ListView.separated(
                       padding:
                           EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-                      itemCount: preview.assets.length,
+                      itemCount: previewRows.length,
                       separatorBuilder: (_, __) => SizedBox(height: 7.h),
                       itemBuilder: (_, index) {
-                        final asset = preview.assets[index];
+                        final asset = previewRows[index];
                         return Container(
                           padding: EdgeInsets.all(11.r),
                           decoration: BoxDecoration(
@@ -212,37 +215,69 @@ class _AssetsConsumptionState extends State<AssetsConsumption> {
                                 : AppColors.whiteColor2,
                             borderRadius: BorderRadius.circular(12.r),
                           ),
-                          child: Row(children: [
-                            CircleAvatar(
-                              backgroundColor:
-                                  AppColors.primaryColor.withValues(alpha: .12),
-                              child: const Icon(Icons.precision_manufacturing,
-                                  color: AppColors.primaryColor),
-                            ),
-                            SizedBox(width: 10.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(asset.name,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                CircleAvatar(
+                                  backgroundColor: AppColors.primaryColor
+                                      .withValues(alpha: .12),
+                                  child: const Icon(
+                                      Icons.precision_manufacturing,
+                                      color: AppColors.primaryColor),
+                                ),
+                                SizedBox(width: 10.w),
+                                Expanded(
+                                  child: Text(asset.name,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold)),
-                                  Text(
-                                    '${NumberFormat('#,##0.00').format(asset.valueBefore)} ← ${NumberFormat('#,##0.00').format(asset.valueAfter)}',
+                                ),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w, vertical: 4.h),
+                                  decoration: BoxDecoration(
+                                    color: asset.eligible
+                                        ? Colors.green.withValues(alpha: .12)
+                                        : asset.warning.isNotEmpty
+                                            ? Colors.orange
+                                                .withValues(alpha: .14)
+                                            : Colors.grey
+                                                .withValues(alpha: .12),
+                                    borderRadius: BorderRadius.circular(12.r),
                                   ),
-                                ],
-                              ),
-                            ),
-                            Column(children: [
-                              Text('${asset.depreciationRate}%'),
+                                  child: Text(asset.statusLabel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall),
+                                ),
+                              ]),
+                              SizedBox(height: 8.h),
                               Text(
-                                '-${NumberFormat('#,##0.00').format(asset.depreciationAmount)}',
-                                style: const TextStyle(
-                                    color: Colors.redAccent,
-                                    fontWeight: FontWeight.bold),
+                                'القيمة الحالية ${NumberFormat('#,##0.00').format(asset.currentBookValue)} • العمر ${asset.usefulLifeMonths} شهر',
                               ),
-                            ]),
-                          ]),
+                              Text(
+                                'تم ${asset.usedPeriods} • المتبقي ${asset.remainingPeriods} • إهلاك الشهر القادم ${NumberFormat('#,##0.00').format(asset.nextDepreciationAmount)}',
+                              ),
+                              Text(
+                                'بعد الإهلاك: ${NumberFormat('#,##0.00').format(asset.valueAfter)} • النسبة ${asset.depreciationRate.toStringAsFixed(4)}%',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              if (asset.warning.isNotEmpty ||
+                                  asset.skipReason.isNotEmpty) ...[
+                                SizedBox(height: 4.h),
+                                Text(
+                                  asset.warning.isNotEmpty
+                                      ? asset.warning
+                                      : asset.skipReason,
+                                  style: TextStyle(
+                                    color: asset.warning.isNotEmpty
+                                        ? Colors.orange.shade700
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         );
                       },
                     ),
