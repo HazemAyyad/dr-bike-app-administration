@@ -53,7 +53,37 @@ class AddBalanceWidget extends GetView<BoxesController> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Obx(
+                    () => Wrap(
+                      spacing: 8.w,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('إضافة رصيد'),
+                          selected:
+                              controller.balanceAdjustmentDirection.value ==
+                                  'add',
+                          onSelected: (_) {
+                            controller.balanceAdjustmentDirection.value = 'add';
+                            controller.balanceAdjustmentReason.value = '';
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('سحب رصيد'),
+                          selected:
+                              controller.balanceAdjustmentDirection.value ==
+                                  'subtract',
+                          onSelected: (_) {
+                            controller.balanceAdjustmentDirection.value =
+                                'subtract';
+                            controller.balanceAdjustmentReason.value = '';
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
                   CustomTextField(
+                    isRequired: true,
                     label: 'value'.tr,
                     labelTextstyle:
                         Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -66,6 +96,35 @@ class AddBalanceWidget extends GetView<BoxesController> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                       signed: false,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Obx(
+                    () => DropdownButtonFormField<String>(
+                      key: ValueKey(
+                        controller.balanceAdjustmentDirection.value,
+                      ),
+                      initialValue:
+                          controller.balanceAdjustmentReason.value.isEmpty
+                              ? null
+                              : controller.balanceAdjustmentReason.value,
+                      decoration: const InputDecoration(
+                        labelText: 'سبب الحركة',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: controller.availableBalanceReasons.entries
+                          .map(
+                            (entry) => DropdownMenuItem<String>(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) => controller
+                          .balanceAdjustmentReason.value = value ?? '',
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'اختر سبب حركة الصندوق'
+                          : null,
                     ),
                   ),
                   SizedBox(height: 12.h),

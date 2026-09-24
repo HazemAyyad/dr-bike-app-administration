@@ -214,10 +214,15 @@ class BoxesDatasource {
   Future<Map<String, dynamic>> addBoxBalance(
       {required String boxId,
       required String total,
-      required String note}) async {
+      required String note,
+      required String reasonCode}) async {
     try {
-      final response = await api.post(EndPoints.addBoxBalance,
-          data: {'box_id': boxId, 'total': total, 'note': note});
+      final response = await api.post(EndPoints.addBoxBalance, data: {
+        'box_id': boxId,
+        'total': total,
+        'note': note,
+        'reason_code': reasonCode,
+      });
       final data = response.data;
       return data;
     } on DioException catch (e) {

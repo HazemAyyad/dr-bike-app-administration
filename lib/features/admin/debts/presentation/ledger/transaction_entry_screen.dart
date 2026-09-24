@@ -8,7 +8,6 @@ import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
-import 'ledger_currency_chips.dart';
 import 'receipt_media_thumb.dart';
 
 class TransactionEntryScreen extends StatelessWidget {
@@ -162,17 +161,11 @@ class TransactionEntryScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8.h),
                   Obx(
-                    () => LedgerCurrencyChips(
-                      selected: calc.selectedCurrency.value,
-                      onSelected: calc.setCurrency,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Obx(
                     () => CustomDropdownFieldWithSearch(
-                      tital: 'ledgerBoxOptional'.tr,
+                      tital: 'الصندوق *',
                       hint: 'boxName',
-                      validator: (_) => null,
+                      validator: (value) =>
+                          value == null ? 'الصندوق مطلوب' : null,
                       items: calc.shownBoxesList,
                       onChanged: (value) {
                         calc.selectedBox.value = value;
@@ -186,6 +179,21 @@ class TransactionEntryScreen extends StatelessWidget {
                       value: calc.selectedBox.value,
                     ),
                   ),
+                  Obx(() {
+                    final box = calc.selectedBox.value;
+                    if (box == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: EdgeInsets.only(top: 6.h),
+                      child: Text(
+                        'عملة الحركة: ${box.currency}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    );
+                  }),
                   SizedBox(height: 6.h),
                   Obx(
                     () => TextButton.icon(

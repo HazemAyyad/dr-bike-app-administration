@@ -29,6 +29,7 @@ import '../widgets/box_report_pdf_builder.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class BoxesController extends GetxController {
   AddBoxesUsecase boxesUsecase;
   GetShownBoxUsecase getShownBoxUsecase;
@@ -211,6 +212,28 @@ class BoxesController extends GetxController {
       TextEditingController();
   final TextEditingController addBalanceNoteController =
       TextEditingController();
+  final RxString balanceAdjustmentDirection = 'add'.obs;
+  final RxString balanceAdjustmentReason = ''.obs;
+
+  Map<String, String> get availableBalanceReasons =>
+      balanceAdjustmentDirection.value == 'add'
+          ? const {
+              'owner_contribution': 'مساهمة مالك',
+              'cash_overage': 'زيادة صندوق بالجرد',
+              'accounting_correction': 'تصحيح محاسبي',
+            }
+          : const {
+              'owner_withdrawal': 'سحب مالك',
+              'cash_shortage': 'عجز صندوق',
+              'accounting_correction': 'تصحيح محاسبي',
+            };
+
+  void resetBalanceAdjustment() {
+    addBalanceValueController.clear();
+    addBalanceNoteController.clear();
+    balanceAdjustmentDirection.value = 'add';
+    balanceAdjustmentReason.value = '';
+  }
 
   // نقل رصيد
   final TextEditingController transferToBoxIdController =
@@ -366,7 +389,7 @@ class BoxesController extends GetxController {
 
       final result = await boxesUsecase.call(
         boxName: createBoxNameController.text,
-        total: createStartBalanceController.text,
+        total: '0',
         currency: currencyController.text.tr,
       );
 
@@ -418,12 +441,38 @@ class BoxesController extends GetxController {
   // add box
   void addBoxBalance(BuildContext context, String boxId) async {
     if ((formKey.currentState as FormState).validate()) {
+      final reason = balanceAdjustmentReason.value;
+      if (reason.isEmpty) {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'اختر سبب حركة الصندوق.',
+        );
+        return;
+      }
+      final noteRequired = const {
+        'cash_overage',
+        'cash_shortage',
+        'accounting_correction',
+      }.contains(reason);
+      if (noteRequired && addBalanceNoteController.text.trim().isEmpty) {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'الملاحظة مطلوبة لهذا النوع من التسوية.',
+        );
+        return;
+      }
       isAddBoxLoading(true);
+
+      final entered = double.tryParse(addBalanceValueController.text) ?? 0;
+      final signedTotal = balanceAdjustmentDirection.value == 'subtract'
+          ? -entered.abs()
+          : entered.abs();
 
       final result = await addBoxBalanceUsecase.call(
         boxId: boxId,
-        total: addBalanceValueController.text,
+        total: signedTotal.toString(),
         note: addBalanceNoteController.text.trim(),
+        reasonCode: reason,
       );
 
       result.fold(
@@ -439,8 +488,7 @@ class BoxesController extends GetxController {
         (success) {
           Get.back();
           getAllBoxes();
-          addBalanceValueController.clear();
-          addBalanceNoteController.clear();
+          resetBalanceAdjustment();
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -475,9 +523,9 @@ class BoxesController extends GetxController {
         update();
         isDelete
             ? AppFailureNotice.show(
-  title: failure.errMessage,
-  message: failure.data['message'],
-)
+                title: failure.errMessage,
+                message: failure.data['message'],
+              )
             : Helpers.showCustomDialogError(
                 context: context,
                 title: failure.errMessage,

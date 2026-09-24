@@ -28,12 +28,16 @@ class CreateBoxesScreen extends GetView<BoxesController> {
               controller: controller.createBoxNameController,
             ),
             SizedBox(height: 20.h),
-            CustomTextField(
-              label: 'startBalance'.tr,
-              hintText: 'startBalanceExample',
-              controller: controller.createStartBalanceController,
-              keyboardType: TextInputType.number,
-              // validator: (p0) => null,
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: const Text(
+                'يتم إنشاء الصندوق برصيد صفر، ويمكن تمويله بعد الإنشاء.',
+                textAlign: TextAlign.center,
+              ),
             ),
             SizedBox(height: 20.h),
             CustomDropdownField(

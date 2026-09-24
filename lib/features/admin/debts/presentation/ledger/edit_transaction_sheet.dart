@@ -15,7 +15,6 @@ import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart'
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
-import 'ledger_currency_chips.dart';
 import 'receipt_media_thumb.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
@@ -61,13 +60,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   }
 
   void _applyBoxFilter() {
-    shownBoxesList.assignAll(
-      allBoxes.where((b) => b.currency == selectedCurrency).toList(),
-    );
-    final box = selectedBox.value;
-    if (box != null && box.currency != selectedCurrency) {
-      selectedBox.value = null;
-    }
+    shownBoxesList.assignAll(allBoxes);
   }
 
   Future<void> _loadBoxes(int? currentBoxId) async {
@@ -174,6 +167,14 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
       return;
     }
 
+    if (_requiresBox && selectedBox.value == null) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'الصندوق مطلوب للحركة اليدوية.',
+      );
+      return;
+    }
+
     setState(() => isSaving = true);
     final controller = Get.find<DebtLedgerController>();
     final ok = await controller.updateTransaction(
@@ -271,16 +272,6 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                 ),
               ),
               SizedBox(height: 12.h),
-              LedgerCurrencyChips(
-                selected: selectedCurrency,
-                onSelected: (currency) {
-                  setState(() {
-                    selectedCurrency = currency;
-                    _applyBoxFilter();
-                  });
-                },
-              ),
-              SizedBox(height: 12.h),
               if (_requiresBox) ...[
                 if (isLoadingBoxes)
                   Padding(
@@ -290,17 +281,38 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                 else
                   Obx(
                     () => CustomDropdownFieldWithSearch(
-                      tital: 'ledgerBoxOptional'.tr,
+                      tital: 'الصندوق *',
                       hint: 'boxName',
-                      validator: (_) => null,
+                      validator: (value) =>
+                          value == null ? 'الصندوق مطلوب' : null,
                       items: shownBoxesList,
-                      onChanged: (value) => selectedBox.value = value,
+                      onChanged: (value) {
+                        selectedBox.value = value;
+                        if (value != null) {
+                          setState(() => selectedCurrency = value.currency);
+                        }
+                      },
                       itemAsString: (item) =>
                           '${item.boxName} - (${item.totalBalance} ${item.currency})',
                       compareFn: (a, b) => a.boxId == b.boxId,
                       value: selectedBox.value,
                     ),
                   ),
+                Obx(() {
+                  final box = selectedBox.value;
+                  if (box == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: EdgeInsets.only(top: 6.h),
+                    child: Text(
+                      'عملة الحركة: ${box.currency}',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                }),
                 SizedBox(height: 12.h),
               ] else
                 Padding(

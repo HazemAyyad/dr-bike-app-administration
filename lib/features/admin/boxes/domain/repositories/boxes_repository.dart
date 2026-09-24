@@ -28,6 +28,7 @@ abstract class BoxesRepository {
     required String boxId,
     required String total,
     required String note,
+    required String reasonCode,
   });
 
   Future<Either<Failure, String>> editBox({

@@ -43,6 +43,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 enum LedgerReportDetailLevel {
   summary,
   detailed,
@@ -398,9 +399,9 @@ class DebtLedgerController extends GetxController {
       );
       result.fold(
         (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+          title: 'error'.tr,
+          message: failure.errMessage,
+        ),
         (data) => people.assignAll(data),
       );
     }
@@ -443,9 +444,9 @@ class DebtLedgerController extends GetxController {
     for (final result in results) {
       result.fold(
         (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+          title: 'error'.tr,
+          message: failure.errMessage,
+        ),
         nextPeople.addAll,
       );
     }
@@ -461,9 +462,9 @@ class DebtLedgerController extends GetxController {
     final result = await repository.getCategories();
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (list) => categories.assignAll(list),
     );
   }
@@ -659,9 +660,9 @@ class DebtLedgerController extends GetxController {
     );
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (data) {
         personDetail.value = data;
         selectedPerson = data.person;
@@ -953,6 +954,16 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> deleteTransaction(int id) async {
+    final transaction = selectedTransaction.value;
+    if (transaction != null && transaction.id == id && !transaction.isManual) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message:
+            'هذه الحركة مرتبطة بعملية أصلية ولا يمكن تعديلها من دفتر الديون.',
+      );
+      return;
+    }
+
     final confirm = await showLedgerConfirmDialog(
       title: 'ledgerDeleteConfirmTitle'.tr,
       body: 'ledgerDeleteConfirmBody'.tr,
@@ -964,9 +975,9 @@ class DebtLedgerController extends GetxController {
     final result = await repository.deleteTransaction(id);
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (_) {
         Get.back(result: true);
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -980,6 +991,16 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> archiveTransactionFromDetail(int id) async {
+    final transaction = selectedTransaction.value;
+    if (transaction != null && transaction.id == id && !transaction.isManual) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message:
+            'هذه الحركة مرتبطة بعملية أصلية ولا يمكن تعديلها من دفتر الديون.',
+      );
+      return;
+    }
+
     final confirm = await showLedgerConfirmDialog(
       title: 'ledgerArchiveConfirmTitle'.tr,
       body: 'ledgerArchiveConfirmBody'.tr,
@@ -991,9 +1012,9 @@ class DebtLedgerController extends GetxController {
     final result = await repository.archiveTransaction(id);
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (_) {
         Get.back(result: true);
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -1042,6 +1063,14 @@ class DebtLedgerController extends GetxController {
   }
 
   void openEditTransaction(LedgerTransaction transaction) {
+    if (!transaction.isManual) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'لتعديل هذه الحركة، عدّل العملية الأصلية.',
+      );
+      return;
+    }
+
     Get.bottomSheet(
       EditTransactionSheet(transaction: transaction),
       isScrollControlled: true,
@@ -1212,16 +1241,18 @@ class DebtLedgerController extends GetxController {
     );
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (data) => personArchiveDetail.value = data,
     );
     personArchiveLoading(false);
   }
 
   void openArchiveSheet() {
-    final txs = personDetail.value?.transactions ?? [];
+    final txs = (personDetail.value?.transactions ?? [])
+        .where((transaction) => transaction.isManual)
+        .toList();
     if (txs.isEmpty) {
       AppFailureNotice.show(
         title: 'error'.tr,
@@ -1261,9 +1292,9 @@ class DebtLedgerController extends GetxController {
     );
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (data) => personDeletedDetail.value = data,
     );
     personDeletedLoading(false);
@@ -1761,13 +1792,7 @@ class TransactionCalculatorController extends GetxController {
   }
 
   void _applyBoxFilter() {
-    shownBoxesList.assignAll(
-      allBoxes.where((b) => b.currency == selectedCurrency.value).toList(),
-    );
-    final box = selectedBox.value;
-    if (box != null && box.currency != selectedCurrency.value) {
-      selectedBox.value = null;
-    }
+    shownBoxesList.assignAll(allBoxes);
   }
 
   String get effectiveCurrency =>
@@ -1934,6 +1959,13 @@ class TransactionCalculatorController extends GetxController {
     }
 
     final box = selectedBox.value;
+    if (box == null) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'الصندوق مطلوب للحركة اليدوية.',
+      );
+      return;
+    }
 
     isSaving.value = true;
     try {
@@ -1949,7 +1981,7 @@ class TransactionCalculatorController extends GetxController {
         note: noteController.text.trim().isEmpty
             ? null
             : noteController.text.trim(),
-        boxId: box?.boxId.toString(),
+        boxId: box.boxId.toString(),
         receiptImages:
             receiptImages.isEmpty ? null : List<File>.from(receiptImages),
       );

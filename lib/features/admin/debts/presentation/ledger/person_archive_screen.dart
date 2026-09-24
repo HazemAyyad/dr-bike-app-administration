@@ -105,6 +105,8 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
           final stats = detail.balanceFor(cur);
           final balanceColor = controller.balanceColor(stats.balance);
           final typeHint = stats.balance >= 0 ? 'took'.tr : 'gave'.tr;
+          final manualTransactions =
+              detail.transactions.where((tx) => tx.isManual).toList();
 
           return Column(
             children: [
@@ -190,9 +192,11 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                                 ),
                                 const Spacer(),
                                 Checkbox(
-                                  value: _allSelected(detail.transactions),
-                                  onChanged: (v) =>
-                                      _toggleAll(detail.transactions, v),
+                                  value: _allSelected(manualTransactions),
+                                  onChanged: manualTransactions.isEmpty
+                                      ? null
+                                      : (v) =>
+                                          _toggleAll(manualTransactions, v),
                                   activeColor: LedgerColors.primaryBlue,
                                 ),
                               ],
@@ -213,16 +217,18 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                                     timeLabel:
                                         controller.formatTransactionTime(tx),
                                     selected: _selected.contains(tx.id),
-                                    onChanged: (v) {
-                                      setState(() {
-                                        if (v == true) {
-                                          _selected.add(tx.id);
-                                        } else {
-                                          _selected.remove(tx.id);
-                                        }
-                                      });
-                                    },
-                                    onRestore: _isRestoring
+                                    onChanged: tx.isManual
+                                        ? (v) {
+                                            setState(() {
+                                              if (v == true) {
+                                                _selected.add(tx.id);
+                                              } else {
+                                                _selected.remove(tx.id);
+                                              }
+                                            });
+                                          }
+                                        : null,
+                                    onRestore: _isRestoring || !tx.isManual
                                         ? null
                                         : () => _restoreOne(tx.id),
                                   ),
@@ -283,7 +289,7 @@ class _ArchivedRow extends StatelessWidget {
   final LedgerTransaction transaction;
   final String timeLabel;
   final bool selected;
-  final ValueChanged<bool?> onChanged;
+  final ValueChanged<bool?>? onChanged;
   final VoidCallback? onRestore;
 
   const _ArchivedRow({
@@ -300,7 +306,7 @@ class _ArchivedRow extends StatelessWidget {
     final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
 
     return InkWell(
-      onTap: () => onChanged(!selected),
+      onTap: onChanged == null ? null : () => onChanged!(!selected),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
         child: Row(
@@ -364,11 +370,21 @@ class _ArchivedRow extends StatelessWidget {
                 ),
               ],
             ),
-            Checkbox(
-              value: selected,
-              onChanged: onChanged,
-              activeColor: LedgerColors.primaryBlue,
-            ),
+            if (onChanged != null)
+              Checkbox(
+                value: selected,
+                onChanged: onChanged,
+                activeColor: LedgerColors.primaryBlue,
+              )
+            else
+              Padding(
+                padding: EdgeInsets.only(right: 8.w),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 20.sp,
+                  color: Colors.grey.shade500,
+                ),
+              ),
           ],
         ),
       ),

@@ -11,7 +11,13 @@ class AddBoxBalanceUsecase {
     required String boxId,
     required String total,
     required String note,
+    required String reasonCode,
   }) {
-    return boxesRepository.addBoxBalance(boxId: boxId, total: total, note: note);
+    return boxesRepository.addBoxBalance(
+      boxId: boxId,
+      total: total,
+      note: note,
+      reasonCode: reasonCode,
+    );
   }
 }

@@ -137,6 +137,39 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                             ),
                           ],
+                          if (!tx.isManual) ...[
+                            SizedBox(height: 12.h),
+                            Container(
+                              padding: EdgeInsets.all(12.w),
+                              decoration: BoxDecoration(
+                                color: LedgerColors.cardBlue,
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'المصدر: ${tx.sourceLabel?.trim().isNotEmpty == true ? tx.sourceLabel : tx.source}',
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: LedgerColors.primaryBlue,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    'لتعديل هذه الحركة، عدّل العملية الأصلية.',
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           if (canOpenPurchaseInvoice) ...[
                             SizedBox(height: 12.h),
                             OutlinedButton.icon(
@@ -192,40 +225,41 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                       ),
                     ),
                     SizedBox(width: 28.w),
-                    Padding(
-                      padding: EdgeInsets.only(top: 2.h),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Material(
-                            color: LedgerColors.cardBlue,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              onTap: () => controller.openEditTransaction(tx),
-                              customBorder: const CircleBorder(),
-                              child: SizedBox(
-                                width: 48.w,
-                                height: 48.w,
-                                child: Icon(
-                                  Icons.edit_outlined,
-                                  color: LedgerColors.primaryBlue,
-                                  size: 24.sp,
+                    if (tx.isManual)
+                      Padding(
+                        padding: EdgeInsets.only(top: 2.h),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Material(
+                              color: LedgerColors.cardBlue,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                onTap: () => controller.openEditTransaction(tx),
+                                customBorder: const CircleBorder(),
+                                child: SizedBox(
+                                  width: 48.w,
+                                  height: 48.w,
+                                  child: Icon(
+                                    Icons.edit_outlined,
+                                    color: LedgerColors.primaryBlue,
+                                    size: 24.sp,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            'edit'.tr,
-                            style: TextStyle(
-                              color: LedgerColors.primaryBlue,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12.sp,
+                            SizedBox(height: 8.h),
+                            Text(
+                              'edit'.tr,
+                              style: TextStyle(
+                                color: LedgerColors.primaryBlue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.sp,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -237,60 +271,62 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 48.h,
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: LedgerColors.givenRed,
-                              side: const BorderSide(
-                                  color: LedgerColors.givenRed),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.r),
+                  if (tx.isManual) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 48.h,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: LedgerColors.givenRed,
+                                side: const BorderSide(
+                                    color: LedgerColors.givenRed),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
                               ),
-                            ),
-                            onPressed: () =>
-                                controller.deleteTransaction(tx.id),
-                            child: Text(
-                              'delete'.tr,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 10.w),
-                      Expanded(
-                        child: SizedBox(
-                          height: 48.h,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: LedgerColors.primaryBlue,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                            ),
-                            onPressed: () =>
-                                controller.archiveTransactionFromDetail(tx.id),
-                            child: Text(
-                              'ledgerArchive'.tr,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              onPressed: () =>
+                                  controller.deleteTransaction(tx.id),
+                              child: Text(
+                                'delete'.tr,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10.h),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: SizedBox(
+                            height: 48.h,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: LedgerColors.primaryBlue,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                              onPressed: () => controller
+                                  .archiveTransactionFromDetail(tx.id),
+                              child: Text(
+                                'ledgerArchive'.tr,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     height: 46.h,

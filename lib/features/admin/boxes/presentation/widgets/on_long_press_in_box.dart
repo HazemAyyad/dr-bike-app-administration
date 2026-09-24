@@ -44,7 +44,7 @@ class OnLongPressInBox extends GetView<BoxesController> {
                 if (controller.currentTab.value == 0)
                   TextButton.icon(
                     onPressed: () {
-                      controller.addBalanceValueController.clear();
+                      controller.resetBalanceAdjustment();
                       Get.back();
                       Get.dialog(AddBalanceWidget(boxId: box.boxId));
                     },
