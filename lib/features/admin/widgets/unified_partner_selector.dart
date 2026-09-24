@@ -121,6 +121,11 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
         .toList();
   }
 
+  _PartnerIdentity _identityOf(_PartnerEntry<T> entry) => _PartnerIdentity(
+        id: widget.idOf(entry.value),
+        isSeller: entry.isSeller,
+      );
+
   Future<void> _select(_PartnerEntry<T> entry) async {
     await widget.onSelected(entry.value, entry.isSeller);
     if (!mounted) return;
@@ -286,33 +291,47 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
                     padding: EdgeInsets.all(14.r),
                     child: const Text('لا توجد نتائج'),
                   )
-                : ListView.separated(
+                : ListView.builder(
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
                     itemCount: rows.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    findChildIndexCallback: (key) {
+                      if (key is! ValueKey<_PartnerIdentity>) return null;
+                      final index = rows.indexWhere(
+                        (entry) => _identityOf(entry) == key.value,
+                      );
+                      return index < 0 ? null : index;
+                    },
                     itemBuilder: (_, index) {
                       final entry = rows[index];
                       final phone = widget.phoneOf(entry.value).trim();
-                      return ListTile(
-                        dense: true,
-                        leading: Icon(
-                          entry.isSeller
-                              ? Icons.storefront_outlined
-                              : Icons.person_outline_rounded,
-                          color: AppColors.primaryColor,
-                        ),
-                        title: Text(
-                          widget.nameOf(entry.value),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text([
-                          entry.isSeller ? 'مورد / تاجر' : 'زبون',
-                          if (phone.isNotEmpty) phone,
-                        ].join(' • ')),
-                        onTap: () => _select(entry),
+                      return Column(
+                        key: ValueKey(_identityOf(entry)),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            dense: true,
+                            leading: Icon(
+                              entry.isSeller
+                                  ? Icons.storefront_outlined
+                                  : Icons.person_outline_rounded,
+                              color: AppColors.primaryColor,
+                            ),
+                            title: Text(
+                              widget.nameOf(entry.value),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            subtitle: Text([
+                              entry.isSeller ? 'مورد / تاجر' : 'زبون',
+                              if (phone.isNotEmpty) phone,
+                            ].join(' • ')),
+                            onTap: () => _select(entry),
+                          ),
+                          if (index < rows.length - 1) const Divider(height: 1),
+                        ],
                       );
                     },
                   ),
@@ -327,4 +346,18 @@ class _PartnerEntry<T> {
 
   final T value;
   final bool isSeller;
+}
+
+class _PartnerIdentity {
+  const _PartnerIdentity({required this.id, required this.isSeller});
+
+  final int id;
+  final bool isSeller;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PartnerIdentity && other.id == id && other.isSeller == isSeller;
+
+  @override
+  int get hashCode => id.hashCode ^ isSeller.hashCode;
 }
