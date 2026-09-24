@@ -137,6 +137,17 @@ void _instantSaleDebug(String message, [Object? details]) {
   }());
 }
 
+void _salesSearchDebug(String message, [Object? details]) {
+  assert(() {
+    debugPrint(
+      details == null
+          ? '[SalesSearchDebug][Controller] $message'
+          : '[SalesSearchDebug][Controller] $message | $details',
+    );
+    return true;
+  }());
+}
+
 void _suspendedInstantSaleDebug(String message, [Object? details]) {
   assert(() {
     debugPrint(
@@ -287,12 +298,14 @@ class SalesController extends GetxController
   final instantSalesSortDescending = true.obs;
   final selectedInstantSalesDate = _todayDateOnly().obs;
   Timer? _instantSalesSearchDebounce;
+  int _instantSalesFetchSerial = 0;
   final TextEditingController profitSalesSearchController =
       TextEditingController();
   final profitSalesSearchQuery = ''.obs;
   final profitSalesSortDescending = true.obs;
   final selectedProfitSalesDate = _todayDateOnly().obs;
   Timer? _profitSalesSearchDebounce;
+  int _profitSalesFetchSerial = 0;
 
   String get instantSalesSortDirection =>
       instantSalesSortDescending.value ? 'desc' : 'asc';
@@ -428,6 +441,10 @@ class SalesController extends GetxController
 
   void onInstantSalesSearchChanged(String value) {
     instantSalesSearchQuery.value = value;
+    _salesSearchDebug('instant input changed', {
+      'value': value,
+      'selected_date': selectedInstantSalesDateParam,
+    });
     _instantSalesSearchDebounce?.cancel();
     _instantSalesSearchDebounce = Timer(
       const Duration(milliseconds: 400),
@@ -438,6 +455,10 @@ class SalesController extends GetxController
   void onInstantSalesSearchSubmitted(String value) {
     _instantSalesSearchDebounce?.cancel();
     instantSalesSearchQuery.value = value;
+    _salesSearchDebug('instant input submitted', {
+      'value': value,
+      'selected_date': selectedInstantSalesDateParam,
+    });
     getInstantSales(loding: true, clearCache: true);
   }
 
@@ -454,6 +475,10 @@ class SalesController extends GetxController
 
   void onProfitSalesSearchChanged(String value) {
     profitSalesSearchQuery.value = value;
+    _salesSearchDebug('profit input changed', {
+      'value': value,
+      'selected_date': selectedProfitSalesDateParam,
+    });
     _profitSalesSearchDebounce?.cancel();
     _profitSalesSearchDebounce = Timer(
       const Duration(milliseconds: 400),
@@ -464,6 +489,10 @@ class SalesController extends GetxController
   void onProfitSalesSearchSubmitted(String value) {
     _profitSalesSearchDebounce?.cancel();
     profitSalesSearchQuery.value = value;
+    _salesSearchDebug('profit input submitted', {
+      'value': value,
+      'selected_date': selectedProfitSalesDateParam,
+    });
     fetchProfitSales(clearCache: true);
   }
 
@@ -5315,6 +5344,16 @@ class SalesController extends GetxController
     bool clearCache = true,
     bool showLoading = false,
   }) async {
+    final requestId = ++_instantSalesFetchSerial;
+    final requestedSearch = instantSalesSearchQuery.value.trim();
+    final requestedDate = selectedInstantSalesDateParam;
+    _salesSearchDebug('instant fetch start', {
+      'request_id': requestId,
+      'search': requestedSearch,
+      'date': requestedDate,
+      'sort': instantSalesSortDirection,
+      'clear_cache': clearCache,
+    });
     if (clearCache) {
       salesService.instantSalesTasks.clear();
       salesService.filterInstantSalesTasks.clear();
@@ -5326,20 +5365,48 @@ class SalesController extends GetxController
     }
     try {
       final sales = await getInstantSalesUsecase.call(
-        search: instantSalesSearchQuery.value.trim().isEmpty
-            ? null
-            : instantSalesSearchQuery.value.trim(),
-        date: selectedInstantSalesDateParam,
+        search: requestedSearch.isEmpty ? null : requestedSearch,
+        date: requestedDate,
         sortDirection: instantSalesSortDirection,
       );
+      _salesSearchDebug('instant fetch received', {
+        'request_id': requestId,
+        'latest_request_id': _instantSalesFetchSerial,
+        'stale': requestId != _instantSalesFetchSerial,
+        'count': sales.length,
+        'rows': sales
+            .take(10)
+            .map((sale) => {
+                  'id': sale.id,
+                  'invoice': sale.invoiceNumber,
+                  'buyer': sale.partnerName,
+                  'phone': sale.buyerPhone,
+                  'date': sale.createdAt ?? sale.date,
+                })
+            .toList(),
+      });
       if (clearCache) {
         salesService.instantSalesTasks.clear();
       }
       _groupInstantSalesIntoMaps(sales);
-    } catch (e) {
+      _salesSearchDebug('instant UI map updated', {
+        'request_id': requestId,
+        'group_count': salesService.filterInstantSalesTasks.length,
+        'visible_count': visibleInstantSalesCount,
+        'package_filter': instantSalesPackageFilter.value,
+      });
+    } catch (e, stackTrace) {
       // Background list load — must not crash handover or other flows.
+      _salesSearchDebug('instant fetch failed', {
+        'request_id': requestId,
+        'type': e.runtimeType,
+        'error': e,
+      });
       assert(() {
-        debugPrint('[SalesController.fetchInstantSales] $e');
+        debugPrintStack(
+          label: '[SalesSearchDebug][Controller] instant stack',
+          stackTrace: stackTrace,
+        );
         return true;
       }());
     } finally {
@@ -5353,6 +5420,15 @@ class SalesController extends GetxController
     bool clearCache = true,
     bool showLoading = false,
   }) async {
+    final requestId = ++_profitSalesFetchSerial;
+    final requestedSearch = profitSalesSearchQuery.value.trim();
+    final requestedDate = selectedProfitSalesDateParam;
+    _salesSearchDebug('profit fetch start', {
+      'request_id': requestId,
+      'search': requestedSearch,
+      'date': requestedDate,
+      'clear_cache': clearCache,
+    });
     if (clearCache) {
       salesService.profitSalesTasks.clear();
       salesService.filterProfitSalesTasks.clear();
@@ -5362,11 +5438,24 @@ class SalesController extends GetxController
     }
     try {
       final list = await getProfitSalesUsecase.call(
-        date: selectedProfitSalesDateParam,
-        search: profitSalesSearchQuery.value.trim().isEmpty
-            ? null
-            : profitSalesSearchQuery.value.trim(),
+        date: requestedDate,
+        search: requestedSearch.isEmpty ? null : requestedSearch,
       );
+      _salesSearchDebug('profit fetch received', {
+        'request_id': requestId,
+        'latest_request_id': _profitSalesFetchSerial,
+        'stale': requestId != _profitSalesFetchSerial,
+        'count': list.length,
+        'rows': list
+            .take(10)
+            .map((sale) => {
+                  'id': sale.id,
+                  'buyer': sale.partnerDisplay,
+                  'phone': sale.buyerPhone,
+                  'date': sale.createdAt,
+                })
+            .toList(),
+      });
       if (clearCache) {
         salesService.profitSalesTasks.clear();
       }
@@ -5378,9 +5467,22 @@ class SalesController extends GetxController
             .add(profitSale);
       }
       _syncFilteredProfitSales();
-    } catch (e) {
+      _salesSearchDebug('profit UI map updated', {
+        'request_id': requestId,
+        'group_count': salesService.filterProfitSalesTasks.length,
+        'visible_count': visibleProfitSalesCount,
+      });
+    } catch (e, stackTrace) {
+      _salesSearchDebug('profit fetch failed', {
+        'request_id': requestId,
+        'type': e.runtimeType,
+        'error': e,
+      });
       assert(() {
-        debugPrint('[SalesController.fetchProfitSales] $e');
+        debugPrintStack(
+          label: '[SalesSearchDebug][Controller] profit stack',
+          stackTrace: stackTrace,
+        );
         return true;
       }());
     } finally {

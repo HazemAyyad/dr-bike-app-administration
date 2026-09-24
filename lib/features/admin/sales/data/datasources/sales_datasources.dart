@@ -83,6 +83,58 @@ class SalesDatasource {
 
   SalesDatasource({required this.api});
 
+  void _salesSearchDebug(String message, [Object? details]) {
+    if (!kDebugMode) return;
+    debugPrint(
+      details == null
+          ? '[SalesSearchDebug][Datasource] $message'
+          : '[SalesSearchDebug][Datasource] $message | $details',
+    );
+  }
+
+  List<Map<String, dynamic>> _salesSearchRows(
+    dynamic responseData,
+    String key,
+  ) =>
+      extractMapListFromResponse(responseData, key);
+
+  List<Map<String, dynamic>> _instantSalesSearchPreview(
+    List<Map<String, dynamic>> rows,
+  ) =>
+      rows
+          .take(8)
+          .map(
+            (row) => {
+              'id': row['id'],
+              'invoice': row['invoice_number'] ?? row['serial_number'],
+              'date': row['created_at'] ?? row['date'],
+              'buyer_type': row['buyer_type'],
+              'buyer_id': row['buyer_id'],
+              'seller_id': row['seller_id'],
+              'buyer_name': row['buyer_name'],
+              'buyer_phone': row['buyer_phone'],
+            },
+          )
+          .toList();
+
+  List<Map<String, dynamic>> _profitSalesSearchPreview(
+    List<Map<String, dynamic>> rows,
+  ) =>
+      rows
+          .take(8)
+          .map(
+            (row) => {
+              'id': row['id'],
+              'date': row['created_at'],
+              'buyer_type': row['buyer_type'],
+              'customer_id': row['customer_id'],
+              'seller_id': row['seller_id'],
+              'buyer_name': row['buyer_name'],
+              'buyer_phone': row['buyer_phone'],
+            },
+          )
+          .toList();
+
   void _instantSaleDebug(String message, [Object? details]) {
     if (!kDebugMode) return;
     debugPrint(
@@ -263,29 +315,71 @@ class SalesDatasource {
     String? date,
     String? search,
   }) async {
+    final query = <String, dynamic>{
+      if (date?.trim().isNotEmpty == true) 'date': date!.trim(),
+      if (search?.trim().isNotEmpty == true) 'search': search!.trim(),
+    };
     try {
+      _salesSearchDebug('profit request', {
+        'url': '${EndPoints.baserUrl}${EndPoints.allProfitSales}',
+        'query': query,
+      });
       final response = await api.get(
         EndPoints.allProfitSales,
-        queryParameters: {
-          if (date?.trim().isNotEmpty == true) 'date': date!.trim(),
-          if (search?.trim().isNotEmpty == true) 'search': search!.trim(),
-        },
+        queryParameters: query,
       );
-      return mapListFromResponseKey(
+      final rawRows = _salesSearchRows(response.data, 'profit_sales');
+      final responseMap = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      _salesSearchDebug('profit response', {
+        'http_status': response.statusCode,
+        'api_status': responseMap['status'],
+        'message': responseMap['message'],
+        'error': responseMap['error'],
+        'raw_count': rawRows.length,
+        'rows': _profitSalesSearchPreview(rawRows),
+      });
+      final parsed = mapListFromResponseKey(
         response.data,
         'profit_sales',
         (Map<String, dynamic> m) => ProfitSale.fromJson(m),
         debugScope: 'SalesDatasource.getProfitSales',
       );
+      _salesSearchDebug('profit parsed', {
+        'parsed_count': parsed.length,
+        'ids': parsed.take(12).map((sale) => sale.id).toList(),
+      });
+      return parsed;
     } on DioException catch (e) {
       final data = e.response?.data;
+      _salesSearchDebug('profit DioException', {
+        'uri': e.requestOptions.uri,
+        'status': e.response?.statusCode,
+        'response': data,
+        'message': e.message,
+      });
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage:
+              data is Map ? '${data['message'] ?? 'Unknown error'}' : '$e',
+          status: data is Map ? asInt(data['status'], 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
+    } catch (e, stackTrace) {
+      _salesSearchDebug('profit exception', {
+        'type': e.runtimeType,
+        'error': e,
+        'query': query,
+      });
+      if (kDebugMode) {
+        debugPrintStack(
+          label: '[SalesSearchDebug][Datasource] profit stack',
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
     }
   }
 
@@ -295,10 +389,10 @@ class SalesDatasource {
     String? date,
     String sortDirection = 'desc',
   }) async {
+    final query = <String, dynamic>{
+      'sort_direction': sortDirection,
+    };
     try {
-      final query = <String, dynamic>{
-        'sort_direction': sortDirection,
-      };
       final trimmed = search?.trim();
       if (trimmed != null && trimmed.isNotEmpty) {
         query['search'] = trimmed;
@@ -307,25 +401,68 @@ class SalesDatasource {
       if (selectedDate != null && selectedDate.isNotEmpty) {
         query['date'] = selectedDate;
       }
+      _salesSearchDebug('instant request', {
+        'url': '${EndPoints.baserUrl}${EndPoints.allInstantSales}',
+        'query': query,
+      });
       final response = await api.get(
         EndPoints.allInstantSales,
         queryParameters: query,
       );
-      return mapListFromResponseKey(
+      final rawRows = _salesSearchRows(response.data, 'instant_sales');
+      final responseMap = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      _salesSearchDebug('instant response', {
+        'http_status': response.statusCode,
+        'api_status': responseMap['status'],
+        'message': responseMap['message'],
+        'error': responseMap['error'],
+        'raw_count': rawRows.length,
+        'sort_direction': responseMap['sort_direction'],
+        'rows': _instantSalesSearchPreview(rawRows),
+      });
+      final parsed = mapListFromResponseKey(
         response.data,
         'instant_sales',
         (Map<String, dynamic> m) => InstantSalesModel.fromJson(m),
         debugScope: 'SalesDatasource.getInstantSales',
       );
+      _salesSearchDebug('instant parsed', {
+        'parsed_count': parsed.length,
+        'invoices': parsed.take(12).map((sale) => sale.invoiceNumber).toList(),
+        'buyers': parsed.take(12).map((sale) => sale.partnerName).toList(),
+      });
+      return parsed;
     } on DioException catch (e) {
       final data = e.response?.data;
+      _salesSearchDebug('instant DioException', {
+        'uri': e.requestOptions.uri,
+        'status': e.response?.statusCode,
+        'response': data,
+        'message': e.message,
+      });
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage:
+              data is Map ? '${data['message'] ?? 'Unknown error'}' : '$e',
+          status: data is Map ? asInt(data['status'], 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
+    } catch (e, stackTrace) {
+      _salesSearchDebug('instant exception', {
+        'type': e.runtimeType,
+        'error': e,
+        'query': query,
+      });
+      if (kDebugMode) {
+        debugPrintStack(
+          label: '[SalesSearchDebug][Datasource] instant stack',
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
     }
   }
 
