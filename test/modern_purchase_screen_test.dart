@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doctorbike/features/admin/boxes/data/models/get_shown_boxes_model.dart';
 import 'package:doctorbike/features/admin/boxes/domain/repositories/boxes_repository.dart';
 import 'package:doctorbike/features/admin/boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -30,20 +32,21 @@ void main() {
   tearDown(Get.reset);
 
   group('Modern purchase creation screen', () {
-    testWidgets('shows selector, search, loading and bottom summary',
+    testWidgets('shows source action, search, loading and cart action',
         (tester) async {
+      final products = Completer<List<ProductModel>>();
       final controller = _putController(
-        productsLoader: () async => <ProductModel>[],
+        productsLoader: () => products.future,
       );
       controller.purchaseProductsStatus.value = PurchaseLoadStatus.loading;
       controller.update();
 
       await _pumpScreen(tester);
 
-      expect(find.text('اختر المورد أو الزبون'), findsOneWidget);
+      expect(find.byIcon(Icons.person_search_outlined), findsWidgets);
       expect(find.text('ابحث عن منتج للشراء'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsWidgets);
-      expect(find.text('الإجمالي'), findsOneWidget);
+      expect(find.byIcon(Icons.shopping_cart_outlined), findsWidgets);
     });
 
     testWidgets('renders loaded product cards', (tester) async {
