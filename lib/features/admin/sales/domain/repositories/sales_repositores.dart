@@ -26,7 +26,7 @@ abstract class SalesRepository {
     XFile? image,
     XFile? video,
   });
-  Future<List<ProfitSale>> getProfitSales({String? date});
+  Future<List<ProfitSale>> getProfitSales({String? date, String? search});
 
   Future<List<InstantSalesModel>> getInstantSales({
     String? search,

@@ -456,21 +456,21 @@ class SalesController extends GetxController
     profitSalesSearchQuery.value = value;
     _profitSalesSearchDebounce?.cancel();
     _profitSalesSearchDebounce = Timer(
-      const Duration(milliseconds: 250),
-      notifySalesListChanged,
+      const Duration(milliseconds: 400),
+      () => fetchProfitSales(clearCache: true),
     );
   }
 
   void onProfitSalesSearchSubmitted(String value) {
     _profitSalesSearchDebounce?.cancel();
     profitSalesSearchQuery.value = value;
-    notifySalesListChanged();
+    fetchProfitSales(clearCache: true);
   }
 
   void clearProfitSalesSearch() {
     profitSalesSearchController.clear();
     profitSalesSearchQuery.value = '';
-    notifySalesListChanged();
+    fetchProfitSales(clearCache: true);
   }
 
   void toggleProfitSalesSort() {
@@ -562,6 +562,7 @@ class SalesController extends GetxController
                 task.id.toString(),
                 task.notes,
                 task.partnerDisplay,
+                task.buyerPhone ?? '',
                 task.paymentDisplay,
                 task.paymentBoxName ?? '',
                 task.paymentBoxValue ?? '',
@@ -5362,6 +5363,9 @@ class SalesController extends GetxController
     try {
       final list = await getProfitSalesUsecase.call(
         date: selectedProfitSalesDateParam,
+        search: profitSalesSearchQuery.value.trim().isEmpty
+            ? null
+            : profitSalesSearchQuery.value.trim(),
       );
       if (clearCache) {
         salesService.profitSalesTasks.clear();

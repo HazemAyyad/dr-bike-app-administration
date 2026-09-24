@@ -329,7 +329,9 @@ class _SalesSearchBar extends GetView<SalesController> {
               icon: const Icon(Icons.close_rounded),
             ),
           ],
-          hintText: tab == 0 ? 'searchInvoicesHint'.tr : 'بحث في البيع الربحي',
+          hintText: tab == 0
+              ? 'searchInvoicesHint'.tr
+              : 'ابحث باسم الزبون أو رقم الهاتف',
           backgroundColor: WidgetStateProperty.all(
             AppColors.customGreyColor7,
           ),

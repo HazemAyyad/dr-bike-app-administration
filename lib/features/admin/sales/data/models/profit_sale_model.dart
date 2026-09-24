@@ -8,6 +8,7 @@ class ProfitSale {
   final String? videoPath;
   final String? buyerType;
   final String? buyerName;
+  final String? buyerPhone;
   final int? customerId;
   final int? sellerId;
   final String? paymentBoxName;
@@ -25,6 +26,7 @@ class ProfitSale {
     this.videoPath,
     this.buyerType,
     this.buyerName,
+    this.buyerPhone,
     this.customerId,
     this.sellerId,
     this.paymentBoxName,
@@ -44,6 +46,7 @@ class ProfitSale {
       videoPath: asNullableString(json['video_path']),
       buyerType: asNullableString(json['buyer_type']),
       buyerName: asNullableString(json['buyer_name']),
+      buyerPhone: asNullableString(json['buyer_phone']),
       customerId: json['customer_id'] == null ? null : asInt(json['customer_id']),
       sellerId: json['seller_id'] == null ? null : asInt(json['seller_id']),
       paymentBoxName: asNullableString(json['payment_box_name']),
@@ -82,6 +85,7 @@ class ProfitSale {
       'video_path': videoPath,
       'buyer_type': buyerType,
       'buyer_name': buyerName,
+      'buyer_phone': buyerPhone,
       'customer_id': customerId,
       'seller_id': sellerId,
       'payment_box_name': paymentBoxName,

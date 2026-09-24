@@ -7,7 +7,7 @@ class GetProfitSalesUsecase {
 
   GetProfitSalesUsecase({required this.salesRepository});
 
-  Future<List<ProfitSale>> call({String? date}) async {
-    return await salesRepository.getProfitSales(date: date);
+  Future<List<ProfitSale>> call({String? date, String? search}) async {
+    return await salesRepository.getProfitSales(date: date, search: search);
   }
 }
