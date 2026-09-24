@@ -147,42 +147,83 @@ class _BuyingPrimaryTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52.h,
-      padding: EdgeInsets.all(4.w),
-      decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor
-            : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: TabBar(
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelColor: AppColors.secondaryColor,
-        unselectedLabelColor: Colors.black87,
-        labelStyle: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
-        unselectedLabelStyle:
-            TextStyle(fontSize: 10.5.sp, fontWeight: FontWeight.w600),
-        indicator: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 6.r,
-              offset: const Offset(0, 2),
+    return GetBuilder<BillsController>(
+      builder: (bills) => GetBuilder<PurchaseOrdersController>(
+        builder: (orders) => GetBuilder<ReturnPurchasesController>(
+          builder: (returns) => Container(
+            height: 52.h,
+            padding: EdgeInsets.all(4.w),
+            decoration: BoxDecoration(
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(999),
             ),
-          ],
+            child: TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: AppColors.secondaryColor,
+              unselectedLabelColor:
+                  ThemeService.isDark.value ? Colors.white70 : Colors.black87,
+              labelStyle:
+                  TextStyle(fontSize: 10.5.sp, fontWeight: FontWeight.w800),
+              unselectedLabelStyle:
+                  TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w600),
+              indicator: BoxDecoration(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor4
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6.r,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              tabs: [
+                _primaryTab('فواتير الشراء', bills.purchaseBillsCount),
+                _primaryTab('الاستلام والمتابعة', orders.totalCount),
+                _primaryTab('المرتجعات', returns.totalCount),
+              ],
+            ),
+          ),
         ),
-        tabs: const [
-          Tab(text: 'فواتير الشراء'),
-          Tab(text: 'الاستلام والمتابعة'),
-          Tab(text: 'مرتجعات الموردين'),
-        ],
       ),
     );
   }
+
+  Widget _primaryTab(String label, int count) => Tab(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(99.r),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: AppColors.secondaryColor,
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _PurchaseInvoicesTab extends GetView<BillsController> {
@@ -190,44 +231,115 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
   Widget build(BuildContext context) {
     return GetBuilder<BillsController>(
       builder: (controller) {
-        if (controller.isLoading.value) {
-          return AppPullToRefresh(
-            onRefresh: controller.getBills,
-            child: ListView(
-              physics: kRefreshableScrollPhysics,
-              children: const [BuyingBillsTableSkeleton()],
-            ),
-          );
-        }
-        if (controller.allBillsSearch.isEmpty) {
-          return AppPullToRefresh(
-            onRefresh: controller.getBills,
-            child: ListView(
-              physics: kRefreshableScrollPhysics,
-              padding: EdgeInsets.fromLTRB(16.w, 80.h, 16.w, 24.h),
-              children: const [ShowNoData()],
-            ),
-          );
-        }
         final months = controller.allBillsSearch.keys.toList();
         return AppPullToRefresh(
           onRefresh: controller.getBills,
-          child: ListView.builder(
+          child: CustomScrollView(
             physics: kRefreshableScrollPhysics,
-            padding: EdgeInsets.only(bottom: 90.h),
-            itemCount: months.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) return const PurchaseBillsTableHeader();
-              final monthIndex = index - 1;
-              final month = months[monthIndex];
-              final bills = controller.allBillsSearch[month] ?? [];
-              return BillsList(month: month, bills: bills, page: '1');
-            },
+            slivers: [
+              const SliverToBoxAdapter(child: _PurchaseInvoiceStatusTabs()),
+              SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isPurchaseSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 6.h),
+                          child: SearchBar(
+                            controller: controller.searchController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            leading: const Icon(Icons.search),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closePurchaseSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText: 'ابحث برقم الفاتورة أو المصدر',
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: controller.searchBar,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+              if (controller.isLoading.value)
+                const SliverToBoxAdapter(child: BuyingBillsTableSkeleton())
+              else if (months.isEmpty)
+                const SliverFillRemaining(child: Center(child: ShowNoData()))
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final month = months[index];
+                      final bills = controller.allBillsSearch[month] ?? [];
+                      return BillsList(month: month, bills: bills, page: '1');
+                    },
+                    childCount: months.length,
+                  ),
+                ),
+              SliverToBoxAdapter(child: SizedBox(height: 90.h)),
+            ],
           ),
         );
       },
     );
   }
+}
+
+class _PurchaseInvoiceStatusTabs extends GetView<BillsController> {
+  const _PurchaseInvoiceStatusTabs();
+
+  static const _items = [
+    _StatusTabItem('الكل', Icons.all_inbox_outlined, Colors.blueGrey),
+    _StatusTabItem('بانتظار الاستلام', Icons.inventory_outlined, Colors.orange),
+    _StatusTabItem(
+      'استلام جزئي',
+      Icons.hourglass_bottom_outlined,
+      Colors.deepOrange,
+    ),
+    _StatusTabItem(
+      'مشاكل استلام',
+      Icons.report_problem_outlined,
+      Colors.red,
+    ),
+    _StatusTabItem(
+      'بانتظار الاعتماد',
+      Icons.fact_check_outlined,
+      Colors.indigo,
+    ),
+    _StatusTabItem('غير مدفوعة', Icons.money_off_outlined, Colors.red),
+    _StatusTabItem('مدفوعة جزئياً', Icons.payments_outlined, Colors.orange),
+    _StatusTabItem('مدفوعة', Icons.check_circle_outline, Colors.green),
+  ];
+
+  static const _values = [
+    'all',
+    'awaiting_receiving',
+    'partially_received',
+    'receiving_issues',
+    'awaiting_finalization',
+    'unpaid',
+    'partially_paid',
+    'paid',
+  ];
+
+  @override
+  Widget build(BuildContext context) => _OperationalStatusBar(
+        items: _items,
+        selectedIndex:
+            _values.indexOf(controller.purchaseBillStateFilter.value),
+        countForIndex: (index) =>
+            controller.purchaseBillStateCount(_values[index]),
+        onSelected: (index) =>
+            controller.changePurchaseBillStateFilter(_values[index]),
+        searchVisible: controller.isPurchaseSearchVisible.value,
+        onSearch: controller.togglePurchaseSearch,
+      );
 }
 
 class _PurchaseOrderIconTabs extends StatelessWidget {
@@ -236,22 +348,22 @@ class _PurchaseOrderIconTabs extends StatelessWidget {
   final PurchaseOrdersController controller;
 
   static const _items = [
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
       label: 'قيد الاستلام',
       icon: Icons.inventory_2_outlined,
       color: Colors.orange,
     ),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
       label: 'فروقات',
       icon: Icons.report_problem_outlined,
       color: Colors.red,
     ),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
       label: 'مكتملة',
       icon: Icons.check_circle_outline,
       color: Colors.green,
     ),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
       label: 'أمانات',
       icon: Icons.account_balance_wallet_outlined,
       color: Colors.indigo,
@@ -261,117 +373,26 @@ class _PurchaseOrderIconTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<PurchaseOrdersController>(
-      builder: (_) {
-        final selected = controller.currentTab.value;
-        return Container(
-          margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-          decoration: BoxDecoration(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor
-                : AppColors.whiteColor2,
-            borderRadius: BorderRadius.circular(10.r),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < _items.length; i++)
-                        SizedBox(
-                          width: 105.w,
-                          child: _PurchaseOrderIconTab(
-                            item: _items[i],
-                            selected: selected == i,
-                            onTap: () => controller.changeTab(i),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 4.w),
-              IconButton(
-                tooltip: 'search'.tr,
-                visualDensity: VisualDensity.compact,
-                onPressed: controller.toggleSearch,
-                icon: Obx(
-                  () => Icon(
-                    controller.isSearchVisible.value
-                        ? Icons.search_off_rounded
-                        : Icons.search_rounded,
-                    color: AppColors.secondaryColor,
-                    size: 22.sp,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _PurchaseOrderIconTab extends StatelessWidget {
-  const _PurchaseOrderIconTab({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _PurchaseOrderTabUi item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? Colors.white : item.color;
-    return Tooltip(
-      message: item.label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(9.r),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          height: 42.h,
-          margin: EdgeInsets.symmetric(horizontal: 3.w),
-          padding: EdgeInsets.symmetric(horizontal: 4.w),
-          decoration: BoxDecoration(
-            color: selected ? item.color : item.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(9.r),
-            border: Border.all(color: item.color.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(item.icon, color: fg, size: 18.sp),
-              SizedBox(width: 4.w),
-              Flexible(
-                child: Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: fg,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (_) => _OperationalStatusBar(
+        items: _items,
+        selectedIndex: controller.currentTab.value,
+        countForIndex: controller.tabCount,
+        onSelected: controller.changeTab,
+        searchVisible: controller.isSearchVisible.value,
+        onSearch: controller.toggleSearch,
       ),
     );
   }
 }
 
-class _PurchaseOrderTabUi {
-  const _PurchaseOrderTabUi({
+class _StatusTabItem {
+  const _StatusTabItem(
+    this.label,
+    this.icon,
+    this.color,
+  );
+
+  const _StatusTabItem.named({
     required this.label,
     required this.icon,
     required this.color,
@@ -380,6 +401,110 @@ class _PurchaseOrderTabUi {
   final String label;
   final IconData icon;
   final Color color;
+}
+
+class _OperationalStatusBar extends StatelessWidget {
+  const _OperationalStatusBar({
+    required this.items,
+    required this.selectedIndex,
+    required this.countForIndex,
+    required this.onSelected,
+    required this.searchVisible,
+    required this.onSearch,
+  });
+
+  final List<_StatusTabItem> items;
+  final int selectedIndex;
+  final int Function(int index) countForIndex;
+  final ValueChanged<int> onSelected;
+  final bool searchVisible;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 10.w, 4.h),
+        child: Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(items.length, (index) {
+                    final item = items[index];
+                    final selected = selectedIndex == index;
+                    return Padding(
+                      padding: EdgeInsetsDirectional.only(end: 8.w),
+                      child: FilterChip(
+                        selected: selected,
+                        showCheckmark: false,
+                        avatar: Icon(
+                          item.icon,
+                          size: 15.sp,
+                          color: item.color,
+                        ),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.label,
+                              style: TextStyle(
+                                color: ThemeService.isDark.value
+                                    ? Colors.white
+                                    : Colors.grey.shade800,
+                                fontSize: 11.sp,
+                                fontWeight: selected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 6.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: item.color.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(99.r),
+                              ),
+                              child: Text(
+                                '${countForIndex(index)}',
+                                style: TextStyle(
+                                  color: item.color,
+                                  fontSize: 9.5.sp,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.whiteColor2,
+                        selectedColor: item.color.withValues(alpha: 0.13),
+                        side: BorderSide(
+                          color: selected ? item.color : Colors.grey.shade300,
+                        ),
+                        onSelected: (_) => onSelected(index),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'search'.tr,
+              visualDensity: VisualDensity.compact,
+              onPressed: onSearch,
+              icon: Icon(
+                searchVisible ? Icons.search_off_rounded : Icons.search_rounded,
+                color: AppColors.secondaryColor,
+                size: 22.sp,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
@@ -578,71 +703,34 @@ class _PurchaseReturnIconTabs extends StatelessWidget {
   final ReturnPurchasesController controller;
 
   static const _items = [
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
         label: 'مسودات',
         icon: Icons.edit_note_outlined,
         color: Colors.blueGrey),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
         label: 'قيد التسليم',
         icon: Icons.local_shipping_outlined,
         color: Colors.orange),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
         label: 'قيد التسوية',
         icon: Icons.account_balance_wallet_outlined,
         color: Colors.indigo),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
         label: 'مكتملة', icon: Icons.check_circle_outline, color: Colors.green),
-    _PurchaseOrderTabUi(
+    _StatusTabItem.named(
         label: 'ملغاة', icon: Icons.cancel_outlined, color: Colors.red),
   ];
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<ReturnPurchasesController>(builder: (_) {
-      final selected = controller.currentTab.value;
-      return Container(
-        margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Row(children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (var i = 0; i < _items.length; i++)
-                    SizedBox(
-                      width: 105.w,
-                      child: _PurchaseOrderIconTab(
-                        item: _items[i],
-                        selected: selected == i,
-                        onTap: () => controller.changeTab(i),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: 4.w),
-          IconButton(
-            tooltip: 'search'.tr,
-            visualDensity: VisualDensity.compact,
-            onPressed: controller.toggleSearch,
-            icon: Obx(() => Icon(
-                  controller.isSearchVisible.value
-                      ? Icons.search_off_rounded
-                      : Icons.search_rounded,
-                  color: AppColors.secondaryColor,
-                  size: 22.sp,
-                )),
-          ),
-        ]),
+      return _OperationalStatusBar(
+        items: _items,
+        selectedIndex: controller.currentTab.value,
+        countForIndex: controller.tabCount,
+        onSelected: controller.changeTab,
+        searchVisible: controller.isSearchVisible.value,
+        onSearch: controller.toggleSearch,
       );
     });
   }

@@ -158,6 +158,28 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  int purchaseBillStateCount(String filter) {
+    final query = searchController.text.trim().toLowerCase();
+    return BuyingServes()
+        .allBillsTasks
+        .values
+        .expand((bills) => bills)
+        .where((bill) {
+      final textMatches = query.isEmpty ||
+          bill.seller.toLowerCase().contains(query) ||
+          bill.id.toString().contains(query);
+      return textMatches && _billMatchesState(bill, filter);
+    }).length;
+  }
+
+  int get purchaseBillsCount => BuyingServes()
+      .allBillsTasks
+      .values
+      .expand((bills) => bills)
+      .map((bill) => bill.id)
+      .toSet()
+      .length;
+
   // get all products
   final RxList<ProductModel> products = <ProductModel>[].obs;
   final Rx<PurchaseLoadStatus> purchaseProductsStatus =
@@ -1368,6 +1390,52 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<bool> receiveShownItem(
+    BuildContext context,
+    BillProductModel product,
+  ) async {
+    final details = billDetails;
+    if (details == null || product.remainingQuantity <= 0) return false;
+    return _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: [
+          {
+            'bill_item_id': product.billItemId,
+            'accepted_quantity': product.remainingQuantity,
+            'unit_price': product.price,
+          },
+        ],
+      ),
+      showSuccess: false,
+    );
+  }
+
+  Future<bool> receiveReviewedShownItem(
+    BuildContext context,
+    PurchaseReceivingRowModel row,
+  ) async {
+    final details = billDetails;
+    if (details == null || row.isEmpty) return false;
+    if (!row.isValid) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'راجع كميات ${row.product.displayName}',
+      );
+      return false;
+    }
+    return _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.receive(
+        billId: details.billId.toString(),
+        items: [row.toApiMap()],
+      ),
+      showSuccess: false,
+    );
+  }
+
   void prepareReceivingRows() {
     for (final row in receivingRows) {
       row.dispose();
@@ -1958,6 +2026,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
   bool _billMatchesState(BillDataModel bill, String filter) {
     if (filter == 'all') return true;
+    final workflow = bill.workflowStatus.toLowerCase();
+    final payment = bill.paymentStatus.toLowerCase();
     final haystack = [
       bill.status,
       bill.workflowStatus,
@@ -1965,24 +2035,24 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     ].join(' ').toLowerCase();
     switch (filter) {
       case 'awaiting_receiving':
-        return haystack.contains('awaiting_receiving') ||
-            haystack.contains('draft');
+        return workflow == 'awaiting_receiving' ||
+            bill.status.toLowerCase() == 'draft';
       case 'partially_received':
-        return haystack.contains('partially_received');
+        return workflow == 'partially_received';
       case 'receiving_issues':
-        return haystack.contains('issue') ||
+        return bill.hasReceivingSummary ||
+            haystack.contains('issue') ||
             haystack.contains('discrep') ||
             haystack.contains('damaged') ||
             haystack.contains('mismatch');
       case 'awaiting_finalization':
-        return haystack.contains('awaiting_finalization') ||
-            haystack.contains('received');
+        return workflow == 'awaiting_finalization';
       case 'unpaid':
-        return haystack.contains('unpaid');
+        return payment == 'unpaid' || payment.isEmpty;
       case 'partially_paid':
-        return haystack.contains('partial');
+        return payment == 'partially_paid' || payment == 'partial';
       case 'paid':
-        return haystack.contains('paid') && !haystack.contains('unpaid');
+        return payment == 'paid';
       default:
         return haystack.contains(filter.toLowerCase());
     }

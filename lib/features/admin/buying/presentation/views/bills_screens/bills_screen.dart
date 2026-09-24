@@ -161,31 +161,54 @@ class _PurchaseBillStateFilters extends GetView<BillsController> {
   const _PurchaseBillStateFilters();
 
   static const _states = [
-    _PurchaseBillState('all', 'الكل', Icons.all_inbox_outlined),
+    _PurchaseBillState(
+      'all',
+      'الكل',
+      Icons.all_inbox_outlined,
+      Colors.blueGrey,
+    ),
     _PurchaseBillState(
       'awaiting_receiving',
       'بانتظار الاستلام',
       Icons.inventory_outlined,
+      Colors.orange,
     ),
     _PurchaseBillState(
       'partially_received',
       'استلام جزئي',
       Icons.hourglass_bottom_outlined,
+      Colors.deepOrange,
     ),
     _PurchaseBillState(
       'receiving_issues',
       'مشاكل استلام',
       Icons.report_problem_outlined,
+      Colors.red,
     ),
     _PurchaseBillState(
       'awaiting_finalization',
       'بانتظار الاعتماد',
       Icons.fact_check_outlined,
+      Colors.indigo,
     ),
-    _PurchaseBillState('unpaid', 'غير مدفوعة', Icons.money_off_outlined),
     _PurchaseBillState(
-        'partially_paid', 'مدفوعة جزئياً', Icons.payments_outlined),
-    _PurchaseBillState('paid', 'مدفوعة', Icons.check_circle_outline),
+      'unpaid',
+      'غير مدفوعة',
+      Icons.money_off_outlined,
+      Colors.red,
+    ),
+    _PurchaseBillState(
+      'partially_paid',
+      'مدفوعة جزئياً',
+      Icons.payments_outlined,
+      Colors.orange,
+    ),
+    _PurchaseBillState(
+      'paid',
+      'مدفوعة',
+      Icons.check_circle_outline,
+      Colors.green,
+    ),
   ];
 
   @override
@@ -203,24 +226,52 @@ class _PurchaseBillStateFilters extends GetView<BillsController> {
             itemBuilder: (_, index) {
               final state = _states[index];
               final selected = selectedState == state.value;
-              return ChoiceChip(
+              return FilterChip(
                 selected: selected,
+                showCheckmark: false,
                 avatar: Icon(
                   state.icon,
                   size: 15.sp,
-                  color: selected ? Colors.white : AppColors.primaryColor,
+                  color: state.color,
                 ),
-                label: Text(state.label),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(state.label),
+                    SizedBox(width: 6.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 2.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: state.color.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(99.r),
+                      ),
+                      child: Text(
+                        '${controller.purchaseBillStateCount(state.value)}',
+                        style: TextStyle(
+                          color: state.color,
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 labelStyle: TextStyle(
-                  color: selected ? Colors.white : Colors.grey.shade800,
+                  color: ThemeService.isDark.value
+                      ? Colors.white
+                      : Colors.grey.shade800,
                   fontWeight: FontWeight.w700,
                   fontSize: 11.sp,
                 ),
-                selectedColor: AppColors.primaryColor,
-                backgroundColor: Colors.grey.shade50,
+                selectedColor: state.color.withValues(alpha: .13),
+                backgroundColor: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.whiteColor2,
                 side: BorderSide(
-                  color:
-                      selected ? AppColors.primaryColor : Colors.grey.shade200,
+                  color: selected ? state.color : Colors.grey.shade300,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8.r),
@@ -240,6 +291,7 @@ class _PurchaseBillState {
   final String value;
   final String label;
   final IconData icon;
+  final Color color;
 
-  const _PurchaseBillState(this.value, this.label, this.icon);
+  const _PurchaseBillState(this.value, this.label, this.icon, this.color);
 }

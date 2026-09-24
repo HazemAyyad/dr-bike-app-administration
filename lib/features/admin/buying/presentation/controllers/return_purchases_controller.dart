@@ -23,6 +23,7 @@ import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart'
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class ReturnPurchasesController extends GetxController {
   ReturnPurchasesController({
     required this.getBillsUsecase,
@@ -83,6 +84,23 @@ class ReturnPurchasesController extends GetxController {
   // Kept for the existing list widget while the new five-state tabs use one source.
   final returnPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
   final deliveredPurchasesSearch = <String, List<ReturnProduct>>{}.obs;
+
+  int tabCount(int index) {
+    if (index < 0 || index >= statuses.length) return 0;
+    final status = statuses[index];
+    final query = search.value;
+    return allReturns.where((row) {
+      final matchesStatus = row.status == status ||
+          (status == 'confirmed' && row.status == 'pending');
+      final matchesSearch = query.isEmpty ||
+          row.number.toLowerCase().contains(query) ||
+          row.billId.contains(query) ||
+          row.seller.name.toLowerCase().contains(query);
+      return matchesStatus && matchesSearch;
+    }).length;
+  }
+
+  int get totalCount => allReturns.length;
 
   void changeTab(int index) {
     currentTab.value = index;

@@ -403,6 +403,34 @@ class PurchaseOrdersController extends GetxController {
   final completedSearch = <String, List<BillDataModel>>{}.obs;
   final depositsSearch = <String, List<BillDataModel>>{}.obs;
 
+  int tabCount(int index) {
+    final groups = index == 0
+        ? unprocessedSearch
+        : index == 1
+            ? notMatchedSearch
+            : index == 2
+                ? completedSearch
+                : depositsSearch;
+    return groups.values
+        .expand((bills) => bills)
+        .map((bill) => bill.id)
+        .toSet()
+        .length;
+  }
+
+  int get totalCount {
+    final ids = <int>{};
+    for (final groups in [
+      unprocessedSearch,
+      notMatchedSearch,
+      completedSearch,
+      depositsSearch,
+    ]) {
+      ids.addAll(groups.values.expand((bills) => bills).map((bill) => bill.id));
+    }
+    return ids.length;
+  }
+
   void searchBar(String value) {
     if (searchController.text != value) {
       searchController.text = value;

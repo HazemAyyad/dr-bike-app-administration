@@ -21,22 +21,13 @@ class ReturnPurchasesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor4
-              : Colors.white,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Column(children: [
-          _ReturnMonthDivider(month: month, count: bills.length),
-          ...bills.map((bill) => _ReturnPurchaseCard(bill: bill)),
-        ]),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReturnMonthDivider(month: month, count: bills.length),
+        ...bills.map((bill) => _ReturnPurchaseCard(bill: bill)),
+        SizedBox(height: 7.h),
+      ],
     );
   }
 }
@@ -46,22 +37,41 @@ class _ReturnMonthDivider extends StatelessWidget {
   final String month;
   final int count;
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor.withValues(alpha: 0.04),
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade300),
-            bottom: BorderSide(color: Colors.grey.shade300),
-          ),
-        ),
-        child: Text('$month · $count مرتجعات',
-            textAlign: TextAlign.center,
-            style: TextStyle(
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 4.h),
+        child: Row(
+          children: [
+            Container(
+              width: 4.w,
+              height: 18.h,
+              decoration: BoxDecoration(
                 color: AppColors.primaryColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 13.sp)),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            SizedBox(width: 7.w),
+            Icon(
+              Icons.calendar_month_outlined,
+              size: 17.sp,
+              color: AppColors.primaryColor,
+            ),
+            SizedBox(width: 5.w),
+            Expanded(
+              child: Text(
+                month,
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Text('$count', style: TextStyle(fontSize: 10.sp)),
+            ),
+          ],
+        ),
       );
 }
 
@@ -82,96 +92,124 @@ class _ReturnPurchaseCard extends StatelessWidget {
     return _SwipeReturnCard(
       onOptions: () => _showReturnActions(context, bill),
       child: Material(
-        color: ThemeService.isDark.value
-            ? AppColors.customGreyColor4
-            : Colors.white,
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => Get.toNamed(
             AppRoutes.PURCHASERETURNDETAILSSCREEN,
             arguments: bill,
           ),
+          borderRadius: BorderRadius.circular(12.r),
           child: Container(
-            constraints: BoxConstraints(minHeight: 112.h),
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+            margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+            padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: AppColors.operationalCardBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.035),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Column(children: [
-              Row(children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            child: Row(children: [
+              Container(
+                width: 38.w,
+                height: 38.w,
+                decoration: BoxDecoration(
+                  color: _statusColor(bill.status).withValues(alpha: .1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.assignment_return_outlined,
+                  color: _statusColor(bill.status),
+                  size: 19.sp,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          bill.seller.name.trim().isEmpty
+                              ? 'مورد غير محدد'
+                              : bill.seller.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 13.sp, fontWeight: FontWeight.w800),
+                        ),
+                      ),
                       Text(
                         bill.number,
                         style: TextStyle(
                           color: AppColors.primaryColor,
-                          fontSize: 14.sp,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ]),
+                    SizedBox(height: 4.h),
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          '$date • $itemsCount أصناف',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.5.sp,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${NumberFormat('#,##0.##').format(total)} ${bill.currency}',
+                        style: TextStyle(
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      SizedBox(height: 2.h),
-                      Text('$date  •  $sourceLabel',
+                      SizedBox(width: 7.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 7.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color:
+                              _statusColor(bill.status).withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _statusLabel(bill.status),
                           style: TextStyle(
-                              fontSize: 10.5.sp, color: Colors.grey.shade700)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
-                  decoration: BoxDecoration(
-                    color: _statusColor(bill.status).withValues(alpha: .1),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(_statusLabel(bill.status),
-                      style: TextStyle(
-                          color: _statusColor(bill.status),
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w900)),
-                ),
-              ]),
-              SizedBox(height: 10.h),
-              Row(children: [
-                CircleAvatar(
-                  radius: 17.r,
-                  backgroundColor:
-                      AppColors.primaryColor.withValues(alpha: .08),
-                  child: const Icon(Icons.storefront_outlined,
-                      color: AppColors.primaryColor, size: 18),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        bill.seller.name.trim().isEmpty
-                            ? 'مورد غير محدد'
-                            : bill.seller.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 13.sp, fontWeight: FontWeight.w800),
+                            color: _statusColor(bill.status),
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                      Text('$itemsCount أصناف',
-                          style: TextStyle(
-                              fontSize: 10.5.sp, color: Colors.grey.shade600)),
-                    ],
-                  ),
-                ),
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text(
-                      '${NumberFormat('#,##0.##').format(total)} ${bill.currency}',
+                    ]),
+                    SizedBox(height: 4.h),
+                    Text(
+                      sourceLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 14.sp, fontWeight: FontWeight.w900)),
-                  if ((double.tryParse(bill.settledAmount) ?? 0) > 0)
-                    Text('تمت تسوية ${bill.settledAmount} ${bill.currency}',
-                        style: TextStyle(
-                            fontSize: 9.5.sp,
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w700)),
-                ]),
-              ]),
+                        fontSize: 9.sp,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left_rounded, size: 19.sp, color: Colors.grey),
             ]),
           ),
         ),
