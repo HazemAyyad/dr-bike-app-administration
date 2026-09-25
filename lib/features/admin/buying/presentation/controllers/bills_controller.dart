@@ -1624,9 +1624,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
           title: 'success'.tr,
           message: success,
         );
-        getBills();
       },
     );
+    if (ok) {
+      await getBills();
+    }
     isWorkflowLoading(false);
     update();
     return ok;

@@ -7,6 +7,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
 import '../../controllers/bills_controller.dart';
+import '../../utils/purchase_status_labels.dart';
 import '../../../../../../routes/app_routes.dart';
 
 class ReturnPurchasesList extends StatelessWidget {
@@ -26,7 +27,7 @@ class ReturnPurchasesList extends StatelessWidget {
       children: [
         _ReturnMonthDivider(month: month, count: bills.length),
         ...bills.map((bill) => _ReturnPurchaseCard(bill: bill)),
-        SizedBox(height: 7.h),
+        SizedBox(height: 4.h),
       ],
     );
   }
@@ -38,12 +39,12 @@ class _ReturnMonthDivider extends StatelessWidget {
   final int count;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 4.h),
+        padding: EdgeInsets.fromLTRB(12.w, 5.h, 12.w, 2.h),
         child: Row(
           children: [
             Container(
               width: 4.w,
-              height: 18.h,
+              height: 15.h,
               decoration: BoxDecoration(
                 color: AppColors.primaryColor,
                 borderRadius: BorderRadius.circular(8.r),
@@ -52,14 +53,14 @@ class _ReturnMonthDivider extends StatelessWidget {
             SizedBox(width: 7.w),
             Icon(
               Icons.calendar_month_outlined,
-              size: 17.sp,
+              size: 15.sp,
               color: AppColors.primaryColor,
             ),
             SizedBox(width: 5.w),
             Expanded(
               child: Text(
                 month,
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
               ),
             ),
             Container(
@@ -100,8 +101,8 @@ class _ReturnPurchaseCard extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(12.r),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-            padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+            margin: EdgeInsets.symmetric(horizontal: 10.w, vertical: 1.5.h),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor
@@ -118,8 +119,8 @@ class _ReturnPurchaseCard extends StatelessWidget {
             ),
             child: Row(children: [
               Container(
-                width: 38.w,
-                height: 38.w,
+                width: 32.w,
+                height: 32.w,
                 decoration: BoxDecoration(
                   color: _statusColor(bill.status).withValues(alpha: .1),
                   shape: BoxShape.circle,
@@ -127,10 +128,10 @@ class _ReturnPurchaseCard extends StatelessWidget {
                 child: Icon(
                   Icons.assignment_return_outlined,
                   color: _statusColor(bill.status),
-                  size: 19.sp,
+                  size: 17.sp,
                 ),
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 7.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,19 +145,19 @@ class _ReturnPurchaseCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              fontSize: 13.sp, fontWeight: FontWeight.w800),
+                              fontSize: 12.sp, fontWeight: FontWeight.w800),
                         ),
                       ),
                       Text(
                         bill.number,
                         style: TextStyle(
                           color: AppColors.primaryColor,
-                          fontSize: 11.sp,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ]),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h),
                     Row(children: [
                       Expanded(
                         child: Text(
@@ -164,7 +165,7 @@ class _ReturnPurchaseCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 9.5.sp,
+                            fontSize: 9.sp,
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -172,36 +173,36 @@ class _ReturnPurchaseCard extends StatelessWidget {
                       Text(
                         '${NumberFormat('#,##0.##').format(total)} ${bill.currency}',
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 10.sp,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                       SizedBox(width: 7.w),
                       Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 7.w, vertical: 2.h),
+                            horizontal: 6.w, vertical: 1.5.h),
                         decoration: BoxDecoration(
                           color:
                               _statusColor(bill.status).withValues(alpha: .1),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          _statusLabel(bill.status),
+                          purchaseReturnStatusLabel(bill.status),
                           style: TextStyle(
                             color: _statusColor(bill.status),
-                            fontSize: 9.sp,
+                            fontSize: 8.5.sp,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ]),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h),
                     Text(
                       sourceLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 8.5.sp,
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w600,
                       ),
@@ -209,30 +210,12 @@ class _ReturnPurchaseCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_left_rounded, size: 19.sp, color: Colors.grey),
+              Icon(Icons.chevron_left_rounded, size: 17.sp, color: Colors.grey),
             ]),
           ),
         ),
       ),
     );
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'draft':
-        return 'مسودة';
-      case 'confirmed':
-      case 'pending':
-        return 'قيد التسليم';
-      case 'delivered':
-        return 'قيد التسوية';
-      case 'settled':
-        return 'مكتمل';
-      case 'cancelled':
-        return 'ملغى';
-      default:
-        return status;
-    }
   }
 
   Color _statusColor(String status) {

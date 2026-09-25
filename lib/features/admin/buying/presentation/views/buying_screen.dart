@@ -51,7 +51,7 @@ class BuyingScreen extends GetView<BillsController> {
         body: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(10.w, 6.h, 10.w, 2.h),
+              padding: EdgeInsets.fromLTRB(8.w, 3.h, 8.w, 1.h),
               child: const _BuyingPrimaryTabs(),
             ),
             Expanded(
@@ -212,7 +212,7 @@ class _BuyingPrimaryTabs extends StatelessWidget {
       builder: (bills) => GetBuilder<PurchaseOrdersController>(
         builder: (orders) => GetBuilder<ReturnPurchasesController>(
           builder: (returns) => SizedBox(
-            height: 72.h,
+            height: 58.h,
             child: TabBar(
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
@@ -220,17 +220,17 @@ class _BuyingPrimaryTabs extends StatelessWidget {
               unselectedLabelColor:
                   ThemeService.isDark.value ? Colors.white70 : Colors.black87,
               labelStyle: TextStyle(
-                fontSize: 10.sp,
+                fontSize: 9.sp,
                 fontWeight: FontWeight.w900,
               ),
               unselectedLabelStyle: TextStyle(
-                fontSize: 9.5.sp,
+                fontSize: 8.5.sp,
                 fontWeight: FontWeight.w700,
               ),
               indicator: UnderlineTabIndicator(
                 borderSide: BorderSide(
                   color: AppColors.secondaryColor,
-                  width: 3.h,
+                  width: 2.5.h,
                 ),
                 borderRadius: BorderRadius.circular(12.r),
                 insets: EdgeInsets.symmetric(horizontal: 24.w),
@@ -260,7 +260,7 @@ class _BuyingPrimaryTabs extends StatelessWidget {
   }
 
   Widget _primaryTab(String label, IconData icon, int count) => Tab(
-        height: 68.h,
+        height: 55.h,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -268,8 +268,8 @@ class _BuyingPrimaryTabs extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 38.w,
-                  height: 38.w,
+                  width: 31.w,
+                  height: 31.w,
                   decoration: BoxDecoration(
                     color: AppColors.secondaryColor.withValues(alpha: .09),
                     shape: BoxShape.circle,
@@ -277,7 +277,7 @@ class _BuyingPrimaryTabs extends StatelessWidget {
                       color: AppColors.secondaryColor.withValues(alpha: .2),
                     ),
                   ),
-                  child: Icon(icon, size: 19.sp),
+                  child: Icon(icon, size: 16.sp),
                 ),
                 if (count > 0)
                   PositionedDirectional(
@@ -287,7 +287,7 @@ class _BuyingPrimaryTabs extends StatelessWidget {
                   ),
               ],
             ),
-            SizedBox(height: 3.h),
+            SizedBox(height: 2.h),
             Text(
               label,
               maxLines: 1,
@@ -639,12 +639,12 @@ class _OperationalStatusBar extends StatelessWidget {
         if (index == 0 || countForIndex(index) > 0) index,
     ];
     return SizedBox(
-      height: 70.h,
+      height: 58.h,
       child: ListView.separated(
-        padding: EdgeInsets.fromLTRB(16.w, 7.h, 16.w, 3.h),
+        padding: EdgeInsets.fromLTRB(12.w, 5.h, 12.w, 2.h),
         scrollDirection: Axis.horizontal,
         itemCount: visibleIndices.length,
-        separatorBuilder: (_, __) => SizedBox(width: 11.w),
+        separatorBuilder: (_, __) => SizedBox(width: 7.w),
         itemBuilder: (_, listIndex) {
           final index = visibleIndices[listIndex];
           final item = items[index];
@@ -659,14 +659,14 @@ class _OperationalStatusBar extends StatelessWidget {
               onTap: () => onSelected(index),
               borderRadius: BorderRadius.circular(24.r),
               child: SizedBox(
-                width: 52.w,
+                width: 47.w,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      width: 42.w,
-                      height: 42.w,
+                      width: 34.w,
+                      height: 34.w,
                       decoration: BoxDecoration(
                         color: selected
                             ? item.color
@@ -682,7 +682,7 @@ class _OperationalStatusBar extends StatelessWidget {
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
                         children: [
-                          Icon(item.icon, size: 20.sp, color: foreground),
+                          Icon(item.icon, size: 17.sp, color: foreground),
                           if (count > 0)
                             PositionedDirectional(
                               top: -5.h,
@@ -692,14 +692,14 @@ class _OperationalStatusBar extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: 3.h),
+                    SizedBox(height: 2.h),
                     Text(
                       item.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 8.sp,
+                        fontSize: 7.5.sp,
                         height: 1,
                         fontWeight:
                             selected ? FontWeight.w900 : FontWeight.w700,
@@ -724,8 +724,8 @@ class _CountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.w),
-        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+        constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+        padding: EdgeInsets.symmetric(horizontal: 3.5.w, vertical: .5.h),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.redAccent,
@@ -736,7 +736,7 @@ class _CountBadge extends StatelessWidget {
           count > 99 ? '99+' : '$count',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 8.sp,
+            fontSize: 7.5.sp,
             fontWeight: FontWeight.w900,
             height: 1,
           ),
@@ -792,7 +792,7 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
               ),
             ),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 5.h)),
           const SliverToBoxAdapter(child: PurchaseBillsTableHeader()),
           GetBuilder<PurchaseOrdersController>(
             builder: (controller) {
@@ -947,7 +947,7 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
               ),
             ),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 5.h)),
           GetBuilder<ReturnPurchasesController>(
             builder: (controller) {
               if (controller.isLoading.value) {
@@ -1157,27 +1157,27 @@ class _OperationalSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(16.w, 14.h, 16.w, 5.h),
+        padding: EdgeInsetsDirectional.fromSTEB(12.w, 8.h, 12.w, 3.h),
         child: Row(
           children: [
             Container(
               width: 4.w,
-              height: 21.h,
+              height: 17.h,
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(20.r),
               ),
             ),
-            SizedBox(width: 8.w),
-            Icon(icon, size: 18.sp, color: color),
             SizedBox(width: 6.w),
+            Icon(icon, size: 16.sp, color: color),
+            SizedBox(width: 5.w),
             Expanded(
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w900,
                   color: ThemeService.isDark.value
                       ? AppColors.whiteColor
@@ -1194,7 +1194,7 @@ class _OperationalSectionHeader extends StatelessWidget {
               child: Text(
                 '$count',
                 style: TextStyle(
-                  fontSize: 11.sp,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w900,
                   color: color,
                 ),

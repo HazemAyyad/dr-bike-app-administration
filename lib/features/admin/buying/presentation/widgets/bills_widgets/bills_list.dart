@@ -6,8 +6,11 @@ import 'package:intl/intl.dart' as intl;
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../data/models/bills_models/bills_model.dart';
 import '../../controllers/bills_controller.dart';
+import '../../controllers/purchase_orders_controller.dart';
+import '../../utils/purchase_status_labels.dart';
 
 class BillsList extends GetView<BillsController> {
   const BillsList({
@@ -40,7 +43,7 @@ class BillsList extends GetView<BillsController> {
             dateText: _formatDate(bill.createdAt),
           ),
         ),
-        SizedBox(height: 7.h),
+        SizedBox(height: 4.h),
       ],
     );
   }
@@ -52,9 +55,9 @@ class PurchaseBillsTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
         decoration: BoxDecoration(
           color: AppColors.primaryColor.withValues(alpha: .06),
           borderRadius: BorderRadius.circular(10.r),
@@ -63,14 +66,14 @@ class PurchaseBillsTableHeader extends StatelessWidget {
         ),
         child: Row(children: [
           Icon(Icons.touch_app_outlined,
-              color: AppColors.primaryColor, size: 21.sp),
+              color: AppColors.primaryColor, size: 18.sp),
           SizedBox(width: 8.w),
           Expanded(
             child: Text(
               'اضغط على الفاتورة لعرض الأصناف والاستلام والدفعات',
               style: TextStyle(
                   color: AppColors.primaryColor,
-                  fontSize: 11.sp,
+                  fontSize: 10.sp,
                   fontWeight: FontWeight.w700),
             ),
           ),
@@ -88,12 +91,12 @@ class _PurchaseMonthDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.fromLTRB(14.w, 8.h, 14.w, 4.h),
+        padding: EdgeInsets.fromLTRB(12.w, 5.h, 12.w, 2.h),
         child: Row(
           children: [
             Container(
               width: 4.w,
-              height: 18.h,
+              height: 15.h,
               decoration: BoxDecoration(
                 color: AppColors.primaryColor,
                 borderRadius: BorderRadius.circular(8.r),
@@ -102,14 +105,14 @@ class _PurchaseMonthDivider extends StatelessWidget {
             SizedBox(width: 7.w),
             Icon(
               Icons.calendar_month_outlined,
-              size: 17.sp,
+              size: 15.sp,
               color: AppColors.primaryColor,
             ),
             SizedBox(width: 5.w),
             Expanded(
               child: Text(
                 month,
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
               ),
             ),
             Container(
@@ -151,8 +154,8 @@ class _PurchaseBillCard extends GetView<BillsController> {
         },
         borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-          padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
+          margin: EdgeInsets.symmetric(horizontal: 10.w, vertical: 1.5.h),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
                 ? AppColors.customGreyColor
@@ -170,8 +173,8 @@ class _PurchaseBillCard extends GetView<BillsController> {
           child: Row(
             children: [
               Container(
-                width: 38.w,
-                height: 38.w,
+                width: 32.w,
+                height: 32.w,
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
@@ -181,10 +184,10 @@ class _PurchaseBillCard extends GetView<BillsController> {
                       ? Icons.inventory_2_outlined
                       : Icons.receipt_long_outlined,
                   color: statusColor,
-                  size: 19.sp,
+                  size: 17.sp,
                 ),
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 7.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +202,7 @@ class _PurchaseBillCard extends GetView<BillsController> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 13.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -208,13 +211,13 @@ class _PurchaseBillCard extends GetView<BillsController> {
                           'PUR-${bill.id}',
                           style: TextStyle(
                             color: AppColors.primaryColor,
-                            fontSize: 11.sp,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h),
                     Row(
                       children: [
                         Expanded(
@@ -223,46 +226,37 @@ class _PurchaseBillCard extends GetView<BillsController> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 9.5.sp,
+                              fontSize: 9.sp,
                               color: Colors.grey.shade600,
                             ),
                           ),
                         ),
-                        Text(
-                          '${_formatMoney(bill.finalTotal)} ${bill.currency}',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(width: 7.w),
                         _PurchaseStatusPill(
-                          label: _workflowLabel(bill.workflowStatus),
+                          label: purchaseWorkflowLabel(bill.workflowStatus),
                           color: statusColor,
                         ),
                       ],
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h),
                     Row(
                       children: [
                         Icon(
                           Icons.account_balance_wallet_outlined,
-                          size: 13.sp,
+                          size: 12.sp,
                           color: _paymentColor(bill.paymentStatus),
                         ),
                         SizedBox(width: 3.w),
                         Expanded(
                           child: Text(
-                            [
-                              _sourceTypeLabel(bill),
-                              _paymentLabel(bill.paymentStatus),
-                              if (_issueSummaryText() != null)
-                                _issueSummaryText()!,
-                            ].join(' • '),
+                            '${purchasePaymentStatusLabel(bill.paymentStatus)} • '
+                            'الإجمالي ${_formatMoney(bill.finalTotal)} | '
+                            'المدفوع ${_formatMoney(bill.paidAmount)} | '
+                            'المتبقي ${_formatMoney(bill.remainingAmount)} '
+                            '${_currencySymbol(bill.currency)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 9.sp,
+                              fontSize: 8.5.sp,
                               color: Colors.grey.shade600,
                               fontWeight: FontWeight.w600,
                             ),
@@ -274,7 +268,36 @@ class _PurchaseBillCard extends GetView<BillsController> {
                 ),
               ),
               SizedBox(width: 3.w),
-              Icon(Icons.chevron_left_rounded, size: 19.sp, color: Colors.grey),
+              if (bill.canQuickPay)
+                Tooltip(
+                  message: 'تسجيل دفعة على الفاتورة',
+                  child: InkResponse(
+                    radius: 22.r,
+                    onTap: () => _showQuickPaymentSheet(context),
+                    child: Container(
+                      width: 31.w,
+                      height: 31.w,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: .1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.payments_outlined,
+                        size: 17.sp,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ),
+                )
+              else if (bill.paymentStatus == 'paid')
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 19.sp,
+                  color: Colors.green.shade700,
+                )
+              else
+                Icon(Icons.chevron_left_rounded,
+                    size: 17.sp, color: Colors.grey),
             ],
           ),
         ),
@@ -287,50 +310,19 @@ class _PurchaseBillCard extends GetView<BillsController> {
     return intl.NumberFormat('#,##0.##').format(amount);
   }
 
-  String _formatQty(num value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toString();
-  }
-
-  String _sourceTypeLabel(BillDataModel bill) {
-    switch (bill.sourceType) {
-      case 'seller':
-        return 'مورد';
-      case 'customer':
-        return 'زبون';
+  String _currencySymbol(String currency) {
+    switch (currency.trim()) {
+      case 'شيكل':
+      case 'ILS':
+        return '₪';
+      case 'دولار':
+      case 'USD':
+        return r'$';
+      case 'دينار':
+      case 'JOD':
+        return 'د.أ';
       default:
-        return 'غير محدد';
-    }
-  }
-
-  String? _issueSummaryText() {
-    final parts = <String>[];
-    if (bill.missingQuantityTotal > 0) {
-      parts.add('نقص ${_formatQty(bill.missingQuantityTotal)}');
-    }
-    if (bill.extraQuantityTotal > 0) {
-      parts.add('زيادة ${_formatQty(bill.extraQuantityTotal)}');
-    }
-    if (bill.damagedQuantityTotal > 0) {
-      parts.add('تالف ${_formatQty(bill.damagedQuantityTotal)}');
-    }
-    if (bill.mismatchedQuantityTotal > 0) {
-      parts.add('غير مطابق ${_formatQty(bill.mismatchedQuantityTotal)}');
-    }
-    return parts.isEmpty ? null : parts.join(' · ');
-  }
-
-  String _workflowLabel(String status) {
-    switch (status) {
-      case 'finalized':
-        return 'مكتملة';
-      case 'partially_received':
-        return 'استلام جزئي';
-      case 'awaiting_finalization':
-        return 'بانتظار الاعتماد';
-      case 'awaiting_receiving':
-        return 'بانتظار الاستلام';
-      default:
-        return status;
+        return currency;
     }
   }
 
@@ -349,20 +341,6 @@ class _PurchaseBillCard extends GetView<BillsController> {
     }
   }
 
-  String _paymentLabel(String status) {
-    switch (status) {
-      case 'paid':
-        return 'مدفوعة';
-      case 'partially_paid':
-      case 'partial':
-        return 'مدفوعة جزئياً';
-      case 'unpaid':
-        return 'غير مدفوعة';
-      default:
-        return status;
-    }
-  }
-
   Color _paymentColor(String status) {
     switch (status) {
       case 'paid':
@@ -375,6 +353,134 @@ class _PurchaseBillCard extends GetView<BillsController> {
       default:
         return AppColors.primaryColor;
     }
+  }
+
+  Future<void> _showQuickPaymentSheet(BuildContext context) async {
+    await controller.loadPurchaseBoxes();
+    controller.preparePaymentAmount(amount: bill.remainingAmount);
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor:
+          ThemeService.isDark.value ? AppColors.customGreyColor : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            16.w,
+            14.h,
+            16.w,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 14.h,
+          ),
+          child: GetBuilder<BillsController>(
+            builder: (controller) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.payments_outlined,
+                        color: Colors.green.shade700, size: 21.sp),
+                    SizedBox(width: 7.w),
+                    Expanded(
+                      child: Text(
+                        'دفعة لفاتورة PUR-${bill.id}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '${bill.seller} • المتبقي ${_formatMoney(bill.remainingAmount)} ${_currencySymbol(bill.currency)}',
+                  style:
+                      TextStyle(fontSize: 10.sp, color: Colors.grey.shade600),
+                ),
+                SizedBox(height: 12.h),
+                DropdownButtonFormField<ShownBoxesModel>(
+                  initialValue: controller.selectedPurchaseBox.value,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'الصندوق',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: controller.purchaseBoxes
+                      .map(
+                        (box) => DropdownMenuItem<ShownBoxesModel>(
+                          value: box,
+                          child: Text('${box.boxName} (${box.currency})'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: controller.selectPurchaseBox,
+                ),
+                SizedBox(height: 9.h),
+                TextField(
+                  controller: controller.purchasePaymentAmountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'المبلغ المدفوع',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                SizedBox(height: 9.h),
+                TextField(
+                  controller: controller.purchasePaymentNoteController,
+                  decoration: const InputDecoration(
+                    labelText: 'ملاحظات (اختياري)',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: controller.isWorkflowLoading.value
+                        ? null
+                        : () async {
+                            final ok = await controller.payPurchaseBillFromList(
+                              context,
+                              bill: bill,
+                            );
+                            if (ok &&
+                                Get.isRegistered<PurchaseOrdersController>()) {
+                              await Get.find<PurchaseOrdersController>()
+                                  .getBills();
+                            }
+                            if (ok && sheetContext.mounted) {
+                              Navigator.of(sheetContext).pop();
+                            }
+                          },
+                    icon: controller.isWorkflowLoading.value
+                        ? SizedBox(
+                            width: 16.w,
+                            height: 16.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded),
+                    label: const Text('تسجيل الدفعة'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

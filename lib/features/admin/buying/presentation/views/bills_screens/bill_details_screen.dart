@@ -20,6 +20,7 @@ import '../../../data/models/bills_models/bills_details_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../controllers/bills_controller.dart';
 import '../../controllers/purchase_orders_controller.dart';
+import '../../utils/purchase_status_labels.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
 import '../../../../../../core/helpers/app_success_notice.dart';
 
@@ -658,9 +659,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
         _PurchaseSummaryHeader(
           details: details,
           sourceType: _sourceTypeLabel(details),
-          workflowLabel: _workflowLabel(details.workflowStatus),
+          workflowLabel: purchaseWorkflowLabel(details.workflowStatus),
           receivingLabel: _receivingLabel(details, totalRemaining),
-          paymentLabel: _paymentLabel(details.paymentStatus),
+          paymentLabel: purchasePaymentStatusLabel(details.paymentStatus),
           totalText: _money(details.finalTotal == '0'
               ? details.totalBill
               : details.finalTotal),
@@ -954,19 +955,6 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     return '${intl.NumberFormat('#,##0.00').format(amount)} ₪';
   }
 
-  String _workflowLabel(String status) {
-    switch (status) {
-      case 'finalized':
-        return 'مكتملة';
-      case 'awaiting_finalization':
-        return 'بانتظار الاعتماد';
-      case 'partially_received':
-        return 'مستلم جزئياً';
-      default:
-        return status.isEmpty ? 'بانتظار الاستلام' : status;
-    }
-  }
-
   String _receivingLabel(BillDetailsModel details, num totalRemaining) {
     if (totalRemaining <= 0) return 'مستلم بالكامل';
     final received = details.products.fold<num>(
@@ -974,21 +962,6 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
       (sum, p) => sum + p.receivedOwnedQuantity,
     );
     return received > 0 ? 'مستلم جزئياً' : 'بانتظار الاستلام';
-  }
-
-  String _paymentLabel(String status) {
-    switch (status) {
-      case 'paid':
-        return 'مدفوعة';
-      case 'partially_paid':
-      case 'partial':
-        return 'مدفوعة جزئياً';
-      case 'unpaid':
-      case '':
-        return 'غير مدفوعة';
-      default:
-        return status;
-    }
   }
 
   String _sourceTypeLabel(BillDetailsModel details) {
@@ -1915,17 +1888,17 @@ class _PurchaseSummaryHeader extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 8.h),
           Wrap(
-            spacing: 6.w,
-            runSpacing: 6.h,
+            spacing: 4.w,
+            runSpacing: 4.h,
             children: [
               _StatusChip(label: 'سير العمل', value: workflowLabel),
               _StatusChip(label: 'الاستلام', value: receivingLabel),
               _StatusChip(label: 'الدفع', value: paymentLabel),
             ],
           ),
-          SizedBox(height: 14.h),
+          SizedBox(height: 8.h),
           Row(
             children: [
               Expanded(
@@ -1963,8 +1936,8 @@ class _MoneyBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 64),
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: highlighted
             ? AppColors.primaryColor.withValues(alpha: 0.08)
@@ -1980,7 +1953,7 @@ class _MoneyBlock extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.grey.shade700, fontSize: 10.sp),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 2.h),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
@@ -1989,7 +1962,7 @@ class _MoneyBlock extends StatelessWidget {
               style: TextStyle(
                 color: highlighted ? AppColors.primaryColor : Colors.black87,
                 fontWeight: FontWeight.w800,
-                fontSize: 13.sp,
+                fontSize: 12.sp,
               ),
             ),
           ),
@@ -2313,7 +2286,7 @@ class _PaymentCard extends StatelessWidget {
           _MutedText(
             text: [
               if (payment.boxName.isNotEmpty) payment.boxName,
-              if (payment.paymentType.isNotEmpty) payment.paymentType,
+              purchasePaymentTypeLabel(payment.paymentType),
               if (payment.note.isNotEmpty) payment.note,
             ].join(' • '),
           ),
@@ -2344,7 +2317,10 @@ class _ReturnCard extends StatelessWidget {
                       TextStyle(fontWeight: FontWeight.w800, fontSize: 13.sp),
                 ),
               ),
-              _StatusChip(label: 'الحالة', value: ret.status),
+              _StatusChip(
+                label: 'الحالة',
+                value: purchaseReturnStatusLabel(ret.status),
+              ),
             ],
           ),
           SizedBox(height: 6.h),
@@ -2503,7 +2479,7 @@ class _DetailsCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: margin,
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8.r),
@@ -2531,7 +2507,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: AppColors.primaryColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8.r),
@@ -2541,7 +2517,7 @@ class _StatusChip extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall!.copyWith(
               color: AppColors.primaryColor,
               fontWeight: FontWeight.w700,
-              fontSize: 11.sp,
+              fontSize: 10.sp,
             ),
       ),
     );
@@ -3148,7 +3124,7 @@ class _PurchaseDetailsSectionTabs extends StatelessWidget {
           final section = _sections[index];
           final isSelected = selected == index;
           return Padding(
-            padding: EdgeInsetsDirectional.only(end: 8.w),
+            padding: EdgeInsetsDirectional.only(end: 5.w),
             child: ChoiceChip(
               selected: isSelected,
               avatar: Icon(
@@ -3160,7 +3136,7 @@ class _PurchaseDetailsSectionTabs extends StatelessWidget {
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey.shade800,
                 fontWeight: FontWeight.w700,
-                fontSize: 11.sp,
+                fontSize: 10.sp,
               ),
               selectedColor: AppColors.primaryColor,
               backgroundColor: Colors.grey.shade50,
@@ -3432,18 +3408,18 @@ class _InfoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.only(bottom: 4.h),
       child: Row(
         children: [
           Icon(Icons.circle, size: 6.sp, color: AppColors.primaryColor),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Expanded(
             child: Text(
               subtitle.isEmpty ? title : '$title • $subtitle',
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall!.copyWith(
                     color: Colors.grey.shade700,
-                    fontSize: 11.sp,
+                    fontSize: 10.sp,
                   ),
             ),
           ),

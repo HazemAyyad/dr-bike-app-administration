@@ -10,6 +10,7 @@ import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/return_purchases_controller.dart';
+import '../../utils/purchase_status_labels.dart';
 import '../../../data/models/return_purchases_models/return_products_model.dart';
 
 class PurchaseReturnDetailsScreen extends StatefulWidget {
@@ -80,7 +81,7 @@ class _PurchaseReturnDetailsScreenState
                 number: row.number,
                 bill: '#${row.billId}',
                 party: row.seller.name,
-                status: _statusLabel(row.status),
+                status: purchaseReturnStatusLabel(row.status),
                 total:
                     '${NumberFormat('#,##0.00').format(double.tryParse(row.total) ?? 0)} ${row.currency}',
                 reason: asString(details['reason']),
@@ -119,18 +120,6 @@ class _PurchaseReturnDetailsScreenState
         );
       }),
     );
-  }
-
-  String _statusLabel(String status) {
-    const labels = {
-      'draft': 'مسودة',
-      'confirmed': 'قيد التسليم',
-      'pending': 'قيد التسليم',
-      'delivered': 'قيد التسوية',
-      'settled': 'مكتمل',
-      'cancelled': 'ملغى',
-    };
-    return labels[status] ?? status;
   }
 
   Future<void> _showAttachmentSheet(BuildContext context) async {

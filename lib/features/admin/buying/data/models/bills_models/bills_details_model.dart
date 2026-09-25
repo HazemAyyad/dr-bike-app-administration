@@ -288,7 +288,7 @@ class PurchasePaymentUiModel {
     return PurchasePaymentUiModel(
       id: asInt(j['id']),
       amount: asString(j['amount'], '0'),
-      paymentType: asString(j['payment_type']),
+      paymentType: asString(j['payment_type'] ?? j['type']),
       paidAt: asString(j['paid_at']),
       boxId: asString(j['box_id']),
       boxName: asString(j['box_name']),

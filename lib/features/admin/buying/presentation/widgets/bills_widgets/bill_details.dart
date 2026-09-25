@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/bills_controller.dart';
+import '../../utils/purchase_status_labels.dart';
 import '../purchase_orders_widgets/chang_product_status.dart';
 import '../purchase_orders_widgets/change_one_product_status.dart';
 
@@ -83,7 +84,7 @@ class BillDetails extends GetView<BillsController> {
                           );
                         },
                   child: Text(
-                    e.productStatus.tr.toString(),
+                    purchaseItemStatusLabel(e.productStatus),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
