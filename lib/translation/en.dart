@@ -2457,6 +2457,7 @@ const Map<String, String> en = {
   "purchase_requests": "Purchase Requests",
   "unprocessed": "Unprocessed",
   "not_matched": "Not Matched",
+  "awaiting_approval": "Awaiting Approval",
   "deposits": "Deposits",
   "return_full_order": "Return Full Order",
   "deliver_product": "Deliver Product",

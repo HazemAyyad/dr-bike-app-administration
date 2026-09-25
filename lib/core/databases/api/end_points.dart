@@ -841,6 +841,8 @@ class EndPoints {
       'purchase/products/quick-create-options';
   static const String purchaseQuickCreateProduct =
       'purchase/products/quick-create';
+  static const String purchaseCreateProductFull =
+      'purchase/products/create-full';
   static const String purchaseFinalize = 'purchase/finalize';
   static const String purchasePayment = 'purchase/payment';
   static const String purchaseAccountPayment = 'purchase/account/payment';

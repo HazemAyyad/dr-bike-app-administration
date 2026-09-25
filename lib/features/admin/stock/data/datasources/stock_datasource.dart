@@ -1122,8 +1122,15 @@ class StockDatasource {
     required bool isCreate,
   }) async {
     try {
+      final isPurchaseCreate = isCreate &&
+          formData.fields.any(
+              (field) => field.key == 'purchase_context' && field.value == '1');
       final response = await api.post(
-        isCreate ? EndPoints.createProductFull : EndPoints.updateProductFull,
+        isPurchaseCreate
+            ? EndPoints.purchaseCreateProductFull
+            : isCreate
+                ? EndPoints.createProductFull
+                : EndPoints.updateProductFull,
         data: formData,
       );
       final raw = response.data;

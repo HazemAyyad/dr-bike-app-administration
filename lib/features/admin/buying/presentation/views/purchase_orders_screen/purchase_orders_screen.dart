@@ -80,7 +80,7 @@ class PurchaseOrdersScreen extends GetView<PurchaseOrdersController> {
                         bills: bills,
                         page: current <= 1
                             ? '2'
-                            : current == 3
+                            : current == 3 || current == 4
                                 ? '1'
                                 : current == 2
                                     ? '3'

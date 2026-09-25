@@ -1503,6 +1503,21 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
   }
 
+  Future<bool> finalizePurchaseFromList(
+    BuildContext context, {
+    required String billId,
+  }) {
+    return _runWorkflowAction(
+      context,
+      purchaseWorkflowUsecase.finalize(
+        billId: billId,
+        initialPayment: '0',
+      ),
+      showSuccess: false,
+      refreshShownBill: false,
+    );
+  }
+
   Future<void> loadPurchaseBoxes() async {
     if (purchaseBoxes.isNotEmpty) return;
     final boxes = await getShownBoxUsecase.call(screen: 0);
@@ -1940,6 +1955,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     BuildContext context,
     Future<dynamic> future, {
     bool showSuccess = true,
+    bool refreshShownBill = true,
   }) async {
     isWorkflowLoading(true);
     update();
@@ -1965,7 +1981,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       }
     });
     if (result.isRight()) {
-      if (billDetails != null) {
+      if (refreshShownBill && billDetails != null) {
         await getBillDetails(
           context: context,
           billId: billDetails!.billId.toString(),

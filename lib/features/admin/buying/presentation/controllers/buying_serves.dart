@@ -12,6 +12,7 @@ class BuyingServes {
 
   final unprocessedTasks = <String, List<BillDataModel>>{}.obs;
   final notMatchedTasks = <String, List<BillDataModel>>{}.obs;
+  final awaitingApprovalTasks = <String, List<BillDataModel>>{}.obs;
   final completedTasks = <String, List<BillDataModel>>{}.obs;
   final depositsTasks = <String, List<BillDataModel>>{}.obs;
 

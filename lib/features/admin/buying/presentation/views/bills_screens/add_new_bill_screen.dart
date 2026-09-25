@@ -3,6 +3,7 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:doctorbike/core/helpers/app_failure_notice.dart';
+import 'package:doctorbike/core/helpers/app_success_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,6 +18,7 @@ import '../../../../checks/data/models/check_model.dart';
 import '../../../../widgets/unified_partner_selector.dart';
 import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/presentation/utils/product_image_viewer.dart';
+import '../../../../stock/presentation/controllers/stock_controller.dart';
 import '../../binding/buying_binding.dart';
 import '../../controllers/bills_controller.dart';
 import '../../widgets/bills_widgets/purchase_variant_picker_sheet.dart';
@@ -281,183 +283,56 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
   }
 
   Future<void> _showQuickCreateProduct() async {
-    Map<String, dynamic> options;
-    try {
-      options = await controller.loadPurchaseQuickCreateOptions();
-    } catch (error) {
-      AppFailureNotice.show(title: 'error'.tr, message: error.toString());
+    if (Get.isRegistered<StockController>()) {
+      Get.find<StockController>().prepareCreateProduct(fromPurchase: true);
+    }
+    final result = await Get.toNamed<Map<String, dynamic>>(
+      AppRoutes.EDITPRODUCTSCREEN,
+      arguments: const <String, dynamic>{
+        'createProduct': true,
+        'purchaseFlow': true,
+      },
+    );
+    if (!mounted || result == null) return;
+
+    final productId = result['product_id']?.toString();
+    if (productId == null || productId.isEmpty) return;
+    await controller.getAllProducts();
+    if (!mounted) return;
+
+    ProductModel? created;
+    for (final product in controller.products) {
+      if (product.id == productId) {
+        created = product;
+        break;
+      }
+    }
+    if (created == null) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تم إنشاء المنتج، لكن تعذر تحميله في قائمة الشراء.',
+      );
       return;
     }
-    if (!mounted) return;
-    final categories = (options['categories'] as List? ?? const [])
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-    final subs = (options['sub_categories'] as List? ?? const [])
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
-    final name = TextEditingController();
-    final code = TextEditingController();
-    final retail = TextEditingController();
-    final wholesale = TextEditingController();
-    final minimumStock = TextEditingController(text: '0');
-    final size = TextEditingController();
-    final color = TextEditingController();
-    String? categoryId;
-    String? subCategoryId;
-    var saving = false;
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final filteredSubs = subs
-              .where((row) => '${row['mainCategoryId']}' == (categoryId ?? ''))
-              .toList();
-          InputDecoration decoration(String label) => InputDecoration(
-              labelText: label, border: const OutlineInputBorder());
-          return AlertDialog(
-            title: const Text('إنشاء منتج جديد للفاتورة'),
-            content: SizedBox(
-              width: 520.w,
-              child: SingleChildScrollView(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  TextField(
-                      controller: name, decoration: decoration('اسم المنتج *')),
-                  SizedBox(height: 10.h),
-                  TextField(
-                      controller: code,
-                      maxLength: 6,
-                      decoration: decoration('كود المنتج (اختياري)')),
-                  DropdownButtonFormField<String>(
-                    initialValue: categoryId,
-                    decoration: decoration('الفئة الرئيسية *'),
-                    items: categories
-                        .map((row) => DropdownMenuItem(
-                            value: '${row['id']}',
-                            child: Text('${row['nameAr']}')))
-                        .toList(),
-                    onChanged: (value) => setDialogState(() {
-                      categoryId = value;
-                      subCategoryId = null;
-                    }),
-                  ),
-                  SizedBox(height: 10.h),
-                  DropdownButtonFormField<String>(
-                    initialValue: subCategoryId,
-                    decoration: decoration('الفئة الفرعية (اختياري)'),
-                    items: filteredSubs
-                        .map((row) => DropdownMenuItem(
-                            value: '${row['id']}',
-                            child: Text('${row['nameAr']}')))
-                        .toList(),
-                    onChanged: (value) =>
-                        setDialogState(() => subCategoryId = value),
-                  ),
-                  SizedBox(height: 10.h),
-                  Row(children: [
-                    Expanded(
-                        child: TextField(
-                            controller: retail,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: decoration('سعر المفرق *'))),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                        child: TextField(
-                            controller: wholesale,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            decoration: decoration('سعر الجملة'))),
-                  ]),
-                  SizedBox(height: 10.h),
-                  TextField(
-                      controller: minimumStock,
-                      keyboardType: TextInputType.number,
-                      decoration: decoration('حد تنبيه المخزون')),
-                  SizedBox(height: 10.h),
-                  Row(children: [
-                    Expanded(
-                        child: TextField(
-                            controller: size,
-                            decoration: decoration('المقاس (اختياري)'))),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                        child: TextField(
-                            controller: color,
-                            decoration: decoration('اللون (اختياري)'))),
-                  ]),
-                  SizedBox(height: 8.h),
-                  const Text(
-                      'إنشاء المنتج لا يضيف مخزوناً؛ المخزون يزيد فقط عند استلام البضاعة.',
-                      style: TextStyle(fontSize: 12, color: Colors.orange)),
-                ]),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: saving ? null : () => Navigator.pop(dialogContext),
-                  child: const Text('إلغاء')),
-              FilledButton(
-                onPressed: saving
-                    ? null
-                    : () async {
-                        if (name.text.trim().isEmpty ||
-                            categoryId == null ||
-                            double.tryParse(retail.text.trim()) == null) {
-                          AppFailureNotice.show(
-                              title: 'error'.tr,
-                              message: 'أكمل الحقول المطلوبة.');
-                          return;
-                        }
-                        setDialogState(() => saving = true);
-                        final product =
-                            await controller.quickCreatePurchaseProduct({
-                          'name': name.text.trim(),
-                          if (code.text.trim().isNotEmpty)
-                            'product_code': code.text.trim(),
-                          'category_id': categoryId,
-                          if (subCategoryId != null)
-                            'sub_category_id': subCategoryId,
-                          'retail_price': retail.text.trim(),
-                          if (wholesale.text.trim().isNotEmpty)
-                            'wholesale_price': wholesale.text.trim(),
-                          'minimum_stock': minimumStock.text.trim().isEmpty
-                              ? '0'
-                              : minimumStock.text.trim(),
-                          if (size.text.trim().isNotEmpty)
-                            'size': size.text.trim(),
-                          if (color.text.trim().isNotEmpty)
-                            'color': color.text.trim(),
-                        });
-                        if (product != null && dialogContext.mounted) {
-                          Navigator.pop(dialogContext);
-                          return;
-                        }
-                        if (dialogContext.mounted) {
-                          setDialogState(() => saving = false);
-                        }
-                      },
-                child: saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('إنشاء واختيار'),
-              ),
-            ],
-          );
-        },
-      ),
+    controller.purchaseProductSearchController.text = created.nameAr;
+    controller.onPurchaseProductSearchChanged(created.nameAr);
+    if (created.hasVariants && created.sizes.isNotEmpty) {
+      final selections = await showPurchaseVariantPickerSheet(
+        context: context,
+        product: created,
+        initialItems: controller.purchaseCartItemsForProduct(created.id),
+      );
+      if (selections != null) {
+        controller.syncPurchaseProductVariants(created, selections);
+      }
+    } else {
+      controller.addProductToPurchaseCart(created);
+    }
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: 'تم إنشاء المنتج وإضافته لاختيار فاتورة الشراء.',
     );
-    name.dispose();
-    code.dispose();
-    retail.dispose();
-    wholesale.dispose();
-    minimumStock.dispose();
-    size.dispose();
-    color.dispose();
   }
 
   @override

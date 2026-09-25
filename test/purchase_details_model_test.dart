@@ -1,4 +1,5 @@
 import 'package:doctorbike/features/admin/buying/data/models/bills_models/bills_details_model.dart';
+import 'package:doctorbike/features/admin/buying/data/models/bills_models/bills_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -129,6 +130,36 @@ void main() {
       expect(item.orderedQuantity, 6);
       expect(item.remainingQuantity, 0);
       expect(item.amanatStocks, isEmpty);
+    });
+  });
+
+  group('BillDataModel purchase actions', () {
+    test('received invoice without issues can be approved from its card', () {
+      final bill = BillDataModel.fromJson({
+        'id': 71,
+        'workflow_status': 'received',
+        'payment_status': 'unpaid',
+        'remaining_amount': 200,
+        'receiving_issues_count': 0,
+      });
+
+      expect(bill.isAwaitingApproval, isTrue);
+      expect(bill.canQuickFinalize, isTrue);
+      expect(bill.canQuickPay, isFalse);
+    });
+
+    test('received invoice with unresolved issues cannot be quick approved',
+        () {
+      final bill = BillDataModel.fromJson({
+        'id': 72,
+        'workflow_status': 'received',
+        'payment_status': 'unpaid',
+        'remaining_amount': 200,
+        'receiving_issues_count': 1,
+      });
+
+      expect(bill.isAwaitingApproval, isTrue);
+      expect(bill.canQuickFinalize, isFalse);
     });
   });
 }

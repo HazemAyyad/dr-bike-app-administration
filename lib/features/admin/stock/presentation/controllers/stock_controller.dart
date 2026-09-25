@@ -1522,6 +1522,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   /// `null` = إنشاء منتج جديد؛ وإلا تعديل المنتج ذو الـ id.
   final Rxn<String> editingProductId = Rxn<String>();
 
+  /// إنشاء بيانات المنتج من داخل فاتورة الشراء، من دون مخزون افتتاحي.
+  final RxBool purchaseProductCreationMode = false.obs;
+
   /// يطابق `save_scope` في الـ API: `full` أو `local_only`.
   final RxBool saveScopeFull = true.obs;
 
@@ -2891,7 +2894,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   String closeoutsProductsId = '';
 
   /// نموذج فارغ لإضافة منتج من شاشة المخزون.
-  void prepareCreateProduct() {
+  void prepareCreateProduct({bool fromPurchase = false}) {
+    purchaseProductCreationMode.value = fromPurchase;
     editingProductId.value = null;
     saveScopeFull.value = false;
     productNameController.clear();
@@ -2932,12 +2936,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
     items.clear();
     isForcedSale.value = false;
-    loadProductSizeOptions(productId: null);
-    Future<void>(() async => ensureStoreSectionsLoaded());
+    if (fromPurchase) {
+      Future<void>(() async => getCategories());
+      if (canAccessFullStock) {
+        loadProductSizeOptions(productId: null);
+        Future<void>(() async => ensureStoreSectionsLoaded());
+      }
+    } else {
+      loadProductSizeOptions(productId: null);
+      Future<void>(() async => ensureStoreSectionsLoaded());
+    }
     update();
   }
 
   Future<bool> initProductDetails() async {
+    purchaseProductCreationMode.value = false;
     final p = productDetails.value;
     if (p == null) {
       return false;
@@ -3132,7 +3145,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           : minimumStockController.text.trim(),
     );
     addField('is_sold_with_paper', isForcedSale.value ? '1' : '0');
-    addField('save_scope', saveScopeFull.value ? 'full' : 'local_only');
+    addField(
+      'save_scope',
+      purchaseProductCreationMode.value
+          ? 'local_only'
+          : saveScopeFull.value
+              ? 'full'
+              : 'local_only',
+    );
+    if (purchaseProductCreationMode.value) {
+      addField('purchase_context', '1');
+    }
     addField('isShow', isShowProduct.value ? '1' : '0');
     addField('isNewItem', isNewItemProduct.value ? '1' : '0');
     addField('isMoreSales', isMoreSalesProduct.value ? '1' : '0');
@@ -3327,6 +3350,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> submitProduct() async {
+    if (purchaseProductCreationMode.value) {
+      addOpeningStock.value = false;
+      openingQuantityController.clear();
+      openingUnitCostController.clear();
+    }
     if (productNameController.text.trim().isEmpty) {
       AppFailureNotice.show(
         title: 'error'.tr,
@@ -3384,6 +3412,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       }
     }
 
+    Map<String, dynamic>? purchaseCreationResult;
     isSubmittingProduct(true);
     update();
     try {
@@ -3402,12 +3431,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         buf.writeln(mediaExtra.toString());
       }
 
-      allProducts.clear();
-      allClearances.clear();
-      allCombinations.clear();
-      page = 1;
-      currentTab.value = 0;
-      await getAllProducts();
+      if (!purchaseProductCreationMode.value) {
+        allProducts.clear();
+        allClearances.clear();
+        allCombinations.clear();
+        page = 1;
+        currentTab.value = 0;
+        await getAllProducts();
+      }
 
       clearPendingMedia();
       _resetEditMediaState();
@@ -3415,7 +3446,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
       update();
 
-      if (wasEdit) {
+      if (!wasEdit && purchaseProductCreationMode.value) {
+        purchaseCreationResult = <String, dynamic>{
+          'product_id': result['product_id']?.toString(),
+          'message': buf.toString().trim(),
+        };
+      } else if (wasEdit) {
         Get.back();
         if (editedId != null) {
           await getProductDetails(productId: editedId);
@@ -3426,13 +3462,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       }
 
       final createMessage = buf.toString().trim();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showSweetSuccessDialog(
-          title: 'success'.tr,
-          message: wasEdit ? 'productUpdatedSuccess'.tr : createMessage,
-          subtitle: null,
-        );
-      });
+      if (!purchaseProductCreationMode.value) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showSweetSuccessDialog(
+            title: 'success'.tr,
+            message: wasEdit ? 'productUpdatedSuccess'.tr : createMessage,
+            subtitle: null,
+          );
+        });
+      }
     } on ServerFailure catch (e) {
       final details = formatLaravelValidationErrors(
         e.data is Map<String, dynamic>
@@ -3453,26 +3491,34 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       isSubmittingProduct(false);
       update();
     }
+    if (purchaseCreationResult != null) {
+      Get.back(result: purchaseCreationResult);
+    }
   }
 
   @override
   void onInit() {
     super.onInit();
     final routeArgs = Get.arguments;
+    final isPurchaseCreateRoute = routeArgs is Map &&
+        routeArgs['createProduct'] == true &&
+        routeArgs['purchaseFlow'] == true;
     if (routeArgs is Map && routeArgs['createProduct'] == true) {
-      prepareCreateProduct();
+      prepareCreateProduct(fromPurchase: isPurchaseCreateRoute);
     }
     if (routeArgs is Map && routeArgs['stockImagesExportId'] != null) {
       final exportId = routeArgs['stockImagesExportId'].toString();
       Future<void>(() async => downloadProductsImagesZipExport(exportId));
     }
-    loadStockSearchHistory();
-    if (isQuickEditTab) {
-      getQuickEditProducts();
-    } else {
-      getAllProducts();
+    if (!isPurchaseCreateRoute) {
+      loadStockSearchHistory();
+      if (isQuickEditTab) {
+        getQuickEditProducts();
+      } else {
+        getAllProducts();
+      }
     }
-    if (canAccessFullStock) {
+    if (canAccessFullStock && !isPurchaseCreateRoute) {
       getCategories();
     }
     scrollController.addListener(_onScroll);

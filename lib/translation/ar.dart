@@ -2510,6 +2510,7 @@ const Map<String, String> ar = {
   "purchase_requests": "إستلام طلبات الشراء",
   "unprocessed": "غير معالجة",
   "not_matched": "غير متطابقة",
+  "awaiting_approval": "بانتظار الاعتماد",
   "deposits": "الامانات",
   "return_full_order": "إرجاع الطلبية بالكامل",
   "deliver_product": "تسليم المنتج",

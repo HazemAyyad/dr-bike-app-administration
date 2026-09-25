@@ -104,6 +104,11 @@ class BillDataModel {
       paymentStatus != 'paid' &&
       (double.tryParse(remainingAmount) ?? 0) > 0;
 
+  bool get isAwaitingApproval =>
+      workflowStatus == 'received' || workflowStatus == 'awaiting_finalization';
+
+  bool get canQuickFinalize => isAwaitingApproval && !hasReceivingSummary;
+
   bool get hasReceivingSummary =>
       receivingIssuesCount > 0 ||
       missingQuantityTotal > 0 ||

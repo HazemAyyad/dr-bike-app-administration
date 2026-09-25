@@ -20,9 +20,11 @@ class EditProductScreen extends GetView<StockController> {
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Obx(
           () => CustomAppBar(
-            title: controller.editingProductId.value == null
-                ? 'addProduct'
-                : 'editProduct',
+            title: controller.purchaseProductCreationMode.value
+                ? 'إضافة منتج لفاتورة شراء'
+                : controller.editingProductId.value == null
+                    ? 'addProduct'
+                    : 'editProduct',
             action: false,
           ),
         ),
@@ -36,19 +38,43 @@ class EditProductScreen extends GetView<StockController> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: 6.h),
+                  Obx(() => controller.purchaseProductCreationMode.value
+                      ? Container(
+                          margin: EdgeInsets.only(bottom: 8.h),
+                          padding: EdgeInsets.all(12.w),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: .08),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: .25),
+                            ),
+                          ),
+                          child: const Text(
+                            'أدخل بيانات المنتج وصوره ومقاساته وألوانه. سيبقى المخزون صفراً حتى استلام فاتورة الشراء.',
+                          ),
+                        )
+                      : const SizedBox.shrink()),
                   EditProductHero(controller: controller),
                   SizedBox(height: 8.h),
                   EditProductOverviewSection(controller: controller),
-                  Obx(() => controller.editingProductId.value == null
+                  Obx(() => controller.editingProductId.value == null &&
+                          !controller.purchaseProductCreationMode.value
                       ? _OpeningStockSection(controller: controller)
                       : const SizedBox.shrink()),
                   SizedBox(height: 12.h),
                   EditSizeColorSection(controller: controller),
                   SizedBox(height: 12.h),
-                  const StoreLocationPickerTile(),
-                  SizedBox(height: 10.h),
-                  const ProductOptionsPickerTile(),
-                  SizedBox(height: 12.h),
+                  Obx(() => controller.purchaseProductCreationMode.value &&
+                          !controller.canAccessFullStock
+                      ? const SizedBox.shrink()
+                      : Column(
+                          children: [
+                            const StoreLocationPickerTile(),
+                            SizedBox(height: 10.h),
+                            const ProductOptionsPickerTile(),
+                            SizedBox(height: 12.h),
+                          ],
+                        )),
                   EditProductMediaSection(controller: controller),
                   SizedBox(height: 16.h),
                   EditProductSaveBar(controller: controller),

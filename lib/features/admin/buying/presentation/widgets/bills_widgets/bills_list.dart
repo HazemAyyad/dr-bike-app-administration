@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 
 import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/helpers/app_success_notice.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../data/models/bills_models/bills_model.dart';
@@ -289,6 +291,27 @@ class _PurchaseBillCard extends GetView<BillsController> {
                     ),
                   ),
                 )
+              else if (bill.canQuickFinalize && canManagePurchases)
+                Tooltip(
+                  message: 'اعتماد الفاتورة',
+                  child: InkResponse(
+                    radius: 22.r,
+                    onTap: () => _confirmQuickFinalize(context),
+                    child: Container(
+                      width: 31.w,
+                      height: 31.w,
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withValues(alpha: .1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.fact_check_outlined,
+                        size: 17.sp,
+                        color: Colors.indigo.shade700,
+                      ),
+                    ),
+                  ),
+                )
               else if (bill.paymentStatus == 'paid')
                 Icon(
                   Icons.check_circle_rounded,
@@ -353,6 +376,43 @@ class _PurchaseBillCard extends GetView<BillsController> {
       default:
         return AppColors.primaryColor;
     }
+  }
+
+  Future<void> _confirmQuickFinalize(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('اعتماد فاتورة الشراء'),
+        content: Text(
+          'سيتم اعتماد فاتورة PUR-${bill.id} بالمبلغ النهائي للبضاعة المستلمة. هل تريد المتابعة؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.verified_outlined),
+            label: const Text('اعتماد'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final ok = await controller.finalizePurchaseFromList(
+      context,
+      billId: bill.id.toString(),
+    );
+    if (!ok || !context.mounted) return;
+    if (Get.isRegistered<PurchaseOrdersController>()) {
+      await Get.find<PurchaseOrdersController>().getBills();
+    }
+    AppSuccessNotice.show(
+      title: 'success'.tr,
+      message: 'تم اعتماد فاتورة الشراء بنجاح.',
+    );
   }
 
   Future<void> _showQuickPaymentSheet(BuildContext context) async {

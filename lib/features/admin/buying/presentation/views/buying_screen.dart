@@ -577,7 +577,12 @@ class _PurchaseOrderIconTabs extends StatelessWidget {
       color: Colors.red,
     ),
     _StatusTabItem.named(
-      label: 'المستلمة',
+      label: 'بانتظار الاعتماد',
+      icon: Icons.fact_check_outlined,
+      color: Colors.indigo,
+    ),
+    _StatusTabItem.named(
+      label: 'المكتملة',
       icon: Icons.check_circle_outline,
       color: Colors.green,
     ),
@@ -846,7 +851,7 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
                       bills: bills,
                       page: current <= 1
                           ? '2'
-                          : current == 3
+                          : current == 3 || current == 4
                               ? '1'
                               : current == 2
                                   ? '3'
@@ -883,7 +888,14 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
           page: '3',
         ),
         _BuyingListSection<BillDataModel>(
-          title: 'الفواتير المستلمة',
+          title: 'بانتظار الاعتماد',
+          color: Colors.indigo,
+          icon: Icons.fact_check_outlined,
+          groups: controller.awaitingApprovalSearch,
+          page: '1',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'الفواتير المكتملة',
           color: Colors.green,
           icon: Icons.check_circle_outline,
           groups: controller.completedSearch,
