@@ -2053,7 +2053,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
             haystack.contains('damaged') ||
             haystack.contains('mismatch');
       case 'awaiting_finalization':
-        return workflow == 'awaiting_finalization';
+        return workflow == 'awaiting_finalization' || workflow == 'received';
       case 'unpaid':
         return payment == 'unpaid' || payment.isEmpty;
       case 'partially_paid':

@@ -8,6 +8,8 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/models/bills_models/bills_model.dart';
+import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../binding/buying_binding.dart';
 import '../controllers/bills_controller.dart';
 import '../controllers/purchase_orders_controller.dart';
@@ -49,7 +51,7 @@ class BuyingScreen extends GetView<BillsController> {
         body: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
+              padding: EdgeInsets.fromLTRB(10.w, 6.h, 10.w, 2.h),
               child: const _BuyingPrimaryTabs(),
             ),
             Expanded(
@@ -209,42 +211,46 @@ class _BuyingPrimaryTabs extends StatelessWidget {
     return GetBuilder<BillsController>(
       builder: (bills) => GetBuilder<PurchaseOrdersController>(
         builder: (orders) => GetBuilder<ReturnPurchasesController>(
-          builder: (returns) => Container(
-            height: 62.h,
-            padding: EdgeInsets.all(4.w),
-            decoration: BoxDecoration(
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(999),
-            ),
+          builder: (returns) => SizedBox(
+            height: 72.h,
             child: TabBar(
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               labelColor: AppColors.secondaryColor,
               unselectedLabelColor:
                   ThemeService.isDark.value ? Colors.white70 : Colors.black87,
-              labelStyle:
-                  TextStyle(fontSize: 10.5.sp, fontWeight: FontWeight.w800),
-              unselectedLabelStyle:
-                  TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w600),
-              indicator: BoxDecoration(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor4
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 6.r,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+              labelStyle: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w900,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: 9.5.sp,
+                fontWeight: FontWeight.w700,
+              ),
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  color: AppColors.secondaryColor,
+                  width: 3.h,
+                ),
+                borderRadius: BorderRadius.circular(12.r),
+                insets: EdgeInsets.symmetric(horizontal: 24.w),
               ),
               tabs: [
-                _primaryTab('فواتير الشراء', bills.purchaseBillsCount),
-                _primaryTab('الاستلام والمتابعة', orders.totalCount),
-                _primaryTab('المرتجعات', returns.totalCount),
+                _primaryTab(
+                  'فواتير الشراء',
+                  Icons.receipt_long_outlined,
+                  bills.purchaseBillsCount,
+                ),
+                _primaryTab(
+                  'الاستلام والمتابعة',
+                  Icons.inventory_2_outlined,
+                  orders.totalCount,
+                ),
+                _primaryTab(
+                  'المرتجعات',
+                  Icons.assignment_return_outlined,
+                  returns.totalCount,
+                ),
               ],
             ),
           ),
@@ -253,34 +259,40 @@ class _BuyingPrimaryTabs extends StatelessWidget {
     );
   }
 
-  Widget _primaryTab(String label, int count) => Tab(
-        height: 54.h,
+  Widget _primaryTab(String label, IconData icon, int count) => Tab(
+        height: 68.h,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 38.w,
+                  height: 38.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryColor.withValues(alpha: .09),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.secondaryColor.withValues(alpha: .2),
+                    ),
+                  ),
+                  child: Icon(icon, size: 19.sp),
+                ),
+                if (count > 0)
+                  PositionedDirectional(
+                    top: -4.h,
+                    end: -7.w,
+                    child: _CountBadge(count: count),
+                  ),
+              ],
+            ),
+            SizedBox(height: 3.h),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.fade,
               softWrap: false,
-            ),
-            SizedBox(height: 2.h),
-            Container(
-              constraints: BoxConstraints(minWidth: 24.w),
-              alignment: Alignment.center,
-              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
-              decoration: BoxDecoration(
-                color: AppColors.secondaryColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(99.r),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  color: AppColors.secondaryColor,
-                  fontSize: 9.sp,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
             ),
           ],
         ),
@@ -293,6 +305,11 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
     return GetBuilder<BillsController>(
       builder: (controller) {
         final months = controller.allBillsSearch.keys.toList();
+        final showOperationalSections =
+            controller.purchaseBillStateFilter.value == 'all';
+        final sections = showOperationalSections
+            ? _purchaseSections(controller.allBillsSearch)
+            : const <_BuyingListSection<BillDataModel>>[];
         return AppPullToRefresh(
           onRefresh: controller.getBills,
           child: CustomScrollView(
@@ -332,6 +349,25 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
                 const SliverToBoxAdapter(child: BuyingBillsTableSkeleton())
               else if (months.isEmpty)
                 const SliverFillRemaining(child: Center(child: ShowNoData()))
+              else if (showOperationalSections)
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    for (final section in sections) ...[
+                      _OperationalSectionHeader(
+                        title: section.title,
+                        count: section.count,
+                        color: section.color,
+                        icon: section.icon,
+                      ),
+                      for (final entry in section.groups.entries)
+                        BillsList(
+                          month: entry.key,
+                          bills: entry.value,
+                          page: '1',
+                        ),
+                    ],
+                  ]),
+                )
               else
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
@@ -349,6 +385,124 @@ class _PurchaseInvoicesTab extends GetView<BillsController> {
         );
       },
     );
+  }
+
+  List<_BuyingListSection<BillDataModel>> _purchaseSections(
+    Map<String, List<BillDataModel>> source,
+  ) {
+    const order = [
+      'awaiting_receiving',
+      'partially_received',
+      'receiving_issues',
+      'awaiting_finalization',
+      'unpaid',
+      'partially_paid',
+      'paid',
+    ];
+    final groups = <String, Map<String, List<BillDataModel>>>{};
+    for (final dateEntry in source.entries) {
+      for (final bill in dateEntry.value) {
+        final key = _purchaseSectionKey(bill);
+        if (key == null) continue;
+        groups
+            .putIfAbsent(key, () => <String, List<BillDataModel>>{})
+            .putIfAbsent(dateEntry.key, () => <BillDataModel>[])
+            .add(bill);
+      }
+    }
+    return [
+      for (final key in order)
+        if (groups[key]?.isNotEmpty == true)
+          _BuyingListSection<BillDataModel>(
+            title: _purchaseSectionLabel(key),
+            color: _purchaseSectionColor(key),
+            icon: _purchaseSectionIcon(key),
+            groups: groups[key]!,
+          ),
+    ];
+  }
+
+  String? _purchaseSectionKey(BillDataModel bill) {
+    final workflow = bill.workflowStatus.toLowerCase();
+    final payment = bill.paymentStatus.toLowerCase();
+    if (workflow == 'awaiting_receiving' ||
+        bill.status.toLowerCase() == 'draft') {
+      return 'awaiting_receiving';
+    }
+    if (bill.hasReceivingSummary) return 'receiving_issues';
+    if (workflow == 'partially_received') return 'partially_received';
+    if (workflow == 'awaiting_finalization' || workflow == 'received') {
+      return 'awaiting_finalization';
+    }
+    if (payment == 'paid') return 'paid';
+    if (payment == 'partially_paid' || payment == 'partial') {
+      return 'partially_paid';
+    }
+    if (payment == 'unpaid' || payment.isEmpty) return 'unpaid';
+    return null;
+  }
+
+  String _purchaseSectionLabel(String key) {
+    switch (key) {
+      case 'awaiting_receiving':
+        return 'بانتظار الاستلام';
+      case 'partially_received':
+        return 'استلام جزئي';
+      case 'receiving_issues':
+        return 'مشاكل الاستلام';
+      case 'awaiting_finalization':
+        return 'بانتظار الاعتماد';
+      case 'unpaid':
+        return 'فواتير غير مدفوعة';
+      case 'partially_paid':
+        return 'فواتير مدفوعة جزئياً';
+      case 'paid':
+        return 'فواتير مدفوعة';
+      default:
+        return 'فواتير غير مدفوعة';
+    }
+  }
+
+  Color _purchaseSectionColor(String key) {
+    switch (key) {
+      case 'awaiting_receiving':
+        return Colors.orange;
+      case 'partially_received':
+        return Colors.deepOrange;
+      case 'receiving_issues':
+        return Colors.red;
+      case 'awaiting_finalization':
+        return Colors.indigo;
+      case 'paid':
+        return Colors.green;
+      case 'partially_paid':
+        return Colors.orange;
+      case 'unpaid':
+        return Colors.red;
+      default:
+        return Colors.blueGrey;
+    }
+  }
+
+  IconData _purchaseSectionIcon(String key) {
+    switch (key) {
+      case 'awaiting_receiving':
+        return Icons.inventory_outlined;
+      case 'partially_received':
+        return Icons.hourglass_bottom_outlined;
+      case 'receiving_issues':
+        return Icons.report_problem_outlined;
+      case 'awaiting_finalization':
+        return Icons.fact_check_outlined;
+      case 'paid':
+        return Icons.check_circle_outline;
+      case 'partially_paid':
+        return Icons.payments_outlined;
+      case 'unpaid':
+        return Icons.money_off_outlined;
+      default:
+        return Icons.more_horiz_rounded;
+    }
   }
 }
 
@@ -484,81 +638,110 @@ class _OperationalStatusBar extends StatelessWidget {
       for (var index = 0; index < items.length; index++)
         if (index == 0 || countForIndex(index) > 0) index,
     ];
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
-      child: SingleChildScrollView(
+    return SizedBox(
+      height: 70.h,
+      child: ListView.separated(
+        padding: EdgeInsets.fromLTRB(16.w, 7.h, 16.w, 3.h),
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final index in visibleIndices) ...[
-              Builder(
-                builder: (_) {
-                  final item = items[index];
-                  final count = countForIndex(index);
-                  final selected = selectedIndex == index;
-                  return Padding(
-                    padding: EdgeInsetsDirectional.only(end: 8.w),
-                    child: FilterChip(
-                      selected: selected,
-                      showCheckmark: false,
-                      avatar: Icon(
-                        item.icon,
-                        size: 15.sp,
-                        color: item.color,
+        itemCount: visibleIndices.length,
+        separatorBuilder: (_, __) => SizedBox(width: 11.w),
+        itemBuilder: (_, listIndex) {
+          final index = visibleIndices[listIndex];
+          final item = items[index];
+          final count = countForIndex(index);
+          final selected = selectedIndex == index;
+          final isDark = ThemeService.isDark.value;
+          final foreground =
+              selected ? Colors.white : (isDark ? Colors.white : item.color);
+          return Tooltip(
+            message: item.label,
+            child: InkWell(
+              onTap: () => onSelected(index),
+              borderRadius: BorderRadius.circular(24.r),
+              child: SizedBox(
+                width: 52.w,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 42.w,
+                      height: 42.w,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? item.color
+                            : item.color.withValues(alpha: isDark ? .18 : .09),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? item.color
+                              : item.color.withValues(alpha: .24),
+                        ),
                       ),
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
                         children: [
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              color: ThemeService.isDark.value
-                                  ? Colors.white
-                                  : Colors.grey.shade800,
-                              fontSize: 11.sp,
-                              fontWeight:
-                                  selected ? FontWeight.w800 : FontWeight.w600,
+                          Icon(item.icon, size: 20.sp, color: foreground),
+                          if (count > 0)
+                            PositionedDirectional(
+                              top: -5.h,
+                              end: -6.w,
+                              child: _CountBadge(count: count),
                             ),
-                          ),
-                          SizedBox(width: 6.w),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6.w,
-                              vertical: 2.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: item.color.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(99.r),
-                            ),
-                            child: Text(
-                              '$count',
-                              style: TextStyle(
-                                color: item.color,
-                                fontSize: 9.5.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
-                      backgroundColor: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.whiteColor2,
-                      selectedColor: item.color.withValues(alpha: 0.13),
-                      side: BorderSide(
-                        color: selected ? item.color : Colors.grey.shade300,
-                      ),
-                      onSelected: (_) => onSelected(index),
                     ),
-                  );
-                },
+                    SizedBox(height: 3.h),
+                    Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 8.sp,
+                        height: 1,
+                        fontWeight:
+                            selected ? FontWeight.w900 : FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.grey.shade800,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.w),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.redAccent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white, width: 1.2),
+        ),
+        child: Text(
+          count > 99 ? '99+' : '$count',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 8.sp,
+            fontWeight: FontWeight.w900,
+            height: 1,
+          ),
+        ),
+      );
 }
 
 class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
@@ -621,10 +804,34 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
 
               final current = controller.currentTab.value;
               final source = controller.currentSearch;
+              final sections = current == 0
+                  ? _receivingSections(controller)
+                  : const <_BuyingListSection<BillDataModel>>[];
 
               if (source.isEmpty) {
                 return const SliverFillRemaining(
                   child: Center(child: ShowNoData()),
+                );
+              }
+
+              if (current == 0) {
+                return SliverList(
+                  delegate: SliverChildListDelegate([
+                    for (final section in sections) ...[
+                      _OperationalSectionHeader(
+                        title: section.title,
+                        count: section.count,
+                        color: section.color,
+                        icon: section.icon,
+                      ),
+                      for (final entry in section.groups.entries)
+                        BillsList(
+                          month: entry.key,
+                          bills: entry.value,
+                          page: section.page!,
+                        ),
+                    ],
+                  ]),
                 );
               }
 
@@ -656,6 +863,40 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
       ),
     );
   }
+
+  List<_BuyingListSection<BillDataModel>> _receivingSections(
+    PurchaseOrdersController controller,
+  ) =>
+      [
+        _BuyingListSection<BillDataModel>(
+          title: 'قيد الاستلام',
+          color: Colors.orange,
+          icon: Icons.inventory_2_outlined,
+          groups: controller.unprocessedSearch,
+          page: '2',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'فروقات الاستلام',
+          color: Colors.red,
+          icon: Icons.report_problem_outlined,
+          groups: controller.notMatchedSearch,
+          page: '3',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'الفواتير المستلمة',
+          color: Colors.green,
+          icon: Icons.check_circle_outline,
+          groups: controller.completedSearch,
+          page: '1',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'الأمانات',
+          color: Colors.indigo,
+          icon: Icons.account_balance_wallet_outlined,
+          groups: controller.depositsSearch,
+          page: '4',
+        ),
+      ].where((section) => section.count > 0).toList(growable: false);
 }
 
 class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
@@ -716,10 +957,33 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
               }
 
               final source = controller.returnPurchasesSearch;
+              final sections = controller.currentTab.value == 0
+                  ? _returnSections(source)
+                  : const <_BuyingListSection<ReturnProduct>>[];
 
               if (source.isEmpty) {
                 return const SliverFillRemaining(
                   child: Center(child: ShowNoData()),
+                );
+              }
+
+              if (controller.currentTab.value == 0) {
+                return SliverList(
+                  delegate: SliverChildListDelegate([
+                    for (final section in sections) ...[
+                      _OperationalSectionHeader(
+                        title: section.title,
+                        count: section.count,
+                        color: section.color,
+                        icon: section.icon,
+                      ),
+                      for (final entry in section.groups.entries)
+                        ReturnPurchasesList(
+                          month: entry.key,
+                          bills: entry.value,
+                        ),
+                    ],
+                  ]),
                 );
               }
 
@@ -740,6 +1004,67 @@ class _ReturnPurchasesEntryTab extends GetView<ReturnPurchasesController> {
         ],
       ),
     );
+  }
+
+  List<_BuyingListSection<ReturnProduct>> _returnSections(
+    Map<String, List<ReturnProduct>> source,
+  ) {
+    const definitions = <_ReturnSectionDefinition>[
+      _ReturnSectionDefinition(
+        status: 'draft',
+        title: 'مسودات المرتجعات',
+        color: Colors.blueGrey,
+        icon: Icons.edit_note_outlined,
+      ),
+      _ReturnSectionDefinition(
+        status: 'confirmed',
+        title: 'مرتجعات قيد التسليم',
+        color: Colors.orange,
+        icon: Icons.local_shipping_outlined,
+      ),
+      _ReturnSectionDefinition(
+        status: 'delivered',
+        title: 'مرتجعات قيد التسوية',
+        color: Colors.indigo,
+        icon: Icons.account_balance_wallet_outlined,
+      ),
+      _ReturnSectionDefinition(
+        status: 'settled',
+        title: 'المرتجعات المكتملة',
+        color: Colors.green,
+        icon: Icons.check_circle_outline,
+      ),
+      _ReturnSectionDefinition(
+        status: 'cancelled',
+        title: 'المرتجعات الملغاة',
+        color: Colors.red,
+        icon: Icons.cancel_outlined,
+      ),
+    ];
+    final sections = <_BuyingListSection<ReturnProduct>>[];
+    for (final definition in definitions) {
+      final grouped = <String, List<ReturnProduct>>{};
+      for (final entry in source.entries) {
+        final rows = entry.value.where((row) {
+          if (definition.status == 'confirmed') {
+            return row.status == 'confirmed' || row.status == 'pending';
+          }
+          return row.status == definition.status;
+        }).toList();
+        if (rows.isNotEmpty) grouped[entry.key] = rows;
+      }
+      if (grouped.isNotEmpty) {
+        sections.add(
+          _BuyingListSection<ReturnProduct>(
+            title: definition.title,
+            color: definition.color,
+            icon: definition.icon,
+            groups: grouped,
+          ),
+        );
+      }
+    }
+    return sections;
   }
 }
 
@@ -780,4 +1105,102 @@ class _PurchaseReturnIconTabs extends StatelessWidget {
       );
     });
   }
+}
+
+class _ReturnSectionDefinition {
+  const _ReturnSectionDefinition({
+    required this.status,
+    required this.title,
+    required this.color,
+    required this.icon,
+  });
+
+  final String status;
+  final String title;
+  final Color color;
+  final IconData icon;
+}
+
+class _BuyingListSection<T> {
+  const _BuyingListSection({
+    required this.title,
+    required this.color,
+    required this.icon,
+    required this.groups,
+    this.page,
+  });
+
+  final String title;
+  final Color color;
+  final IconData icon;
+  final Map<String, List<T>> groups;
+  final String? page;
+
+  int get count => groups.values.fold<int>(
+        0,
+        (total, rows) => total + rows.length,
+      );
+}
+
+class _OperationalSectionHeader extends StatelessWidget {
+  const _OperationalSectionHeader({
+    required this.title,
+    required this.count,
+    required this.color,
+    required this.icon,
+  });
+
+  final String title;
+  final int count;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsetsDirectional.fromSTEB(16.w, 14.h, 16.w, 5.h),
+        child: Row(
+          children: [
+            Container(
+              width: 4.w,
+              height: 21.h,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(icon, size: 18.sp, color: color),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w900,
+                  color: ThemeService.isDark.value
+                      ? AppColors.whiteColor
+                      : AppColors.secondaryColor,
+                ),
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
