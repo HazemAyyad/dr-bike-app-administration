@@ -15,6 +15,9 @@ import '../../data/models/bills_models/bills_details_model.dart';
 class PurchaseInvoicePdfBuilder {
   PurchaseInvoicePdfBuilder._();
 
+  static final PdfColor _brandColor = PdfColor.fromHex('#6B65BD');
+  static final PdfColor _mutedColor = PdfColor.fromHex('#6B7280');
+
   static Future<pw.Font> _regular() async {
     final data = await rootBundle.load(
       'assets/fonts/Almarai/Almarai-Regular.ttf',
@@ -31,7 +34,8 @@ class PurchaseInvoicePdfBuilder {
 
   static Future<pw.MemoryImage?> _logo() async {
     try {
-      final data = await rootBundle.load('assets/images/dark_Logo.png');
+      final data =
+          await rootBundle.load('assets/images/purchase_invoice_logo.jpg');
       return pw.MemoryImage(data.buffer.asUint8List());
     } catch (_) {
       return null;
@@ -40,7 +44,38 @@ class PurchaseInvoicePdfBuilder {
 
   static String _money(dynamic value) {
     final parsed = value is num ? value.toDouble() : double.tryParse('$value');
-    return '${NumberFormat('#,##0.00').format(parsed ?? 0)} ₪';
+    return NumberFormat('#,##0.00').format(parsed ?? 0);
+  }
+
+  static pw.Widget _amount(
+    dynamic value, {
+    required pw.Font font,
+    pw.Alignment alignment = pw.Alignment.centerRight,
+  }) {
+    return pw.Container(
+      alignment: alignment,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.rtl,
+        child: pw.Row(
+          mainAxisSize: pw.MainAxisSize.min,
+          mainAxisAlignment: pw.MainAxisAlignment.center,
+          children: [
+            pw.Text(
+              _money(value),
+              textDirection: pw.TextDirection.ltr,
+              style: pw.TextStyle(font: font, fontSize: 9),
+            ),
+            pw.SizedBox(width: 3),
+            pw.Text(
+              'شيكل',
+              textDirection: pw.TextDirection.rtl,
+              style: pw.TextStyle(font: font, fontSize: 9),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   static Future<pw.ImageProvider?> _productImage(String imageUrl) async {
@@ -79,26 +114,15 @@ class PurchaseInvoicePdfBuilder {
         theme: pw.ThemeData.withFont(base: regular, bold: bold),
         margin: const pw.EdgeInsets.fromLTRB(28, 26, 28, 26),
         build: (_) => [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'دكتور بايك - فاتورة مشتريات',
-                  style: pw.TextStyle(
-                    font: bold,
-                    fontSize: 21,
-                    color: PdfColors.deepPurple600,
-                  ),
-                ),
-              ),
-              if (logo != null) pw.Image(logo, height: 88),
-            ],
+          _maintenanceStyleHeader(
+            invoice: invoice,
+            logo: logo,
+            bold: bold,
           ),
           pw.Container(
             margin: const pw.EdgeInsets.only(top: 8, bottom: 10),
             height: 1.3,
-            color: PdfColors.deepPurple600,
+            color: _brandColor,
           ),
           pw.Center(
             child: pw.Text(
@@ -135,10 +159,10 @@ class PurchaseInvoicePdfBuilder {
                 regular: regular,
                 bold: bold,
                 rows: [
-                  ['المجموع الفرعي', _money(invoice.totalBill)],
-                  ['إجمالي الفاتورة', _money(invoice.finalTotal)],
-                  ['المبلغ المدفوع', _money(invoice.paidAmount)],
-                  ['المبلغ المتبقي', _money(invoice.remainingAmount)],
+                  ['المجموع الفرعي', invoice.totalBill],
+                  ['إجمالي الفاتورة', invoice.finalTotal],
+                  ['المبلغ المدفوع', invoice.paidAmount],
+                  ['المبلغ المتبقي', invoice.remainingAmount],
                 ],
               ),
             ),
@@ -153,6 +177,75 @@ class PurchaseInvoicePdfBuilder {
       ),
     );
     return doc.save();
+  }
+
+  static pw.Widget _maintenanceStyleHeader({
+    required BillDetailsModel invoice,
+    required pw.MemoryImage? logo,
+    required pw.Font bold,
+  }) {
+    final qrPayload = [
+      'purchase-invoice:${invoice.billId}',
+      'supplier:${invoice.sellerName}',
+      'date:${invoice.createdAt}',
+      'total:${invoice.finalTotal}',
+      'paid:${invoice.paidAmount}',
+    ].join('|');
+
+    return pw.Directionality(
+      textDirection: pw.TextDirection.ltr,
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.SizedBox(
+            width: 130,
+            height: 88,
+            child: logo == null
+                ? pw.SizedBox()
+                : pw.Align(
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Image(logo, height: 88),
+                  ),
+          ),
+          pw.Expanded(
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.BarcodeWidget(
+                  barcode: pw.Barcode.qrCode(),
+                  data: qrPayload,
+                  width: 64,
+                  height: 64,
+                  drawText: false,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  '${invoice.billId}',
+                  textDirection: pw.TextDirection.ltr,
+                  style: pw.TextStyle(fontSize: 8, color: _mutedColor),
+                ),
+              ],
+            ),
+          ),
+          pw.Expanded(
+            flex: 2,
+            child: pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'دكتور بايك - فاتورة مشتريات',
+                textDirection: pw.TextDirection.rtl,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 21,
+                  color: _brandColor,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   static pw.Widget _itemsTable(
@@ -205,8 +298,8 @@ class PurchaseInvoicePdfBuilder {
         ...List.generate(products.length, (index) {
           final item = products[index];
           final cells = <pw.Widget>[
-            _cell(_money(item.subTotal), font: regular),
-            _cell(_money(item.price), font: regular),
+            _amount(item.subTotal, font: regular),
+            _amount(item.price, font: regular),
             _cell(item.quantity, font: regular),
             _productCell(item, regular: regular, bold: bold),
             _cell(item.productCode.isEmpty ? '-' : item.productCode,
@@ -271,7 +364,7 @@ class PurchaseInvoicePdfBuilder {
                 ? const pw.BoxDecoration(color: PdfColors.grey200)
                 : null,
             children: [
-              _cell(row[1],
+              _amount(row[1],
                   font: isTotal ? bold : regular,
                   alignment: pw.Alignment.centerLeft),
               _cell(row[0], font: isTotal ? bold : regular),
@@ -304,7 +397,7 @@ class PurchaseInvoicePdfBuilder {
                   font: regular),
               _cell(payment.paymentType.tr, font: regular),
               _cell(payment.paidAt, font: regular),
-              _cell(_money(payment.amount), font: regular),
+              _amount(payment.amount, font: regular),
             ]),
           ),
         ],
