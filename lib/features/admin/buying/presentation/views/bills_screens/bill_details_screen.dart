@@ -95,8 +95,25 @@ class BillDetailsScreen extends GetView<BillsController> {
   }
 }
 
-class _CompactReceivingPanel extends GetView<BillsController> {
+class _CompactReceivingPanel extends StatefulWidget {
   const _CompactReceivingPanel();
+
+  @override
+  State<_CompactReceivingPanel> createState() => _CompactReceivingPanelState();
+}
+
+class _CompactReceivingPanelState extends State<_CompactReceivingPanel> {
+  BillsController get controller => Get.find<BillsController>();
+
+  bool _receivingAll = false;
+  bool _finalizing = false;
+  int? _receivingItemId;
+
+  bool get _busy =>
+      controller.isWorkflowLoading.value ||
+      _receivingAll ||
+      _finalizing ||
+      _receivingItemId != null;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +123,8 @@ class _CompactReceivingPanel extends GetView<BillsController> {
         .length;
     final receivedItems = details.products.length - pendingItems;
     final canFinalize = pendingItems == 0 &&
-        details.workflowStatus != 'finalized' &&
+        (details.workflowStatus == 'received' ||
+            details.workflowStatus == 'awaiting_finalization') &&
         details.products.any((product) => product.receivedOwnedQuantity > 0);
 
     return Column(
@@ -153,10 +171,21 @@ class _CompactReceivingPanel extends GetView<BillsController> {
                     ),
                     SizedBox(height: 3.h),
                     Text(
-                      'فاتورة #${details.billId} • $receivedItems من ${details.products.length} أصناف مستلمة',
+                      details.workflowStatus == 'finalized'
+                          ? 'فاتورة #${details.billId} • معتمدة ومكتملة'
+                          : pendingItems == 0
+                              ? 'اكتمل الاستلام • بانتظار اعتماد الفاتورة'
+                              : 'فاتورة #${details.billId} • $receivedItems من ${details.products.length} أصناف مستلمة',
                       style: TextStyle(
                         fontSize: 10.5.sp,
-                        color: Colors.grey.shade600,
+                        color: pendingItems == 0 &&
+                                details.workflowStatus != 'finalized'
+                            ? Colors.orange.shade800
+                            : Colors.grey.shade600,
+                        fontWeight: pendingItems == 0 &&
+                                details.workflowStatus != 'finalized'
+                            ? FontWeight.w700
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -164,11 +193,18 @@ class _CompactReceivingPanel extends GetView<BillsController> {
               ),
               if (pendingItems > 0)
                 TextButton.icon(
-                  onPressed: controller.isWorkflowLoading.value
-                      ? null
-                      : () => _receiveAll(context),
-                  icon: Icon(Icons.done_all_rounded, size: 17.sp),
-                  label: const Text('استلام الكل'),
+                  onPressed: _busy ? null : () => _receiveAll(context),
+                  icon: _receivingAll
+                      ? SizedBox.square(
+                          dimension: 16.w,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(Icons.done_all_rounded, size: 17.sp),
+                  label: Text(
+                    _receivingAll ? 'جاري الاستلام...' : 'استلام الكل',
+                  ),
                 )
               else
                 Icon(
@@ -179,6 +215,22 @@ class _CompactReceivingPanel extends GetView<BillsController> {
             ],
           ),
         ),
+        if (_busy) ...[
+          SizedBox(height: 8.h),
+          const LinearProgressIndicator(minHeight: 3),
+          SizedBox(height: 5.h),
+          Text(
+            _finalizing
+                ? 'جاري اعتماد الفاتورة...'
+                : 'جاري تسجيل الاستلام، يرجى الانتظار...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.primaryColor,
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         SizedBox(height: 12.h),
         Row(
           children: [
@@ -208,7 +260,8 @@ class _CompactReceivingPanel extends GetView<BillsController> {
         ...details.products.map(
           (product) => _CompactReceivingProductCard(
             product: product,
-            busy: controller.isWorkflowLoading.value,
+            busy: _busy,
+            loading: _receivingItemId == product.billItemId,
             onReceive: () => _receiveProduct(context, product),
             onOption: (option) => _reviewProduct(context, product, option),
           ),
@@ -216,11 +269,21 @@ class _CompactReceivingPanel extends GetView<BillsController> {
         if (canFinalize) ...[
           SizedBox(height: 8.h),
           FilledButton.icon(
-            onPressed: controller.isWorkflowLoading.value
-                ? null
-                : () => _finalize(context),
-            icon: const Icon(Icons.verified_outlined),
-            label: const Text('اعتماد الفاتورة بعد اكتمال الاستلام'),
+            onPressed: _busy ? null : () => _finalize(context),
+            icon: _finalizing
+                ? SizedBox.square(
+                    dimension: 17.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.verified_outlined),
+            label: Text(
+              _finalizing
+                  ? 'جاري الاعتماد...'
+                  : 'اعتماد الفاتورة بعد اكتمال الاستلام',
+            ),
             style: FilledButton.styleFrom(
               minimumSize: Size(double.infinity, 46.h),
             ),
@@ -231,26 +294,38 @@ class _CompactReceivingPanel extends GetView<BillsController> {
   }
 
   Future<void> _receiveAll(BuildContext context) async {
-    final ok = await controller.receiveAllShownItems(context);
-    if (!ok || !context.mounted) return;
-    AppSuccessNotice.show(
-      title: 'تم الاستلام',
-      message: 'تم استلام جميع الكميات المتبقية في الفاتورة',
-    );
-    await _moveToReceivedTabIfComplete(context);
+    if (_busy) return;
+    setState(() => _receivingAll = true);
+    try {
+      final ok = await controller.receiveAllShownItems(context);
+      if (!ok || !context.mounted) return;
+      AppSuccessNotice.show(
+        title: 'تم الاستلام',
+        message: 'تم استلام جميع الكميات المتبقية في الفاتورة',
+      );
+      await _moveToReceivedTabIfComplete(context);
+    } finally {
+      if (mounted) setState(() => _receivingAll = false);
+    }
   }
 
   Future<void> _receiveProduct(
     BuildContext context,
     BillProductModel product,
   ) async {
-    final ok = await controller.receiveShownItem(context, product);
-    if (!ok || !context.mounted) return;
-    AppSuccessNotice.show(
-      title: 'تم استلام المنتج',
-      message: product.displayName,
-    );
-    await _moveToReceivedTabIfComplete(context);
+    if (_busy) return;
+    setState(() => _receivingItemId = product.billItemId);
+    try {
+      final ok = await controller.receiveShownItem(context, product);
+      if (!ok || !context.mounted) return;
+      AppSuccessNotice.show(
+        title: 'تم استلام المنتج',
+        message: product.displayName,
+      );
+      await _moveToReceivedTabIfComplete(context);
+    } finally {
+      if (mounted) setState(() => _receivingItemId = null);
+    }
   }
 
   Future<void> _reviewProduct(
@@ -259,33 +334,32 @@ class _CompactReceivingPanel extends GetView<BillsController> {
     String option,
   ) async {
     final row = PurchaseReceivingRowModel(product: product);
-    switch (option) {
-      case 'missing':
-        row.deliveredNowController.text = '0';
-        break;
-      case 'extra':
-        row.setIssueEnabled(option, true);
-        break;
-      case 'damaged':
-      case 'mismatched':
-      case 'price':
-        row.deliveredNowController.text = product.remainingQuantity.toString();
-        row.setIssueEnabled(option, true);
-        break;
-    }
-    final saved = await _showReceivingItemEditor(context, row);
+    final saved = await _showReceivingItemEditor(
+      context,
+      row,
+      mode: option,
+    );
     if (!saved || row.isEmpty || !context.mounted) {
       row.dispose();
       return;
     }
-    final ok = await controller.receiveReviewedShownItem(context, row);
-    row.dispose();
-    if (!ok || !context.mounted) return;
-    AppSuccessNotice.show(
-      title: 'تم تسجيل الاستلام',
-      message: product.displayName,
-    );
-    await _moveToReceivedTabIfComplete(context);
+    if (_busy) {
+      row.dispose();
+      return;
+    }
+    setState(() => _receivingItemId = product.billItemId);
+    try {
+      final ok = await controller.receiveReviewedShownItem(context, row);
+      if (!ok || !context.mounted) return;
+      AppSuccessNotice.show(
+        title: 'تم تسجيل الاستلام',
+        message: product.displayName,
+      );
+      await _moveToReceivedTabIfComplete(context);
+    } finally {
+      row.dispose();
+      if (mounted) setState(() => _receivingItemId = null);
+    }
   }
 
   Future<void> _moveToReceivedTabIfComplete(BuildContext context) async {
@@ -323,16 +397,21 @@ class _CompactReceivingPanel extends GetView<BillsController> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final ok = await controller.finalizeShownPurchase(context);
-    if (!ok) return;
-    if (Get.isRegistered<PurchaseOrdersController>()) {
-      final purchaseOrders = Get.find<PurchaseOrdersController>();
-      purchaseOrders.changeTab(4);
+    setState(() => _finalizing = true);
+    try {
+      final ok = await controller.finalizeShownPurchase(context);
+      if (!ok) return;
+      if (Get.isRegistered<PurchaseOrdersController>()) {
+        final purchaseOrders = Get.find<PurchaseOrdersController>();
+        purchaseOrders.changeTab(4);
+      }
+      AppSuccessNotice.show(
+        title: 'تم اعتماد الفاتورة',
+        message: 'اكتملت متابعة فاتورة الشراء',
+      );
+    } finally {
+      if (mounted) setState(() => _finalizing = false);
     }
-    AppSuccessNotice.show(
-      title: 'تم اعتماد الفاتورة',
-      message: 'اكتملت متابعة فاتورة الشراء',
-    );
   }
 }
 
@@ -340,12 +419,14 @@ class _CompactReceivingProductCard extends StatelessWidget {
   const _CompactReceivingProductCard({
     required this.product,
     required this.busy,
+    required this.loading,
     required this.onReceive,
     required this.onOption,
   });
 
   final BillProductModel product;
   final bool busy;
+  final bool loading;
   final VoidCallback onReceive;
   final ValueChanged<String> onOption;
 
@@ -447,50 +528,7 @@ class _CompactReceivingProductCard extends StatelessWidget {
             tooltip: 'خيارات الاستلام',
             enabled: !received && !busy,
             onSelected: onOption,
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'custom',
-                child: _ReceivingMenuItem(
-                  icon: Icons.edit_note_outlined,
-                  text: 'استلام كمية مختلفة',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'missing',
-                child: _ReceivingMenuItem(
-                  icon: Icons.remove_circle_outline,
-                  text: 'لم يصل / ناقص',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'damaged',
-                child: _ReceivingMenuItem(
-                  icon: Icons.broken_image_outlined,
-                  text: 'تالف',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'mismatched',
-                child: _ReceivingMenuItem(
-                  icon: Icons.compare_arrows_rounded,
-                  text: 'غير مطابق',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'extra',
-                child: _ReceivingMenuItem(
-                  icon: Icons.add_box_outlined,
-                  text: 'زائد / أمانة',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'price',
-                child: _ReceivingMenuItem(
-                  icon: Icons.price_change_outlined,
-                  text: 'تعديل السعر',
-                ),
-              ),
-            ],
+            itemBuilder: (_) => _receivingModeMenuItems(),
             icon: const Icon(Icons.more_vert_rounded),
           ),
           SizedBox(width: 2.w),
@@ -505,10 +543,18 @@ class _CompactReceivingProductCard extends StatelessWidget {
               disabledBackgroundColor: Colors.green.withValues(alpha: .12),
               disabledForegroundColor: Colors.green.shade700,
             ),
-            icon: Icon(
-              received ? Icons.check_circle_rounded : Icons.check_rounded,
-              size: 20.sp,
-            ),
+            icon: loading
+                ? SizedBox.square(
+                    dimension: 18.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.green,
+                    ),
+                  )
+                : Icon(
+                    received ? Icons.check_circle_rounded : Icons.check_rounded,
+                    size: 20.sp,
+                  ),
           ),
         ],
       ),
@@ -2846,43 +2892,33 @@ class _ReceivingReviewTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return ListView.separated(
       controller: scrollController,
       padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 16.h),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          // Column widths total 664.w. Keep extra room for the table's
-          // horizontal padding and ScreenUtil rounding on desktop widths.
-          width: 690.w,
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 9.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withValues(alpha: 0.08),
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(9.r)),
-                ),
-                child: Row(
-                  children: [
-                    _ReceivingTableHeader('المنتج', width: 230.w),
-                    _ReceivingTableHeader('المطلوب', width: 75.w),
-                    _ReceivingTableHeader('المتبقي', width: 75.w),
-                    _ReceivingTableHeader('نتيجة المراجعة', width: 230.w),
-                    _ReceivingTableHeader('إجراء', width: 54.w),
-                  ],
-                ),
-              ),
-              ...rows.map((row) => _ReceivingReviewTableRow(row: row)),
-            ],
-          ),
-        ),
-      ),
+      itemCount: rows.length + 1,
+      separatorBuilder: (_, __) => SizedBox(height: 7.h),
+      itemBuilder: (_, index) {
+        if (index == 0) {
+          return Container(
+            padding: EdgeInsets.all(9.w),
+            decoration: BoxDecoration(
+              color: AppColors.primaryColor.withValues(alpha: .06),
+              borderRadius: BorderRadius.circular(9.r),
+            ),
+            child: Text(
+              'اختر الإجراء لكل منتج. يمكنك مثلاً تسجيل 5 سليمة و1 تالف في مودال التالف.',
+              style: TextStyle(fontSize: 10.5.sp, height: 1.4),
+            ),
+          );
+        }
+        return _ReceivingReviewTableRow(row: rows[index - 1]);
+      },
     );
   }
 }
 
+// Legacy desktop table header retained for compatibility.
+// ignore: unused_element
 class _ReceivingTableHeader extends StatelessWidget {
   const _ReceivingTableHeader(this.text, {required this.width});
 
@@ -2917,101 +2953,120 @@ class _ReceivingReviewTableRow extends GetView<BillsController> {
     final hasImage = product.productImage.startsWith('http://') ||
         product.productImage.startsWith('https://');
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: row.isEmpty
             ? Colors.white
-            : AppColors.primaryColor.withValues(alpha: 0.025),
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade200),
-          right: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+            : AppColors.primaryColor.withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 230.w,
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: hasImage
-                      ? () => openProductImageViewer(
-                            context,
-                            product.productImage,
-                            title: product.displayName,
-                          )
-                      : null,
+          Row(
+            children: [
+              InkWell(
+                onTap: hasImage
+                    ? () => openProductImageViewer(
+                          context,
+                          product.productImage,
+                          title: product.displayName,
+                        )
+                    : null,
+                borderRadius: BorderRadius.circular(8.r),
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.r),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: SizedBox.square(
-                      dimension: 46,
-                      child: hasImage
-                          ? Image.network(
-                              product.productImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.inventory_2_outlined),
-                            )
-                          : const ColoredBox(
-                              color: Color(0xFFF3F4F6),
-                              child: Icon(Icons.inventory_2_outlined),
-                            ),
-                    ),
+                  child: SizedBox.square(
+                    dimension: 44.w,
+                    child: hasImage
+                        ? Image.network(
+                            product.productImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.inventory_2_outlined),
+                          )
+                        : const ColoredBox(
+                            color: Color(0xFFF3F4F6),
+                            child: Icon(Icons.inventory_2_outlined),
+                          ),
                   ),
                 ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    product.displayName,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w800,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      'المطلوب ${_receivingQty(product.orderedQuantity)} • المتبقي ${_receivingQty(product.remainingQuantity)}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 9.5.sp,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              PopupMenuButton<String>(
+                tooltip: row.isEmpty ? 'اختر حالة الاستلام' : 'تعديل الحالة',
+                onSelected: (mode) async {
+                  if (mode == 'clear') {
+                    row.clearReview();
+                    controller.update();
+                    return;
+                  }
+                  final saved = await _showReceivingItemEditor(
+                    context,
+                    row,
+                    mode: mode,
+                  );
+                  if (saved) controller.update();
+                },
+                itemBuilder: (_) => [
+                  ..._receivingModeMenuItems(),
+                  if (!row.isEmpty) const PopupMenuDivider(),
+                  if (!row.isEmpty)
+                    const PopupMenuItem(
+                      value: 'clear',
+                      child: _ReceivingMenuItem(
+                        icon: Icons.delete_outline,
+                        text: 'إلغاء مراجعة المنتج',
+                      ),
+                    ),
+                ],
+                icon: Icon(
+                  row.isEmpty ? Icons.add_circle_outline : Icons.edit_note,
+                  color: AppColors.primaryColor,
+                  size: 22.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 7.h),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: row.isEmpty ? Colors.grey.shade50 : Colors.white,
+              borderRadius: BorderRadius.circular(7.r),
             ),
-          ),
-          _ReceivingTableValue(
-            product.orderedQuantity.toString(),
-            width: 75.w,
-          ),
-          _ReceivingTableValue(
-            product.remainingQuantity.toString(),
-            width: 75.w,
-          ),
-          SizedBox(
-            width: 230.w,
             child: Text(
               _summary,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w700,
                 color: row.isEmpty ? Colors.grey.shade600 : Colors.black87,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 54.w,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(
-                width: 42,
-                height: 42,
-              ),
-              tooltip: row.isEmpty ? 'مراجعة الاستلام' : 'تعديل المراجعة',
-              onPressed: () => _showReceivingItemEditor(context, row),
-              icon: Icon(
-                row.isEmpty ? Icons.tune : Icons.edit_note,
-                color: AppColors.primaryColor,
-                size: 22,
               ),
             ),
           ),
@@ -3033,6 +3088,8 @@ class _ReceivingReviewTableRow extends GetView<BillsController> {
   }
 }
 
+// Legacy desktop table value retained for compatibility.
+// ignore: unused_element
 class _ReceivingTableValue extends StatelessWidget {
   const _ReceivingTableValue(this.value, {required this.width});
 
@@ -3054,8 +3111,11 @@ class _ReceivingTableValue extends StatelessWidget {
 
 Future<bool> _showReceivingItemEditor(
   BuildContext context,
-  PurchaseReceivingRowModel row,
-) async {
+  PurchaseReceivingRowModel row, {
+  required String mode,
+}) async {
+  final draft = PurchaseReceivingRowModel(product: row.product)
+    ..prepareForMode(mode);
   final saved = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -3063,67 +3123,448 @@ Future<bool> _showReceivingItemEditor(
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
     ),
-    builder: (sheetContext) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-      ),
-      child: SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: 0.9.sh),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(16.w, 10.h, 6.w, 6.h),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'استلام ${row.product.displayName}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w900,
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (sheetContext, setSheetState) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: 0.9.sh),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 10.h, 6.w, 6.h),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36.w,
+                        height: 36.w,
+                        decoration: BoxDecoration(
+                          color: _receivingModeColor(draft.mode)
+                              .withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(9.r),
+                        ),
+                        child: Icon(
+                          _receivingModeIcon(draft.mode),
+                          color: _receivingModeColor(draft.mode),
+                          size: 20.sp,
                         ),
                       ),
+                      SizedBox(width: 9.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _receivingModeTitle(draft.mode),
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              draft.product.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 10.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: 14.w),
+                    child: _ReceivingModeEditor(
+                      row: draft,
+                      onChanged: () => setSheetState(() {}),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(sheetContext, false),
-                      icon: const Icon(Icons.close),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(14.w),
+                  child: FilledButton.icon(
+                    onPressed: draft.isValid
+                        ? () => Navigator.pop(sheetContext, true)
+                        : null,
+                    icon: const Icon(Icons.check),
+                    label: Text(_receivingModeSaveLabel(draft.mode)),
+                    style: FilledButton.styleFrom(
+                      minimumSize: Size(double.infinity, 46.h),
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  if (saved == true) {
+    row.applyFrom(draft);
+  }
+  draft.dispose();
+  return saved ?? false;
+}
+
+String _receivingModeTitle(String mode) {
+  switch (mode) {
+    case 'missing':
+      return 'تسجيل كمية ناقصة';
+    case 'damaged':
+      return 'تسجيل منتج تالف';
+    case 'mismatched':
+      return 'تسجيل منتج غير مطابق';
+    case 'extra':
+      return 'تسجيل زيادة / أمانة';
+    case 'price':
+      return 'استلام مع تعديل السعر';
+    default:
+      return 'استلام عادي';
+  }
+}
+
+List<PopupMenuEntry<String>> _receivingModeMenuItems() => const [
+      PopupMenuItem(
+        value: 'normal',
+        child: _ReceivingMenuItem(
+          icon: Icons.inventory_2_outlined,
+          text: 'استلام عادي',
+        ),
+      ),
+      PopupMenuItem(
+        value: 'missing',
+        child: _ReceivingMenuItem(
+          icon: Icons.remove_circle_outline,
+          text: 'ناقص / لم يصل',
+        ),
+      ),
+      PopupMenuItem(
+        value: 'damaged',
+        child: _ReceivingMenuItem(
+          icon: Icons.broken_image_outlined,
+          text: 'تالف',
+        ),
+      ),
+      PopupMenuItem(
+        value: 'mismatched',
+        child: _ReceivingMenuItem(
+          icon: Icons.compare_arrows_rounded,
+          text: 'غير مطابق',
+        ),
+      ),
+      PopupMenuItem(
+        value: 'extra',
+        child: _ReceivingMenuItem(
+          icon: Icons.handshake_outlined,
+          text: 'زائد / أمانة',
+        ),
+      ),
+      PopupMenuItem(
+        value: 'price',
+        child: _ReceivingMenuItem(
+          icon: Icons.price_change_outlined,
+          text: 'تعديل السعر',
+        ),
+      ),
+    ];
+
+String _receivingModeSaveLabel(String mode) {
+  switch (mode) {
+    case 'missing':
+      return 'حفظ النقص';
+    case 'damaged':
+      return 'حفظ التالف';
+    case 'mismatched':
+      return 'حفظ غير المطابق';
+    case 'extra':
+      return 'حفظ الأمانة';
+    default:
+      return 'حفظ الاستلام';
+  }
+}
+
+String _receivingModeDescription(String mode) {
+  switch (mode) {
+    case 'missing':
+      return 'أدخل السليم الذي استلمته والكمية التي لم تصل.';
+    case 'damaged':
+      return 'أدخل السليم والتالف بشكل منفصل. مجموعهما لا يتجاوز المتبقي.';
+    case 'mismatched':
+      return 'أدخل السليم والكمية غير المطابقة بشكل منفصل.';
+    case 'extra':
+      return 'الزيادة لا تدخل المخزون، وتُسجّل كأمانة حتى شرائها أو إرجاعها.';
+    case 'price':
+      return 'حدد الكمية السليمة المستلمة ثم أدخل سعر الوحدة الجديد.';
+    default:
+      return 'حدد فقط الكمية السليمة التي ستدخل إلى المخزون.';
+  }
+}
+
+IconData _receivingModeIcon(String mode) {
+  switch (mode) {
+    case 'missing':
+      return Icons.remove_circle_outline;
+    case 'damaged':
+      return Icons.broken_image_outlined;
+    case 'mismatched':
+      return Icons.compare_arrows_rounded;
+    case 'extra':
+      return Icons.handshake_outlined;
+    case 'price':
+      return Icons.price_change_outlined;
+    default:
+      return Icons.inventory_2_outlined;
+  }
+}
+
+Color _receivingModeColor(String mode) {
+  switch (mode) {
+    case 'missing':
+    case 'damaged':
+    case 'mismatched':
+      return Colors.red.shade700;
+    case 'extra':
+      return Colors.indigo.shade700;
+    case 'price':
+      return Colors.orange.shade800;
+    default:
+      return Colors.green.shade700;
+  }
+}
+
+class _ReceivingModeEditor extends StatelessWidget {
+  const _ReceivingModeEditor({
+    required this.row,
+    required this.onChanged,
+  });
+
+  final PurchaseReceivingRowModel row;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final product = row.product;
+    TextEditingController? issueController;
+    var issueLabel = '';
+    switch (row.mode) {
+      case 'missing':
+        issueController = row.missingController;
+        issueLabel = 'الكمية الناقصة';
+        break;
+      case 'damaged':
+        issueController = row.damagedController;
+        issueLabel = 'كمية التالف';
+        break;
+      case 'mismatched':
+        issueController = row.mismatchedController;
+        issueLabel = 'الكمية غير المطابقة';
+        break;
+      case 'extra':
+        issueController = row.extraController;
+        issueLabel = 'كمية الزيادة / الأمانة';
+        break;
+    }
+    final remainingAfter =
+        product.remainingQuantity - row.orderedOutcomeQuantity;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(10.w),
+          decoration: BoxDecoration(
+            color: _receivingModeColor(row.mode).withValues(alpha: .06),
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _receivingModeDescription(row.mode),
+                style: TextStyle(fontSize: 11.sp, height: 1.4),
+              ),
+              SizedBox(height: 7.h),
+              Wrap(
+                spacing: 6.w,
+                runSpacing: 5.h,
+                children: [
+                  _StatusChip(
+                    label: 'المطلوب',
+                    value: _receivingQty(product.orderedQuantity),
+                  ),
+                  _StatusChip(
+                    label: 'مستلم سابقاً',
+                    value: _receivingQty(product.receivedOwnedQuantity),
+                  ),
+                  _StatusChip(
+                    label: 'المتاح الآن',
+                    value: _receivingQty(product.remainingQuantity),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12.h),
+        _ReceivingNumberField(
+          label: 'الكمية السليمة المستلمة',
+          controller: row.acceptedController,
+          onChanged: onChanged,
+        ),
+        if (issueController != null) ...[
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: issueLabel,
+            controller: issueController,
+            onChanged: onChanged,
+          ),
+        ],
+        if (row.mode == 'price') ...[
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: 'سعر الوحدة الجديد',
+            controller: row.unitPriceController,
+            onChanged: onChanged,
+          ),
+        ],
+        SizedBox(height: 12.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(10.w),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(9.r),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Wrap(
+            spacing: 7.w,
+            runSpacing: 6.h,
+            children: [
+              _StatusChip(
+                label: 'سيدخل المخزون',
+                value: _receivingQty(row.accepted),
+              ),
+              if (issueController != null)
+                _StatusChip(
+                  label: row.mode == 'extra' ? 'أمانة' : issueLabel,
+                  value: _receivingQty(
+                    num.tryParse(issueController.text.trim()) ?? 0,
+                  ),
+                ),
+              _StatusChip(
+                label: 'يبقى من الطلب',
+                value: _receivingQty(
+                  remainingAfter > 0 ? remainingAfter : 0,
                 ),
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w),
-                  child: _ReceivingRowCard(row: row),
-                ),
+            ],
+          ),
+        ),
+        SizedBox(height: 10.h),
+        if (row.mode != 'normal')
+          TextField(
+            controller: row.reasonController,
+            minLines: 2,
+            maxLines: 3,
+            textInputAction: TextInputAction.newline,
+            decoration: const InputDecoration(
+              labelText: 'سبب أو ملاحظة (اختياري)',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        if (row.mode != 'normal') SizedBox(height: 10.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: (row.isValid ? Colors.green : Colors.red)
+                .withValues(alpha: .07),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                row.isValid
+                    ? Icons.check_circle_outline
+                    : Icons.info_outline_rounded,
+                color:
+                    row.isValid ? Colors.green.shade700 : Colors.red.shade700,
+                size: 18.sp,
               ),
-              Padding(
-                padding: EdgeInsets.all(14.w),
-                child: FilledButton.icon(
-                  onPressed: () {
-                    Get.find<BillsController>().update();
-                    Navigator.pop(sheetContext, true);
-                  },
-                  icon: const Icon(Icons.check),
-                  label: const Text('حفظ المراجعة'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: Size(double.infinity, 46.h),
+              SizedBox(width: 7.w),
+              Expanded(
+                child: Text(
+                  row.validationMessage ?? 'الكميات صحيحة ويمكن الحفظ',
+                  style: TextStyle(
+                    color: row.isValid
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                    fontSize: 10.5.sp,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    ),
-  );
-  return saved ?? false;
+        SizedBox(height: 4.h),
+      ],
+    );
+  }
 }
 
+class _ReceivingNumberField extends StatelessWidget {
+  const _ReceivingNumberField({
+    required this.label,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) => TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        onChanged: (_) => onChanged(),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: '0',
+          border: const OutlineInputBorder(),
+          isDense: true,
+          suffixIcon: IconButton(
+            tooltip: 'تصفير',
+            onPressed: () {
+              controller.text = '0';
+              onChanged();
+            },
+            icon: const Icon(Icons.backspace_outlined),
+          ),
+        ),
+      );
+}
+
+String _receivingQty(num value) =>
+    value % 1 == 0 ? value.toInt().toString() : value.toString();
+
+// Legacy combined editor retained for compatibility with older entry points.
+// ignore: unused_element
 class _ReceivingRowCard extends GetView<BillsController> {
   final PurchaseReceivingRowModel row;
 

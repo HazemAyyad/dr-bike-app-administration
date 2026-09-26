@@ -1,5 +1,6 @@
 import 'package:doctorbike/features/admin/buying/data/models/bills_models/bills_details_model.dart';
 import 'package:doctorbike/features/admin/buying/data/models/bills_models/bills_model.dart';
+import 'package:doctorbike/features/admin/buying/presentation/controllers/bills_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -225,6 +226,66 @@ void main() {
       expect(bill.needsPartialPayment, isFalse);
       expect(bill.isPaymentComplete, isTrue);
       expect(bill.canQuickPay, isFalse);
+    });
+  });
+
+  group('PurchaseReceivingRowModel', () {
+    BillProductModel product({num remaining = 6}) => BillProductModel.fromJson({
+          'id': 91,
+          'bill_id': 9,
+          'product_id': 7,
+          'product_name': 'قطعة اختبار',
+          'quantity': 6,
+          'price': 5,
+          'sub_total': 30,
+          'ordered_quantity': 6,
+          'received_owned_quantity': 6 - remaining,
+          'remaining_quantity': remaining,
+        });
+
+    test('splits six remaining items into five good and one damaged', () {
+      final row = PurchaseReceivingRowModel(product: product())
+        ..prepareForMode('damaged');
+      addTearDown(row.dispose);
+
+      expect(row.accepted, 5);
+      expect(row.damaged, 1);
+      expect(row.orderedOutcomeQuantity, 6);
+      expect(row.isValid, isTrue);
+      expect(row.toApiMap(), containsPair('accepted_quantity', 5));
+      expect(row.toApiMap(), containsPair('damaged_quantity', 1));
+    });
+
+    test('rejects a good and damaged total above the remaining quantity', () {
+      final row = PurchaseReceivingRowModel(product: product())
+        ..prepareForMode('damaged');
+      addTearDown(row.dispose);
+      row.acceptedController.text = '6';
+      row.damagedController.text = '1';
+
+      expect(row.isValid, isFalse);
+      expect(row.validationMessage, contains('لا يمكن أن يتجاوز 6'));
+    });
+
+    test('keeps extra custody outside the ordered quantity limit', () {
+      final row = PurchaseReceivingRowModel(product: product())
+        ..prepareForMode('extra');
+      addTearDown(row.dispose);
+
+      expect(row.accepted, 6);
+      expect(row.effectiveExtra, 1);
+      expect(row.orderedOutcomeQuantity, 6);
+      expect(row.isValid, isTrue);
+    });
+
+    test('uses the fractional remainder as the default issue quantity', () {
+      final row = PurchaseReceivingRowModel(product: product(remaining: .5))
+        ..prepareForMode('missing');
+      addTearDown(row.dispose);
+
+      expect(row.accepted, 0);
+      expect(row.missing, .5);
+      expect(row.isValid, isTrue);
     });
   });
 }

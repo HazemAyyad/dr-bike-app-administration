@@ -2412,6 +2412,7 @@ class PurchaseReceivingRowModel {
   bool hasDamaged = false;
   bool hasMismatched = false;
   bool editUnitPrice = false;
+  String mode = 'normal';
 
   PurchaseReceivingRowModel({required this.product})
       : deliveredNowController = TextEditingController(),
@@ -2424,76 +2425,150 @@ class PurchaseReceivingRowModel {
         reasonController = TextEditingController(),
         notesController = TextEditingController();
 
-  num get deliveredNow => _num(deliveredNowController);
   num get accepted => _num(acceptedController);
   num get missing => _num(missingController);
   num get extra => _num(extraController);
   num get damaged => _num(damagedController);
   num get mismatched => _num(mismatchedController);
-  bool get hasDeliveredEntry => deliveredNowController.text.trim().isNotEmpty;
-  num get effectiveExtra {
-    if (!hasDeliveredEntry) return hasExtra ? extra : 0;
-    if (hasExtra) return extra;
-    final surplus =
-        deliveredNow - product.remainingQuantity - damaged - mismatched;
-    return surplus > 0 ? surplus : 0;
-  }
-
-  num get autoAccepted {
-    if (!hasDeliveredEntry || deliveredNow <= 0) return 0;
-    final issueTotal = effectiveExtra + damaged + mismatched;
-    final owned = deliveredNow - issueTotal;
-    if (owned <= 0 || issueTotal >= deliveredNow) return 0;
-    return owned > product.remainingQuantity
-        ? product.remainingQuantity
-        : owned;
-  }
-
-  num get autoMissing {
-    final missing = product.remainingQuantity - autoAccepted;
-    return missing > 0 ? missing : 0;
-  }
+  bool get hasDeliveredEntry => acceptedController.text.trim().isNotEmpty;
+  num get effectiveExtra => mode == 'extra' ? extra : 0;
+  num get autoAccepted => accepted;
+  num get autoMissing => mode == 'missing' ? missing : 0;
+  num get orderedOutcomeQuantity =>
+      accepted +
+      autoMissing +
+      (mode == 'damaged' ? damaged : 0) +
+      (mode == 'mismatched' ? mismatched : 0);
 
   bool get isEmpty =>
-      !hasDeliveredEntry &&
       accepted <= 0 &&
-      missing <= 0 &&
+      autoMissing <= 0 &&
       effectiveExtra <= 0 &&
-      damaged <= 0 &&
-      mismatched <= 0;
+      (mode == 'damaged' ? damaged : 0) <= 0 &&
+      (mode == 'mismatched' ? mismatched : 0) <= 0;
 
-  bool get isValid {
+  String? get validationMessage {
     if (accepted < 0 ||
-        missing < 0 ||
+        autoMissing < 0 ||
         effectiveExtra < 0 ||
         damaged < 0 ||
         mismatched < 0) {
-      return false;
+      return 'لا يمكن إدخال كمية سالبة';
     }
-    final effectiveAccepted = hasDeliveredEntry ? autoAccepted : accepted;
-    final effectiveMissing = hasDeliveredEntry ? autoMissing : missing;
-    if (effectiveAccepted > product.remainingQuantity) return false;
-    if (effectiveAccepted + effectiveMissing > product.remainingQuantity) {
-      return false;
+    if (orderedOutcomeQuantity > product.remainingQuantity) {
+      return 'مجموع السليم والحالة لا يمكن أن يتجاوز ${_qty(product.remainingQuantity)}';
     }
-    if (hasDeliveredEntry &&
-        effectiveAccepted + effectiveExtra + damaged + mismatched >
-            deliveredNow) {
-      return false;
+    switch (mode) {
+      case 'normal':
+      case 'price':
+        if (accepted <= 0) return 'أدخل الكمية السليمة المستلمة';
+        if (mode == 'price' && _num(unitPriceController) < 0) {
+          return 'أدخل سعراً صحيحاً';
+        }
+        break;
+      case 'missing':
+        if (autoMissing <= 0) return 'أدخل الكمية الناقصة';
+        break;
+      case 'damaged':
+        if (damaged <= 0) return 'أدخل كمية التالف';
+        break;
+      case 'mismatched':
+        if (mismatched <= 0) return 'أدخل الكمية غير المطابقة';
+        break;
+      case 'extra':
+        if (effectiveExtra <= 0) return 'أدخل كمية الزيادة / الأمانة';
+        break;
     }
-    return true;
+    return null;
+  }
+
+  bool get isValid => validationMessage == null && !isEmpty;
+
+  void prepareForMode(String nextMode) {
+    mode = nextMode == 'custom' ? 'normal' : nextMode;
+    deliveredNowController.clear();
+    acceptedController.clear();
+    missingController.clear();
+    extraController.clear();
+    damagedController.clear();
+    mismatchedController.clear();
+    reasonController.clear();
+    notesController.clear();
+    unitPriceController.text = product.price;
+    hasExtra = mode == 'extra';
+    hasDamaged = mode == 'damaged';
+    hasMismatched = mode == 'mismatched';
+    editUnitPrice = mode == 'price';
+
+    final remaining = product.remainingQuantity;
+    final defaultIssue = remaining > 1 ? 1 : remaining;
+    final defaultAccepted =
+        remaining > defaultIssue ? remaining - defaultIssue : 0;
+    switch (mode) {
+      case 'missing':
+        acceptedController.text = _qty(defaultAccepted);
+        missingController.text = _qty(defaultIssue);
+        break;
+      case 'damaged':
+        acceptedController.text = _qty(defaultAccepted);
+        damagedController.text = _qty(defaultIssue);
+        break;
+      case 'mismatched':
+        acceptedController.text = _qty(defaultAccepted);
+        mismatchedController.text = _qty(defaultIssue);
+        break;
+      case 'extra':
+        acceptedController.text = _qty(remaining);
+        extraController.text = '1';
+        break;
+      default:
+        acceptedController.text = _qty(remaining);
+        break;
+    }
+  }
+
+  void clearReview() {
+    mode = 'normal';
+    deliveredNowController.clear();
+    acceptedController.clear();
+    missingController.clear();
+    extraController.clear();
+    damagedController.clear();
+    mismatchedController.clear();
+    reasonController.clear();
+    notesController.clear();
+    unitPriceController.text = product.price;
+    hasExtra = false;
+    hasDamaged = false;
+    hasMismatched = false;
+    editUnitPrice = false;
+  }
+
+  void applyFrom(PurchaseReceivingRowModel other) {
+    mode = other.mode;
+    deliveredNowController.text = other.deliveredNowController.text;
+    acceptedController.text = other.acceptedController.text;
+    missingController.text = other.missingController.text;
+    extraController.text = other.extraController.text;
+    damagedController.text = other.damagedController.text;
+    mismatchedController.text = other.mismatchedController.text;
+    unitPriceController.text = other.unitPriceController.text;
+    reasonController.text = other.reasonController.text;
+    notesController.text = other.notesController.text;
+    hasExtra = other.hasExtra;
+    hasDamaged = other.hasDamaged;
+    hasMismatched = other.hasMismatched;
+    editUnitPrice = other.editUnitPrice;
   }
 
   Map<String, dynamic> toApiMap() {
-    final effectiveAccepted = hasDeliveredEntry ? autoAccepted : accepted;
-    final effectiveMissing = hasDeliveredEntry ? autoMissing : missing;
     return {
       'bill_item_id': product.billItemId,
-      'accepted_quantity': effectiveAccepted,
-      'missing_quantity': effectiveMissing,
+      'accepted_quantity': accepted,
+      'missing_quantity': autoMissing,
       'extra_quantity': effectiveExtra,
-      'damaged_quantity': hasDamaged ? damaged : 0,
-      'mismatched_quantity': hasMismatched ? mismatched : 0,
+      'damaged_quantity': mode == 'damaged' ? damaged : 0,
+      'mismatched_quantity': mode == 'mismatched' ? mismatched : 0,
       'unit_price': unitPriceController.text.trim(),
       if (reasonController.text.trim().isNotEmpty)
         'reason': reasonController.text.trim(),
@@ -2505,6 +2580,9 @@ class PurchaseReceivingRowModel {
   num _num(TextEditingController controller) {
     return num.tryParse(controller.text.trim()) ?? 0;
   }
+
+  String _qty(num value) =>
+      value % 1 == 0 ? value.toInt().toString() : value.toString();
 
   void setIssueEnabled(String type, bool enabled) {
     switch (type) {
