@@ -60,7 +60,7 @@ class BoxesScreen extends GetView<BoxesController> {
           ),
           IconButton(
             tooltip: 'الصناديق اليومية',
-            onPressed: () => Get.toNamed(AppRoutes.DAILYBOXESSCREEN),
+            onPressed: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
             icon: Icon(
               Icons.today_outlined,
               color: ThemeService.isDark.value
