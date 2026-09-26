@@ -382,8 +382,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     title == 'editSpecialTask'
                         ? controller.createSpecialTask(
                             context,
-                            specialTaskId: controller.specialTasksService
-                                .specialTaskDetails.value!.taskId,
+                            specialTaskId: controller.editSpecialTaskId ?? 0,
                           )
                         : controller.createTask(
                             context,

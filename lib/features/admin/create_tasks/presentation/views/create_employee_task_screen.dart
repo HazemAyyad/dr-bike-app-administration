@@ -416,10 +416,8 @@ class _StickySaveBar extends GetView<CreateTaskController> {
                       if (isSpecialTask) {
                         controller.createSpecialTask(
                           context,
-                          specialTaskId: isEdit
-                              ? controller.specialTasksService
-                                  .specialTaskDetails.value!.taskId
-                              : 0,
+                          specialTaskId:
+                              isEdit ? controller.editSpecialTaskId ?? 0 : 0,
                         );
                       } else if (isEdit) {
                         controller.createTask(

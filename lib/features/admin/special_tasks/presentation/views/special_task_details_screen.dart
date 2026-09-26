@@ -55,11 +55,16 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                 minimumSize: Size(0, 36.h),
               ),
               onPressed: () {
+                final details =
+                    controller.specialTasksService.specialTaskDetails.value;
+                if (details == null) return;
                 Get.toNamed(
                   AppRoutes.CREATETASKSCREEN,
                   arguments: {
                     'title': 'editSpecialTask',
                     'isEdit': true,
+                    'specialTaskId': details.taskId,
+                    'specialTaskDetails': details,
                   },
                 );
               },

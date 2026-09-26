@@ -18,6 +18,7 @@ import '../../../employee_section/presentation/controllers/employee_service.dart
 import '../../../employee_tasks/presentation/controllers/employee_task_service.dart';
 import '../../../special_tasks/presentation/controllers/special_tasks_controller.dart';
 import '../../../special_tasks/presentation/controllers/special_tasks_service.dart';
+import '../../../special_tasks/domain/entities/special_task_details_entities.dart';
 import '../../domain/usecases/creat_special_tasks_usecase.dart';
 import '../../domain/usecases/create_task_usecase.dart';
 import '../../../employee_tasks/domain/entities/task_details_entiny.dart';
@@ -29,6 +30,7 @@ import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../widgets/horizontal_time_picker_sheet.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class CreateTaskController extends GetxController {
   CreateTaskUsecase createTaskUsecase;
   GetAllEmployeeUsecase getAllEmployeeUsecase;
@@ -872,8 +874,21 @@ class CreateTaskController extends GetxController {
 
   // دالة لإنشاء المهمة خاصة
   void createSpecialTask(BuildContext context, {int specialTaskId = 0}) async {
+    if (isEdit &&
+        title == 'editSpecialTask' &&
+        (editSpecialTaskId == null || specialTaskId != editSpecialTaskId)) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message:
+            'تعذر تحديد المهمة المراد تعديلها. أغلق الشاشة وافتح المهمة مجدداً.',
+      );
+      return;
+    }
     if (formKey.currentState!.validate()) {
-      _initSpecialTaskDefaultEndDate();
+      if (!isEdit && !_endManuallyChanged) {
+        _initSpecialTaskDefaultEndDate();
+      }
       _mergeStartDateTime();
       _mergeEndDateTime();
       if (!_ensureEndAfterStart()) {
@@ -1025,12 +1040,22 @@ class CreateTaskController extends GetxController {
 
   final bool isEdit = Get.arguments?['isEdit'] == true;
   final String title = Get.arguments?['title']?.toString() ?? '';
+  final int? editSpecialTaskId = int.tryParse(
+    Get.arguments?['specialTaskId']?.toString() ?? '',
+  );
+  final SpecialTaskDetailsEntities? editSpecialTaskSnapshot =
+      Get.arguments?['specialTaskDetails'] is SpecialTaskDetailsEntities
+          ? Get.arguments!['specialTaskDetails'] as SpecialTaskDetailsEntities
+          : null;
   final bool isOpenedFromHomeWidget = Get.arguments?['fromHomeWidget'] == true;
   bool get isSpecialTaskFlow =>
       title == 'addNewPravateTask' || title == 'editSpecialTask';
 
   void updateSpecialTask() {
-    final data = specialTasksService.specialTaskDetails.value!;
+    final data = editSpecialTaskSnapshot;
+    if (data == null || data.taskId != editSpecialTaskId) {
+      return;
+    }
     taskNameController.text = data.taskName;
     taskDescriptionController.text = data.taskDescription;
     taskNotesController.text = data.notes;
