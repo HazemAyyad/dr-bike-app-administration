@@ -109,6 +109,7 @@ class BillProductModel {
   final int billId;
   final String productId;
   final String productName;
+  final String productCode;
   final String sizeId;
   final String sizeColorId;
   final String sizeLabel;
@@ -134,6 +135,7 @@ class BillProductModel {
     required this.billId,
     required this.productId,
     required this.productName,
+    required this.productCode,
     required this.sizeId,
     required this.sizeColorId,
     required this.sizeLabel,
@@ -162,6 +164,7 @@ class BillProductModel {
       billId: asInt(j['bill_id']),
       productId: asString(j['product_id']),
       productName: asString(j['product_name']),
+      productCode: asString(j['product_code']),
       sizeId: asString(j['size_id']),
       sizeColorId: asString(j['size_color_id']),
       sizeLabel: asString(j['size_label']),
@@ -193,6 +196,7 @@ class BillProductModel {
       'bill_id': billId,
       'product_id': productId,
       'product_name': productName,
+      'product_code': productCode,
       'size_id': sizeId,
       'size_color_id': sizeColorId,
       'size_label': sizeLabel,

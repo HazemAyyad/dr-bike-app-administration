@@ -592,21 +592,17 @@ class _PurchaseInvoicePrintActions extends GetView<BillsController> {
           ),
           IconButton(
             tooltip: 'حفظ PDF',
-            onPressed: () => controller.getBillDetails(
-              context: context,
-              billId: details.billId.toString(),
-              isDownload: true,
-            ),
+            onPressed: () => controller.saveShownPurchaseBillPdf(context),
             icon: const Icon(Icons.file_download_outlined),
           ),
           IconButton(
             tooltip: 'pdf'.tr,
-            onPressed: controller.shareShownPurchaseBillPdf,
+            onPressed: () => controller.shareShownPurchaseBillPdf(context),
             icon: const Icon(Icons.picture_as_pdf_outlined),
           ),
           IconButton(
             tooltip: 'print'.tr,
-            onPressed: controller.printShownPurchaseBillPdf,
+            onPressed: () => controller.printShownPurchaseBillPdf(context),
             icon: const Icon(Icons.print_outlined),
           ),
         ],

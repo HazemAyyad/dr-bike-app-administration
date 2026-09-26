@@ -27,6 +27,7 @@ import '../../domain/usecases/bills_usecases/add_bill_usecase.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/get_billt_details_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
+import '../utils/purchase_invoice_pdf_builder.dart';
 import 'buying_serves.dart';
 import 'purchase_orders_controller.dart';
 import 'return_purchases_controller.dart';
@@ -969,15 +970,39 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     return 'purchase_invoice_${id}_$safeSeller.pdf';
   }
 
-  Future<Uint8List?> fetchPurchaseBillPdfBytes(String billId) async {
+  Future<bool?> _choosePurchaseInvoiceImageMode(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('صور المنتجات'),
+        content: const Text('اختر نسخة الفاتورة المطلوبة.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('بدون صور'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            icon: const Icon(Icons.image_outlined),
+            label: const Text('مع الصور'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<Uint8List?> _buildShownPurchaseBillPdf(
+    BuildContext context,
+  ) async {
+    final details = billDetails;
+    if (details == null) return null;
+    final includeImages = await _choosePurchaseInvoiceImageMode(context);
+    if (includeImages == null) return null;
     try {
-      final response = await getBilltDetailsUsecase.call(
-        billId: billId,
-        isDownload: true,
+      return await PurchaseInvoicePdfBuilder.build(
+        details,
+        includeProductImages: includeImages,
       );
-      if (response is Uint8List) return response;
-      if (response is List<int>) return Uint8List.fromList(response);
-      return null;
     } catch (e) {
       AppFailureNotice.show(
         title: 'error'.tr,
@@ -987,23 +1012,45 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
-  Future<void> shareShownPurchaseBillPdf() async {
-    final details = billDetails;
-    if (details == null) return;
-    final bytes = await fetchPurchaseBillPdfBytes(details.billId.toString());
+  Future<void> shareShownPurchaseBillPdf(BuildContext context) async {
+    final bytes = await _buildShownPurchaseBillPdf(context);
     if (bytes == null) return;
     await Printing.sharePdf(bytes: bytes, filename: purchaseBillPdfFileName);
   }
 
-  Future<void> printShownPurchaseBillPdf() async {
-    final details = billDetails;
-    if (details == null) return;
-    final bytes = await fetchPurchaseBillPdfBytes(details.billId.toString());
+  Future<void> printShownPurchaseBillPdf(BuildContext context) async {
+    final bytes = await _buildShownPurchaseBillPdf(context);
     if (bytes == null) return;
     await Printing.layoutPdf(
       name: purchaseBillPdfFileName,
       onLayout: (_) async => bytes,
     );
+  }
+
+  Future<void> saveShownPurchaseBillPdf(BuildContext context) async {
+    final bytes = await _buildShownPurchaseBillPdf(context);
+    if (bytes == null) return;
+    try {
+      late Directory directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download/Doctor Bike/PDF');
+      } else {
+        final appDocDir = await getApplicationDocumentsDirectory();
+        directory = Directory('${appDocDir.path}/Doctor Bike/PDF');
+      }
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      final filePath = '${directory.path}/$purchaseBillPdfFileName';
+      await File(filePath).writeAsBytes(bytes);
+      AppSuccessNotice.show(
+        title: 'fileDownloadedSuccessfully'.tr,
+        message: filePath,
+      );
+      await OpenFilex.open(filePath);
+    } catch (e) {
+      AppFailureNotice.show(title: 'error'.tr, message: e.toString());
+    }
   }
 
   Future<void> getBillDetails({
