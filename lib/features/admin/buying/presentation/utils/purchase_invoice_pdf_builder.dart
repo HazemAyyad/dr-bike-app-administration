@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -9,6 +8,7 @@ import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/bills_models/bills_details_model.dart';
+import 'purchase_status_labels.dart';
 
 /// Builds purchase invoices with the same local pdf/printing mechanism and
 /// visual language used by the sales invoice.
@@ -138,8 +138,11 @@ class PurchaseInvoicePdfBuilder {
               ['رقم الفاتورة', '${invoice.billId}'],
               ['التاريخ', invoice.createdAt],
               ['المورد', invoice.sellerName],
-              ['حالة الدفع', invoice.paymentStatus.tr],
-              ['حالة المشتريات', invoice.workflowStatus.tr],
+              ['حالة الدفع', purchasePaymentStatusLabel(invoice.paymentStatus)],
+              [
+                'حالة المشتريات',
+                purchaseWorkflowLabel(invoice.workflowStatus),
+              ],
             ],
           ),
           pw.SizedBox(height: 12),
@@ -150,6 +153,12 @@ class PurchaseInvoicePdfBuilder {
             bold: bold,
             includeProductImages: includeProductImages,
           ),
+          if (invoice.payments.isNotEmpty) ...[
+            pw.SizedBox(height: 14),
+            pw.Text('الدفعات', style: pw.TextStyle(font: bold, fontSize: 12)),
+            pw.SizedBox(height: 5),
+            _paymentsTable(invoice.payments, regular: regular, bold: bold),
+          ],
           pw.SizedBox(height: 12),
           pw.Align(
             alignment: pw.Alignment.centerRight,
@@ -167,12 +176,6 @@ class PurchaseInvoicePdfBuilder {
               ),
             ),
           ),
-          if (invoice.payments.isNotEmpty) ...[
-            pw.SizedBox(height: 14),
-            pw.Text('الدفعات', style: pw.TextStyle(font: bold, fontSize: 12)),
-            pw.SizedBox(height: 5),
-            _paymentsTable(invoice.payments, regular: regular, bold: bold),
-          ],
         ],
       ),
     );
@@ -395,7 +398,8 @@ class PurchaseInvoicePdfBuilder {
               _cell(payment.note.isEmpty ? '-' : payment.note, font: regular),
               _cell(payment.boxName.isEmpty ? '-' : payment.boxName,
                   font: regular),
-              _cell(payment.paymentType.tr, font: regular),
+              _cell(purchasePaymentTypeLabel(payment.paymentType),
+                  font: regular),
               _cell(payment.paidAt, font: regular),
               _amount(payment.amount, font: regular),
             ]),
