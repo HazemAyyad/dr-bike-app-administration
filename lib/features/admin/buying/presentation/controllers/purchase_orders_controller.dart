@@ -33,6 +33,8 @@ class PurchaseOrdersController extends GetxController {
     'unprocessed',
     'not_matched',
     'awaiting_approval',
+    'unpaid',
+    'partially_paid',
     'completed',
     'deposits',
   ];
@@ -154,16 +156,32 @@ class PurchaseOrdersController extends GetxController {
         debugScope: 'PurchaseOrdersController.completed',
         fallback: [
           ...BuyingServes().awaitingApprovalTasks.values.expand((e) => e),
+          ...BuyingServes().unpaidTasks.values.expand((e) => e),
+          ...BuyingServes().partiallyPaidTasks.values.expand((e) => e),
           ...BuyingServes().completedTasks.values.expand((e) => e),
         ],
       );
       BuyingServes().awaitingApprovalTasks.value = groupByDate(
         completedList.where((bill) => bill.isAwaitingApproval).toList(),
       );
+      final finalizedList = completedList
+          .where(
+            (bill) =>
+                !bill.isAwaitingApproval && bill.workflowStatus != 'cancelled',
+          )
+          .toList();
+      BuyingServes().unpaidTasks.value = groupByDate(
+        finalizedList.where((bill) => bill.needsFullPayment).toList(),
+      );
+      BuyingServes().partiallyPaidTasks.value = groupByDate(
+        finalizedList.where((bill) => bill.needsPartialPayment).toList(),
+      );
       BuyingServes().completedTasks.value = groupByDate(
-        completedList.where((bill) => !bill.isAwaitingApproval).toList(),
+        finalizedList.where((bill) => bill.isPaymentComplete).toList(),
       );
       awaitingApprovalSearch.assignAll(BuyingServes().awaitingApprovalTasks);
+      unpaidSearch.assignAll(BuyingServes().unpaidTasks);
+      partiallyPaidSearch.assignAll(BuyingServes().partiallyPaidTasks);
       completedSearch.assignAll(BuyingServes().completedTasks);
 
       final depositsList = await _loadBillPageSafely(
@@ -418,6 +436,8 @@ class PurchaseOrdersController extends GetxController {
   final unprocessedSearch = <String, List<BillDataModel>>{}.obs;
   final notMatchedSearch = <String, List<BillDataModel>>{}.obs;
   final awaitingApprovalSearch = <String, List<BillDataModel>>{}.obs;
+  final unpaidSearch = <String, List<BillDataModel>>{}.obs;
+  final partiallyPaidSearch = <String, List<BillDataModel>>{}.obs;
   final completedSearch = <String, List<BillDataModel>>{}.obs;
   final depositsSearch = <String, List<BillDataModel>>{}.obs;
 
@@ -428,6 +448,8 @@ class PurchaseOrdersController extends GetxController {
       unprocessedSearch,
       notMatchedSearch,
       awaitingApprovalSearch,
+      unpaidSearch,
+      partiallyPaidSearch,
       completedSearch,
       depositsSearch,
     ]) {
@@ -463,6 +485,10 @@ class PurchaseOrdersController extends GetxController {
       case 3:
         return awaitingApprovalSearch;
       case 4:
+        return unpaidSearch;
+      case 5:
+        return partiallyPaidSearch;
+      case 6:
         return completedSearch;
       default:
         return depositsSearch;
@@ -479,8 +505,12 @@ class PurchaseOrdersController extends GetxController {
                 : index == 3
                     ? awaitingApprovalSearch
                     : index == 4
-                        ? completedSearch
-                        : depositsSearch;
+                        ? unpaidSearch
+                        : index == 5
+                            ? partiallyPaidSearch
+                            : index == 6
+                                ? completedSearch
+                                : depositsSearch;
     return groups.values
         .expand((bills) => bills)
         .map((bill) => bill.id)
@@ -494,6 +524,8 @@ class PurchaseOrdersController extends GetxController {
       unprocessedSearch,
       notMatchedSearch,
       awaitingApprovalSearch,
+      unpaidSearch,
+      partiallyPaidSearch,
       completedSearch,
       depositsSearch,
     ]) {
@@ -547,6 +579,26 @@ class PurchaseOrdersController extends GetxController {
         }).where((entry) => entry.value.isNotEmpty),
       );
 
+      unpaidSearch.value = Map.fromEntries(
+        BuyingServes().unpaidTasks.entries.map((entry) {
+          final filteredBills = entry.value
+              .where((bill) =>
+                  bill.seller.toLowerCase().contains(value.toLowerCase()))
+              .toList();
+          return MapEntry(entry.key, filteredBills);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+
+      partiallyPaidSearch.value = Map.fromEntries(
+        BuyingServes().partiallyPaidTasks.entries.map((entry) {
+          final filteredBills = entry.value
+              .where((bill) =>
+                  bill.seller.toLowerCase().contains(value.toLowerCase()))
+              .toList();
+          return MapEntry(entry.key, filteredBills);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+
       completedSearch.value = Map.fromEntries(
         BuyingServes().completedTasks.entries.map((entry) {
           final filteredBills = entry.value
@@ -570,6 +622,8 @@ class PurchaseOrdersController extends GetxController {
       unprocessedSearch.assignAll(BuyingServes().unprocessedTasks);
       notMatchedSearch.assignAll(BuyingServes().notMatchedTasks);
       awaitingApprovalSearch.assignAll(BuyingServes().awaitingApprovalTasks);
+      unpaidSearch.assignAll(BuyingServes().unpaidTasks);
+      partiallyPaidSearch.assignAll(BuyingServes().partiallyPaidTasks);
       completedSearch.assignAll(BuyingServes().completedTasks);
       depositsSearch.assignAll(BuyingServes().depositsTasks);
     }
@@ -582,6 +636,8 @@ class PurchaseOrdersController extends GetxController {
     unprocessedSearch.assignAll(BuyingServes().unprocessedTasks);
     notMatchedSearch.assignAll(BuyingServes().notMatchedTasks);
     awaitingApprovalSearch.assignAll(BuyingServes().awaitingApprovalTasks);
+    unpaidSearch.assignAll(BuyingServes().unpaidTasks);
+    partiallyPaidSearch.assignAll(BuyingServes().partiallyPaidTasks);
     completedSearch.assignAll(BuyingServes().completedTasks);
     depositsSearch.assignAll(BuyingServes().depositsTasks);
     super.onInit();

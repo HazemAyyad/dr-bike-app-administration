@@ -276,10 +276,9 @@ class _PurchaseBillCard extends GetView<BillsController> {
                     _approvalAction(context),
                   if (bill.isAwaitingApproval &&
                       canManagePurchases &&
-                      page != '1' &&
                       bill.canQuickPay)
                     SizedBox(width: 3.w),
-                  if (page != '1' && bill.canQuickPay)
+                  if (bill.canQuickPay)
                     _paymentAction(context)
                   else if (!bill.isAwaitingApproval &&
                       bill.paymentStatus == 'paid')

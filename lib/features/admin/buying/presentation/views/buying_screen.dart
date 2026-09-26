@@ -582,6 +582,16 @@ class _PurchaseOrderIconTabs extends StatelessWidget {
       color: Colors.indigo,
     ),
     _StatusTabItem.named(
+      label: 'غير مدفوعة',
+      icon: Icons.money_off_outlined,
+      color: Colors.red,
+    ),
+    _StatusTabItem.named(
+      label: 'مدفوعة جزئياً',
+      icon: Icons.payments_outlined,
+      color: Colors.orange,
+    ),
+    _StatusTabItem.named(
       label: 'المكتملة',
       icon: Icons.check_circle_outline,
       color: Colors.green,
@@ -851,11 +861,11 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
                       bills: bills,
                       page: current <= 1
                           ? '2'
-                          : current == 3 || current == 4
-                              ? '1'
-                              : current == 2
-                                  ? '3'
-                                  : '4',
+                          : current == 2
+                              ? '3'
+                              : current == 7
+                                  ? '4'
+                                  : '1',
                     );
                   },
                   childCount: months.length,
@@ -892,6 +902,20 @@ class _PurchaseOrdersEntryTab extends GetView<PurchaseOrdersController> {
           color: Colors.indigo,
           icon: Icons.fact_check_outlined,
           groups: controller.awaitingApprovalSearch,
+          page: '1',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'فواتير غير مدفوعة',
+          color: Colors.red,
+          icon: Icons.money_off_outlined,
+          groups: controller.unpaidSearch,
+          page: '1',
+        ),
+        _BuyingListSection<BillDataModel>(
+          title: 'فواتير مدفوعة جزئياً',
+          color: Colors.orange,
+          icon: Icons.payments_outlined,
+          groups: controller.partiallyPaidSearch,
           page: '1',
         ),
         _BuyingListSection<BillDataModel>(

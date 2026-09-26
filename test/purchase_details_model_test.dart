@@ -178,5 +178,53 @@ void main() {
 
       expect(bill.canQuickPay, isFalse);
     });
+
+    test('finalized unpaid invoice stays actionable until fully paid', () {
+      final bill = BillDataModel.fromJson({
+        'id': 74,
+        'workflow_status': 'finalized',
+        'payment_status': 'unpaid',
+        'final_total': 90,
+        'paid_amount': 0,
+        'remaining_amount': 90,
+      });
+
+      expect(bill.needsFullPayment, isTrue);
+      expect(bill.needsPartialPayment, isFalse);
+      expect(bill.isPaymentComplete, isFalse);
+      expect(bill.canQuickPay, isTrue);
+    });
+
+    test('finalized partially paid invoice stays actionable', () {
+      final bill = BillDataModel.fromJson({
+        'id': 75,
+        'workflow_status': 'finalized',
+        'payment_status': 'partially_paid',
+        'final_total': 90,
+        'paid_amount': 80,
+        'remaining_amount': 10,
+      });
+
+      expect(bill.needsFullPayment, isFalse);
+      expect(bill.needsPartialPayment, isTrue);
+      expect(bill.isPaymentComplete, isFalse);
+      expect(bill.canQuickPay, isTrue);
+    });
+
+    test('only invoice without remaining payment is complete', () {
+      final bill = BillDataModel.fromJson({
+        'id': 76,
+        'workflow_status': 'finalized',
+        'payment_status': 'paid',
+        'final_total': 90,
+        'paid_amount': 90,
+        'remaining_amount': 0,
+      });
+
+      expect(bill.needsFullPayment, isFalse);
+      expect(bill.needsPartialPayment, isFalse);
+      expect(bill.isPaymentComplete, isTrue);
+      expect(bill.canQuickPay, isFalse);
+    });
   });
 }

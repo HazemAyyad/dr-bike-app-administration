@@ -101,8 +101,17 @@ class BillDataModel {
 
   bool get canQuickPay =>
       workflowStatus != 'cancelled' &&
-      paymentStatus != 'paid' &&
       (double.tryParse(remainingAmount) ?? 0) > 0;
+
+  bool get needsFullPayment =>
+      canQuickPay && (double.tryParse(paidAmount) ?? 0) <= 0;
+
+  bool get needsPartialPayment =>
+      canQuickPay && (double.tryParse(paidAmount) ?? 0) > 0;
+
+  bool get isPaymentComplete =>
+      workflowStatus != 'cancelled' &&
+      (double.tryParse(remainingAmount) ?? 0) <= 0;
 
   bool get isAwaitingApproval =>
       workflowStatus == 'received' || workflowStatus == 'awaiting_finalization';
