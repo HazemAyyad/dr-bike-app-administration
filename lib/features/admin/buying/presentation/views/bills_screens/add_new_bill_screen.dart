@@ -286,14 +286,15 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
     if (Get.isRegistered<StockController>()) {
       Get.find<StockController>().prepareCreateProduct(fromPurchase: true);
     }
-    final result = await Get.toNamed<Map<String, dynamic>>(
+    final dynamic routeResult = await Get.toNamed<dynamic>(
       AppRoutes.EDITPRODUCTSCREEN,
       arguments: const <String, dynamic>{
         'createProduct': true,
         'purchaseFlow': true,
       },
     );
-    if (!mounted || result == null) return;
+    if (!mounted || routeResult is! Map) return;
+    final result = Map<String, dynamic>.from(routeResult);
 
     final productId = result['product_id']?.toString();
     if (productId == null || productId.isEmpty) return;
@@ -442,38 +443,6 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
                             ),
                             onChanged:
                                 controller.onPurchaseProductSearchChanged,
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        GetBuilder<BillsController>(
-                          builder: (controller) => SizedBox(
-                            height: 48.h,
-                            width: 48.h,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                ),
-                              ),
-                              onPressed: () => _showSourceSheet(context),
-                              child: controller.purchaseSourcesStatus.value ==
-                                      PurchaseLoadStatus.loading
-                                  ? SizedBox(
-                                      width: 18.w,
-                                      height: 18.w,
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Icon(
-                                      controller.selectedPurchaseSource.value ==
-                                              null
-                                          ? Icons.person_search_outlined
-                                          : Icons.person_pin_circle_outlined,
-                                      size: 22.sp,
-                                    ),
-                            ),
                           ),
                         ),
                       ],
@@ -991,7 +960,7 @@ class _PurchasePaymentSection extends GetView<BillsController> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'طريقة الدفع',
+          'الدفعة الأولية (اختياري)',
           textAlign: TextAlign.right,
           style: TextStyle(
             color: AppColors.primaryColor,
@@ -1035,11 +1004,20 @@ class _PurchasePaymentSection extends GetView<BillsController> {
         ),
         SizedBox(height: 12.h),
         CustomTextField(
-          label: 'قيمة المبلغ المدفوع',
+          label: 'قيمة الدفعة الأولية',
           hintText: '0',
           controller: controller.purchasePaymentAmountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (_) => controller.update(),
+        ),
+        SizedBox(height: 5.h),
+        Text(
+          'تُسجل على فاتورة الشراء نفسها وتظهر ضمن المدفوع والمتبقي.',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 10.sp,
+          ),
         ),
       ],
     );

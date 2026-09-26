@@ -28,6 +28,7 @@ import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/get_billt_details_usecase.dart';
 import '../../domain/usecases/purchase_workflow_usecase.dart';
 import 'buying_serves.dart';
+import 'purchase_orders_controller.dart';
 import 'return_purchases_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
@@ -854,7 +855,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (isEditingPurchase) {
       await updatePurchaseDraft(context);
     } else {
-      addBill(context);
+      await addBill(context);
     }
   }
 
@@ -938,6 +939,24 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
 
     isLoading(false);
     update();
+  }
+
+  Future<void> refreshBuyingLists() async {
+    final refreshes = <Future<void>>[getBills()];
+    if (Get.isRegistered<PurchaseOrdersController>()) {
+      refreshes.add(Get.find<PurchaseOrdersController>().getBills());
+    }
+    if (Get.isRegistered<ReturnPurchasesController>()) {
+      refreshes.add(Get.find<ReturnPurchasesController>().getReturnBills());
+    }
+    try {
+      await Future.wait(refreshes);
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('BillsController.refreshBuyingLists failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
   }
 
   // get bill details
@@ -1244,19 +1263,19 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       total: totalCost.value.toString(),
       notes: purchaseNotesController.text.trim(),
     );
-    result.fold(
-      (failure) => Helpers.showCustomDialogError(
+    await result.fold<Future<void>>(
+      (failure) async => Helpers.showCustomDialogError(
         context: context,
         title: failure.errMessage,
         message: failure.data['message']?.toString() ?? failure.errMessage,
       ),
-      (success) {
+      (success) async {
         editingPurchaseBillId.value = null;
         _clearPurchaseEditor();
-        getBills();
+        await refreshBuyingLists();
+        if (!context.mounted) return;
         Get.offNamed(AppRoutes.BUYINGSCREEN);
-        Helpers.showCustomDialogSuccess(
-          context: context,
+        AppSuccessNotice.show(
           title: 'success'.tr,
           message: success,
         );
@@ -1274,17 +1293,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     final result = await purchaseWorkflowUsecase.deleteDraft(
       billId: details.billId.toString(),
     );
-    result.fold(
-      (failure) => Helpers.showCustomDialogError(
+    await result.fold<Future<void>>(
+      (failure) async => Helpers.showCustomDialogError(
         context: context,
         title: failure.errMessage,
         message: failure.data['message']?.toString() ?? failure.errMessage,
       ),
-      (success) {
-        getBills();
+      (success) async {
+        await refreshBuyingLists();
+        if (!context.mounted) return;
         Get.offNamed(AppRoutes.BUYINGSCREEN);
-        Helpers.showCustomDialogSuccess(
-          context: context,
+        AppSuccessNotice.show(
           title: 'success'.tr,
           message: success,
         );
@@ -1309,7 +1328,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   // add bill
-  void addBill(BuildContext context) async {
+  Future<void> addBill(BuildContext context) async {
     isAddLoading(true);
     final result = await addBillUsecase.call(
       page: isaddNewBill,
@@ -1323,38 +1342,36 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       boxId: selectedPurchaseBox.value?.boxId.toString(),
     );
 
-    result.fold((failure) {
+    await result.fold<Future<void>>((failure) async {
       Helpers.showCustomDialogError(
         context: context,
         title: failure.errMessage,
         message: failure.data['message'],
       );
-    }, (success) {
-      Future.delayed(const Duration(seconds: 1), () {
-        sellerIdController.clear();
-        customerIdController.clear();
-        discountController.clear();
-        purchaseNotesController.clear();
-        purchasePaymentAmountController.clear();
-        purchasePaymentNoteController.clear();
-        selectedPurchaseSource.value = null;
-        for (final item in purchaseCart) {
-          item.dispose();
-        }
-        purchaseCart.clear();
-        totalCost.value = 0;
-        billModel.map((e) => e.productIdController.clear()).toList();
-        billModel.map((e) => e.quantityController.clear()).toList();
-        billModel.map((e) => e.priceController.clear()).toList();
-        Get.offNamed(AppRoutes.BUYINGSCREEN);
-      });
-      getBills();
-      Get.find<ReturnPurchasesController>().getReturnBills();
+    }, (success) async {
+      sellerIdController.clear();
+      customerIdController.clear();
+      discountController.clear();
+      purchaseNotesController.clear();
+      purchasePaymentAmountController.clear();
+      purchasePaymentNoteController.clear();
+      selectedPurchaseSource.value = null;
+      for (final item in purchaseCart) {
+        item.dispose();
+      }
+      purchaseCart.clear();
+      totalCost.value = 0;
+      billModel.map((e) => e.productIdController.clear()).toList();
+      billModel.map((e) => e.quantityController.clear()).toList();
+      billModel.map((e) => e.priceController.clear()).toList();
+      await refreshBuyingLists();
+      if (!context.mounted) return;
       Helpers.showCustomDialogSuccess(
         context: context,
         title: 'success'.tr,
         message: success,
       );
+      Get.offNamed(AppRoutes.BUYINGSCREEN);
     });
 
     isAddLoading(false);
@@ -1578,7 +1595,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }) async {
     final details = billDetails;
     if (details == null) return false;
-    return _runWorkflowAction(
+    final ok = await _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.pay(
         billId: details.billId.toString(),
@@ -1589,6 +1606,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       ),
       showSuccess: showSuccess,
     );
+    if (ok) preparePaymentAmount();
+    return ok;
   }
 
   Future<bool> payPurchaseBillFromList(
@@ -1642,7 +1661,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       },
     );
     if (ok) {
-      await getBills();
+      preparePaymentAmount();
+      await refreshBuyingLists();
     }
     isWorkflowLoading(false);
     update();
@@ -1717,7 +1737,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         .toList();
     final evidenceFiles = await _buildPaymentEvidenceMultipart(context);
     if (!context.mounted) return false;
-    return _runWorkflowAction(
+    final ok = await _runWorkflowAction(
       context,
       purchaseWorkflowUsecase.paySupplierAccount(
         sellerId: sellerId,
@@ -1731,6 +1751,8 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       ),
       showSuccess: false,
     );
+    if (ok) preparePaymentAmount();
+    return ok;
   }
 
   Future<void> loadPurchaseTimeline(String billId) async {
@@ -1987,7 +2009,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
           billId: billDetails!.billId.toString(),
         );
       }
-      await getBills();
+      await refreshBuyingLists();
     }
     isWorkflowLoading(false);
     update();

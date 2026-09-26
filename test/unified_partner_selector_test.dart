@@ -104,6 +104,44 @@ void main() {
     expect(selected, same(seller));
     expect(selectedIsSeller, isTrue);
   });
+
+  testWidgets('keeps results selectable during a slow touch', (tester) async {
+    const seller = _Partner(41, 'مورد بطيء');
+    _Partner? selected;
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          home: Scaffold(
+            body: UnifiedPartnerSelector<_Partner>(
+              customers: const [],
+              sellers: const [seller],
+              selected: selected,
+              selectedIsSeller: true,
+              idOf: (partner) => partner.id,
+              nameOf: (partner) => partner.name,
+              phoneOf: (partner) => partner.phone,
+              onSelected: (partner, _) => selected = partner,
+              onCleared: () => selected = null,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextFormField));
+    await tester.pump();
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('مورد بطيء')),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+
+    expect(selected, same(seller));
+  });
 }
 
 class _Partner {

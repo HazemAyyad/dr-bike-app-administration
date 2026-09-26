@@ -11,7 +11,6 @@ import '../../../../../../routes/app_routes.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../data/models/bills_models/bills_model.dart';
 import '../../controllers/bills_controller.dart';
-import '../../controllers/purchase_orders_controller.dart';
 import '../../utils/purchase_status_labels.dart';
 
 class BillsList extends GetView<BillsController> {
@@ -270,63 +269,86 @@ class _PurchaseBillCard extends GetView<BillsController> {
                 ),
               ),
               SizedBox(width: 3.w),
-              if (bill.canQuickPay)
-                Tooltip(
-                  message: 'تسجيل دفعة على الفاتورة',
-                  child: InkResponse(
-                    radius: 22.r,
-                    onTap: () => _showQuickPaymentSheet(context),
-                    child: Container(
-                      width: 31.w,
-                      height: 31.w,
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: .1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.payments_outlined,
-                        size: 17.sp,
-                        color: Colors.green.shade700,
-                      ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (bill.isAwaitingApproval && canManagePurchases)
+                    _approvalAction(context),
+                  if (bill.isAwaitingApproval &&
+                      canManagePurchases &&
+                      page != '1' &&
+                      bill.canQuickPay)
+                    SizedBox(width: 3.w),
+                  if (page != '1' && bill.canQuickPay)
+                    _paymentAction(context)
+                  else if (!bill.isAwaitingApproval &&
+                      bill.paymentStatus == 'paid')
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 19.sp,
+                      color: Colors.green.shade700,
+                    )
+                  else if (!bill.isAwaitingApproval)
+                    Icon(
+                      Icons.chevron_left_rounded,
+                      size: 17.sp,
+                      color: Colors.grey,
                     ),
-                  ),
-                )
-              else if (bill.canQuickFinalize && canManagePurchases)
-                Tooltip(
-                  message: 'اعتماد الفاتورة',
-                  child: InkResponse(
-                    radius: 22.r,
-                    onTap: () => _confirmQuickFinalize(context),
-                    child: Container(
-                      width: 31.w,
-                      height: 31.w,
-                      decoration: BoxDecoration(
-                        color: Colors.indigo.withValues(alpha: .1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.fact_check_outlined,
-                        size: 17.sp,
-                        color: Colors.indigo.shade700,
-                      ),
-                    ),
-                  ),
-                )
-              else if (bill.paymentStatus == 'paid')
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 19.sp,
-                  color: Colors.green.shade700,
-                )
-              else
-                Icon(Icons.chevron_left_rounded,
-                    size: 17.sp, color: Colors.grey),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _paymentAction(BuildContext context) => Tooltip(
+        message: 'تسجيل دفعة على الفاتورة',
+        child: InkResponse(
+          radius: 22.r,
+          onTap: () => _showQuickPaymentSheet(context),
+          child: Container(
+            width: 31.w,
+            height: 31.w,
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: .1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.payments_outlined,
+              size: 17.sp,
+              color: Colors.green.shade700,
+            ),
+          ),
+        ),
+      );
+
+  Widget _approvalAction(BuildContext context) => Tooltip(
+        message: bill.canQuickFinalize
+            ? 'اعتماد الفاتورة'
+            : 'عالج فروقات الاستلام قبل الاعتماد',
+        child: InkResponse(
+          radius: 22.r,
+          onTap: () => _confirmQuickFinalize(context),
+          child: Container(
+            width: 31.w,
+            height: 31.w,
+            decoration: BoxDecoration(
+              color: (bill.canQuickFinalize ? Colors.indigo : Colors.orange)
+                  .withValues(alpha: .1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.fact_check_outlined,
+              size: 17.sp,
+              color: bill.canQuickFinalize
+                  ? Colors.indigo.shade700
+                  : Colors.orange.shade800,
+            ),
+          ),
+        ),
+      );
 
   String _formatMoney(String value) {
     final amount = double.tryParse(value) ?? 0;
@@ -379,6 +401,24 @@ class _PurchaseBillCard extends GetView<BillsController> {
   }
 
   Future<void> _confirmQuickFinalize(BuildContext context) async {
+    if (!bill.canQuickFinalize) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('الفاتورة غير جاهزة للاعتماد'),
+          content: const Text(
+            'يوجد فرق أو ملاحظة غير معالجة في الاستلام. افتح الفاتورة وعالج الفروقات أولاً، وبعدها يمكنك اعتمادها.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('حسنًا'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -406,9 +446,6 @@ class _PurchaseBillCard extends GetView<BillsController> {
       billId: bill.id.toString(),
     );
     if (!ok || !context.mounted) return;
-    if (Get.isRegistered<PurchaseOrdersController>()) {
-      await Get.find<PurchaseOrdersController>().getBills();
-    }
     AppSuccessNotice.show(
       title: 'success'.tr,
       message: 'تم اعتماد فاتورة الشراء بنجاح.',
@@ -513,11 +550,6 @@ class _PurchaseBillCard extends GetView<BillsController> {
                               context,
                               bill: bill,
                             );
-                            if (ok &&
-                                Get.isRegistered<PurchaseOrdersController>()) {
-                              await Get.find<PurchaseOrdersController>()
-                                  .getBills();
-                            }
                             if (ok && sheetContext.mounted) {
                               Navigator.of(sheetContext).pop();
                             }

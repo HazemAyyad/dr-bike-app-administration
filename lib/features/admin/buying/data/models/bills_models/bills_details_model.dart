@@ -440,6 +440,9 @@ class PurchaseTimelineUiModel {
   final String action;
   final String title;
   final String description;
+  final String actorId;
+  final String actorName;
+  final String actorType;
   final String createdAt;
 
   PurchaseTimelineUiModel({
@@ -447,6 +450,9 @@ class PurchaseTimelineUiModel {
     required this.action,
     required this.title,
     required this.description,
+    required this.actorId,
+    required this.actorName,
+    required this.actorType,
     required this.createdAt,
   });
 
@@ -454,9 +460,12 @@ class PurchaseTimelineUiModel {
     final j = Map<String, dynamic>.from(json);
     return PurchaseTimelineUiModel(
       id: asInt(j['id']),
-      action: asString(j['action']),
+      action: asString(j['action'] ?? j['event']),
       title: asString(j['title']),
       description: asString(j['description']),
+      actorId: asString(j['actor_id'] ?? j['created_by']),
+      actorName: asString(j['actor_name']),
+      actorType: asString(j['actor_type']),
       createdAt: asString(j['created_at']),
     );
   }
@@ -466,6 +475,9 @@ class PurchaseTimelineUiModel {
         'action': action,
         'title': title,
         'description': description,
+        'actor_id': actorId,
+        'actor_name': actorName,
+        'actor_type': actorType,
         'created_at': createdAt,
       };
 }

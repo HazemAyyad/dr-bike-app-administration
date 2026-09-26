@@ -92,6 +92,9 @@ void main() {
             'action': 'purchase_received',
             'title': 'تم الاستلام',
             'description': 'تم تسجيل استلام جزئي',
+            'actor_id': 12,
+            'actor_name': 'موظف الاستلام',
+            'actor_type': 'employee',
             'created_at': '2026-08-23 10:20',
           }
         ],
@@ -114,6 +117,8 @@ void main() {
       expect(model.returns.single.items.single.productName, 'فحمات');
       expect(model.attachments.single.category, 'damaged_evidence');
       expect(model.timeline.single.action, 'purchase_received');
+      expect(model.timeline.single.actorId, '12');
+      expect(model.timeline.single.actorName, 'موظف الاستلام');
     });
 
     test('falls back to quantity when ordered quantity is missing', () {
@@ -145,7 +150,7 @@ void main() {
 
       expect(bill.isAwaitingApproval, isTrue);
       expect(bill.canQuickFinalize, isTrue);
-      expect(bill.canQuickPay, isFalse);
+      expect(bill.canQuickPay, isTrue);
     });
 
     test('received invoice with unresolved issues cannot be quick approved',
@@ -160,6 +165,18 @@ void main() {
 
       expect(bill.isAwaitingApproval, isTrue);
       expect(bill.canQuickFinalize, isFalse);
+      expect(bill.canQuickPay, isTrue);
+    });
+
+    test('cancelled invoice cannot be paid from its card', () {
+      final bill = BillDataModel.fromJson({
+        'id': 73,
+        'workflow_status': 'cancelled',
+        'payment_status': 'unpaid',
+        'remaining_amount': 200,
+      });
+
+      expect(bill.canQuickPay, isFalse);
     });
   });
 }

@@ -323,9 +323,12 @@ class _CompactReceivingPanel extends GetView<BillsController> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final ok =
-        await controller.finalizeShownPurchaseWithInitialPayment(context);
+    final ok = await controller.finalizeShownPurchase(context);
     if (!ok) return;
+    if (Get.isRegistered<PurchaseOrdersController>()) {
+      final purchaseOrders = Get.find<PurchaseOrdersController>();
+      purchaseOrders.changeTab(4);
+    }
     AppSuccessNotice.show(
       title: 'تم اعتماد الفاتورة',
       message: 'اكتملت متابعة فاتورة الشراء',
@@ -635,7 +638,8 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     final canFinalize = page != '1' &&
         details.workflowStatus != 'finalized' &&
         details.products.any((item) => item.receivedOwnedQuantity > 0);
-    final canPay = details.workflowStatus == 'finalized' &&
+    final canPay = page != '1' &&
+        details.workflowStatus != 'cancelled' &&
         details.paymentStatus != 'paid' &&
         (double.tryParse(details.remainingAmount) ?? 0) > 0;
     final totalOrdered = details.products.fold<num>(
@@ -731,15 +735,6 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
           ),
           onFinalize: () => _showFinalizationSheet(context),
         ),
-        if (details.workflowStatus != 'finalized' &&
-            details.paymentStatus != 'paid') ...[
-          SizedBox(height: 8.h),
-          const _InlineNotice(
-            icon: Icons.info_outline,
-            title:
-                'الدفع على الفاتورة يظهر بعد الاستلام والاعتماد. قبل الاعتماد استخدم دفعة على حساب المصدر إذا بدك تسجل مبلغ للمورد.',
-          ),
-        ],
         SizedBox(height: 10.h),
         _PurchaseDetailsSectionTabs(
           selected: _selectedSection,
@@ -755,27 +750,19 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
             totalRemaining: totalRemaining,
             issueItems: issueItems,
             onIssuesTap: () => setState(() => _selectedSection = 2),
-            onAccountPayment:
-                (details.sellerId.isNotEmpty || details.customerId.isNotEmpty)
-                    ? () => _showPurchasePaymentSheet(
-                          context,
-                          title: 'دفعة على حساب المصدر',
-                          primaryText: 'تسجيل الدفعة',
-                          initialAmount: details.remainingAmount == '0'
-                              ? ''
-                              : details.remainingAmount,
-                          showAllocations: true,
-                          attachmentCategory: 'account_payment_evidence',
-                          attachableType: 'purchase_account_payment',
-                          attachableId: details.sellerId.isNotEmpty
-                              ? details.sellerId
-                              : details.customerId,
-                          onSubmit: () =>
-                              controller.paySupplierAccountForShownSeller(
-                            context,
-                          ),
-                        )
-                    : null,
+            onInvoicePayment: canPay
+                ? () => _showPurchasePaymentSheet(
+                      context,
+                      title: 'دفعة على فاتورة PUR-${details.billId}',
+                      primaryText: 'تسجيل الدفعة',
+                      initialAmount: details.remainingAmount,
+                      attachmentCategory: 'purchase_payment_evidence',
+                      attachableType: 'bill',
+                      attachableId: details.billId.toString(),
+                      onSubmit: () =>
+                          controller.submitShownPurchasePayment(context),
+                    )
+                : null,
           ),
         if (_selectedSection == 1) ...[
           Row(
@@ -1044,12 +1031,15 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                     ? null
                     : () async {
                         final ok = await controller
-                            .finalizeShownPurchaseWithInitialPayment(
-                          sheetContext,
-                        );
+                            .finalizeShownPurchase(sheetContext);
                         if (!sheetContext.mounted) return;
                         if (!ok) return;
                         Navigator.of(sheetContext).pop();
+                        if (Get.isRegistered<PurchaseOrdersController>()) {
+                          final purchaseOrders =
+                              Get.find<PurchaseOrdersController>();
+                          purchaseOrders.changeTab(4);
+                        }
                         AppSuccessNotice.show(
                           title: 'success'.tr,
                           message: 'تم اعتماد الفاتورة بنجاح',
@@ -1111,6 +1101,13 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                 final description = event['description']?.toString() ?? '';
                 final createdAt = event['created_at']?.toString() ?? '';
                 final sourceType = event['source_type']?.toString() ?? '';
+                final actorName = event['actor_name']?.toString().trim() ?? '';
+                final actorId = event['actor_id']?.toString().trim() ?? '';
+                final actorLabel = actorName.isNotEmpty
+                    ? actorName
+                    : actorId.isNotEmpty
+                        ? 'مستخدم #$actorId'
+                        : 'النظام';
                 return Container(
                   padding: EdgeInsets.all(10.w),
                   decoration: BoxDecoration(
@@ -1141,6 +1138,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                       SizedBox(height: 6.h),
                       _MutedText(
                         text: [
+                          'نفذها: $actorLabel',
                           if (createdAt.isNotEmpty) createdAt,
                           if (sourceType.isNotEmpty) sourceType,
                         ].join(' • '),
@@ -2101,7 +2099,7 @@ class _SummaryTab extends StatelessWidget {
     required this.totalRemaining,
     required this.issueItems,
     required this.onIssuesTap,
-    required this.onAccountPayment,
+    required this.onInvoicePayment,
   });
 
   final BillDetailsModel details;
@@ -2111,7 +2109,7 @@ class _SummaryTab extends StatelessWidget {
   final num totalRemaining;
   final List<BillProductModel> issueItems;
   final VoidCallback onIssuesTap;
-  final VoidCallback? onAccountPayment;
+  final VoidCallback? onInvoicePayment;
 
   @override
   Widget build(BuildContext context) {
@@ -2154,14 +2152,14 @@ class _SummaryTab extends StatelessWidget {
                 title: 'المتبقي',
                 subtitle: _PurchaseMoney.format(details.remainingAmount),
               ),
-              if (onAccountPayment != null)
+              if (onInvoicePayment != null)
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: TextButton.icon(
-                    onPressed: onAccountPayment,
+                    onPressed: onInvoicePayment,
                     icon: Icon(Icons.account_balance_wallet_outlined,
                         size: 16.sp),
-                    label: const Text('دفعة على حساب المصدر'),
+                    label: const Text('تسجيل دفعة على الفاتورة'),
                   ),
                 ),
             ],
@@ -2245,13 +2243,11 @@ class _PaymentsTab extends StatelessWidget {
             isSafeArea: false,
             onPressed: onPay,
           ),
-        ] else if (details.workflowStatus != 'finalized' &&
-            details.paymentStatus != 'paid') ...[
+        ] else if (details.workflowStatus == 'cancelled') ...[
           SizedBox(height: 8.h),
           const _InlineNotice(
             icon: Icons.lock_clock_outlined,
-            title:
-                'دفعة الفاتورة تتاح بعد الاستلام والاعتماد. لتسجيل مبلغ قبل الاعتماد استخدم دفعة على حساب المصدر من تبويب الملخص.',
+            title: 'لا يمكن تسجيل دفعة على فاتورة ملغاة.',
           ),
         ],
         SizedBox(height: 12.h),
@@ -2377,6 +2373,13 @@ class _TimelineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = event['title']?.toString() ?? '';
     final description = event['description']?.toString() ?? '';
+    final actorName = event['actor_name']?.toString().trim() ?? '';
+    final actorId = event['actor_id']?.toString().trim() ?? '';
+    final actorLabel = actorName.isNotEmpty
+        ? actorName
+        : actorId.isNotEmpty
+            ? 'مستخدم #$actorId'
+            : 'النظام';
     final createdAt = event['created_at']?.toString() ?? '';
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
@@ -2404,6 +2407,18 @@ class _TimelineCard extends StatelessWidget {
                   SizedBox(height: 3.h),
                   _MutedText(text: description),
                 ],
+                SizedBox(height: 4.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline_rounded,
+                      size: 13.sp,
+                      color: Colors.grey.shade600,
+                    ),
+                    SizedBox(width: 4.w),
+                    Expanded(child: _MutedText(text: 'نفذها: $actorLabel')),
+                  ],
+                ),
                 if (createdAt.isNotEmpty) ...[
                   SizedBox(height: 4.h),
                   _MutedText(text: createdAt),

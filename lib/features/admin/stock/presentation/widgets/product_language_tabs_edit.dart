@@ -21,7 +21,8 @@ class ProductArabicFieldsEdit extends StatelessWidget {
     final c = controller;
     final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w700,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
         );
 
     InputDecoration fieldDecoration(String label) {
@@ -55,9 +56,10 @@ class ProductArabicFieldsEdit extends StatelessWidget {
         TextField(
           controller: c.productDetailsController,
           style: fieldStyle,
-          minLines: 2,
-          maxLines: 3,
-          textInputAction: TextInputAction.done,
+          keyboardType: TextInputType.multiline,
+          minLines: 3,
+          maxLines: 6,
+          textInputAction: TextInputAction.newline,
           decoration: fieldDecoration('productDetails'.tr),
         ),
       ],

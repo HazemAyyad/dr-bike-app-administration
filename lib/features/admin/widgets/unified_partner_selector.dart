@@ -62,6 +62,8 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   bool _showResults = false;
+  bool _isInteractingWithResults = false;
+  Timer? _blurTimer;
 
   @override
   void initState() {
@@ -70,11 +72,13 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
     _focusNode.addListener(() {
       if (!mounted) return;
       if (_focusNode.hasFocus) {
+        _blurTimer?.cancel();
         setState(() => _showResults = true);
         return;
       }
-      Future<void>.delayed(const Duration(milliseconds: 120), () {
-        if (mounted && !_focusNode.hasFocus) {
+      _blurTimer?.cancel();
+      _blurTimer = Timer(const Duration(milliseconds: 120), () {
+        if (mounted && !_focusNode.hasFocus && !_isInteractingWithResults) {
           setState(() => _showResults = false);
         }
       });
@@ -89,6 +93,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
 
   @override
   void dispose() {
+    _blurTimer?.cancel();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -270,71 +275,77 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
           ],
         ),
         if (_showResults && widget.enabled)
-          Container(
-            width: double.infinity,
-            constraints: BoxConstraints(maxHeight: 220.h),
-            margin: EdgeInsets.only(top: 6.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10.r),
-              border: Border.all(color: AppColors.operationalCardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: .06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: rows.isEmpty
-                ? Padding(
-                    padding: EdgeInsets.all(14.r),
-                    child: const Text('لا توجد نتائج'),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: rows.length,
-                    findChildIndexCallback: (key) {
-                      if (key is! ValueKey<_PartnerIdentity>) return null;
-                      final index = rows.indexWhere(
-                        (entry) => _identityOf(entry) == key.value,
-                      );
-                      return index < 0 ? null : index;
-                    },
-                    itemBuilder: (_, index) {
-                      final entry = rows[index];
-                      final phone = widget.phoneOf(entry.value).trim();
-                      return Column(
-                        key: ValueKey(_identityOf(entry)),
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            dense: true,
-                            leading: Icon(
-                              entry.isSeller
-                                  ? Icons.storefront_outlined
-                                  : Icons.person_outline_rounded,
-                              color: AppColors.primaryColor,
-                            ),
-                            title: Text(
-                              widget.nameOf(entry.value),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Text([
-                              entry.isSeller ? 'مورد / تاجر' : 'زبون',
-                              if (phone.isNotEmpty) phone,
-                            ].join(' • ')),
-                            onTap: () => _select(entry),
-                          ),
-                          if (index < rows.length - 1) const Divider(height: 1),
-                        ],
-                      );
-                    },
+          Listener(
+            onPointerDown: (_) => _isInteractingWithResults = true,
+            onPointerUp: (_) => _isInteractingWithResults = false,
+            onPointerCancel: (_) => _isInteractingWithResults = false,
+            child: Container(
+              width: double.infinity,
+              constraints: BoxConstraints(maxHeight: 220.h),
+              margin: EdgeInsets.only(top: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: AppColors.operationalCardBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
+                ],
+              ),
+              child: rows.isEmpty
+                  ? Padding(
+                      padding: EdgeInsets.all(14.r),
+                      child: const Text('لا توجد نتائج'),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: rows.length,
+                      findChildIndexCallback: (key) {
+                        if (key is! ValueKey<_PartnerIdentity>) return null;
+                        final index = rows.indexWhere(
+                          (entry) => _identityOf(entry) == key.value,
+                        );
+                        return index < 0 ? null : index;
+                      },
+                      itemBuilder: (_, index) {
+                        final entry = rows[index];
+                        final phone = widget.phoneOf(entry.value).trim();
+                        return Column(
+                          key: ValueKey(_identityOf(entry)),
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              dense: true,
+                              leading: Icon(
+                                entry.isSeller
+                                    ? Icons.storefront_outlined
+                                    : Icons.person_outline_rounded,
+                                color: AppColors.primaryColor,
+                              ),
+                              title: Text(
+                                widget.nameOf(entry.value),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700),
+                              ),
+                              subtitle: Text([
+                                entry.isSeller ? 'مورد / تاجر' : 'زبون',
+                                if (phone.isNotEmpty) phone,
+                              ].join(' • ')),
+                              onTap: () => _select(entry),
+                            ),
+                            if (index < rows.length - 1)
+                              const Divider(height: 1),
+                          ],
+                        );
+                      },
+                    ),
+            ),
           ),
       ],
     );

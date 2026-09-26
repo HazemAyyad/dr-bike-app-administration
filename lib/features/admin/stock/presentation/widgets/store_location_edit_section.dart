@@ -11,6 +11,7 @@ import 'product_location_badge.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 Future<void> showCreateStoreSectionDialog() async {
   final controller = Get.find<StockController>();
   final nameCtrl = TextEditingController();
@@ -187,7 +188,9 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
                 ],
               ),
               DropdownButtonFormField<String?>(
-                value: controller.selectedProductStoreSectionId.value,
+                key: ValueKey(controller.selectedProductStoreSectionId.value),
+                initialValue: controller.selectedProductStoreSectionId.value,
+                isExpanded: true,
                 decoration: OutlineInputStyle.merge(
                   context,
                   labelText: 'storeSection'.tr,
@@ -195,12 +198,20 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
                 items: [
                   DropdownMenuItem<String?>(
                     value: null,
-                    child: Text('all'.tr),
+                    child: Text(
+                      'all'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   ...sections.map(
                     (s) => DropdownMenuItem(
                       value: s.id,
-                      child: Text(s.name),
+                      child: Text(
+                        s.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
