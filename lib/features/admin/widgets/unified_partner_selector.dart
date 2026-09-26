@@ -63,6 +63,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   final _focusNode = FocusNode();
   bool _showResults = false;
   bool _isInteractingWithResults = false;
+  bool _isCommittingSelection = false;
   Timer? _blurTimer;
 
   @override
@@ -132,11 +133,23 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
       );
 
   Future<void> _select(_PartnerEntry<T> entry) async {
-    await widget.onSelected(entry.value, entry.isSeller);
-    if (!mounted) return;
-    _searchController.text = widget.nameOf(entry.value);
+    if (_isCommittingSelection) return;
+    _isCommittingSelection = true;
+    _blurTimer?.cancel();
+    final name = widget.nameOf(entry.value);
+    _searchController.value = TextEditingValue(
+      text: name,
+      selection: TextSelection.collapsed(offset: name.length),
+    );
     _focusNode.unfocus();
-    setState(() => _showResults = false);
+    if (mounted) setState(() => _showResults = false);
+    try {
+      await widget.onSelected(entry.value, entry.isSeller);
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _isCommittingSelection = false;
+      });
+    }
   }
 
   Future<void> _clear({bool keepFocus = false}) async {
@@ -252,6 +265,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
                     ? 'اختر زبونًا أو موردًا'
                     : null,
                 onChanged: (_) {
+                  if (_isCommittingSelection) return;
                   if (selected != null) widget.onCleared?.call();
                   setState(() => _showResults = true);
                 },

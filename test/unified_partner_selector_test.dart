@@ -142,6 +142,56 @@ void main() {
 
     expect(selected, same(seller));
   });
+
+  testWidgets('keeps searched partner selected when a late text event arrives',
+      (tester) async {
+    const seller = _Partner(51, 'مورد نتيجة البحث', '0599000000');
+    _Partner? selected;
+    var clearCalls = 0;
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setHostState) =>
+                  UnifiedPartnerSelector<_Partner>(
+                customers: const [],
+                sellers: const [seller],
+                selected: selected,
+                selectedIsSeller: true,
+                idOf: (partner) => partner.id,
+                nameOf: (partner) => partner.name,
+                phoneOf: (partner) => partner.phone,
+                onSelected: (partner, _) {
+                  setHostState(() => selected = partner);
+                },
+                onCleared: () {
+                  clearCalls++;
+                  setHostState(() => selected = null);
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final field = find.byType(TextFormField);
+    await tester.tap(field);
+    await tester.enterText(field, 'نتيجة البحث');
+    await tester.pump();
+    expect(find.text('مورد نتيجة البحث'), findsOneWidget);
+
+    await tester.tap(find.text('مورد نتيجة البحث'));
+    await tester.enterText(field, 'مورد نتيجة البحث');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+
+    expect(selected, same(seller));
+    expect(clearCalls, 0);
+  });
 }
 
 class _Partner {
