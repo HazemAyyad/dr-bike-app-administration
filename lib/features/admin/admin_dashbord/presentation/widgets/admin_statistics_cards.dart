@@ -28,8 +28,7 @@ class BuildStatisticsCards extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (controller.showDashboardAttentionSection.value &&
-              alertsCount > 0) ...[
+          if (alertsCount > 0) ...[
             _DashboardAttentionCard(
               items: attentionItems,
               total: alertsCount,
@@ -55,7 +54,7 @@ class BuildStatisticsCards extends StatelessWidget {
                 childAspectRatio: columns == 4 ? 1.02 : 1.75,
                 children: [
                   _OverviewItem(
-                    title: 'لنا (مستحقات)',
+                    title: 'لنا',
                     value: data?.totalDebtsOwedToUs,
                     icon: Icons.north_rounded,
                     accent: DashboardDesignTokens.success,
@@ -63,7 +62,7 @@ class BuildStatisticsCards extends StatelessWidget {
                         data?.debtSummary ?? const DashboardDebtSummary()),
                   ),
                   _OverviewItem(
-                    title: 'علينا (التزامات)',
+                    title: 'علينا',
                     value: data?.totalDebtsWeOwe,
                     icon: Icons.south_rounded,
                     accent: DashboardDesignTokens.danger,
@@ -289,7 +288,7 @@ class _OverviewItem extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(title,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: DashboardDesignTokens.textPrimaryFor(dark),
@@ -677,6 +676,20 @@ class _DebtGroupCard extends StatelessWidget {
 List<_AttentionItem> _buildAttentionItems(Map<String, int> badges) {
   int badge(String key) => badges[key] ?? 0;
   return <_AttentionItem>[
+    _AttentionItem(
+      title: 'مبيعات معلّقة',
+      shortTitle: 'مبيعات معلّقة',
+      count: badge('sales'),
+      icon: Icons.pending_actions_rounded,
+      route: AppRoutes.SALESSCREEN,
+    ),
+    _AttentionItem(
+      title: 'صيانة غير مسلّمة',
+      shortTitle: 'صيانة غير مسلّمة',
+      count: badge('maintenance'),
+      icon: Icons.home_repair_service_outlined,
+      route: AppRoutes.MAINTENANCESCREEN,
+    ),
     _AttentionItem(
       title: 'مهام بحاجة مراجعة',
       shortTitle: 'مهام للمراجعة',

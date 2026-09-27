@@ -22,6 +22,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     this.backgroundColor,
     this.compact = false,
     this.centered = false,
+    this.overlayOnly = false,
   }) : super(key: key);
 
   final RxBool isAddMenuOpen;
@@ -35,9 +36,13 @@ class CustomFloatingActionButton extends StatelessWidget {
   final Color? backgroundColor;
   final bool compact;
   final bool centered;
+  final bool overlayOnly;
 
   @override
   Widget build(BuildContext context) {
+    if (centered && !overlayOnly) {
+      return _buildButton();
+    }
     return Align(
       alignment: centered ? Alignment.bottomCenter : Alignment.bottomRight,
       child: SizedBox(
@@ -60,7 +65,6 @@ class CustomFloatingActionButton extends StatelessWidget {
                 ),
               );
             }),
-
             Obx(() {
               if (!isAddMenuOpen.value) return const SizedBox.shrink();
               return Positioned(
@@ -147,36 +151,31 @@ class CustomFloatingActionButton extends StatelessWidget {
                 ),
               );
             }),
-
-            // زر الإضافة
-            Positioned(
-              right: centered
-                  ? 0
-                  : Get.locale!.languageCode == 'ar'
-                      ? 30.w
-                      : 0.w,
-              left: centered ? 0 : null,
-              bottom: 10.h,
-              child: Center(
-                child: SizedBox(
-                  width: compact ? 52.r : 56.r,
-                  height: compact ? 52.r : 56.r,
-                  child: FloatingActionButton(
-                    onPressed: onTap,
-                    backgroundColor:
-                        backgroundColor ?? AppColors.secondaryColor,
-                    elevation: 5.0,
-                    shape: const CircleBorder(),
-                    child: Icon(
-                      Icons.add,
-                      color: AppColors.whiteColor,
-                      size: compact ? 30.sp : 42.sp,
-                    ),
-                  ),
-                ),
+            if (!overlayOnly)
+              Positioned(
+                right: Get.locale!.languageCode == 'ar' ? 30.w : 0.w,
+                bottom: 10.h,
+                child: _buildButton(),
               ),
-            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton() {
+    return SizedBox(
+      width: compact ? 52.r : 56.r,
+      height: compact ? 52.r : 56.r,
+      child: FloatingActionButton(
+        onPressed: onTap,
+        backgroundColor: backgroundColor ?? AppColors.secondaryColor,
+        elevation: 5.0,
+        shape: const CircleBorder(),
+        child: Icon(
+          Icons.add,
+          color: AppColors.whiteColor,
+          size: compact ? 30.sp : 42.sp,
         ),
       ),
     );

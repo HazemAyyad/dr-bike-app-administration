@@ -24,8 +24,10 @@ class DashboardDesignTokens {
 
   static const double cardRadius = 16;
   static const double iconRadius = 12;
+  static const double headerContentSpacing = 12;
   static const double sectionSpacing = 22;
   static const double cardSpacing = 10;
+  static const double centeredFabDiameter = 52;
 
   static Color backgroundFor(bool dark) => dark ? darkBackground : background;
 

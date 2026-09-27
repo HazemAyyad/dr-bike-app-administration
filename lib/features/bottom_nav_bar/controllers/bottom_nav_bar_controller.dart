@@ -58,9 +58,8 @@ class BottomNavBarController extends GetxController {
 
   Widget animatedSwitch() {
     return Obx(() {
-      final role = sessionUserType.value.isNotEmpty
-          ? sessionUserType.value
-          : userType;
+      final role =
+          sessionUserType.value.isNotEmpty ? sessionUserType.value : userType;
       return KeyedSubtree(
         key: ValueKey<String>('nav_${role}_${sessionEpoch.value}'),
         child: _getPage(currentIndex.value, role),
@@ -72,34 +71,7 @@ class BottomNavBarController extends GetxController {
     switch (index) {
       case 0:
         if (role == 'admin') {
-          if (!Get.isRegistered<AdminDashboardController>()) {
-            Get.put(
-              AdminDashboardController(
-                getAllEmployeeUsecase: GetAllEmployeeUsecase(
-                  employeeRepository: Get.find<EmployeeImplement>(),
-                ),
-                getAdminLogsUsecase: GetAdminLogsUsecase(
-                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
-                ),
-                getActivitySummaryUsecase: GetActivitySummaryUsecase(
-                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
-                ),
-                cancelLogUsecase: CancelLogUsecase(
-                  employeeRepository: Get.find<EmployeeImplement>(),
-                ),
-                getMainDashboardDataUsecase: GetMainDashboardDataUsecase(
-                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
-                ),
-                getAdminUiPreferencesUsecase: GetAdminUiPreferencesUsecase(
-                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
-                ),
-                saveAdminUiPreferencesUsecase: SaveAdminUiPreferencesUsecase(
-                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
-                ),
-              ),
-            );
-            return const AdminDashboardScreen();
-          }
+          ensureAdminDashboardController();
           return const AdminDashboardScreen();
         } else {
           if (!Get.isRegistered<EmployeeDashbordController>()) {
@@ -194,5 +166,36 @@ class BottomNavBarController extends GetxController {
       default:
         return const HomePageScreen(key: ValueKey(1));
     }
+  }
+
+  AdminDashboardController ensureAdminDashboardController() {
+    if (Get.isRegistered<AdminDashboardController>()) {
+      return Get.find<AdminDashboardController>();
+    }
+    return Get.put(
+      AdminDashboardController(
+        getAllEmployeeUsecase: GetAllEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getAdminLogsUsecase: GetAdminLogsUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+        ),
+        getActivitySummaryUsecase: GetActivitySummaryUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+        ),
+        cancelLogUsecase: CancelLogUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getMainDashboardDataUsecase: GetMainDashboardDataUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+        ),
+        getAdminUiPreferencesUsecase: GetAdminUiPreferencesUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+        ),
+        saveAdminUiPreferencesUsecase: SaveAdminUiPreferencesUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+        ),
+      ),
+    );
   }
 }

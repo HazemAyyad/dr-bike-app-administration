@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/person_avatar_helper.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -46,7 +45,10 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                 onCustomize: () =>
                                     _showCustomizeDashboardDialog(context),
                               ),
-                              SizedBox(height: 18.h),
+                              SizedBox(
+                                height: DashboardDesignTokens
+                                    .headerContentSpacing.h,
+                              ),
                               const BuildStatisticsCards(),
                               SizedBox(
                                 height: DashboardDesignTokens.sectionSpacing.h,
@@ -164,7 +166,12 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                   );
                                 },
                               ),
-                              SizedBox(height: 108.h),
+                              SizedBox(
+                                height: DashboardDesignTokens
+                                            .centeredFabDiameter.r /
+                                        2 +
+                                    DashboardDesignTokens.sectionSpacing.h,
+                              ),
                             ]),
                           ),
                         ),
@@ -172,21 +179,6 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                     ],
                   ),
                 ),
-          floatingActionButton: controller.isDashboardPreparing.value
-              ? const SizedBox.shrink()
-              : CustomFloatingActionButton(
-                  isAddMenuOpen: controller.isAddMenuOpen,
-                  onTap: controller.toggleAddMenu,
-                  opacityAnimation: controller.sizeAnimation,
-                  sizeAnimation: controller.opacityAnimation,
-                  addList: controller.visibleAdminAddList,
-                  useGrid: true,
-                  backgroundColor: DashboardDesignTokens.primary,
-                  compact: true,
-                  centered: true,
-                ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
         ),
       );
     });
@@ -295,31 +287,6 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                           icon: const Icon(Icons.add_circle_outline_rounded),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                GetBuilder<AdminDashboardController>(
-                  builder: (controller) => SwitchListTile.adaptive(
-                    value: controller.showDashboardAttentionSection.value,
-                    onChanged: controller.isUiPreferencesSaving.value
-                        ? null
-                        : controller.setDashboardAttentionSectionVisible,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 4.w),
-                    activeThumbColor: AppColors.primaryColor,
-                    title: Text(
-                      'أهم ما ينتظر المتابعة',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'إظهار القسم في الصفحة الرئيسية',
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        color: AppColors.customGreyColor5,
-                      ),
                     ),
                   ),
                 ),
