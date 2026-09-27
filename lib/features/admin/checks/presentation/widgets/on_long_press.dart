@@ -165,6 +165,7 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
   @override
   void initState() {
     super.initState();
+    checks.getOutgoingPaymentBoxes();
     for (final existing
         in widget.check.installments.where((row) => row.status == 'pending')) {
       final row = _InstallmentDraft();
@@ -289,17 +290,22 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
                   Text(
                       'المتبقي: ${widget.check.remainingAmount.toStringAsFixed(2)} ${widget.check.currency}'),
                   const SizedBox(height: 12),
-                  CustomDropdownFieldWithSearch(
-                    tital: 'boxName',
-                    hint: 'boxNameExample',
-                    items: checks.shownBoxesList
+                  Obx(() {
+                    final boxes = checks.outgoingPaymentBoxesList
                         .where((b) => b.currency == widget.check.currency)
-                        .toList(),
-                    onChanged: (value) => boxId = value?.boxId.toString(),
-                    itemAsString: (item) =>
-                        '${item.boxName} - (${item.totalBalance} ${item.currency})',
-                    compareFn: (a, b) => a.boxId == b.boxId,
-                  ),
+                        .toList();
+                    return CustomDropdownFieldWithSearch(
+                      tital: 'boxName',
+                      hint: boxes.isEmpty
+                          ? 'لا يوجد صندوق صرف متاح بنفس العملة'
+                          : 'boxNameExample',
+                      items: boxes,
+                      onChanged: (value) => boxId = value?.boxId.toString(),
+                      itemAsString: (item) =>
+                          '${item.boxName} - (${item.totalBalance} ${item.currency})',
+                      compareFn: (a, b) => a.boxId == b.boxId,
+                    );
+                  }),
                   const SizedBox(height: 10),
                   TextField(
                       controller: amountController,

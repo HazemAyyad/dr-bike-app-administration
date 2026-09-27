@@ -1741,6 +1741,8 @@ class ChecksController extends GetxController
 
   // get shown boxes
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
+  final RxList<ShownBoxesModel> outgoingPaymentBoxesList =
+      <ShownBoxesModel>[].obs;
 
   void getShowBoxes() async {
     try {
@@ -1748,6 +1750,15 @@ class ChecksController extends GetxController
       shownBoxesList.value = boxes;
     } catch (e) {
       debugPrint('[Checks] getShowBoxes failed: $e');
+    }
+  }
+
+  Future<void> getOutgoingPaymentBoxes() async {
+    try {
+      final boxes = await getShownBoxUsecase.call(screen: 3);
+      outgoingPaymentBoxesList.assignAll(boxes);
+    } catch (e) {
+      debugPrint('[Checks] getOutgoingPaymentBoxes failed: $e');
     }
   }
 
@@ -1944,6 +1955,7 @@ class ChecksController extends GetxController
 
     getAllCustomersAndSellers();
     getShowBoxes();
+    getOutgoingPaymentBoxes();
   }
 
   void _applyRouteArguments() {
