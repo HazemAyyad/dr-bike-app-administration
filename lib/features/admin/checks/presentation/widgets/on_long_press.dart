@@ -268,145 +268,283 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
 
   @override
   Widget build(BuildContext context) {
+    const surface = Color(0xFFF8FAFC);
+    const fieldSurface = Color(0xFFF1F5F9);
+    const textColor = Color(0xFF111827);
+    const mutedText = Color(0xFF475569);
+    const borderColor = Color(0xFFE2E8F0);
+
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * .88, maxWidth: 560),
+            maxHeight: MediaQuery.of(context).size.height * .82, maxWidth: 500),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           child: Directionality(
             textDirection: TextDirection.rtl,
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('دفع جزئي / إعادة جدولة',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                      'القيمة الأصلية: ${widget.check.total} ${widget.check.currency}'),
-                  Text(
-                      'المدفوع سابقًا: ${widget.check.settledAmount.toStringAsFixed(2)} ${widget.check.currency}'),
-                  Text(
-                      'المتبقي: ${widget.check.remainingAmount.toStringAsFixed(2)} ${widget.check.currency}'),
-                  const SizedBox(height: 12),
-                  Obx(() {
-                    final boxes = checks.outgoingPaymentBoxesList
-                        .where((b) => b.currency == widget.check.currency)
-                        .toList();
-                    return CustomDropdownFieldWithSearch(
-                      tital: 'boxName',
-                      hint: boxes.isEmpty
-                          ? 'لا يوجد صندوق صرف متاح بنفس العملة'
-                          : 'boxNameExample',
-                      items: boxes,
-                      onChanged: (value) => boxId = value?.boxId.toString(),
-                      itemAsString: (item) =>
-                          '${item.boxName} - (${item.totalBalance} ${item.currency})',
-                      compareFn: (a, b) => a.boxId == b.boxId,
-                    );
-                  }),
-                  const SizedBox(height: 10),
-                  TextField(
-                      controller: amountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                          labelText: 'المبلغ المدفوع الآن',
-                          border: OutlineInputBorder())),
-                  const SizedBox(height: 8),
-                  ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('تاريخ الدفع'),
-                      subtitle: Text(dateText(paidAt)),
-                      trailing: const Icon(Icons.calendar_month),
-                      onTap: () =>
-                          pickDate(context, (v) => paidAt = v, paidAt)),
-                  Container(
-                      padding: const EdgeInsets.all(10),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: InputDecorationTheme(
+                  filled: true,
+                  fillColor: fieldSurface,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  labelStyle: const TextStyle(color: mutedText),
+                  hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(
+                        color: AppColors.primaryColor, width: 1.4),
+                  ),
+                ),
+              ),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'دفع جزئي / إعادة جدولة',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'إغلاق',
+                          onPressed: Get.back,
+                          icon:
+                              const Icon(Icons.close_rounded, color: textColor),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 9),
                       decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Text(
-                          'المتبقي بعد الدفع: ${remaining.toStringAsFixed(2)} ${widget.check.currency}\nلن يتأثر حساب الشخص مرة أخرى.')),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(
-                        child: Text('جدولة المتبقي',
-                            style: Theme.of(context).textTheme.titleMedium)),
-                    TextButton.icon(
-                        onPressed: remaining > 0 ? addInstallment : null,
-                        icon: const Icon(Icons.add),
-                        label: const Text('إضافة دفعة'))
+                        color: fieldSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: Wrap(
+                        spacing: 14,
+                        runSpacing: 5,
+                        children: [
+                          _SettlementSummaryText(
+                              label: 'الأصلية',
+                              value: widget.check.total.toString()),
+                          _SettlementSummaryText(
+                              label: 'المدفوع',
+                              value: widget.check.settledAmount
+                                  .toStringAsFixed(2)),
+                          _SettlementSummaryText(
+                              label: 'المتبقي',
+                              value: widget.check.remainingAmount
+                                  .toStringAsFixed(2)),
+                          Text(widget.check.currency,
+                              style: const TextStyle(
+                                  color: mutedText,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Obx(() {
+                      final boxes = checks.outgoingPaymentBoxesList
+                          .where((b) => b.currency == widget.check.currency)
+                          .toList();
+                      return CustomDropdownFieldWithSearch(
+                        tital: 'boxName',
+                        hint: boxes.isEmpty
+                            ? 'لا يوجد صندوق صرف متاح بنفس العملة'
+                            : 'boxNameExample',
+                        items: boxes,
+                        onChanged: (value) => boxId = value?.boxId.toString(),
+                        itemAsString: (item) =>
+                            '${item.boxName} - (${item.totalBalance} ${item.currency})',
+                        compareFn: (a, b) => a.boxId == b.boxId,
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    TextField(
+                        controller: amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (_) => setState(() {}),
+                        decoration: const InputDecoration(
+                            labelText: 'المبلغ المدفوع الآن',
+                            border: OutlineInputBorder())),
+                    const SizedBox(height: 4),
+                    ListTile(
+                        dense: true,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        tileColor: fieldSurface,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 10),
+                        title: const Text('تاريخ الدفع',
+                            style: TextStyle(color: textColor)),
+                        subtitle: Text(dateText(paidAt),
+                            style: const TextStyle(color: mutedText)),
+                        trailing: const Icon(Icons.calendar_month,
+                            color: AppColors.primaryColor),
+                        onTap: () =>
+                            pickDate(context, (v) => paidAt = v, paidAt)),
+                    Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2F7),
+                            border: Border.all(color: borderColor),
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Text(
+                            'المتبقي بعد الدفع: ${remaining.toStringAsFixed(2)} ${widget.check.currency} — لن يتأثر حساب الشخص مرة أخرى.',
+                            style: const TextStyle(
+                                color: textColor, fontSize: 13))),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      const Expanded(
+                          child: Text('جدولة المتبقي',
+                              style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800))),
+                      TextButton.icon(
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryColor),
+                          onPressed: remaining > 0 ? addInstallment : null,
+                          icon: const Icon(Icons.add),
+                          label: const Text('إضافة دفعة'))
+                    ]),
+                    ...installments.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final row = entry.value;
+                      return Card(
+                          color: const Color(0xFFF1F5F9),
+                          surfaceTintColor: Colors.transparent,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              side: const BorderSide(color: borderColor),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(children: [
+                                Row(children: [
+                                  Expanded(child: Text('الدفعة ${index + 1}')),
+                                  IconButton(
+                                      onPressed: () => setState(() {
+                                            installments
+                                                .removeAt(index)
+                                                .dispose();
+                                          }),
+                                      icon: const Icon(Icons.delete_outline))
+                                ]),
+                                TextField(
+                                    controller: row.amount,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                        labelText: 'المبلغ')),
+                                ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text('تاريخ الاستحقاق'),
+                                    subtitle: Text(dateText(row.dueDate)),
+                                    trailing: const Icon(Icons.calendar_month),
+                                    onTap: () => pickDate(context,
+                                        (v) => row.dueDate = v, row.dueDate)),
+                                SwitchListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text('شيك بديل فعلي'),
+                                    value: row.replacement,
+                                    onChanged: (v) =>
+                                        setState(() => row.replacement = v)),
+                                if (row.replacement) ...[
+                                  TextField(
+                                      controller: row.checkNumber,
+                                      decoration: const InputDecoration(
+                                          labelText: 'رقم الشيك الجديد')),
+                                  TextField(
+                                      controller: row.bank,
+                                      decoration: const InputDecoration(
+                                          labelText: 'البنك')),
+                                ],
+                              ])));
+                    }),
+                    TextField(
+                        controller: notesController,
+                        minLines: 1,
+                        maxLines: 2,
+                        decoration:
+                            const InputDecoration(labelText: 'ملاحظات')),
+                    const SizedBox(height: 12),
+                    Obx(() => FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          foregroundColor: textColor,
+                          disabledBackgroundColor: const Color(0xFFE5E7EB),
+                          disabledForegroundColor: const Color(0xFF64748B),
+                          side: const BorderSide(color: AppColors.primaryColor),
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: checks.isLoading.value ? null : submit,
+                        child: checks.isLoading.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('تأكيد التسديد',
+                                style:
+                                    TextStyle(fontWeight: FontWeight.w800)))),
                   ]),
-                  ...installments.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final row = entry.value;
-                    return Card(
-                        child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(children: [
-                              Row(children: [
-                                Expanded(child: Text('الدفعة ${index + 1}')),
-                                IconButton(
-                                    onPressed: () => setState(() {
-                                          installments
-                                              .removeAt(index)
-                                              .dispose();
-                                        }),
-                                    icon: const Icon(Icons.delete_outline))
-                              ]),
-                              TextField(
-                                  controller: row.amount,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                          decimal: true),
-                                  decoration: const InputDecoration(
-                                      labelText: 'المبلغ')),
-                              ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('تاريخ الاستحقاق'),
-                                  subtitle: Text(dateText(row.dueDate)),
-                                  trailing: const Icon(Icons.calendar_month),
-                                  onTap: () => pickDate(context,
-                                      (v) => row.dueDate = v, row.dueDate)),
-                              SwitchListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('شيك بديل فعلي'),
-                                  value: row.replacement,
-                                  onChanged: (v) =>
-                                      setState(() => row.replacement = v)),
-                              if (row.replacement) ...[
-                                TextField(
-                                    controller: row.checkNumber,
-                                    decoration: const InputDecoration(
-                                        labelText: 'رقم الشيك الجديد')),
-                                TextField(
-                                    controller: row.bank,
-                                    decoration: const InputDecoration(
-                                        labelText: 'البنك')),
-                              ],
-                            ])));
-                  }),
-                  TextField(
-                      controller: notesController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'ملاحظات')),
-                  const SizedBox(height: 16),
-                  Obx(() => FilledButton(
-                      onPressed: checks.isLoading.value ? null : submit,
-                      child: checks.isLoading.value
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('تأكيد التسديد'))),
-                ]),
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SettlementSummaryText extends StatelessWidget {
+  const _SettlementSummaryText({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        style: const TextStyle(color: Color(0xFF475569), fontSize: 13),
+        children: [
+          TextSpan(text: '$label: '),
+          TextSpan(
+            text: value,
+            style: const TextStyle(
+                color: Color(0xFF111827), fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }
