@@ -51,7 +51,8 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                               ),
                               const BuildStatisticsCards(),
                               SizedBox(
-                                height: DashboardDesignTokens.sectionSpacing.h,
+                                height:
+                                    DashboardDesignTokens.upperSectionSpacing.h,
                               ),
                               GetBuilder<AdminDashboardController>(
                                 builder: (controller) {

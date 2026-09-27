@@ -34,7 +34,7 @@ class BuildStatisticsCards extends StatelessWidget {
               total: alertsCount,
               onTap: () => _showAttentionSheet(context, attentionItems),
             ),
-            SizedBox(height: DashboardDesignTokens.sectionSpacing.h),
+            SizedBox(height: DashboardDesignTokens.upperSectionSpacing.h),
           ],
           const DashboardSectionHeader(
             title: 'نظرة سريعة',
@@ -114,7 +114,7 @@ class _DashboardAttentionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(DashboardDesignTokens.cardRadius.r),
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.fromLTRB(13.w, 11.h, 13.w, 10.h),
+          padding: EdgeInsets.fromLTRB(13.w, 9.h, 13.w, 8.h),
           decoration: BoxDecoration(
             color: dark
                 ? DashboardDesignTokens.darkSurface
@@ -201,7 +201,7 @@ class _DashboardAttentionCard extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: 9.h),
+              SizedBox(height: 6.h),
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Wrap(
@@ -212,7 +212,7 @@ class _DashboardAttentionCard extends StatelessWidget {
                         (item) => Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 10.w,
-                            vertical: 5.h,
+                            vertical: 4.h,
                           ),
                           decoration: BoxDecoration(
                             color: DashboardDesignTokens.danger.withValues(
@@ -287,15 +287,21 @@ class _OverviewItem extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(title,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        title,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
                         style: TextStyle(
                           color: DashboardDesignTokens.textPrimaryFor(dark),
                           fontSize: 8.5.sp,
                           height: 1.1,
                           fontWeight: FontWeight.w700,
-                        )),
+                        ),
+                      ),
+                    ),
                   ),
                   SizedBox(width: 4.w),
                   Container(
