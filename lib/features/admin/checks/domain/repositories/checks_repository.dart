@@ -43,6 +43,7 @@ abstract class ChecksRepository {
   });
 
   Future<Either<Failure, String>> addIncomingChecksBatch({
+    required bool isIncoming,
     String? customerId,
     String? sellerId,
     required DateTime receivedAt,

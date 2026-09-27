@@ -66,6 +66,7 @@ class ChecksImplement implements ChecksRepository {
 
   @override
   Future<Either<Failure, String>> addIncomingChecksBatch({
+    required bool isIncoming,
     String? customerId,
     String? sellerId,
     required DateTime receivedAt,
@@ -76,6 +77,7 @@ class ChecksImplement implements ChecksRepository {
     }
     try {
       final result = await checksDatasource.addIncomingChecksBatch(
+        isIncoming: isIncoming,
         customerId: customerId,
         sellerId: sellerId,
         receivedAt: receivedAt,

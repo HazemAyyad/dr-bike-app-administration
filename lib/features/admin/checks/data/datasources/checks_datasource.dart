@@ -93,6 +93,7 @@ class ChecksDatasource {
   }
 
   Future<Map<String, dynamic>> addIncomingChecksBatch({
+    required bool isIncoming,
     String? customerId,
     String? sellerId,
     required DateTime receivedAt,
@@ -130,11 +131,15 @@ class ChecksDatasource {
       }
 
       final response = await api.post(
-        EndPoints.addIncomingChecksBatch,
+        isIncoming
+            ? EndPoints.addIncomingChecksBatch
+            : EndPoints.addOutgoingChecksBatch,
         data: {
-          if (customerId != null) 'from_customer': customerId,
-          if (sellerId != null) 'from_seller': sellerId,
-          'received_at': receivedAt.toIso8601String(),
+          if (isIncoming && customerId != null) 'from_customer': customerId,
+          if (isIncoming && sellerId != null) 'from_seller': sellerId,
+          if (!isIncoming && customerId != null) 'customer_id': customerId,
+          if (!isIncoming && sellerId != null) 'seller_id': sellerId,
+          if (isIncoming) 'received_at': receivedAt.toIso8601String(),
           'checks': rows,
         },
         isFormData: true,

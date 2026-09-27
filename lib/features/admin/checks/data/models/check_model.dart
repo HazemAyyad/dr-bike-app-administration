@@ -146,6 +146,10 @@ class CheckModel extends CheckEntity {
     Seller? toCustomer,
     Seller? toSeller,
     String? notes,
+    double settledAmount = 0,
+    double remainingAmount = 0,
+    String settlementStatus = 'unpaid',
+    List<CheckInstallment> installments = const [],
   }) : super(
           id: id,
           customerId: customerId,
@@ -169,6 +173,10 @@ class CheckModel extends CheckEntity {
           toCustomer: toCustomer,
           toSeller: toSeller,
           notes: notes,
+          settledAmount: settledAmount,
+          remainingAmount: remainingAmount,
+          settlementStatus: settlementStatus,
+          installments: installments,
         );
 
   factory CheckModel.fromJson(
@@ -219,6 +227,25 @@ class CheckModel extends CheckEntity {
           ? SellerModel.fromJson(asMap(j['to_seller']))
           : null,
       notes: asString(j['notes']),
+      settledAmount: asDouble(j['settled_amount']),
+      remainingAmount: j.containsKey('remaining_amount')
+          ? asDouble(j['remaining_amount'])
+          : asDouble(j['total']),
+      settlementStatus: asString(j['settlement_status'], 'unpaid'),
+      installments:
+          (j['installments'] is List ? j['installments'] as List : const [])
+              .map((row) {
+        final item = asMap(row);
+        return CheckInstallment(
+          id: asInt(item['id']),
+          amount: asDouble(item['amount']),
+          dueDate: parseApiDateTime(item['due_date']),
+          instrumentType: asString(item['instrument_type'], 'same_check'),
+          checkId: asNullableString(item['check_id']),
+          bankName: asNullableString(item['bank_name']),
+          status: asString(item['status'], 'pending'),
+        );
+      }).toList(),
     );
   }
 
@@ -245,6 +272,20 @@ class CheckModel extends CheckEntity {
       'to_customer': toCustomer,
       'to_seller': toSeller,
       'notes': notes,
+      'settled_amount': settledAmount,
+      'remaining_amount': remainingAmount,
+      'settlement_status': settlementStatus,
+      'installments': installments
+          .map((e) => {
+                'id': e.id,
+                'amount': e.amount,
+                'due_date': e.dueDate.toIso8601String(),
+                'instrument_type': e.instrumentType,
+                'check_id': e.checkId,
+                'bank_name': e.bankName,
+                'status': e.status,
+              })
+          .toList(),
     };
   }
 }

@@ -1889,6 +1889,7 @@ const Map<String, String> en = {
   'endorseTheCheck': 'Endorse the Check',
   'voidTheCheck': 'Void the Check',
   'cashTheCheck': 'Cash The Check',
+  'partialSettleCheck': 'Partial payment / reschedule',
   'returnedCheck': 'Returned Check',
   'deleteCheck': 'Delete Check',
   'beneficiary': 'beneficiary Name',

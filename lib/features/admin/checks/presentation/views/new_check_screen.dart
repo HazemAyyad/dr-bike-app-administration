@@ -70,11 +70,12 @@ class NewCheckScreen extends GetView<ChecksController> {
       );
     }
     final bool isIncomingBatch = !isNewCheck && !controller.isEdit.value;
-    if (isIncomingBatch) {
-      return _IncomingBatchCreateScaffold(controller: controller);
-    }
-    if (isNewCheck) {
-      return _CompactOutgoingCreateScaffold(controller: controller);
+    final bool isBatchCreate = !controller.isEdit.value;
+    if (isBatchCreate) {
+      return _IncomingBatchCreateScaffold(
+        controller: controller,
+        isIncoming: !isNewCheck,
+      );
     }
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
@@ -1161,9 +1162,13 @@ class _IncomingBatchHeader extends StatelessWidget {
 }
 
 class _IncomingBatchCreateScaffold extends StatefulWidget {
-  const _IncomingBatchCreateScaffold({required this.controller});
+  const _IncomingBatchCreateScaffold({
+    required this.controller,
+    required this.isIncoming,
+  });
 
   final ChecksController controller;
+  final bool isIncoming;
 
   @override
   State<_IncomingBatchCreateScaffold> createState() =>
@@ -1232,7 +1237,7 @@ class _IncomingBatchCreateScaffoldState
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
-        title: Text('newReceipt'.tr),
+        title: Text((widget.isIncoming ? 'newReceipt' : 'newCheck').tr),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF111827),
         elevation: 0,
@@ -1301,33 +1306,25 @@ class _IncomingBatchCreateScaffoldState
                     onSelected: () => _countFocus.requestFocus(),
                   ),
                   SizedBox(height: 12.h),
-                  Row(
-                    children: [
+                  Row(children: [
+                    if (widget.isIncoming) ...[
                       Expanded(
-                        child: Obx(
-                          () => _DateTile(
-                            label: 'receivedDate'.tr,
-                            value: controller.receivedDay.value,
-                            onChanged: (picked) {
-                              controller.receivedDay.value = picked;
-                            },
-                          ),
-                        ),
-                      ),
+                          child: Obx(() => _DateTile(
+                                label: 'receivedDate'.tr,
+                                value: controller.receivedDay.value,
+                                onChanged: (picked) =>
+                                    controller.receivedDay.value = picked,
+                              ))),
                       SizedBox(width: 10.w),
-                      Expanded(
-                        child: Obx(
-                          () => _DateTile(
-                            label: 'firstDueDate'.tr,
-                            value: controller.selectedDay.value,
-                            onChanged: (picked) {
-                              controller.selectedDay.value = picked;
-                            },
-                          ),
-                        ),
-                      ),
                     ],
-                  ),
+                    Expanded(
+                        child: Obx(() => _DateTile(
+                              label: 'firstDueDate'.tr,
+                              value: controller.selectedDay.value,
+                              onChanged: (picked) =>
+                                  controller.selectedDay.value = picked,
+                            ))),
+                  ]),
                   SizedBox(height: 12.h),
                   _PlainTextField(
                     label: 'numberOfChecks'.tr,
@@ -1393,7 +1390,10 @@ class _IncomingBatchCreateScaffoldState
               ),
             ),
             SizedBox(height: 12.h),
-            _IncomingBatchSummary(controller: controller),
+            _IncomingBatchSummary(
+              controller: controller,
+              isIncoming: widget.isIncoming,
+            ),
             SizedBox(height: 12.h),
             _IncomingBatchRows(controller: controller),
             SizedBox(height: 12.h),
@@ -1404,6 +1404,7 @@ class _IncomingBatchCreateScaffoldState
                     : () {
                         controller.addIncomingChecksBatch(
                           context: context,
+                          isIncoming: widget.isIncoming,
                           customerId: controller.selectedCustomersSellers.value
                               ? controller.selectedValue.value
                               : null,
@@ -1873,6 +1874,7 @@ class _SaveIncomingBatchButton extends StatelessWidget {
         onPressed: () {
           controller.addIncomingChecksBatch(
             context: context,
+            isIncoming: true,
             customerId: controller.selectedCustomersSellers.value
                 ? controller.selectedValue.value
                 : null,
@@ -1887,9 +1889,13 @@ class _SaveIncomingBatchButton extends StatelessWidget {
 }
 
 class _IncomingBatchSummary extends StatelessWidget {
-  const _IncomingBatchSummary({required this.controller});
+  const _IncomingBatchSummary({
+    required this.controller,
+    this.isIncoming = true,
+  });
 
   final ChecksController controller;
+  final bool isIncoming;
 
   @override
   Widget build(BuildContext context) {
@@ -1921,13 +1927,15 @@ class _IncomingBatchSummary extends StatelessWidget {
                     value: '${rows.length}',
                   ),
                 ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: _BatchSummaryItem(
-                    label: 'receivedDate'.tr,
-                    value: dateFmt.format(controller.receivedDay.value),
+                if (isIncoming) ...[
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: _BatchSummaryItem(
+                      label: 'receivedDate'.tr,
+                      value: dateFmt.format(controller.receivedDay.value),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             SizedBox(height: 8.h),

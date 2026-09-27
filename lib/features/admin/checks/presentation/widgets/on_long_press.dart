@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
+import 'package:doctorbike/core/helpers/app_failure_notice.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -118,6 +119,9 @@ class OnLongPress extends GetView<ChecksController> {
                                       ),
                               );
                             }
+                            if (value == 'partialSettleCheck') {
+                              Get.dialog(PartialSettlementDialog(check: check));
+                            }
                             if (value == 'returnedCheck') {
                               Get.dialog(
                                 IfCancelCheck(
@@ -138,6 +142,280 @@ class OnLongPress extends GetView<ChecksController> {
         ),
       ],
     );
+  }
+}
+
+class PartialSettlementDialog extends StatefulWidget {
+  const PartialSettlementDialog({Key? key, required this.check})
+      : super(key: key);
+  final CheckModel check;
+
+  @override
+  State<PartialSettlementDialog> createState() =>
+      _PartialSettlementDialogState();
+}
+
+class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
+  final amountController = TextEditingController();
+  final notesController = TextEditingController();
+  final List<_InstallmentDraft> installments = [];
+  String? boxId;
+  DateTime paidAt = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    for (final existing
+        in widget.check.installments.where((row) => row.status == 'pending')) {
+      final row = _InstallmentDraft();
+      row.amount.text = existing.amount.toStringAsFixed(2);
+      row.dueDate = existing.dueDate;
+      row.replacement = existing.instrumentType == 'replacement_check';
+      row.checkNumber.text = existing.checkId ?? '';
+      row.bank.text = existing.bankName ?? '';
+      installments.add(row);
+    }
+  }
+
+  ChecksController get checks => Get.find<ChecksController>();
+
+  double get payment => double.tryParse(amountController.text.trim()) ?? 0;
+  double get remaining =>
+      (widget.check.remainingAmount - payment).clamp(0, double.infinity);
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    notesController.dispose();
+    for (final row in installments) {
+      row.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> pickDate(BuildContext context, ValueChanged<DateTime> onPicked,
+      DateTime initial) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (date != null) setState(() => onPicked(date));
+  }
+
+  String dateText(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  void addInstallment() {
+    setState(() {
+      final row = _InstallmentDraft();
+      final unallocated = remaining -
+          installments.fold<double>(
+              0, (sum, item) => sum + (double.tryParse(item.amount.text) ?? 0));
+      if (unallocated > 0) row.amount.text = unallocated.toStringAsFixed(2);
+      installments.add(row);
+    });
+  }
+
+  Future<void> submit() async {
+    if (boxId == null ||
+        payment <= 0 ||
+        payment > widget.check.remainingAmount) {
+      AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'اختر الصندوق وأدخل مبلغًا صحيحًا لا يتجاوز المتبقي');
+      return;
+    }
+    final rows = <Map<String, dynamic>>[];
+    for (final row in installments) {
+      final amount = double.tryParse(row.amount.text.trim()) ?? 0;
+      if (amount <= 0 ||
+          (row.replacement &&
+              (row.checkNumber.text.trim().isEmpty ||
+                  row.bank.text.trim().isEmpty))) {
+        AppFailureNotice.show(
+            title: 'error'.tr, message: 'أكمل مبالغ وبيانات الشيكات البديلة');
+        return;
+      }
+      rows.add({
+        'amount': amount,
+        'due_date': dateText(row.dueDate),
+        'instrument_type': row.replacement ? 'replacement_check' : 'same_check',
+        if (row.replacement) 'check_id': row.checkNumber.text.trim(),
+        if (row.replacement) 'bank_name': row.bank.text.trim(),
+      });
+    }
+    final scheduled =
+        rows.fold<double>(0, (sum, row) => sum + (row['amount'] as double));
+    if (rows.isNotEmpty && (scheduled - remaining).abs() > 0.001) {
+      AppFailureNotice.show(
+          title: 'error'.tr,
+          message:
+              'مجموع الدفعات ${scheduled.toStringAsFixed(2)} ويجب أن يساوي المتبقي ${remaining.toStringAsFixed(2)}');
+      return;
+    }
+    await checks.partialSettleOutgoingCheck(
+      check: widget.check,
+      boxId: boxId!,
+      amount: payment,
+      paidAt: paidAt,
+      installments: rows,
+      notes: notesController.text,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * .88, maxWidth: 560),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(18),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('دفع جزئي / إعادة جدولة',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(
+                      'القيمة الأصلية: ${widget.check.total} ${widget.check.currency}'),
+                  Text(
+                      'المدفوع سابقًا: ${widget.check.settledAmount.toStringAsFixed(2)} ${widget.check.currency}'),
+                  Text(
+                      'المتبقي: ${widget.check.remainingAmount.toStringAsFixed(2)} ${widget.check.currency}'),
+                  const SizedBox(height: 12),
+                  CustomDropdownFieldWithSearch(
+                    tital: 'boxName',
+                    hint: 'boxNameExample',
+                    items: checks.shownBoxesList
+                        .where((b) => b.currency == widget.check.currency)
+                        .toList(),
+                    onChanged: (value) => boxId = value?.boxId.toString(),
+                    itemAsString: (item) =>
+                        '${item.boxName} - (${item.totalBalance} ${item.currency})',
+                    compareFn: (a, b) => a.boxId == b.boxId,
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                      controller: amountController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                          labelText: 'المبلغ المدفوع الآن',
+                          border: OutlineInputBorder())),
+                  const SizedBox(height: 8),
+                  ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('تاريخ الدفع'),
+                      subtitle: Text(dateText(paidAt)),
+                      trailing: const Icon(Icons.calendar_month),
+                      onTap: () =>
+                          pickDate(context, (v) => paidAt = v, paidAt)),
+                  Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Text(
+                          'المتبقي بعد الدفع: ${remaining.toStringAsFixed(2)} ${widget.check.currency}\nلن يتأثر حساب الشخص مرة أخرى.')),
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    Expanded(
+                        child: Text('جدولة المتبقي',
+                            style: Theme.of(context).textTheme.titleMedium)),
+                    TextButton.icon(
+                        onPressed: remaining > 0 ? addInstallment : null,
+                        icon: const Icon(Icons.add),
+                        label: const Text('إضافة دفعة'))
+                  ]),
+                  ...installments.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final row = entry.value;
+                    return Card(
+                        child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(children: [
+                              Row(children: [
+                                Expanded(child: Text('الدفعة ${index + 1}')),
+                                IconButton(
+                                    onPressed: () => setState(() {
+                                          installments
+                                              .removeAt(index)
+                                              .dispose();
+                                        }),
+                                    icon: const Icon(Icons.delete_outline))
+                              ]),
+                              TextField(
+                                  controller: row.amount,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration: const InputDecoration(
+                                      labelText: 'المبلغ')),
+                              ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('تاريخ الاستحقاق'),
+                                  subtitle: Text(dateText(row.dueDate)),
+                                  trailing: const Icon(Icons.calendar_month),
+                                  onTap: () => pickDate(context,
+                                      (v) => row.dueDate = v, row.dueDate)),
+                              SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('شيك بديل فعلي'),
+                                  value: row.replacement,
+                                  onChanged: (v) =>
+                                      setState(() => row.replacement = v)),
+                              if (row.replacement) ...[
+                                TextField(
+                                    controller: row.checkNumber,
+                                    decoration: const InputDecoration(
+                                        labelText: 'رقم الشيك الجديد')),
+                                TextField(
+                                    controller: row.bank,
+                                    decoration: const InputDecoration(
+                                        labelText: 'البنك')),
+                              ],
+                            ])));
+                  }),
+                  TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(labelText: 'ملاحظات')),
+                  const SizedBox(height: 16),
+                  Obx(() => FilledButton(
+                      onPressed: checks.isLoading.value ? null : submit,
+                      child: checks.isLoading.value
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('تأكيد التسديد'))),
+                ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InstallmentDraft {
+  final amount = TextEditingController();
+  final checkNumber = TextEditingController();
+  final bank = TextEditingController();
+  DateTime dueDate = DateTime.now().add(const Duration(days: 30));
+  bool replacement = false;
+  void dispose() {
+    amount.dispose();
+    checkNumber.dispose();
+    bank.dispose();
   }
 }
 

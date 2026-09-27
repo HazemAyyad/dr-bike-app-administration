@@ -460,6 +460,7 @@ class EndPoints {
   static const String addOutgoingCheck = 'add/outgoing/check';
   static const String addIncomingCheck = 'add/incoming/check';
   static const String addIncomingChecksBatch = 'add/incoming/checks/batch';
+  static const String addOutgoingChecksBatch = 'add/outgoing/checks/batch';
   static const String checkNotificationRules = 'check-notification-rules';
   static String checkNotificationRule(int id) => 'check-notification-rules/$id';
   static const String checkNotificationOwner =
@@ -498,6 +499,8 @@ class EndPoints {
 
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
   static const String chashOutgoingCheckToBox = 'cash/outgoing/check/from/box';
+  static const String partialSettleOutgoingCheck =
+      'outgoing/checks/partial-settlement';
 
   static const String deleteIncomingCheck = 'delete/incoming/check';
   static const String deleteOutgoingCheck = 'delete/outgoing/check';

@@ -469,6 +469,7 @@ class ChecksController extends GetxController
 
   // الشيكات الصادرة
   RxList<String> outgoingChecksDidNotActOnIt = <String>[
+    'partialSettleCheck',
     'endorseTheCheck',
     'returnedCheck',
     'voidTheCheck',
@@ -476,6 +477,7 @@ class ChecksController extends GetxController
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
+    'partialSettleCheck',
     'cashTheCheck',
     'returnedCheck',
     'voidTheCheck',
@@ -607,10 +609,11 @@ class ChecksController extends GetxController
 
   void addIncomingChecksBatch({
     required BuildContext context,
+    required bool isIncoming,
     String? customerId,
     String? sellerId,
   }) async {
-    if (!canCreateIncomingChecks) {
+    if (isIncoming ? !canCreateIncomingChecks : !canCreateOutgoingChecks) {
       _showChecksPermissionDenied();
       return;
     }
@@ -645,6 +648,7 @@ class ChecksController extends GetxController
         .toList();
 
     final result = await addIncomingChecksBatchUsecase.call(
+      isIncoming: isIncoming,
       customerId: customerId ?? selectedCheckCustomerId,
       sellerId: sellerId ?? selectedCheckSellerId,
       receivedAt: receivedDay.value,
@@ -1243,6 +1247,55 @@ class ChecksController extends GetxController
 
     isLoading(false);
     update();
+  }
+
+  Future<void> partialSettleOutgoingCheck({
+    required CheckModel check,
+    required String boxId,
+    required double amount,
+    required DateTime paidAt,
+    required List<Map<String, dynamic>> installments,
+    String? notes,
+  }) async {
+    isLoading(true);
+    update();
+    try {
+      final response = await Get.find<DioConsumer>().post(
+        EndPoints.partialSettleOutgoingCheck,
+        data: {
+          'outgoing_check_id': check.id,
+          'box_id': boxId,
+          'amount': amount,
+          'paid_at': paidAt.toIso8601String().split('T').first,
+          'idempotency_key':
+              'flutter-${check.id}-${DateTime.now().microsecondsSinceEpoch}',
+          if (notes?.trim().isNotEmpty == true) 'notes': notes!.trim(),
+          'installments': installments,
+        },
+      );
+      final body = response.data;
+      if (body is! Map || body['status'] != 'success') {
+        final errors = body is Map && body['errors'] is Map
+            ? (body['errors'] as Map)
+                .values
+                .expand((e) => e is List ? e : [e])
+                .join('\n')
+            : null;
+        throw Exception(
+            errors ?? (body is Map ? body['message'] : 'تعذر تنفيذ التسديد'));
+      }
+      Get.back();
+      await Future.wait([getGeneralChecksData(), getNotCashed(), getArchive()]);
+      AppSuccessNotice.show(
+          title: 'success'.tr, message: body['message'].toString());
+    } catch (e) {
+      AppFailureNotice.show(
+          title: 'error'.tr,
+          message: e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   Future<void> bulkChashToBox({required String boxId}) async {

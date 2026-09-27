@@ -1943,6 +1943,7 @@ const Map<String, String> ar = {
   'endorseTheCheck': 'التصرف في الشيك',
   'voidTheCheck': 'اعدام الشيك',
   'cashTheCheck': 'صرف الشيك',
+  'partialSettleCheck': 'دفع جزئي / إعادة جدولة',
   'returnedCheck': 'ارجاع الشيك',
   'deleteCheck': 'حذف الشيك',
   'beneficiary': 'أسم المستفيد',
