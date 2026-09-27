@@ -41,7 +41,7 @@ abstract class BillsRepository {
 
   Future<Either<Failure, String>> purgePurchaseInvoice({
     required String billId,
-    required String confirmation,
+    required String password,
     required String reason,
   });
 

@@ -247,7 +247,7 @@ class BillsDatasource {
 
   Future<dynamic> purgePurchaseInvoice({
     required String billId,
-    required String confirmation,
+    required String password,
     required String reason,
   }) async {
     try {
@@ -255,7 +255,7 @@ class BillsDatasource {
         EndPoints.purchasePurge,
         data: {
           'bill_id': billId,
-          'confirmation': confirmation,
+          'password': password,
           'reason': reason,
         },
       );

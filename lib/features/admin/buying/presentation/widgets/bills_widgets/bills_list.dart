@@ -343,82 +343,17 @@ class _PurchaseBillCard extends GetView<BillsController> {
   }
 
   Future<void> _confirmPermanentDelete(BuildContext context) async {
-    final confirmationController = TextEditingController();
-    final reasonController = TextEditingController();
-    var canConfirm = false;
-    final expected = 'PUR-${bill.id}';
     final payload = await showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) {
-          void validate() {
-            final next = confirmationController.text.trim() == expected &&
-                reasonController.text.trim().length >= 3;
-            if (next != canConfirm) setState(() => canConfirm = next);
-          }
-
-          return AlertDialog(
-            title: const Text('حذف فاتورة الشراء نهائياً'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'سيتم حذف $expected من جميع المراحل وعكس أثر المخزون والدين والدفعات والصندوق والمرتجعات المرتبطة. إذا صُرفت الكمية أو الأموال لاحقاً فقد يصبح المخزون أو الصندوق سالباً. لا يمكن التراجع من التطبيق.',
-                  ),
-                  SizedBox(height: 12.h),
-                  TextField(
-                    controller: reasonController,
-                    onChanged: (_) => validate(),
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'سبب الحذف',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  TextField(
-                    controller: confirmationController,
-                    onChanged: (_) => validate(),
-                    decoration: InputDecoration(
-                      labelText: 'اكتب $expected للتأكيد',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('إلغاء'),
-              ),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: canConfirm
-                    ? () => Navigator.of(dialogContext).pop({
-                          'confirmation': confirmationController.text.trim(),
-                          'reason': reasonController.text.trim(),
-                        })
-                    : null,
-                icon: const Icon(Icons.delete_forever_outlined),
-                label: const Text('حذف وعكس الآثار'),
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (_) => _PurchaseInvoiceDeleteDialog(billId: bill.id.toString()),
     );
-    confirmationController.dispose();
-    reasonController.dispose();
     if (payload == null || !context.mounted) return;
 
     await controller.purgePurchaseInvoiceFromList(
       context,
       billId: bill.id.toString(),
-      confirmation: payload['confirmation']!,
+      password: payload['password']!,
       reason: payload['reason']!,
     );
   }
@@ -715,4 +650,171 @@ class _PurchaseStatusPill extends StatelessWidget {
             style: TextStyle(
                 color: color, fontSize: 9.5.sp, fontWeight: FontWeight.w900)),
       );
+}
+
+class _PurchaseInvoiceDeleteDialog extends StatefulWidget {
+  const _PurchaseInvoiceDeleteDialog({required this.billId});
+
+  final String billId;
+
+  @override
+  State<_PurchaseInvoiceDeleteDialog> createState() =>
+      _PurchaseInvoiceDeleteDialogState();
+}
+
+class _PurchaseInvoiceDeleteDialogState
+    extends State<_PurchaseInvoiceDeleteDialog> {
+  static const _textColor = Color(0xFF1F2937);
+  static const _mutedTextColor = Color(0xFF4B5563);
+  static const _dangerColor = Color(0xFFB42318);
+
+  final _reasonController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _canConfirm = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _validate() {
+    final next = _reasonController.text.trim().length >= 3 &&
+        _passwordController.text.isNotEmpty;
+    if (next != _canConfirm) setState(() => _canConfirm = next);
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: _mutedTextColor),
+      filled: true,
+      fillColor: Colors.white,
+      suffixIcon: suffixIcon,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.r),
+        borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.r),
+        borderSide: const BorderSide(color: _dangerColor, width: 1.4),
+      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reference = 'PUR-${widget.billId}';
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      title: const Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: _dangerColor),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'حذف فاتورة الشراء نهائياً',
+              style: TextStyle(color: _textColor, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF4F2),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Text(
+                'سيتم حذف $reference من جميع المراحل وعكس أثر المخزون والدين والدفعات والصندوق والمرتجعات المرتبطة. إذا صُرفت الكمية أو الأموال لاحقاً فقد يصبح المخزون أو الصندوق سالباً. لا يمكن التراجع من التطبيق.',
+                style: const TextStyle(
+                  color: _textColor,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            SizedBox(height: 14.h),
+            TextField(
+              controller: _reasonController,
+              onChanged: (_) => _validate(),
+              maxLines: 2,
+              style: const TextStyle(color: _textColor),
+              cursorColor: _dangerColor,
+              decoration: _fieldDecoration(label: 'سبب الحذف'),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: _passwordController,
+              onChanged: (_) => _validate(),
+              obscureText: _obscurePassword,
+              enableSuggestions: false,
+              autocorrect: false,
+              autofillHints: const [AutofillHints.password],
+              style: const TextStyle(color: _textColor),
+              cursorColor: _dangerColor,
+              decoration: _fieldDecoration(
+                label: 'كلمة مرور حسابك',
+                suffixIcon: IconButton(
+                  color: _mutedTextColor,
+                  tooltip: _obscurePassword
+                      ? 'إظهار كلمة المرور'
+                      : 'إخفاء كلمة المرور',
+                  onPressed: () => setState(
+                    () => _obscurePassword = !_obscurePassword,
+                  ),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: _mutedTextColor),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFFE4E1),
+            foregroundColor: _dangerColor,
+            disabledBackgroundColor: const Color(0xFFF3F4F6),
+            disabledForegroundColor: const Color(0xFF9CA3AF),
+          ),
+          onPressed: _canConfirm ? _submit : null,
+          icon: const Icon(Icons.delete_forever_outlined),
+          label: const Text('حذف وعكس الآثار'),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    if (!_canConfirm) return;
+    Navigator.of(context).pop({
+      'password': _passwordController.text,
+      'reason': _reasonController.text.trim(),
+    });
+  }
 }

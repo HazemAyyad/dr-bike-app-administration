@@ -40,12 +40,12 @@ class PurchaseWorkflowUsecase {
 
   Future<Either<Failure, String>> purgeInvoice({
     required String billId,
-    required String confirmation,
+    required String password,
     required String reason,
   }) {
     return billsRepository.purgePurchaseInvoice(
       billId: billId,
-      confirmation: confirmation,
+      password: password,
       reason: reason,
     );
   }

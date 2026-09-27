@@ -98,7 +98,7 @@ class BillsImplement implements BillsRepository {
   @override
   Future<Either<Failure, String>> purgePurchaseInvoice({
     required String billId,
-    required String confirmation,
+    required String password,
     required String reason,
   }) async {
     if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
@@ -106,7 +106,7 @@ class BillsImplement implements BillsRepository {
       return _messageResult(
         await billsDataSource.purgePurchaseInvoice(
           billId: billId,
-          confirmation: confirmation,
+          password: password,
           reason: reason,
         ),
       );

@@ -1384,7 +1384,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   Future<bool> purgePurchaseInvoiceFromList(
     BuildContext context, {
     required String billId,
-    required String confirmation,
+    required String password,
     required String reason,
   }) async {
     isWorkflowLoading(true);
@@ -1392,7 +1392,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     var deleted = false;
     final result = await purchaseWorkflowUsecase.purgeInvoice(
       billId: billId,
-      confirmation: confirmation,
+      password: password,
       reason: reason,
     );
     await result.fold<Future<void>>(
