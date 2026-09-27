@@ -178,6 +178,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
       .allBillsTasks
       .values
       .expand((bills) => bills)
+      .where((bill) => !bill.isCompletedPurchase)
       .map((bill) => bill.id)
       .toSet()
       .length;
@@ -1378,6 +1379,40 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     );
     isWorkflowLoading(false);
     update();
+  }
+
+  Future<bool> purgePurchaseInvoiceFromList(
+    BuildContext context, {
+    required String billId,
+    required String confirmation,
+    required String reason,
+  }) async {
+    isWorkflowLoading(true);
+    update();
+    var deleted = false;
+    final result = await purchaseWorkflowUsecase.purgeInvoice(
+      billId: billId,
+      confirmation: confirmation,
+      reason: reason,
+    );
+    await result.fold<Future<void>>(
+      (failure) async {
+        if (!context.mounted) return;
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message']?.toString() ?? failure.errMessage,
+        );
+      },
+      (success) async {
+        deleted = true;
+        await refreshBuyingLists();
+        AppSuccessNotice.show(title: 'success'.tr, message: success);
+      },
+    );
+    isWorkflowLoading(false);
+    update();
+    return deleted;
   }
 
   void _clearPurchaseEditor() {

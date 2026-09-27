@@ -526,7 +526,6 @@ class PurchaseOrdersController extends GetxController {
       awaitingApprovalSearch,
       unpaidSearch,
       partiallyPaidSearch,
-      completedSearch,
       depositsSearch,
     ]) {
       ids.addAll(groups.values.expand((bills) => bills).map((bill) => bill.id));

@@ -836,6 +836,7 @@ class EndPoints {
   static const String addBill = 'add/bill';
   static const String purchaseUpdateDraft = 'purchase/update-draft';
   static const String purchaseDeleteDraft = 'purchase/delete-draft';
+  static const String purchasePurge = 'purchase/purge';
   static const String purchaseReceive = 'purchase/receive';
   static const String purchaseQuickCreateOptions =
       'purchase/products/quick-create-options';

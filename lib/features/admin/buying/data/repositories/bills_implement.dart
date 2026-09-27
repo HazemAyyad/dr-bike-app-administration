@@ -96,6 +96,26 @@ class BillsImplement implements BillsRepository {
   }
 
   @override
+  Future<Either<Failure, String>> purgePurchaseInvoice({
+    required String billId,
+    required String confirmation,
+    required String reason,
+  }) async {
+    if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
+    try {
+      return _messageResult(
+        await billsDataSource.purgePurchaseInvoice(
+          billId: billId,
+          confirmation: confirmation,
+          reason: reason,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> receivePurchase({
     required String billId,
     required List<Map<String, dynamic>> items,

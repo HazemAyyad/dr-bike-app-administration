@@ -75,7 +75,9 @@ class BillDetailsScreen extends GetView<BillsController> {
                         if (page == '2')
                           const _CompactReceivingPanel()
                         else
-                          const _PurchaseWorkflowPanel(),
+                          _PurchaseWorkflowPanel(
+                            key: ObjectKey(controller.billDetails),
+                          ),
                         if (page == '3' || page == '4') ...[
                           SizedBox(height: 10.h),
                           CancelBill(billId: controller.billDetails!.billId),
@@ -657,7 +659,7 @@ class _PurchaseInvoicePrintActions extends GetView<BillsController> {
 }
 
 class _PurchaseWorkflowPanel extends StatefulWidget {
-  const _PurchaseWorkflowPanel();
+  const _PurchaseWorkflowPanel({Key? key}) : super(key: key);
 
   @override
   State<_PurchaseWorkflowPanel> createState() => _PurchaseWorkflowPanelState();
@@ -1066,11 +1068,31 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                         if (Get.isRegistered<PurchaseOrdersController>()) {
                           final purchaseOrders =
                               Get.find<PurchaseOrdersController>();
-                          purchaseOrders.changeTab(4);
+                          final paymentStatus = controller
+                                  .billDetails?.paymentStatus
+                                  .toLowerCase() ??
+                              'unpaid';
+                          purchaseOrders.changeTab(
+                            paymentStatus == 'paid'
+                                ? 6
+                                : paymentStatus == 'partially_paid' ||
+                                        paymentStatus == 'partial'
+                                    ? 5
+                                    : 4,
+                          );
                         }
+                        final paymentStatus = controller
+                                .billDetails?.paymentStatus
+                                .toLowerCase() ??
+                            'unpaid';
                         AppSuccessNotice.show(
                           title: 'success'.tr,
-                          message: 'تم اعتماد الفاتورة بنجاح',
+                          message: paymentStatus == 'paid'
+                              ? 'تم اعتماد الفاتورة وأصبحت مكتملة'
+                              : paymentStatus == 'partially_paid' ||
+                                      paymentStatus == 'partial'
+                                  ? 'تم اعتماد الفاتورة وهي مدفوعة جزئياً'
+                                  : 'تم اعتماد الفاتورة وانتقلت إلى غير مدفوعة',
                         );
                       },
               ),

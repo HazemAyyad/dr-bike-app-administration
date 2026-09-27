@@ -71,7 +71,9 @@ class PurchaseBillsTableHeader extends StatelessWidget {
           SizedBox(width: 8.w),
           Expanded(
             child: Text(
-              'اضغط على الفاتورة لعرض الأصناف والاستلام والدفعات',
+              canDeletePurchaseInvoices
+                  ? 'اضغط للتفاصيل، أو اسحب الكرت لإظهار الحذف النهائي'
+                  : 'اضغط على الفاتورة لعرض الأصناف والاستلام والدفعات',
               style: TextStyle(
                   color: AppColors.primaryColor,
                   fontSize: 10.sp,
@@ -143,7 +145,7 @@ class _PurchaseBillCard extends GetView<BillsController> {
   @override
   Widget build(BuildContext context) {
     final statusColor = _workflowColor(bill.workflowStatus);
-    return Material(
+    final card = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
@@ -299,6 +301,125 @@ class _PurchaseBillCard extends GetView<BillsController> {
           ),
         ),
       ),
+    );
+
+    if (!canDeletePurchaseInvoices) return card;
+
+    final deleteBackground = Container(
+      margin: EdgeInsets.symmetric(horizontal: 10.w, vertical: 1.5.h),
+      padding: EdgeInsets.symmetric(horizontal: 18.w),
+      decoration: BoxDecoration(
+        color: Colors.red.shade700,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(Icons.delete_forever_outlined, color: Colors.white, size: 22.sp),
+          Text(
+            'حذف نهائي',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Icon(Icons.delete_forever_outlined, color: Colors.white, size: 22.sp),
+        ],
+      ),
+    );
+
+    return Dismissible(
+      key: ValueKey('purchase-bill-$page-${bill.id}'),
+      direction: DismissDirection.horizontal,
+      background: deleteBackground,
+      secondaryBackground: deleteBackground,
+      confirmDismiss: (_) async {
+        await _confirmPermanentDelete(context);
+        return false;
+      },
+      child: card,
+    );
+  }
+
+  Future<void> _confirmPermanentDelete(BuildContext context) async {
+    final confirmationController = TextEditingController();
+    final reasonController = TextEditingController();
+    var canConfirm = false;
+    final expected = 'PUR-${bill.id}';
+    final payload = await showDialog<Map<String, String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) {
+          void validate() {
+            final next = confirmationController.text.trim() == expected &&
+                reasonController.text.trim().length >= 3;
+            if (next != canConfirm) setState(() => canConfirm = next);
+          }
+
+          return AlertDialog(
+            title: const Text('حذف فاتورة الشراء نهائياً'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'سيتم حذف $expected من جميع المراحل وعكس أثر المخزون والدين والدفعات والصندوق والمرتجعات المرتبطة. إذا صُرفت الكمية أو الأموال لاحقاً فقد يصبح المخزون أو الصندوق سالباً. لا يمكن التراجع من التطبيق.',
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: reasonController,
+                    onChanged: (_) => validate(),
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'سبب الحذف',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  TextField(
+                    controller: confirmationController,
+                    onChanged: (_) => validate(),
+                    decoration: InputDecoration(
+                      labelText: 'اكتب $expected للتأكيد',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: canConfirm
+                    ? () => Navigator.of(dialogContext).pop({
+                          'confirmation': confirmationController.text.trim(),
+                          'reason': reasonController.text.trim(),
+                        })
+                    : null,
+                icon: const Icon(Icons.delete_forever_outlined),
+                label: const Text('حذف وعكس الآثار'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    confirmationController.dispose();
+    reasonController.dispose();
+    if (payload == null || !context.mounted) return;
+
+    await controller.purgePurchaseInvoiceFromList(
+      context,
+      billId: bill.id.toString(),
+      confirmation: payload['confirmation']!,
+      reason: payload['reason']!,
     );
   }
 

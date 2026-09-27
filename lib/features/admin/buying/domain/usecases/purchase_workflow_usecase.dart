@@ -38,6 +38,18 @@ class PurchaseWorkflowUsecase {
     return billsRepository.deletePurchaseDraft(billId: billId);
   }
 
+  Future<Either<Failure, String>> purgeInvoice({
+    required String billId,
+    required String confirmation,
+    required String reason,
+  }) {
+    return billsRepository.purgePurchaseInvoice(
+      billId: billId,
+      confirmation: confirmation,
+      reason: reason,
+    );
+  }
+
   Future<Either<Failure, String>> receive({
     required String billId,
     required List<Map<String, dynamic>> items,

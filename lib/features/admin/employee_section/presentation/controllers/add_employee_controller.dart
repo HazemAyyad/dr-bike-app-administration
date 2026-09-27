@@ -721,6 +721,7 @@ class AddEmployeeController extends GetxController {
       'Adjust Stock': 'stock',
       'Adjust Inventory Cost': 'stock',
       'Manage Purchases': 'stock',
+      'Delete Purchase Invoices': 'stock',
       'Employees Section': 'employees',
       'Employee Tasks': 'employee_tasks',
       'Special Tasks': 'special_tasks',

@@ -245,6 +245,33 @@ class BillsDatasource {
     }
   }
 
+  Future<dynamic> purgePurchaseInvoice({
+    required String billId,
+    required String confirmation,
+    required String reason,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.purchasePurge,
+        data: {
+          'bill_id': billId,
+          'confirmation': confirmation,
+          'reason': reason,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = asMap(e.response?.data);
+      throw ServerException(
+        ErrorModel(
+          errorMessage: asString(data['message'], 'تعذر حذف الفاتورة'),
+          status: e.response?.statusCode ?? 500,
+          data: data,
+        ),
+      );
+    }
+  }
+
   Future<dynamic> finalizePurchase({
     required String billId,
     String initialPayment = '0',

@@ -113,6 +113,9 @@ class BillDataModel {
       workflowStatus != 'cancelled' &&
       (double.tryParse(remainingAmount) ?? 0) <= 0;
 
+  bool get isCompletedPurchase =>
+      workflowStatus == 'finalized' && isPaymentComplete;
+
   bool get isAwaitingApproval =>
       workflowStatus == 'received' || workflowStatus == 'awaiting_finalization';
 

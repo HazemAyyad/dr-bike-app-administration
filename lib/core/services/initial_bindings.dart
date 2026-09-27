@@ -53,6 +53,7 @@ const String viewInventoryCostPermissionName = 'View Inventory Cost';
 const String adjustStockPermissionName = 'Adjust Stock';
 const String adjustInventoryCostPermissionName = 'Adjust Inventory Cost';
 const String managePurchasesPermissionName = 'Manage Purchases';
+const String deletePurchaseInvoicesPermissionName = 'Delete Purchase Invoices';
 
 /// اسم صلاحية إدارة خدمات الصيانة (يطابق name_en في الباك إند).
 const String maintenanceServicesSettingsPermissionName =
@@ -81,6 +82,10 @@ bool get canManagePurchases =>
     userType == 'admin' ||
     employeePermissionNames.contains(managePurchasesPermissionName) ||
     employeePermissionNames.contains('Purchasing Section');
+
+bool get canDeletePurchaseInvoices =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(deletePurchaseInvoicesPermissionName);
 
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية إعدادات خدمات الصيانة.
 bool get canManageMaintenanceServicesSettings =>
