@@ -192,6 +192,64 @@ void main() {
     expect(selected, same(seller));
     expect(clearCalls, 0);
   });
+
+  testWidgets(
+      'keeps tapped search result during transient reactive parent rebuild',
+      (tester) async {
+    const customer = _Partner(61, 'زبون قديم');
+    const seller = _Partner(62, 'مورد نتيجة البحث', '0599111111');
+    _Partner? selected = customer;
+    var selectedIsSeller = false;
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setHostState) =>
+                  UnifiedPartnerSelector<_Partner>(
+                customers: const [customer],
+                sellers: const [seller],
+                selected: selected,
+                selectedIsSeller: selectedIsSeller,
+                idOf: (partner) => partner.id,
+                nameOf: (partner) => partner.name,
+                phoneOf: (partner) => partner.phone,
+                onSelected: (partner, isSeller) async {
+                  setHostState(() {
+                    selected = null;
+                    selectedIsSeller = isSeller;
+                  });
+                  await Future<void>.delayed(const Duration(milliseconds: 1));
+                  setHostState(() => selected = partner);
+                },
+                onCleared: () => setHostState(() => selected = null),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final field = find.byType(TextFormField);
+    await tester.tap(field);
+    await tester.enterText(field, 'نتيجة البحث');
+    await tester.pump();
+
+    await tester.tap(find.text('مورد نتيجة البحث'));
+    await tester.pump();
+    expect(tester.widget<TextFormField>(field).controller!.text,
+        'مورد نتيجة البحث');
+
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+
+    expect(selected, same(seller));
+    expect(selectedIsSeller, isTrue);
+    expect(tester.widget<TextFormField>(field).controller!.text,
+        'مورد نتيجة البحث');
+  });
 }
 
 class _Partner {

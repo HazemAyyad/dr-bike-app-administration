@@ -64,6 +64,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   bool _showResults = false;
   bool _isInteractingWithResults = false;
   bool _isCommittingSelection = false;
+  _PartnerIdentity? _committingIdentity;
   Timer? _blurTimer;
 
   @override
@@ -89,7 +90,22 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   @override
   void didUpdateWidget(covariant UnifiedPartnerSelector<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_focusNode.hasFocus) _syncSelectedText();
+    if (_focusNode.hasFocus) return;
+
+    // Some consumers update the partner type and id through separate reactive
+    // values. Ignore the transient rebuild between those updates so it cannot
+    // replace the tapped search result with the initial list/empty value.
+    final selected = widget.selected;
+    final selectedIdentity = selected == null
+        ? null
+        : _PartnerIdentity(
+            id: widget.idOf(selected),
+            isSeller: widget.selectedIsSeller,
+          );
+    if (_isCommittingSelection && selectedIdentity != _committingIdentity) {
+      return;
+    }
+    _syncSelectedText();
   }
 
   @override
@@ -135,6 +151,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   Future<void> _select(_PartnerEntry<T> entry) async {
     if (_isCommittingSelection) return;
     _isCommittingSelection = true;
+    _committingIdentity = _identityOf(entry);
     _blurTimer?.cancel();
     final name = widget.nameOf(entry.value);
     _searchController.value = TextEditingValue(
@@ -147,7 +164,9 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
       await widget.onSelected(entry.value, entry.isSeller);
     } finally {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _isCommittingSelection = false;
+        if (!mounted) return;
+        _isCommittingSelection = false;
+        _committingIdentity = null;
       });
     }
   }
