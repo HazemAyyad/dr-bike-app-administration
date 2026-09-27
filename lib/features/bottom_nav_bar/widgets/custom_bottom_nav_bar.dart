@@ -104,6 +104,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                             _selectPage(1);
                           },
                         ),
+                  if (role == 'admin') SizedBox(width: 52.w),
                   if (role == 'admin')
                     BuildNavItem(
                       icon: Icons.groups_2_outlined,

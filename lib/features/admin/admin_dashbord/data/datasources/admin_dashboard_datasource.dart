@@ -87,13 +87,13 @@ class AdminDashboardDatasource {
       final order = adminDashboard['button_order_keys'] as List? ?? const [];
       final quickAccessCount = int.tryParse(
               adminDashboard['quick_access_count']?.toString() ?? '') ??
-          6;
+          7;
       return DashboardUiPreferences(
         hiddenButtonKeys:
             keys.map((item) => item.toString()).toList(growable: false),
         buttonOrderKeys:
             order.map((item) => item.toString()).toList(growable: false),
-        quickAccessCount: quickAccessCount.clamp(3, 30),
+        quickAccessCount: quickAccessCount.clamp(3, 7),
         showAttentionSection: adminDashboard['show_attention_section'] != false,
       );
     } on DioException catch (e) {
@@ -135,13 +135,13 @@ class AdminDashboardDatasource {
       final savedQuickAccessCount = int.tryParse(
               adminDashboard['quick_access_count']?.toString() ?? '') ??
           quickAccessCount ??
-          6;
+          7;
       return DashboardUiPreferences(
         hiddenButtonKeys:
             keys.map((item) => item.toString()).toList(growable: false),
         buttonOrderKeys:
             order.map((item) => item.toString()).toList(growable: false),
-        quickAccessCount: savedQuickAccessCount.clamp(3, 30),
+        quickAccessCount: savedQuickAccessCount.clamp(3, 7),
         showAttentionSection: adminDashboard['show_attention_section'] ??
             showAttentionSection ??
             true,

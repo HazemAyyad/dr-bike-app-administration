@@ -31,7 +31,7 @@ class DashboardUiPreferences {
   const DashboardUiPreferences({
     this.hiddenButtonKeys = const [],
     this.buttonOrderKeys = const [],
-    this.quickAccessCount = 6,
+    this.quickAccessCount = 7,
     this.showAttentionSection = true,
   });
 }

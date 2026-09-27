@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -8,6 +10,10 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
+import 'dashboard_design_tokens.dart';
+import 'dashboard_section_header.dart';
+
+enum DashboardButtonStyle { legacy, quickAccess, allSections }
 
 class BuildActionButtons extends StatelessWidget {
   const BuildActionButtons({
@@ -26,6 +32,8 @@ class BuildActionButtons extends StatelessWidget {
     this.onAddShortcut,
     this.headerAction,
     this.sectionLead,
+    this.dashboardStyle = DashboardButtonStyle.legacy,
+    this.sectionIcon,
   }) : super(key: key);
 
   final List<Map<String, dynamic>> buttons;
@@ -42,6 +50,8 @@ class BuildActionButtons extends StatelessWidget {
   final VoidCallback? onAddShortcut;
   final Widget? headerAction;
   final Widget? sectionLead;
+  final DashboardButtonStyle dashboardStyle;
+  final IconData? sectionIcon;
 
   String _buttonKey(Map<String, dynamic> button) {
     final route = button['route']?.toString() ?? '';
@@ -58,56 +68,62 @@ class BuildActionButtons extends StatelessWidget {
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sectionTitle ??
-                        (employeePurpleStyle
-                            ? 'الأقسام المتاحة'
-                            : 'permissions'.tr),
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w800,
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor6
-                              : AppColors.secondaryColor,
-                        ),
-                  ),
-                ],
+        if (dashboardStyle != DashboardButtonStyle.legacy)
+          DashboardSectionHeader(
+            title: sectionTitle ?? 'الأقسام المتاحة',
+            icon: sectionIcon ?? Icons.grid_view_rounded,
+            action: headerAction,
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  sectionTitle ??
+                      (employeePurpleStyle
+                          ? 'الأقسام المتاحة'
+                          : 'permissions'.tr),
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w800,
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.secondaryColor,
+                      ),
+                ),
               ),
-            ),
-            if (headerAction != null) headerAction!,
-          ],
-        ),
+              if (headerAction != null) headerAction!,
+            ],
+          ),
         if (sectionLead != null) ...[
           SizedBox(height: 3.h),
           sectionLead!,
         ],
-        SizedBox(height: 5.h),
+        SizedBox(
+            height: dashboardStyle == DashboardButtonStyle.legacy ? 5.h : 10.h),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 320 ? 4 : 3;
-            return GridView.builder(
-              padding: EdgeInsets.zero,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                childAspectRatio:
-                    DesktopLayout.isDesktop(context) ? 1.65 : 1.05,
-                crossAxisSpacing: 8.w,
-                mainAxisSpacing: employeePurpleStyle ? 7.h : 13.h,
-              ),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredButtons.length,
-              itemBuilder: (context, index) {
+            final spacing = DashboardDesignTokens.cardSpacing.w;
+            final tileWidth =
+                (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
+            final tileHeight = DesktopLayout.isDesktop(context)
+                ? 84.0
+                : dashboardStyle == DashboardButtonStyle.quickAccess
+                    ? (tileWidth * 1.08).clamp(78.0, 94.0)
+                    : dashboardStyle == DashboardButtonStyle.allSections
+                        ? (tileWidth * 1.02).clamp(75.0, 90.0)
+                        : 78.h;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: dashboardStyle == DashboardButtonStyle.legacy
+                  ? 7.h
+                  : DashboardDesignTokens.cardSpacing.h,
+              children: List<Widget>.generate(filteredButtons.length, (index) {
                 final button = filteredButtons[index];
                 final isAddShortcut = button['id'] == 'add_shortcut';
                 final buttonKey = _buttonKey(button);
-                const tileAccents = [
+                const legacyAccents = [
                   Color(0xFFE9445B),
                   Color(0xFF16A464),
                   Color(0xFF6750E8),
@@ -115,8 +131,12 @@ class BuildActionButtons extends StatelessWidget {
                   Color(0xFF1677F2),
                   Color(0xFF52617A),
                 ];
-                final tileAccent =
-                    accentColor ?? tileAccents[index % tileAccents.length];
+                final tileAccent = accentColor ??
+                    (dashboardStyle == DashboardButtonStyle.legacy
+                        ? legacyAccents[index % legacyAccents.length]
+                        : _dashboardAccent(
+                            button['title']?.toString() ?? '',
+                          ));
                 final badgeDescriptors = (button['badgeDescriptors'] as List?)
                         ?.whereType<Map>()
                         .map((item) => _ActionBadge.fromMap(item, badges))
@@ -134,6 +154,7 @@ class BuildActionButtons extends StatelessWidget {
                   backgroundColor:
                       backgroundColor ?? tileAccent.withValues(alpha: .075),
                   onTapOverride: isAddShortcut ? onAddShortcut : null,
+                  dashboardStyle: dashboardStyle,
                 );
                 final animatedTile = _ReorderWiggle(
                   enabled: reorderMode,
@@ -141,61 +162,48 @@ class BuildActionButtons extends StatelessWidget {
                   child: tile,
                 );
                 if (onReorder == null || buttonKey.isEmpty || isAddShortcut) {
-                  return animatedTile;
+                  return SizedBox(
+                    width: tileWidth,
+                    height: tileHeight,
+                    child: animatedTile,
+                  );
                 }
-                final tileWidth =
-                    (constraints.maxWidth - ((columns - 1) * 8.w)) / columns;
-                return DragTarget<String>(
-                  onWillAcceptWithDetails: (details) =>
-                      details.data != buttonKey,
-                  onAcceptWithDetails: (details) =>
-                      onReorder!(details.data, buttonKey),
-                  builder: (context, candidates, rejected) =>
-                      LongPressDraggable<String>(
-                    data: buttonKey,
-                    delay: const Duration(milliseconds: 350),
-                    onDragStarted: onReorderStarted,
-                    onDragEnd: (_) => onReorderFinished?.call(),
-                    onDraggableCanceled: (_, __) => onReorderFinished?.call(),
-                    feedback: Material(
-                      color: Colors.transparent,
-                      child: SizedBox(
-                        width: tileWidth,
-                        height: DesktopLayout.isDesktop(context) ? 76 : 78.h,
-                        child: Opacity(opacity: .92, child: tile),
+                return SizedBox(
+                  width: tileWidth,
+                  height: tileHeight,
+                  child: DragTarget<String>(
+                    onWillAcceptWithDetails: (details) =>
+                        details.data != buttonKey,
+                    onAcceptWithDetails: (details) =>
+                        onReorder!(details.data, buttonKey),
+                    builder: (context, candidates, rejected) =>
+                        LongPressDraggable<String>(
+                      data: buttonKey,
+                      delay: const Duration(milliseconds: 350),
+                      onDragStarted: onReorderStarted,
+                      onDragEnd: (_) => onReorderFinished?.call(),
+                      onDraggableCanceled: (_, __) => onReorderFinished?.call(),
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: SizedBox(
+                          width: tileWidth,
+                          height: tileHeight,
+                          child: Opacity(opacity: .92, child: tile),
+                        ),
                       ),
-                    ),
-                    childWhenDragging: Opacity(opacity: .25, child: tile),
-                    child: AnimatedScale(
-                      scale: candidates.isEmpty ? 1 : .94,
-                      duration: const Duration(milliseconds: 120),
-                      child: animatedTile,
+                      childWhenDragging: Opacity(opacity: .25, child: tile),
+                      child: AnimatedScale(
+                        scale: candidates.isEmpty ? 1 : .94,
+                        duration: const Duration(milliseconds: 120),
+                        child: animatedTile,
+                      ),
                     ),
                   ),
                 );
-              },
+              }),
             );
           },
         ),
-
-        // زر المصاريف والأمور المالية (عرض كامل)
-        // Container(
-        //   height: 45.h,
-        //   decoration: BoxDecoration(
-        //     color: AppColors.primaryColor,
-        //     borderRadius: BorderRadius.circular(10.r),
-        //   ),
-        //   child: Center(
-        //     child: Text(
-        //       'financialMatters'.tr,
-        //       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-        //             color: Colors.white,
-        //             fontSize: 14.sp,
-        //             fontWeight: FontWeight.w700,
-        //           ),
-        //     ),
-        //   ),
-        // ),
       ],
     );
   }
@@ -329,8 +337,12 @@ Widget _buildActionButton(
   Color? accentColor,
   Color? backgroundColor,
   VoidCallback? onTapOverride,
+  DashboardButtonStyle dashboardStyle = DashboardButtonStyle.legacy,
 }) {
   final effectiveAccent = accentColor ?? AppColors.operationalPurple;
+  final isDashboard = dashboardStyle != DashboardButtonStyle.legacy;
+  final isAddShortcut = title == 'إضافة اختصار';
+  final dark = ThemeService.isDark.value;
   String desktopWindowTitle() {
     final count = badge > 0
         ? badge
@@ -350,40 +362,77 @@ Widget _buildActionButton(
     }
   }
 
-  return GestureDetector(
-    onTap: openCurrent,
+  final card = Container(
+    width: double.infinity,
+    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+    decoration: BoxDecoration(
+      color: isDashboard
+          ? DashboardDesignTokens.surfaceFor(dark)
+          : employeePurpleStyle
+              ? (dark
+                  ? AppColors.customGreyColor
+                  : backgroundColor ?? Colors.white)
+              : AppColors.primaryColor,
+      borderRadius: BorderRadius.circular(
+        isDashboard ? DashboardDesignTokens.cardRadius.r : 10.r,
+      ),
+      border: isDashboard
+          ? (isAddShortcut
+              ? null
+              : Border.all(color: DashboardDesignTokens.borderFor(dark)))
+          : employeePurpleStyle
+              ? Border.all(color: effectiveAccent.withValues(alpha: .28))
+              : null,
+      boxShadow: isDashboard && !isAddShortcut
+          ? DashboardDesignTokens.shadowFor(
+              dark,
+              quiet: dashboardStyle == DashboardButtonStyle.allSections,
+            )
+          : employeePurpleStyle
+              ? [
+                  BoxShadow(
+                    color: effectiveAccent.withValues(alpha: .06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+    ),
     child: Stack(
-      clipBehavior: Clip.none,
       children: [
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 5.w),
-          decoration: BoxDecoration(
-            color: employeePurpleStyle
-                ? (ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : backgroundColor ?? Colors.white)
-                : AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(10.r),
-            border: employeePurpleStyle
-                ? Border.all(
-                    color: effectiveAccent.withValues(alpha: .28),
-                  )
-                : null,
-            boxShadow: employeePurpleStyle
-                ? [
-                    BoxShadow(
-                      color: effectiveAccent.withValues(alpha: .06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
+        Center(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (employeePurpleStyle) ...[
+              if (isDashboard) ...[
+                Container(
+                  width: dashboardStyle == DashboardButtonStyle.quickAccess
+                      ? 36.r
+                      : 32.r,
+                  height: dashboardStyle == DashboardButtonStyle.quickAccess
+                      ? 36.r
+                      : 32.r,
+                  decoration: BoxDecoration(
+                    color: isAddShortcut
+                        ? Colors.transparent
+                        : effectiveAccent.withValues(alpha: dark ? .17 : .09),
+                    borderRadius: BorderRadius.circular(
+                      DashboardDesignTokens.iconRadius.r,
+                    ),
+                  ),
+                  child: Icon(
+                    _actionIcon(title),
+                    color: isAddShortcut
+                        ? DashboardDesignTokens.textSecondaryFor(dark)
+                        : effectiveAccent,
+                    size: dashboardStyle == DashboardButtonStyle.quickAccess
+                        ? 22.sp
+                        : 19.sp,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+              ] else if (employeePurpleStyle) ...[
                 Icon(
                   _actionIcon(title),
                   color: effectiveAccent,
@@ -391,42 +440,30 @@ Widget _buildActionButton(
                 ),
                 SizedBox(height: 3.h),
               ],
-              if (DesktopWindowService.isSupported && route.isNotEmpty)
-                Align(
-                  alignment: AlignmentDirectional.topEnd,
-                  child: Tooltip(
-                    message: 'openInNewWindow'.tr,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: () => DesktopWindowService.openRoute(
-                        route: route,
-                        title: desktopWindowTitle(),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: Icon(
-                          Icons.open_in_new_rounded,
-                          color: employeePurpleStyle
-                              ? effectiveAccent
-                              : Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               Flexible(
                 child: Text(
                   title.tr,
                   textAlign: TextAlign.center,
                   style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
-                        color: employeePurpleStyle
-                            ? (ThemeService.isDark.value
-                                ? Colors.white
-                                : AppColors.operationalNavy)
-                            : Colors.white,
-                        fontSize: employeePurpleStyle ? 10.sp : 12.sp,
-                        fontWeight: FontWeight.w700,
+                        color: isDashboard
+                            ? (isAddShortcut
+                                ? DashboardDesignTokens.textSecondaryFor(dark)
+                                : DashboardDesignTokens.textPrimaryFor(dark))
+                            : employeePurpleStyle
+                                ? (dark
+                                    ? Colors.white
+                                    : AppColors.operationalNavy)
+                                : Colors.white,
+                        fontSize: isDashboard
+                            ? dashboardStyle == DashboardButtonStyle.quickAccess
+                                ? 10.5.sp
+                                : 9.5.sp
+                            : employeePurpleStyle
+                                ? 10.sp
+                                : 12.sp,
+                        fontWeight:
+                            isAddShortcut ? FontWeight.w600 : FontWeight.w700,
+                        height: 1.15,
                       ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -435,6 +472,51 @@ Widget _buildActionButton(
             ],
           ),
         ),
+        if (DesktopWindowService.isSupported && route.isNotEmpty)
+          PositionedDirectional(
+            top: 0,
+            end: 0,
+            child: Tooltip(
+              message: 'openInNewWindow'.tr,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => DesktopWindowService.openRoute(
+                  route: route,
+                  title: desktopWindowTitle(),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.open_in_new_rounded,
+                    color: isDashboard || employeePurpleStyle
+                        ? effectiveAccent
+                        : Colors.white,
+                    size: 15,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  return GestureDetector(
+    onTap: openCurrent,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (isAddShortcut && isDashboard)
+          CustomPaint(
+            foregroundPainter: _DashedRRectPainter(
+              color: DashboardDesignTokens.textSecondaryFor(dark)
+                  .withValues(alpha: .32),
+              radius: DashboardDesignTokens.cardRadius.r,
+            ),
+            child: card,
+          )
+        else
+          card,
         if (badgeDescriptors.isNotEmpty)
           PositionedDirectional(
             top: -8.h,
@@ -531,6 +613,78 @@ IconData _actionIcon(String title) {
     default:
       return Icons.apps_rounded;
   }
+}
+
+Color _dashboardAccent(String title) {
+  switch (title) {
+    case 'sales':
+      return DashboardDesignTokens.info;
+    case 'boxes':
+    case 'dailyBoxes':
+      return DashboardDesignTokens.warning;
+    case 'التقارير':
+      return DashboardDesignTokens.reports;
+    case 'debts':
+    case 'employeeTasks':
+    case 'followUpDepartment':
+      return DashboardDesignTokens.danger;
+    case 'stock':
+    case 'generalData':
+    case 'productManagement':
+      return DashboardDesignTokens.success;
+    case 'maintenance':
+    case 'checksandCommitments':
+    case 'targetSetting':
+      return DashboardDesignTokens.primary;
+    case 'purchasesandReturns':
+    case 'employeeReminders':
+      return DashboardDesignTokens.info;
+    case 'projectManagement':
+    case 'privateTasks':
+      return DashboardDesignTokens.warning;
+    default:
+      return const Color(0xFF526785);
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+  });
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3;
+    final rect = Offset.zero & size;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          rect.deflate(.8),
+          Radius.circular(radius),
+        ),
+      );
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(distance, math.min(distance + 6, metric.length)),
+          paint,
+        );
+        distance += 10;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 Widget _buildBadgeDetailsButton(List<_ActionBadge> badges) {

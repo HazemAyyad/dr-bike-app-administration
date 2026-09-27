@@ -21,6 +21,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     this.beforeNavigate,
     this.backgroundColor,
     this.compact = false,
+    this.centered = false,
   }) : super(key: key);
 
   final RxBool isAddMenuOpen;
@@ -33,16 +34,17 @@ class CustomFloatingActionButton extends StatelessWidget {
   final Future<bool> Function(Map<String, String> item)? beforeNavigate;
   final Color? backgroundColor;
   final bool compact;
+  final bool centered;
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.bottomRight,
+      alignment: centered ? Alignment.bottomCenter : Alignment.bottomRight,
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
-          alignment: Alignment.bottomRight,
+          alignment: centered ? Alignment.bottomCenter : Alignment.bottomRight,
           children: [
             Obx(() {
               if (!isAddMenuOpen.value) return const SizedBox.shrink();
@@ -148,20 +150,28 @@ class CustomFloatingActionButton extends StatelessWidget {
 
             // زر الإضافة
             Positioned(
-              right: Get.locale!.languageCode == 'ar' ? 30.w : 0.w,
+              right: centered
+                  ? 0
+                  : Get.locale!.languageCode == 'ar'
+                      ? 30.w
+                      : 0.w,
+              left: centered ? 0 : null,
               bottom: 10.h,
-              child: SizedBox(
-                width: compact ? 46.r : 56.r,
-                height: compact ? 46.r : 56.r,
-                child: FloatingActionButton(
-                  onPressed: onTap,
-                  backgroundColor: backgroundColor ?? AppColors.secondaryColor,
-                  elevation: 2.0,
-                  shape: const CircleBorder(),
-                  child: Icon(
-                    Icons.add,
-                    color: AppColors.whiteColor,
-                    size: compact ? 29.sp : 42.sp,
+              child: Center(
+                child: SizedBox(
+                  width: compact ? 52.r : 56.r,
+                  height: compact ? 52.r : 56.r,
+                  child: FloatingActionButton(
+                    onPressed: onTap,
+                    backgroundColor:
+                        backgroundColor ?? AppColors.secondaryColor,
+                    elevation: 5.0,
+                    shape: const CircleBorder(),
+                    child: Icon(
+                      Icons.add,
+                      color: AppColors.whiteColor,
+                      size: compact ? 30.sp : 42.sp,
+                    ),
                   ),
                 ),
               ),

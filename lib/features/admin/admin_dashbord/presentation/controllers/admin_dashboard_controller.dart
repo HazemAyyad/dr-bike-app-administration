@@ -5,6 +5,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/user_data.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../maintenance/data/repositories/maintenance_implement.dart';
@@ -203,12 +204,25 @@ class AdminDashboardController extends GetxController
   final RxList<String> hiddenDashboardButtonKeys = <String>[].obs;
   final RxList<String> dashboardButtonOrderKeys = <String>[].obs;
   final RxBool isUiPreferencesSaving = false.obs;
-  final RxInt dashboardQuickAccessCount = 6.obs;
+  final RxInt dashboardQuickAccessCount = 7.obs;
   final RxBool isDashboardReorderMode = false.obs;
   final RxBool isDashboardPreparing = true.obs;
   final RxBool showDashboardAttentionSection = true.obs;
   final RxString dashboardSectionsSearch = ''.obs;
   final RxBool isDashboardSectionsSearchOpen = false.obs;
+  final RxString dashboardUserName = ''.obs;
+  final RxString dashboardUserRole = ''.obs;
+  final RxString dashboardUserImage = ''.obs;
+
+  static const List<String> _defaultQuickAccessRoutes = [
+    AppRoutes.SALESSCREEN,
+    AppRoutes.BOXESSCREEN,
+    AppRoutes.REPORTSSCREEN,
+    AppRoutes.DEBTSSCREEN,
+    AppRoutes.STOCKSCREEN,
+    AppRoutes.MAINTENANCESCREEN,
+    AppRoutes.GENERALSETTINGSSCREEN,
+  ];
 
   void toggleDashboardSectionsSearch() {
     isDashboardSectionsSearchOpen.toggle();
@@ -219,9 +233,12 @@ class AdminDashboardController extends GetxController
   }
 
   void setDashboardSectionsSearch(String value) {
-    dashboardSectionsSearch.value = value.trim().toLowerCase();
+    dashboardSectionsSearch.value = _normalizeDashboardSearch(value);
     update();
   }
+
+  String _normalizeDashboardSearch(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   List<Map<String, dynamic>> filterDashboardButtons(
     Iterable<Map<String, dynamic>> source,
@@ -229,10 +246,13 @@ class AdminDashboardController extends GetxController
     final query = dashboardSectionsSearch.value;
     if (query.isEmpty) return source.toList(growable: false);
     return source.where((button) {
-      final rawTitle = button['title']?.toString() ?? '';
-      final translatedTitle = rawTitle.tr;
-      return rawTitle.toLowerCase().contains(query) ||
-          translatedTitle.toLowerCase().contains(query);
+      final rawTitle = _normalizeDashboardSearch(
+        button['title']?.toString() ?? '',
+      );
+      final translatedTitle = _normalizeDashboardSearch(
+        (button['title']?.toString() ?? '').tr,
+      );
+      return rawTitle.contains(query) || translatedTitle.contains(query);
     }).toList(growable: false);
   }
 
@@ -243,7 +263,20 @@ class AdminDashboardController extends GetxController
     visible.sort((a, b) {
       final aIndex = dashboardButtonOrderKeys.indexOf(dashboardButtonKey(a));
       final bIndex = dashboardButtonOrderKeys.indexOf(dashboardButtonKey(b));
-      return (aIndex < 0 ? 9999 : aIndex).compareTo(bIndex < 0 ? 9999 : bIndex);
+      if (aIndex >= 0 || bIndex >= 0) {
+        return (aIndex < 0 ? 9999 : aIndex)
+            .compareTo(bIndex < 0 ? 9999 : bIndex);
+      }
+      final aDefault = _defaultQuickAccessRoutes.indexOf(
+        dashboardButtonKey(a),
+      );
+      final bDefault = _defaultQuickAccessRoutes.indexOf(
+        dashboardButtonKey(b),
+      );
+      final defaultComparison = (aDefault < 0 ? 9999 : aDefault)
+          .compareTo(bDefault < 0 ? 9999 : bDefault);
+      if (defaultComparison != 0) return defaultComparison;
+      return buttons.indexOf(a).compareTo(buttons.indexOf(b));
     });
     return visible;
   }
@@ -264,7 +297,8 @@ class AdminDashboardController extends GetxController
       final preferences = await getAdminUiPreferencesUsecase.call();
       hiddenDashboardButtonKeys.assignAll(preferences.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(preferences.buttonOrderKeys);
-      dashboardQuickAccessCount.value = preferences.quickAccessCount;
+      dashboardQuickAccessCount.value =
+          preferences.quickAccessCount.clamp(3, 7);
       showDashboardAttentionSection.value = preferences.showAttentionSection;
       update();
     } catch (_) {
@@ -319,12 +353,12 @@ class AdminDashboardController extends GetxController
       final saved = await saveAdminUiPreferencesUsecase.call(
         const [],
         buttonOrderKeys: const [],
-        quickAccessCount: 6,
+        quickAccessCount: 7,
         showAttentionSection: true,
       );
       hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
-      dashboardQuickAccessCount.value = saved.quickAccessCount;
+      dashboardQuickAccessCount.value = saved.quickAccessCount.clamp(3, 7);
       showDashboardAttentionSection.value = saved.showAttentionSection;
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
@@ -683,6 +717,7 @@ class AdminDashboardController extends GetxController
     await Future.wait([
       getMainDashboardData(),
       loadUiPreferences(),
+      loadDashboardUser(),
       if (userType == 'admin' &&
           Get.isRegistered<AdminNotificationBadgeController>())
         Get.find<AdminNotificationBadgeController>().refresh(),
@@ -695,12 +730,33 @@ class AdminDashboardController extends GetxController
       await Future.wait([
         getMainDashboardData(),
         loadUiPreferences(),
+        loadDashboardUser(),
       ]);
     } catch (_) {
       // Each section keeps its current fallback; never leave the skeleton stuck.
     } finally {
       isDashboardPreparing.value = false;
       update();
+    }
+  }
+
+  Future<void> loadDashboardUser() async {
+    dashboardUserName.value = userName;
+    dashboardUserRole.value = userType == 'admin' ? 'مدير النظام' : '';
+    dashboardUserImage.value = '';
+    try {
+      final saved = await UserData.getSavedUser();
+      if (saved == null) return;
+      if (saved.user.name.trim().isNotEmpty) {
+        dashboardUserName.value = saved.user.name.trim();
+      }
+      final jobTitle = saved.user.employee.jobTitle?.trim() ?? '';
+      if (jobTitle.isNotEmpty) {
+        dashboardUserRole.value = jobTitle;
+      }
+      dashboardUserImage.value = saved.user.employee.employeeImg.trim();
+    } catch (_) {
+      // The authenticated session name remains a safe fallback.
     }
   }
 
@@ -751,7 +807,7 @@ class AdminDashboardController extends GetxController
   }
 
   Future<void> setDashboardQuickAccessCount(int count) async {
-    final next = count.clamp(3, 30);
+    final next = count.clamp(3, 7);
     if (next == dashboardQuickAccessCount.value ||
         isUiPreferencesSaving.value) {
       return;
@@ -767,7 +823,7 @@ class AdminDashboardController extends GetxController
         buttonOrderKeys: dashboardButtonOrderKeys.toList(growable: false),
         quickAccessCount: next,
       );
-      dashboardQuickAccessCount.value = saved.quickAccessCount;
+      dashboardQuickAccessCount.value = saved.quickAccessCount.clamp(3, 7);
     } catch (_) {
       dashboardQuickAccessCount.value = previous;
       AppFailureNotice.show(
