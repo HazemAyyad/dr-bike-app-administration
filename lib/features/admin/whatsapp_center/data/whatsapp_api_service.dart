@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import 'package:http_parser/http_parser.dart';
 
 import '../../../../core/databases/api/dio_consumer.dart';
 
@@ -150,7 +151,11 @@ class WhatsAppApiService {
       int? durationSeconds,
       bool voiceNote = false}) async {
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(path, filename: name),
+      'file': await MultipartFile.fromFile(
+        path,
+        filename: name,
+        contentType: _uploadContentType(name, mediaKind),
+      ),
       if (caption != null && caption.isNotEmpty) 'caption': caption,
       if (mediaKind != null) 'media_kind': mediaKind,
       if (durationSeconds != null && durationSeconds > 0)
@@ -160,6 +165,26 @@ class WhatsAppApiService {
     final Response response = await _api
         .post('$_socialBase/conversations/$channel/$id/send-media', data: form);
     return _map(response.data);
+  }
+
+  MediaType? _uploadContentType(String name, String? mediaKind) {
+    final extension = name.toLowerCase().split('.').last;
+    if (mediaKind == 'image') {
+      if (extension == 'png') return MediaType('image', 'png');
+      if (extension == 'webp') return MediaType('image', 'webp');
+      if (extension == 'gif') return MediaType('image', 'gif');
+      return MediaType('image', 'jpeg');
+    }
+    if (mediaKind == 'video') {
+      return MediaType('video', extension == 'mov' ? 'quicktime' : 'mp4');
+    }
+    if (mediaKind == 'audio') {
+      if (extension == 'ogg') return MediaType('audio', 'ogg');
+      if (extension == 'wav') return MediaType('audio', 'wav');
+      if (extension == 'mp3') return MediaType('audio', 'mpeg');
+      return MediaType('audio', 'mp4');
+    }
+    return null;
   }
 
   Future<List<int>> getRemoteMedia(String url) async {
