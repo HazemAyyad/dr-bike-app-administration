@@ -5,6 +5,8 @@ String purchaseWorkflowLabel(String status) {
       return 'بانتظار الاستلام';
     case 'partially_received':
       return 'استلام جزئي';
+    case 'receiving_issues':
+      return 'فروقات استلام';
     case 'received':
       return 'مستلمة بانتظار الاعتماد';
     case 'awaiting_finalization':

@@ -24,8 +24,6 @@ import '../../utils/purchase_status_labels.dart';
 import '../../widgets/purchase_orders_widgets/cancel_bill.dart';
 import '../../../../../../core/helpers/app_success_notice.dart';
 
-import '../../../../../../core/helpers/app_failure_notice.dart';
-
 class BillDetailsScreen extends GetView<BillsController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
 
@@ -334,23 +332,18 @@ class _CompactReceivingPanelState extends State<_CompactReceivingPanel> {
     String option,
   ) async {
     final row = PurchaseReceivingRowModel(product: product);
-    final saved = await _showReceivingItemEditor(
+    final submitted = await _showReceivingItemEditor(
       context,
       row,
       mode: option,
+      onSubmit: (sheetContext, draft) =>
+          controller.receiveReviewedShownItem(sheetContext, draft),
     );
-    if (!saved || row.isEmpty || !context.mounted) {
+    if (!submitted || !context.mounted) {
       row.dispose();
       return;
     }
-    if (_busy) {
-      row.dispose();
-      return;
-    }
-    setState(() => _receivingItemId = product.billItemId);
     try {
-      final ok = await controller.receiveReviewedShownItem(context, row);
-      if (!ok || !context.mounted) return;
       AppSuccessNotice.show(
         title: 'تم تسجيل الاستلام',
         message: product.displayName,
@@ -358,7 +351,6 @@ class _CompactReceivingPanelState extends State<_CompactReceivingPanel> {
       await _moveToReceivedTabIfComplete(context);
     } finally {
       row.dispose();
-      if (mounted) setState(() => _receivingItemId = null);
     }
   }
 
@@ -366,6 +358,13 @@ class _CompactReceivingPanelState extends State<_CompactReceivingPanel> {
     final details = controller.billDetails;
     if (details == null ||
         details.products.any((product) => product.remainingQuantity > 0) ||
+        details.products.any(
+          (product) =>
+              (num.tryParse(product.missingAmount) ?? 0) > 0 ||
+              product.damagedQuantity > 0 ||
+              product.mismatchedQuantity > 0 ||
+              product.custodyQuantity > 0,
+        ) ||
         !Get.isRegistered<PurchaseOrdersController>()) {
       return;
     }
@@ -682,7 +681,7 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
         details.products.isNotEmpty &&
         details.products.every((item) => item.remainingQuantity <= 0) &&
         details.products.any((item) => item.receivedOwnedQuantity > 0);
-    final canPay = details.workflowStatus != 'cancelled' &&
+    final canPay = details.workflowStatus == 'finalized' &&
         (double.tryParse(details.remainingAmount) ?? 0) > 0;
     final totalOrdered = details.products.fold<num>(
       0,
@@ -1338,6 +1337,8 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
@@ -1370,7 +1371,9 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            onPressed: controller.isWorkflowLoading.value
+                                ? null
+                                : () => Navigator.of(sheetContext).pop(),
                             icon: const Icon(Icons.close),
                           ),
                         ],
@@ -1396,12 +1399,6 @@ class _PurchaseWorkflowPanelState extends State<_PurchaseWorkflowPanel> {
                               AppSuccessNotice.show(
                                 title: 'success'.tr,
                                 message: 'تم تسجيل الاستلام بنجاح',
-                              );
-                            } else {
-                              AppFailureNotice.show(
-                                title: 'error'.tr,
-                                message:
-                                    'لم يتم تسجيل الاستلام، راجع الكميات أو رسالة الخطأ',
                               );
                             }
                           },
@@ -3113,12 +3110,19 @@ Future<bool> _showReceivingItemEditor(
   BuildContext context,
   PurchaseReceivingRowModel row, {
   required String mode,
+  Future<bool> Function(
+    BuildContext context,
+    PurchaseReceivingRowModel row,
+  )? onSubmit,
 }) async {
   final draft = PurchaseReceivingRowModel(product: row.product)
     ..prepareForMode(mode);
+  var submitting = false;
   final saved = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
     backgroundColor: Colors.white,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
@@ -3177,7 +3181,9 @@ Future<bool> _showReceivingItemEditor(
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.pop(sheetContext, false),
+                        onPressed: submitting
+                            ? null
+                            : () => Navigator.pop(sheetContext, false),
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -3195,11 +3201,36 @@ Future<bool> _showReceivingItemEditor(
                 Padding(
                   padding: EdgeInsets.all(14.w),
                   child: FilledButton.icon(
-                    onPressed: draft.isValid
-                        ? () => Navigator.pop(sheetContext, true)
-                        : null,
-                    icon: const Icon(Icons.check),
-                    label: Text(_receivingModeSaveLabel(draft.mode)),
+                    onPressed: !draft.isValid || submitting
+                        ? null
+                        : () async {
+                            if (onSubmit == null) {
+                              Navigator.pop(sheetContext, true);
+                              return;
+                            }
+                            setSheetState(() => submitting = true);
+                            final ok = await onSubmit(sheetContext, draft);
+                            if (!sheetContext.mounted) return;
+                            if (ok) {
+                              Navigator.pop(sheetContext, true);
+                            } else {
+                              setSheetState(() => submitting = false);
+                            }
+                          },
+                    icon: submitting
+                        ? SizedBox.square(
+                            dimension: 17.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check),
+                    label: Text(
+                      submitting
+                          ? 'جاري الحفظ...'
+                          : _receivingModeSaveLabel(draft.mode),
+                    ),
                     style: FilledButton.styleFrom(
                       minimumSize: Size(double.infinity, 46.h),
                     ),
@@ -3231,6 +3262,8 @@ String _receivingModeTitle(String mode) {
       return 'تسجيل زيادة / أمانة';
     case 'price':
       return 'استلام مع تعديل السعر';
+    case 'mixed':
+      return 'تسجيل استلام مختلط';
     default:
       return 'استلام عادي';
   }
@@ -3279,6 +3312,13 @@ List<PopupMenuEntry<String>> _receivingModeMenuItems() => const [
           text: 'تعديل السعر',
         ),
       ),
+      PopupMenuItem(
+        value: 'mixed',
+        child: _ReceivingMenuItem(
+          icon: Icons.tune_rounded,
+          text: 'استلام مختلط',
+        ),
+      ),
     ];
 
 String _receivingModeSaveLabel(String mode) {
@@ -3291,6 +3331,8 @@ String _receivingModeSaveLabel(String mode) {
       return 'حفظ غير المطابق';
     case 'extra':
       return 'حفظ الأمانة';
+    case 'mixed':
+      return 'حفظ الحالة المختلطة';
     default:
       return 'حفظ الاستلام';
   }
@@ -3308,6 +3350,8 @@ String _receivingModeDescription(String mode) {
       return 'الزيادة لا تدخل المخزون، وتُسجّل كأمانة حتى شرائها أو إرجاعها.';
     case 'price':
       return 'حدد الكمية السليمة المستلمة ثم أدخل سعر الوحدة الجديد.';
+    case 'mixed':
+      return 'وزّع الاستلام بين السليم والناقص والتالف وغير المطابق، وسجّل أي زيادة كأمانة مستقلة.';
     default:
       return 'حدد فقط الكمية السليمة التي ستدخل إلى المخزون.';
   }
@@ -3325,6 +3369,8 @@ IconData _receivingModeIcon(String mode) {
       return Icons.handshake_outlined;
     case 'price':
       return Icons.price_change_outlined;
+    case 'mixed':
+      return Icons.tune_rounded;
     default:
       return Icons.inventory_2_outlined;
   }
@@ -3340,6 +3386,8 @@ Color _receivingModeColor(String mode) {
       return Colors.indigo.shade700;
     case 'price':
       return Colors.orange.shade800;
+    case 'mixed':
+      return Colors.deepPurple.shade700;
     default:
       return Colors.green.shade700;
   }
@@ -3424,7 +3472,32 @@ class _ReceivingModeEditor extends StatelessWidget {
           controller: row.acceptedController,
           onChanged: onChanged,
         ),
-        if (issueController != null) ...[
+        if (row.mode == 'mixed') ...[
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: 'الكمية الناقصة',
+            controller: row.missingController,
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: 'كمية التالف',
+            controller: row.damagedController,
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: 'الكمية غير المطابقة',
+            controller: row.mismatchedController,
+            onChanged: onChanged,
+          ),
+          SizedBox(height: 10.h),
+          _ReceivingNumberField(
+            label: 'كمية الزيادة / الأمانة',
+            controller: row.extraController,
+            onChanged: onChanged,
+          ),
+        ] else if (issueController != null) ...[
           SizedBox(height: 10.h),
           _ReceivingNumberField(
             label: issueLabel,
@@ -3463,6 +3536,26 @@ class _ReceivingModeEditor extends StatelessWidget {
                   value: _receivingQty(
                     num.tryParse(issueController.text.trim()) ?? 0,
                   ),
+                ),
+              if (row.mode == 'mixed' && row.autoMissing > 0)
+                _StatusChip(
+                  label: 'ناقص',
+                  value: _receivingQty(row.autoMissing),
+                ),
+              if (row.mode == 'mixed' && row.damaged > 0)
+                _StatusChip(
+                  label: 'تالف',
+                  value: _receivingQty(row.damaged),
+                ),
+              if (row.mode == 'mixed' && row.mismatched > 0)
+                _StatusChip(
+                  label: 'غير مطابق',
+                  value: _receivingQty(row.mismatched),
+                ),
+              if (row.mode == 'mixed' && row.effectiveExtra > 0)
+                _StatusChip(
+                  label: 'أمانة',
+                  value: _receivingQty(row.effectiveExtra),
                 ),
               _StatusChip(
                 label: 'يبقى من الطلب',

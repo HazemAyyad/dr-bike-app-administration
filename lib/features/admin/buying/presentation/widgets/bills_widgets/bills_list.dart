@@ -376,6 +376,8 @@ class _PurchaseBillCard extends GetView<BillsController> {
         return Colors.green.shade700;
       case 'partially_received':
         return Colors.deepOrange.shade700;
+      case 'receiving_issues':
+        return Colors.red.shade700;
       case 'awaiting_finalization':
         return Colors.indigo;
       case 'awaiting_receiving':

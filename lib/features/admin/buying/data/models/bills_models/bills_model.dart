@@ -100,7 +100,7 @@ class BillDataModel {
   }
 
   bool get canQuickPay =>
-      workflowStatus != 'cancelled' &&
+      workflowStatus == 'finalized' &&
       (double.tryParse(remainingAmount) ?? 0) > 0;
 
   bool get needsFullPayment =>

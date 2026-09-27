@@ -911,13 +911,33 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? bills.keys.toList() : []}',
       );
     }
-    final allBillsTasks = mapListFromResponseKey(
+    final activeBills = mapListFromResponseKey(
       bills,
       'bills',
       (Map<String, dynamic> m) => BillDataModel.fromJson(m),
       debugScope: 'BillsController.getBills.unfinished',
     );
-    BuyingServes().allBillsTasks.value = groupByDate(allBillsTasks);
+
+    final issuesResponse = await getBillsUsecase.call(page: '3');
+    final issueBills = mapListFromResponseKey(
+      issuesResponse,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'BillsController.getBills.issues',
+    );
+    final completedResponse = await getBillsUsecase.call(page: '4');
+    final completedBills = mapListFromResponseKey(
+      completedResponse,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'BillsController.getBills.completed',
+    );
+    final activeById = <int, BillDataModel>{
+      for (final bill in [...activeBills, ...issueBills, ...completedBills])
+        if (bill.workflowStatus != 'cancelled') bill.id: bill,
+    };
+    BuyingServes().allBillsTasks.value =
+        groupByDate(activeById.values.toList());
     _applyPurchaseBillFilters();
     isLoading(false);
     update();
@@ -2431,21 +2451,18 @@ class PurchaseReceivingRowModel {
   num get damaged => _num(damagedController);
   num get mismatched => _num(mismatchedController);
   bool get hasDeliveredEntry => acceptedController.text.trim().isNotEmpty;
-  num get effectiveExtra => mode == 'extra' ? extra : 0;
+  num get effectiveExtra => extra;
   num get autoAccepted => accepted;
-  num get autoMissing => mode == 'missing' ? missing : 0;
+  num get autoMissing => missing;
   num get orderedOutcomeQuantity =>
-      accepted +
-      autoMissing +
-      (mode == 'damaged' ? damaged : 0) +
-      (mode == 'mismatched' ? mismatched : 0);
+      accepted + autoMissing + damaged + mismatched;
 
   bool get isEmpty =>
       accepted <= 0 &&
       autoMissing <= 0 &&
       effectiveExtra <= 0 &&
-      (mode == 'damaged' ? damaged : 0) <= 0 &&
-      (mode == 'mismatched' ? mismatched : 0) <= 0;
+      damaged <= 0 &&
+      mismatched <= 0;
 
   String? get validationMessage {
     if (accepted < 0 ||
@@ -2477,6 +2494,8 @@ class PurchaseReceivingRowModel {
         break;
       case 'extra':
         if (effectiveExtra <= 0) return 'أدخل كمية الزيادة / الأمانة';
+        break;
+      case 'mixed':
         break;
     }
     return null;
@@ -2520,6 +2539,13 @@ class PurchaseReceivingRowModel {
       case 'extra':
         acceptedController.text = _qty(remaining);
         extraController.text = '1';
+        break;
+      case 'mixed':
+        acceptedController.text = _qty(remaining);
+        missingController.text = '0';
+        damagedController.text = '0';
+        mismatchedController.text = '0';
+        extraController.text = '0';
         break;
       default:
         acceptedController.text = _qty(remaining);
@@ -2567,8 +2593,8 @@ class PurchaseReceivingRowModel {
       'accepted_quantity': accepted,
       'missing_quantity': autoMissing,
       'extra_quantity': effectiveExtra,
-      'damaged_quantity': mode == 'damaged' ? damaged : 0,
-      'mismatched_quantity': mode == 'mismatched' ? mismatched : 0,
+      'damaged_quantity': damaged,
+      'mismatched_quantity': mismatched,
       'unit_price': unitPriceController.text.trim(),
       if (reasonController.text.trim().isNotEmpty)
         'reason': reasonController.text.trim(),
