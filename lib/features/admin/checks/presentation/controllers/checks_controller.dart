@@ -1562,6 +1562,20 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> archiveTasks = {};
   final Map<String, double> totalArchive = {};
 
+  Map<String, List<CheckModel>> _sortArchiveNewestFirst(
+    Map<String, List<CheckModel>> grouped,
+  ) {
+    final entries = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+    for (final entry in entries) {
+      entry.value.sort((a, b) {
+        final byDueDate = b.dueDate.compareTo(a.dueDate);
+        return byDueDate != 0 ? byDueDate : b.id.compareTo(a.id);
+      });
+    }
+    return Map<String, List<CheckModel>>.fromEntries(entries);
+  }
+
   Future<void> getArchive({bool isStopLoding = true}) async {
     if (isStopLoding) isLoading(true);
 
@@ -1589,6 +1603,10 @@ class ChecksController extends GetxController
       final total = double.tryParse(task.total.toString()) ?? 0.0;
       totalArchive[dateKey] = (totalArchive[dateKey] ?? 0.0) + total;
     }
+    final sortedArchive = _sortArchiveNewestFirst(archiveTasks);
+    archiveTasks
+      ..clear()
+      ..addAll(sortedArchive);
     filteredArchiveTasks.assignAll(archiveTasks);
     _syncTabCounts();
     if (isStopLoding) isLoading(false);
@@ -1767,8 +1785,9 @@ class ChecksController extends GetxController
   Map<String, List<CheckModel>> filterChecks(
     Map<String, List<CheckModel>> source,
     String nameQuery,
-    bool filterByAmount,
-  ) {
+    bool filterByAmount, {
+    bool newestFirst = false,
+  }) {
     // لو الفلاتر كلها فاضية → رجع النسخة الأصلية زي ما هي
     if (nameQuery.isEmpty && !filterByAmount) {
       return Map.from(source);
@@ -1845,9 +1864,13 @@ class ChecksController extends GetxController
         return aDate.compareTo(bDate);
       });
 
-    final Map<String, List<CheckModel>> sortedGrouped = {
+    Map<String, List<CheckModel>> sortedGrouped = {
       for (var key in sortedKeys) key: grouped[key]!
     };
+
+    if (newestFirst) {
+      sortedGrouped = _sortArchiveNewestFirst(sortedGrouped);
+    }
 
     return sortedGrouped;
   }
@@ -1864,7 +1887,12 @@ class ChecksController extends GetxController
     );
 
     filteredArchiveTasks.assignAll(
-      filterChecks(archiveTasks, query, amountFilter.value),
+      filterChecks(
+        archiveTasks,
+        query,
+        amountFilter.value,
+        newestFirst: true,
+      ),
     );
 
     filteredInComingTasks.assignAll(
