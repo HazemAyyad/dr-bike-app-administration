@@ -72,6 +72,7 @@ abstract class SalesRepository {
     String saleKind = kInstantSaleKindRegular,
     String? closedDayEditMode,
     String? closedDayEditReason,
+    Map<int, double>? restorationUnitCosts,
   });
 
   Future<Either<Failure, String>> cancelInstantSale(

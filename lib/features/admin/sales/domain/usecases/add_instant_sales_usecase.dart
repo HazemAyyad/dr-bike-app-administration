@@ -33,6 +33,7 @@ class AddInstantSalesUsecase {
     String saleKind = kInstantSaleKindRegular,
     String? closedDayEditMode,
     String? closedDayEditReason,
+    Map<int, double>? restorationUnitCosts,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -58,6 +59,7 @@ class AddInstantSalesUsecase {
       saleKind: saleKind,
       closedDayEditMode: closedDayEditMode,
       closedDayEditReason: closedDayEditReason,
+      restorationUnitCosts: restorationUnitCosts,
     );
   }
 }

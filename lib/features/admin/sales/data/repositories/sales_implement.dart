@@ -177,7 +177,8 @@ class SalesImplement implements SalesRepository {
       String? instantSaleId,
       String saleKind = kInstantSaleKindRegular,
       String? closedDayEditMode,
-      String? closedDayEditReason}) async {
+      String? closedDayEditReason,
+      Map<int, double>? restorationUnitCosts}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -206,6 +207,7 @@ class SalesImplement implements SalesRepository {
         saleKind: saleKind,
         closedDayEditMode: closedDayEditMode,
         closedDayEditReason: closedDayEditReason,
+        restorationUnitCosts: restorationUnitCosts,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

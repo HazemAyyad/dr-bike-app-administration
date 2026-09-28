@@ -623,6 +623,7 @@ class SalesDatasource {
     String saleKind = kInstantSaleKindRegular,
     String? closedDayEditMode,
     String? closedDayEditReason,
+    Map<int, double>? restorationUnitCosts,
   }) async {
     try {
       String resolvedProductId = productId;
@@ -732,6 +733,9 @@ class SalesDatasource {
           'closed_day_edit_mode': closedDayEditMode,
         if (closedDayEditReason != null && closedDayEditReason.isNotEmpty)
           'closed_day_edit_reason': closedDayEditReason,
+        if (restorationUnitCosts != null)
+          for (final entry in restorationUnitCosts.entries)
+            'restoration_unit_costs[${entry.key}]': entry.value.toString(),
         ...otherProductsMap,
       };
       if (isEdit) {
