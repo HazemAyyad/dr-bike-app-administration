@@ -1574,8 +1574,6 @@ class ChecksController extends GetxController
       return month1.compareTo(month2);
     });
 
-    entries = entries.reversed.toList(); // الأحدث فوق
-
     final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
     inComingTasks
       ..clear()
@@ -1627,14 +1625,14 @@ class ChecksController extends GetxController
       tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
     });
 
-    // ترتيب الشهور (الأحدث فوق)
+    // القوائم النشطة: الأقرب/الأقدم استحقاقًا يظهر أولاً.
     final entries = cashedToPersonTasks.entries.toList()
       ..sort((e1, e2) {
         final y1 = int.parse(e1.key.split('/')[0]);
         final m1 = int.parse(e1.key.split('/')[1]);
         final y2 = int.parse(e2.key.split('/')[0]);
         final m2 = int.parse(e2.key.split('/')[1]);
-        return y1 != y2 ? y2.compareTo(y1) : m2.compareTo(m1);
+        return y1 != y2 ? y1.compareTo(y2) : m1.compareTo(m2);
       });
 
     final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
@@ -1669,7 +1667,7 @@ class ChecksController extends GetxController
           '${check.dueDate.year}/${check.dueDate.month.toString().padLeft(2, '0')}';
       partiallyPaidTasks.putIfAbsent(key, () => []).add(check);
     }
-    final sorted = _sortArchiveNewestFirst(partiallyPaidTasks);
+    final sorted = _sortActiveOldestFirst(partiallyPaidTasks);
     partiallyPaidTasks
       ..clear()
       ..addAll(sorted);
@@ -1683,6 +1681,20 @@ class ChecksController extends GetxController
   final Rxn<NotCashedModel> archiveData = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> archiveTasks = {};
   final Map<String, double> totalArchive = {};
+
+  Map<String, List<CheckModel>> _sortActiveOldestFirst(
+    Map<String, List<CheckModel>> grouped,
+  ) {
+    final entries = grouped.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    for (final entry in entries) {
+      entry.value.sort((a, b) {
+        final byDueDate = a.dueDate.compareTo(b.dueDate);
+        return byDueDate != 0 ? byDueDate : a.id.compareTo(b.id);
+      });
+    }
+    return Map<String, List<CheckModel>>.fromEntries(entries);
+  }
 
   Map<String, List<CheckModel>> _sortArchiveNewestFirst(
     Map<String, List<CheckModel>> grouped,
@@ -1808,7 +1820,7 @@ class ChecksController extends GetxController
       return;
     }
     isInComing = false;
-    currentTab.value = 1;
+    currentTab.value = 0;
     getGeneralChecksData();
     loadAllChecksTabs();
     Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
@@ -2025,7 +2037,6 @@ class ChecksController extends GetxController
         partiallyPaidTasks,
         query,
         amountFilter.value,
-        newestFirst: true,
       ),
     );
 
