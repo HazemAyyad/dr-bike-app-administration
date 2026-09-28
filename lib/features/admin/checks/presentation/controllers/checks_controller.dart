@@ -1251,7 +1251,7 @@ class ChecksController extends GetxController
 
   Future<void> partialSettleOutgoingCheck({
     required CheckModel check,
-    required String boxId,
+    String? boxId,
     required double amount,
     required DateTime paidAt,
     required List<Map<String, dynamic>> installments,
@@ -1264,7 +1264,7 @@ class ChecksController extends GetxController
         EndPoints.partialSettleOutgoingCheck,
         data: {
           'outgoing_check_id': check.id,
-          'box_id': boxId,
+          if (boxId != null) 'box_id': boxId,
           'amount': amount,
           'paid_at': paidAt.toIso8601String().split('T').first,
           'idempotency_key':

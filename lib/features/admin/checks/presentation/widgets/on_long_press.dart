@@ -220,12 +220,9 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
   }
 
   Future<void> submit() async {
-    if (boxId == null ||
-        payment <= 0 ||
-        payment > widget.check.remainingAmount) {
+    if (payment <= 0 || payment > widget.check.remainingAmount) {
       AppFailureNotice.show(
-          title: 'error'.tr,
-          message: 'اختر الصندوق وأدخل مبلغًا صحيحًا لا يتجاوز المتبقي');
+          title: 'error'.tr, message: 'أدخل مبلغًا صحيحًا لا يتجاوز المتبقي');
       return;
     }
     final rows = <Map<String, dynamic>>[];
@@ -258,7 +255,7 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
     }
     await checks.partialSettleOutgoingCheck(
       check: widget.check,
-      boxId: boxId!,
+      boxId: boxId,
       amount: payment,
       paidAt: paidAt,
       installments: rows,
@@ -373,10 +370,10 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
                           .where((b) => b.currency == widget.check.currency)
                           .toList();
                       return CustomDropdownFieldWithSearch(
-                        tital: 'boxName',
+                        tital: 'الصندوق (اختياري)',
                         hint: boxes.isEmpty
-                            ? 'لا يوجد صندوق صرف متاح بنفس العملة'
-                            : 'boxNameExample',
+                            ? 'متابعة بدون صندوق'
+                            : 'اختر صندوقًا أو اتركه فارغًا',
                         items: boxes,
                         onChanged: (value) => boxId = value?.boxId.toString(),
                         itemAsString: (item) =>
