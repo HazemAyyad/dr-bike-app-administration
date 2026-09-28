@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
+import '../controllers/checks_serves.dart';
 
 class ChecksDataDetails extends StatelessWidget {
   const ChecksDataDetails({Key? key, this.isOutGoing = false})
@@ -50,6 +51,40 @@ class ChecksDataDetails extends StatelessWidget {
                   ),
                 ],
               ),
+              if (isOutGoing)
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'scheduledChecks',
+                        icon: Icons.event_repeat_rounded,
+                        value: ChecksServes()
+                                .generalChecksData
+                                .value
+                                ?.scheduledOutgoingChecksCount
+                                .toString() ??
+                            '0',
+                        subtitle: '',
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'partiallyPaidChecks',
+                        icon: Icons.pie_chart_outline_rounded,
+                        value: ChecksServes()
+                                .generalChecksData
+                                .value
+                                ?.partiallyPaidOutgoingChecksCount
+                                .toString() ??
+                            '0',
+                        subtitle: '',
+                      ),
+                    ),
+                  ],
+                ),
               if (controller.isInComing)
                 Text(
                   'total'.tr,
