@@ -48,6 +48,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                         () => AppTabs(
                           tabs: [
                             '${'didNotActOnIt'.tr} (${controller.notActedTabCount.value})',
+                            'مدفوعة جزئيًا (${controller.partiallyPaidTabCount.value})',
                             '${'actedOnIt'.tr} (${controller.actedTabCount.value})',
                             '${'archive'.tr} (${controller.archiveTabCount.value})',
                           ],

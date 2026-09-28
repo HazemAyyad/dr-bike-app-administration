@@ -15,11 +15,14 @@ class BulkChecksActionsDialog extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
-    final actions = controller.currentTab.value == 0
+    final actedTabIndex = controller.isInComing ? 1 : 2;
+    final isOpenTab = controller.currentTab.value == 0 ||
+        (!controller.isInComing && controller.currentTab.value == 1);
+    final actions = isOpenTab
         ? controller.isInComing
             ? controller.incomingChecksDidNotActOnIt
             : controller.outgoingChecksDidNotActOnIt
-        : controller.currentTab.value == 1
+        : controller.currentTab.value == actedTabIndex
             ? controller.isInComing
                 ? controller.incomingChecksActedOnIt
                 : controller.outgoingChecksActedOnIt

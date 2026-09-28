@@ -29,6 +29,8 @@ class ChecksDataDetails extends StatelessWidget {
         builder: (controller) {
           if (controller.isLoading.value ||
               controller.inComingChecksList.value == null ||
+              (!controller.isInComing &&
+                  controller.partiallyPaidData.value == null) ||
               controller.cashedToPerson.value == null ||
               controller.archiveData.value == null) {
             return const Center(child: CircularProgressIndicator());
@@ -179,33 +181,14 @@ class ChecksDataDetails extends StatelessWidget {
                                   ),
                         ),
                         ...List.generate(
-                          controller.currentTab.value == 0
-                              ? controller.inComingChecksList.value
-                                      ?.coverPercentage?.length ??
-                                  0
-                              : controller.currentTab.value == 1
-                                  ? controller.cashedToPerson.value
-                                          ?.coverPercentage?.length ??
-                                      0
-                                  : controller.archiveData.value
-                                          ?.coverPercentage?.length ??
-                                      0,
+                          controller
+                                  .activeChecksData?.coverPercentage?.length ??
+                              0,
                           (index) {
-                            final coverPercentage =
-                                controller.currentTab.value == 0
-                                    ? (controller.inComingChecksList.value
-                                            ?.coverPercentage?.values
-                                            .toList()[index] ??
-                                        0)
-                                    : controller.currentTab.value == 1
-                                        ? (controller.cashedToPerson.value
-                                                ?.coverPercentage?.values
-                                                .toList()[index] ??
-                                            0)
-                                        : (controller.archiveData.value
-                                                ?.coverPercentage?.values
-                                                .toList()[index] ??
-                                            0);
+                            final coverPercentage = controller
+                                    .activeChecksData?.coverPercentage?.values
+                                    .toList()[index] ??
+                                0;
 
                             return Container(
                               margin: EdgeInsets.all(5.r),
@@ -270,19 +253,9 @@ class ChecksDataDetails extends StatelessWidget {
                             title: 'currency1',
                             icon: Icons.attach_money_rounded,
                             value: NumberFormat('#,###').format(
-                              double.tryParse(
-                                    controller.currentTab.value == 0
-                                        ? controller.inComingChecksList.value
-                                                ?.boxesTotalDollar ??
-                                            '0.0'
-                                        : controller.currentTab.value == 1
-                                            ? controller.cashedToPerson.value
-                                                    ?.boxesTotalDollar ??
-                                                '0.0'
-                                            : controller.archiveData.value
-                                                    ?.boxesTotalDollar ??
-                                                '0.0',
-                                  ) ??
+                              double.tryParse(controller
+                                          .activeChecksData?.boxesTotalDollar ??
+                                      '0.0') ??
                                   0.0,
                             ),
                             subtitle: '',
@@ -292,19 +265,9 @@ class ChecksDataDetails extends StatelessWidget {
                             title: 'currency2',
                             icon: Icons.account_balance_outlined,
                             value: NumberFormat('#,###').format(
-                              double.tryParse(
-                                    controller.currentTab.value == 0
-                                        ? controller.inComingChecksList.value
-                                                ?.boxesTotalDinar ??
-                                            '0.0'
-                                        : controller.currentTab.value == 1
-                                            ? controller.cashedToPerson.value
-                                                    ?.boxesTotalDinar ??
-                                                '0.0'
-                                            : controller.archiveData.value
-                                                    ?.boxesTotalDinar ??
-                                                '0.0',
-                                  ) ??
+                              double.tryParse(controller
+                                          .activeChecksData?.boxesTotalDinar ??
+                                      '0.0') ??
                                   0.0,
                             ),
                             subtitle: '',
@@ -314,19 +277,9 @@ class ChecksDataDetails extends StatelessWidget {
                             title: 'currency',
                             icon: Icons.payments_outlined,
                             value: NumberFormat('#,###').format(
-                              double.tryParse(
-                                    controller.currentTab.value == 0
-                                        ? controller.inComingChecksList.value
-                                                ?.boxesTotalShekel ??
-                                            '0.0'
-                                        : controller.currentTab.value == 1
-                                            ? controller.cashedToPerson.value
-                                                    ?.boxesTotalShekel ??
-                                                '0.0'
-                                            : controller.archiveData.value
-                                                    ?.boxesTotalShekel ??
-                                                '0.0',
-                                  ) ??
+                              double.tryParse(controller
+                                          .activeChecksData?.boxesTotalShekel ??
+                                      '0.0') ??
                                   0.0,
                             ),
                             subtitle: '',

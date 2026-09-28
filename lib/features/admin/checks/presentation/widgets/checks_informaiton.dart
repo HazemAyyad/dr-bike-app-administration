@@ -73,6 +73,37 @@ class ChecksInformaiton extends StatelessWidget {
                 children: [
                   Expanded(
                     child: StatCard(
+                      title: 'scheduledChecks',
+                      icon: Icons.event_repeat_rounded,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.scheduledOutgoingChecksCount
+                              .toString() ??
+                          '0',
+                      subtitle: '',
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: StatCard(
+                      title: 'partiallyPaidChecks',
+                      icon: Icons.pie_chart_outline_rounded,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.partiallyPaidOutgoingChecksCount
+                              .toString() ??
+                          '0',
+                      subtitle: '',
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
                       show: true,
                       title: 'currency',
                       icon: Icons.payments_outlined,

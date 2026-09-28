@@ -323,7 +323,7 @@ class ChecksController extends GetxController
   }
 
   final currentTab = 0.obs;
-  final tabs = ['didNotActOnIt', 'actedOnIt', 'archive'].obs;
+  final tabs = ['didNotActOnIt', 'partiallyPaid', 'actedOnIt', 'archive'].obs;
   int? _pendingOpenCheckId;
   bool _pendingCheckDialogOpened = false;
 
@@ -381,6 +381,7 @@ class ChecksController extends GetxController
   }
 
   final notActedTabCount = 0.obs;
+  final partiallyPaidTabCount = 0.obs;
   final actedTabCount = 0.obs;
   final archiveTabCount = 0.obs;
 
@@ -390,14 +391,31 @@ class ChecksController extends GetxController
 
   void _syncTabCounts() {
     notActedTabCount.value = _countChecksInMap(filteredInComingTasks);
+    partiallyPaidTabCount.value = _countChecksInMap(filteredPartiallyPaidTasks);
     actedTabCount.value = _countChecksInMap(filteredCashedToPersonTasks);
     archiveTabCount.value = _countChecksInMap(filteredArchiveTasks);
   }
 
   Map<String, List<CheckModel>> get _activeFilteredMap {
     if (currentTab.value == 0) return filteredInComingTasks;
-    if (currentTab.value == 1) return filteredCashedToPersonTasks;
+    if (!isInComing && currentTab.value == 1) {
+      return filteredPartiallyPaidTasks;
+    }
+    if (currentTab.value == (isInComing ? 1 : 2)) {
+      return filteredCashedToPersonTasks;
+    }
     return filteredArchiveTasks;
+  }
+
+  Map<String, List<CheckModel>> get activeFilteredMap => _activeFilteredMap;
+
+  NotCashedModel? get activeChecksData {
+    if (currentTab.value == 0) return inComingChecksList.value;
+    if (!isInComing && currentTab.value == 1) return partiallyPaidData.value;
+    if (currentTab.value == (isInComing ? 1 : 2)) {
+      return cashedToPerson.value;
+    }
+    return archiveData.value;
   }
 
   List<CheckModel> get activeFilteredChecks =>
@@ -474,6 +492,11 @@ class ChecksController extends GetxController
     'returnedCheck',
     'voidTheCheck',
     'deleteCheck'
+  ].obs;
+
+  final RxList<String> scheduledOutgoingCheckActions = <String>[
+    'partialSettleCheck',
+    'cashTheCheck',
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
@@ -1285,7 +1308,12 @@ class ChecksController extends GetxController
             errors ?? (body is Map ? body['message'] : 'تعذر تنفيذ التسديد'));
       }
       Get.back();
-      await Future.wait([getGeneralChecksData(), getNotCashed(), getArchive()]);
+      await Future.wait([
+        getGeneralChecksData(),
+        getNotCashed(),
+        getPartiallyPaid(),
+        getArchive(),
+      ]);
       AppSuccessNotice.show(
           title: 'success'.tr, message: body['message'].toString());
     } catch (e) {
@@ -1557,6 +1585,35 @@ class ChecksController extends GetxController
     update();
   }
 
+  final Rxn<NotCashedModel> partiallyPaidData = Rxn<NotCashedModel>(null);
+  final Map<String, List<CheckModel>> partiallyPaidTasks = {};
+
+  Future<void> getPartiallyPaid({bool isStopLoding = true}) async {
+    if (isInComing) return;
+    if (isStopLoding) isLoading(true);
+    filteredPartiallyPaidTasks.clear();
+    partiallyPaidTasks.clear();
+
+    final result = await getChecksUsecase.call(
+      endPoint: EndPoints.partiallyPaidOutgoingChecks,
+    );
+    partiallyPaidData.value =
+        NotCashedModel.fromJson(result, checksPath: 'partially_paid_checks');
+    for (final check in partiallyPaidData.value!.inComingChecksList) {
+      final key =
+          '${check.dueDate.year}/${check.dueDate.month.toString().padLeft(2, '0')}';
+      partiallyPaidTasks.putIfAbsent(key, () => []).add(check);
+    }
+    final sorted = _sortArchiveNewestFirst(partiallyPaidTasks);
+    partiallyPaidTasks
+      ..clear()
+      ..addAll(sorted);
+    filteredPartiallyPaidTasks.assignAll(partiallyPaidTasks);
+    _syncTabCounts();
+    if (isStopLoding) isLoading(false);
+    update();
+  }
+
   // get cashed to person checks
   final Rxn<NotCashedModel> archiveData = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> archiveTasks = {};
@@ -1626,6 +1683,7 @@ class ChecksController extends GetxController
     }
     try {
       await getNotCashed(isStopLoding: false);
+      await getPartiallyPaid(isStopLoding: false);
       await getCashedToPerson(isStopLoding: false);
       await getArchive(isStopLoding: false);
       _syncTabCounts();
@@ -1658,8 +1716,9 @@ class ChecksController extends GetxController
   _CheckTabMatch? _findCheckById(int id) {
     final sources = [
       _CheckTabSource(0, filteredInComingTasks),
-      _CheckTabSource(1, filteredCashedToPersonTasks),
-      _CheckTabSource(2, filteredArchiveTasks),
+      if (!isInComing) _CheckTabSource(1, filteredPartiallyPaidTasks),
+      _CheckTabSource(isInComing ? 1 : 2, filteredCashedToPersonTasks),
+      _CheckTabSource(isInComing ? 2 : 3, filteredArchiveTasks),
     ];
     for (final source in sources) {
       for (final list in source.grouped.values) {
@@ -1876,6 +1935,7 @@ class ChecksController extends GetxController
   }
 
   Map<String, List<CheckModel>> filteredInComingTasks = {};
+  Map<String, List<CheckModel>> filteredPartiallyPaidTasks = {};
   Map<String, List<CheckModel>> filteredCashedToPersonTasks = {};
   Map<String, List<CheckModel>> filteredArchiveTasks = {};
 
@@ -1889,6 +1949,15 @@ class ChecksController extends GetxController
     filteredArchiveTasks.assignAll(
       filterChecks(
         archiveTasks,
+        query,
+        amountFilter.value,
+        newestFirst: true,
+      ),
+    );
+
+    filteredPartiallyPaidTasks.assignAll(
+      filterChecks(
+        partiallyPaidTasks,
         query,
         amountFilter.value,
         newestFirst: true,
@@ -1935,6 +2004,14 @@ class ChecksController extends GetxController
         }).where((entry) => entry.value.isNotEmpty),
       );
 
+      filteredPartiallyPaidTasks = Map.fromEntries(
+        partiallyPaidTasks.entries.map((entry) {
+          final filtered =
+              entry.value.where((check) => matches(check, value)).toList();
+          return MapEntry(entry.key, filtered);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+
       filteredArchiveTasks = Map.fromEntries(
         archiveTasks.entries.map((entry) {
           final filtered =
@@ -1945,6 +2022,7 @@ class ChecksController extends GetxController
     } else {
       filteredInComingTasks.assignAll(inComingTasks);
       filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+      filteredPartiallyPaidTasks.assignAll(partiallyPaidTasks);
       filteredArchiveTasks.assignAll(archiveTasks);
     }
 
@@ -2009,12 +2087,15 @@ class ChecksController extends GetxController
 
   void _clearVisibleChecksData() {
     inComingTasks.clear();
+    partiallyPaidTasks.clear();
     cashedToPersonTasks.clear();
     archiveTasks.clear();
     filteredInComingTasks.clear();
+    filteredPartiallyPaidTasks.clear();
     filteredCashedToPersonTasks.clear();
     filteredArchiveTasks.clear();
     notActedTabCount.value = 0;
+    partiallyPaidTabCount.value = 0;
     actedTabCount.value = 0;
     archiveTabCount.value = 0;
     isLoading(false);

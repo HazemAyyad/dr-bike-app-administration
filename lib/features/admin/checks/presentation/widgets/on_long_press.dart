@@ -22,6 +22,10 @@ class OnLongPress extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
+    final actedTabIndex = controller.isInComing ? 1 : 2;
+    final archiveTabIndex = controller.isInComing ? 2 : 3;
+    final isOpenTab = controller.currentTab.value == 0 ||
+        (!controller.isInComing && controller.currentTab.value == 1);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -54,11 +58,13 @@ class OnLongPress extends GetView<ChecksController> {
                   borderRadius: BorderRadius.all(Radius.circular(8.r)),
                 ),
                 child: Column(
-                  children: (controller.currentTab.value == 0
+                  children: (isOpenTab
                           ? controller.isInComing
                               ? controller.incomingChecksDidNotActOnIt
-                              : controller.outgoingChecksDidNotActOnIt
-                          : controller.currentTab.value == 1
+                              : check.parentOutgoingCheckId != null
+                                  ? controller.scheduledOutgoingCheckActions
+                                  : controller.outgoingChecksDidNotActOnIt
+                          : controller.currentTab.value == actedTabIndex
                               ? controller.isInComing
                                   ? controller.incomingChecksActedOnIt
                                   : controller.outgoingChecksActedOnIt
@@ -106,7 +112,7 @@ class OnLongPress extends GetView<ChecksController> {
                             }
                             if (value == 'cashTheCheck') {
                               Get.dialog(
-                                controller.currentTab.value != 2
+                                controller.currentTab.value != archiveTabIndex
                                     ? CashToBox(
                                         label: 'boxName',
                                         hint: 'boxNameExample',

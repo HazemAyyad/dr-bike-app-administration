@@ -125,6 +125,7 @@ class CoverPercentageModel {
 class CheckModel extends CheckEntity {
   const CheckModel({
     required int id,
+    int? parentOutgoingCheckId,
     String? customerId,
     required String status,
     required String total,
@@ -152,6 +153,7 @@ class CheckModel extends CheckEntity {
     List<CheckInstallment> installments = const [],
   }) : super(
           id: id,
+          parentOutgoingCheckId: parentOutgoingCheckId,
           customerId: customerId,
           status: status,
           total: total,
@@ -191,6 +193,9 @@ class CheckModel extends CheckEntity {
 
     return CheckModel(
       id: asInt(j['id']),
+      parentOutgoingCheckId: j['parent_outgoing_check_id'] == null
+          ? null
+          : asInt(j['parent_outgoing_check_id']),
       customerId: asNullableString(j['customer_id']),
       status: asString(j['status']),
       total: asString(j['total'], '0.00'),
@@ -252,6 +257,7 @@ class CheckModel extends CheckEntity {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'parent_outgoing_check_id': parentOutgoingCheckId,
       'customer_id': customerId,
       'status': status,
       'total': total,

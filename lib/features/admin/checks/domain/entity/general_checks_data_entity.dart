@@ -1,6 +1,8 @@
 class GeneralChecksDataEntity {
   final int notCashedOutgoingChecksCount;
   final int cashedOutgoingChecksCount;
+  final int scheduledOutgoingChecksCount;
+  final int partiallyPaidOutgoingChecksCount;
   final int notCashedIncomingChecksCount;
   final int cashedIncomingChecksCount;
   final int cashedToBoxIncomingChecksCount;
@@ -16,6 +18,8 @@ class GeneralChecksDataEntity {
   const GeneralChecksDataEntity({
     required this.notCashedOutgoingChecksCount,
     required this.cashedOutgoingChecksCount,
+    required this.scheduledOutgoingChecksCount,
+    required this.partiallyPaidOutgoingChecksCount,
     required this.notCashedIncomingChecksCount,
     required this.cashedIncomingChecksCount,
     required this.cashedToBoxIncomingChecksCount,

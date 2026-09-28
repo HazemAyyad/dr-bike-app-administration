@@ -57,23 +57,24 @@ class CheckDetails extends GetView<ChecksController> {
                         fontSize: 20.sp,
                       ),
                 ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.edit_document,
-                    color: AppColors.primaryColor,
-                    size: 30,
+                if (check.parentOutgoingCheckId == null)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit_document,
+                      color: AppColors.primaryColor,
+                      size: 30,
+                    ),
+                    onPressed: () {
+                      Get.back();
+                      Future.microtask(() {
+                        controller.isEdit.value = true;
+                        controller.getCeckData(
+                          check: check,
+                          isOutgoing: !type,
+                        );
+                      });
+                    },
                   ),
-                  onPressed: () {
-                    Get.back();
-                    Future.microtask(() {
-                      controller.isEdit.value = true;
-                      controller.getCeckData(
-                        check: check,
-                        isOutgoing: !type,
-                      );
-                    });
-                  },
-                ),
               ],
             ),
             SizedBox(height: 10.h),

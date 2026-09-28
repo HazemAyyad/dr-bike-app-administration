@@ -472,6 +472,8 @@ class EndPoints {
   static const String editIncomingCheck = 'edit/incoming/check';
 
   static const String notCashedOutgoingChecks = 'not-cashed/outgoing/checks';
+  static const String partiallyPaidOutgoingChecks =
+      'partially-paid/outgoing/checks';
   static const String inComingChecks = 'not-cashed/incoming/checks';
 
   static const String cashedOutgoingChecks = 'cashed/to/person/outgoing/checks';
