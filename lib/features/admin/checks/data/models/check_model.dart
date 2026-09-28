@@ -126,6 +126,7 @@ class CheckModel extends CheckEntity {
   const CheckModel({
     required int id,
     int? parentOutgoingCheckId,
+    String? originInstallmentType,
     String? customerId,
     required String status,
     required String total,
@@ -154,6 +155,7 @@ class CheckModel extends CheckEntity {
   }) : super(
           id: id,
           parentOutgoingCheckId: parentOutgoingCheckId,
+          originInstallmentType: originInstallmentType,
           customerId: customerId,
           status: status,
           total: total,
@@ -196,6 +198,9 @@ class CheckModel extends CheckEntity {
       parentOutgoingCheckId: j['parent_outgoing_check_id'] == null
           ? null
           : asInt(j['parent_outgoing_check_id']),
+      originInstallmentType: j['origin_installment'] is Map
+          ? asNullableString(asMap(j['origin_installment'])['instrument_type'])
+          : null,
       customerId: asNullableString(j['customer_id']),
       status: asString(j['status']),
       total: asString(j['total'], '0.00'),
@@ -258,6 +263,9 @@ class CheckModel extends CheckEntity {
     return {
       'id': id,
       'parent_outgoing_check_id': parentOutgoingCheckId,
+      'origin_installment': originInstallmentType == null
+          ? null
+          : {'instrument_type': originInstallmentType},
       'customer_id': customerId,
       'status': status,
       'total': total,

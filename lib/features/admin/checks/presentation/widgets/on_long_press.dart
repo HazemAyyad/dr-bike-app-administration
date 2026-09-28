@@ -142,6 +142,9 @@ class OnLongPress extends GetView<ChecksController> {
                             if (value == 'editCheckSchedule') {
                               Get.dialog(ScheduleEditDialog(check: check));
                             }
+                            if (value == 'viewScheduledChecks') {
+                              Get.dialog(ScheduledChecksDialog(check: check));
+                            }
                             if (value == 'returnedCheck') {
                               Get.dialog(
                                 IfCancelCheck(
@@ -161,6 +164,140 @@ class OnLongPress extends GetView<ChecksController> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class ScheduledChecksDialog extends StatelessWidget {
+  const ScheduledChecksDialog({Key? key, required this.check})
+      : super(key: key);
+
+  final CheckModel check;
+
+  String _date(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [...check.installments]
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return Dialog(
+      backgroundColor: const Color(0xFFF8FAFC),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: 560.h),
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'الدفعات والشيكات التابعة',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: Color(0xFF111827),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'الشيك الأصلي: ${check.checkId}',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: rows.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (_, index) {
+                    final row = rows[index];
+                    final internal = row.instrumentType == 'same_check';
+                    return Container(
+                      padding: EdgeInsets.all(11.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: Row(
+                        textDirection: TextDirection.rtl,
+                        children: [
+                          Container(
+                            width: 38.r,
+                            height: 38.r,
+                            decoration: BoxDecoration(
+                              color: internal
+                                  ? const Color(0xFFCCFBF1)
+                                  : const Color(0xFFFFE4C7),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Icon(
+                              internal
+                                  ? Icons.event_repeat_rounded
+                                  : Icons.find_replace_rounded,
+                              color: internal
+                                  ? const Color(0xFF0F766E)
+                                  : const Color(0xFF9A3412),
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  internal ? 'مجدول داخلياً' : 'شيك بديل',
+                                  style: const TextStyle(
+                                    color: Color(0xFF111827),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                SizedBox(height: 3.h),
+                                Text(
+                                  'رقم الشيك: ${internal ? check.checkId : (row.checkId ?? '-')}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF334155),
+                                  ),
+                                ),
+                                Text(
+                                  '${row.amount.toStringAsFixed(2)} ${check.currency} · ${_date(row.dueDate)}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF475569),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 8.h),
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text(
+                  'إغلاق',
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

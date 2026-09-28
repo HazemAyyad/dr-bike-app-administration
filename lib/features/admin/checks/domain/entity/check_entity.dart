@@ -1,6 +1,7 @@
 class CheckEntity {
   final int id;
   final int? parentOutgoingCheckId;
+  final String? originInstallmentType;
   final String? customerId;
   final String status;
   final String total;
@@ -30,6 +31,7 @@ class CheckEntity {
   const CheckEntity({
     required this.id,
     this.parentOutgoingCheckId,
+    this.originInstallmentType,
     this.customerId,
     required this.status,
     required this.total,

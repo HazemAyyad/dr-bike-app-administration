@@ -499,12 +499,13 @@ class ChecksController extends GetxController
     'cashTheCheck',
   ].obs;
   final RxList<String> scheduledParentActions = <String>[
+    'viewScheduledChecks',
     'editCheckSchedule',
     'deleteCheck',
   ].obs;
   final RxList<String> internalScheduleActions = <String>[
+    'viewScheduledChecks',
     'editCheckSchedule',
-    'partialSettleCheck',
     'deleteCheck',
   ].obs;
 

@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -77,7 +75,9 @@ class ViewChecksWidget extends GetView<ChecksController> {
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor4
               : check.parentOutgoingCheckId != null
-                  ? const Color(0xFFFFF7ED)
+                  ? check.originInstallmentType == 'same_check'
+                      ? const Color(0xFFF0FDFA)
+                      : const Color(0xFFFFF7ED)
                   : AppColors.whiteColor2,
           borderRadius: BorderRadius.circular(4.r),
           boxShadow: shadowed == true
@@ -139,34 +139,39 @@ class ViewChecksWidget extends GetView<ChecksController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            "${'checkNumber'.tr} : ${check.checkId}",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w400,
+                          Wrap(
+                            spacing: 5.w,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                "${'checkNumber'.tr} : ${check.checkId}",
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                              if (check.parentOutgoingCheckId != null)
+                                Tooltip(
+                                  message: check.originInstallmentType ==
+                                          'same_check'
+                                      ? 'مجدول داخلياً'
+                                      : 'شيك بديل',
+                                  child: Icon(
+                                    check.originInstallmentType == 'same_check'
+                                        ? Icons.event_repeat_rounded
+                                        : Icons.find_replace_rounded,
+                                    size: 18.sp,
+                                    color: check.originInstallmentType ==
+                                            'same_check'
+                                        ? const Color(0xFF0F766E)
+                                        : const Color(0xFF9A3412),
+                                  ),
                                 ),
+                            ],
                           ),
-                          if (check.parentOutgoingCheckId != null)
-                            Container(
-                              margin: EdgeInsets.only(top: 3.h),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 7.w, vertical: 2.h),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFED7AA),
-                                borderRadius: BorderRadius.circular(10.r),
-                              ),
-                              child: Text(
-                                'شيك مجدول',
-                                style: TextStyle(
-                                  color: const Color(0xFF7C2D12),
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
                           // if (currentTab == 0)
                           SizedBox(height: 5.h),
                           Text(
@@ -274,18 +279,6 @@ class ViewChecksWidget extends GetView<ChecksController> {
                 ),
               ),
             ),
-            if (!type &&
-                check.installments
-                    .any((row) => row.instrumentType == 'same_check'))
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'تفاصيل الجدولة الداخلية',
-                onPressed: () => _showInternalSchedule(context, check),
-                icon: const Icon(
-                  Icons.event_repeat_rounded,
-                  color: Color(0xFF0F766E),
-                ),
-              ),
             currentTab != archiveTabIndex
                 ? Container(
                     width: 60.w,
@@ -418,63 +411,6 @@ class ViewChecksWidget extends GetView<ChecksController> {
                     ),
                   ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showInternalSchedule(BuildContext context, CheckModel value) {
-    final rows = value.installments
-        .where((row) => row.instrumentType == 'same_check')
-        .toList();
-    showDialog<void>(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: const Color(0xFFF8FAFC),
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Directionality(
-            textDirection: ui.TextDirection.rtl,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('تفاصيل الجدولة الداخلية',
-                    style: TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                Text(
-                  'الأصل ${NumberFormat('#,###').format(double.parse(value.total))} · المدفوع ${NumberFormat('#,###').format(value.settledAmount)} · المتبقي ${NumberFormat('#,###').format(value.remainingAmount)} ${_currencyDisplay(value.currency)}',
-                  style: const TextStyle(color: Color(0xFF334155)),
-                ),
-                const SizedBox(height: 10),
-                ...rows.asMap().entries.map((entry) => Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        'الدفعة ${entry.key + 1}: ${NumberFormat('#,###').format(entry.value.amount)} ${_currencyDisplay(value.currency)} — ${showData(entry.value.dueDate)}',
-                        style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontWeight: FontWeight.w700),
-                      ),
-                    )),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('إغلاق',
-                      style: TextStyle(color: Color(0xFF111827))),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
