@@ -120,7 +120,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 1),
                           child: Text(
-                            "${NumberFormat('#,###').format(check.settledAmount > 0 ? check.remainingAmount : double.parse(check.total))} ${_currencyDisplay(check.currency)}",
+                            "${NumberFormat('#,###').format(double.parse(check.total))} ${_currencyDisplay(check.currency)}",
                             textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
@@ -187,7 +187,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
                           if (!type && check.settledAmount > 0) ...[
                             SizedBox(height: 4.h),
                             Text(
-                              'الأصل ${NumberFormat('#,###').format(double.parse(check.total))} · المدفوع ${NumberFormat('#,###').format(check.settledAmount)} · المتبقي ${NumberFormat('#,###').format(check.remainingAmount)}',
+                              'المتبقي: ${NumberFormat('#,###').format(check.remainingAmount)} ${_currencyDisplay(check.currency)}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context)
