@@ -528,7 +528,7 @@ class _SpecialSubtaskChecklist extends GetView<SpecialTasksController> {
                     ],
                   ),
                 ),
-                if (done) ...[
+                if (closed) ...[
                   SizedBox(width: 6.w),
                   Tooltip(
                     message: 'undoSubtaskCompletion'.tr,
