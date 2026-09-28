@@ -4,6 +4,7 @@ import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -61,9 +62,15 @@ class OnLongPress extends GetView<ChecksController> {
                   children: (isOpenTab
                           ? controller.isInComing
                               ? controller.incomingChecksDidNotActOnIt
-                              : check.parentOutgoingCheckId != null
-                                  ? controller.scheduledOutgoingCheckActions
-                                  : controller.outgoingChecksDidNotActOnIt
+                              : check.status == 'restructured_parent'
+                                  ? controller.scheduledParentActions
+                                  : check.installments.isNotEmpty
+                                      ? controller.internalScheduleActions
+                                      : check.parentOutgoingCheckId != null
+                                          ? controller
+                                              .scheduledOutgoingCheckActions
+                                          : controller
+                                              .outgoingChecksDidNotActOnIt
                           : controller.currentTab.value == actedTabIndex
                               ? controller.isInComing
                                   ? controller.incomingChecksActedOnIt
@@ -107,7 +114,11 @@ class OnLongPress extends GetView<ChecksController> {
                             }
                             if (value == 'deleteCheck') {
                               Get.dialog(
-                                DeleteCheck(checkId: check.id.toString()),
+                                DeleteCheck(
+                                  checkId: check.id.toString(),
+                                  cascade: check.settledAmount > 0 ||
+                                      check.installments.isNotEmpty,
+                                ),
                               );
                             }
                             if (value == 'cashTheCheck') {
@@ -127,6 +138,9 @@ class OnLongPress extends GetView<ChecksController> {
                             }
                             if (value == 'partialSettleCheck') {
                               Get.dialog(PartialSettlementDialog(check: check));
+                            }
+                            if (value == 'editCheckSchedule') {
+                              Get.dialog(ScheduleEditDialog(check: check));
                             }
                             if (value == 'returnedCheck') {
                               Get.dialog(
@@ -159,6 +173,215 @@ class PartialSettlementDialog extends StatefulWidget {
   @override
   State<PartialSettlementDialog> createState() =>
       _PartialSettlementDialogState();
+}
+
+class ScheduleEditDialog extends StatefulWidget {
+  const ScheduleEditDialog({Key? key, required this.check}) : super(key: key);
+  final CheckModel check;
+
+  @override
+  State<ScheduleEditDialog> createState() => _ScheduleEditDialogState();
+}
+
+class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
+  final rows = <_InstallmentDraft>[];
+  final picker = ImagePicker();
+  ChecksController get controller => Get.find<ChecksController>();
+
+  @override
+  void initState() {
+    super.initState();
+    for (final item in widget.check.installments) {
+      final row = _InstallmentDraft()
+        ..amount.text = item.amount.toStringAsFixed(2)
+        ..dueDate = item.dueDate
+        ..replacement = item.instrumentType == 'replacement_check'
+        ..checkNumber.text = item.checkId ?? ''
+        ..bank.text = item.bankName ?? '';
+      rows.add(row);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final row in rows) {
+      row.dispose();
+    }
+    super.dispose();
+  }
+
+  String _date(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate(_InstallmentDraft row) async {
+    final value = await showDatePicker(
+      context: context,
+      initialDate: row.dueDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (value != null) setState(() => row.dueDate = value);
+  }
+
+  Future<void> _submit() async {
+    final data = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      final amount = double.tryParse(row.amount.text.trim()) ?? 0;
+      if (amount <= 0 ||
+          (row.replacement &&
+              (row.checkNumber.text.trim().isEmpty ||
+                  row.bank.text.trim().isEmpty))) {
+        AppFailureNotice.show(
+            title: 'error'.tr, message: 'أكمل بيانات ومبالغ الجدولة');
+        return;
+      }
+      data.add({
+        'amount': amount,
+        'due_date': _date(row.dueDate),
+        'instrument_type': row.replacement ? 'replacement_check' : 'same_check',
+        if (row.replacement) 'check_id': row.checkNumber.text.trim(),
+        if (row.replacement) 'bank_name': row.bank.text.trim(),
+        if (row.frontImage != null) 'front_image_file': row.frontImage,
+        if (row.backImage != null) 'back_image_file': row.backImage,
+      });
+    }
+    await controller.updateOutgoingCheckSchedule(
+        check: widget.check, installments: data);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFFF8FAFC),
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * .82, maxWidth: 500),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('تعديل الجدولة والشيكات التابعة',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      color: Color(0xFF111827),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      setState(() => rows.add(_InstallmentDraft())),
+                  icon: const Icon(Icons.add),
+                  label: const Text('إضافة دفعة'),
+                ),
+              ),
+              ...rows.asMap().entries.map((entry) {
+                final row = entry.value;
+                return Card(
+                  color: const Color(0xFFF1F5F9),
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        Row(children: [
+                          Expanded(
+                            child: Text('الدفعة ${entry.key + 1}',
+                                style: const TextStyle(
+                                    color: Color(0xFF111827),
+                                    fontWeight: FontWeight.w800)),
+                          ),
+                          if (rows.length > 1)
+                            IconButton(
+                              onPressed: () => setState(() {
+                                rows.removeAt(entry.key).dispose();
+                              }),
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Color(0xFF991B1B)),
+                            ),
+                        ]),
+                        TextField(
+                            controller: row.amount,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            decoration:
+                                const InputDecoration(labelText: 'المبلغ')),
+                        ListTile(
+                          dense: true,
+                          title: const Text('تاريخ الاستحقاق'),
+                          subtitle: Text(_date(row.dueDate)),
+                          trailing: const Icon(Icons.calendar_month),
+                          onTap: () => _pickDate(row),
+                        ),
+                        SwitchListTile(
+                          dense: true,
+                          title: const Text('شيك بديل فعلي'),
+                          value: row.replacement,
+                          onChanged: (value) =>
+                              setState(() => row.replacement = value),
+                        ),
+                        if (row.replacement) ...[
+                          TextField(
+                              controller: row.checkNumber,
+                              decoration: const InputDecoration(
+                                  labelText: 'رقم الشيك')),
+                          TextField(
+                              controller: row.bank,
+                              decoration:
+                                  const InputDecoration(labelText: 'البنك')),
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: TextButton.icon(
+                                      onPressed: () async {
+                                        row.frontImage = await picker.pickImage(
+                                            source: ImageSource.gallery);
+                                        if (mounted) setState(() {});
+                                      },
+                                      icon: const Icon(Icons.image_outlined),
+                                      label: Text(row.frontImage == null
+                                          ? 'الصورة الأمامية'
+                                          : 'تم اختيار الأمامية'))),
+                              Expanded(
+                                  child: TextButton.icon(
+                                      onPressed: () async {
+                                        row.backImage = await picker.pickImage(
+                                            source: ImageSource.gallery);
+                                        if (mounted) setState(() {});
+                                      },
+                                      icon: const Icon(Icons.image_outlined),
+                                      label: Text(row.backImage == null
+                                          ? 'الصورة الخلفية'
+                                          : 'تم اختيار الخلفية'))),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 10),
+              Obx(() => FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      foregroundColor: const Color(0xFF111827),
+                    ),
+                    onPressed: controller.isLoading.value ? null : _submit,
+                    child: const Text('حفظ التعديلات'),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
@@ -559,6 +782,8 @@ class _InstallmentDraft {
   final bank = TextEditingController();
   DateTime dueDate = DateTime.now().add(const Duration(days: 30));
   bool replacement = false;
+  XFile? frontImage;
+  XFile? backImage;
   void dispose() {
     amount.dispose();
     checkNumber.dispose();
@@ -904,9 +1129,11 @@ class CashToBox extends GetView<ChecksController> {
 }
 
 class DeleteCheck extends GetView<ChecksController> {
-  const DeleteCheck({Key? key, required this.checkId}) : super(key: key);
+  const DeleteCheck({Key? key, required this.checkId, this.cascade = false})
+      : super(key: key);
 
   final String checkId;
+  final bool cascade;
 
   @override
   Widget build(BuildContext context) {
@@ -924,7 +1151,9 @@ class DeleteCheck extends GetView<ChecksController> {
           children: [
             SizedBox(height: 5.h),
             Text(
-              'areYouSure'.tr,
+              cascade
+                  ? 'سيتم حذف الشيك الأساسي وكل الدفعات والشيكات التابعة والقيود المرتبطة، وإعادة أي مبلغ خُصم من صندوق. هل أنت متأكد؟'
+                  : 'areYouSure'.tr,
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,

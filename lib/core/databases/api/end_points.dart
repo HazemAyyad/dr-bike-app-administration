@@ -503,6 +503,8 @@ class EndPoints {
   static const String chashOutgoingCheckToBox = 'cash/outgoing/check/from/box';
   static const String partialSettleOutgoingCheck =
       'outgoing/checks/partial-settlement';
+  static const String updateOutgoingCheckSchedule =
+      'outgoing/checks/update-schedule';
 
   static const String deleteIncomingCheck = 'delete/incoming/check';
   static const String deleteOutgoingCheck = 'delete/outgoing/check';

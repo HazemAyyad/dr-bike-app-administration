@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
@@ -124,8 +124,8 @@ class ChecksController extends GetxController
   final exchangeError = ''.obs;
   final isExchangeLoading = false.obs;
   Timer? _exchangeDebounce;
-  final Dio _exchangeDio = Dio(
-    BaseOptions(
+  final dio.Dio _exchangeDio = dio.Dio(
+    dio.BaseOptions(
       baseUrl: 'https://api.frankfurter.dev/v2',
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
@@ -497,6 +497,15 @@ class ChecksController extends GetxController
   final RxList<String> scheduledOutgoingCheckActions = <String>[
     'partialSettleCheck',
     'cashTheCheck',
+  ].obs;
+  final RxList<String> scheduledParentActions = <String>[
+    'editCheckSchedule',
+    'deleteCheck',
+  ].obs;
+  final RxList<String> internalScheduleActions = <String>[
+    'editCheckSchedule',
+    'partialSettleCheck',
+    'deleteCheck',
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
@@ -1326,6 +1335,61 @@ class ChecksController extends GetxController
     }
   }
 
+  Future<void> updateOutgoingCheckSchedule({
+    required CheckModel check,
+    required List<Map<String, dynamic>> installments,
+  }) async {
+    isLoading(true);
+    update();
+    try {
+      final rows = <Map<String, dynamic>>[];
+      for (final source in installments) {
+        final row = Map<String, dynamic>.from(source);
+        final front = row.remove('front_image_file') as XFile?;
+        final back = row.remove('back_image_file') as XFile?;
+        if (front != null) {
+          row['front_image'] = await dio.MultipartFile.fromFile(front.path,
+              filename: front.name);
+        }
+        if (back != null) {
+          row['back_image'] =
+              await dio.MultipartFile.fromFile(back.path, filename: back.name);
+        }
+        rows.add(row);
+      }
+      final response = await Get.find<DioConsumer>().post(
+        EndPoints.updateOutgoingCheckSchedule,
+        data: dio.FormData.fromMap({
+          'outgoing_check_id': check.id,
+          'installments': rows,
+        }),
+      );
+      final body = response.data;
+      if (body is! Map || body['status'] != 'success') {
+        final errors = body is Map && body['errors'] is Map
+            ? (body['errors'] as Map)
+                .values
+                .expand((e) => e is List ? e : [e])
+                .join('\n')
+            : null;
+        throw Exception(
+            errors ?? (body is Map ? body['message'] : 'تعذر تحديث الجدولة'));
+      }
+      Get.back();
+      await Future.wait(
+          [getGeneralChecksData(), getNotCashed(), getPartiallyPaid()]);
+      AppSuccessNotice.show(
+          title: 'success'.tr, message: body['message'].toString());
+    } catch (e) {
+      AppFailureNotice.show(
+          title: 'error'.tr,
+          message: e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      isLoading(false);
+      update();
+    }
+  }
+
   Future<void> bulkChashToBox({required String boxId}) async {
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
@@ -1384,6 +1448,7 @@ class ChecksController extends GetxController
           // generalData(),
           getCashedToPerson(isStopLoding: false),
           getNotCashed(isStopLoding: false),
+          getPartiallyPaid(isStopLoding: false),
           getGeneralChecksData(),
         ]);
         // Future.delayed(

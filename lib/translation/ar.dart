@@ -1947,6 +1947,7 @@ const Map<String, String> ar = {
   'partiallyPaid': 'مدفوعة جزئيًا',
   'scheduledChecks': 'الشيكات المجدولة',
   'partiallyPaidChecks': 'الشيكات المدفوعة جزئيًا',
+  'editCheckSchedule': 'تعديل الجدولة والشيكات التابعة',
   'returnedCheck': 'ارجاع الشيك',
   'deleteCheck': 'حذف الشيك',
   'beneficiary': 'أسم المستفيد',
