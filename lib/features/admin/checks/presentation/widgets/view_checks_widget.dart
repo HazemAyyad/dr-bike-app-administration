@@ -41,6 +41,14 @@ class ViewChecksWidget extends GetView<ChecksController> {
   Widget build(BuildContext context) {
     final actedTabIndex = type ? 1 : 2;
     final archiveTabIndex = type ? 2 : 3;
+    final activeScheduleTypes = check.installments
+        .where(
+            (item) => item.status == 'pending' || item.status == 'materialized')
+        .map((item) => item.instrumentType)
+        .toSet();
+    final hasInternalSchedule = activeScheduleTypes.contains('same_check');
+    final hasReplacementChecks =
+        activeScheduleTypes.contains('replacement_check');
     // final now = DateTime.now();
     // final diff = check.dueDate.difference(now);
 
@@ -168,6 +176,26 @@ class ViewChecksWidget extends GetView<ChecksController> {
                                             'same_check'
                                         ? const Color(0xFF0F766E)
                                         : const Color(0xFF9A3412),
+                                  ),
+                                ),
+                              if (check.parentOutgoingCheckId == null &&
+                                  hasInternalSchedule)
+                                Tooltip(
+                                  message: 'مجدول داخلياً',
+                                  child: Icon(
+                                    Icons.event_repeat_rounded,
+                                    size: 18.sp,
+                                    color: const Color(0xFF0F766E),
+                                  ),
+                                ),
+                              if (check.parentOutgoingCheckId == null &&
+                                  hasReplacementChecks)
+                                Tooltip(
+                                  message: 'يحتوي شيكات بديلة',
+                                  child: Icon(
+                                    Icons.find_replace_rounded,
+                                    size: 18.sp,
+                                    color: const Color(0xFF9A3412),
                                   ),
                                 ),
                             ],

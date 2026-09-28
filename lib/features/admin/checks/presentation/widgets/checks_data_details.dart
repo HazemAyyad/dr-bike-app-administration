@@ -38,22 +38,18 @@ class ChecksDataDetails extends StatelessWidget {
           }
           return Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
-                      show: true,
-                      title: 'numberOfChecks',
-                      icon: Icons.receipt_long_outlined,
-                      value: controller.activeFilteredCount,
-                      subtitle: '',
-                    ),
-                  ),
-                ],
-              ),
               if (isOutGoing)
                 Row(
                   children: [
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'count',
+                        icon: Icons.receipt_long_outlined,
+                        value: controller.activeFilteredCount,
+                        subtitle: '',
+                      ),
+                    ),
                     Expanded(
                       child: StatCard(
                         show: true,
@@ -68,7 +64,6 @@ class ChecksDataDetails extends StatelessWidget {
                         subtitle: '',
                       ),
                     ),
-                    SizedBox(width: 8.w),
                     Expanded(
                       child: StatCard(
                         show: true,
@@ -85,6 +80,101 @@ class ChecksDataDetails extends StatelessWidget {
                     ),
                   ],
                 ),
+              if (!isOutGoing)
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'numberOfChecks',
+                        icon: Icons.receipt_long_outlined,
+                        value: controller.activeFilteredCount,
+                        subtitle: '',
+                      ),
+                    ),
+                  ],
+                ),
+              if (isOutGoing) ...[
+                Text(
+                  'paidOutgoingChecks'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'count',
+                        icon: Icons.task_alt_rounded,
+                        value: ChecksServes()
+                                .generalChecksData
+                                .value
+                                ?.paidOutgoingChecksCount
+                                .toString() ??
+                            '0',
+                        subtitle: '',
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'currency',
+                        icon: Icons.payments_outlined,
+                        value: NumberFormat('#,###').format(double.tryParse(
+                                ChecksServes()
+                                        .generalChecksData
+                                        .value
+                                        ?.paidOutgoingChecksShekel ??
+                                    '0') ??
+                            0),
+                        subtitle: '',
+                      ),
+                    ),
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'currency1',
+                        icon: Icons.attach_money_rounded,
+                        value: NumberFormat('#,###').format(double.tryParse(
+                                ChecksServes()
+                                        .generalChecksData
+                                        .value
+                                        ?.paidOutgoingChecksDollar ??
+                                    '0') ??
+                            0),
+                        subtitle: '',
+                      ),
+                    ),
+                    Expanded(
+                      child: StatCard(
+                        show: true,
+                        title: 'currency2',
+                        icon: Icons.account_balance_outlined,
+                        value: NumberFormat('#,###').format(double.tryParse(
+                                ChecksServes()
+                                        .generalChecksData
+                                        .value
+                                        ?.paidOutgoingChecksDinar ??
+                                    '0') ??
+                            0),
+                        subtitle: '',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (controller.isInComing)
                 Text(
                   'total'.tr,

@@ -3,6 +3,7 @@ class GeneralChecksDataEntity {
   final int cashedOutgoingChecksCount;
   final int scheduledOutgoingChecksCount;
   final int partiallyPaidOutgoingChecksCount;
+  final int paidOutgoingChecksCount;
   final int notCashedIncomingChecksCount;
   final int cashedIncomingChecksCount;
   final int cashedToBoxIncomingChecksCount;
@@ -10,6 +11,9 @@ class GeneralChecksDataEntity {
   final String totalOutgoingChecksDollar;
   final String totalOutgoingChecksDinar;
   final String totalOutgoingChecksShekel;
+  final String paidOutgoingChecksDollar;
+  final String paidOutgoingChecksDinar;
+  final String paidOutgoingChecksShekel;
 
   final String totalIncomingChecksDollar;
   final String totalIncomingChecksDinar;
@@ -20,12 +24,16 @@ class GeneralChecksDataEntity {
     required this.cashedOutgoingChecksCount,
     required this.scheduledOutgoingChecksCount,
     required this.partiallyPaidOutgoingChecksCount,
+    required this.paidOutgoingChecksCount,
     required this.notCashedIncomingChecksCount,
     required this.cashedIncomingChecksCount,
     required this.cashedToBoxIncomingChecksCount,
     required this.totalOutgoingChecksDollar,
     required this.totalOutgoingChecksDinar,
     required this.totalOutgoingChecksShekel,
+    required this.paidOutgoingChecksDollar,
+    required this.paidOutgoingChecksDinar,
+    required this.paidOutgoingChecksShekel,
     required this.totalIncomingChecksDollar,
     required this.totalIncomingChecksDinar,
     required this.totalIncomingChecksShekel,

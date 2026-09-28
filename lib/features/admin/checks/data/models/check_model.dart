@@ -254,6 +254,7 @@ class CheckModel extends CheckEntity {
           checkId: asNullableString(item['check_id']),
           bankName: asNullableString(item['bank_name']),
           status: asString(item['status'], 'pending'),
+          notes: asNullableString(item['notes']),
         );
       }).toList(),
     );
@@ -298,6 +299,7 @@ class CheckModel extends CheckEntity {
                 'check_id': e.checkId,
                 'bank_name': e.bankName,
                 'status': e.status,
+                'notes': e.notes,
               })
           .toList(),
     };

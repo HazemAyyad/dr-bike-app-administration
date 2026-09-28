@@ -68,6 +68,7 @@ class CheckInstallment {
   final String? checkId;
   final String? bankName;
   final String status;
+  final String? notes;
 
   const CheckInstallment(
       {required this.id,
@@ -76,7 +77,8 @@ class CheckInstallment {
       required this.instrumentType,
       this.checkId,
       this.bankName,
-      required this.status});
+      required this.status,
+      this.notes});
 }
 
 class Seller {

@@ -23,197 +23,226 @@ class CustomActionsAppBar extends GetView<ChecksController> {
         isNewCheck ? canViewOutgoingChecks : canViewIncomingChecks;
     if (!canViewCurrentChecks) return const SizedBox.shrink();
 
-    return Row(
-      children: [
-        Obx(
-          () => controller.isBulkSelectionMode.value
-              ? Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'bulkChecksActions'.tr,
-                      highlightColor: Colors.transparent,
-                      icon: Icon(
-                        Icons.playlist_add_check_circle_outlined,
-                        size: 24.sp,
-                        color: AppColors.primaryColor,
+    return Obx(
+      () {
+        if (controller.isChecksSearchOpen.value) {
+          return IconButton(
+            tooltip: 'close'.tr,
+            highlightColor: Colors.transparent,
+            icon: Icon(
+              Icons.close_rounded,
+              size: 24.sp,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+            onPressed: controller.closeChecksSearch,
+          );
+        }
+
+        return Row(
+          children: [
+            IconButton(
+              tooltip: 'search'.tr,
+              highlightColor: Colors.transparent,
+              icon: Icon(
+                Icons.search_rounded,
+                size: 24.sp,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: controller.openChecksSearch,
+            ),
+            controller.isBulkSelectionMode.value
+                ? Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'bulkChecksActions'.tr,
+                        highlightColor: Colors.transparent,
+                        icon: Icon(
+                          Icons.playlist_add_check_circle_outlined,
+                          size: 24.sp,
+                          color: AppColors.primaryColor,
+                        ),
+                        onPressed: controller.selectedBulkCheckIds.isEmpty
+                            ? null
+                            : () {
+                                controller.getShowBoxes();
+                                controller.getAllCustomersAndSellers();
+                                Get.dialog(const BulkChecksActionsDialog());
+                              },
                       ),
-                      onPressed: controller.selectedBulkCheckIds.isEmpty
-                          ? null
-                          : () {
-                              controller.getShowBoxes();
-                              controller.getAllCustomersAndSellers();
-                              Get.dialog(const BulkChecksActionsDialog());
-                            },
-                    ),
-                    IconButton(
-                      tooltip: 'cancel'.tr,
-                      highlightColor: Colors.transparent,
-                      icon: Icon(
-                        Icons.close,
-                        size: 24.sp,
-                        color: Colors.red,
+                      IconButton(
+                        tooltip: 'cancel'.tr,
+                        highlightColor: Colors.transparent,
+                        icon: Icon(
+                          Icons.close,
+                          size: 24.sp,
+                          color: Colors.red,
+                        ),
+                        onPressed: controller.clearBulkSelection,
                       ),
-                      onPressed: controller.clearBulkSelection,
+                    ],
+                  )
+                : IconButton(
+                    tooltip: 'selectChecks'.tr,
+                    highlightColor: Colors.transparent,
+                    icon: Icon(
+                      Icons.checklist_rtl,
+                      size: 24.sp,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
                     ),
-                  ],
-                )
-              : IconButton(
-                  tooltip: 'selectChecks'.tr,
-                  highlightColor: Colors.transparent,
-                  icon: Icon(
-                    Icons.checklist_rtl,
-                    size: 24.sp,
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
+                    onPressed: controller.startBulkSelection,
                   ),
-                  onPressed: controller.startBulkSelection,
-                ),
-        ),
-        IconButton(
-          tooltip: 'checkNotifications'.tr,
-          highlightColor: Colors.transparent,
-          icon: Icon(
-            Icons.notifications_active_outlined,
-            size: 22.sp,
-            color: ThemeService.isDark.value
-                ? AppColors.primaryColor
-                : AppColors.secondaryColor,
-          ),
-          onPressed: () => Get.toNamed(
-            AppRoutes.CHECKNOTIFICATIONRULESSCREEN,
-            arguments: {
-              'check_direction': isNewCheck ? 'outgoing' : 'incoming',
-            },
-          ),
-        ),
-        IconButton(
-          highlightColor: Colors.transparent,
-          icon: Icon(
-            Icons.calendar_today_outlined,
-            size: 22.sp,
-            color: ThemeService.isDark.value
-                ? AppColors.primaryColor
-                : AppColors.secondaryColor,
-          ),
-          onPressed: () {
-            Get.dialog(
-              // ignore: deprecated_member_use
-              WillPopScope(
-                onWillPop: () async {
-                  controller.applyFilters();
-                  return true;
+            IconButton(
+              tooltip: 'checkNotifications'.tr,
+              highlightColor: Colors.transparent,
+              icon: Icon(
+                Icons.notifications_active_outlined,
+                size: 22.sp,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: () => Get.toNamed(
+                AppRoutes.CHECKNOTIFICATIONRULESSCREEN,
+                arguments: {
+                  'check_direction': isNewCheck ? 'outgoing' : 'incoming',
                 },
-                child: Dialog(
-                  backgroundColor: ThemeService.isDark.value
-                      ? AppColors.darkColor
-                      : AppColors.whiteColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(25.w),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CustomCheckBox(
-                          title: "${'sortByDate'.tr} ",
-                          subtitle: 'sortByDateDesc',
-                          value: controller.dateFilter,
-                          onChanged: (value) {
-                            controller.dateFilter.value = value ?? false;
-                          },
-                        ),
-                        CustomCheckBox(
-                          title: "${'sortByAmount'.tr} ",
-                          subtitle: 'sortByAmountDesc',
-                          value: controller.amountFilter,
-                          onChanged: (value) {
-                            controller.amountFilter.value = value ?? false;
-                          },
-                        ),
-                        // CustomTextField(
-                        //   label: 'beneficiary'.tr,
-                        //   labelTextstyle:
-                        //       Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        //             color: AppColors.primaryColor,
-                        //             fontSize: 15.sp,
-                        //             fontWeight: FontWeight.w700,
-                        //           ),
-                        //   hintText: 'customerNameExample',
-                        //   controller: controller.employeeNameController,
-                        // ),
-                        SizedBox(height: 30.h),
-                        Row(
+              ),
+            ),
+            IconButton(
+              highlightColor: Colors.transparent,
+              icon: Icon(
+                Icons.calendar_today_outlined,
+                size: 22.sp,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: () {
+                Get.dialog(
+                  // ignore: deprecated_member_use
+                  WillPopScope(
+                    onWillPop: () async {
+                      controller.applyFilters();
+                      return true;
+                    },
+                    child: Dialog(
+                      backgroundColor: ThemeService.isDark.value
+                          ? AppColors.darkColor
+                          : AppColors.whiteColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(25.w),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: AppButton(
-                                isSafeArea: false,
-                                text: 'apply',
-                                textStyle: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.whiteColor,
-                                    ),
-                                onPressed: () {
-                                  controller.applyFilters();
-                                },
-                              ),
+                            CustomCheckBox(
+                              title: "${'sortByDate'.tr} ",
+                              subtitle: 'sortByDateDesc',
+                              value: controller.dateFilter,
+                              onChanged: (value) {
+                                controller.dateFilter.value = value ?? false;
+                              },
                             ),
-                            SizedBox(width: 10.w),
-                            Expanded(
-                              child: AppButton(
-                                isSafeArea: false,
-                                color: Colors.red,
-                                text: 'clear',
-                                textStyle: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.whiteColor,
-                                    ),
-                                onPressed: () {
-                                  controller.amountFilter.value = false;
-                                  controller.dateFilter.value = false;
-                                  controller.employeeNameController.clear();
-                                  controller.applyFilters();
-                                },
-                              ),
+                            CustomCheckBox(
+                              title: "${'sortByAmount'.tr} ",
+                              subtitle: 'sortByAmountDesc',
+                              value: controller.amountFilter,
+                              onChanged: (value) {
+                                controller.amountFilter.value = value ?? false;
+                              },
+                            ),
+                            // CustomTextField(
+                            //   label: 'beneficiary'.tr,
+                            //   labelTextstyle:
+                            //       Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            //             color: AppColors.primaryColor,
+                            //             fontSize: 15.sp,
+                            //             fontWeight: FontWeight.w700,
+                            //           ),
+                            //   hintText: 'customerNameExample',
+                            //   controller: controller.employeeNameController,
+                            // ),
+                            SizedBox(height: 30.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppButton(
+                                    isSafeArea: false,
+                                    text: 'apply',
+                                    textStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.whiteColor,
+                                        ),
+                                    onPressed: () {
+                                      controller.applyFilters();
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: 10.w),
+                                Expanded(
+                                  child: AppButton(
+                                    isSafeArea: false,
+                                    color: Colors.red,
+                                    text: 'clear',
+                                    textStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.whiteColor,
+                                        ),
+                                    onPressed: () {
+                                      controller.amountFilter.value = false;
+                                      controller.dateFilter.value = false;
+                                      controller.employeeNameController.clear();
+                                      controller.applyFilters();
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
-        // IconButton(
-        //   highlightColor: Colors.transparent,
-        //   icon: Icon(
-        //     Icons.add_circle,
-        //     size: 32.sp,
-        //     color: ThemeService.isDark.value
-        //         ? AppColors.primaryColor
-        //         : AppColors.secondaryColor,
-        //   ),
-        //   onPressed: () {
-        //     // Handle add action
-        //     Get.toNamed(
-        //       AppRoutes.NEWCHECKSCREEN,
-        //       arguments: {'isNewCheck': isNewCheck},
-        //     );
-        //   },
-        // ),
-        SizedBox(width: 10.w),
-      ],
+                );
+              },
+            ),
+            // IconButton(
+            //   highlightColor: Colors.transparent,
+            //   icon: Icon(
+            //     Icons.add_circle,
+            //     size: 32.sp,
+            //     color: ThemeService.isDark.value
+            //         ? AppColors.primaryColor
+            //         : AppColors.secondaryColor,
+            //   ),
+            //   onPressed: () {
+            //     // Handle add action
+            //     Get.toNamed(
+            //       AppRoutes.NEWCHECKSCREEN,
+            //       arguments: {'isNewCheck': isNewCheck},
+            //     );
+            //   },
+            // ),
+            SizedBox(width: 10.w),
+          ],
+        );
+      },
     );
   }
 }

@@ -81,6 +81,8 @@ class ChecksController extends GetxController
       TextEditingController(text: '1');
 
   final TextEditingController employeeNameController = TextEditingController();
+  final TextEditingController checksSearchController = TextEditingController();
+  final RxBool isChecksSearchOpen = false.obs;
 
   final TextEditingController notesController = TextEditingController();
 
@@ -336,6 +338,17 @@ class ChecksController extends GetxController
     clearBulkSelection();
     // generalData();
     update();
+  }
+
+  void openChecksSearch() {
+    isChecksSearchOpen.value = true;
+    update();
+  }
+
+  void closeChecksSearch() {
+    checksSearchController.clear();
+    isChecksSearchOpen.value = false;
+    searchBar('');
   }
 
   void startBulkSelection() {
@@ -1293,9 +1306,32 @@ class ChecksController extends GetxController
     isLoading(true);
     update();
     try {
+      final rows = <Map<String, dynamic>>[];
+      for (final source in installments) {
+        final row = Map<String, dynamic>.from(source);
+        if (row['instrument_type'] == 'replacement_check') {
+          await Get.find<BanksService>()
+              .findOrCreateByName(row['bank_name']?.toString() ?? '');
+        }
+        final front = row.remove('front_image_file') as XFile?;
+        final back = row.remove('back_image_file') as XFile?;
+        if (front != null) {
+          row['front_image'] = await dio.MultipartFile.fromFile(
+            front.path,
+            filename: front.name,
+          );
+        }
+        if (back != null) {
+          row['back_image'] = await dio.MultipartFile.fromFile(
+            back.path,
+            filename: back.name,
+          );
+        }
+        rows.add(row);
+      }
       final response = await Get.find<DioConsumer>().post(
         EndPoints.partialSettleOutgoingCheck,
-        data: {
+        data: dio.FormData.fromMap({
           'outgoing_check_id': check.id,
           if (boxId != null) 'box_id': boxId,
           'amount': amount,
@@ -1303,8 +1339,8 @@ class ChecksController extends GetxController
           'idempotency_key':
               'flutter-${check.id}-${DateTime.now().microsecondsSinceEpoch}',
           if (notes?.trim().isNotEmpty == true) 'notes': notes!.trim(),
-          'installments': installments,
-        },
+          'installments': rows,
+        }),
       );
       final body = response.data;
       if (body is! Map || body['status'] != 'success') {
@@ -1346,6 +1382,10 @@ class ChecksController extends GetxController
       final rows = <Map<String, dynamic>>[];
       for (final source in installments) {
         final row = Map<String, dynamic>.from(source);
+        if (row['instrument_type'] == 'replacement_check') {
+          await Get.find<BanksService>()
+              .findOrCreateByName(row['bank_name']?.toString() ?? '');
+        }
         final front = row.remove('front_image_file') as XFile?;
         final back = row.remove('back_image_file') as XFile?;
         if (front != null) {
@@ -2051,17 +2091,63 @@ class ChecksController extends GetxController
 
   void searchBar(String value) {
     bool matches(CheckModel check, String query) {
-      final q = query.toLowerCase();
-      return (check.checkId.toLowerCase().contains(q)) ||
-          (check.bankName.toLowerCase().contains(q)) ||
-          (check.currency.toLowerCase().contains(q)) ||
-          (check.total.toLowerCase().contains(q)) ||
-          (check.dueDate.toString().contains(q)) ||
-          (check.notes?.toLowerCase().contains(q) ?? false) ||
-          (check.customer?.name.toLowerCase().contains(q) ?? false) ||
-          (check.seller?.name.toLowerCase().contains(q) ?? false) ||
-          (check.fromCustomer?.name.toLowerCase().contains(q) ?? false) ||
-          (check.fromSeller?.name.toLowerCase().contains(q) ?? false);
+      final q = query.trim().toLowerCase();
+      final dueDate = check.dueDate;
+      final installmentValues = check.installments.expand(
+        (item) => [
+          item.amount,
+          item.dueDate,
+          item.instrumentType,
+          item.checkId,
+          item.bankName,
+          item.status,
+          item.notes,
+          item.instrumentType == 'same_check'
+              ? 'مجدول داخليا جدولة داخلية'
+              : 'شيك بديل شيكات بديلة',
+        ],
+      );
+      final values = <Object?>[
+        check.id,
+        check.parentOutgoingCheckId,
+        check.checkId,
+        check.bankName,
+        check.currency,
+        check.total,
+        check.settledAmount,
+        check.remainingAmount,
+        check.status,
+        check.settlementStatus,
+        check.notes,
+        check.batchNumber,
+        check.customerId,
+        check.sellerId,
+        dueDate,
+        '${dueDate.year}/${dueDate.month}/${dueDate.day}',
+        '${dueDate.day}/${dueDate.month}/${dueDate.year}',
+        check.customer?.name,
+        check.customer?.phone,
+        check.seller?.name,
+        check.seller?.phone,
+        check.fromCustomer?.name,
+        check.fromCustomer?.phone,
+        check.fromSeller?.name,
+        check.fromSeller?.phone,
+        check.toCustomer?.name,
+        check.toCustomer?.phone,
+        check.toSeller?.name,
+        check.toSeller?.phone,
+        if (check.parentOutgoingCheckId != null)
+          check.originInstallmentType == 'same_check'
+              ? 'مجدول داخليا جدولة داخلية'
+              : 'شيك بديل شيكات بديلة',
+        ...installmentValues,
+      ];
+      return values
+          .where((item) => item != null)
+          .join(' ')
+          .toLowerCase()
+          .contains(q);
     }
 
     if (value.isNotEmpty) {
@@ -2196,6 +2282,7 @@ class ChecksController extends GetxController
       row.dispose();
     }
     employeeNameController.dispose();
+    checksSearchController.dispose();
     exchangeAmountController.dispose();
     _exchangeDebounce?.cancel();
     super.onClose();

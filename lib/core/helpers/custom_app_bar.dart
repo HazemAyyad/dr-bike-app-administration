@@ -28,6 +28,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleFontSize,
     this.iconSize,
     this.toolbarHeight,
+    this.titleWidget,
   }) : super(key: key);
 
   final String title;
@@ -47,6 +48,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double? titleFontSize;
   final double? iconSize;
   final double? toolbarHeight;
+  final Widget? titleWidget;
 
   static bool _backNavigationInProgress = false;
 
@@ -135,16 +137,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: toolbarHeight,
       iconTheme: IconThemeData(size: iconSize),
       actionsIconTheme: IconThemeData(size: iconSize),
-      title: Text(
-        title.tr,
-        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              fontSize: titleFontSize ?? 20.sp,
-              fontWeight: FontWeight.w700,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
-      ),
+      title: titleWidget ??
+          Text(
+            title.tr,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: titleFontSize ?? 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                ),
+          ),
       leading: dsibalBack
           ? const SizedBox.shrink()
           : IconButton(

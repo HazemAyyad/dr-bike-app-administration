@@ -1893,6 +1893,7 @@ const Map<String, String> en = {
   'partiallyPaid': 'Partially paid',
   'scheduledChecks': 'Scheduled',
   'partiallyPaidChecks': 'Partially paid',
+  'paidOutgoingChecks': 'Cashed',
   'editCheckSchedule': 'Edit schedule and linked checks',
   'viewScheduledChecks': 'View scheduled and linked checks',
   'returnedCheck': 'Returned Check',

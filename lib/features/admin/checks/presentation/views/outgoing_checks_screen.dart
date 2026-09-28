@@ -7,8 +7,6 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../../../core/services/theme_service.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_data_details.dart';
 import '../widgets/custom_actions_appbar.dart';
@@ -21,9 +19,33 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'outgoingChecks'.tr,
-        actions: const [CustomActionsAppBar(isNewCheck: true)],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Obx(
+          () => CustomAppBar(
+            title: 'outgoingChecks'.tr,
+            titleWidget: controller.isChecksSearchOpen.value
+                ? TextField(
+                    controller: controller.checksSearchController,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    onChanged: controller.searchBar,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      hintText: 'search'.tr,
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  )
+                : null,
+            actions: const [CustomActionsAppBar(isNewCheck: true)],
+          ),
+        ),
       ),
       body: Stack(
         children: [
@@ -61,32 +83,6 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                           tabVerticalPadding: 7.h,
                           tabHorizontalMargin: 2.w,
                           fontSize: 12.sp,
-                        ),
-                      ),
-                    ),
-                    SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 50.w),
-                        child: SearchBar(
-                          shadowColor:
-                              WidgetStateProperty.all(Colors.transparent),
-                          textStyle: WidgetStateProperty.all(
-                            const TextStyle(fontSize: 16),
-                          ),
-                          hintStyle: WidgetStateProperty.all(
-                            const TextStyle(fontSize: 16),
-                          ),
-                          leading: const Icon(
-                            Icons.search,
-                          ),
-                          hintText: 'search'.tr,
-                          backgroundColor: WidgetStateProperty.all(
-                            ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor7,
-                          ),
-                          onChanged: (value) => controller.searchBar(value),
                         ),
                       ),
                     ),

@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/app_failure_notice.dart';
+import 'package:doctorbike/core/helpers/bank_name_field.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
+import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -15,6 +17,15 @@ import '../../../widgets/unified_partner_selector.dart';
 import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 import 'view_checks_widget.dart';
+
+Future<XFile?> _pickReplacementCheckImage(
+  BuildContext context,
+  XFile? current,
+) async {
+  final selected = Rx<XFile?>(current);
+  await UploadImageButton.pickFileFor(context, selected);
+  return selected.value;
+}
 
 class OnLongPress extends GetView<ChecksController> {
   const OnLongPress({Key? key, required this.check}) : super(key: key);
@@ -322,7 +333,6 @@ class ScheduleEditDialog extends StatefulWidget {
 
 class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
   final rows = <_InstallmentDraft>[];
-  final picker = ImagePicker();
   ChecksController get controller => Get.find<ChecksController>();
 
   @override
@@ -378,8 +388,10 @@ class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
         'instrument_type': row.replacement ? 'replacement_check' : 'same_check',
         if (row.replacement) 'check_id': row.checkNumber.text.trim(),
         if (row.replacement) 'bank_name': row.bank.text.trim(),
-        if (row.frontImage != null) 'front_image_file': row.frontImage,
-        if (row.backImage != null) 'back_image_file': row.backImage,
+        if (row.replacement && row.frontImage != null)
+          'front_image_file': row.frontImage,
+        if (row.replacement && row.backImage != null)
+          'back_image_file': row.backImage,
       });
     }
     await controller.updateOutgoingCheckSchedule(
@@ -468,17 +480,21 @@ class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
                               controller: row.checkNumber,
                               decoration: const InputDecoration(
                                   labelText: 'رقم الشيك')),
-                          TextField(
-                              controller: row.bank,
-                              decoration:
-                                  const InputDecoration(labelText: 'البنك')),
+                          BankNameField(
+                            plainStyle: true,
+                            controller: row.bank,
+                            focusNode: row.bankFocus,
+                            decoration:
+                                const InputDecoration(labelText: 'البنك'),
+                          ),
                           Row(
                             children: [
                               Expanded(
                                   child: TextButton.icon(
                                       onPressed: () async {
-                                        row.frontImage = await picker.pickImage(
-                                            source: ImageSource.gallery);
+                                        row.frontImage =
+                                            await _pickReplacementCheckImage(
+                                                context, row.frontImage);
                                         if (mounted) setState(() {});
                                       },
                                       icon: const Icon(Icons.image_outlined),
@@ -488,8 +504,9 @@ class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
                               Expanded(
                                   child: TextButton.icon(
                                       onPressed: () async {
-                                        row.backImage = await picker.pickImage(
-                                            source: ImageSource.gallery);
+                                        row.backImage =
+                                            await _pickReplacementCheckImage(
+                                                context, row.backImage);
                                         if (mounted) setState(() {});
                                       },
                                       icon: const Icon(Icons.image_outlined),
@@ -497,6 +514,13 @@ class _ScheduleEditDialogState extends State<ScheduleEditDialog> {
                                           ? 'الصورة الخلفية'
                                           : 'تم اختيار الخلفية'))),
                             ],
+                          ),
+                          const Text(
+                            'عند عدم إرفاق صورة ستُستخدم صورة الشيك الأساسي.',
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ],
@@ -608,6 +632,10 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
         'instrument_type': row.replacement ? 'replacement_check' : 'same_check',
         if (row.replacement) 'check_id': row.checkNumber.text.trim(),
         if (row.replacement) 'bank_name': row.bank.text.trim(),
+        if (row.replacement && row.frontImage != null)
+          'front_image_file': row.frontImage,
+        if (row.replacement && row.backImage != null)
+          'back_image_file': row.backImage,
       });
     }
     final scheduled =
@@ -845,10 +873,58 @@ class _PartialSettlementDialogState extends State<PartialSettlementDialog> {
                                       controller: row.checkNumber,
                                       decoration: const InputDecoration(
                                           labelText: 'رقم الشيك الجديد')),
-                                  TextField(
-                                      controller: row.bank,
-                                      decoration: const InputDecoration(
-                                          labelText: 'البنك')),
+                                  BankNameField(
+                                    plainStyle: true,
+                                    controller: row.bank,
+                                    focusNode: row.bankFocus,
+                                    decoration: const InputDecoration(
+                                        labelText: 'البنك'),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextButton.icon(
+                                          onPressed: () async {
+                                            row.frontImage =
+                                                await _pickReplacementCheckImage(
+                                              context,
+                                              row.frontImage,
+                                            );
+                                            if (mounted) setState(() {});
+                                          },
+                                          icon:
+                                              const Icon(Icons.image_outlined),
+                                          label: Text(row.frontImage == null
+                                              ? 'الصورة الأمامية'
+                                              : 'تم اختيار الأمامية'),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: TextButton.icon(
+                                          onPressed: () async {
+                                            row.backImage =
+                                                await _pickReplacementCheckImage(
+                                              context,
+                                              row.backImage,
+                                            );
+                                            if (mounted) setState(() {});
+                                          },
+                                          icon:
+                                              const Icon(Icons.image_outlined),
+                                          label: Text(row.backImage == null
+                                              ? 'الصورة الخلفية'
+                                              : 'تم اختيار الخلفية'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Text(
+                                    'بدون صورة جديدة سيأخذ الشيك البديل صورة الشيك الأساسي.',
+                                    style: TextStyle(
+                                      color: mutedText,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ])));
                     }),
@@ -917,6 +993,7 @@ class _InstallmentDraft {
   final amount = TextEditingController();
   final checkNumber = TextEditingController();
   final bank = TextEditingController();
+  final bankFocus = FocusNode();
   DateTime dueDate = DateTime.now().add(const Duration(days: 30));
   bool replacement = false;
   XFile? frontImage;
@@ -925,6 +1002,7 @@ class _InstallmentDraft {
     amount.dispose();
     checkNumber.dispose();
     bank.dispose();
+    bankFocus.dispose();
   }
 }
 
