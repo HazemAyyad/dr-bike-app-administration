@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +14,7 @@ import 'package:printing/printing.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
@@ -1988,7 +1990,20 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     if (details == null) return;
     final picked = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      type: FileType.any,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'heic',
+        'heif',
+        'pdf',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+      ],
       withData: false,
     );
     if (!context.mounted) return;
@@ -1996,12 +2011,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     final multipart = <dio.MultipartFile>[];
     for (final file in picked.files) {
       if (file.path == null) continue;
-      multipart.add(
-        await dio.MultipartFile.fromFile(
-          file.path!,
-          filename: file.name,
-        ),
-      );
+      multipart.add(await _preparePurchaseFile(
+        file.path!,
+        allowedDocuments: const {'pdf', 'doc', 'docx', 'xls', 'xlsx'},
+        maxBytes: 10 * 1024 * 1024,
+      ));
     }
     if (!context.mounted) return;
     if (multipart.isEmpty) {
@@ -2027,7 +2041,17 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   Future<void> pickPurchasePaymentEvidence(BuildContext context) async {
     final picked = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      type: FileType.any,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'webp',
+        'heic',
+        'heif',
+        'pdf',
+      ],
       withData: false,
     );
     if (!context.mounted) return;
@@ -2056,12 +2080,11 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     final multipart = <dio.MultipartFile>[];
     for (final file in purchasePaymentEvidenceFiles) {
       if (file.path == null) continue;
-      multipart.add(
-        await dio.MultipartFile.fromFile(
-          file.path!,
-          filename: file.name,
-        ),
-      );
+      multipart.add(await _preparePurchaseFile(
+        file.path!,
+        allowedDocuments: const {'pdf'},
+        maxBytes: 8 * 1024 * 1024,
+      ));
     }
     if (purchasePaymentEvidenceFiles.isNotEmpty &&
         multipart.isEmpty &&
@@ -2309,6 +2332,28 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     clearOpenPurchaseBills();
     super.onClose();
   }
+}
+
+Future<dio.MultipartFile> _preparePurchaseFile(
+  String path, {
+  required Set<String> allowedDocuments,
+  required int maxBytes,
+}) async {
+  final extension = path.split('.').last.toLowerCase();
+  if ({'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'}
+      .contains(extension)) {
+    final prepared = await MediaUploadPreparer.prepareImageForUpload(
+      XFile(path),
+      profile: ImageUploadProfile.receipt,
+    );
+    return prepared.toMultipartFile();
+  }
+  final prepared = await MediaUploadPreparer.prepareDocumentForUpload(
+    XFile(path),
+    allowedExtensions: allowedDocuments,
+    maxBytes: maxBytes,
+  );
+  return prepared.toMultipartFile();
 }
 
 class BillModel {

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 
 class DebtLedgerDatasource {
   final ApiConsumer api;
@@ -246,10 +248,11 @@ class DebtLedgerDatasource {
       if (receiptImages != null && receiptImages.isNotEmpty) {
         payload['receipt_images[]'] = await Future.wait(
           receiptImages.map((file) async {
-            return await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split(RegExp(r'[/\\]')).last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(file.path),
+              profile: ImageUploadProfile.receipt,
             );
+            return prepared.toMultipartFile();
           }),
         );
       }
@@ -297,10 +300,11 @@ class DebtLedgerDatasource {
       if (receiptImages != null && receiptImages.isNotEmpty) {
         payload['receipt_images[]'] = await Future.wait(
           receiptImages.map((file) async {
-            return await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split(RegExp(r'[/\\]')).last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(file.path),
+              profile: ImageUploadProfile.receipt,
             );
+            return prepared.toMultipartFile();
           }),
         );
       }

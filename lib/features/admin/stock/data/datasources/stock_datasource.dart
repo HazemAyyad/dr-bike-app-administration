@@ -5,6 +5,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile, Response;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
@@ -12,6 +13,7 @@ import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
@@ -1416,7 +1418,11 @@ class StockDatasource {
           endpoint,
           data: {
             ...body,
-            'image': await MultipartFile.fromFile(imagePath),
+            'image': await (await MediaUploadPreparer.prepareImageForUpload(
+              XFile(imagePath),
+              profile: ImageUploadProfile.profile,
+            ))
+                .toMultipartFile(),
           },
           isFormData: true,
         );

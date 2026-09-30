@@ -11,6 +11,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
@@ -1316,16 +1317,18 @@ class ChecksController extends GetxController
         final front = row.remove('front_image_file') as XFile?;
         final back = row.remove('back_image_file') as XFile?;
         if (front != null) {
-          row['front_image'] = await dio.MultipartFile.fromFile(
-            front.path,
-            filename: front.name,
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            front,
+            profile: ImageUploadProfile.check,
           );
+          row['front_image'] = await prepared.toMultipartFile();
         }
         if (back != null) {
-          row['back_image'] = await dio.MultipartFile.fromFile(
-            back.path,
-            filename: back.name,
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            back,
+            profile: ImageUploadProfile.check,
           );
+          row['back_image'] = await prepared.toMultipartFile();
         }
         rows.add(row);
       }
@@ -1389,12 +1392,18 @@ class ChecksController extends GetxController
         final front = row.remove('front_image_file') as XFile?;
         final back = row.remove('back_image_file') as XFile?;
         if (front != null) {
-          row['front_image'] = await dio.MultipartFile.fromFile(front.path,
-              filename: front.name);
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            front,
+            profile: ImageUploadProfile.check,
+          );
+          row['front_image'] = await prepared.toMultipartFile();
         }
         if (back != null) {
-          row['back_image'] =
-              await dio.MultipartFile.fromFile(back.path, filename: back.name);
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            back,
+            profile: ImageUploadProfile.check,
+          );
+          row['back_image'] = await prepared.toMultipartFile();
         }
         rows.add(row);
       }

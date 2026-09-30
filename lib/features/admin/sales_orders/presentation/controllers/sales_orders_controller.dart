@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/helpers/media_permissions.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../routes/app_routes.dart';
 
 import '../../data/models/sales_order_model.dart';
@@ -2346,9 +2347,19 @@ class SalesOrdersController extends GetxController {
     await withBlockingProgress(() async {
       final multipart = <dio.MultipartFile>[];
       for (final file in picked) {
-        multipart.add(
-          await dio.MultipartFile.fromFile(file.path, filename: file.name),
-        );
+        if (capture.mediaKind == 'video') {
+          final prepared = await MediaUploadPreparer.prepareVideoForUpload(
+            file,
+            maxBytes: 50 * 1024 * 1024,
+          );
+          multipart.add(await prepared.toMultipartFile());
+        } else {
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            file,
+            profile: ImageUploadProfile.salesOrder,
+          );
+          multipart.add(await prepared.toMultipartFile());
+        }
       }
 
       final uploadResult = await repository.uploadMedia(

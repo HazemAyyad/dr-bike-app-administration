@@ -12,14 +12,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path/path.dart' as p;
-import 'package:video_compress/video_compress.dart';
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
+import '../../../../../core/media/prepared_upload.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
@@ -738,13 +737,14 @@ class WhatsAppConversationController extends GetxController {
     if (sending.value) return;
     sending.value = true;
     try {
-      final prepared = await _prepareIosMedia(path, name, mediaKind);
+      final prepared = await _prepareMedia(path, name, mediaKind);
       await api.sendWhatsAppMedia(id, prepared.path, prepared.name,
           mediaKind: mediaKind,
           channel: channel,
           durationSeconds: durationSeconds,
           voiceNote: voiceNote);
       await load(silent: true);
+      await prepared.upload?.deleteTemporaryCopy();
     } catch (e) {
       AppFailureNotice.show(
         title: 'خطأ',
@@ -755,53 +755,24 @@ class WhatsAppConversationController extends GetxController {
     }
   }
 
-  Future<_PreparedMedia> _prepareIosMedia(
+  Future<_PreparedMedia> _prepareMedia(
       String path, String name, String? mediaKind) async {
-    if (!Platform.isIOS || !['image', 'video'].contains(mediaKind)) {
-      return _PreparedMedia(path, name);
-    }
-
-    final temp = await getTemporaryDirectory();
-    final stamp = DateTime.now().microsecondsSinceEpoch;
     if (mediaKind == 'image') {
-      final target = p.join(temp.path, 'whatsapp_image_$stamp.jpg');
-      final converted = await FlutterImageCompress.compressAndGetFile(
-        path,
-        target,
-        quality: 88,
-        format: CompressFormat.jpeg,
-        keepExif: false,
+      final upload = await MediaUploadPreparer.prepareImageForUpload(
+        XFile(path),
+        profile: ImageUploadProfile.social,
       );
-      if (converted == null) {
-        throw StateError('تعذر تحويل صورة الآيفون إلى صيغة JPG المدعومة.');
-      }
-      return _PreparedMedia(converted.path, p.basename(converted.path));
+      return _PreparedMedia(upload.path, upload.filename, upload: upload);
     }
-
-    var compressed = await VideoCompress.compressVideo(
-      path,
-      quality: VideoQuality.MediumQuality,
-      deleteOrigin: false,
-      includeAudio: true,
-    );
-    var file = compressed?.file;
-    const uploadLimit = 16 * 1024 * 1024;
-    if (file != null && await file.length() > uploadLimit) {
-      compressed = await VideoCompress.compressVideo(
-        path,
-        quality: VideoQuality.LowQuality,
-        deleteOrigin: false,
-        includeAudio: true,
+    if (mediaKind == 'video') {
+      final upload = await MediaUploadPreparer.prepareVideoForUpload(
+        XFile(path),
+        maxBytes: 16 * 1024 * 1024,
+        compressWhenOversize: true,
       );
-      file = compressed?.file;
+      return _PreparedMedia(upload.path, upload.filename, upload: upload);
     }
-    if (file == null) {
-      throw StateError('تعذر تحويل فيديو الآيفون إلى صيغة MP4 المدعومة.');
-    }
-    if (await file.length() > uploadLimit) {
-      throw StateError('حجم الفيديو بعد الضغط أكبر من 16 ميجابايت.');
-    }
-    return _PreparedMedia(file.path, 'whatsapp_video_$stamp.mp4');
+    return _PreparedMedia(path, name);
   }
 
   Future<void> showMedia(WhatsAppMessage message) async {
@@ -1058,8 +1029,9 @@ class WhatsAppConversationController extends GetxController {
 }
 
 class _PreparedMedia {
-  const _PreparedMedia(this.path, this.name);
+  const _PreparedMedia(this.path, this.name, {this.upload});
 
   final String path;
   final String name;
+  final PreparedUpload? upload;
 }

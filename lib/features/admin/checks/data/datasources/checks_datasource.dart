@@ -1,10 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
-// ignore: depend_on_referenced_packages
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:video_compress/video_compress.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -15,6 +11,7 @@ import '../models/general_checks_data_model.dart';
 import '../../domain/repositories/checks_repository.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 
 class ChecksDatasource {
   final ApiConsumer api;
@@ -437,56 +434,20 @@ class ChecksDatasource {
 }
 
 Future<XFile> compressImage(XFile file) async {
-  final lower = file.path.toLowerCase();
-  try {
-    final tempDir = await getTemporaryDirectory();
-    // 🎥 ضغط الفيديوهات
-    if (lower.endsWith('.mp4') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.avi') ||
-        lower.endsWith('.mkv') ||
-        lower.endsWith('.webm')) {
-      final compressedVideo = await VideoCompress.compressVideo(
-        file.path,
-        quality: VideoQuality.MediumQuality, // اختيارات: Low / Medium / High
-        deleteOrigin: false,
-        includeAudio: true,
-      );
-      if (compressedVideo != null && compressedVideo.file != null) {
-        return XFile(compressedVideo.file!.path);
-      } else {
-        return file;
-      }
-    }
-    // 🖼️ ضغط الصور
-    String sourcePath = file.path;
-    if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
-      final jpgPath = p.join(
-        tempDir.path,
-        'converted_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      );
-      final converted = await FlutterImageCompress.compressAndGetFile(
-        file.path,
-        jpgPath,
-        quality: 95,
-        format: CompressFormat.jpeg,
-      );
-      if (converted != null) sourcePath = converted.path;
-    }
-    final targetPath = p.join(
-      tempDir.path,
-      'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg',
+  final extension = file.path.split('.').last.toLowerCase();
+  if ({'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv'}.contains(extension)) {
+    final preparedVideo = await MediaUploadPreparer.prepareVideoForUpload(
+      file,
+      maxBytes: 50 * 1024 * 1024,
     );
-    final compressedImage = await FlutterImageCompress.compressAndGetFile(
-      sourcePath,
-      targetPath,
-      quality: 85,
-      format: CompressFormat.jpeg,
-      keepExif: false,
+    return XFile(
+      preparedVideo.path,
+      mimeType: preparedVideo.contentType.toString(),
     );
-    if (compressedImage == null) return file;
-    return XFile(compressedImage.path);
-  } catch (e) {
-    return file;
   }
+  final prepared = await MediaUploadPreparer.prepareImageForUpload(
+    file,
+    profile: ImageUploadProfile.check,
+  );
+  return XFile(prepared.path, mimeType: prepared.contentType.toString());
 }

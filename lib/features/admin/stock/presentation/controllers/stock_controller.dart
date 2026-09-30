@@ -16,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/server_validation_messages.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -3303,11 +3304,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         }
         final pendingImg = c.pendingImage;
         if (pendingImg != null) {
-          final bytes = await pendingImg.readAsBytes();
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            pendingImg,
+            profile: ImageUploadProfile.general,
+          );
           form.files.add(
             MapEntry(
               'sizes[$sizeIndex][color_sizes][$j][image]',
-              MultipartFile.fromBytes(bytes, filename: pendingImg.name),
+              await prepared.toMultipartFile(),
             ),
           );
         } else if (c.clearImage) {
@@ -3322,11 +3326,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       List<XFile> files,
     ) async {
       for (final x in files) {
-        final bytes = await x.readAsBytes();
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          x,
+          profile: ImageUploadProfile.general,
+        );
         form.files.add(
           MapEntry(
             fieldName,
-            MultipartFile.fromBytes(bytes, filename: x.name),
+            await prepared.toMultipartFile(),
           ),
         );
       }
@@ -3337,11 +3344,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     await appendFiles('three_d_images[]', pendingThreeDImages);
     if (pendingVideo != null) {
       final v = pendingVideo!;
-      final bytes = await v.readAsBytes();
+      final prepared = await MediaUploadPreparer.prepareVideoForUpload(
+        v,
+        maxBytes: 100 * 1024 * 1024,
+      );
       form.files.add(
         MapEntry(
           'video',
-          MultipartFile.fromBytes(bytes, filename: v.name),
+          await prepared.toMultipartFile(),
         ),
       );
     }

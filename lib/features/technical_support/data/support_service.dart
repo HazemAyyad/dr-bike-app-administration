@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response, FormData, MultipartFile;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/databases/api/dio_consumer.dart';
 import '../../../core/databases/api/end_points.dart';
+import '../../../core/media/media_upload_preparer.dart';
 
 class SupportAttachment {
   final int id;
@@ -308,7 +310,25 @@ class SupportService {
         'subject': subject.trim(),
       if (message.trim().isNotEmpty) 'message': message.trim(),
       for (var i = 0; i < files.length; i++)
-        'attachments[$i]': await MultipartFile.fromFile(files[i]),
+        'attachments[$i]':
+            await (await MediaUploadPreparer.prepareAttachmentForUpload(
+          XFile(files[i]),
+          allowedExtensions: const {
+            'pdf',
+            'doc',
+            'docx',
+            'xls',
+            'xlsx',
+            'txt',
+            'mp3',
+            'm4a',
+            'aac',
+            'ogg',
+            'wav'
+          },
+          maxBytes: 100 * 1024 * 1024,
+        ))
+                .toMultipartFile(),
     });
   }
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -8,6 +9,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 
 void _debugLogDebtListSample(
   String flow,
@@ -146,12 +148,13 @@ class DebetDatasource {
           'due_date': dueDate,
           'total': total,
           'receipt_image[]': await Future.wait(
-            receiptImage.map(
-              (file) => MultipartFile.fromFile(
-                file.path,
-                filename: file.path.split('/').last,
-              ),
-            ),
+            receiptImage.map((file) async {
+              final prepared = await MediaUploadPreparer.prepareImageForUpload(
+                XFile(file.path),
+                profile: ImageUploadProfile.receipt,
+              );
+              return prepared.toMultipartFile();
+            }),
           ),
           'notes': notes,
           'box_id': boxId,

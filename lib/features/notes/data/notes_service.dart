@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile, Response;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/databases/api/dio_consumer.dart';
 import '../../../core/databases/api/end_points.dart';
+import '../../../core/media/media_upload_preparer.dart';
 
 class NoteUser {
   final int id;
@@ -241,10 +243,29 @@ class NotesService {
     String path, {
     String? type,
   }) async {
+    final prepared = await MediaUploadPreparer.prepareAttachmentForUpload(
+      XFile(path),
+      allowedExtensions: const {
+        'pdf',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'txt',
+        'zip',
+        'rar',
+        'mp3',
+        'm4a',
+        'aac',
+        'ogg',
+        'wav'
+      },
+      maxBytes: 100 * 1024 * 1024,
+    );
     final response = await _api.post(
       EndPoints.noteAttachments(noteId),
       data: FormData.fromMap({
-        'file': await MultipartFile.fromFile(path),
+        'file': await prepared.toMultipartFile(),
         if (type != null) 'attachment_type': type,
       }),
     );

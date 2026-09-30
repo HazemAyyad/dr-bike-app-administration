@@ -9,6 +9,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
@@ -1283,6 +1284,23 @@ class EmployeeDatasource {
     String? imagePath,
   }) async {
     try {
+      MultipartFile? preparedMedia;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        final extension = imagePath.split('.').last.toLowerCase();
+        if ({'mp4', 'mov', '3gp', 'webm'}.contains(extension)) {
+          final prepared = await MediaUploadPreparer.prepareVideoForUpload(
+            XFile(imagePath),
+            maxBytes: 50 * 1024 * 1024,
+          );
+          preparedMedia = await prepared.toMultipartFile();
+        } else {
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            XFile(imagePath),
+            profile: ImageUploadProfile.salesOrder,
+          );
+          preparedMedia = await prepared.toMultipartFile();
+        }
+      }
       final payload = <String, dynamic>{
         if (points != null) 'points': points,
         if (category != null && category.isNotEmpty) 'category': category,
@@ -1291,11 +1309,7 @@ class EmployeeDatasource {
         if (notes != null && notes.isNotEmpty) 'notes': notes,
         if (pointsDate != null && pointsDate.isNotEmpty)
           'points_date': pointsDate,
-        if (imagePath != null && imagePath.isNotEmpty)
-          'image': await MultipartFile.fromFile(
-            imagePath,
-            filename: imagePath.split(Platform.pathSeparator).last,
-          ),
+        if (preparedMedia != null) 'image': preparedMedia,
       };
       final response = await api.post(
         isAdd

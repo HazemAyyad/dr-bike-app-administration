@@ -2,13 +2,14 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../sales/data/models/daily_session_model.dart';
 import '../models/maintenance_activity_log_model.dart';
 import '../models/maintenance_invoice_model.dart';
@@ -82,11 +83,8 @@ class MaintenanceDatasource {
                 if (e.path.contains('http')) {
                   return e.path;
                 } else {
-                  final compressedImg = await compressImage(XFile(e.path));
-                  return await MultipartFile.fromFile(
-                    compressedImg.path,
-                    filename: compressedImg.path.split('/').last,
-                  );
+                  return _prepareMaintenanceMedia(e,
+                      maxBytes: 30 * 1024 * 1024);
                 }
               }),
             ),
@@ -332,13 +330,14 @@ class MaintenanceDatasource {
         ),
       ]);
       for (final file in media) {
+        final prepared = await _prepareMaintenanceMedia(
+          file,
+          maxBytes: 500 * 1024 * 1024,
+        );
         formData.files.add(
           MapEntry(
             'media[]',
-            await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split(Platform.pathSeparator).last,
-            ),
+            prepared,
           ),
         );
       }
@@ -709,4 +708,24 @@ class MaintenanceDatasource {
       );
     }
   }
+}
+
+Future<MultipartFile> _prepareMaintenanceMedia(
+  File file, {
+  required int maxBytes,
+}) async {
+  final extension = p.extension(file.path).toLowerCase();
+  if ({'.mp4', '.mov', '.m4v', '.3gp', '.webm', '.avi', '.mkv'}
+      .contains(extension)) {
+    final prepared = await MediaUploadPreparer.prepareVideoForUpload(
+      XFile(file.path),
+      maxBytes: maxBytes,
+    );
+    return prepared.toMultipartFile();
+  }
+  final prepared = await MediaUploadPreparer.prepareImageForUpload(
+    XFile(file.path),
+    profile: ImageUploadProfile.maintenance,
+  );
+  return prepared.toMultipartFile();
 }

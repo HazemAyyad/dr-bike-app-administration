@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/databases/api/api_consumer.dart';
 import '../../../../core/databases/api/end_points.dart';
@@ -8,6 +9,7 @@ import '../../../../core/errors/error_model.dart';
 import '../../../../core/errors/expentions.dart';
 import '../../../../core/services/initial_bindings.dart';
 import '../../../../core/services/user_data.dart';
+import '../../../../core/media/media_upload_preparer.dart';
 import '../../../auth/data/models/user_model.dart';
 
 class CommonDatasource {
@@ -33,10 +35,11 @@ class CommonDatasource {
       'address': address.isEmpty ? null : address,
     };
     if (employeeImage != null) {
-      payload['employee_img'] = await MultipartFile.fromFile(
-        employeeImage.path,
-        filename: employeeImage.uri.pathSegments.last,
+      final prepared = await MediaUploadPreparer.prepareImageForUpload(
+        XFile(employeeImage.path),
+        profile: ImageUploadProfile.profile,
       );
+      payload['employee_img'] = await prepared.toMultipartFile();
     }
 
     if (kDebugMode) {

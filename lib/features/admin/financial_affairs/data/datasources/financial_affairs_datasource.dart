@@ -3,16 +3,14 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-// ignore: depend_on_referenced_packages
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/asset_depreciation_preview_model.dart';
@@ -267,8 +265,11 @@ class FinancialAffairsDatasource {
     for (var i = 0; i < media.length; i++) {
       final file = media[i];
       if (file == null || file.path.startsWith('http')) continue;
-      payload['media[$i]'] = await MultipartFile.fromFile(file.path,
-          filename: p.basename(file.path));
+      final prepared = await MediaUploadPreparer.prepareImageForUpload(
+        XFile(file.path),
+        profile: ImageUploadProfile.general,
+      );
+      payload['media[$i]'] = await prepared.toMultipartFile();
     }
     final response = await api.post(EndPoints.editDestruction,
         data: payload, isFormData: true);
@@ -423,25 +424,33 @@ class FinancialAffairsDatasource {
     void Function(double progress)? onUploadProgress,
   }) async {
     try {
+      final selected = media.isEmpty ? null : media.first;
+      dynamic preparedFile;
+      if (selected != null) {
+        if (selected.path.contains('http')) {
+          preparedFile = selected.path;
+        } else {
+          final extension = selected.path.split('.').last.toLowerCase();
+          final prepared =
+              {'mp4', 'mov', 'webm', 'avi', 'mkv'}.contains(extension)
+                  ? await MediaUploadPreparer.prepareVideoForUpload(
+                      XFile(selected.path),
+                      maxBytes: 30 * 1024 * 1024,
+                    )
+                  : await MediaUploadPreparer.prepareImageForUpload(
+                      XFile(selected.path),
+                      profile: ImageUploadProfile.general,
+                    );
+          preparedFile = await prepared.toMultipartFile();
+        }
+      }
       final response = await api.post(
         pictureId.isNotEmpty ? EndPoints.editPicture : EndPoints.addPicture,
         data: {
           if (pictureId.isNotEmpty) 'picture_id': pictureId,
           'name': name,
           'description': description,
-          if (media.isNotEmpty)
-            'file': await Future.wait(
-              media.map((file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                final compressedImg = await compressImage(XFile(file.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }),
-            ),
+          if (preparedFile != null) 'file': preparedFile,
         },
         isFormData: true,
         onSendProgress: (sent, total) {
@@ -652,26 +661,9 @@ class FinancialAffairsDatasource {
 }
 
 Future<XFile> compressImageFile({required XFile inputFile}) async {
-  final file = File(inputFile.path);
-  final tempDir = await getTemporaryDirectory();
-  final targetPath = p.join(
-    tempDir.path,
-    "${DateTime.now().millisecondsSinceEpoch}_${p.basename(inputFile.path)}",
+  final prepared = await MediaUploadPreparer.prepareImageForUpload(
+    inputFile,
+    profile: ImageUploadProfile.receipt,
   );
-
-  // نستخدم compressAndGetFile للحصول على ملف مضغوط
-  final compressedFile = await FlutterImageCompress.compressAndGetFile(
-    file.absolute.path,
-    targetPath,
-    quality: 90,
-    format: CompressFormat.jpeg,
-    keepExif: false,
-  );
-
-  if (compressedFile == null) {
-    // في حال فشل الضغط، رجّع الصورة الأصلية
-    return inputFile;
-  }
-
-  return XFile(compressedFile.path);
+  return XFile(prepared.path, mimeType: prepared.contentType.toString());
 }
