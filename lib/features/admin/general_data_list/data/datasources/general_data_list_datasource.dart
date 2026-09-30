@@ -7,7 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../debts/data/models/debt_ledger_models.dart';
 import '../../domain/entity/add_person_entity.dart';
 import '../models/employee_data_model.dart';
@@ -94,11 +94,11 @@ class GeneralDataListDatasource {
             if (e.path.startsWith('http')) {
               return e.path.split('http://doctorbike.mj-sall.com/').last;
             }
-            final compressedImg = await compressImage(XFile(e.path));
-            return await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(e.path),
+              profile: ImageUploadProfile.general,
             );
+            return prepared.toMultipartFile();
           }),
         );
       }
@@ -109,11 +109,11 @@ class GeneralDataListDatasource {
             if (e.path.startsWith('http')) {
               return e.path.split('http://doctorbike.mj-sall.com/').last;
             }
-            final compressedImg = await compressImage(XFile(e.path));
-            return await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(e.path),
+              profile: ImageUploadProfile.general,
             );
+            return prepared.toMultipartFile();
           }),
         );
       }

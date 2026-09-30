@@ -12,6 +12,7 @@ import '../../domain/repositories/checks_repository.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 import '../../../../../core/media/media_upload_preparer.dart';
+import '../../../../../core/media/prepared_upload.dart';
 
 class ChecksDatasource {
   final ApiConsumer api;
@@ -32,16 +33,19 @@ class ChecksDatasource {
     XFile? backImage,
     required String notes,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
-      XFile? compressedFrontImage;
-      XFile? compressedBackImage;
+      PreparedUpload? preparedFrontImage;
+      PreparedUpload? preparedBackImage;
 
       if (frontImage != null) {
-        compressedFrontImage = await compressImage(frontImage);
+        preparedFrontImage = await _prepareCheckImage(frontImage);
+        preparedUploads.add(preparedFrontImage);
       }
 
       if (backImage != null) {
-        compressedBackImage = await compressImage(backImage);
+        preparedBackImage = await _prepareCheckImage(backImage);
+        preparedUploads.add(preparedBackImage);
       }
 
       final response = await api.post(
@@ -57,21 +61,12 @@ class ChecksDatasource {
           'check_id': checkId,
           'bank_name': bankName,
           // if (isInComing)
-          if (compressedFrontImage != null)
-            'img': await MultipartFile.fromFile(
-              compressedFrontImage.path,
-              filename: compressedFrontImage.path.split('/').last,
-            ),
-          if (compressedFrontImage != null)
-            'front_image': await MultipartFile.fromFile(
-              compressedFrontImage.path,
-              filename: compressedFrontImage.path.split('/').last,
-            ),
-          if (compressedBackImage != null)
-            'back_image': await MultipartFile.fromFile(
-              compressedBackImage.path,
-              filename: compressedBackImage.path.split('/').last,
-            ),
+          if (preparedFrontImage != null)
+            'img': await preparedFrontImage.toMultipartFile(),
+          if (preparedFrontImage != null)
+            'front_image': await preparedFrontImage.toMultipartFile(),
+          if (preparedBackImage != null)
+            'back_image': await preparedBackImage.toMultipartFile(),
           'notes': notes,
         },
         isFormData: true,
@@ -86,6 +81,8 @@ class ChecksDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -96,16 +93,19 @@ class ChecksDatasource {
     required DateTime receivedAt,
     required List<IncomingCheckBatchItem> checks,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
       final rows = <Map<String, dynamic>>[];
 
       for (final check in checks) {
-        final compressedFrontImage = check.frontImage == null
+        final preparedFrontImage = check.frontImage == null
             ? null
-            : await compressImage(check.frontImage!);
-        final compressedBackImage = check.backImage == null
+            : await _prepareCheckImage(check.frontImage!);
+        final preparedBackImage = check.backImage == null
             ? null
-            : await compressImage(check.backImage!);
+            : await _prepareCheckImage(check.backImage!);
+        if (preparedFrontImage != null) preparedUploads.add(preparedFrontImage);
+        if (preparedBackImage != null) preparedUploads.add(preparedBackImage);
 
         rows.add({
           'total': check.total,
@@ -114,16 +114,10 @@ class ChecksDatasource {
           'check_id': check.checkId,
           'bank_name': check.bankName,
           'notes': check.notes,
-          if (compressedFrontImage != null)
-            'front_image': await MultipartFile.fromFile(
-              compressedFrontImage.path,
-              filename: compressedFrontImage.path.split('/').last,
-            ),
-          if (compressedBackImage != null)
-            'back_image': await MultipartFile.fromFile(
-              compressedBackImage.path,
-              filename: compressedBackImage.path.split('/').last,
-            ),
+          if (preparedFrontImage != null)
+            'front_image': await preparedFrontImage.toMultipartFile(),
+          if (preparedBackImage != null)
+            'back_image': await preparedBackImage.toMultipartFile(),
         });
       }
 
@@ -151,6 +145,8 @@ class ChecksDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -329,20 +325,19 @@ class ChecksDatasource {
     XFile? backImage,
     required String notes,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
-      XFile? compressedFrontImage;
-      XFile? compressedBackImage;
+      PreparedUpload? preparedFrontImage;
+      PreparedUpload? preparedBackImage;
 
       if (frontImage != null && !frontImage.path.contains('http')) {
-        compressedFrontImage = await compressImage(frontImage);
-      } else {
-        compressedFrontImage = frontImage;
+        preparedFrontImage = await _prepareCheckImage(frontImage);
+        preparedUploads.add(preparedFrontImage);
       }
 
       if (backImage != null && !backImage.path.contains('http')) {
-        compressedBackImage = await compressImage(backImage);
-      } else {
-        compressedBackImage = backImage;
+        preparedBackImage = await _prepareCheckImage(backImage);
+        preparedUploads.add(preparedBackImage);
       }
       final response = await api.post(
         isInComing ? EndPoints.editIncomingCheck : EndPoints.editOutgoingCheck,
@@ -359,35 +354,20 @@ class ChecksDatasource {
           'check_id': checkId,
           'bank_name': bankName,
           if (frontImage == null) 'img': '',
-          if (compressedFrontImage != null)
-            if (compressedFrontImage.path.contains('http'))
-              'img': compressedFrontImage.path.split('/').last,
-          if (compressedFrontImage != null)
-            if (!compressedFrontImage.path.contains('http'))
-              'img': await MultipartFile.fromFile(
-                compressedFrontImage.path,
-                filename: compressedFrontImage.path.split('/').last,
-              ),
+          if (frontImage != null && frontImage.path.contains('http'))
+            'img': frontImage.path.split('/').last,
+          if (preparedFrontImage != null)
+            'img': await preparedFrontImage.toMultipartFile(),
           if (frontImage == null) 'front_image': '',
-          if (compressedFrontImage != null)
-            if (compressedFrontImage.path.contains('http'))
-              'front_image': compressedFrontImage.path.split('/').last,
-          if (compressedFrontImage != null)
-            if (!compressedFrontImage.path.contains('http'))
-              'front_image': await MultipartFile.fromFile(
-                compressedFrontImage.path,
-                filename: compressedFrontImage.path.split('/').last,
-              ),
+          if (frontImage != null && frontImage.path.contains('http'))
+            'front_image': frontImage.path.split('/').last,
+          if (preparedFrontImage != null)
+            'front_image': await preparedFrontImage.toMultipartFile(),
           if (backImage == null) 'back_image': '',
-          if (compressedBackImage != null)
-            if (compressedBackImage.path.contains('http'))
-              'back_image': compressedBackImage.path.split('/').last,
-          if (compressedBackImage != null)
-            if (!compressedBackImage.path.contains('http'))
-              'back_image': await MultipartFile.fromFile(
-                compressedBackImage.path,
-                filename: compressedBackImage.path.split('/').last,
-              ),
+          if (backImage != null && backImage.path.contains('http'))
+            'back_image': backImage.path.split('/').last,
+          if (preparedBackImage != null)
+            'back_image': await preparedBackImage.toMultipartFile(),
           'notes': notes,
         },
         isFormData: true,
@@ -402,6 +382,8 @@ class ChecksDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -433,21 +415,15 @@ class ChecksDatasource {
   }
 }
 
-Future<XFile> compressImage(XFile file) async {
-  final extension = file.path.split('.').last.toLowerCase();
-  if ({'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv'}.contains(extension)) {
-    final preparedVideo = await MediaUploadPreparer.prepareVideoForUpload(
-      file,
-      maxBytes: 50 * 1024 * 1024,
-    );
-    return XFile(
-      preparedVideo.path,
-      mimeType: preparedVideo.contentType.toString(),
-    );
-  }
-  final prepared = await MediaUploadPreparer.prepareImageForUpload(
+Future<PreparedUpload> _prepareCheckImage(XFile file) {
+  return MediaUploadPreparer.prepareImageForUpload(
     file,
     profile: ImageUploadProfile.check,
   );
-  return XFile(prepared.path, mimeType: prepared.contentType.toString());
+}
+
+Future<void> _cleanupPrepared(Iterable<PreparedUpload> uploads) async {
+  for (final upload in uploads) {
+    await upload.deleteTemporaryCopy();
+  }
 }

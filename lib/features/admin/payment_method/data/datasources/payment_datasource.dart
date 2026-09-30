@@ -7,7 +7,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../presentation/controllers/payment_controller.dart';
 
 class PaymentDatasource {
@@ -46,12 +46,11 @@ class PaymentDatasource {
           checksMap['checks[$i][check_id]'] = checks[i].checkNumber.text;
           checksMap['checks[$i][bank_name]'] = checks[i].bankName.text;
           if (checks[i].selectedFile.value != null) {
-            final compressedImg =
-                await compressImage(XFile(checks[i].selectedFile.value!.path));
-            checksMap['checks[$i][img]'] = await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(checks[i].selectedFile.value!.path),
+              profile: ImageUploadProfile.check,
             );
+            checksMap['checks[$i][img]'] = await prepared.toMultipartFile();
           }
         }
         if (checks[i].debtValue.text.isNotEmpty) {

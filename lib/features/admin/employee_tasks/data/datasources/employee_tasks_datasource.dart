@@ -14,7 +14,7 @@ import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/helpers/proof_form_data.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../employee_section/data/models/employee_points_log_model.dart';
 import '../../../employee_section/data/models/employee_reward_rule_model.dart';
 import '../models/employee_task_model.dart';
@@ -47,21 +47,24 @@ class EmployeeTasksDatasource {
       for (int i = 0; i < subEmployeeTasks.length; i++) {
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
-        final compressedImg =
-            await compressImage(XFile(subEmployeeTasks[i]['subTaskImage']));
-        subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img]'] =
-            await MultipartFile.fromFile(
-          compressedImg.path,
-          filename: compressedImg.path.split('/').last,
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          XFile(subEmployeeTasks[i]['subTaskImage']),
+          profile: ImageUploadProfile.general,
         );
+        subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img]'] =
+            await prepared.toMultipartFile();
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
-      XFile? compressedImg;
+      MultipartFile? preparedAdminImage;
       if (adminImg != null) {
-        compressedImg = await compressImage(XFile(adminImg.path));
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          adminImg,
+          profile: ImageUploadProfile.general,
+        );
+        preparedAdminImage = await prepared.toMultipartFile();
       }
       final response = await api.post(
         EndPoints.createEmployeeTask,
@@ -76,11 +79,7 @@ class EmployeeTasksDatasource {
           'task_recurrence': taskRecurrence,
           'task_recurrence_time[]': taskRecurrenceTime,
           ...subEmployeeTasksMap,
-          if (compressedImg != null)
-            'admin_img': await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
-            ),
+          if (preparedAdminImage != null) 'admin_img': preparedAdminImage,
           // if (employeeImg == null) 'employee_img': '',
           // if (documentImg != null && documentImg.path.contains('http://'))
           //   'document_img': documentImg.path,

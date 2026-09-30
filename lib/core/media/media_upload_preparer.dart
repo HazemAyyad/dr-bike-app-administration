@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_compress/video_compress.dart';
@@ -53,25 +54,88 @@ class MediaUploadPreparer {
     await _validateReadable(source);
     final format = await _detectImageFormat(source);
     if (format == null) {
-      throw const MediaPreparationException('صيغة الصورة غير مدعومة.');
+      throw MediaPreparationException('صيغة الصورة غير مدعومة.');
+    }
+
+    if (format == _ImageFormat.gif || format == _ImageFormat.webp) {
+      await _validateGenerated(source, profile.maxBytes);
+      final extension = format == _ImageFormat.gif ? 'gif' : 'webp';
+      return PreparedUpload(
+        path: source.path,
+        filename: _uniqueName(extension),
+        contentType: MediaType('image', extension),
+        sizeBytes: await source.length(),
+        temporary: false,
+      );
     }
 
     final keepPng = preservePng && format == _ImageFormat.png;
     final outputExtension = keepPng ? 'png' : 'jpg';
     final outputMime = keepPng ? 'png' : 'jpeg';
+    File? intermediate;
     try {
+      var input = source;
+      if (format == _ImageFormat.heic) {
+        final convertedPath = await _temporaryPath('jpg');
+        final converted = await FlutterImageCompress.compressAndGetFile(
+          source.path,
+          convertedPath,
+          minWidth: 1,
+          minHeight: 1,
+          quality: 95,
+          format: CompressFormat.jpeg,
+          keepExif: false,
+        );
+        if (converted == null) {
+          throw MediaPreparationException(
+            'تعذر تحويل صورة HEIC/HEIF إلى JPEG.',
+          );
+        }
+        intermediate = File(converted.path);
+        await _validateReadable(intermediate);
+        if (await _detectImageFormat(intermediate) != _ImageFormat.jpeg) {
+          throw MediaPreparationException(
+            'تعذر التحقق من صورة HEIC/HEIF المحولة.',
+          );
+        }
+        input = intermediate;
+      }
+
+      final dimensions = await _imageDimensions(input);
+      if (dimensions == null) {
+        throw MediaPreparationException('تعذر قراءة أبعاد الصورة.');
+      }
+      final target = fitWithinDimensions(
+        dimensions.width,
+        dimensions.height,
+        profile.maxDimension,
+      );
+
+      if (keepPng &&
+          target.width == dimensions.width &&
+          target.height == dimensions.height &&
+          await source.length() <= profile.maxBytes) {
+        return PreparedUpload(
+          path: source.path,
+          filename: _uniqueName('png'),
+          contentType: MediaType('image', 'png'),
+          sizeBytes: await source.length(),
+          temporary: false,
+        );
+      }
+
       final tempPath = await _temporaryPath(outputExtension);
       final result = await FlutterImageCompress.compressAndGetFile(
-        source.path,
+        input.path,
         tempPath,
-        minWidth: profile.maxDimension,
-        minHeight: profile.maxDimension,
+        minWidth: target.width,
+        minHeight: target.height,
         quality: keepPng ? 100 : profile.quality,
         format: keepPng ? CompressFormat.png : CompressFormat.jpeg,
         keepExif: false,
       );
       if (result == null) {
-        throw const MediaPreparationException('تعذر تجهيز الصورة للرفع.');
+        throw MediaPreparationException('تعذر تجهيز الصورة للرفع.');
       }
       final output = File(result.path);
       await _validateGenerated(output, profile.maxBytes);
@@ -79,7 +143,7 @@ class MediaUploadPreparer {
       if ((keepPng && detected != _ImageFormat.png) ||
           (!keepPng && detected != _ImageFormat.jpeg)) {
         await _safeDelete(output);
-        throw const MediaPreparationException('تعذر التحقق من الصورة المجهزة.');
+        throw MediaPreparationException('تعذر التحقق من الصورة المجهزة.');
       }
       return PreparedUpload(
         path: output.path,
@@ -97,7 +161,24 @@ class MediaUploadPreparer {
             : 'تعذر تجهيز الصورة للرفع.',
         cause: error,
       );
+    } finally {
+      if (intermediate != null) await _safeDelete(intermediate);
     }
+  }
+
+  static ImageUploadDimensions fitWithinDimensions(
+    int width,
+    int height,
+    int maxDimension,
+  ) {
+    if (width <= maxDimension && height <= maxDimension) {
+      return ImageUploadDimensions(width, height);
+    }
+    final scale = maxDimension / max(width, height);
+    return ImageUploadDimensions(
+      max(1, (width * scale).round()),
+      max(1, (height * scale).round()),
+    );
   }
 
   static Future<PreparedUpload> prepareVideoForUpload(
@@ -108,9 +189,9 @@ class MediaUploadPreparer {
     var file = File(input.path);
     await _validateReadable(file);
     var extension = p.extension(file.path).replaceFirst('.', '').toLowerCase();
-    const allowed = {'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv'};
+    const allowed = {'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv', 'wmv'};
     if (!allowed.contains(extension)) {
-      throw const MediaPreparationException('صيغة الفيديو غير مدعومة.');
+      throw MediaPreparationException('صيغة الفيديو غير مدعومة.');
     }
     var temporary = false;
     if (await file.length() > maxBytes && compressWhenOversize) {
@@ -121,13 +202,18 @@ class MediaUploadPreparer {
         includeAudio: true,
       );
       if (compressed?.file == null) {
-        throw const MediaPreparationException('تعذر ضغط الفيديو للرفع.');
+        throw MediaPreparationException('تعذر ضغط الفيديو للرفع.');
       }
       file = compressed!.file!;
       extension = p.extension(file.path).replaceFirst('.', '').toLowerCase();
       temporary = true;
     }
-    await _validateGenerated(file, maxBytes);
+    try {
+      await _validateGenerated(file, maxBytes);
+    } on MediaPreparationException {
+      if (temporary) await _safeDelete(file);
+      rethrow;
+    }
     return PreparedUpload(
       path: file.path,
       filename: _uniqueName(extension),
@@ -147,7 +233,7 @@ class MediaUploadPreparer {
     final extension =
         p.extension(file.path).replaceFirst('.', '').toLowerCase();
     if (!allowedExtensions.contains(extension)) {
-      throw const MediaPreparationException('نوع الملف غير مسموح.');
+      throw MediaPreparationException('نوع الملف غير مسموح.');
     }
     await _validateGenerated(file, maxBytes);
     return PreparedUpload(
@@ -175,7 +261,7 @@ class MediaUploadPreparer {
             : ImageUploadProfile.attachment,
       );
     }
-    if ({'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv'}
+    if ({'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv', 'wmv'}
         .contains(extension)) {
       return prepareVideoForUpload(input, maxBytes: maxBytes);
     }
@@ -188,10 +274,10 @@ class MediaUploadPreparer {
 
   static Future<void> _validateReadable(File file) async {
     if (!await file.exists()) {
-      throw const MediaPreparationException('تعذر قراءة الملف المختار.');
+      throw MediaPreparationException('تعذر قراءة الملف المختار.');
     }
     if (await file.length() <= 0) {
-      throw const MediaPreparationException('الملف المختار فارغ أو تالف.');
+      throw MediaPreparationException('الملف المختار فارغ أو تالف.');
     }
   }
 
@@ -231,7 +317,18 @@ class MediaUploadPreparer {
       if (bytes.length >= 12 &&
           String.fromCharCodes(bytes.sublist(4, 8)) == 'ftyp') {
         final brand = String.fromCharCodes(bytes.sublist(8, 12)).toLowerCase();
-        if ({'heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'}.contains(brand)) {
+        if ({
+          'heic',
+          'heix',
+          'hevc',
+          'hevx',
+          'heis',
+          'heim',
+          'hevs',
+          'hevm',
+          'mif1',
+          'msf1',
+        }.contains(brand)) {
           return _ImageFormat.heic;
         }
       }
@@ -239,6 +336,12 @@ class MediaUploadPreparer {
     } finally {
       await handle.close();
     }
+  }
+
+  static Future<ImageUploadDimensions?> _imageDimensions(File file) async {
+    final decoded = img.decodeImage(await file.readAsBytes());
+    if (decoded == null) return null;
+    return ImageUploadDimensions(decoded.width, decoded.height);
   }
 
   static bool _matches(Uint8List bytes, List<int> signature) {
@@ -279,6 +382,8 @@ class MediaUploadPreparer {
         return MediaType('video', 'x-msvideo');
       case 'mkv':
         return MediaType('video', 'x-matroska');
+      case 'wmv':
+        return MediaType('video', 'x-ms-wmv');
       default:
         return MediaType('video', 'mp4');
     }
@@ -320,3 +425,10 @@ class MediaUploadPreparer {
 }
 
 enum _ImageFormat { jpeg, png, webp, gif, heic }
+
+class ImageUploadDimensions {
+  const ImageUploadDimensions(this.width, this.height);
+
+  final int width;
+  final int height;
+}

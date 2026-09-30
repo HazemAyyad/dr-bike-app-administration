@@ -5,6 +5,7 @@ import 'package:doctorbike/core/errors/error_model.dart';
 import 'package:doctorbike/core/errors/expentions.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../models/category_model.dart';
 import '../models/sub_category_model.dart';
 
@@ -17,7 +18,8 @@ class CategoryDatasource {
     try {
       final response = await api.get(EndPoints.getAllCategoriesManagement);
       final list = (response.data['categories'] as List)
-          .map((e) => CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       return list;
     } on DioException catch (e) {
@@ -50,8 +52,11 @@ class CategoryDatasource {
         'sortOrder': sortOrder,
       };
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        data['image'] = MultipartFile.fromBytes(bytes, filename: image.name);
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          image,
+          profile: ImageUploadProfile.profile,
+        );
+        data['image'] = await prepared.toMultipartFile();
       }
       final response = await api.post(endpoint, data: data, isFormData: true);
       return response.data as Map<String, dynamic>;
@@ -65,7 +70,8 @@ class CategoryDatasource {
     }
   }
 
-  Future<Map<String, dynamic>> toggleCategoryStatus({required int categoryId}) async {
+  Future<Map<String, dynamic>> toggleCategoryStatus(
+      {required int categoryId}) async {
     try {
       final response = await api.post(EndPoints.toggleCategoryStatusAdmin,
           data: {'category_id': categoryId});
@@ -80,12 +86,14 @@ class CategoryDatasource {
     }
   }
 
-  Future<List<SubCategoryModel>> getSubCategoriesByCategory({required int categoryId}) async {
+  Future<List<SubCategoryModel>> getSubCategoriesByCategory(
+      {required int categoryId}) async {
     try {
       final response = await api.post(EndPoints.getSubCategoriesByCategory,
           data: {'category_id': categoryId});
       final list = (response.data['sub_categories'] as List)
-          .map((e) => SubCategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              SubCategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       return list;
     } on DioException catch (e) {
@@ -120,8 +128,11 @@ class CategoryDatasource {
         'sortOrder': sortOrder,
       };
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        body['image'] = MultipartFile.fromBytes(bytes, filename: image.name);
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          image,
+          profile: ImageUploadProfile.profile,
+        );
+        body['image'] = await prepared.toMultipartFile();
       }
       final response = await api.post(endpoint, data: body, isFormData: true);
       return response.data as Map<String, dynamic>;
@@ -135,7 +146,8 @@ class CategoryDatasource {
     }
   }
 
-  Future<Map<String, dynamic>> toggleSubCategoryStatus({required int subCategoryId}) async {
+  Future<Map<String, dynamic>> toggleSubCategoryStatus(
+      {required int subCategoryId}) async {
     try {
       final response = await api.post(EndPoints.toggleSubCategoryStatusAdmin,
           data: {'sub_category_id': subCategoryId});

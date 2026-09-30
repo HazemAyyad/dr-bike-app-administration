@@ -15,6 +15,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../stock/data/models/offer_package_model.dart';
 import '../models/customer_product_price_history_model.dart';
 import '../models/daily_session_model.dart';
@@ -215,6 +216,22 @@ class SalesDatasource {
     XFile? video,
   }) async {
     try {
+      final preparedImage = image == null
+          ? null
+          : await MediaUploadPreparer.prepareImageForUpload(
+              image,
+              profile: const ImageUploadProfile(
+                maxBytes: 10 * 1024 * 1024,
+                quality: 86,
+                maxDimension: 2048,
+              ),
+            );
+      final preparedVideo = video == null
+          ? null
+          : await MediaUploadPreparer.prepareVideoForUpload(
+              video,
+              maxBytes: 50 * 1024 * 1024,
+            );
       final response = await api.post(
         EndPoints.createProfitSale,
         data: {
@@ -232,16 +249,10 @@ class SalesDatasource {
             'payment_box_name': paymentBoxName,
           if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
             'payment_box_value': _cleanAmount(paymentBoxValue),
-          if (image != null)
-            'image': await MultipartFile.fromFile(
-              image.path,
-              filename: image.path.split('/').last,
-            ),
-          if (video != null)
-            'video': await MultipartFile.fromFile(
-              video.path,
-              filename: video.path.split('/').last,
-            ),
+          if (preparedImage != null)
+            'image': await preparedImage.toMultipartFile(),
+          if (preparedVideo != null)
+            'video': await preparedVideo.toMultipartFile(),
         },
         isFormData: true,
       );
@@ -445,13 +456,14 @@ class SalesDatasource {
     required XFile image,
   }) async {
     try {
+      final prepared = await MediaUploadPreparer.prepareImageForUpload(
+        image,
+        profile: ImageUploadProfile.check,
+      );
       final response = await api.post(
         EndPoints.productOcrText,
         data: {
-          'image': await MultipartFile.fromFile(
-            image.path,
-            filename: image.name,
-          ),
+          'image': await prepared.toMultipartFile(),
         },
         isFormData: true,
       );
@@ -841,6 +853,22 @@ class SalesDatasource {
     XFile? video,
   }) async {
     try {
+      final preparedImage = image == null
+          ? null
+          : await MediaUploadPreparer.prepareImageForUpload(
+              image,
+              profile: const ImageUploadProfile(
+                maxBytes: 10 * 1024 * 1024,
+                quality: 86,
+                maxDimension: 2048,
+              ),
+            );
+      final preparedVideo = video == null
+          ? null
+          : await MediaUploadPreparer.prepareVideoForUpload(
+              video,
+              maxBytes: 50 * 1024 * 1024,
+            );
       final response = await api.post(
         EndPoints.editProfitSale,
         data: {
@@ -854,16 +882,10 @@ class SalesDatasource {
             'buyer_name': buyerName,
           if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
             'payment_box_value': _cleanAmount(paymentBoxValue),
-          if (image != null)
-            'image': await MultipartFile.fromFile(
-              image.path,
-              filename: image.path.split('/').last,
-            ),
-          if (video != null)
-            'video': await MultipartFile.fromFile(
-              video.path,
-              filename: video.path.split('/').last,
-            ),
+          if (preparedImage != null)
+            'image': await preparedImage.toMultipartFile(),
+          if (preparedVideo != null)
+            'video': await preparedVideo.toMultipartFile(),
         },
         isFormData: true,
       );

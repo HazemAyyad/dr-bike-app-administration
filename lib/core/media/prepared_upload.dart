@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
 
+import '../errors/error_model.dart';
+import '../errors/expentions.dart';
+
 class PreparedUpload {
-  const PreparedUpload({
+  PreparedUpload({
     required this.path,
     required this.filename,
     required this.contentType,
@@ -17,12 +21,29 @@ class PreparedUpload {
   final MediaType contentType;
   final int sizeBytes;
   final bool temporary;
+  Uint8List? _temporaryBytes;
 
-  Future<MultipartFile> toMultipartFile() => MultipartFile.fromFile(
+  Future<MultipartFile> toMultipartFile() async {
+    if (!temporary) {
+      return MultipartFile.fromFile(
         path,
         filename: filename,
         contentType: contentType,
       );
+    }
+
+    final file = File(path);
+    try {
+      _temporaryBytes ??= await file.readAsBytes();
+      return MultipartFile.fromBytes(
+        _temporaryBytes!,
+        filename: filename,
+        contentType: contentType,
+      );
+    } finally {
+      if (await file.exists()) await file.delete();
+    }
+  }
 
   Future<void> deleteTemporaryCopy() async {
     if (!temporary) return;
@@ -31,8 +52,15 @@ class PreparedUpload {
   }
 }
 
-class MediaPreparationException implements Exception {
-  const MediaPreparationException(this.userMessage, {this.cause});
+class MediaPreparationException extends ServerException {
+  MediaPreparationException(this.userMessage, {this.cause})
+      : super(
+          ErrorModel(
+            status: 422,
+            errorMessage: userMessage,
+            data: {'message': userMessage},
+          ),
+        );
 
   final String userMessage;
   final Object? cause;

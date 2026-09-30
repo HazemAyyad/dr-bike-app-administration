@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:open_filex/open_filex.dart';
@@ -13,6 +14,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/helpers/product_image_utils.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
@@ -356,8 +358,51 @@ class ReturnPurchasesController extends GetxController {
     final multipart = <dio.MultipartFile>[];
     for (final file in files) {
       if (file.path == null) continue;
-      multipart.add(
-          await dio.MultipartFile.fromFile(file.path!, filename: file.name));
+      final extension = file.name.split('.').last.toLowerCase();
+      const preparedExtensions = {
+        'jpg',
+        'jpeg',
+        'png',
+        'gif',
+        'webp',
+        'heic',
+        'heif',
+        'mp4',
+        'mov',
+        'm4v',
+        '3gp',
+        'webm',
+        'avi',
+        'mkv',
+        'wmv',
+        'pdf',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'txt',
+        'zip',
+        'rar',
+        'mp3',
+        'm4a',
+        'aac',
+        'ogg',
+        'wav',
+      };
+      if (preparedExtensions.contains(extension)) {
+        final prepared = await MediaUploadPreparer.prepareAttachmentForUpload(
+          XFile(file.path!),
+          allowedExtensions: preparedExtensions,
+          maxBytes: 10 * 1024 * 1024,
+        );
+        multipart.add(await prepared.toMultipartFile());
+      } else {
+        // This endpoint intentionally accepts arbitrary file types up to 10 MB.
+        multipart.add(await dio.MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        ));
+      }
     }
     if (multipart.isNotEmpty) {
       await purchaseWorkflowUsecase.uploadReturnAttachments(

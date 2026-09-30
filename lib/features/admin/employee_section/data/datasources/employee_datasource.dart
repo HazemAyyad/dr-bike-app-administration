@@ -11,7 +11,6 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/services/initial_bindings.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
 import '../models/employee_advances_model.dart';
 import '../models/employee_activity_log_model.dart';
@@ -134,11 +133,11 @@ class EmployeeDatasource {
             return e.path;
           } else {
             // صورة محلية → حولها لـ MultipartFile
-            final compressedImg = await compressImage(XFile(e.path));
-            return await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(e.path),
+              profile: ImageUploadProfile.general,
             );
+            return prepared.toMultipartFile();
           }
         }),
       );
@@ -151,13 +150,11 @@ class EmployeeDatasource {
             // صورة جاية من السيرفر → رجعها كـ string
             return e.path;
           } else {
-            final compressedImg = await compressImage(XFile(e.path));
-
-            // صورة محلية → حولها لـ MultipartFile
-            return await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              XFile(e.path),
+              profile: ImageUploadProfile.general,
             );
+            return prepared.toMultipartFile();
           }
         }),
       );

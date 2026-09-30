@@ -11,48 +11,24 @@ import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
-import '../../../../../core/helpers/audio_helper.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/helpers/task_details_debug.dart';
-import '../../../../../core/helpers/task_media_paths.dart';
 import '../../presentation/helpers/recurrence_config_helper.dart';
 
-bool _isAudioPath(String path) => isAudioMediaPath(path);
-
-MediaType? _uploadContentType(String path) {
-  final lower = path.toLowerCase();
-  if (lower.endsWith('.m4a')) return MediaType('audio', 'mp4');
-  if (lower.endsWith('.aac')) return MediaType('audio', 'aac');
-  if (lower.endsWith('.mp3')) return MediaType('audio', 'mpeg');
-  if (lower.endsWith('.wav')) return MediaType('audio', 'wav');
-  if (lower.endsWith('.mp4') || lower.endsWith('.mov')) {
-    return MediaType('video', 'mp4');
-  }
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
-    return MediaType('image', 'jpeg');
-  }
-  if (lower.endsWith('.png')) return MediaType('image', 'png');
-  return null;
-}
-
 Future<MultipartFile> _multipartFromPath(String path) async {
-  final filename = path.split(RegExp(r'[/\\]')).last;
-  final type = _uploadContentType(path);
-  return MultipartFile.fromFile(
-    path,
-    filename: filename,
-    contentType: type,
+  final prepared = await MediaUploadPreparer.prepareAttachmentForUpload(
+    XFile(path),
+    allowedExtensions: const {'m4a', 'aac', 'mp3', 'wav', 'ogg'},
+    maxBytes: 100 * 1024 * 1024,
   );
+  return prepared.toMultipartFile();
 }
 
 Future<dynamic> _adminAttachmentFromFile(File file) async {
   if (file.path.startsWith('http')) {
     return file.path;
   }
-  final uploadPath = localFileIsVideo(file.path) || _isAudioPath(file.path)
-      ? file.path
-      : (await compressImage(XFile(file.path))).path;
-  return _multipartFromPath(uploadPath);
+  return _multipartFromPath(file.path);
 }
 
 Future<void> _appendSubtaskAdminUploads({
@@ -68,14 +44,7 @@ Future<void> _appendSubtaskAdminUploads({
     if (path.isEmpty || seen.contains(path)) return;
     seen.add(path);
     final key = 'sub_employee_tasks[$subIndex][admin_subtask__img][$fileIndex]';
-    if (_isAudioPath(path)) {
-      target[key] = await _multipartFromPath(path);
-    } else {
-      final file = localFileIsVideo(path)
-          ? XFile(path)
-          : await compressImage(XFile(path));
-      target[key] = await _multipartFromPath(file.path);
-    }
+    target[key] = await _multipartFromPath(path);
     fileIndex++;
   }
 
@@ -104,11 +73,8 @@ Future<void> _appendSpecialSubtaskAdminUploads({
   Future<void> addPath(String path) async {
     if (path.isEmpty || path.startsWith('http') || seen.contains(path)) return;
     seen.add(path);
-    final uploadPath = localFileIsVideo(path) || _isAudioPath(path)
-        ? path
-        : (await compressImage(XFile(path))).path;
     target['sub_special_tasks[$subIndex][$fieldName][$fileIndex]'] =
-        await _multipartFromPath(uploadPath);
+        await _multipartFromPath(path);
     fileIndex++;
   }
 

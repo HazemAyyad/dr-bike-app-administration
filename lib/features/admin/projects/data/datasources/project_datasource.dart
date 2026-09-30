@@ -9,7 +9,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/media_upload_preparer.dart';
 import '../models/project_details_model.dart';
 
 class ProjectDatasource {
@@ -70,11 +70,12 @@ class ProjectDatasource {
               if (e.path.startsWith('http')) {
                 return e.path;
               } else {
-                final compressedImg = await compressImage(XFile(e.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
+                final prepared =
+                    await MediaUploadPreparer.prepareImageForUpload(
+                  XFile(e.path),
+                  profile: ImageUploadProfile.general,
                 );
+                return prepared.toMultipartFile();
               }
             }),
           ),
@@ -88,11 +89,12 @@ class ProjectDatasource {
               if (e.path.startsWith('http')) {
                 return e.path;
               } else {
-                final compressedImg = await compressImage(XFile(e.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
+                final prepared =
+                    await MediaUploadPreparer.prepareImageForUpload(
+                  XFile(e.path),
+                  profile: ImageUploadProfile.general,
                 );
+                return prepared.toMultipartFile();
               }
             }),
           ),

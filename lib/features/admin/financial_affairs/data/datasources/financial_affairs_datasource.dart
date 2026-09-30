@@ -11,7 +11,7 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/media/media_upload_preparer.dart';
-import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/media/prepared_upload.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/asset_depreciation_preview_model.dart';
 import '../models/assets_models/assets_log_model.dart';
@@ -98,6 +98,7 @@ class FinancialAffairsDatasource {
     required List<File?> selectedFile,
     void Function(double progress)? onUploadProgress,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
       final Map<String, dynamic> formData = {};
 
@@ -110,12 +111,13 @@ class FinancialAffairsDatasource {
             // لو الملف لينك (مش مرفوع جديد)
             formData['media[$i]'] = file.path;
           } else {
-            final compressedImg = await compressImage(XFile(file.path));
-            // لو الملف محلي
-            formData['media[$i]'] = await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+            final prepared = await _prepareFinancialMedia(
+              file,
+              imageProfile: ImageUploadProfile.general,
+              maxVideoBytes: 30 * 1024 * 1024,
             );
+            preparedUploads.add(prepared);
+            formData['media[$i]'] = await prepared.toMultipartFile();
           }
         }
       }
@@ -148,6 +150,8 @@ class FinancialAffairsDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -213,7 +217,23 @@ class FinancialAffairsDatasource {
     String? costLayerId,
     List<Map<String, dynamic>>? items,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
+      final uploadMedia = <dynamic>[];
+      for (final file in media) {
+        if (file == null) continue;
+        if (file.path.contains('http')) {
+          uploadMedia.add(file.path);
+          continue;
+        }
+        final prepared = await _prepareFinancialMedia(
+          file,
+          imageProfile: ImageUploadProfile.general,
+          maxVideoBytes: 30 * 1024 * 1024,
+        );
+        preparedUploads.add(prepared);
+        uploadMedia.add(await prepared.toMultipartFile());
+      }
       final response = await api.post(
         items == null
             ? EndPoints.addDestruction
@@ -224,19 +244,7 @@ class FinancialAffairsDatasource {
           if (items != null) 'items': jsonEncode(items),
           'destruction_reason': destructionReason,
           if (costLayerId != null) 'cost_layer_id': costLayerId,
-          if (media.isNotEmpty)
-            'media[]': await Future.wait(
-              media.map((file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                final compressedImg = await compressImage(XFile(file.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }),
-            ),
+          if (uploadMedia.isNotEmpty) 'media[]': uploadMedia,
         },
         isFormData: true,
       );
@@ -250,6 +258,8 @@ class FinancialAffairsDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -258,22 +268,29 @@ class FinancialAffairsDatasource {
     required String destructionReason,
     required List<File?> media,
   }) async {
-    final Map<String, dynamic> payload = {
-      'destruction_id': destructionId,
-      'destruction_reason': destructionReason,
-    };
-    for (var i = 0; i < media.length; i++) {
-      final file = media[i];
-      if (file == null || file.path.startsWith('http')) continue;
-      final prepared = await MediaUploadPreparer.prepareImageForUpload(
-        XFile(file.path),
-        profile: ImageUploadProfile.general,
-      );
-      payload['media[$i]'] = await prepared.toMultipartFile();
+    final preparedUploads = <PreparedUpload>[];
+    try {
+      final Map<String, dynamic> payload = {
+        'destruction_id': destructionId,
+        'destruction_reason': destructionReason,
+      };
+      for (var i = 0; i < media.length; i++) {
+        final file = media[i];
+        if (file == null || file.path.startsWith('http')) continue;
+        final prepared = await _prepareFinancialMedia(
+          file,
+          imageProfile: ImageUploadProfile.general,
+          maxVideoBytes: 30 * 1024 * 1024,
+        );
+        preparedUploads.add(prepared);
+        payload['media[$i]'] = await prepared.toMultipartFile();
+      }
+      final response = await api.post(EndPoints.editDestruction,
+          data: payload, isFormData: true);
+      return Map<String, dynamic>.from(response.data);
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
-    final response = await api.post(EndPoints.editDestruction,
-        data: payload, isFormData: true);
-    return Map<String, dynamic>.from(response.data);
   }
 
   // add expense
@@ -289,7 +306,37 @@ class FinancialAffairsDatasource {
     void Function(double progress)? onUploadProgress,
     String? expenseId,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
+      final invoiceUploads = <dynamic>[];
+      for (final file in invoiceImage) {
+        if (file == null) continue;
+        if (file.path.contains('http')) {
+          invoiceUploads.add(file.path);
+          continue;
+        }
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(
+          XFile(file.path),
+          profile: ImageUploadProfile.receipt,
+        );
+        preparedUploads.add(prepared);
+        invoiceUploads.add(await prepared.toMultipartFile());
+      }
+      final mediaUploads = <dynamic>[];
+      for (final file in media) {
+        if (file == null) continue;
+        if (file.path.contains('http')) {
+          mediaUploads.add(file.path);
+          continue;
+        }
+        final prepared = await _prepareFinancialMedia(
+          file,
+          imageProfile: ImageUploadProfile.general,
+          maxVideoBytes: 30 * 1024 * 1024,
+        );
+        preparedUploads.add(prepared);
+        mediaUploads.add(await prepared.toMultipartFile());
+      }
       final response = await api.post(
         expenseId != null ? EndPoints.editExpense : EndPoints.addExpense,
         data: {
@@ -300,32 +347,8 @@ class FinancialAffairsDatasource {
           if (expenseId == null) 'box_id': boxId,
           if (expenseId == null) 'expense_type': expenseType,
           if (expenseId == null) 'expense_date': expenseDate,
-          if (invoiceImage.isNotEmpty)
-            'invoice_img[]': await Future.wait(
-              invoiceImage.map((file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                final compressedImg = await compressImage(XFile(file.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }),
-            ),
-          if (media.isNotEmpty)
-            'media[]': await Future.wait(
-              media.map((file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                final compressedImg = await compressImage(XFile(file.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }),
-            ),
+          if (invoiceUploads.isNotEmpty) 'invoice_img[]': invoiceUploads,
+          if (mediaUploads.isNotEmpty) 'media[]': mediaUploads,
         },
         isFormData: true,
         onSendProgress: (sent, total) {
@@ -342,6 +365,8 @@ class FinancialAffairsDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -423,6 +448,7 @@ class FinancialAffairsDatasource {
     required String pictureId,
     void Function(double progress)? onUploadProgress,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
       final selected = media.isEmpty ? null : media.first;
       dynamic preparedFile;
@@ -431,16 +457,17 @@ class FinancialAffairsDatasource {
           preparedFile = selected.path;
         } else {
           final extension = selected.path.split('.').last.toLowerCase();
-          final prepared =
-              {'mp4', 'mov', 'webm', 'avi', 'mkv'}.contains(extension)
-                  ? await MediaUploadPreparer.prepareVideoForUpload(
-                      XFile(selected.path),
-                      maxBytes: 30 * 1024 * 1024,
-                    )
-                  : await MediaUploadPreparer.prepareImageForUpload(
-                      XFile(selected.path),
-                      profile: ImageUploadProfile.general,
-                    );
+          final prepared = {'mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv', 'wmv'}
+                  .contains(extension)
+              ? await MediaUploadPreparer.prepareVideoForUpload(
+                  XFile(selected.path),
+                  maxBytes: 30 * 1024 * 1024,
+                )
+              : await MediaUploadPreparer.prepareImageForUpload(
+                  XFile(selected.path),
+                  profile: ImageUploadProfile.general,
+                );
+          preparedUploads.add(prepared);
           preparedFile = await prepared.toMultipartFile();
         }
       }
@@ -467,6 +494,8 @@ class FinancialAffairsDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -479,6 +508,7 @@ class FinancialAffairsDatasource {
     required String notes,
     void Function(double progress)? onUploadProgress,
   }) async {
+    final preparedUploads = <PreparedUpload>[];
     try {
       // تجهيز قائمة الملفات اللي هترفعها
       final List filesToUpload = [];
@@ -491,14 +521,12 @@ class FinancialAffairsDatasource {
         if (file.path.contains('http')) {
           retainedImages.add(file.path);
         } else {
-          // نضغط الصورة أولاً باستخدام الـ compressImage (نفس الفانكشن اللي اعددناه)
-          final compressed =
-              await compressImageFile(inputFile: XFile(file.path));
-          final mf = await MultipartFile.fromFile(
-            compressed.path,
-            filename: compressed.path.split('/').last,
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+            XFile(file.path),
+            profile: ImageUploadProfile.receipt,
           );
-          filesToUpload.add(mf);
+          preparedUploads.add(prepared);
+          filesToUpload.add(await prepared.toMultipartFile());
         }
       }
 
@@ -527,6 +555,8 @@ class FinancialAffairsDatasource {
           data: data['data'] ?? {},
         ),
       );
+    } finally {
+      await _cleanupPrepared(preparedUploads);
     }
   }
 
@@ -660,10 +690,27 @@ class FinancialAffairsDatasource {
   }
 }
 
-Future<XFile> compressImageFile({required XFile inputFile}) async {
-  final prepared = await MediaUploadPreparer.prepareImageForUpload(
-    inputFile,
-    profile: ImageUploadProfile.receipt,
+Future<PreparedUpload> _prepareFinancialMedia(
+  File file, {
+  required ImageUploadProfile imageProfile,
+  required int maxVideoBytes,
+}) {
+  final extension = file.path.split('.').last.toLowerCase();
+  if ({'mp4', 'mov', 'm4v', '3gp', 'webm', 'avi', 'mkv', 'wmv'}
+      .contains(extension)) {
+    return MediaUploadPreparer.prepareVideoForUpload(
+      XFile(file.path),
+      maxBytes: maxVideoBytes,
+    );
+  }
+  return MediaUploadPreparer.prepareImageForUpload(
+    XFile(file.path),
+    profile: imageProfile,
   );
-  return XFile(prepared.path, mimeType: prepared.contentType.toString());
+}
+
+Future<void> _cleanupPrepared(Iterable<PreparedUpload> uploads) async {
+  for (final upload in uploads) {
+    await upload.deleteTemporaryCopy();
+  }
 }
