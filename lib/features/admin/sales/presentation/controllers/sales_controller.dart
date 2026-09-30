@@ -3246,6 +3246,12 @@ class SalesController extends GetxController
     }
 
     calculateGrandTotal();
+    if (isClosedDayAdministrativeCorrection) {
+      totalCost.value = SalesAmountFormat.parse(invoice.totalCost);
+      totalController.text = SalesAmountFormat.display(totalCost.value);
+      _administrativeTotalTouched = true;
+      syncPaymentCashFromTotal(onlyIfCashEmpty: true);
+    }
     bumpCartRevision();
   }
 
@@ -3537,6 +3543,9 @@ class SalesController extends GetxController
   String? _paymentBoxValue;
   String? _closedDayEditMode;
   String? _closedDayEditReason;
+  bool _administrativeTotalTouched = false;
+  bool get isClosedDayAdministrativeCorrection =>
+      _closedDayEditMode == 'administrative_correction';
   final Map<int, double> _restorationUnitCosts = <int, double>{};
   final Map<int, Map<String, String>> _originalEditLineDetails =
       <int, Map<String, String>>{};
@@ -4287,6 +4296,7 @@ class SalesController extends GetxController
     totalCost.value = 0.0;
     instantSalePaidAmount.value = 0;
     _instantSalePaymentAmountTouched = false;
+    _administrativeTotalTouched = false;
     pickerPartnerIsCustomer.value = true;
     _clearPaymentBuyer();
     if (renewFormKey) {
@@ -4474,6 +4484,12 @@ class SalesController extends GetxController
         .trim();
     final currentAmount = double.tryParse(current) ?? 0;
     final exceedsInvoiceTotal = currentAmount > totalCost.value + 0.0001;
+    if (isClosedDayAdministrativeCorrection &&
+        _instantSalePaymentAmountTouched) {
+      payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
+      refreshInstantSalePaymentSummary();
+      return;
+    }
     if ((_instantSalePaymentAmountTouched && !exceedsInvoiceTotal) ||
         (onlyIfCashEmpty && current.isNotEmpty && !exceedsInvoiceTotal)) {
       payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
@@ -4586,6 +4602,13 @@ class SalesController extends GetxController
       final paidAmount = SalesAmountFormat.parse(
         rawPaidText,
       );
+      if (paidAmount > totalCost.value + 0.0001) {
+        AppFailureNotice.show(
+          title: 'error'.tr,
+          message: 'instantSalePaidExceedsTotal'.tr,
+        );
+        return;
+      }
       _instantSaleEditZeroDebug(
         'before payment decision',
         {
@@ -4598,8 +4621,14 @@ class SalesController extends GetxController
           'paymentBoxCash': payment.cashValueController.text,
         },
       );
-      if (activeSuspendedSaleId.value != null || paidAmount <= 0.0001) {
+      if (activeSuspendedSaleId.value != null ||
+          isClosedDayAdministrativeCorrection ||
+          paidAmount <= 0.0001) {
         final buyer = payment.buildInstantSaleBuyerPayload();
+        if (isClosedDayAdministrativeCorrection) {
+          buyer['payment_box_value'] =
+              rawPaidText.replaceAll(',', '').replaceAll('،', '').trim();
+        }
         _instantSaleEditZeroDebug(
           'skip pre-receive and save invoice directly',
           {
@@ -4793,6 +4822,15 @@ class SalesController extends GetxController
       (totalCost.value - instantSalePaidAmount.value).clamp(0, double.infinity);
   final RxDouble packageLineTotal = 0.0.obs;
 
+  void setAdministrativeInvoiceTotal(String value) {
+    if (!isClosedDayAdministrativeCorrection) return;
+    _administrativeTotalTouched = true;
+    totalCost.value =
+        SalesAmountFormat.parse(value).clamp(0, double.infinity).toDouble();
+    syncPaymentCashFromTotal();
+    refreshInstantSalePaymentSummary();
+  }
+
   void calculateGrandTotal() {
     double total = 0;
 
@@ -4820,9 +4858,17 @@ class SalesController extends GetxController
     }
     final discount = SalesAmountFormat.parse(discountController.text);
 
-    totalCost.value = total - discount + instantSaleNotesTotal;
-    if (totalCost.value < 0) totalCost.value = 0;
-    totalController.text = SalesAmountFormat.display(totalCost.value);
+    final calculatedTotal = (total - discount + instantSaleNotesTotal)
+        .clamp(0, double.infinity)
+        .toDouble();
+    if (isClosedDayAdministrativeCorrection && _administrativeTotalTouched) {
+      totalCost.value = SalesAmountFormat.parse(totalController.text)
+          .clamp(0, double.infinity)
+          .toDouble();
+    } else {
+      totalCost.value = calculatedTotal;
+      totalController.text = SalesAmountFormat.display(totalCost.value);
+    }
     syncPaymentCashFromTotal();
     refreshInstantSalePaymentSummary();
   }
@@ -5164,145 +5210,25 @@ class SalesController extends GetxController
   Future<Map<int, double>?> _showRestorationCostsDialog(
     BuildContext context,
     List<int> lineIds,
+    Map<String, dynamic>? serverContext,
   ) async {
-    final controllers = <int, TextEditingController>{
-      for (final id in lineIds)
-        id: TextEditingController(
-          text: _restorationUnitCosts[id]?.toString() ?? '',
-        ),
-    };
-    String? validationMessage;
-    try {
-      return await showDialog<Map<int, double>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setState) => Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              backgroundColor: const Color(0xFFF7F7F8),
-              surfaceTintColor: Colors.transparent,
-              title: const Text(
-                'تكلفة الأصناف وقت البيع',
-                style: TextStyle(
-                  color: Color(0xFF111827),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              content: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'لا توجد تكلفة مخزون محفوظة لحركة البيع الأصلية. أدخل تكلفة الوحدة التي كانت معتمدة وقت البيع لإكمال التصحيح الإداري.',
-                        style: TextStyle(color: Color(0xFF374151)),
-                      ),
-                      const SizedBox(height: 14),
-                      for (final id in lineIds) ...[
-                        Builder(builder: (_) {
-                          final details = _originalEditLineDetails[id];
-                          final name = details?['name'] ?? 'سطر الفاتورة #$id';
-                          final quantity = details?['quantity'] ?? '-';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFEFF1),
-                              borderRadius: BorderRadius.circular(12),
-                              border:
-                                  Border.all(color: const Color(0xFFD1D5DB)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    color: Color(0xFF111827),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  'الكمية المباعة: $quantity',
-                                  style:
-                                      const TextStyle(color: Color(0xFF6B7280)),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: controllers[id],
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                          decimal: true),
-                                  style:
-                                      const TextStyle(color: Color(0xFF111827)),
-                                  decoration: const InputDecoration(
-                                    labelText: 'تكلفة الوحدة وقت البيع',
-                                    suffixText: 'شيكل',
-                                    filled: true,
-                                    fillColor: Color(0xFFF3F4F6),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                      if (validationMessage != null)
-                        Text(
-                          validationMessage!,
-                          style: const TextStyle(
-                            color: Color(0xFFB91C1C),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('إلغاء'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE5E7EB),
-                    foregroundColor: const Color(0xFF5B4AB8),
-                  ),
-                  onPressed: () {
-                    final result = <int, double>{};
-                    for (final id in lineIds) {
-                      final raw =
-                          controllers[id]!.text.trim().replaceAll(',', '.');
-                      final value = double.tryParse(raw);
-                      if (value == null || value < 0) {
-                        setState(() {
-                          validationMessage =
-                              'أدخل تكلفة صحيحة لكل الأصناف قبل المتابعة.';
-                        });
-                        return;
-                      }
-                      result[id] = value;
-                    }
-                    Navigator.pop(dialogContext, result);
-                  },
-                  child: const Text('اعتماد ومتابعة'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } finally {
-      for (final controller in controllers.values) {
-        controller.dispose();
-      }
+    final details = <int, Map<String, dynamic>>{};
+    for (final id in lineIds) {
+      details[id] = <String, dynamic>{
+        ...?_originalEditLineDetails[id],
+        if (serverContext?[id.toString()] is Map)
+          ...Map<String, dynamic>.from(serverContext![id.toString()] as Map),
+      };
     }
+    return showDialog<Map<int, double>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _RestorationCostsDialog(
+        lineIds: lineIds,
+        details: details,
+        initialValues: Map<int, double>.from(_restorationUnitCosts),
+      ),
+    );
   }
 
   // add instant sale
@@ -5409,6 +5335,11 @@ class SalesController extends GetxController
             final costs = await _showRestorationCostsDialog(
               context,
               missingCostLineIds,
+              failure.data?['restoration_cost_context'] is Map
+                  ? Map<String, dynamic>.from(
+                      failure.data!['restoration_cost_context'] as Map,
+                    )
+                  : null,
             );
             if (costs != null) {
               _restorationUnitCosts.addAll(costs);
@@ -6525,5 +6456,208 @@ class ItemModel {
   void onClose() {
     priceController.dispose();
     quantityController.dispose();
+  }
+}
+
+class _RestorationCostsDialog extends StatefulWidget {
+  const _RestorationCostsDialog({
+    required this.lineIds,
+    required this.details,
+    required this.initialValues,
+  });
+
+  final List<int> lineIds;
+  final Map<int, Map<String, dynamic>> details;
+  final Map<int, double> initialValues;
+
+  @override
+  State<_RestorationCostsDialog> createState() =>
+      _RestorationCostsDialogState();
+}
+
+class _RestorationCostsDialogState extends State<_RestorationCostsDialog> {
+  late final Map<int, TextEditingController> _controllers;
+  String? _validationMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = {
+      for (final id in widget.lineIds)
+        id: TextEditingController(
+          text: widget.initialValues[id]?.toString() ?? '',
+        ),
+    };
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  String _price(dynamic value) {
+    final number = value is num ? value.toDouble() : double.tryParse('$value');
+    if (number == null) return 'غير متوفرة';
+    return number == number.roundToDouble()
+        ? '${number.toInt()} شيكل'
+        : '${number.toStringAsFixed(2)} شيكل';
+  }
+
+  Widget _fact(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5E7EB),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(
+          color: Color(0xFF374151),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  void _submit() {
+    final result = <int, double>{};
+    for (final id in widget.lineIds) {
+      final raw = _controllers[id]!.text.trim().replaceAll(',', '.');
+      final value = double.tryParse(raw);
+      if (value == null || value < 0) {
+        setState(() {
+          _validationMessage = 'أدخل تكلفة صحيحة لكل الأصناف قبل المتابعة.';
+        });
+        return;
+      }
+      result[id] = value;
+    }
+    Navigator.pop(context, result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        backgroundColor: const Color(0xFFF7F7F8),
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          'تكلفة الأصناف وقت البيع',
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'أدخل تكلفة الوحدة التي كانت معتمدة وقت البيع. الأسعار الحالية أدناه للمساعدة فقط ولن تُعتمد تلقائياً.',
+                  style: TextStyle(color: Color(0xFF374151)),
+                ),
+                const SizedBox(height: 14),
+                for (final id in widget.lineIds) ...[
+                  Builder(builder: (_) {
+                    final details = widget.details[id] ?? const {};
+                    final name = details['name']?.toString() ??
+                        details['product_name']?.toString() ??
+                        'سطر الفاتورة #$id';
+                    final quantity = details['quantity']?.toString() ?? '-';
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFEFF1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD1D5DB)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _fact('الكمية', quantity),
+                              _fact(
+                                'التكلفة الحالية',
+                                _price(details['current_inventory_cost']),
+                              ),
+                              _fact(
+                                'سعر الجملة',
+                                _price(details['wholesale_price']),
+                              ),
+                              _fact(
+                                'سعر البيع',
+                                _price(details['sale_price']),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _controllers[id],
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: const TextStyle(color: Color(0xFF111827)),
+                            decoration: const InputDecoration(
+                              labelText: 'تكلفة الوحدة وقت البيع',
+                              suffixText: 'شيكل',
+                              filled: true,
+                              fillColor: Color(0xFFF3F4F6),
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                if (_validationMessage != null)
+                  Text(
+                    _validationMessage!,
+                    style: const TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE5E7EB),
+              foregroundColor: const Color(0xFF5B4AB8),
+            ),
+            onPressed: _submit,
+            child: const Text('اعتماد ومتابعة'),
+          ),
+        ],
+      ),
+    );
   }
 }
