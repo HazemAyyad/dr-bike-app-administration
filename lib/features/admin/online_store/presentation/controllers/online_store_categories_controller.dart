@@ -20,4 +20,7 @@ class OnlineStoreCategoriesController extends OnlineStoreResourceController {
           })
           .then((_) => true)
           .catchError((_) => false);
+
+  Future<void> reorderCategories(List<int> ids) =>
+      repository.reorderCategories(ids);
 }

@@ -11,6 +11,10 @@ class OnlineStoreAccountsController extends GetxController {
   final loading = false.obs;
   final error = RxnString();
   final accounts = <OnlineStoreAccount>[].obs;
+  final parties = <OnlineStoreParty>[].obs;
+  final customerParties = <OnlineStoreParty>[].obs;
+  final sellerParties = <OnlineStoreParty>[].obs;
+  final partiesLoading = false.obs;
 
   @override
   void onInit() {
@@ -21,7 +25,14 @@ class OnlineStoreAccountsController extends GetxController {
   Future<void> load() async {
     loading.value = true;
     try {
-      accounts.assignAll(await repository.accounts(search: search.text));
+      final results = await Future.wait<dynamic>([
+        repository.accounts(search: search.text),
+        repository.parties('customer'),
+        repository.parties('seller'),
+      ]);
+      accounts.assignAll(results[0] as List<OnlineStoreAccount>);
+      customerParties.assignAll(results[1] as List<OnlineStoreParty>);
+      sellerParties.assignAll(results[2] as List<OnlineStoreParty>);
     } catch (e) {
       error.value = e.toString();
     } finally {
@@ -46,15 +57,51 @@ class OnlineStoreAccountsController extends GetxController {
       await load();
       return true;
     } catch (e) {
-      error.value = e.toString();
+      error.value = _message(e);
+      Get.snackbar('تعذر ربط الحساب', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
       return false;
     }
   }
 
+  Future<void> loadParties(String role) async {
+    partiesLoading.value = true;
+    error.value = null;
+    try {
+      final loaded = await repository.parties(role);
+      parties.assignAll(loaded);
+      (role == 'seller' ? sellerParties : customerParties).assignAll(loaded);
+    } catch (e) {
+      error.value = _message(e);
+    } finally {
+      partiesLoading.value = false;
+    }
+  }
+
+  String partyName(OnlineStoreAccountLink link) {
+    if (link.partyName?.trim().isNotEmpty == true) return link.partyName!;
+    final source = link.role == 'seller' ? sellerParties : customerParties;
+    for (final party in source) {
+      if (party.id == link.partyId) return party.name;
+    }
+    return link.role == 'seller' ? 'مورد مرتبط' : 'عميل مرتبط';
+  }
+
   Future<void> setLinkStatus(int linkId, String status) async {
-    await repository
-        .patch('online-store/account-links/$linkId', data: {'status': status});
-    await load();
+    try {
+      await repository.patch('online-store/account-links/$linkId',
+          data: {'status': status});
+      await load();
+    } catch (e) {
+      error.value = _message(e);
+      Get.snackbar('تعذر تحديث الربط', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  String _message(Object value) {
+    final text = value.toString().replaceFirst('Exception: ', '');
+    return text.isEmpty ? 'تعذر إكمال العملية.' : text;
   }
 
   @override

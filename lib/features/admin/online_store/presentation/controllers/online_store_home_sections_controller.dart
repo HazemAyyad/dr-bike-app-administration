@@ -11,4 +11,7 @@ class OnlineStoreHomeSectionsController extends OnlineStoreResourceController {
           .put('$endpoint/$sectionId/items', data: {'items': items})
           .then((_) => true)
           .catchError((_) => false);
+
+  Future<void> reorderSections(List<int> ids) =>
+      repository.reorderHomeSections(ids);
 }

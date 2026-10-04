@@ -231,6 +231,25 @@ class OnlineStoreAccountLink {
       );
 }
 
+class OnlineStoreParty {
+  const OnlineStoreParty({
+    required this.id,
+    required this.name,
+    this.phone = '',
+  });
+
+  final int id;
+  final String name;
+  final String phone;
+
+  factory OnlineStoreParty.fromJson(Map<String, dynamic> json) =>
+      OnlineStoreParty(
+        id: _int(json['id']),
+        name: '${json['name'] ?? ''}',
+        phone: '${json['phone'] ?? ''}',
+      );
+}
+
 class OnlineStoreCreditSnapshot {
   const OnlineStoreCreditSnapshot({
     required this.eligible,
@@ -285,8 +304,12 @@ class OnlineStoreEntity {
   final Map<String, dynamic> values;
   int get id => _int(values['id']);
   String get status => '${values['status'] ?? ''}';
-  String get label =>
-      '${values['name'] ?? values['title'] ?? values['key'] ?? values['code'] ?? '#$id'}';
+  String get label {
+    final translations = onlineStoreMap(
+        values['name_translations'] ?? values['title_translations']);
+    return '${values['name'] ?? values['title'] ?? translations['ar'] ?? translations['en'] ?? values['key'] ?? values['code'] ?? '#$id'}';
+  }
+
   factory OnlineStoreEntity.fromJson(Map<String, dynamic> json) =>
       OnlineStoreEntity(json);
 }

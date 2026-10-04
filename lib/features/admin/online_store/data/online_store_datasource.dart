@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/databases/api/api_consumer.dart';
 import '../../../../core/databases/api/end_points.dart';
 import 'online_store_models.dart';
+import '../../../../core/media/media_upload_preparer.dart';
 
 class OnlineStoreDatasource {
   const OnlineStoreDatasource({required this.api});
@@ -38,6 +40,42 @@ class OnlineStoreDatasource {
         'status': status,
         if (updatedAt != null) 'updated_at': updatedAt,
       });
+
+  Future<Map<String, dynamic>> reorderCategories(List<int> ids) => post(
+        '${EndPoints.onlineStoreCategories}/reorder',
+        data: {'category_ids': ids},
+      );
+
+  Future<Map<String, dynamic>> reorderHomeSections(List<int> ids) => post(
+        '${EndPoints.onlineStoreHomeSections}/reorder',
+        data: {'section_ids': ids},
+      );
+
+  Future<Map<String, dynamic>> reorderBanners(List<int> ids) => post(
+        '${EndPoints.onlineStoreBanners}/reorder',
+        data: {'banner_ids': ids},
+      );
+
+  Future<Map<String, dynamic>> uploadContentImage(XFile file) async {
+    const profile = ImageUploadProfile(
+      maxBytes: 10 * 1024 * 1024,
+      quality: 88,
+      maxDimension: 2560,
+    );
+    final prepared = await MediaUploadPreparer.prepareImageForUpload(
+      file,
+      profile: profile,
+    );
+    try {
+      return _unwrap(await api.post(
+        EndPoints.onlineStoreContentImages,
+        data: {'file': await prepared.toMultipartFile()},
+        isFormData: true,
+      ));
+    } finally {
+      await prepared.deleteTemporaryCopy();
+    }
+  }
 
   Map<String, dynamic> _unwrap(dynamic response) {
     final value = response is Response ? response.data : response;

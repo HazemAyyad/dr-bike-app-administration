@@ -14,8 +14,9 @@ class OnlineStoreSettingsController extends GetxController {
   final operatingState = ''.obs;
 
   String get effectiveOperatingState {
+    if (values['store_enabled'] == false) return 'disabled';
     if (values['maintenance_mode'] == true) return 'maintenance';
-    if (values['store_enabled'] == false) return 'closed';
+    if (values['checkout_enabled'] == false) return 'browse_only';
     return 'open';
   }
 
@@ -44,7 +45,15 @@ class OnlineStoreSettingsController extends GetxController {
   Future<void> save() async {
     saving.value = true;
     try {
-      await repository.put(EndPoints.onlineStoreSettings, data: Map.of(values));
+      final payload = Map<String, dynamic>.of(values)
+        ..['out_of_stock_behavior'] = 'visible_non_purchasable'
+        ..removeWhere((key, _) => {
+              'id',
+              'created_at',
+              'updated_at',
+              'updated_by',
+            }.contains(key));
+      await repository.put(EndPoints.onlineStoreSettings, data: payload);
       await load();
     } catch (e) {
       error.value = e.toString();

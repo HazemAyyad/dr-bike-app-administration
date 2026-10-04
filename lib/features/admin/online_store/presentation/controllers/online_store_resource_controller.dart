@@ -54,12 +54,32 @@ class OnlineStoreResourceController extends GetxController {
         () => repository.post('$endpoint/$id/$action', data: payload),
       );
 
-  Future<bool> reorder(List<int> ids, {String? updatedAt}) => _mutate(
-        () => repository.post('$endpoint/reorder', data: {
-          'ids': ids,
-          if (updatedAt != null) 'updated_at': updatedAt,
-        }),
-      );
+  Future<bool> reorderItems(
+    int oldIndex,
+    int newIndex,
+    Future<void> Function(List<int> ids) submit,
+  ) async {
+    final ordered = items.toList(growable: true);
+    if (newIndex > oldIndex) newIndex--;
+    final moved = ordered.removeAt(oldIndex);
+    ordered.insert(newIndex, moved);
+    items.assignAll(ordered);
+    saving.value = true;
+    error.value = null;
+    try {
+      await submit(ordered.map((item) => item.id).toList(growable: false));
+      await load();
+      return true;
+    } catch (e) {
+      error.value = _message(e);
+      await load();
+      Get.snackbar('تعذر حفظ الترتيب', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    } finally {
+      saving.value = false;
+    }
+  }
 
   Future<bool> _mutate(
       Future<Map<String, dynamic>> Function() operation) async {

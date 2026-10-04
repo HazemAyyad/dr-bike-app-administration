@@ -18,6 +18,8 @@ class OnlineStoreHomeSectionsScreen
         subtitle: 'يدوي أو تلقائي بترتيب حتمي',
         inspectLabel: 'إدارة العناصر اليدوية',
         onInspect: _manageItems,
+        actions: const {OnlineStoreResourceAction.delete},
+        onReorder: controller.reorderSections,
         fields: const [
           OnlineStoreFormField('key', 'المفتاح'),
           OnlineStoreFormField('section_type', 'النوع', options: [
@@ -32,8 +34,9 @@ class OnlineStoreHomeSectionsScreen
           OnlineStoreFormField('title_translations.ar', 'العنوان العربي'),
           OnlineStoreFormField('selection_mode', 'نمط الاختيار',
               options: ['manual', 'automatic', 'dedicated_banners']),
-          OnlineStoreFormField('selection_config', 'إعداد الاختيار JSON',
-              json: true),
+          OnlineStoreFormField('selection_config.selector', 'المحدد التلقائي'),
+          OnlineStoreFormField('selection_config.limit', 'حد العناصر',
+              numeric: true),
           OnlineStoreFormField('is_visible', 'ظاهر', boolean: true),
           OnlineStoreFormField('sort_order', 'الترتيب', numeric: true),
         ],

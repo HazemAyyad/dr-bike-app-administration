@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../data/online_store_models.dart';
 import '../controllers/online_store_categories_controller.dart';
 import '../utils/online_store_permissions.dart';
 import '../widgets/online_store_resource_screen.dart';
@@ -16,17 +17,102 @@ class OnlineStoreCategoriesScreen
         subtitle: 'تصنيف مستقل عن تصنيفات المخزون وأقسامه',
         inspectLabel: 'تعيين قوائم المنتجات',
         onInspect: (item) => _assignListings(item.id),
-        fields: const [
-          OnlineStoreFormField('name_translations.ar', 'الاسم العربي'),
-          OnlineStoreFormField('name_translations.en', 'الاسم الإنجليزي'),
-          OnlineStoreFormField('parent_id', 'رقم التصنيف الأب', numeric: true),
-          OnlineStoreFormField('image_path', 'مسار الصورة'),
-          OnlineStoreFormField('is_active', 'نشط', boolean: true),
-          OnlineStoreFormField('show_on_home', 'يظهر في الرئيسية',
-              boolean: true),
-          OnlineStoreFormField('sort_order', 'الترتيب', numeric: true),
-        ],
+        actions: const {OnlineStoreResourceAction.delete},
+        onReorder: controller.reorderCategories,
+        editor: _editCategory,
       );
+
+  Future<Map<String, dynamic>?> _editCategory(
+    BuildContext context,
+    OnlineStoreEntity? item,
+  ) async {
+    final nameAr = TextEditingController(
+        text:
+            '${onlineStoreMap(item?.values['name_translations'])['ar'] ?? ''}');
+    final nameEn = TextEditingController(
+        text:
+            '${onlineStoreMap(item?.values['name_translations'])['en'] ?? ''}');
+    final sortOrder = TextEditingController(
+        text: '${item?.values['sort_order'] ?? controller.items.length}');
+    int? parentId = int.tryParse('${item?.values['parent_id'] ?? ''}');
+    var active = item == null || item.values['is_active'] == true;
+    var showOnHome = item?.values['show_on_home'] == true;
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(item == null ? 'إضافة تصنيف' : 'تعديل التصنيف'),
+          content: SizedBox(
+            width: 460,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: nameAr,
+                decoration: const InputDecoration(labelText: 'الاسم العربي'),
+              ),
+              TextField(
+                controller: nameEn,
+                decoration: const InputDecoration(labelText: 'الاسم الإنجليزي'),
+              ),
+              DropdownButtonFormField<int?>(
+                initialValue: parentId,
+                decoration: const InputDecoration(labelText: 'التصنيف الأب'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                      value: null, child: Text('بدون تصنيف أب')),
+                  ...controller.items
+                      .where((category) => category.id != item?.id)
+                      .map((category) => DropdownMenuItem<int?>(
+                            value: category.id,
+                            child: Text(category.label),
+                          )),
+                ],
+                onChanged: (value) => setState(() => parentId = value),
+              ),
+              TextField(
+                controller: sortOrder,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'الترتيب'),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('نشط'),
+                value: active,
+                onChanged: (value) => setState(() => active = value),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('يظهر في الرئيسية'),
+                value: showOnHome,
+                onChanged: (value) => setState(() => showOnHome = value),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء')),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, {
+                'name_translations': {
+                  'ar': nameAr.text.trim(),
+                  'en': nameEn.text.trim(),
+                },
+                'parent_id': parentId,
+                'is_active': active,
+                'show_on_home': showOnHome,
+                'sort_order': int.tryParse(sortOrder.text.trim()) ?? 0,
+              }),
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameAr.dispose();
+    nameEn.dispose();
+    sortOrder.dispose();
+    return result;
+  }
 
   Future<void> _assignListings(int categoryId) async {
     final listings = (await controller.repository.listings()).items;

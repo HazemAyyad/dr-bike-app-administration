@@ -1,5 +1,6 @@
 import 'package:doctorbike/features/admin/online_store/data/online_store_models.dart';
 import 'package:doctorbike/features/admin/online_store/domain/online_store_repository.dart';
+import 'package:image_picker/image_picker.dart';
 
 class FakeOnlineStoreRepository implements OnlineStoreRepository {
   final responses = <String, Map<String, dynamic>>{};
@@ -84,6 +85,16 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
       );
 
   @override
+  Future<List<OnlineStoreListing>> allListings() async =>
+      (await listings()).items;
+
+  @override
+  Future<List<OnlineStoreEntity>> allEntities(String path) async =>
+      onlineStoreRows(responses['GET $path']?['data'])
+          .map((row) => OnlineStoreEntity.fromJson(row))
+          .toList(growable: false);
+
+  @override
   Future<OnlineStoreListing> transitionListing(int id, String status,
       {String? updatedAt}) async {
     lastData = {'status': status, 'updated_at': updatedAt};
@@ -107,5 +118,39 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
           'status': 'draft',
           ...payload,
         });
+  }
+
+  @override
+  Future<void> reorderCategories(List<int> categoryIds) async {
+    calls.add('POST online-store/categories/reorder');
+    lastData = {'category_ids': categoryIds};
+  }
+
+  @override
+  Future<void> reorderHomeSections(List<int> sectionIds) async {
+    calls.add('POST online-store/home-sections/reorder');
+    lastData = {'section_ids': sectionIds};
+  }
+
+  @override
+  Future<void> reorderBanners(List<int> bannerIds) async {
+    calls.add('POST online-store/banners/reorder');
+    lastData = {'banner_ids': bannerIds};
+  }
+
+  @override
+  Future<String> uploadContentImage(XFile file) async {
+    calls.add('POST online-store/content-images');
+    lastData = {'file': file.path};
+    return responses['upload']?['image_path'] ??
+        'public/OnlineStore/Content/banner.jpg';
+  }
+
+  @override
+  Future<List<OnlineStoreParty>> parties(String role) async {
+    calls.add('GET ${role == 'seller' ? 'all/sellers' : 'all/customers'}');
+    return onlineStoreRows(responses['parties:$role']?['data'])
+        .map((json) => OnlineStoreParty.fromJson(json))
+        .toList(growable: false);
   }
 }

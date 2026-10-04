@@ -1,4 +1,5 @@
 import '../data/online_store_models.dart';
+import 'package:image_picker/image_picker.dart';
 
 abstract class OnlineStoreRepository {
   Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query});
@@ -9,6 +10,8 @@ abstract class OnlineStoreRepository {
       {Map<String, dynamic>? data});
 
   Future<OnlineStorePage<OnlineStoreListing>> listings({String? status});
+  Future<List<OnlineStoreListing>> allListings();
+  Future<List<OnlineStoreEntity>> allEntities(String path);
   Future<OnlineStoreListing> listing(int id);
   Future<OnlineStoreListing> createListing(int productId);
   Future<OnlineStoreListing> updateListing(
@@ -17,4 +20,9 @@ abstract class OnlineStoreRepository {
       {String? updatedAt});
   Future<OnlineStoreDashboardSummary> dashboard();
   Future<List<OnlineStoreAccount>> accounts({String? search});
+  Future<void> reorderCategories(List<int> categoryIds);
+  Future<void> reorderHomeSections(List<int> sectionIds);
+  Future<void> reorderBanners(List<int> bannerIds);
+  Future<String> uploadContentImage(XFile file);
+  Future<List<OnlineStoreParty>> parties(String role);
 }

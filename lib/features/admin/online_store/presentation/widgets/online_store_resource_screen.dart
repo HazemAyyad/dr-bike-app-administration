@@ -24,6 +24,13 @@ class OnlineStoreFormField {
   final bool json;
 }
 
+enum OnlineStoreResourceAction { activate, deactivate, delete }
+
+typedef OnlineStoreResourceEditor = Future<Map<String, dynamic>?> Function(
+  BuildContext context,
+  OnlineStoreEntity? item,
+);
+
 class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     extends GetView<T> {
   const OnlineStoreResourceScreen({
@@ -35,6 +42,9 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     this.fields = const [],
     this.inspectLabel,
     this.onInspect,
+    this.actions = const {},
+    this.onReorder,
+    this.editor,
   }) : super(key: key);
 
   final String title;
@@ -44,11 +54,14 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
   final List<OnlineStoreFormField> fields;
   final String? inspectLabel;
   final Future<void> Function(OnlineStoreEntity item)? onInspect;
+  final Set<OnlineStoreResourceAction> actions;
+  final Future<void> Function(List<int> ids)? onReorder;
+  final OnlineStoreResourceEditor? editor;
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(title)),
-        floatingActionButton: canManage && fields.isNotEmpty
+        floatingActionButton: canManage && (fields.isNotEmpty || editor != null)
             ? FloatingActionButton.extended(
                 onPressed: () => _showEditor(context),
                 icon: const Icon(Icons.add),
@@ -62,71 +75,117 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
               onRetry: controller.load,
               child: RefreshIndicator(
                 onRefresh: controller.load,
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: controller.items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (_, index) {
-                    final item = controller.items[index];
-                    return Card(
-                      color: const Color(0xFFF7F7FA),
-                      child: ListTile(
-                        onTap: canManage && fields.isNotEmpty
-                            ? () => _showEditor(context, item: item)
-                            : null,
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              const Color(0xFF6F42C1).withValues(alpha: .1),
-                          child: Icon(icon, color: const Color(0xFF6F42C1)),
+                child: onReorder == null
+                    ? ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: controller.items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (_, index) =>
+                            _resourceCard(context, controller.items[index]),
+                      )
+                    : ReorderableListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        buildDefaultDragHandles: false,
+                        itemCount: controller.items.length,
+                        onReorder: (oldIndex, newIndex) =>
+                            controller.reorderItems(
+                          oldIndex,
+                          newIndex,
+                          onReorder!,
                         ),
-                        title: Text(item.label,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
-                        subtitle: Text(subtitle ??
-                            (item.status.isEmpty
-                                ? '#${item.id}'
-                                : item.status)),
-                        trailing: canManage
-                            ? PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'delete') {
-                                    controller.remove(item.id);
-                                  }
-                                  if (value == 'activate') {
-                                    controller.action(item.id, 'activate');
-                                  }
-                                  if (value == 'deactivate') {
-                                    controller.action(item.id, 'deactivate');
-                                  }
-                                  if (value == 'inspect') {
-                                    onInspect?.call(item);
-                                  }
-                                },
-                                itemBuilder: (_) => [
-                                  const PopupMenuItem(
-                                      value: 'activate', child: Text('تفعيل')),
-                                  const PopupMenuItem(
-                                      value: 'deactivate',
-                                      child: Text('إيقاف')),
-                                  const PopupMenuItem(
-                                      value: 'delete', child: Text('حذف')),
-                                  if (inspectLabel != null)
-                                    PopupMenuItem(
-                                        value: 'inspect',
-                                        child: Text(inspectLabel!)),
-                                ],
-                              )
-                            : const Icon(Icons.chevron_left),
+                        itemBuilder: (_, index) => Padding(
+                          key: ValueKey(controller.items[index].id),
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _resourceCard(
+                            context,
+                            controller.items[index],
+                            reorderIndex: index,
+                          ),
+                        ),
                       ),
-                    );
-                  },
-                ),
               ),
             )),
       );
 
+  Widget _resourceCard(
+    BuildContext context,
+    OnlineStoreEntity item, {
+    int? reorderIndex,
+  }) =>
+      Card(
+        color: const Color(0xFFF7F7FA),
+        child: ListTile(
+          onTap: canManage && (fields.isNotEmpty || editor != null)
+              ? () => _showEditor(context, item: item)
+              : null,
+          leading: CircleAvatar(
+            backgroundColor: const Color(0xFF6F42C1).withValues(alpha: .1),
+            child: Icon(icon, color: const Color(0xFF6F42C1)),
+          ),
+          title: Text(item.label,
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text(
+              subtitle ?? (item.status.isEmpty ? '#${item.id}' : item.status)),
+          trailing: _trailing(item, reorderIndex),
+        ),
+      );
+
+  Widget _trailing(OnlineStoreEntity item, int? reorderIndex) {
+    final hasMenu = canManage && (actions.isNotEmpty || inspectLabel != null);
+    if (!hasMenu && reorderIndex == null) {
+      return const Icon(Icons.chevron_left);
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      if (reorderIndex != null && canManage)
+        ReorderableDragStartListener(
+          index: reorderIndex,
+          child: const Padding(
+            padding: EdgeInsets.all(8),
+            child: Icon(Icons.drag_handle),
+          ),
+        ),
+      if (hasMenu)
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'delete') {
+              controller.remove(item.id);
+            }
+            if (value == 'activate') {
+              controller.action(item.id, 'activate');
+            }
+            if (value == 'deactivate') {
+              controller.action(item.id, 'deactivate');
+            }
+            if (value == 'inspect') {
+              onInspect?.call(item);
+            }
+          },
+          itemBuilder: (_) => [
+            if (actions.contains(OnlineStoreResourceAction.activate))
+              const PopupMenuItem(value: 'activate', child: Text('تفعيل')),
+            if (actions.contains(OnlineStoreResourceAction.deactivate))
+              const PopupMenuItem(value: 'deactivate', child: Text('إيقاف')),
+            if (actions.contains(OnlineStoreResourceAction.delete))
+              const PopupMenuItem(value: 'delete', child: Text('حذف')),
+            if (inspectLabel != null)
+              PopupMenuItem(value: 'inspect', child: Text(inspectLabel!)),
+          ],
+        ),
+    ]);
+  }
+
   Future<void> _showEditor(BuildContext context,
       {OnlineStoreEntity? item}) async {
+    if (editor != null) {
+      final payload = await editor!(context, item);
+      if (payload == null) return;
+      if (item == null) {
+        await controller.create(payload);
+      } else {
+        await controller.updateItem(item.id, payload);
+      }
+      return;
+    }
     final controllers = <String, TextEditingController>{};
     final booleans = <String, bool>{};
     for (final field in fields) {

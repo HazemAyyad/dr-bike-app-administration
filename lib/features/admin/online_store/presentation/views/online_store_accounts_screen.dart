@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../routes/app_routes.dart';
+import '../../../widgets/unified_partner_selector.dart';
+import '../../data/online_store_models.dart';
 import '../controllers/online_store_accounts_controller.dart';
 import '../widgets/online_store_state_view.dart';
 
@@ -59,7 +61,7 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
                                     title: Text('لا توجد روابط بعد')),
                               ...account.links.map((link) => ListTile(
                                     title: Text(
-                                        '${link.role} • ${link.partyName ?? '#${link.partyId}'}'),
+                                        '${link.role == 'seller' ? 'مورد' : 'عميل'} • ${controller.partyName(link)}'),
                                     subtitle: Text(link.status),
                                     trailing: PopupMenuButton<String>(
                                       onSelected: (action) {
@@ -105,40 +107,66 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
       );
 
   Future<void> _showLinkDialog(int userId) async {
-    final partyId = TextEditingController();
     var role = 'customer';
+    OnlineStoreParty? selected;
+    await controller.loadParties(role);
     final confirmed = await Get.dialog<bool>(StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('إنشاء ربط صريح'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButtonFormField<String>(
-            initialValue: role,
-            items: const [
-              DropdownMenuItem(value: 'customer', child: Text('عميل')),
-              DropdownMenuItem(value: 'seller', child: Text('مورد')),
-            ],
-            onChanged: (value) => setState(() => role = value ?? 'customer'),
-          ),
-          TextField(
-            controller: partyId,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'رقم الطرف'),
-          ),
-        ]),
+        content: SizedBox(
+            width: 460,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                initialValue: role,
+                items: const [
+                  DropdownMenuItem(value: 'customer', child: Text('عميل')),
+                  DropdownMenuItem(value: 'seller', child: Text('مورد')),
+                ],
+                onChanged: (value) async {
+                  role = value ?? 'customer';
+                  selected = null;
+                  await controller.loadParties(role);
+                  if (context.mounted) setState(() {});
+                },
+              ),
+              const SizedBox(height: 12),
+              if (controller.partiesLoading.value)
+                const LinearProgressIndicator()
+              else
+                UnifiedPartnerSelector<OnlineStoreParty>(
+                  customers: role == 'customer' ? controller.parties : const [],
+                  sellers: role == 'seller' ? controller.parties : const [],
+                  selected: selected,
+                  selectedIsSeller: role == 'seller',
+                  idOf: (party) => party.id,
+                  nameOf: (party) => party.name,
+                  phoneOf: (party) => party.phone,
+                  onSelected: (party, _) => setState(() => selected = party),
+                  onCleared: () => setState(() => selected = null),
+                  title: role == 'customer' ? 'اختيار العميل' : 'اختيار المورد',
+                  hintText: 'ابحث بالاسم أو الهاتف',
+                  requiredSelection: true,
+                  compact: true,
+                ),
+              if (controller.error.value != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(controller.error.value!,
+                      style: const TextStyle(color: Colors.red)),
+                ),
+            ])),
         actions: [
           TextButton(
               onPressed: () => Get.back(result: false),
               child: const Text('إلغاء')),
           FilledButton(
-              onPressed: () => Get.back(result: true),
+              onPressed: selected == null ? null : () => Get.back(result: true),
               child: const Text('ربط')),
         ],
       ),
     ));
-    final id = int.tryParse(partyId.text);
-    partyId.dispose();
-    if (confirmed == true && id != null) {
-      await controller.link(userId: userId, role: role, partyId: id);
+    if (confirmed == true && selected != null) {
+      await controller.link(userId: userId, role: role, partyId: selected!.id);
     }
   }
 }

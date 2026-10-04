@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import '../controllers/online_store_promotions_controller.dart';
 import '../utils/online_store_permissions.dart';
 import '../widgets/online_store_resource_screen.dart';
+import '../widgets/online_store_discount_editor.dart';
+import '../widgets/online_store_target_picker.dart';
+import '../../data/online_store_models.dart';
 
 class OnlineStorePromotionsScreen
     extends GetView<OnlineStorePromotionsController> {
@@ -16,48 +19,97 @@ class OnlineStorePromotionsScreen
         subtitle: 'عالمي أو مستهدف • أولوية وجدولة • معاينة سعر للقراءة فقط',
         inspectLabel: 'معاينة التسعير',
         onInspect: (_) => _preview(),
-        fields: const [
-          OnlineStoreFormField('name', 'اسم العرض'),
-          OnlineStoreFormField('discount_type', 'نوع الخصم',
-              options: ['percentage', 'fixed']),
-          OnlineStoreFormField('discount_value', 'قيمة الخصم', numeric: true),
-          OnlineStoreFormField('applies_to', 'السعر المستهدف',
-              options: ['retail', 'wholesale', 'both']),
-          OnlineStoreFormField('scope', 'النطاق',
-              options: ['global', 'targeted']),
-          OnlineStoreFormField('targets', 'الأهداف JSON', json: true),
-          OnlineStoreFormField('starts_at', 'يبدأ في'),
-          OnlineStoreFormField('ends_at', 'ينتهي في'),
-          OnlineStoreFormField('priority', 'الأولوية', numeric: true),
-          OnlineStoreFormField('is_active', 'نشط', boolean: true),
-        ],
+        actions: const {
+          OnlineStoreResourceAction.activate,
+          OnlineStoreResourceAction.deactivate,
+          OnlineStoreResourceAction.delete,
+        },
+        editor: (context, item) => showOnlineStoreDiscountEditor(
+          context,
+          controller: controller,
+          kind: OnlineStoreDiscountKind.promotion,
+          item: item,
+        ),
       );
 
   Future<void> _preview() async {
-    final userId = TextEditingController();
-    final listingId = TextEditingController();
+    final accounts = (await controller.repository.accounts())
+        .where((account) => account.links.any((link) =>
+            link.status == 'active' &&
+            {'customer', 'seller'}.contains(link.role)))
+        .toList(growable: false);
+    final listings = await controller.repository.allListings();
+    OnlineStoreAccount? account;
+    OnlineStoreListing? listing;
     final quantity = TextEditingController(text: '1');
-    var role = 'customer';
+    String? role;
     final accepted = await Get.dialog<bool>(StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('معاينة تسعير للقراءة فقط'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-              controller: userId,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'رقم المستخدم')),
-          DropdownButtonFormField<String>(
-            initialValue: role,
-            items: const [
-              DropdownMenuItem(value: 'customer', child: Text('تجزئة')),
-              DropdownMenuItem(value: 'seller', child: Text('جملة')),
-            ],
-            onChanged: (v) => setState(() => role = v ?? 'customer'),
+          DropdownButtonFormField<OnlineStoreAccount>(
+            initialValue: account,
+            decoration: const InputDecoration(labelText: 'حساب المتجر'),
+            items: accounts
+                .map((value) =>
+                    DropdownMenuItem(value: value, child: Text(value.name)))
+                .toList(growable: false),
+            onChanged: (value) => setState(() {
+              account = value;
+              final roles = value?.links
+                      .where((link) => link.status == 'active')
+                      .map((link) => link.role)
+                      .toSet() ??
+                  const <String>{};
+              role = roles.contains(role)
+                  ? role
+                  : (roles.isEmpty ? null : roles.first);
+            }),
           ),
-          TextField(
-              controller: listingId,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'رقم القائمة')),
+          if (account != null)
+            DropdownButtonFormField<String>(
+              initialValue: role,
+              decoration: const InputDecoration(labelText: 'نوع الحساب'),
+              items: account!.links
+                  .where((link) => link.status == 'active')
+                  .map((link) => link.role)
+                  .toSet()
+                  .map((value) => DropdownMenuItem(
+                        value: value,
+                        child: Text(value == 'seller' ? 'جملة' : 'تجزئة'),
+                      ))
+                  .toList(growable: false),
+              onChanged: (value) => setState(() => role = value),
+            ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(listing?.productName.isNotEmpty == true
+                ? listing!.productName
+                : 'اختيار قائمة منتج'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () async {
+              final selected = await showOnlineStoreTargetPicker(
+                context,
+                title: 'اختيار قائمة المنتج',
+                options: listings
+                    .map((value) => OnlineStoreTargetOption(
+                          type: 'listing',
+                          id: value.id,
+                          label: value.productName.isEmpty
+                              ? 'قائمة #${value.id}'
+                              : value.productName,
+                        ))
+                    .toList(growable: false),
+                selectedKeys:
+                    listing == null ? const [] : ['listing:${listing!.id}'],
+                multiple: false,
+              );
+              if (selected != null && selected.isNotEmpty) {
+                setState(() => listing = listings
+                    .firstWhere((value) => value.id == selected.single.id));
+              }
+            },
+          ),
           TextField(
               controller: quantity,
               keyboardType: TextInputType.number,
@@ -66,18 +118,20 @@ class OnlineStorePromotionsScreen
         actions: [
           TextButton(onPressed: Get.back, child: const Text('إلغاء')),
           FilledButton(
-              onPressed: () => Get.back(result: true),
+              onPressed: account == null || role == null || listing == null
+                  ? null
+                  : () => Get.back(result: true),
               child: const Text('معاينة')),
         ],
       ),
     ));
     if (accepted == true) {
       final result = await controller.preview({
-        'user_id': int.tryParse(userId.text),
+        'user_id': account!.id,
         'account_role': role,
         'items': [
           {
-            'listing_id': int.tryParse(listingId.text),
+            'listing_id': listing!.id,
             'quantity': int.tryParse(quantity.text) ?? 1,
           }
         ],
@@ -89,8 +143,6 @@ class OnlineStorePromotionsScreen
         actions: [TextButton(onPressed: Get.back, child: const Text('إغلاق'))],
       ));
     }
-    userId.dispose();
-    listingId.dispose();
     quantity.dispose();
   }
 }
