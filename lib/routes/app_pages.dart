@@ -40,6 +40,23 @@ import '../features/admin/whatsapp_center/presentation/views/whatsapp_center_scr
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_conversation_screen.dart';
 import '../features/admin/meta_catalog/presentation/bindings/meta_catalog_binding.dart';
 import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_screen.dart';
+import '../features/admin/online_store/presentation/bindings/online_store_binding.dart';
+import '../features/admin/online_store/presentation/views/online_store_accounts_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_audit_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_banners_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_categories_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_coupons_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_credit_policy_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_dashboard_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_home_sections_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_listing_editor_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_listings_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_media_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_product_picker_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_promotions_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_reports_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_reviews_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_settings_screen.dart';
 import '../features/technical_support/presentation/technical_support_screen.dart';
 import '../features/notes/presentation/notes_screen.dart';
 import '../features/smart_home/presentation/bindings/smart_home_binding.dart';
@@ -349,6 +366,86 @@ class AppPages {
       binding: MetaCatalogBinding(),
       transition: _transitionFadeIn,
     ),
+    GetPage(
+        name: AppRoutes.ONLINESTOREDASHBOARD,
+        page: () => const OnlineStoreDashboardScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORELISTINGS,
+        page: () => const OnlineStoreListingsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORELISTINGEDITOR,
+        page: () => const OnlineStoreListingEditorScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREPRODUCTPICKER,
+        page: () => const OnlineStoreProductPickerScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREMEDIA,
+        page: () => const OnlineStoreMediaScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORECATEGORIES,
+        page: () => const OnlineStoreCategoriesScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREHOMESECTIONS,
+        page: () => const OnlineStoreHomeSectionsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREBANNERS,
+        page: () => const OnlineStoreBannersScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREPROMOTIONS,
+        page: () => const OnlineStorePromotionsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORECOUPONS,
+        page: () => const OnlineStoreCouponsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREACCOUNTS,
+        page: () => const OnlineStoreAccountsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORECREDIT,
+        page: () => const OnlineStoreCreditPolicyScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREREVIEWS,
+        page: () => const OnlineStoreReviewsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORESETTINGS,
+        page: () => const OnlineStoreSettingsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREAUDIT,
+        page: () => const OnlineStoreAuditScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTOREREPORTS,
+        page: () => const OnlineStoreReportsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
     GetPage(
       name: AppRoutes.WHATSAPPCONVERSATION,
       page: () => const WhatsAppConversationScreen(),

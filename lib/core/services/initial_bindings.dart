@@ -45,6 +45,42 @@ bool get isDesktopRuntime {
 
 /// أسماء صلاحيات الموظف بالإنجليزي (name_en) — تُستخدم للفحص بالاسم بدل الـ ID.
 List<String> employeePermissionNames = [];
+
+const String onlineStoreViewPermissionName = 'Online Store View';
+const String onlineStoreProductsManagePermissionName =
+    'Online Store Products Manage';
+const String onlineStoreCategoriesManagePermissionName =
+    'Online Store Categories Manage';
+const String onlineStoreContentManagePermissionName =
+    'Online Store Content Manage';
+const String onlineStorePromotionsManagePermissionName =
+    'Online Store Promotions Manage';
+const String onlineStoreReviewsManagePermissionName =
+    'Online Store Reviews Manage';
+const String onlineStoreSettingsManagePermissionName =
+    'Online Store Settings Manage';
+
+bool get canViewOnlineStore =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreViewPermissionName);
+bool get canManageOnlineStoreProducts =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreProductsManagePermissionName);
+bool get canManageOnlineStoreCategories =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreCategoriesManagePermissionName);
+bool get canManageOnlineStoreContent =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreContentManagePermissionName);
+bool get canManageOnlineStorePromotions =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStorePromotionsManagePermissionName);
+bool get canManageOnlineStoreReviews =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreReviewsManagePermissionName);
+bool get canManageOnlineStoreSettings =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(onlineStoreSettingsManagePermissionName);
 String userName = '';
 
 /// اسم صلاحية رؤية/تعديل سعر التكلفة (يطابق name_en في الباك إند).

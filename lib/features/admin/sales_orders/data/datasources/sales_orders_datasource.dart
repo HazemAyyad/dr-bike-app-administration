@@ -28,12 +28,15 @@ class SalesOrdersDatasource {
   Future<SalesOrdersPageModel> fetchOrders({
     String? status,
     String? search,
+    String? origin,
   }) async {
     final raw = await api.get(
       EndPoints.salesOrders,
       queryParameters: {
         if (status != null && status.isNotEmpty) 'status': status,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (origin != null && origin.isNotEmpty && origin != 'all')
+          'origin': origin,
       },
     );
     final response = _asMap(raw);

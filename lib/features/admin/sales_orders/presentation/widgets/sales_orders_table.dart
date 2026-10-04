@@ -12,6 +12,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import 'sales_order_status_ui.dart';
+import 'sales_order_origin_badge.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -702,6 +703,8 @@ class _OrderCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                        SizedBox(width: 5.w),
+                        SalesOrderOriginBadge(origin: order.origin),
                       ],
                     ),
                     SizedBox(height: 4.h),

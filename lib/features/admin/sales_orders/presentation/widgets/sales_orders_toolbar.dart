@@ -29,6 +29,20 @@ class SalesOrdersToolbar extends GetView<SalesOrdersController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Obx(() => Wrap(
+                spacing: 6.w,
+                children: const ['all', 'admin', 'store'].map((origin) {
+                  final selected = controller.originFilter.value == origin;
+                  final label = origin == 'all'
+                      ? 'كل المصادر'
+                      : controller.originLabel(origin);
+                  return FilterChip(
+                    label: Text(label),
+                    selected: selected,
+                    onSelected: (_) => controller.changeOriginFilter(origin),
+                  );
+                }).toList(),
+              )),
           if (userType == 'admin')
             Align(
               alignment: AlignmentDirectional.centerEnd,

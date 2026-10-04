@@ -13,6 +13,7 @@ abstract class SalesOrdersRepository {
   Future<Either<Failure, SalesOrdersPageModel>> getOrders({
     String? status,
     String? search,
+    String? origin,
   });
 
   Future<Either<Failure, SalesOrderDetailModel>> getOrder(int orderId);
@@ -203,8 +204,13 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   Future<Either<Failure, SalesOrdersPageModel>> getOrders({
     String? status,
     String? search,
+    String? origin,
   }) =>
-      _guard(() => datasource.fetchOrders(status: status, search: search));
+      _guard(() => datasource.fetchOrders(
+            status: status,
+            search: search,
+            origin: origin,
+          ));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> getOrder(int orderId) =>

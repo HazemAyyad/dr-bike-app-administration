@@ -628,6 +628,24 @@ class EndPoints {
       'suspended/instant/sale/cancel';
 
   static const String salesOrders = 'sales/orders';
+  static const String onlineStoreBase = 'online-store';
+  static const String onlineStoreDashboard = '$onlineStoreBase/dashboard';
+  static const String onlineStoreReports = '$onlineStoreBase/reports';
+  static const String onlineStoreListings = '$onlineStoreBase/listings';
+  static const String onlineStoreCategories = '$onlineStoreBase/categories';
+  static const String onlineStoreHomeSections =
+      '$onlineStoreBase/home-sections';
+  static const String onlineStoreBanners = '$onlineStoreBase/banners';
+  static const String onlineStorePromotions = '$onlineStoreBase/promotions';
+  static const String onlineStoreCoupons = '$onlineStoreBase/coupons';
+  static const String onlineStorePricingPreview =
+      '$onlineStoreBase/pricing/preview';
+  static const String onlineStoreAccounts = '$onlineStoreBase/accounts';
+  static const String onlineStoreAccountLinks =
+      '$onlineStoreBase/account-links';
+  static const String onlineStoreReviews = '$onlineStoreBase/reviews';
+  static const String onlineStoreSettings = '$onlineStoreBase/settings';
+  static const String onlineStoreAuditEvents = '$onlineStoreBase/audit-events';
   static const String salesSettings = 'sales/settings';
   static const String manageDeliveryCompanies = 'sales/delivery-companies';
   static const String deliveryCompanyAccounts =
