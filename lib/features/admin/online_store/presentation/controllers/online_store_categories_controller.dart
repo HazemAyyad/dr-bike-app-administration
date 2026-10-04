@@ -1,4 +1,5 @@
 import '../../../../../../core/databases/api/end_points.dart';
+import '../../data/online_store_models.dart';
 import '../../domain/online_store_repository.dart';
 import 'online_store_resource_controller.dart';
 
@@ -23,4 +24,6 @@ class OnlineStoreCategoriesController extends OnlineStoreResourceController {
 
   Future<void> reorderCategories(List<int> ids) =>
       repository.reorderCategories(ids);
+
+  Future<List<OnlineStoreListing>> pickerListings() => repository.allListings();
 }

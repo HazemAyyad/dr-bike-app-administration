@@ -12,7 +12,6 @@ class OnlineStoreReportsController extends GetxController {
   final error = RxnString();
   final from = RxnString();
   final to = RxnString();
-  final metric = 'overview'.obs;
   final accountType = 'all'.obs;
   final origin = 'all'.obs;
   final status = 'all'.obs;
@@ -29,7 +28,6 @@ class OnlineStoreReportsController extends GetxController {
       final json = await repository.get(EndPoints.onlineStoreReports, query: {
         if (from.value != null) 'from': from.value,
         if (to.value != null) 'to': to.value,
-        'metric': metric.value,
         if (accountType.value != 'all') 'account_type': accountType.value,
         if (origin.value != 'all') 'origin': origin.value,
         if (status.value != 'all') 'status': status.value,

@@ -56,25 +56,6 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
                 label: const Text('تطبيق'),
               ),
             ]),
-            const SizedBox(height: 8),
-            Wrap(spacing: 8, children: [
-              ChoiceChip(
-                label: const Text('ملخص'),
-                selected: controller.metric.value == 'overview',
-                onSelected: (_) {
-                  controller.metric.value = 'overview';
-                  controller.load();
-                },
-              ),
-              ChoiceChip(
-                label: const Text('طلبات المتجر'),
-                selected: controller.metric.value == 'orders',
-                onSelected: (_) {
-                  controller.metric.value = 'orders';
-                  controller.load();
-                },
-              ),
-            ]),
             const SizedBox(height: 10),
             ...entries.map((entry) => Card(
                   color: const Color(0xFFF7F7FA),

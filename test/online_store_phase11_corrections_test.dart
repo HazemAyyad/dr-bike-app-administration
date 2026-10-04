@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:doctorbike/core/databases/api/api_consumer.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/features/admin/online_store/data/online_store_datasource.dart';
+import 'package:doctorbike/features/admin/online_store/data/online_store_repository_impl.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_audit_controller.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_banners_controller.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_categories_controller.dart';
@@ -46,6 +47,87 @@ void main() {
     expect(fake.lastData, {
       'banner_ids': [9, 7, 6]
     });
+  });
+
+  test('category and home pickers load every paginated listing', () async {
+    final api = _RecordingApiConsumer();
+    api.getPages[EndPoints.onlineStoreListings] = {
+      1: {
+        'data': [
+          {'id': 11, 'product_id': 101, 'product_name': 'A'}
+        ],
+        'meta': {'last_page': 2},
+      },
+      2: {
+        'data': [
+          {'id': 22, 'product_id': 202, 'product_name': 'B'}
+        ],
+        'meta': {'last_page': 2},
+      },
+    };
+    final repository = OnlineStoreRepositoryImpl(
+      OnlineStoreDatasource(api: api),
+    );
+
+    final categoryListings =
+        await OnlineStoreCategoriesController(repository).pickerListings();
+    final homeListings =
+        await OnlineStoreHomeSectionsController(repository).pickerListings();
+
+    expect(categoryListings.map((item) => item.id), [11, 22]);
+    expect(homeListings.map((item) => item.id), [11, 22]);
+    expect(
+      api.getRequests
+          .where((request) => request['path'] == EndPoints.onlineStoreListings)
+          .map((request) => request['page']),
+      [1, 2, 1, 2],
+    );
+  });
+
+  test('allEntities loads all pages for meta and direct paginator shapes',
+      () async {
+    final api = _RecordingApiConsumer();
+    api.getPages[EndPoints.onlineStoreCategories] = {
+      1: {
+        'data': [
+          {'id': 1, 'name': 'Category 1'}
+        ],
+        'meta': {'last_page': 2},
+      },
+      2: {
+        'data': [
+          {'id': 2, 'name': 'Category 2'}
+        ],
+        'meta': {'last_page': 2},
+      },
+    };
+    api.getPages[EndPoints.onlineStorePromotions] = {
+      1: {
+        'current_page': 1,
+        'data': [
+          {'id': 3, 'name': 'Promotion 1'}
+        ],
+        'last_page': 2,
+      },
+      2: {
+        'current_page': 2,
+        'data': [
+          {'id': 4, 'name': 'Promotion 2'}
+        ],
+        'last_page': 2,
+      },
+    };
+    final repository = OnlineStoreRepositoryImpl(
+      OnlineStoreDatasource(api: api),
+    );
+
+    final categories =
+        await repository.allEntities(EndPoints.onlineStoreCategories);
+    final promotions =
+        await repository.allEntities(EndPoints.onlineStorePromotions);
+
+    expect(categories.map((item) => item.id), [1, 2]);
+    expect(promotions.map((item) => item.id), [3, 4]);
   });
 
   test('datasource reorder requests use exact backend payload contracts',
@@ -279,6 +361,30 @@ void main() {
     expect(fake.calls, contains('POST online-store/coupons/3/deactivate'));
   });
 
+  test('report request omits metric and keeps supported filters', () async {
+    final fake = FakeOnlineStoreRepository();
+    fake.responses['GET online-store/reports'] = {
+      'data': {'orders': 2, 'revenue': 120}
+    };
+    final reports = OnlineStoreReportsController(fake);
+    reports.from.value = '2026-09-01';
+    reports.to.value = '2026-09-30';
+    reports.origin.value = 'store';
+    reports.status.value = 'completed';
+    reports.accountType.value = 'seller';
+
+    await reports.load();
+
+    expect(fake.lastQuery, {
+      'from': '2026-09-01',
+      'to': '2026-09-30',
+      'account_type': 'seller',
+      'origin': 'store',
+      'status': 'completed',
+    });
+    expect(reports.data, containsPair('revenue', 120));
+  });
+
   test('banner image upload uses multipart file field and approved endpoint',
       () async {
     final file = File(
@@ -303,6 +409,24 @@ class _RecordingApiConsumer implements ApiConsumer {
   Map<String, dynamic>? data;
   bool? isFormData;
   final requests = <Map<String, dynamic>>[];
+  final getPages = <String, Map<int, Map<String, dynamic>>>{};
+  final getRequests = <Map<String, dynamic>>[];
+
+  @override
+  Future<dynamic> get(
+    String path, {
+    Object? data,
+    Options? options,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final page = (queryParameters?['page'] as num?)?.toInt() ?? 1;
+    getRequests.add({'path': path, 'page': page});
+    return Response(
+      requestOptions: RequestOptions(path: path),
+      statusCode: 200,
+      data: getPages[path]?[page] ?? <String, dynamic>{'data': []},
+    );
+  }
 
   @override
   Future<dynamic> post(

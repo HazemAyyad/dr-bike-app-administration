@@ -115,7 +115,7 @@ class OnlineStoreCategoriesScreen
   }
 
   Future<void> _assignListings(int categoryId) async {
-    final listings = (await controller.repository.listings()).items;
+    final listings = await controller.pickerListings();
     final selected = <int>{};
     final accepted = await Get.dialog<bool>(StatefulBuilder(
       builder: (context, setState) => AlertDialog(

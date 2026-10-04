@@ -67,8 +67,9 @@ class OnlineStoreRepositoryImpl implements OnlineStoreRepository {
       result.addAll(onlineStoreRows(json['data'])
           .map((row) => OnlineStoreEntity.fromJson(row)));
       final meta = onlineStoreMap(json['meta']);
-      lastPage = (meta['last_page'] as num?)?.toInt() ??
-          int.tryParse('${meta['last_page'] ?? 1}') ??
+      final lastPageValue = meta['last_page'] ?? json['last_page'];
+      lastPage = (lastPageValue as num?)?.toInt() ??
+          int.tryParse('${lastPageValue ?? 1}') ??
           1;
       page++;
     } while (page <= lastPage);

@@ -43,7 +43,7 @@ class OnlineStoreHomeSectionsScreen
       );
 
   Future<void> _manageItems(OnlineStoreEntity section) async {
-    final listings = (await controller.repository.listings()).items;
+    final listings = await controller.pickerListings();
     final categoryJson =
         await controller.repository.get(EndPoints.onlineStoreCategories);
     final categories = onlineStoreRows(categoryJson['data'])

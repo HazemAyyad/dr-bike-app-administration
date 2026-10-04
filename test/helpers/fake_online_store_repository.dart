@@ -85,8 +85,10 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
       );
 
   @override
-  Future<List<OnlineStoreListing>> allListings() async =>
-      (await listings()).items;
+  Future<List<OnlineStoreListing>> allListings() async {
+    calls.add('GET ALL online-store/listings');
+    return (await listings()).items;
+  }
 
   @override
   Future<List<OnlineStoreEntity>> allEntities(String path) async =>
