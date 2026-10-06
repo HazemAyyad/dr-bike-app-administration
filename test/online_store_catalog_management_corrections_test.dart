@@ -3,8 +3,14 @@ import 'package:doctorbike/features/admin/online_store/presentation/utils/online
 import 'package:doctorbike/features/admin/online_store/presentation/utils/online_store_feedback.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_categories_screen.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_product_picker_screen.dart';
+import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_categories_controller.dart';
+import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+
+import 'helpers/fake_online_store_repository.dart';
 
 void main() {
   test('readiness codes are shown as actionable Arabic messages', () {
@@ -79,5 +85,46 @@ void main() {
 
     expect(narrow, 312);
     expect(wide, OnlineStoreAdminUi.dialogMaxWidth);
+  });
+
+  testWidgets('editing a category keeps text controllers alive while closing',
+      (tester) async {
+    Get.testMode = true;
+    userType = 'admin';
+    final repository = FakeOnlineStoreRepository();
+    final categories = {
+      'data': [
+        {
+          'id': 4,
+          'name_translations': {'ar': 'دراجات كهربائية', 'en': 'E-bikes'},
+          'is_active': true,
+          'show_on_home': true,
+          'sort_order': 0,
+        }
+      ],
+    };
+    repository.responses['GET ${EndPoints.onlineStoreCategories}'] = categories;
+    repository.responses['PATCH ${EndPoints.onlineStoreCategories}/4'] = {
+      'data': categories['data']!.first,
+    };
+    Get.put(OnlineStoreCategoriesController(repository));
+    addTearDown(Get.reset);
+
+    await tester.pumpWidget(const GetMaterialApp(
+      locale: Locale('ar'),
+      home: OnlineStoreCategoriesScreen(),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('دراجات كهربائية'));
+    await tester.pumpAndSettle();
+    expect(find.text('تعديل التصنيف'), findsOneWidget);
+
+    await tester.tap(find.text('حفظ').last);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(repository.calls,
+        contains('PATCH ${EndPoints.onlineStoreCategories}/4'));
   });
 }

@@ -7,6 +7,7 @@ import 'package:doctorbike/features/admin/online_store/presentation/views/online
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'helpers/fake_online_store_repository.dart';
@@ -101,16 +102,25 @@ void main() {
       'show_on_home': false,
     });
 
-    await tester.pumpWidget(GetMaterialApp(
-      locale: const Locale('ar'),
-      textDirection: TextDirection.rtl,
-      theme: ThemeData(fontFamily: 'Almarai'),
-      home: const Scaffold(),
+    await tester.pumpWidget(ScreenUtilInit(
+      designSize: const Size(430, 1800),
+      builder: (_, __) => GetMaterialApp(
+        locale: const Locale('ar'),
+        textDirection: TextDirection.rtl,
+        theme: ThemeData(fontFamily: 'Almarai'),
+        home: const Scaffold(),
+      ),
     ));
     Get.to(() => const OnlineStoreListingEditorScreen(), arguments: listing);
     await tester.pumpAndSettle();
 
     await expectLater(find.byType(Scaffold),
         matchesGoldenFile('goldens/online_store_listing_editor_ar.png'));
+
+    await tester.tap(find.text('حفظ ونشر في المتجر'));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastData?['status'], 'published');
+    expect(find.text('منشور'), findsOneWidget);
   });
 }

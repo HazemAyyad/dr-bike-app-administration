@@ -35,6 +35,7 @@ class _OnlineStoreListingEditorScreenState
   List<OnlineStoreEntity> categories = const [];
   Set<int> selectedCategoryIds = <int>{};
   bool loadingCategories = false;
+  bool submitting = false;
 
   static const purple = Color(0xFF6D28D9);
   static const border = Color(0xFFE4E7EC);
@@ -561,8 +562,9 @@ class _OnlineStoreListingEditorScreenState
           child: Obx(() => Row(children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed:
-                        controller.saving.value ? null : () => _save(false),
+                    onPressed: controller.saving.value || submitting
+                        ? null
+                        : () => _save(false),
                     style: OutlinedButton.styleFrom(
                         foregroundColor: purple,
                         side: const BorderSide(color: purple),
@@ -574,12 +576,13 @@ class _OnlineStoreListingEditorScreenState
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
-                    onPressed:
-                        controller.saving.value ? null : () => _save(true),
+                    onPressed: controller.saving.value || submitting
+                        ? null
+                        : () => _save(true),
                     style: FilledButton.styleFrom(
                         backgroundColor: purple,
                         padding: const EdgeInsets.symmetric(vertical: 14)),
-                    child: const Text('حفظ وتجهيزه للنشر',
+                    child: const Text('حفظ ونشر في المتجر',
                         style: TextStyle(fontWeight: FontWeight.w800)),
                   ),
                 ),
@@ -595,7 +598,7 @@ class _OnlineStoreListingEditorScreenState
     if (OnlineStorePermissions.canManageCategories) await _loadCategories();
   }
 
-  Future<void> _save(bool markReady) async {
+  Future<void> _save(bool publish) async {
     if (!useFullInventory) {
       final value = int.tryParse(stockLimit.text);
       if (value == null || value < 0 || value > _inventoryAvailable) {
@@ -605,49 +608,78 @@ class _OnlineStoreListingEditorScreenState
         return;
       }
     }
-    var updated = await controller.updateListing(listing, {
-      'name_translations': {
-        ...listing.titleTranslations,
-        'ar': customName ? nameAr.text.trim() : null,
-      },
-      'description_translations': {
-        ...listing.descriptionTranslations,
-        'ar': customDescription ? descriptionAr.text.trim() : null,
-      },
-      'is_featured': isFeatured,
-      'is_new': isNew,
-      'show_on_home': showOnHome,
-      'online_stock_limit':
-          useFullInventory ? null : int.parse(stockLimit.text),
-      if (listing.updatedAt != null) 'updated_at': listing.updatedAt,
-    });
-    if (updated == null || !mounted) return;
-    await mediaController.save();
-    if (OnlineStorePermissions.canManageCategories) {
-      await controller.saveListingCategories(updated.id, selectedCategoryIds);
-    }
-    updated = await controller.repository.listing(updated.id);
-    if (!mounted) return;
-    if (markReady) {
-      if (updated.readinessIssues.isNotEmpty) {
-        setState(() => listing = updated!);
-        OnlineStoreFeedback.error(
-          Exception(updated.readinessIssues
-              .map(OnlineStoreFeedback.readinessLabel)
-              .join('\n')),
-          title: 'أكمل متطلبات النشر أولاً',
-          context: context,
-        );
-        return;
+    setState(() => submitting = true);
+    try {
+      var updated = await controller.updateListing(listing, {
+        'name_translations': {
+          ...listing.titleTranslations,
+          'ar': customName ? nameAr.text.trim() : null,
+        },
+        'description_translations': {
+          ...listing.descriptionTranslations,
+          'ar': customDescription ? descriptionAr.text.trim() : null,
+        },
+        'is_featured': isFeatured,
+        'is_new': isNew,
+        'show_on_home': showOnHome,
+        'online_stock_limit':
+            useFullInventory ? null : int.parse(stockLimit.text),
+        if (listing.updatedAt != null) 'updated_at': listing.updatedAt,
+      });
+      if (updated == null || !mounted) return;
+      await mediaController.save();
+      if (OnlineStorePermissions.canManageCategories) {
+        await controller.saveListingCategories(updated.id, selectedCategoryIds);
       }
-      updated = await controller.transition(updated, 'ready');
-    }
-    if (updated != null && mounted) {
+      updated = await controller.repository.listing(updated.id);
+      if (!mounted) return;
+      if (publish) {
+        if (updated.readinessIssues.isNotEmpty) {
+          setState(() => listing = updated!);
+          OnlineStoreFeedback.error(
+            Exception(updated.readinessIssues
+                .map(OnlineStoreFeedback.readinessLabel)
+                .join('\n')),
+            title: 'أكمل متطلبات النشر أولاً',
+            context: context,
+          );
+          return;
+        }
+        updated = await _publish(updated);
+        if (updated == null || !mounted) return;
+      }
       setState(() => listing = updated!);
       OnlineStoreFeedback.success(
-          markReady ? 'تم حفظ المنتج وتجهيزه للنشر.' : 'تم حفظ تخصيصات المتجر.',
+          publish
+              ? 'تم نشر المنتج، وسيظهر الآن في المتجر.'
+              : 'تم حفظ تخصيصات المتجر.',
           context: context);
+    } finally {
+      if (mounted) setState(() => submitting = false);
     }
+  }
+
+  Future<OnlineStoreListing?> _publish(OnlineStoreListing current) async {
+    var updated = current;
+    for (var step = 0; step < 3 && updated.status != 'published'; step++) {
+      final target = const <String, String>{
+        'hidden': 'draft',
+        'draft': 'ready',
+        'ready': 'published',
+      }[updated.status];
+      if (target == null) {
+        if (!mounted) return null;
+        OnlineStoreFeedback.error(
+          Exception('لا يمكن نشر المنتج من حالته الحالية.'),
+          context: context,
+        );
+        return null;
+      }
+      final transitioned = await controller.transition(updated, target);
+      if (transitioned == null) return null;
+      updated = transitioned;
+    }
+    return updated.status == 'published' ? updated : null;
   }
 
   @override

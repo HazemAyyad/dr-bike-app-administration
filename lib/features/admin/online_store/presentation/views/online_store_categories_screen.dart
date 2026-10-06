@@ -121,6 +121,7 @@ class OnlineStoreCategoriesScreen
     var imagePath = '${item?.values['image_path'] ?? ''}';
     XFile? pickedImage;
     var uploading = false;
+    var closing = false;
     String? uploadError;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -243,10 +244,15 @@ class OnlineStoreCategoriesScreen
                             imagePath: imagePath,
                           ),
                         );
+                        closing = true;
                       } catch (exception) {
-                        setState(() => uploadError = exception.toString());
+                        if (dialogContext.mounted) {
+                          setState(() => uploadError = exception.toString());
+                        }
                       } finally {
-                        setState(() => uploading = false);
+                        if (!closing && dialogContext.mounted) {
+                          setState(() => uploading = false);
+                        }
                       }
                     },
               child: Text(uploading ? 'جارٍ الرفع...' : 'حفظ'),
@@ -255,6 +261,9 @@ class OnlineStoreCategoriesScreen
         ),
       ),
     );
+    // showDialog completes when pop starts, while the route can still animate
+    // TextFields out. Keep their controllers alive until that transition ends.
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     nameAr.dispose();
     nameEn.dispose();
     sortOrder.dispose();
