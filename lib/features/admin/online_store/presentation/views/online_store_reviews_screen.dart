@@ -9,39 +9,43 @@ class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
   const OnlineStoreReviewsScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: const Text('مراجعات المتجر')),
         body: Obx(() => OnlineStoreStateView(
               loading: controller.loading.value,
               error: controller.error.value,
               isEmpty: controller.items.isEmpty,
               onRetry: controller.load,
-              child: ListView.builder(
-                itemCount: controller.items.length,
-                itemBuilder: (_, i) {
-                  final review = controller.items[i];
-                  return Card(
-                    color: OnlineStoreAdminUi.surface,
-                    child: ListTile(
-                      title: Text(review.label),
-                      subtitle: Text(
-                          '${review.status}${controller.verifiedPurchase(review) ? ' • شراء موثّق' : ''}'),
-                      trailing: OnlineStorePermissions.canManageReviews
-                          ? PopupMenuButton<String>(
-                              onSelected: (status) =>
-                                  _moderate(review.id, status),
-                              itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                    value: 'published', child: Text('نشر')),
-                                PopupMenuItem(
-                                    value: 'rejected',
-                                    child: Text('رفض مع سبب')),
-                              ],
-                            )
-                          : null,
-                    ),
-                  );
-                },
-              ),
+              child: RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: controller.items.length,
+                    itemBuilder: (_, i) {
+                      final review = controller.items[i];
+                      return Card(
+                        color: OnlineStoreAdminUi.surface,
+                        child: ListTile(
+                          title: Text(review.label),
+                          subtitle: Text(
+                              '${review.status}${controller.verifiedPurchase(review) ? ' • شراء موثّق' : ''}'),
+                          trailing: OnlineStorePermissions.canManageReviews
+                              ? PopupMenuButton<String>(
+                                  onSelected: (status) =>
+                                      _moderate(review.id, status),
+                                  itemBuilder: (_) => const [
+                                    PopupMenuItem(
+                                        value: 'published', child: Text('نشر')),
+                                    PopupMenuItem(
+                                        value: 'rejected',
+                                        child: Text('رفض مع سبب')),
+                                  ],
+                                )
+                              : null,
+                        ),
+                      );
+                    },
+                  )),
             )),
       );
 

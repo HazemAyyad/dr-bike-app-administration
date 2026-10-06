@@ -16,6 +16,11 @@ class OnlineStoreProductCandidate {
     this.imageUrl = '',
     this.stock = 0,
     this.retailPrice = 0,
+    this.wholesalePrice = 0,
+    this.storeSectionName = '',
+    this.hasVariants = false,
+    this.variants = const [],
+    this.imageUrls = const [],
   });
 
   final int id;
@@ -25,6 +30,11 @@ class OnlineStoreProductCandidate {
   final String imageUrl;
   final num stock;
   final num retailPrice;
+  final num wholesalePrice;
+  final String storeSectionName;
+  final bool hasVariants;
+  final List<Map<String, dynamic>> variants;
+  final List<String> imageUrls;
 
   String get displayName => nameAr.isNotEmpty ? nameAr : nameEn;
 
@@ -38,24 +48,54 @@ class OnlineStoreProductCandidate {
       return '';
     }
 
+    final images = <String>[];
+    for (final source in [
+      json['product_viewImages'],
+      json['viewImages'],
+      json['product_normalImages'],
+      json['normalImages'],
+      json['product_image3d'],
+      json['image3d'],
+    ]) {
+      if (source is List) {
+        for (final item in source) {
+          final path = image(item);
+          if (path.isNotEmpty && !images.contains(path)) {
+            images.add(path);
+          }
+        }
+      }
+    }
+    final primary = image(json['product_image'] ??
+        json['main_image'] ??
+        json['view_image'] ??
+        json['product_viewImages'] ??
+        json['viewImages'] ??
+        json['product_normalImages'] ??
+        json['normalImages'] ??
+        json['product_image3d'] ??
+        json['image3d']);
+    if (primary.isNotEmpty && !images.contains(primary)) {
+      images.insert(0, primary);
+    }
     return OnlineStoreProductCandidate(
       id: _int(json['id']),
       nameAr: '${json['nameAr'] ?? json['name_ar'] ?? json['name'] ?? ''}',
       nameEn: '${json['nameEng'] ?? json['name_en'] ?? ''}',
       code: '${json['product_code'] ?? json['code'] ?? ''}',
-      imageUrl: image(json['product_image'] ??
-          json['main_image'] ??
-          json['view_image'] ??
-          json['product_viewImages'] ??
-          json['viewImages'] ??
-          json['product_normalImages'] ??
-          json['normalImages'] ??
-          json['product_image3d'] ??
-          json['image3d']),
+      imageUrl: primary,
       stock: _num(json['stock']),
       retailPrice: _num(json['normail_price'] ??
           json['product_normail_price'] ??
           json['normailPrice']),
+      wholesalePrice: _num(json['wholesale_price'] ?? json['wholesalePrice']),
+      storeSectionName: '${json['store_section_name'] ?? ''}',
+      hasVariants: _bool(json['has_variants']),
+      variants: (json['sizes'] as List? ?? const [])
+          .whereType<Map>()
+          .map(onlineStoreMap)
+          .toList(growable: false),
+      imageUrls: images,
     );
   }
 }
@@ -104,6 +144,10 @@ class OnlineStoreListing {
     this.basePrices = const {},
     this.availability = const {},
     this.media = const [],
+    this.originalNameTranslations = const {},
+    this.originalDescriptionTranslations = const {},
+    this.productCode = '',
+    this.onlineStockLimit,
     this.updatedAt,
   });
 
@@ -124,6 +168,10 @@ class OnlineStoreListing {
   final Map<String, dynamic> basePrices;
   final Map<String, dynamic> availability;
   final List<OnlineStoreMedia> media;
+  final Map<String, dynamic> originalNameTranslations;
+  final Map<String, dynamic> originalDescriptionTranslations;
+  final String productCode;
+  final int? onlineStockLimit;
   final String? updatedAt;
 
   bool get canPublish => readinessState == 'ready' && readinessIssues.isEmpty;
@@ -158,6 +206,13 @@ class OnlineStoreListing {
       media: onlineStoreRows(json['media'])
           .map((json) => OnlineStoreMedia.fromJson(json))
           .toList(growable: false),
+      originalNameTranslations: onlineStoreMap(product['name_translations']),
+      originalDescriptionTranslations:
+          onlineStoreMap(product['description_translations']),
+      productCode: '${product['code'] ?? ''}',
+      onlineStockLimit: json['online_stock_limit'] == null
+          ? null
+          : _int(json['online_stock_limit']),
       updatedAt: json['updated_at']?.toString(),
     );
   }
@@ -171,6 +226,7 @@ class OnlineStoreListing {
         'show_on_home': showOnHome,
         'show_as_offer': showAsOffer,
         'sort_order': sortOrder,
+        'online_stock_limit': onlineStockLimit,
         if (updatedAt != null) 'updated_at': updatedAt,
       };
 }
@@ -183,6 +239,8 @@ class OnlineStoreMedia {
     this.isMain = false,
     this.isVisible = true,
     this.sourceType = 'product',
+    this.sourceId,
+    this.storeMediaPath,
   });
 
   final int sourceMediaId;
@@ -191,16 +249,23 @@ class OnlineStoreMedia {
   final bool isMain;
   final bool isVisible;
   final String sourceType;
+  final int? sourceId;
+  final String? storeMediaPath;
 
   factory OnlineStoreMedia.fromJson(Map<String, dynamic> json) =>
       OnlineStoreMedia(
-        sourceMediaId:
-            _int(json['source_media_id'] ?? json['media_id'] ?? json['id']),
+        sourceMediaId: _int(json['id'] ??
+            json['source_media_id'] ??
+            json['media_id'] ??
+            json['source_id']),
         sortOrder: _int(json['sort_order']),
-        url: '${json['url'] ?? json['media_url'] ?? json['path'] ?? ''}',
+        url:
+            '${json['resolved_path'] ?? json['url'] ?? json['media_url'] ?? json['path'] ?? ''}',
         isMain: _bool(json['is_main']),
         isVisible: json['is_visible'] == null || _bool(json['is_visible']),
         sourceType: '${json['source_type'] ?? 'product'}',
+        sourceId: json['source_id'] == null ? null : _int(json['source_id']),
+        storeMediaPath: json['store_media_path']?.toString(),
       );
 
   OnlineStoreMedia copyWith({
@@ -215,11 +280,14 @@ class OnlineStoreMedia {
         isMain: isMain ?? this.isMain,
         isVisible: isVisible ?? this.isVisible,
         sourceType: sourceType,
+        sourceId: sourceId,
+        storeMediaPath: storeMediaPath,
       );
 
   Map<String, dynamic> toRequestJson() => {
-        'source_media_id': sourceMediaId,
-        'sort_order': sortOrder,
+        'source_type': sourceType,
+        'source_id': sourceId,
+        'store_media_path': storeMediaPath,
         'is_main': isMain,
         'is_visible': isVisible,
       };

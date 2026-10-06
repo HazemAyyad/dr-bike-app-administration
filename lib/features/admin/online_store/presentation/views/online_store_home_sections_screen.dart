@@ -16,14 +16,15 @@ class OnlineStoreHomeSectionsScreen
         title: 'أقسام واجهة المتجر',
         icon: Icons.view_carousel_outlined,
         canManage: OnlineStorePermissions.canManageContent,
-        subtitle: 'يدوي أو تلقائي بترتيب حتمي',
+        subtitle: 'الأقسام التي يراها العميل في الصفحة الرئيسية',
         inspectLabel: 'إدارة العناصر اليدوية',
         onInspect: _manageItems,
         actions: const {OnlineStoreResourceAction.delete},
         onReorder: controller.reorderSections,
         fields: const [
-          OnlineStoreFormField('key', 'المفتاح'),
-          OnlineStoreFormField('section_type', 'النوع', options: [
+          OnlineStoreFormField('key', 'رمز القسم',
+              helperText: 'اسم تقني قصير وثابت، مثل featured_bikes.'),
+          OnlineStoreFormField('section_type', 'محتوى القسم', options: [
             'hero',
             'categories',
             'best_sellers',
@@ -31,15 +32,37 @@ class OnlineStoreHomeSectionsScreen
             'maintenance',
             'offers',
             'custom'
-          ]),
+          ], optionLabels: {
+            'hero': 'واجهة رئيسية بارزة',
+            'categories': 'تصنيفات المتجر',
+            'best_sellers': 'الأكثر مبيعاً',
+            'recent': 'وصل حديثاً',
+            'maintenance': 'خدمات الصيانة',
+            'offers': 'العروض',
+            'custom': 'قسم مخصص',
+          }),
           OnlineStoreFormField('title_translations.ar', 'العنوان العربي'),
-          OnlineStoreFormField('selection_mode', 'نمط الاختيار',
-              options: ['manual', 'automatic', 'dedicated_banners']),
-          OnlineStoreFormField('selection_config.selector', 'المحدد التلقائي'),
-          OnlineStoreFormField('selection_config.limit', 'حد العناصر',
+          OnlineStoreFormField('selection_mode', 'كيف تُختار العناصر؟',
+              options: [
+                'manual',
+                'automatic',
+                'dedicated_banners'
+              ],
+              optionLabels: {
+                'manual': 'أختار العناصر بنفسي',
+                'automatic': 'اختيار تلقائي من النظام',
+                'dedicated_banners': 'بانرات مخصصة لهذا القسم',
+              }),
+          OnlineStoreFormField(
+              'selection_config.selector', 'قاعدة الاختيار التلقائي',
+              helperText: 'يُستخدم فقط عند اختيار الوضع التلقائي.'),
+          OnlineStoreFormField('selection_config.limit', 'عدد العناصر المعروضة',
               numeric: true),
           OnlineStoreFormField('is_visible', 'ظاهر', boolean: true),
-          OnlineStoreFormField('sort_order', 'الترتيب', numeric: true),
+          OnlineStoreFormField('sort_order', 'موضع القسم',
+              numeric: true,
+              helperText:
+                  'الرقم الأصغر يظهر أولاً، أو رتّب بالسحب من القائمة.'),
         ],
       );
 

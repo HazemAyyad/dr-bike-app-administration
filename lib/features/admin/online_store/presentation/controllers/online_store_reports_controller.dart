@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/databases/api/end_points.dart';
@@ -15,15 +16,27 @@ class OnlineStoreReportsController extends GetxController {
   final accountType = 'all'.obs;
   final origin = 'all'.obs;
   final status = 'all'.obs;
+  final fromController = TextEditingController();
+  final toController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
+    fromController.addListener(() {
+      from.value = fromController.text.trim().isEmpty
+          ? null
+          : fromController.text.trim();
+    });
+    toController.addListener(() {
+      to.value =
+          toController.text.trim().isEmpty ? null : toController.text.trim();
+    });
     load();
   }
 
   Future<void> load() async {
     loading.value = true;
+    error.value = null;
     try {
       final json = await repository.get(EndPoints.onlineStoreReports, query: {
         if (from.value != null) 'from': from.value,
@@ -40,5 +53,12 @@ class OnlineStoreReportsController extends GetxController {
     } finally {
       loading.value = false;
     }
+  }
+
+  @override
+  void onClose() {
+    fromController.dispose();
+    toController.dispose();
+    super.onClose();
   }
 }

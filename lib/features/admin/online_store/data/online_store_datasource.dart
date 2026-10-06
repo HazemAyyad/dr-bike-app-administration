@@ -57,6 +57,14 @@ class OnlineStoreDatasource {
       );
 
   Future<Map<String, dynamic>> uploadContentImage(XFile file) async {
+    return _uploadImage(file, EndPoints.onlineStoreContentImages);
+  }
+
+  Future<Map<String, dynamic>> uploadProductImage(XFile file) async {
+    return _uploadImage(file, '${EndPoints.onlineStoreBase}/product-images');
+  }
+
+  Future<Map<String, dynamic>> _uploadImage(XFile file, String endpoint) async {
     const profile = ImageUploadProfile(
       maxBytes: 10 * 1024 * 1024,
       quality: 88,
@@ -68,7 +76,7 @@ class OnlineStoreDatasource {
     );
     try {
       return _unwrap(await api.post(
-        EndPoints.onlineStoreContentImages,
+        endpoint,
         data: {'file': await prepared.toMultipartFile()},
         isFormData: true,
       ));

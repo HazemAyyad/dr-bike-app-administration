@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_listings_controller.dart';
+import '../controllers/online_store_media_controller.dart';
+import '../utils/online_store_feedback.dart';
 import '../utils/online_store_permissions.dart';
-import '../utils/online_store_admin_ui.dart';
-import '../widgets/online_store_listing_readiness.dart';
 
 class OnlineStoreListingEditorScreen extends StatefulWidget {
   const OnlineStoreListingEditorScreen({Key? key}) : super(key: key);
@@ -19,202 +21,640 @@ class OnlineStoreListingEditorScreen extends StatefulWidget {
 class _OnlineStoreListingEditorScreenState
     extends State<OnlineStoreListingEditorScreen> {
   final controller = Get.find<OnlineStoreListingsController>();
+  final mediaController = Get.find<OnlineStoreMediaController>();
   late OnlineStoreListing listing;
   late final TextEditingController nameAr;
-  late final TextEditingController nameEn;
   late final TextEditingController descriptionAr;
-  late final TextEditingController descriptionEn;
-  late final TextEditingController badgeAr;
-  late final TextEditingController sortOrder;
+  late final TextEditingController stockLimit;
+  late bool customName;
+  late bool customDescription;
+  late bool useFullInventory;
   late bool isFeatured;
   late bool isNew;
   late bool showOnHome;
-  late bool showAsOffer;
+  List<OnlineStoreEntity> categories = const [];
+  Set<int> selectedCategoryIds = <int>{};
+  bool loadingCategories = false;
+
+  static const purple = Color(0xFF6D28D9);
+  static const border = Color(0xFFE4E7EC);
+  static const muted = Color(0xFFF6F7F9);
 
   @override
   void initState() {
     super.initState();
     listing = Get.arguments as OnlineStoreListing;
-    nameAr =
-        TextEditingController(text: '${listing.titleTranslations['ar'] ?? ''}');
-    nameEn =
-        TextEditingController(text: '${listing.titleTranslations['en'] ?? ''}');
+    customName = '${listing.titleTranslations['ar'] ?? ''}'.trim().isNotEmpty;
+    customDescription =
+        '${listing.descriptionTranslations['ar'] ?? ''}'.trim().isNotEmpty;
+    nameAr = TextEditingController(
+        text:
+            customName ? '${listing.titleTranslations['ar']}' : _originalName);
     descriptionAr = TextEditingController(
-        text: '${listing.descriptionTranslations['ar'] ?? ''}');
-    descriptionEn = TextEditingController(
-        text: '${listing.descriptionTranslations['en'] ?? ''}');
-    badgeAr =
-        TextEditingController(text: '${listing.badgeTranslations['ar'] ?? ''}');
-    sortOrder = TextEditingController(text: '${listing.sortOrder}');
+        text: customDescription
+            ? '${listing.descriptionTranslations['ar']}'
+            : _originalDescription);
+    useFullInventory = listing.onlineStockLimit == null;
+    stockLimit = TextEditingController(
+        text: '${listing.onlineStockLimit ?? _inventoryAvailable}');
     isFeatured = listing.isFeatured;
     isNew = listing.isNew;
     showOnHome = listing.showOnHome;
-    showAsOffer = listing.showAsOffer;
+    mediaController.load(listing.id);
+    if (OnlineStorePermissions.canManageCategories) _loadCategories();
+  }
+
+  String get _originalName =>
+      '${listing.originalNameTranslations['ar'] ?? listing.productName}';
+  String get _originalDescription =>
+      '${listing.originalDescriptionTranslations['ar'] ?? ''}';
+  int get _physicalStock =>
+      int.tryParse('${listing.availability['physical_stock'] ?? 0}') ?? 0;
+  int get _reserved =>
+      int.tryParse('${listing.availability['reserved_qty'] ?? 0}') ?? 0;
+  int get _inventoryAvailable =>
+      int.tryParse(
+          '${listing.availability['inventory_available_qty'] ?? listing.availability['available_qty'] ?? 0}') ??
+      0;
+  int get _onlineAvailable => useFullInventory
+      ? _inventoryAvailable
+      : (int.tryParse(stockLimit.text) ?? 0).clamp(0, _inventoryAvailable);
+
+  Future<void> _loadCategories() async {
+    setState(() => loadingCategories = true);
+    try {
+      final snapshot = await controller.listingCategories(listing.id);
+      if (!mounted) return;
+      setState(() {
+        categories = snapshot.categories
+            .where((category) =>
+                category.values['is_active'] == true ||
+                category.values['is_active'] == 1)
+            .toList(growable: false);
+        selectedCategoryIds = snapshot.selectedIds;
+      });
+    } finally {
+      if (mounted) setState(() => loadingCategories = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: const Color(0xFFF4F5F7),
         appBar: AppBar(
-          title: Text(listing.productName.isEmpty
-              ? 'قائمة المنتج'
-              : listing.productName),
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF151A2D),
+          title: const Text('تجهيز المنتج للمتجر',
+              style: TextStyle(fontWeight: FontWeight.w800)),
           actions: [
-            if (OnlineStorePermissions.canManageProducts)
-              IconButton(
-                tooltip: 'حفظ بيانات العرض',
-                onPressed: _save,
-                icon: const Icon(Icons.save_outlined),
-              ),
+            Center(child: _statusChip()),
+            const SizedBox(width: 12),
           ],
         ),
-        body: ListView(padding: const EdgeInsets.all(14), children: [
-          OnlineStoreListingReadiness(
-            state: listing.readinessState,
-            issues: listing.readinessIssues,
-          ),
-          const SizedBox(height: 12),
-          if (OnlineStorePermissions.canManageProducts) ...[
-            _field(nameAr, 'اسم العرض بالعربية'),
-            _field(nameEn, 'اسم العرض بالإنجليزية'),
-            _field(descriptionAr, 'الوصف بالعربية', lines: 3),
-            _field(descriptionEn, 'الوصف بالإنجليزية', lines: 3),
-            _field(badgeAr, 'شارة العرض'),
-            _field(sortOrder, 'الترتيب', numeric: true),
-            SwitchListTile(
-                value: isFeatured,
-                onChanged: (v) => setState(() => isFeatured = v),
-                title: const Text('مميز')),
-            SwitchListTile(
-                value: isNew,
-                onChanged: (v) => setState(() => isNew = v),
-                title: const Text('جديد')),
-            SwitchListTile(
-                value: showOnHome,
-                onChanged: (v) => setState(() => showOnHome = v),
-                title: const Text('إظهار في الرئيسية')),
-            SwitchListTile(
-                value: showAsOffer,
-                onChanged: (v) => setState(() => showAsOffer = v),
-                title: const Text('إظهار كعرض')),
-          ],
-          _ReadOnlyCard(
-            title: 'السعر الأساسي (للقراءة فقط)',
-            value: listing.basePrices.isEmpty
-                ? 'غير متاح'
-                : listing.basePrices.toString(),
-            icon: Icons.payments_outlined,
-          ),
-          _ReadOnlyCard(
-            title: 'المخزون والتوفر (للقراءة فقط)',
-            value: listing.availability.isEmpty
-                ? 'غير متاح'
-                : listing.availability.toString(),
-            icon: Icons.inventory_2_outlined,
-          ),
-          OutlinedButton.icon(
-            onPressed: () => Get.toNamed(AppRoutes.PRODUCTDETAILSSCREEN,
-                arguments: listing.productId),
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('فتح المنتج الأصلي في المخزون'),
-          ),
-          OutlinedButton.icon(
-            onPressed: () =>
-                Get.toNamed(AppRoutes.ONLINESTOREMEDIA, arguments: listing.id),
-            icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('ترتيب وسائط المتجر'),
-          ),
-          if (OnlineStorePermissions.canManageProducts)
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final state in const [
-                'draft',
-                'ready',
-                'published',
-                'hidden'
-              ])
-                OutlinedButton(
-                  style: OnlineStoreAdminUi.actionButtonStyle,
-                  onPressed: state == 'published' && !listing.canPublish
-                      ? null
-                      : () => _transition(state),
-                  child: Text(_label(state)),
+        bottomNavigationBar: _bottomActions(),
+        body: RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            children: [
+              _productSummary(),
+              _section(
+                title: 'معلومات العرض',
+                icon: Icons.description_outlined,
+                child: Column(children: [
+                  _sourceValue('الاسم الأصلي', _originalName),
+                  _switchRow('استخدام اسم مختلف في المتجر', customName,
+                      (value) {
+                    setState(() {
+                      customName = value;
+                      if (!value) nameAr.text = _originalName;
+                    });
+                  }),
+                  _input(nameAr, 'اسم المنتج في المتجر', enabled: customName),
+                  const Divider(height: 28),
+                  _sourceValue('الوصف الأصلي', _originalDescription,
+                      maxLines: 3),
+                  _switchRow('استخدام وصف مختلف في المتجر', customDescription,
+                      (value) {
+                    setState(() {
+                      customDescription = value;
+                      if (!value) descriptionAr.text = _originalDescription;
+                    });
+                  }),
+                  _input(descriptionAr, 'الوصف في المتجر',
+                      enabled: customDescription, lines: 3),
+                ]),
+              ),
+              _section(
+                title: 'كمية المتجر',
+                icon: Icons.inventory_2_outlined,
+                child: Column(children: [
+                  Row(children: [
+                    Expanded(
+                        child: _metric('المتوفر فعلياً', '$_physicalStock',
+                            const Color(0xFFEAF8EF), const Color(0xFF15803D))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: _metric('المحجوز', '$_reserved',
+                            const Color(0xFFFFF7E8), const Color(0xFFF59E0B))),
+                  ]),
+                  _stockMode('إتاحة كامل المخزون', true),
+                  _stockMode('تحديد حد للبيع عبر المتجر', false),
+                  _input(stockLimit, 'الكمية المتاحة للمتجر',
+                      enabled: !useFullInventory,
+                      numeric: true,
+                      suffix: 'قطع',
+                      onChanged: (_) => setState(() {})),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0E9FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                        'المتاح للبيع إلكترونياً: $_onlineAvailable قطع',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: purple, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'هذا الحد لا يغيّر مخزون المنتج الأساسي، ويعرض الأقل بينه وبين المتوفر الفعلي.',
+                    style: TextStyle(color: Color(0xFF667085), fontSize: 12),
+                  ),
+                ]),
+              ),
+              _mediaSection(),
+              _section(
+                title: 'التصنيف والظهور',
+                icon: Icons.sell_outlined,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (loadingCategories)
+                      const LinearProgressIndicator()
+                    else if (categories.isEmpty)
+                      const Text('لا توجد تصنيفات متجر فعالة.')
+                    else
+                      DropdownButtonFormField<int>(
+                        initialValue: selectedCategoryIds.isEmpty
+                            ? null
+                            : selectedCategoryIds.first,
+                        decoration:
+                            const InputDecoration(labelText: 'التصنيف الرئيسي'),
+                        items: categories
+                            .map((category) => DropdownMenuItem(
+                                value: category.id,
+                                child: Text(category.label)))
+                            .toList(),
+                        onChanged: (id) => setState(
+                            () => selectedCategoryIds = id == null ? {} : {id}),
+                      ),
+                    const SizedBox(height: 12),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      _optionChip('مميز', isFeatured,
+                          (value) => setState(() => isFeatured = value)),
+                      _optionChip('جديد', isNew,
+                          (value) => setState(() => isNew = value)),
+                      _optionChip('الرئيسية', showOnHome,
+                          (value) => setState(() => showOnHome = value)),
+                    ]),
+                    const SizedBox(height: 14),
+                    _readinessPanel(),
+                  ],
                 ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Get.toNamed(AppRoutes.PRODUCTDETAILSSCREEN,
+                    arguments: listing.productId),
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('فتح المنتج الأصلي في المخزون'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _productSummary() => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: _box(),
+        child: Row(children: [
+          Obx(() {
+            final main = mediaController.items
+                .firstWhereOrNull((item) => item.isMain && item.isVisible);
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                color: muted,
+                width: 74,
+                height: 74,
+                child: main == null || main.url.isEmpty
+                    ? const Icon(Icons.inventory_2_outlined, size: 34)
+                    : Image.network(ShowNetImage.getPhoto(main.url),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image_outlined)),
+              ),
+            );
+          }),
+          const SizedBox(width: 12),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(customName ? nameAr.text : _originalName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              Text(
+                  'رمز المنتج: ${listing.productCode.isEmpty ? listing.productId : listing.productCode}',
+                  style: const TextStyle(color: Color(0xFF667085))),
+              const SizedBox(height: 4),
+              Text('المتوفر في المخزون: $_physicalStock قطعة',
+                  style: const TextStyle(
+                      color: Color(0xFF15803D), fontWeight: FontWeight.w700)),
             ]),
+          ),
         ]),
       );
 
-  Widget _field(TextEditingController value, String label,
-          {int lines = 1, bool numeric = false}) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: TextField(
-          controller: value,
-          maxLines: lines,
-          keyboardType: numeric ? TextInputType.number : null,
-          decoration: InputDecoration(labelText: label),
+  Widget _mediaSection() => _section(
+        title: 'صور المنتج',
+        icon: Icons.image_outlined,
+        child: Obx(() {
+          if (mediaController.loading.value) {
+            return const LinearProgressIndicator();
+          }
+          return SizedBox(
+            height: 142,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _addImageTile(),
+                ...mediaController.items.map(_mediaTile),
+              ],
+            ),
+          );
+        }),
+      );
+
+  Widget _addImageTile() => InkWell(
+        onTap: () async {
+          final file =
+              await ImagePicker().pickImage(source: ImageSource.gallery);
+          if (file != null) await mediaController.addStoreImage(file);
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 108,
+          margin: const EdgeInsetsDirectional.only(end: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFF98A2B3)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add, size: 34),
+                SizedBox(height: 6),
+                Text('إضافة صورة'),
+              ]),
         ),
       );
 
-  Future<void> _save() async {
-    final updated = await controller.updateListing(listing, {
-      'name_translations': {'ar': nameAr.text.trim(), 'en': nameEn.text.trim()},
-      'description_translations': {
-        'ar': descriptionAr.text.trim(),
-        'en': descriptionEn.text.trim(),
+  Widget _mediaTile(OnlineStoreMedia media) => Container(
+        width: 128,
+        margin: const EdgeInsetsDirectional.only(end: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: media.isMain ? purple : border, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(children: [
+          Positioned.fill(
+              child: media.url.isEmpty
+                  ? const ColoredBox(color: muted, child: Icon(Icons.image))
+                  : Image.network(ShowNetImage.getPhoto(media.url),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.broken_image_outlined))),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .92),
+                  borderRadius: BorderRadius.circular(6)),
+              child: Text(
+                media.sourceType == 'store_specific'
+                    ? 'خاص بالمتجر'
+                    : 'من المخزون',
+                style: const TextStyle(
+                    color: Color(0xFF15803D),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 4,
+            right: 4,
+            bottom: 4,
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _mediaAction(media.isMain ? Icons.star : Icons.star_border,
+                      () => mediaController.selectMain(media.sourceMediaId),
+                      selected: media.isMain),
+                  _mediaAction(
+                      media.isVisible ? Icons.visibility : Icons.visibility_off,
+                      () => mediaController.toggleVisible(media.sourceMediaId)),
+                ]),
+          ),
+        ]),
+      );
+
+  Widget _mediaAction(IconData icon, VoidCallback onTap,
+          {bool selected = false}) =>
+      Material(
+        color: Colors.white.withValues(alpha: .94),
+        borderRadius: BorderRadius.circular(7),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(7),
+          child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(icon,
+                  size: 20, color: selected ? purple : Colors.black87)),
+        ),
+      );
+
+  Widget _section(
+          {required String title,
+          required IconData icon,
+          required Widget child}) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: _box(),
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(children: [
+              Icon(icon, color: const Color(0xFF344054)),
+              const SizedBox(width: 8),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const Divider(height: 1),
+          Padding(padding: const EdgeInsets.all(14), child: child),
+        ]),
+      );
+
+  BoxDecoration _box() => BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0A101828), blurRadius: 8, offset: Offset(0, 2))
+        ],
+      );
+
+  Widget _sourceValue(String label, String value, {int maxLines = 1}) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              color: muted, borderRadius: BorderRadius.circular(9)),
+          child: Text(value.trim().isEmpty ? 'لا توجد قيمة أصلية' : value,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF475467))),
+        ),
+      ]);
+
+  Widget _switchRow(String title, bool value, ValueChanged<bool> changed) =>
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        value: value,
+        activeThumbColor: purple,
+        onChanged: changed,
+      );
+
+  Widget _input(TextEditingController controller, String label,
+          {bool enabled = true,
+          bool numeric = false,
+          int lines = 1,
+          String? suffix,
+          ValueChanged<String>? onChanged}) =>
+      TextField(
+        controller: controller,
+        enabled: enabled,
+        maxLines: lines,
+        keyboardType: numeric ? TextInputType.number : null,
+        onChanged: onChanged,
+        decoration: InputDecoration(labelText: label, suffixText: suffix),
+      );
+
+  Widget _metric(String label, String value, Color background, Color color) =>
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: background, borderRadius: BorderRadius.circular(10)),
+        child: Column(children: [
+          Text(label,
+              style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+        ]),
+      );
+
+  Widget _stockMode(String label, bool value) => InkWell(
+        onTap: () => setState(() => useFullInventory = value),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(children: [
+            Icon(
+              useFullInventory == value
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color:
+                  useFullInventory == value ? purple : const Color(0xFF98A2B3),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(label)),
+          ]),
+        ),
+      );
+
+  Widget _optionChip(String label, bool value, ValueChanged<bool> changed) =>
+      FilterChip(
+        label: Text(label),
+        selected: value,
+        selectedColor: const Color(0xFFF0E9FF),
+        checkmarkColor: purple,
+        onSelected: changed,
+      );
+
+  Widget _readinessPanel() {
+    final ready = listing.readinessIssues.isEmpty;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ready ? const Color(0xFFEAF8EF) : const Color(0xFFFFF7E8),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(children: [
+        Icon(ready ? Icons.check_circle : Icons.info_outline,
+            color: ready ? const Color(0xFF15803D) : const Color(0xFFD97706)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            ready
+                ? 'جميع متطلبات النشر مكتملة'
+                : listing.readinessIssues
+                    .map(OnlineStoreFeedback.readinessLabel)
+                    .join(' • '),
+            style: TextStyle(
+                color:
+                    ready ? const Color(0xFF15803D) : const Color(0xFF9A3412),
+                fontWeight: FontWeight.w700),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _statusChip() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+            color: muted, borderRadius: BorderRadius.circular(16)),
+        child: Text(const {
+              'draft': 'مسودة',
+              'ready': 'جاهز',
+              'published': 'منشور',
+              'hidden': 'مخفي',
+            }[listing.status] ??
+            listing.status),
+      );
+
+  Widget _bottomActions() => SafeArea(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: Obx(() => Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        controller.saving.value ? null : () => _save(false),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: purple,
+                        side: const BorderSide(color: purple),
+                        padding: const EdgeInsets.symmetric(vertical: 14)),
+                    child: const Text('حفظ كمسودة',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed:
+                        controller.saving.value ? null : () => _save(true),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: purple,
+                        padding: const EdgeInsets.symmetric(vertical: 14)),
+                    child: const Text('حفظ وتجهيزه للنشر',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ])),
+        ),
+      );
+
+  Future<void> _refresh() async {
+    final refreshed = await controller.repository.listing(listing.id);
+    if (!mounted) return;
+    setState(() => listing = refreshed);
+    await mediaController.load(listing.id);
+    if (OnlineStorePermissions.canManageCategories) await _loadCategories();
+  }
+
+  Future<void> _save(bool markReady) async {
+    if (!useFullInventory) {
+      final value = int.tryParse(stockLimit.text);
+      if (value == null || value < 0 || value > _inventoryAvailable) {
+        OnlineStoreFeedback.error(
+            Exception('أدخل كمية صحيحة لا تتجاوز المتوفر فعلياً.'),
+            context: context);
+        return;
+      }
+    }
+    var updated = await controller.updateListing(listing, {
+      'name_translations': {
+        ...listing.titleTranslations,
+        'ar': customName ? nameAr.text.trim() : null,
       },
-      'badge_translations': {'ar': badgeAr.text.trim()},
+      'description_translations': {
+        ...listing.descriptionTranslations,
+        'ar': customDescription ? descriptionAr.text.trim() : null,
+      },
       'is_featured': isFeatured,
       'is_new': isNew,
       'show_on_home': showOnHome,
-      'show_as_offer': showAsOffer,
-      'sort_order': int.tryParse(sortOrder.text) ?? 0,
+      'online_stock_limit':
+          useFullInventory ? null : int.parse(stockLimit.text),
       if (listing.updatedAt != null) 'updated_at': listing.updatedAt,
     });
+    if (updated == null || !mounted) return;
+    await mediaController.save();
+    if (OnlineStorePermissions.canManageCategories) {
+      await controller.saveListingCategories(updated.id, selectedCategoryIds);
+    }
+    updated = await controller.repository.listing(updated.id);
+    if (!mounted) return;
+    if (markReady) {
+      if (updated.readinessIssues.isNotEmpty) {
+        setState(() => listing = updated!);
+        OnlineStoreFeedback.error(
+          Exception(updated.readinessIssues
+              .map(OnlineStoreFeedback.readinessLabel)
+              .join('\n')),
+          title: 'أكمل متطلبات النشر أولاً',
+          context: context,
+        );
+        return;
+      }
+      updated = await controller.transition(updated, 'ready');
+    }
     if (updated != null && mounted) {
-      setState(() => listing = updated);
+      setState(() => listing = updated!);
+      OnlineStoreFeedback.success(
+          markReady ? 'تم حفظ المنتج وتجهيزه للنشر.' : 'تم حفظ تخصيصات المتجر.',
+          context: context);
     }
   }
-
-  Future<void> _transition(String state) async {
-    final updated = await controller.transition(listing, state);
-    if (updated != null && mounted) {
-      setState(() => listing = updated);
-    }
-  }
-
-  String _label(String value) => const {
-        'draft': 'إرجاع لمسودة',
-        'ready': 'تحديد كجاهز',
-        'published': 'نشر',
-        'hidden': 'إخفاء',
-      }[value]!;
 
   @override
   void dispose() {
     nameAr.dispose();
-    nameEn.dispose();
     descriptionAr.dispose();
-    descriptionEn.dispose();
-    badgeAr.dispose();
-    sortOrder.dispose();
+    stockLimit.dispose();
     super.dispose();
   }
-}
-
-class _ReadOnlyCard extends StatelessWidget {
-  const _ReadOnlyCard(
-      {required this.title, required this.value, required this.icon});
-  final String title;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        color: OnlineStoreAdminUi.surfaceMuted,
-        child: ListTile(
-          leading: Icon(icon),
-          title:
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: Text(value),
-        ),
-      );
 }

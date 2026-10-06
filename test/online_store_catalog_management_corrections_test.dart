@@ -1,11 +1,18 @@
 import 'package:doctorbike/features/admin/online_store/data/online_store_models.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/utils/online_store_admin_ui.dart';
+import 'package:doctorbike/features/admin/online_store/presentation/utils/online_store_feedback.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_categories_screen.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_product_picker_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('readiness codes are shown as actionable Arabic messages', () {
+    expect(OnlineStoreFeedback.readinessLabel('missing_active_category'),
+        'اختر تصنيف متجر نشطاً لهذا المنتج.');
+    expect(OnlineStoreFeedback.readinessLabel('missing_main_media'),
+        'حدد صورة رئيسية ظاهرة للمنتج.');
+  });
   test('product candidate parses inventory search response fields', () {
     final product = OnlineStoreProductCandidate.fromJson({
       'id': 17,

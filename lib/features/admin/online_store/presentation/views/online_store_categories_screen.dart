@@ -87,7 +87,7 @@ class OnlineStoreCategoriesScreen
           if (parent.isNotEmpty) 'الأب: $parentName',
           active ? 'نشط' : 'غير نشط',
           home ? 'يظهر في الرئيسية' : 'لا يظهر في الرئيسية',
-          'الترتيب: ${item.values['sort_order'] ?? 0}',
+          'موضع العرض: ${(int.tryParse('${item.values['sort_order']}') ?? 0) + 1}',
         ].join(' • ')),
         trailing: trailing,
       ),
@@ -189,7 +189,11 @@ class OnlineStoreCategoriesScreen
               TextField(
                 controller: sortOrder,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'الترتيب'),
+                decoration: const InputDecoration(
+                  labelText: 'موضع التصنيف',
+                  helperText:
+                      'الرقم الأصغر يظهر أولاً. ويمكنك الترتيب بالسحب من القائمة.',
+                ),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

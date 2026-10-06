@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/online_store_feedback.dart';
+
 class OnlineStoreListingReadiness extends StatelessWidget {
   const OnlineStoreListingReadiness({
     Key? key,
@@ -32,7 +34,12 @@ class OnlineStoreListingReadiness extends StatelessWidget {
         ]),
         ...issues.map((issue) => Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text('• $issue'),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('• '),
+                Expanded(
+                    child: Text(OnlineStoreFeedback.readinessLabel(issue))),
+              ]),
             )),
       ]),
     );

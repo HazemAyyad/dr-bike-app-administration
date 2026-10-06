@@ -13,6 +13,7 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: const Text('حسابات المتجر المرتبطة')),
         body: Column(children: [
           Padding(
@@ -35,74 +36,78 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
                     error: controller.error.value,
                     isEmpty: controller.accounts.isEmpty,
                     onRetry: controller.load,
-                    child: ListView.builder(
-                      itemCount: controller.accounts.length,
-                      itemBuilder: (_, i) {
-                        final account = controller.accounts[i];
-                        return Card(
-                          color: OnlineStoreAdminUi.surface,
-                          child: ExpansionTile(
-                            leading: Icon(
-                              account.isBlocked
-                                  ? Icons.block
-                                  : Icons.person_outline,
-                              color: account.isBlocked ? Colors.red : null,
-                            ),
-                            title: Text(account.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w800)),
-                            subtitle: Text([
-                              if (account.email != null) account.email!,
-                              if (account.phone != null) account.phone!,
-                              if (account.isBlocked) 'محظور وغير قابل للربط',
-                            ].join(' • ')),
-                            children: [
-                              if (account.links.isEmpty)
-                                const ListTile(
-                                    title: Text('لا توجد روابط بعد')),
-                              ...account.links.map((link) => ListTile(
-                                    title: Text(
-                                        '${link.role == 'seller' ? 'مورد' : 'عميل'} • ${controller.partyName(link)}'),
-                                    subtitle: Text(link.status),
-                                    trailing: PopupMenuButton<String>(
-                                      onSelected: (action) {
-                                        if (action == 'credit') {
-                                          Get.toNamed(
-                                              AppRoutes.ONLINESTORECREDIT,
-                                              arguments: link.id);
-                                        } else {
-                                          controller.setLinkStatus(
-                                              link.id, action);
-                                        }
-                                      },
-                                      itemBuilder: (_) => const [
-                                        PopupMenuItem(
-                                            value: 'credit',
-                                            child: Text('سياسة الائتمان')),
-                                        PopupMenuItem(
-                                            value: 'active',
-                                            child: Text('تفعيل الربط')),
-                                        PopupMenuItem(
-                                            value: 'suspended',
-                                            child: Text('تعليق الربط')),
-                                      ],
-                                    ),
-                                  )),
-                              if (account.isLinkable)
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: OutlinedButton.icon(
-                                    onPressed: () =>
-                                        _showLinkDialog(account.id),
-                                    icon: const Icon(Icons.link),
-                                    label: const Text('ربط عميل أو مورد'),
-                                  ),
+                    child: RefreshIndicator(
+                        onRefresh: controller.load,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: controller.accounts.length,
+                          itemBuilder: (_, i) {
+                            final account = controller.accounts[i];
+                            return Card(
+                              color: OnlineStoreAdminUi.surface,
+                              child: ExpansionTile(
+                                leading: Icon(
+                                  account.isBlocked
+                                      ? Icons.block
+                                      : Icons.person_outline,
+                                  color: account.isBlocked ? Colors.red : null,
                                 ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                                title: Text(account.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800)),
+                                subtitle: Text([
+                                  if (account.email != null) account.email!,
+                                  if (account.phone != null) account.phone!,
+                                  if (account.isBlocked)
+                                    'محظور وغير قابل للربط',
+                                ].join(' • ')),
+                                children: [
+                                  if (account.links.isEmpty)
+                                    const ListTile(
+                                        title: Text('لا توجد روابط بعد')),
+                                  ...account.links.map((link) => ListTile(
+                                        title: Text(
+                                            '${link.role == 'seller' ? 'مورد' : 'عميل'} • ${controller.partyName(link)}'),
+                                        subtitle: Text(link.status),
+                                        trailing: PopupMenuButton<String>(
+                                          onSelected: (action) {
+                                            if (action == 'credit') {
+                                              Get.toNamed(
+                                                  AppRoutes.ONLINESTORECREDIT,
+                                                  arguments: link.id);
+                                            } else {
+                                              controller.setLinkStatus(
+                                                  link.id, action);
+                                            }
+                                          },
+                                          itemBuilder: (_) => const [
+                                            PopupMenuItem(
+                                                value: 'credit',
+                                                child: Text('سياسة الائتمان')),
+                                            PopupMenuItem(
+                                                value: 'active',
+                                                child: Text('تفعيل الربط')),
+                                            PopupMenuItem(
+                                                value: 'suspended',
+                                                child: Text('تعليق الربط')),
+                                          ],
+                                        ),
+                                      )),
+                                  if (account.isLinkable)
+                                    Padding(
+                                      padding: const EdgeInsets.all(8),
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _showLinkDialog(account.id),
+                                        icon: const Icon(Icons.link),
+                                        label: const Text('ربط عميل أو مورد'),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        )),
                   ))),
         ]),
       );

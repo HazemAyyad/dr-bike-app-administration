@@ -45,4 +45,28 @@ void main() {
     });
     expect(listing.canPublish, isFalse);
   });
+
+  test('admin media response and replacement payload match Laravel contract',
+      () {
+    final media = OnlineStoreMedia.fromJson({
+      'id': 8,
+      'source_type': 'view_image',
+      'source_id': 44,
+      'resolved_path': 'public/products/bike.jpg',
+      'is_main': true,
+      'is_visible': true,
+      'sort_order': 0,
+    });
+
+    expect(media.sourceMediaId, 8);
+    expect(media.sourceId, 44);
+    expect(media.url, 'public/products/bike.jpg');
+    expect(media.toRequestJson(), {
+      'source_type': 'view_image',
+      'source_id': 44,
+      'store_media_path': null,
+      'is_main': true,
+      'is_visible': true,
+    });
+  });
 }

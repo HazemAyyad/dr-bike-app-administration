@@ -9,6 +9,7 @@ import '../../data/online_store_models.dart';
 import '../controllers/online_store_banners_controller.dart';
 import 'online_store_target_picker.dart';
 import '../utils/online_store_admin_ui.dart';
+import 'online_store_form_widgets.dart';
 
 Map<String, dynamic> onlineStoreBannerDestination(
   String actionType, {
@@ -287,12 +288,28 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
                 onTap: _pickTarget,
               ),
             if (actionType == 'url') _field(url, 'رابط الوجهة'),
-            Row(children: [
-              Expanded(child: _field(startsAt, 'يبدأ في')),
-              const SizedBox(width: 8),
-              Expanded(child: _field(endsAt, 'ينتهي في')),
-            ]),
-            _field(sortOrder, 'الترتيب', numeric: true),
+            OnlineStoreFormSection(
+                title: 'مدة ظهور البانر',
+                description:
+                    'اختياري. اتركها فارغة ليظهر البانر دون مدة محددة.',
+                icon: Icons.schedule_outlined,
+                child: Row(children: [
+                  Expanded(
+                      child: OnlineStoreDateTimeField(
+                    controller: startsAt,
+                    label: 'تاريخ ووقت البداية',
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: OnlineStoreDateTimeField(
+                    controller: endsAt,
+                    label: 'تاريخ ووقت النهاية',
+                  )),
+                ])),
+            _field(sortOrder, 'موضع البانر',
+                numeric: true,
+                helper:
+                    'رقم أصغر يعني ظهوراً أبكر. يمكنك أيضاً السحب من قائمة البانرات.'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('نشط'),
@@ -327,10 +344,12 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
     TextEditingController controller,
     String label, {
     bool numeric = false,
+    String? helper,
   }) =>
       TextField(
         controller: controller,
         keyboardType: numeric ? TextInputType.number : null,
-        decoration: InputDecoration(labelText: label, isDense: true),
+        decoration: InputDecoration(
+            labelText: label, helperText: helper, isDense: true),
       );
 }

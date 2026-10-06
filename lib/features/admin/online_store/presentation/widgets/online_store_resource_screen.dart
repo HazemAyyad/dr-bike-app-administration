@@ -7,6 +7,7 @@ import '../../data/online_store_models.dart';
 import '../controllers/online_store_resource_controller.dart';
 import 'online_store_state_view.dart';
 import '../utils/online_store_admin_ui.dart';
+import 'online_store_form_widgets.dart';
 
 class OnlineStoreFormField {
   const OnlineStoreFormField(
@@ -16,6 +17,8 @@ class OnlineStoreFormField {
     this.numeric = false,
     this.boolean = false,
     this.json = false,
+    this.helperText,
+    this.optionLabels = const {},
   });
   final String keyName;
   final String label;
@@ -23,6 +26,8 @@ class OnlineStoreFormField {
   final bool numeric;
   final bool boolean;
   final bool json;
+  final String? helperText;
+  final Map<String, String> optionLabels;
 }
 
 enum OnlineStoreResourceAction { activate, deactivate, delete }
@@ -68,6 +73,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: Text(title)),
         floatingActionButton: canManage && (fields.isNotEmpty || editor != null)
             ? FloatingActionButton.extended(
@@ -86,37 +92,46 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
               error: controller.error.value,
               isEmpty: controller.items.isEmpty,
               onRetry: controller.load,
-              child: RefreshIndicator(
-                onRefresh: controller.load,
-                child: onReorder == null
-                    ? ListView.separated(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: controller.items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (_, index) =>
-                            _resourceCard(context, controller.items[index]),
-                      )
-                    : ReorderableListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        buildDefaultDragHandles: false,
-                        itemCount: controller.items.length,
-                        onReorder: (oldIndex, newIndex) =>
-                            controller.reorderItems(
-                          oldIndex,
-                          newIndex,
-                          onReorder!,
-                        ),
-                        itemBuilder: (_, index) => Padding(
-                          key: ValueKey(controller.items[index].id),
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: _resourceCard(
-                            context,
-                            controller.items[index],
-                            reorderIndex: index,
+              child: Column(children: [
+                if (onReorder != null && canManage)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: OnlineStoreReorderHint(compact: true),
+                  ),
+                Expanded(
+                    child: RefreshIndicator(
+                  onRefresh: controller.load,
+                  child: onReorder == null
+                      ? ListView.separated(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: controller.items.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (_, index) =>
+                              _resourceCard(context, controller.items[index]),
+                        )
+                      : ReorderableListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          buildDefaultDragHandles: false,
+                          itemCount: controller.items.length,
+                          onReorder: (oldIndex, newIndex) =>
+                              controller.reorderItems(
+                            oldIndex,
+                            newIndex,
+                            onReorder!,
+                          ),
+                          itemBuilder: (_, index) => Padding(
+                            key: ValueKey(controller.items[index].id),
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _resourceCard(
+                              context,
+                              controller.items[index],
+                              reorderIndex: index,
+                            ),
                           ),
                         ),
-                      ),
-              ),
+                )),
+              ]),
             )),
       );
 
@@ -247,7 +262,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
                       decoration: InputDecoration(labelText: field.label),
                       items: field.options
                           .map((value) => DropdownMenuItem(
-                              value: value, child: Text(value)))
+                              value: value,
+                              child: Text(field.optionLabels[value] ?? value)))
                           .toList(),
                       onChanged: (value) =>
                           controllers[field.keyName]!.text = value ?? '',
@@ -256,7 +272,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
                   return TextField(
                     controller: controllers[field.keyName],
                     keyboardType: field.numeric ? TextInputType.number : null,
-                    decoration: InputDecoration(labelText: field.label),
+                    decoration: InputDecoration(
+                        labelText: field.label, helperText: field.helperText),
                   );
                 }).toList()),
           ),

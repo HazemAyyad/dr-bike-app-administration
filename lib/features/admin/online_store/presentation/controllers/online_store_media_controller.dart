@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/online_store_models.dart';
 import '../../domain/online_store_repository.dart';
@@ -17,13 +18,50 @@ class OnlineStoreMediaController extends GetxController {
     loading.value = true;
     try {
       final json = await repository.get('online-store/listings/$id/media');
-      items.assignAll(onlineStoreRows(json['data'])
+      final payload = onlineStoreMap(json['data']);
+      items.assignAll(onlineStoreRows(payload['items'])
           .map((row) => OnlineStoreMedia.fromJson(row)));
     } catch (e) {
       error.value = e.toString();
     } finally {
       loading.value = false;
     }
+  }
+
+  Future<void> addStoreImage(XFile file) async {
+    saving.value = true;
+    error.value = null;
+    try {
+      final path = await repository.uploadProductImage(file);
+      final key = -DateTime.now().microsecondsSinceEpoch;
+      items.add(OnlineStoreMedia(
+        sourceMediaId: key,
+        sourceType: 'store_specific',
+        storeMediaPath: path,
+        url: path,
+        sortOrder: items.length,
+        isMain: items.isEmpty,
+      ));
+    } catch (e) {
+      error.value = e.toString();
+      Get.snackbar('تعذر رفع الصورة', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      saving.value = false;
+    }
+  }
+
+  void remove(int mediaKey) {
+    final wasMain =
+        items.any((item) => item.sourceMediaId == mediaKey && item.isMain);
+    items.removeWhere((item) => item.sourceMediaId == mediaKey);
+    if (wasMain && items.isNotEmpty) {
+      selectMain(items.first.sourceMediaId);
+    }
+    items.assignAll(items
+        .asMap()
+        .entries
+        .map((entry) => entry.value.copyWith(sortOrder: entry.key)));
   }
 
   void selectMain(int sourceId) {
@@ -57,7 +95,7 @@ class OnlineStoreMediaController extends GetxController {
     saving.value = true;
     try {
       await repository.put('online-store/listings/$listingId/media', data: {
-        'media': items.map((item) => item.toRequestJson()).toList(),
+        'items': items.map((item) => item.toRequestJson()).toList(),
       });
       await load(listingId);
     } catch (e) {

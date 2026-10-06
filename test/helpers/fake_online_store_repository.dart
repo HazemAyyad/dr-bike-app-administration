@@ -149,6 +149,14 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
   }
 
   @override
+  Future<String> uploadProductImage(XFile file) async {
+    calls.add('POST online-store/product-images');
+    lastData = {'file': file.path};
+    return responses['product-upload']?['image_path'] ??
+        'public/OnlineStore/Products/product.jpg';
+  }
+
+  @override
   Future<List<OnlineStoreParty>> parties(String role) async {
     calls.add('GET ${role == 'seller' ? 'all/sellers' : 'all/customers'}');
     return onlineStoreRows(responses['parties:$role']?['data'])

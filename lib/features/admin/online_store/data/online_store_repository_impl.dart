@@ -141,6 +141,16 @@ class OnlineStoreRepositoryImpl implements OnlineStoreRepository {
   }
 
   @override
+  Future<String> uploadProductImage(XFile file) async {
+    final json = await datasource.uploadProductImage(file);
+    final path = '${onlineStoreMap(json['data'])['image_path'] ?? ''}';
+    if (path.isEmpty) {
+      throw const FormatException('لم يرجع الخادم مسار الصورة.');
+    }
+    return path;
+  }
+
+  @override
   Future<List<OnlineStoreParty>> parties(String role) async {
     final endpoint =
         role == 'seller' ? EndPoints.all_sellers : EndPoints.all_customers;

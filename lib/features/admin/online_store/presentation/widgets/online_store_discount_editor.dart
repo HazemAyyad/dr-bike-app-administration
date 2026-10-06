@@ -5,6 +5,7 @@ import '../../data/online_store_models.dart';
 import '../controllers/online_store_resource_controller.dart';
 import 'online_store_target_picker.dart';
 import '../utils/online_store_admin_ui.dart';
+import 'online_store_form_widgets.dart';
 
 enum OnlineStoreDiscountKind { promotion, coupon }
 
@@ -231,18 +232,39 @@ class _DiscountEditorDialogState extends State<_DiscountEditorDialog> {
                 trailing: const Icon(Icons.chevron_left),
                 onTap: _selectTargets,
               ),
+            OnlineStoreFormSection(
+              title: 'مدة التشغيل',
+              description:
+                  'اترك التاريخين فارغين ليبقى ${isCoupon ? 'الكوبون' : 'العرض'} متاحاً دون مدة محددة.',
+              icon: Icons.schedule_outlined,
+              child: Row(children: [
+                Expanded(
+                  child: OnlineStoreDateTimeField(
+                    controller: controllers['starts_at']!,
+                    label: 'تاريخ ووقت البداية',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OnlineStoreDateTimeField(
+                    controller: controllers['ends_at']!,
+                    label: 'تاريخ ووقت النهاية',
+                  ),
+                ),
+              ]),
+            ),
             if (isCoupon) ...[
               _field('minimum_order', 'الحد الأدنى للطلب', numeric: true),
               _field('total_usage_limit', 'حد الاستخدام الكلي', numeric: true),
               _field('per_user_usage_limit', 'حد الاستخدام لكل مستخدم',
                   numeric: true),
             ] else
-              _field('priority', 'الأولوية', numeric: true),
-            Row(children: [
-              Expanded(child: _field('starts_at', 'يبدأ في')),
-              const SizedBox(width: 8),
-              Expanded(child: _field('ends_at', 'ينتهي في')),
-            ]),
+              _field(
+                'priority',
+                'أولوية العرض',
+                numeric: true,
+                helper: 'عند انطباق أكثر من عرض، الرقم الأكبر يُفحص أولاً.',
+              ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('نشط'),
@@ -265,10 +287,13 @@ class _DiscountEditorDialogState extends State<_DiscountEditorDialog> {
         ],
       );
 
-  Widget _field(String key, String label, {bool numeric = false}) => TextField(
+  Widget _field(String key, String label,
+          {bool numeric = false, String? helper}) =>
+      TextField(
         controller: controllers[key],
         keyboardType: numeric ? TextInputType.number : null,
-        decoration: InputDecoration(labelText: label, isDense: true),
+        decoration: InputDecoration(
+            labelText: label, helperText: helper, isDense: true),
       );
 
   Widget _dropdown(

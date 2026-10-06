@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/online_store_credit_controller.dart';
 import '../utils/online_store_admin_ui.dart';
+import '../widgets/online_store_form_widgets.dart';
 
 class OnlineStoreCreditPolicyScreen extends StatefulWidget {
   const OnlineStoreCreditPolicyScreen({Key? key}) : super(key: key);
@@ -36,6 +37,7 @@ class _OnlineStoreCreditPolicyScreenState
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: const Text('سياسة الائتمان')),
         body: Obx(() {
           final value = controller.snapshot.value;
@@ -73,12 +75,11 @@ class _OnlineStoreCreditPolicyScreenState
               items: const [DropdownMenuItem(value: 'ILS', child: Text('ILS'))],
               onChanged: (v) => currency = v ?? 'ILS',
             ),
-            TextField(
+            OnlineStoreDateTimeField(
               controller: expiresAt,
-              decoration: const InputDecoration(
-                labelText: 'تاريخ انتهاء الأهلية (اختياري)',
-                hintText: 'YYYY-MM-DD',
-              ),
+              label: 'تاريخ انتهاء الأهلية (اختياري)',
+              includeTime: false,
+              helpText: 'بعد هذا التاريخ لن يستطيع الحساب الشراء بالدين.',
             ),
             const SizedBox(height: 16),
             OutlinedButton(

@@ -2,6 +2,14 @@ import 'package:get/get.dart';
 
 import '../../data/online_store_models.dart';
 import '../../domain/online_store_repository.dart';
+import '../../../../../../core/databases/api/end_points.dart';
+import '../utils/online_store_feedback.dart';
+
+class OnlineStoreListingCategories {
+  const OnlineStoreListingCategories(this.categories, this.selectedIds);
+  final List<OnlineStoreEntity> categories;
+  final Set<int> selectedIds;
+}
 
 class OnlineStoreListingsController extends GetxController {
   OnlineStoreListingsController(this.repository);
@@ -10,7 +18,18 @@ class OnlineStoreListingsController extends GetxController {
   final saving = false.obs;
   final error = RxnString();
   final status = 'all'.obs;
+  final search = ''.obs;
   final items = <OnlineStoreListing>[].obs;
+
+  List<OnlineStoreListing> get visibleItems {
+    final term = search.value.trim().toLowerCase();
+    if (term.isEmpty) return items;
+    return items
+        .where((item) =>
+            item.productName.toLowerCase().contains(term) ||
+            '${item.productId}'.contains(term))
+        .toList(growable: false);
+  }
 
   @override
   void onInit() {
@@ -32,6 +51,59 @@ class OnlineStoreListingsController extends GetxController {
 
   Future<OnlineStoreListing?> create(int productId) async =>
       _save(() => repository.createListing(productId));
+
+  Future<OnlineStoreListingCategories> listingCategories(int listingId) async {
+    final categories =
+        await repository.allEntities(EndPoints.onlineStoreCategories);
+    final selected = <int>{};
+    for (final category in categories) {
+      final detail = await repository
+          .get('${EndPoints.onlineStoreCategories}/${category.id}');
+      final values = onlineStoreMap(detail['data']);
+      final memberships = onlineStoreRows(values['memberships']);
+      if (memberships.any((row) =>
+          int.tryParse(
+              '${row['online_store_listing_id'] ?? row['listing_id']}') ==
+          listingId)) {
+        selected.add(category.id);
+      }
+    }
+    return OnlineStoreListingCategories(categories, selected);
+  }
+
+  Future<void> saveListingCategories(
+      int listingId, Set<int> selectedCategoryIds) async {
+    final snapshot = await listingCategories(listingId);
+    for (final category in snapshot.categories) {
+      final shouldContain = selectedCategoryIds.contains(category.id);
+      final contains = snapshot.selectedIds.contains(category.id);
+      if (shouldContain == contains) continue;
+      final detail = await repository
+          .get('${EndPoints.onlineStoreCategories}/${category.id}');
+      final memberships =
+          onlineStoreRows(onlineStoreMap(detail['data'])['memberships']);
+      final listingIds = memberships
+          .map((row) => int.tryParse(
+              '${row['online_store_listing_id'] ?? row['listing_id']}'))
+          .whereType<int>()
+          .where((id) => id != listingId)
+          .toList();
+      if (shouldContain) listingIds.add(listingId);
+      await repository.put(
+        '${EndPoints.onlineStoreCategories}/${category.id}/listings',
+        data: {
+          'items': listingIds
+              .asMap()
+              .entries
+              .map((entry) => {
+                    'listing_id': entry.value,
+                    'sort_order': entry.key,
+                  })
+              .toList(),
+        },
+      );
+    }
+  }
 
   Future<OnlineStoreListing?> updateListing(
     OnlineStoreListing listing,
@@ -62,9 +134,8 @@ class OnlineStoreListingsController extends GetxController {
       }
       return result;
     } catch (e) {
-      error.value = e.toString();
-      Get.snackbar('تعذر تنفيذ العملية', error.value!,
-          snackPosition: SnackPosition.BOTTOM);
+      error.value = OnlineStoreFeedback.message(e);
+      OnlineStoreFeedback.error(e);
       return null;
     } finally {
       saving.value = false;

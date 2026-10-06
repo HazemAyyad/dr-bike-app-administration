@@ -23,96 +23,107 @@ class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: const Text('إعدادات المتجر')),
         body: Obx(() {
           if (controller.loading.value) {
             return const Center(child: CircularProgressIndicator());
           }
           final enabledLanguages = _enabledLanguages;
-          return ListView(padding: const EdgeInsets.all(14), children: [
-            Card(
-              color: OnlineStoreAdminUi.surfaceMuted,
-              child: ListTile(
-                leading: const Icon(Icons.power_settings_new),
-                title: const Text('الحالة التشغيلية الفعلية'),
-                subtitle: Text(_stateLabel(controller.effectiveOperatingState)),
-              ),
-            ),
-            _switch('store_enabled', 'المتجر مفعّل'),
-            _switch('maintenance_mode', 'وضع الصيانة'),
-            _switch('checkout_enabled', 'إتمام الطلبات مفعّل'),
-            _switch('cod_enabled', 'الدفع عند الاستلام'),
-            _switch('guest_browsing_enabled', 'تصفح الزوار'),
-            _number('minimum_order', 'الحد الأدنى للطلب'),
-            _text('support_phone', 'هاتف الدعم'),
-            _text('whatsapp', 'واتساب'),
-            const Divider(height: 28),
-            const Text('لغات المتجر',
-                style: TextStyle(fontWeight: FontWeight.w800)),
-            Wrap(
-              spacing: 8,
-              children: _languages.entries
-                  .map((entry) => FilterChip(
-                        label: Text(entry.value),
-                        selected: enabledLanguages.contains(entry.key),
-                        onSelected: OnlineStorePermissions.canManageSettings
-                            ? (selected) {
-                                final next = {...enabledLanguages};
-                                selected
-                                    ? next.add(entry.key)
-                                    : next.remove(entry.key);
-                                if (next.isEmpty) {
-                                  Get.snackbar('اللغات',
-                                      'يجب اختيار لغة واحدة على الأقل',
-                                      snackPosition: SnackPosition.BOTTOM);
-                                  return;
-                                }
-                                controller.values['enabled_languages'] =
-                                    _languages.keys
-                                        .where(next.contains)
-                                        .toList(growable: false);
-                              }
-                            : null,
-                      ))
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: 12),
-            ..._policies.entries.expand((policy) => [
-                  Text(policy.value,
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ...enabledLanguages.map((language) => _translation(
-                        policy.key,
-                        language,
-                        '${policy.value} - ${_languages[language]}',
-                      )),
-                  const SizedBox(height: 10),
-                ]),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.visibility_outlined),
-              title: Text('سلوك نفاد المخزون'),
-              subtitle: Text('ظاهر وغير قابل للشراء'),
-              trailing: Text('visible_non_purchasable'),
-            ),
-            _number('low_stock_threshold', 'حد تنبيه انخفاض المخزون',
-                integer: true),
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.lock_outline),
-              title: Text('السعر الأساسي والمخزون للقراءة فقط'),
-              subtitle: Text('تتم إدارتهما فقط من نظام المخزون'),
-            ),
-            if (controller.error.value != null)
-              Text(controller.error.value!,
-                  style: const TextStyle(color: Colors.red)),
-            if (OnlineStorePermissions.canManageSettings)
-              OutlinedButton.icon(
-                style: OnlineStoreAdminUi.actionButtonStyle,
-                onPressed: controller.saving.value ? null : controller.save,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('حفظ الإعدادات'),
-              ),
-          ]);
+          return RefreshIndicator(
+              onRefresh: controller.load,
+              child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(14),
+                  children: [
+                    Card(
+                      color: OnlineStoreAdminUi.surfaceMuted,
+                      child: ListTile(
+                        leading: const Icon(Icons.power_settings_new),
+                        title: const Text('الحالة التشغيلية الفعلية'),
+                        subtitle: Text(
+                            _stateLabel(controller.effectiveOperatingState)),
+                      ),
+                    ),
+                    _switch('store_enabled', 'المتجر مفعّل'),
+                    _switch('maintenance_mode', 'وضع الصيانة'),
+                    _switch('checkout_enabled', 'إتمام الطلبات مفعّل'),
+                    _switch('cod_enabled', 'الدفع عند الاستلام'),
+                    _switch('guest_browsing_enabled', 'تصفح الزوار'),
+                    _number('minimum_order', 'الحد الأدنى للطلب'),
+                    _text('support_phone', 'هاتف الدعم'),
+                    _text('whatsapp', 'واتساب'),
+                    const Divider(height: 28),
+                    const Text('لغات المتجر',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    Wrap(
+                      spacing: 8,
+                      children: _languages.entries
+                          .map((entry) => FilterChip(
+                                label: Text(entry.value),
+                                selected: enabledLanguages.contains(entry.key),
+                                onSelected: OnlineStorePermissions
+                                        .canManageSettings
+                                    ? (selected) {
+                                        final next = {...enabledLanguages};
+                                        selected
+                                            ? next.add(entry.key)
+                                            : next.remove(entry.key);
+                                        if (next.isEmpty) {
+                                          Get.snackbar('اللغات',
+                                              'يجب اختيار لغة واحدة على الأقل',
+                                              snackPosition:
+                                                  SnackPosition.BOTTOM);
+                                          return;
+                                        }
+                                        controller.values['enabled_languages'] =
+                                            _languages.keys
+                                                .where(next.contains)
+                                                .toList(growable: false);
+                                      }
+                                    : null,
+                              ))
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._policies.entries.expand((policy) => [
+                          Text(policy.value,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800)),
+                          ...enabledLanguages.map((language) => _translation(
+                                policy.key,
+                                language,
+                                '${policy.value} - ${_languages[language]}',
+                              )),
+                          const SizedBox(height: 10),
+                        ]),
+                    const ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.visibility_outlined),
+                      title: Text('سلوك نفاد المخزون'),
+                      subtitle: Text('ظاهر وغير قابل للشراء'),
+                      trailing: Text('visible_non_purchasable'),
+                    ),
+                    _number('low_stock_threshold', 'حد تنبيه انخفاض المخزون',
+                        integer: true),
+                    const ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.lock_outline),
+                      title: Text('السعر الأساسي والمخزون للقراءة فقط'),
+                      subtitle: Text('تتم إدارتهما فقط من نظام المخزون'),
+                    ),
+                    if (controller.error.value != null)
+                      Text(controller.error.value!,
+                          style: const TextStyle(color: Colors.red)),
+                    if (OnlineStorePermissions.canManageSettings)
+                      OutlinedButton.icon(
+                        style: OnlineStoreAdminUi.actionButtonStyle,
+                        onPressed:
+                            controller.saving.value ? null : controller.save,
+                        icon: const Icon(Icons.save_outlined),
+                        label: const Text('حفظ الإعدادات'),
+                      ),
+                  ]));
         }),
       );
 
