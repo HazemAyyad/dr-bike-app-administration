@@ -80,6 +80,7 @@ class SalesOrdersController extends GetxController {
   final orders = <SalesOrderListItemModel>[].obs;
   final statusCounts = <String, int>{}.obs;
   final statusFilter = 'all'.obs;
+  final originFilter = 'all'.obs;
   final detail = Rxn<SalesOrderDetailModel>();
   final cities = <CityModel>[].obs;
   final shiplyCities = <ShiplyCityModel>[].obs;
@@ -388,6 +389,7 @@ class SalesOrdersController extends GetxController {
     final result = await repository.getOrders(
       status: statusFilter.value,
       search: searchController.text,
+      origin: originFilter.value,
     );
     result.fold(
       (_) {
@@ -424,6 +426,14 @@ class SalesOrdersController extends GetxController {
     );
     isLoading.value = false;
   }
+
+  void changeOriginFilter(String origin) {
+    if (originFilter.value == origin) return;
+    originFilter.value = origin;
+    loadOrders();
+  }
+
+  String originLabel(String origin) => origin == 'store' ? 'المتجر' : 'الإدارة';
 
   void onSearchChanged(String value) {
     _searchDebounce?.cancel();

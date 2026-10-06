@@ -55,6 +55,22 @@ class AppRoutes {
   static const APPDEVELOPMENT = '/AppDevelopment';
   static const APPDEVELOPMENTTASK = '/AppDevelopment/:id';
   static const METACATALOGSYNC = '/MetaCatalogSync';
+  static const ONLINESTOREDASHBOARD = '/OnlineStoreDashboard';
+  static const ONLINESTORELISTINGS = '/OnlineStoreListings';
+  static const ONLINESTORELISTINGEDITOR = '/OnlineStoreListingEditor';
+  static const ONLINESTOREPRODUCTPICKER = '/OnlineStoreProductPicker';
+  static const ONLINESTOREMEDIA = '/OnlineStoreMedia';
+  static const ONLINESTORECATEGORIES = '/OnlineStoreCategories';
+  static const ONLINESTOREHOMESECTIONS = '/OnlineStoreHomeSections';
+  static const ONLINESTOREBANNERS = '/OnlineStoreBanners';
+  static const ONLINESTOREPROMOTIONS = '/OnlineStorePromotions';
+  static const ONLINESTORECOUPONS = '/OnlineStoreCoupons';
+  static const ONLINESTOREACCOUNTS = '/OnlineStoreAccounts';
+  static const ONLINESTORECREDIT = '/OnlineStoreCredit';
+  static const ONLINESTOREREVIEWS = '/OnlineStoreReviews';
+  static const ONLINESTORESETTINGS = '/OnlineStoreSettings';
+  static const ONLINESTOREAUDIT = '/OnlineStoreAudit';
+  static const ONLINESTOREREPORTS = '/OnlineStoreReports';
   static const SMARTHOMESCREEN = '/SmartHomeScreen';
 
   // EMPLOYEE TASKS SCREEN

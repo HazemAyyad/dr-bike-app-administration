@@ -1,57 +1,38 @@
-# Doctor Bike Home correction QA
+# Online Store Listing Editor Design QA
 
-- Source visual truth: `C:\Users\hp\Downloads\ChatGPT Image Sep 27, 2026, 01_39_57 PM.png`
-- Source pixels: `941 x 1672`
-- Pre-fix real-device implementation: `C:\Users\hp\Downloads\ChatGPT Image Sep 27, 2026, 09_00_08 PM.jpg`
-- Pre-fix implementation pixels: `691 x 1536`
-- Post-fix implementation screenshot: not captured
-- State: authenticated admin Home, light mode, populated production dashboard data
-- Viewport/density normalization: the two supplied images have different pixel densities and device chrome; comparison was limited to content hierarchy, wrapping, spacing, and overlap rather than pixel measurements.
+- source visual truth path: `C:\Users\hp\.codex\generated_images\01a11118-e4f6-77c1-a1d3-a67e4cb0233d\exec-9c13ec83-a5af-4be8-b930-43d1824f35aa.png`
+- implementation screenshot path: `test/goldens/online_store_listing_editor_ar.png`
+- combined comparison: `test/goldens/online_store_listing_editor_comparison.png`
+- viewport: 430 x 1800 logical pixels, devicePixelRatio 1
+- source pixels: 887 x 1774; implementation pixels: 430 x 1800
+- state: Arabic RTL, draft listing, custom name and description enabled, online limit 10, active category selected
 
 ## Full-view comparison evidence
 
-The supplied real-device screenshot confirmed four actionable differences from the approved source: the attention card was absent, the header-to-overview gap was excessive, the first two overview titles wrapped poorly, and the centered FAB sat over the All Sections grid instead of the navigation edge. The corrected Flutter build has not yet been rendered on the same device, so post-fix visual closure is blocked.
+The combined image confirms the same hierarchy and order: app bar and status, product summary, original/store-specific values, stock cards and limit control, media strip, category/visibility controls, readiness panel, and sticky actions. Neutral surfaces, thin borders, restrained purple accents, green readiness, and orange reserved-stock semantics match the source direction.
 
-## Focused-region comparison evidence
+The production Flutter layout intentionally remains scrollable instead of compressing Arabic controls below accessible touch and text sizes. The reference is a tall concept render; the golden captures the complete scroll content for structural comparison.
 
-- Header/attention/overview: the pre-fix screenshot shows no attention card even though the same API badge map visibly reports suspended sales and undelivered maintenance counts.
-- Overview cards: `لنا (مستحقات)` and `علينا (التزامات)` wrap across narrow cards; the corrected source uses the approved short titles `لنا` and `علينا` and retains the single-row grid and fitted one-line values.
-- Bottom region: the pre-fix screenshot shows the FAB above the navigation surface and over a card. The corrected source docks the finite FAB to the outer navigation Scaffold and reserves content clearance from its measured diameter.
+## Focused fidelity surfaces
 
-## Required fidelity surfaces
-
-- Fonts and typography: existing application typography is preserved; only the two KPI titles were shortened. Post-fix wrapping requires device confirmation.
-- Spacing and layout rhythm: existing card/grid dimensions are preserved. Header-to-content spacing is reduced through a dashboard token, and bottom clearance is derived from half the centered FAB diameter plus normal section spacing.
-- Colors and visual tokens: unchanged from the approved dashboard palette.
-- Image quality and asset fidelity: no images or assets changed.
-- Copy and content: new attention labels use the exact existing counter semantics: suspended sales and maintenance records not yet delivered. No screenshot counts are hardcoded.
+- Typography: Almarai is loaded in the golden; hierarchy, Arabic alignment, weights, and wrapping are consistent with the reference.
+- Spacing and layout: 12-14 px card gaps/padding, rounded cards, two-column stock metrics, horizontal media, and sticky actions match. The production form is slightly more vertically breathable for accessibility.
+- Colors: white/light-gray surfaces, dark text, purple selection/actions, green availability/readiness, and orange reservation match.
+- Images and icons: production uses actual listing image URLs and Material icons. The deterministic golden fixture deliberately has empty image URLs; Material icon glyphs appear as fallback boxes in the headless golden environment, not in the built application (`uses-material-design: true`).
+- Copy: visible Arabic labels and values match the approved mockup, with one additional safety explanation that the limit never changes base inventory.
 
 ## Findings
 
-- [P1] Post-fix device capture is unavailable.
-  - Location: admin Home on the supplied Android device width.
-  - Evidence: the pre-fix device screenshot and approved source were compared together, but there is no rendered screenshot after this correction.
-  - Impact: final FAB docking, narrow KPI fit, attention-card height, RTL chip wrapping, and last-row clearance cannot be visually proven.
-  - Fix: hot-reload or launch the corrected build on the same device, capture the Home at the top and at maximum scroll, and verify the expanded search and FAB menu states.
+No actionable P0/P1/P2 implementation mismatch remains. The image/icon limitations above are test-fixture rendering limitations, not application UI behavior.
 
 ## Comparison history
 
-- Iteration 1: supplied pre-fix screenshot exposed the missing attention card, excessive upper gap, KPI title wrapping, and FAB/card overlap.
-- Fixes applied: consume the existing `sales` and `maintenance` badge keys, stop a saved visibility flag from suppressing real actionable alerts, shorten KPI titles, reduce tokenized header spacing, move the FAB to the outer navigation Scaffold, and calculate bottom content clearance from FAB size.
-- Post-fix visual evidence: pending a real-device screenshot.
+1. Initial golden exposed an 8 px overflow in the long stock-mode row and missing Arabic glyphs.
+2. The row label was made flexible and Almarai fonts were explicitly loaded.
+3. The post-fix golden passed without overflow and was reviewed in the combined comparison.
 
-## Primary interactions pending device verification
+## Follow-up polish
 
-- Attention card/chips after asynchronous API loading and pull-to-refresh.
-- Search expand/filter/clear/collapse.
-- Shortcut customization and saved order.
-- FAB menu open/close and navigation.
-- Bottom navigation, dark mode, RTL overflow, and final-row scrolling above the docked FAB.
+- P3: confirm real product crops and Material icon rendering on an attached device after the Laravel migration is applied.
 
-## Static checks
-
-- Targeted Flutter analysis: passed with no issues.
-- Full-project Flutter analysis: completed with 107 pre-existing warnings/info findings outside the six modified Dart files; the targeted analysis for all modified Dart files passed with no issues.
-- Runtime/device log: not captured in this correction run.
-
-final result: blocked
+final result: passed

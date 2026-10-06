@@ -210,6 +210,9 @@ class BuildActionButtons extends StatelessWidget {
 
   bool _canShowButton(Map<String, dynamic> button, List<int> permissions) {
     final route = button['route'];
+    if (route == AppRoutes.ONLINESTOREDASHBOARD) {
+      return canViewOnlineStore;
+    }
     if (route == AppRoutes.GENERALSETTINGSSCREEN) {
       return canManageStockInventorySettings;
     }

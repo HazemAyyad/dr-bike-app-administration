@@ -19,6 +19,7 @@ import '../../../sales/presentation/views/delivery_companies_management_screen.d
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
+import '../widgets/sales_order_origin_badge.dart';
 import '../widgets/sales_order_invoice_pdf.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
@@ -250,6 +251,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           order.status,
                           controller,
                         ),
+                        SizedBox(width: 3.w),
+                        SalesOrderOriginBadge(origin: order.origin),
                         SizedBox(width: 3.w),
                         Icon(Icons.expand_more_rounded, size: 18.sp),
                       ],

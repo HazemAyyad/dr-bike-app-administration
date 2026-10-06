@@ -12,6 +12,7 @@ class SalesOrderListItemModel {
   final int id;
   final String? serialNumber;
   final String status;
+  final String origin;
   final String? customerName;
   final String? customerPhone;
   final String? cityName;
@@ -30,6 +31,7 @@ class SalesOrderListItemModel {
     required this.id,
     this.serialNumber,
     required this.status,
+    this.origin = 'admin',
     this.customerName,
     this.customerPhone,
     this.cityName,
@@ -50,6 +52,7 @@ class SalesOrderListItemModel {
       id: json['id'] as int,
       serialNumber: json['serial_number'] as String?,
       status: json['status'] as String? ?? 'unconfirmed',
+      origin: json['origin'] as String? ?? 'admin',
       customerName: json['customer_name'] as String?,
       customerPhone: json['customer_phone'] as String?,
       cityName: json['city_name'] as String?,
@@ -305,6 +308,7 @@ class SalesOrderDetailModel {
   final int id;
   final String? serialNumber;
   final String status;
+  final String origin;
   final int? customerId;
   final String? partnerType;
   final int? partnerId;
@@ -365,6 +369,7 @@ class SalesOrderDetailModel {
     required this.id,
     this.serialNumber,
     required this.status,
+    this.origin = 'admin',
     this.customerId,
     this.partnerType,
     this.partnerId,
@@ -447,6 +452,7 @@ class SalesOrderDetailModel {
       id: json['id'] as int,
       serialNumber: json['serial_number'] as String?,
       status: json['status'] as String? ?? 'unconfirmed',
+      origin: json['origin'] as String? ?? 'admin',
       customerId: json['customer_id'] as int?,
       partnerType: json['partner_type'] as String?,
       partnerId: json['partner_id'] as int?,

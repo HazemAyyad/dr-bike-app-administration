@@ -199,6 +199,11 @@ class AdminDashboardController extends GetxController
       'title': 'كتالوج التواصل الاجتماعي',
       'route': AppRoutes.METACATALOGSYNC
     },
+    {
+      'id': 'online_store',
+      'title': 'إدارة المتجر الإلكتروني',
+      'route': AppRoutes.ONLINESTOREDASHBOARD,
+    },
   ];
 
   final RxList<String> hiddenDashboardButtonKeys = <String>[].obs;
