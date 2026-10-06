@@ -1,9 +1,32 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../../../core/helpers/show_net_image.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_categories_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_resource_screen.dart';
+
+Map<String, dynamic> onlineStoreCategoryPayload({
+  required String nameAr,
+  required String nameEn,
+  required int? parentId,
+  required bool isActive,
+  required bool showOnHome,
+  required int sortOrder,
+  required String imagePath,
+}) =>
+    {
+      'name_translations': {'ar': nameAr.trim(), 'en': nameEn.trim()},
+      'parent_id': parentId,
+      'is_active': isActive,
+      'show_on_home': showOnHome,
+      'sort_order': sortOrder,
+      'image_path': imagePath.isEmpty ? null : imagePath,
+    };
 
 class OnlineStoreCategoriesScreen
     extends GetView<OnlineStoreCategoriesController> {
@@ -20,7 +43,62 @@ class OnlineStoreCategoriesScreen
         actions: const {OnlineStoreResourceAction.delete},
         onReorder: controller.reorderCategories,
         editor: _editCategory,
+        cardBuilder: _categoryCard,
       );
+
+  Widget _categoryCard(
+    BuildContext context,
+    OnlineStoreEntity item,
+    Widget trailing,
+  ) {
+    final imagePath = '${item.values['image_path'] ?? ''}';
+    final parent = onlineStoreMap(item.values['parent']);
+    final parentName = OnlineStoreEntity(parent).label;
+    final active =
+        item.values['is_active'] == true || item.values['is_active'] == 1;
+    final home =
+        item.values['show_on_home'] == true || item.values['show_on_home'] == 1;
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      child: ListTile(
+        onTap: OnlineStorePermissions.canManageCategories
+            ? () => _editAndSave(context, item)
+            : null,
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox.square(
+            dimension: 56,
+            child: imagePath.isEmpty
+                ? const ColoredBox(
+                    color: OnlineStoreAdminUi.surfaceMuted,
+                    child: Icon(Icons.category_outlined),
+                  )
+                : Image.network(ShowNetImage.getPhoto(imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.broken_image_outlined)),
+          ),
+        ),
+        title: Text(item.label,
+            style: const TextStyle(
+                color: OnlineStoreAdminUi.textPrimary,
+                fontWeight: FontWeight.w700)),
+        subtitle: Text([
+          if (parent.isNotEmpty) 'الأب: $parentName',
+          active ? 'نشط' : 'غير نشط',
+          home ? 'يظهر في الرئيسية' : 'لا يظهر في الرئيسية',
+          'الترتيب: ${item.values['sort_order'] ?? 0}',
+        ].join(' • ')),
+        trailing: trailing,
+      ),
+    );
+  }
+
+  Future<void> _editAndSave(
+      BuildContext context, OnlineStoreEntity item) async {
+    final payload = await _editCategory(context, item);
+    if (payload != null) await controller.updateItem(item.id, payload);
+  }
 
   Future<Map<String, dynamic>?> _editCategory(
     BuildContext context,
@@ -35,16 +113,56 @@ class OnlineStoreCategoriesScreen
     final sortOrder = TextEditingController(
         text: '${item?.values['sort_order'] ?? controller.items.length}');
     int? parentId = int.tryParse('${item?.values['parent_id'] ?? ''}');
-    var active = item == null || item.values['is_active'] == true;
-    var showOnHome = item?.values['show_on_home'] == true;
+    var active = item == null ||
+        item.values['is_active'] == true ||
+        item.values['is_active'] == 1;
+    var showOnHome = item?.values['show_on_home'] == true ||
+        item?.values['show_on_home'] == 1;
+    var imagePath = '${item?.values['image_path'] ?? ''}';
+    XFile? pickedImage;
+    var uploading = false;
+    String? uploadError;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(item == null ? 'إضافة تصنيف' : 'تعديل التصنيف'),
-          content: SizedBox(
-            width: 460,
+          content: OnlineStoreDialogBody(
+            maxWidth: OnlineStoreAdminUi.dialogWideMaxWidth,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
+              InkWell(
+                onTap: uploading
+                    ? null
+                    : () async {
+                        final file = await ImagePicker()
+                            .pickImage(source: ImageSource.gallery);
+                        if (file != null) setState(() => pickedImage = file);
+                      },
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: OnlineStoreAdminUi.surfaceMuted,
+                    border: Border.all(color: OnlineStoreAdminUi.border),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: pickedImage != null
+                      ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
+                      : imagePath.isNotEmpty
+                          ? Image.network(ShowNetImage.getPhoto(imagePath),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.broken_image_outlined))
+                          : const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate_outlined),
+                                Text('اختيار صورة التصنيف'),
+                              ],
+                            ),
+                ),
+              ),
               TextField(
                 controller: nameAr,
                 decoration: const InputDecoration(labelText: 'الاسم العربي'),
@@ -85,24 +203,49 @@ class OnlineStoreCategoriesScreen
                 value: showOnHome,
                 onChanged: (value) => setState(() => showOnHome = value),
               ),
+              if (uploadError != null)
+                Text(uploadError!,
+                    style: const TextStyle(color: OnlineStoreAdminUi.danger)),
             ]),
           ),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('إلغاء')),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, {
-                'name_translations': {
-                  'ar': nameAr.text.trim(),
-                  'en': nameEn.text.trim(),
-                },
-                'parent_id': parentId,
-                'is_active': active,
-                'show_on_home': showOnHome,
-                'sort_order': int.tryParse(sortOrder.text.trim()) ?? 0,
-              }),
-              child: const Text('حفظ'),
+            OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
+              onPressed: uploading
+                  ? null
+                  : () async {
+                      setState(() {
+                        uploading = true;
+                        uploadError = null;
+                      });
+                      try {
+                        if (pickedImage != null) {
+                          imagePath =
+                              await controller.uploadImage(pickedImage!);
+                        }
+                        if (!dialogContext.mounted) return;
+                        Navigator.pop(
+                          dialogContext,
+                          onlineStoreCategoryPayload(
+                            nameAr: nameAr.text,
+                            nameEn: nameEn.text,
+                            parentId: parentId,
+                            isActive: active,
+                            showOnHome: showOnHome,
+                            sortOrder: int.tryParse(sortOrder.text.trim()) ?? 0,
+                            imagePath: imagePath,
+                          ),
+                        );
+                      } catch (exception) {
+                        setState(() => uploadError = exception.toString());
+                      } finally {
+                        setState(() => uploading = false);
+                      }
+                    },
+              child: Text(uploading ? 'جارٍ الرفع...' : 'حفظ'),
             ),
           ],
         ),
@@ -121,7 +264,8 @@ class OnlineStoreCategoriesScreen
       builder: (context, setState) => AlertDialog(
         title: const Text('تعيين قوائم للتصنيف'),
         content: SizedBox(
-          width: 420,
+          width: OnlineStoreAdminUi.dialogWidth(context),
+          height: (MediaQuery.sizeOf(context).height * .65).clamp(280, 560),
           child: ListView(
             shrinkWrap: true,
             children: listings
@@ -143,7 +287,8 @@ class OnlineStoreCategoriesScreen
           TextButton(
               onPressed: () => Get.back(result: false),
               child: const Text('إلغاء')),
-          FilledButton(
+          OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: () => Get.back(result: true),
               child: const Text('حفظ')),
         ],

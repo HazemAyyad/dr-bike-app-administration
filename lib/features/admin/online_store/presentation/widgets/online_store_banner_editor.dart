@@ -8,6 +8,7 @@ import '../../../../../../core/helpers/show_net_image.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_banners_controller.dart';
 import 'online_store_target_picker.dart';
+import '../utils/online_store_admin_ui.dart';
 
 Map<String, dynamic> onlineStoreBannerDestination(
   String actionType, {
@@ -227,88 +228,88 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
         title: Text(widget.item == null ? 'إضافة بانر' : 'تعديل البانر'),
-        content: SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              InkWell(
-                onTap: uploading ? null : _pickImage,
-                child: Container(
-                  height: 140,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: pickedImage != null
-                      ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
-                      : imagePath.isNotEmpty
-                          ? Image.network(
-                              ShowNetImage.getPhoto(imagePath),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.broken_image_outlined),
-                            )
-                          : const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_photo_alternate_outlined),
-                                Text('اختيار صورة البانر (حتى 10 MB)'),
-                              ],
-                            ),
+        content: OnlineStoreDialogBody(
+          maxWidth: OnlineStoreAdminUi.dialogWideMaxWidth,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            InkWell(
+              onTap: uploading ? null : _pickImage,
+              child: Container(
+                height: 140,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: OnlineStoreAdminUi.surfaceMuted,
+                  border: Border.all(color: OnlineStoreAdminUi.border),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                clipBehavior: Clip.antiAlias,
+                child: pickedImage != null
+                    ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
+                    : imagePath.isNotEmpty
+                        ? Image.network(
+                            ShowNetImage.getPhoto(imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.broken_image_outlined),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_photo_alternate_outlined),
+                              Text('اختيار صورة البانر (حتى 10 MB)'),
+                            ],
+                          ),
               ),
-              _field(titleAr, 'العنوان العربي'),
-              _field(titleEn, 'العنوان الإنجليزي'),
-              _field(contentAr, 'المحتوى العربي'),
-              _field(contentEn, 'المحتوى الإنجليزي'),
-              DropdownButtonFormField<String>(
-                initialValue: actionType,
-                decoration: const InputDecoration(labelText: 'نوع الوجهة'),
-                items: const [
-                  DropdownMenuItem(value: 'none', child: Text('بدون وجهة')),
-                  DropdownMenuItem(value: 'listing', child: Text('قائمة منتج')),
-                  DropdownMenuItem(value: 'category', child: Text('تصنيف')),
-                  DropdownMenuItem(value: 'promotion', child: Text('عرض')),
-                  DropdownMenuItem(value: 'url', child: Text('رابط خارجي')),
-                ],
-                onChanged: (value) => setState(() {
-                  actionType = value ?? 'none';
-                  targetId = null;
-                }),
-              ),
-              if ({'listing', 'category', 'promotion'}.contains(actionType))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(_targetLabel),
-                  trailing: const Icon(Icons.chevron_left),
-                  onTap: _pickTarget,
-                ),
-              if (actionType == 'url') _field(url, 'رابط الوجهة'),
-              Row(children: [
-                Expanded(child: _field(startsAt, 'يبدأ في')),
-                const SizedBox(width: 8),
-                Expanded(child: _field(endsAt, 'ينتهي في')),
-              ]),
-              _field(sortOrder, 'الترتيب', numeric: true),
-              SwitchListTile(
+            ),
+            _field(titleAr, 'العنوان العربي'),
+            _field(titleEn, 'العنوان الإنجليزي'),
+            _field(contentAr, 'المحتوى العربي'),
+            _field(contentEn, 'المحتوى الإنجليزي'),
+            DropdownButtonFormField<String>(
+              initialValue: actionType,
+              decoration: const InputDecoration(labelText: 'نوع الوجهة'),
+              items: const [
+                DropdownMenuItem(value: 'none', child: Text('بدون وجهة')),
+                DropdownMenuItem(value: 'listing', child: Text('قائمة منتج')),
+                DropdownMenuItem(value: 'category', child: Text('تصنيف')),
+                DropdownMenuItem(value: 'promotion', child: Text('عرض')),
+                DropdownMenuItem(value: 'url', child: Text('رابط خارجي')),
+              ],
+              onChanged: (value) => setState(() {
+                actionType = value ?? 'none';
+                targetId = null;
+              }),
+            ),
+            if ({'listing', 'category', 'promotion'}.contains(actionType))
+              ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('نشط'),
-                value: isActive,
-                onChanged: (value) => setState(() => isActive = value),
+                title: Text(_targetLabel),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: _pickTarget,
               ),
-              if (error != null)
-                Text(error!, style: const TextStyle(color: Colors.red)),
+            if (actionType == 'url') _field(url, 'رابط الوجهة'),
+            Row(children: [
+              Expanded(child: _field(startsAt, 'يبدأ في')),
+              const SizedBox(width: 8),
+              Expanded(child: _field(endsAt, 'ينتهي في')),
             ]),
-          ),
+            _field(sortOrder, 'الترتيب', numeric: true),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('نشط'),
+              value: isActive,
+              onChanged: (value) => setState(() => isActive = value),
+            ),
+            if (error != null)
+              Text(error!, style: const TextStyle(color: Colors.red)),
+          ]),
         ),
         actions: [
           TextButton(
             onPressed: uploading ? null : () => Navigator.pop(context),
             child: const Text('إلغاء'),
           ),
-          FilledButton.icon(
+          OutlinedButton.icon(
+            style: OnlineStoreAdminUi.actionButtonStyle,
             onPressed: uploading ? null : _submit,
             icon: uploading
                 ? const SizedBox(

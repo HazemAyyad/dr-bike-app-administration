@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/online_store_media_controller.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
   const OnlineStoreMediaScreen({Key? key}) : super(key: key);
@@ -32,7 +33,7 @@ class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
             final media = controller.items[index];
             return Card(
               key: ValueKey(media.sourceMediaId),
-              color: const Color(0xFFF7F7FA),
+              color: OnlineStoreAdminUi.surface,
               child: ListTile(
                 leading: media.url.isEmpty
                     ? const Icon(Icons.image_outlined)

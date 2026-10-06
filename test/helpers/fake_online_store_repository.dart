@@ -155,4 +155,16 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
         .map((json) => OnlineStoreParty.fromJson(json))
         .toList(growable: false);
   }
+
+  @override
+  Future<List<OnlineStoreProductCandidate>> productCandidates(
+      {String? search}) async {
+    calls.add('GET all/products');
+    lastQuery = {
+      if (search?.trim().isNotEmpty == true) 'search': search!.trim()
+    };
+    return onlineStoreRows(responses['products']?['products'])
+        .map((row) => OnlineStoreProductCandidate.fromJson(row))
+        .toList(growable: false);
+  }
 }

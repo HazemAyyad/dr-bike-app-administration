@@ -4,6 +4,7 @@ import '../../../../../../core/databases/api/end_points.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_resource_controller.dart';
 import 'online_store_target_picker.dart';
+import '../utils/online_store_admin_ui.dart';
 
 enum OnlineStoreDiscountKind { promotion, coupon }
 
@@ -182,92 +183,85 @@ class _DiscountEditorDialogState extends State<_DiscountEditorDialog> {
         title: Text(widget.item == null
             ? (isCoupon ? 'إضافة كوبون' : 'إضافة عرض')
             : (isCoupon ? 'تعديل الكوبون' : 'تعديل العرض')),
-        content: SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _field(isCoupon ? 'code' : 'name',
-                  isCoupon ? 'رمز الكوبون' : 'اسم العرض'),
+        content: OnlineStoreDialogBody(
+          maxWidth: OnlineStoreAdminUi.dialogWideMaxWidth,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _field(isCoupon ? 'code' : 'name',
+                isCoupon ? 'رمز الكوبون' : 'اسم العرض'),
+            _dropdown(
+              'نوع الخصم',
+              discountType,
+              const {'percentage': 'نسبة مئوية', 'fixed': 'قيمة ثابتة'},
+              (value) => setState(() => discountType = value),
+            ),
+            _field('discount_value', 'قيمة الخصم', numeric: true),
+            _dropdown(
+              'السعر المستهدف',
+              appliesTo,
+              const {'retail': 'تجزئة', 'wholesale': 'جملة', 'both': 'كلاهما'},
+              (value) => setState(() => appliesTo = value),
+            ),
+            if (isCoupon)
               _dropdown(
-                'نوع الخصم',
-                discountType,
-                const {'percentage': 'نسبة مئوية', 'fixed': 'قيمة ثابتة'},
-                (value) => setState(() => discountType = value),
+                'أهلية الحساب',
+                eligibility,
+                const {'customer': 'عميل', 'seller': 'مورد', 'both': 'كلاهما'},
+                (value) => setState(() => eligibility = value),
               ),
-              _field('discount_value', 'قيمة الخصم', numeric: true),
-              _dropdown(
-                'السعر المستهدف',
-                appliesTo,
-                const {
-                  'retail': 'تجزئة',
-                  'wholesale': 'جملة',
-                  'both': 'كلاهما'
-                },
-                (value) => setState(() => appliesTo = value),
-              ),
-              if (isCoupon)
-                _dropdown(
-                  'أهلية الحساب',
-                  eligibility,
-                  const {
-                    'customer': 'عميل',
-                    'seller': 'مورد',
-                    'both': 'كلاهما'
-                  },
-                  (value) => setState(() => eligibility = value),
-                ),
-              _dropdown(
-                'النطاق',
-                scope,
-                const {'global': 'جميع المتجر', 'targeted': 'أهداف محددة'},
-                (value) => setState(() {
-                  scope = value;
-                  if (value == 'global') targets = [];
-                }),
-              ),
-              if (scope == 'targeted')
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.filter_alt_outlined),
-                  title: Text(targets.isEmpty
-                      ? 'اختيار القوائم والتصنيفات'
-                      : 'الأهداف المختارة: ${targets.length}'),
-                  subtitle: targets.isEmpty
-                      ? null
-                      : Text(targets.map((target) => target.label).join('، '),
-                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: const Icon(Icons.chevron_left),
-                  onTap: _selectTargets,
-                ),
-              if (isCoupon) ...[
-                _field('minimum_order', 'الحد الأدنى للطلب', numeric: true),
-                _field('total_usage_limit', 'حد الاستخدام الكلي',
-                    numeric: true),
-                _field('per_user_usage_limit', 'حد الاستخدام لكل مستخدم',
-                    numeric: true),
-              ] else
-                _field('priority', 'الأولوية', numeric: true),
-              Row(children: [
-                Expanded(child: _field('starts_at', 'يبدأ في')),
-                const SizedBox(width: 8),
-                Expanded(child: _field('ends_at', 'ينتهي في')),
-              ]),
-              SwitchListTile(
+            _dropdown(
+              'النطاق',
+              scope,
+              const {'global': 'جميع المتجر', 'targeted': 'أهداف محددة'},
+              (value) => setState(() {
+                scope = value;
+                if (value == 'global') targets = [];
+              }),
+            ),
+            if (scope == 'targeted')
+              ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('نشط'),
-                value: active,
-                onChanged: (value) => setState(() => active = value),
+                leading: const Icon(Icons.filter_alt_outlined),
+                title: Text(targets.isEmpty
+                    ? 'اختيار القوائم والتصنيفات'
+                    : 'الأهداف المختارة: ${targets.length}'),
+                subtitle: targets.isEmpty
+                    ? null
+                    : Text(targets.map((target) => target.label).join('، '),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: _selectTargets,
               ),
-              if (error != null)
-                Text(error!, style: const TextStyle(color: Colors.red)),
+            if (isCoupon) ...[
+              _field('minimum_order', 'الحد الأدنى للطلب', numeric: true),
+              _field('total_usage_limit', 'حد الاستخدام الكلي', numeric: true),
+              _field('per_user_usage_limit', 'حد الاستخدام لكل مستخدم',
+                  numeric: true),
+            ] else
+              _field('priority', 'الأولوية', numeric: true),
+            Row(children: [
+              Expanded(child: _field('starts_at', 'يبدأ في')),
+              const SizedBox(width: 8),
+              Expanded(child: _field('ends_at', 'ينتهي في')),
             ]),
-          ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('نشط'),
+              value: active,
+              onChanged: (value) => setState(() => active = value),
+            ),
+            if (error != null)
+              Text(error!, style: const TextStyle(color: Colors.red)),
+          ]),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('إلغاء')),
-          FilledButton(onPressed: _submit, child: const Text('حفظ')),
+          OutlinedButton(
+            style: OnlineStoreAdminUi.actionButtonStyle,
+            onPressed: _submit,
+            child: const Text('حفظ'),
+          ),
         ],
       );
 

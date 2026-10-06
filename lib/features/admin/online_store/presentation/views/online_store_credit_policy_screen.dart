@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/online_store_credit_controller.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreCreditPolicyScreen extends StatefulWidget {
   const OnlineStoreCreditPolicyScreen({Key? key}) : super(key: key);
@@ -43,7 +44,7 @@ class _OnlineStoreCreditPolicyScreenState
           }
           return ListView(padding: const EdgeInsets.all(14), children: [
             Card(
-                color: const Color(0xFFF2F2F5),
+                color: OnlineStoreAdminUi.surfaceMuted,
                 child: Column(children: [
                   ListTile(
                       title: const Text('الدين الحالي من دفتر الحسابات'),
@@ -80,7 +81,8 @@ class _OnlineStoreCreditPolicyScreenState
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton(
+            OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: () => controller.savePolicy(
                 eligible: eligible,
                 limit: double.tryParse(limit.text),

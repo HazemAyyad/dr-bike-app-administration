@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/online_store_reviews_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_state_view.dart';
 
 class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
@@ -19,7 +20,7 @@ class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
                 itemBuilder: (_, i) {
                   final review = controller.items[i];
                   return Card(
-                    color: const Color(0xFFF7F7FA),
+                    color: OnlineStoreAdminUi.surface,
                     child: ListTile(
                       title: Text(review.label),
                       subtitle: Text(
@@ -58,7 +59,8 @@ class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('إلغاء')),
-          FilledButton(
+          OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: () => Get.back(result: field.text.trim()),
               child: const Text('رفض')),
         ],

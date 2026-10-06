@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/online_store_settings_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
   const OnlineStoreSettingsScreen({Key? key}) : super(key: key);
@@ -30,7 +31,7 @@ class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
           final enabledLanguages = _enabledLanguages;
           return ListView(padding: const EdgeInsets.all(14), children: [
             Card(
-              color: const Color(0xFFF2F2F5),
+              color: OnlineStoreAdminUi.surfaceMuted,
               child: ListTile(
                 leading: const Icon(Icons.power_settings_new),
                 title: const Text('الحالة التشغيلية الفعلية'),
@@ -105,7 +106,8 @@ class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
               Text(controller.error.value!,
                   style: const TextStyle(color: Colors.red)),
             if (OnlineStorePermissions.canManageSettings)
-              FilledButton.icon(
+              OutlinedButton.icon(
+                style: OnlineStoreAdminUi.actionButtonStyle,
                 onPressed: controller.saving.value ? null : controller.save,
                 icon: const Icon(Icons.save_outlined),
                 label: const Text('حفظ الإعدادات'),

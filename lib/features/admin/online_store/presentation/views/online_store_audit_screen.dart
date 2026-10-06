@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/online_store_audit_controller.dart';
 import '../widgets/online_store_state_view.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
   const OnlineStoreAuditScreen({Key? key}) : super(key: key);
@@ -75,7 +76,8 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
                   onChanged: (v) => controller.to.value = v,
                 ),
               ),
-              FilledButton.icon(
+              OutlinedButton.icon(
+                style: OnlineStoreAdminUi.actionButtonStyle,
                 onPressed: controller.applyFilters,
                 icon: const Icon(Icons.filter_alt_outlined),
                 label: const Text('تطبيق'),

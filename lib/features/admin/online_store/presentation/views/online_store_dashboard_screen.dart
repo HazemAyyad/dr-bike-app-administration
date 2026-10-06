@@ -4,13 +4,12 @@ import 'package:get/get.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../controllers/online_store_dashboard_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_state_view.dart';
 
 class OnlineStoreDashboardScreen
     extends GetView<OnlineStoreDashboardController> {
   const OnlineStoreDashboardScreen({Key? key}) : super(key: key);
-
-  static const _purple = Color(0xFF6F42C1);
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -37,10 +36,11 @@ class OnlineStoreDashboardScreen
                 ]),
                 const SizedBox(height: 14),
                 ..._destinations().map((item) => Card(
-                      color: const Color(0xFFF7F7FA),
+                      color: OnlineStoreAdminUi.surface,
                       child: ListTile(
                         onTap: () => Get.toNamed(item.route),
-                        leading: Icon(item.icon, color: _purple),
+                        leading:
+                            Icon(item.icon, color: OnlineStoreAdminUi.accent),
                         title: Text(item.label,
                             style:
                                 const TextStyle(fontWeight: FontWeight.w700)),
@@ -105,7 +105,7 @@ class _Summary extends StatelessWidget {
         width: 158,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7FA),
+          color: OnlineStoreAdminUi.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE1E1E8)),
         ),

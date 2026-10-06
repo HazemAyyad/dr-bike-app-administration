@@ -5,6 +5,7 @@ import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_listing_readiness.dart';
 
 class OnlineStoreListingEditorScreen extends StatefulWidget {
@@ -130,7 +131,8 @@ class _OnlineStoreListingEditorScreenState
                 'published',
                 'hidden'
               ])
-                FilledButton.tonal(
+                OutlinedButton(
+                  style: OnlineStoreAdminUi.actionButtonStyle,
                   onPressed: state == 'published' && !listing.canPublish
                       ? null
                       : () => _transition(state),
@@ -207,7 +209,7 @@ class _ReadOnlyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        color: const Color(0xFFF2F2F5),
+        color: OnlineStoreAdminUi.surfaceMuted,
         child: ListTile(
           leading: Icon(icon),
           title:

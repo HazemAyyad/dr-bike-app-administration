@@ -151,6 +151,22 @@ class OnlineStoreRepositoryImpl implements OnlineStoreRepository {
         .toList(growable: false);
   }
 
+  @override
+  Future<List<OnlineStoreProductCandidate>> productCandidates(
+      {String? search}) async {
+    final term = search?.trim() ?? '';
+    final json = await datasource.get(EndPoints.allProducts,
+        query: {if (term.isNotEmpty) 'search': term});
+    final raw = json['products'] ?? json['data'];
+    if (raw is! List && raw is! Map) {
+      throw const FormatException('استجابة المنتجات لا تحتوي قائمة صالحة.');
+    }
+    return onlineStoreRows(raw)
+        .map((row) => OnlineStoreProductCandidate.fromJson(row))
+        .where((product) => product.id > 0)
+        .toList(growable: false);
+  }
+
   Map<String, dynamic> _data(Map<String, dynamic> json) =>
       onlineStoreMap(json['data']).isEmpty
           ? json

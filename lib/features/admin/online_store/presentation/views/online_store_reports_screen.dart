@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/online_store_reports_controller.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
   const OnlineStoreReportsScreen({Key? key}) : super(key: key);
@@ -50,7 +51,8 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
                 ],
                 onChanged: (v) => controller.accountType.value = v ?? 'all',
               ),
-              FilledButton.icon(
+              OutlinedButton.icon(
+                style: OnlineStoreAdminUi.actionButtonStyle,
                 onPressed: controller.load,
                 icon: const Icon(Icons.filter_alt_outlined),
                 label: const Text('تطبيق'),
@@ -58,7 +60,7 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
             ]),
             const SizedBox(height: 10),
             ...entries.map((entry) => Card(
-                  color: const Color(0xFFF7F7FA),
+                  color: OnlineStoreAdminUi.surface,
                   child: ListTile(
                       title: Text(entry.key), subtitle: Text('${entry.value}')),
                 )),

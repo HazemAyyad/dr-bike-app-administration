@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreTargetOption {
   const OnlineStoreTargetOption({
@@ -41,8 +42,8 @@ Future<List<OnlineStoreTargetOption>?> showOnlineStoreTargetPicker(
         return AlertDialog(
           title: Text(title),
           content: SizedBox(
-            width: 460,
-            height: 430,
+            width: OnlineStoreAdminUi.dialogWidth(context),
+            height: (MediaQuery.sizeOf(context).height * .65).clamp(280, 560),
             child: Column(children: [
               TextField(
                 decoration: const InputDecoration(
@@ -86,7 +87,8 @@ Future<List<OnlineStoreTargetOption>?> showOnlineStoreTargetPicker(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('إلغاء'),
             ),
-            FilledButton(
+            OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: () => Navigator.pop(
                 dialogContext,
                 options

@@ -25,4 +25,5 @@ abstract class OnlineStoreRepository {
   Future<void> reorderBanners(List<int> bannerIds);
   Future<String> uploadContentImage(XFile file);
   Future<List<OnlineStoreParty>> parties(String role);
+  Future<List<OnlineStoreProductCandidate>> productCandidates({String? search});
 }

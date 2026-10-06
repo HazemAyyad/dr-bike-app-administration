@@ -6,6 +6,7 @@ import '../../../widgets/unified_partner_selector.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_accounts_controller.dart';
 import '../widgets/online_store_state_view.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
   const OnlineStoreAccountsScreen({Key? key}) : super(key: key);
@@ -39,7 +40,7 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
                       itemBuilder: (_, i) {
                         final account = controller.accounts[i];
                         return Card(
-                          color: const Color(0xFFF7F7FA),
+                          color: OnlineStoreAdminUi.surface,
                           child: ExpansionTile(
                             leading: Icon(
                               account.isBlocked
@@ -114,7 +115,7 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
       builder: (context, setState) => AlertDialog(
         title: const Text('إنشاء ربط صريح'),
         content: SizedBox(
-            width: 460,
+            width: OnlineStoreAdminUi.dialogWidth(context),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
                 initialValue: role,
@@ -159,7 +160,8 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
           TextButton(
               onPressed: () => Get.back(result: false),
               child: const Text('إلغاء')),
-          FilledButton(
+          OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: selected == null ? null : () => Get.back(result: true),
               child: const Text('ربط')),
         ],

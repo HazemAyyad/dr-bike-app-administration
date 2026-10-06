@@ -2,6 +2,7 @@ import '../../../../../../core/databases/api/end_points.dart';
 import '../../data/online_store_models.dart';
 import '../../domain/online_store_repository.dart';
 import 'online_store_resource_controller.dart';
+import 'package:image_picker/image_picker.dart';
 
 class OnlineStoreCategoriesController extends OnlineStoreResourceController {
   OnlineStoreCategoriesController(OnlineStoreRepository repository)
@@ -26,4 +27,6 @@ class OnlineStoreCategoriesController extends OnlineStoreResourceController {
       repository.reorderCategories(ids);
 
   Future<List<OnlineStoreListing>> pickerListings() => repository.allListings();
+
+  Future<String> uploadImage(XFile file) => repository.uploadContentImage(file);
 }

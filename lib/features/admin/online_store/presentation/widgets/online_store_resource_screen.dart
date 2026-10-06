@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_resource_controller.dart';
 import 'online_store_state_view.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreFormField {
   const OnlineStoreFormField(
@@ -30,6 +31,11 @@ typedef OnlineStoreResourceEditor = Future<Map<String, dynamic>?> Function(
   BuildContext context,
   OnlineStoreEntity? item,
 );
+typedef OnlineStoreResourceCardBuilder = Widget Function(
+  BuildContext context,
+  OnlineStoreEntity item,
+  Widget trailing,
+);
 
 class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     extends GetView<T> {
@@ -45,6 +51,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     this.actions = const {},
     this.onReorder,
     this.editor,
+    this.cardBuilder,
   }) : super(key: key);
 
   final String title;
@@ -57,12 +64,18 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
   final Set<OnlineStoreResourceAction> actions;
   final Future<void> Function(List<int> ids)? onReorder;
   final OnlineStoreResourceEditor? editor;
+  final OnlineStoreResourceCardBuilder? cardBuilder;
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(title)),
         floatingActionButton: canManage && (fields.isNotEmpty || editor != null)
             ? FloatingActionButton.extended(
+                backgroundColor: OnlineStoreAdminUi.surface,
+                foregroundColor: OnlineStoreAdminUi.textPrimary,
+                shape: const StadiumBorder(
+                  side: BorderSide(color: OnlineStoreAdminUi.accent),
+                ),
                 onPressed: () => _showEditor(context),
                 icon: const Icon(Icons.add),
                 label: const Text('إضافة'),
@@ -111,24 +124,32 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     BuildContext context,
     OnlineStoreEntity item, {
     int? reorderIndex,
-  }) =>
-      Card(
-        color: const Color(0xFFF7F7FA),
-        child: ListTile(
-          onTap: canManage && (fields.isNotEmpty || editor != null)
-              ? () => _showEditor(context, item: item)
-              : null,
-          leading: CircleAvatar(
-            backgroundColor: const Color(0xFF6F42C1).withValues(alpha: .1),
-            child: Icon(icon, color: const Color(0xFF6F42C1)),
+  }) {
+    final trailing = _trailing(item, reorderIndex);
+    if (cardBuilder != null) return cardBuilder!(context, item, trailing);
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      child: ListTile(
+        onTap: canManage && (fields.isNotEmpty || editor != null)
+            ? () => _showEditor(context, item: item)
+            : null,
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: OnlineStoreAdminUi.surfaceMuted,
+            border: Border.all(color: OnlineStoreAdminUi.border),
+            shape: BoxShape.circle,
           ),
-          title: Text(item.label,
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: Text(
-              subtitle ?? (item.status.isEmpty ? '#${item.id}' : item.status)),
-          trailing: _trailing(item, reorderIndex),
+          child: Icon(icon, color: OnlineStoreAdminUi.accent),
         ),
-      );
+        title: Text(item.label,
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(
+            subtitle ?? (item.status.isEmpty ? '#${item.id}' : item.status)),
+        trailing: trailing,
+      ),
+    );
+  }
 
   Widget _trailing(OnlineStoreEntity item, int? reorderIndex) {
     final hasMenu = canManage && (actions.isNotEmpty || inspectLabel != null);
@@ -205,7 +226,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(item == null ? 'إضافة $title' : 'تعديل ${item.label}'),
-          content: SingleChildScrollView(
+          content: OnlineStoreDialogBody(
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: fields.map((field) {
@@ -243,7 +264,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
             TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
                 child: const Text('إلغاء')),
-            FilledButton(
+            OutlinedButton(
+                style: OnlineStoreAdminUi.actionButtonStyle,
                 onPressed: () => Navigator.pop(dialogContext, true),
                 child: const Text('حفظ')),
           ],

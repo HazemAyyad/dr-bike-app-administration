@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_state_view.dart';
 
 class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
@@ -54,7 +55,7 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                   itemBuilder: (_, index) {
                     final listing = controller.items[index];
                     return Card(
-                      color: const Color(0xFFF7F7FA),
+                      color: OnlineStoreAdminUi.surface,
                       child: ListTile(
                         onTap: () => Get.toNamed(
                           AppRoutes.ONLINESTORELISTINGEDITOR,

@@ -4,6 +4,7 @@ import '../controllers/online_store_home_sections_controller.dart';
 import '../../data/online_store_models.dart';
 import '../../../../../../core/databases/api/end_points.dart';
 import '../utils/online_store_permissions.dart';
+import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_resource_screen.dart';
 
 class OnlineStoreHomeSectionsScreen
@@ -58,7 +59,8 @@ class OnlineStoreHomeSectionsScreen
       builder: (context, setState) => AlertDialog(
         title: const Text('اختيار عناصر متوافقة'),
         content: SizedBox(
-          width: 430,
+          width: OnlineStoreAdminUi.dialogWidth(context),
+          height: (MediaQuery.sizeOf(context).height * .65).clamp(280, 560),
           child: ListView(shrinkWrap: true, children: [
             if (!categoryTargets) const ListTile(title: Text('قوائم المنتجات')),
             if (!categoryTargets)
@@ -84,7 +86,8 @@ class OnlineStoreHomeSectionsScreen
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('إلغاء')),
-          FilledButton(
+          OutlinedButton(
+              style: OnlineStoreAdminUi.actionButtonStyle,
               onPressed: () => Get.back(result: true),
               child: const Text('حفظ الترتيب')),
         ],

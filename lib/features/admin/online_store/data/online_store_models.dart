@@ -7,6 +7,59 @@ List<Map<String, dynamic>> onlineStoreRows(dynamic value) {
   return raw.whereType<Map>().map(onlineStoreMap).toList(growable: false);
 }
 
+class OnlineStoreProductCandidate {
+  const OnlineStoreProductCandidate({
+    required this.id,
+    required this.nameAr,
+    this.nameEn = '',
+    this.code = '',
+    this.imageUrl = '',
+    this.stock = 0,
+    this.retailPrice = 0,
+  });
+
+  final int id;
+  final String nameAr;
+  final String nameEn;
+  final String code;
+  final String imageUrl;
+  final num stock;
+  final num retailPrice;
+
+  String get displayName => nameAr.isNotEmpty ? nameAr : nameEn;
+
+  factory OnlineStoreProductCandidate.fromJson(Map<String, dynamic> json) {
+    String image(dynamic value) {
+      if (value is String) return value;
+      if (value is Map) {
+        return '${value['imageUrl'] ?? value['url'] ?? value['path'] ?? ''}';
+      }
+      if (value is List && value.isNotEmpty) return image(value.first);
+      return '';
+    }
+
+    return OnlineStoreProductCandidate(
+      id: _int(json['id']),
+      nameAr: '${json['nameAr'] ?? json['name_ar'] ?? json['name'] ?? ''}',
+      nameEn: '${json['nameEng'] ?? json['name_en'] ?? ''}',
+      code: '${json['product_code'] ?? json['code'] ?? ''}',
+      imageUrl: image(json['product_image'] ??
+          json['main_image'] ??
+          json['view_image'] ??
+          json['product_viewImages'] ??
+          json['viewImages'] ??
+          json['product_normalImages'] ??
+          json['normalImages'] ??
+          json['product_image3d'] ??
+          json['image3d']),
+      stock: _num(json['stock']),
+      retailPrice: _num(json['normail_price'] ??
+          json['product_normail_price'] ??
+          json['normailPrice']),
+    );
+  }
+}
+
 class OnlineStorePage<T> {
   const OnlineStorePage({required this.items, this.meta = const {}});
 
@@ -320,4 +373,5 @@ int? _nullableInt(dynamic value) => value == null ? null : _int(value);
 double _double(dynamic value) =>
     (value as num?)?.toDouble() ?? double.tryParse('$value') ?? 0;
 double? _nullableDouble(dynamic value) => value == null ? null : _double(value);
+num _num(dynamic value) => value is num ? value : num.tryParse('$value') ?? 0;
 bool _bool(dynamic value) => value == true || value == 1 || value == '1';

@@ -4,6 +4,7 @@ import '../controllers/online_store_coupons_controller.dart';
 import '../utils/online_store_permissions.dart';
 import '../widgets/online_store_resource_screen.dart';
 import '../widgets/online_store_discount_editor.dart';
+import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
   const OnlineStoreCouponsScreen({Key? key}) : super(key: key);
@@ -34,7 +35,7 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
     await Get.dialog(AlertDialog(
       title: const Text('سجل استخدام الكوبون'),
       content: SizedBox(
-        width: 430,
+        width: OnlineStoreAdminUi.dialogWidth(Get.context!),
         child: rows.isEmpty
             ? const Text('لا توجد استخدامات')
             : ListView.builder(
