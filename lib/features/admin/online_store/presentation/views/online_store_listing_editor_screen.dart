@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -26,6 +27,12 @@ class _OnlineStoreListingEditorScreenState
   late final TextEditingController nameAr;
   late final TextEditingController descriptionAr;
   late final TextEditingController stockLimit;
+  late final TextEditingController brandAr;
+  late final TextEditingController shippingWarrantyAr;
+  late final TextEditingController returnPolicyAr;
+  late final List<TextEditingController> specLabels;
+  late final List<TextEditingController> specValues;
+  late List<String> specIcons;
   late bool customName;
   late bool customDescription;
   late bool useFullInventory;
@@ -58,6 +65,34 @@ class _OnlineStoreListingEditorScreenState
     useFullInventory = listing.onlineStockLimit == null;
     stockLimit = TextEditingController(
         text: '${listing.onlineStockLimit ?? _inventoryAvailable}');
+    final presentation = listing.detailPresentation;
+    brandAr = TextEditingController(
+        text:
+            '${onlineStoreMap(presentation['brand_translations'])['ar'] ?? ''}');
+    shippingWarrantyAr = TextEditingController(
+        text:
+            '${onlineStoreMap(presentation['shipping_warranty_translations'])['ar'] ?? ''}');
+    returnPolicyAr = TextEditingController(
+        text:
+            '${onlineStoreMap(presentation['return_policy_translations'])['ar'] ?? ''}');
+    final quickSpecs = onlineStoreRows(presentation['quick_specs']);
+    specLabels = List.generate(
+        3,
+        (index) => TextEditingController(
+            text: index < quickSpecs.length
+                ? '${onlineStoreMap(quickSpecs[index]['label_translations'])['ar'] ?? ''}'
+                : ''));
+    specValues = List.generate(
+        3,
+        (index) => TextEditingController(
+            text: index < quickSpecs.length
+                ? '${onlineStoreMap(quickSpecs[index]['value_translations'])['ar'] ?? ''}'
+                : ''));
+    specIcons = List.generate(
+        3,
+        (index) => index < quickSpecs.length
+            ? '${quickSpecs[index]['icon'] ?? 'custom'}'
+            : const ['speed', 'battery', 'motor'][index]);
     isFeatured = listing.isFeatured;
     isNew = listing.isNew;
     showOnHome = listing.showOnHome;
@@ -148,6 +183,7 @@ class _OnlineStoreListingEditorScreenState
                       enabled: customDescription, lines: 3),
                 ]),
               ),
+              _productPresentationSection(),
               _section(
                 title: 'كمية المتجر',
                 icon: Icons.inventory_2_outlined,
@@ -285,7 +321,7 @@ class _OnlineStoreListingEditorScreenState
       );
 
   Widget _mediaSection() => _section(
-        title: 'صور المنتج',
+        title: 'وسائط صفحة المنتج',
         icon: Icons.image_outlined,
         child: Obx(() {
           if (mediaController.loading.value) {
@@ -297,11 +333,42 @@ class _OnlineStoreListingEditorScreenState
               scrollDirection: Axis.horizontal,
               children: [
                 _addImageTile(),
+                _addVideoTile(),
                 ...mediaController.items.map(_mediaTile),
               ],
             ),
           );
         }),
+      );
+
+  Widget _addVideoTile() => InkWell(
+        onTap: () async {
+          final picked = await FilePicker.platform.pickFiles(
+            type: FileType.video,
+            allowMultiple: false,
+          );
+          final path = picked?.files.single.path;
+          if (path != null) {
+            await mediaController.addStoreVideo(XFile(path));
+          }
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 108,
+          margin: const EdgeInsetsDirectional.only(end: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFF98A2B3)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.video_library_outlined, size: 34),
+              SizedBox(height: 6),
+              Text('إضافة فيديو'),
+            ],
+          ),
+        ),
       );
 
   Widget _addImageTile() => InkWell(
@@ -338,12 +405,19 @@ class _OnlineStoreListingEditorScreenState
         clipBehavior: Clip.antiAlias,
         child: Stack(children: [
           Positioned.fill(
-              child: media.url.isEmpty
-                  ? const ColoredBox(color: muted, child: Icon(Icons.image))
-                  : Image.network(ShowNetImage.getPhoto(media.url),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.broken_image_outlined))),
+              child: media.mediaType == 'video'
+                  ? const ColoredBox(
+                      color: Color(0xFF101218),
+                      child: Center(
+                          child: Icon(Icons.play_circle_outline,
+                              color: Colors.white, size: 42)),
+                    )
+                  : media.url.isEmpty
+                      ? const ColoredBox(color: muted, child: Icon(Icons.image))
+                      : Image.network(ShowNetImage.getPhoto(media.url),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.broken_image_outlined))),
           Positioned(
             top: 6,
             right: 6,
@@ -364,6 +438,25 @@ class _OnlineStoreListingEditorScreenState
             ),
           ),
           Positioned(
+            top: 6,
+            left: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF151A2D).withValues(alpha: .86),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _mediaRoleLabel(media),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             left: 4,
             right: 4,
             bottom: 4,
@@ -376,9 +469,99 @@ class _OnlineStoreListingEditorScreenState
                   _mediaAction(
                       media.isVisible ? Icons.visibility : Icons.visibility_off,
                       () => mediaController.toggleVisible(media.sourceMediaId)),
+                  PopupMenuButton<String>(
+                    tooltip: 'نوع الصورة',
+                    onSelected: (value) =>
+                        mediaController.setRole(media.sourceMediaId, value),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                          value: 'additional', child: Text('صورة إضافية')),
+                      PopupMenuItem(value: 'folded', child: Text('صورة مطوية')),
+                      PopupMenuItem(
+                          value: 'detail', child: Text('صورة تفصيلية')),
+                      PopupMenuItem(value: 'video', child: Text('فيديو')),
+                    ],
+                    child: const Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(Radius.circular(7)),
+                      child: Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(Icons.label_outline, size: 20)),
+                    ),
+                  ),
                 ]),
           ),
         ]),
+      );
+
+  String _mediaRoleLabel(OnlineStoreMedia media) {
+    if (media.isMain) return 'صورة رئيسية';
+    if (media.mediaType == 'video' || media.role == 'video') return 'فيديو';
+    if (media.sourceType == 'image3d' || media.role == 'model_3d') {
+      return 'عرض 3D';
+    }
+    return const {
+          'folded': 'صورة مطوية',
+          'detail': 'صورة تفصيلية',
+          'additional': 'صورة إضافية',
+        }[media.role] ??
+        'صورة إضافية';
+  }
+
+  Widget _productPresentationSection() => _section(
+        title: 'تفاصيل صفحة المنتج في المتجر',
+        icon: Icons.storefront_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _input(brandAr, 'العلامة/المتجر (اختياري)'),
+            const SizedBox(height: 12),
+            const Text('المواصفات السريعة (حتى 3)',
+                style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            for (var index = 0; index < 3; index++) ...[
+              Row(children: [
+                SizedBox(
+                  width: 118,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: specIcons[index],
+                    decoration: const InputDecoration(labelText: 'الأيقونة'),
+                    items: const {
+                      'speed': 'السرعة',
+                      'battery': 'البطارية',
+                      'motor': 'المحرك',
+                      'range': 'المدى',
+                      'weight': 'الوزن',
+                      'warranty': 'الضمان',
+                      'custom': 'أخرى',
+                    }
+                        .entries
+                        .map((entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => specIcons[index] = value ?? 'custom'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: _input(specLabels[index], 'العنوان')),
+                const SizedBox(width: 8),
+                Expanded(child: _input(specValues[index], 'القيمة')),
+              ]),
+              const SizedBox(height: 10),
+            ],
+            _input(shippingWarrantyAr, 'الشحن والضمان', lines: 3),
+            const SizedBox(height: 10),
+            _input(returnPolicyAr, 'سياسة الإرجاع', lines: 3),
+            const SizedBox(height: 8),
+            const Text(
+              'هذه الحقول تخص عرض المتجر الإلكتروني فقط ولا تعدّل بيانات المنتج الأصلي.',
+              style: TextStyle(color: Color(0xFF667085), fontSize: 12),
+            ),
+          ],
+        ),
       );
 
   Widget _mediaAction(IconData icon, VoidCallback onTap,
@@ -619,6 +802,37 @@ class _OnlineStoreListingEditorScreenState
           ...listing.descriptionTranslations,
           'ar': customDescription ? descriptionAr.text.trim() : null,
         },
+        'detail_presentation': {
+          ...listing.detailPresentation,
+          'brand_translations': {
+            ...onlineStoreMap(listing.detailPresentation['brand_translations']),
+            'ar': brandAr.text.trim().isEmpty ? null : brandAr.text.trim(),
+          },
+          'shipping_warranty_translations': {
+            ...onlineStoreMap(
+                listing.detailPresentation['shipping_warranty_translations']),
+            'ar': shippingWarrantyAr.text.trim().isEmpty
+                ? null
+                : shippingWarrantyAr.text.trim(),
+          },
+          'return_policy_translations': {
+            ...onlineStoreMap(
+                listing.detailPresentation['return_policy_translations']),
+            'ar': returnPolicyAr.text.trim().isEmpty
+                ? null
+                : returnPolicyAr.text.trim(),
+          },
+          'quick_specs': [
+            for (var index = 0; index < 3; index++)
+              if (specLabels[index].text.trim().isNotEmpty &&
+                  specValues[index].text.trim().isNotEmpty)
+                {
+                  'icon': specIcons[index],
+                  'label_translations': {'ar': specLabels[index].text.trim()},
+                  'value_translations': {'ar': specValues[index].text.trim()},
+                },
+          ],
+        },
         'is_featured': isFeatured,
         'is_new': isNew,
         'show_on_home': showOnHome,
@@ -687,6 +901,12 @@ class _OnlineStoreListingEditorScreenState
     nameAr.dispose();
     descriptionAr.dispose();
     stockLimit.dispose();
+    brandAr.dispose();
+    shippingWarrantyAr.dispose();
+    returnPolicyAr.dispose();
+    for (final controller in [...specLabels, ...specValues]) {
+      controller.dispose();
+    }
     super.dispose();
   }
 }

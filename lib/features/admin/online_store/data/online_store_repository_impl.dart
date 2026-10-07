@@ -151,6 +151,16 @@ class OnlineStoreRepositoryImpl implements OnlineStoreRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> uploadProductMedia(XFile file) async {
+    final json = await datasource.uploadProductMedia(file);
+    final data = onlineStoreMap(json['data']);
+    if ('${data['path'] ?? ''}'.isEmpty) {
+      throw const FormatException('لم يرجع الخادم مسار الوسائط.');
+    }
+    return data;
+  }
+
+  @override
   Future<List<OnlineStoreParty>> parties(String role) async {
     final endpoint =
         role == 'seller' ? EndPoints.all_sellers : EndPoints.all_customers;

@@ -25,6 +25,7 @@ abstract class OnlineStoreRepository {
   Future<void> reorderBanners(List<int> bannerIds);
   Future<String> uploadContentImage(XFile file);
   Future<String> uploadProductImage(XFile file);
+  Future<Map<String, dynamic>> uploadProductMedia(XFile file);
   Future<List<OnlineStoreParty>> parties(String role);
   Future<List<OnlineStoreProductCandidate>> productCandidates({String? search});
 }

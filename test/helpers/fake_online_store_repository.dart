@@ -157,6 +157,18 @@ class FakeOnlineStoreRepository implements OnlineStoreRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> uploadProductMedia(XFile file) async {
+    calls.add('POST online-store/product-media');
+    lastData = {'file': file.path};
+    return responses['product-media-upload']?['data'] ??
+        {
+          'path': 'public/OnlineStore/Products/product.mp4',
+          'media_type': 'video',
+          'mime_type': 'video/mp4',
+        };
+  }
+
+  @override
   Future<List<OnlineStoreParty>> parties(String role) async {
     calls.add('GET ${role == 'seller' ? 'all/sellers' : 'all/customers'}');
     return onlineStoreRows(responses['parties:$role']?['data'])

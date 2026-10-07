@@ -51,6 +51,46 @@ class OnlineStoreMediaController extends GetxController {
     }
   }
 
+  Future<void> addStoreVideo(XFile file) async {
+    saving.value = true;
+    error.value = null;
+    try {
+      final uploaded = await repository.uploadProductMedia(file);
+      final path = '${uploaded['path'] ?? ''}';
+      final key = -DateTime.now().microsecondsSinceEpoch;
+      items.add(OnlineStoreMedia(
+        sourceMediaId: key,
+        sourceType: 'store_specific',
+        storeMediaPath: path,
+        url: path,
+        sortOrder: items.length,
+        isMain: items.isEmpty,
+        mediaMetadata: {
+          'media_type': 'video',
+          'mime_type': '${uploaded['mime_type'] ?? 'video/mp4'}',
+          'role': 'video',
+        },
+      ));
+    } catch (e) {
+      error.value = e.toString();
+      Get.snackbar('تعذر رفع الفيديو', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      saving.value = false;
+    }
+  }
+
+  void setRole(int mediaKey, String role) {
+    items.assignAll(items.map((item) {
+      if (item.sourceMediaId != mediaKey) return item;
+      return item.copyWith(mediaMetadata: {
+        ...item.mediaMetadata,
+        'role': role,
+        if (role == 'video') 'media_type': 'video',
+      });
+    }).toList());
+  }
+
   void remove(int mediaKey) {
     final wasMain =
         items.any((item) => item.sourceMediaId == mediaKey && item.isMain);

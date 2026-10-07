@@ -135,6 +135,7 @@ class OnlineStoreListing {
     this.titleTranslations = const {},
     this.descriptionTranslations = const {},
     this.badgeTranslations = const {},
+    this.detailPresentation = const {},
     this.isFeatured = false,
     this.isNew = false,
     this.showOnHome = false,
@@ -159,6 +160,7 @@ class OnlineStoreListing {
   final Map<String, dynamic> titleTranslations;
   final Map<String, dynamic> descriptionTranslations;
   final Map<String, dynamic> badgeTranslations;
+  final Map<String, dynamic> detailPresentation;
   final bool isFeatured;
   final bool isNew;
   final bool showOnHome;
@@ -190,6 +192,7 @@ class OnlineStoreListing {
           json['name_translations'] ?? json['title_translations']),
       descriptionTranslations: onlineStoreMap(json['description_translations']),
       badgeTranslations: onlineStoreMap(json['badge_translations']),
+      detailPresentation: onlineStoreMap(json['detail_presentation']),
       isFeatured: _bool(json['is_featured']),
       isNew: _bool(json['is_new']),
       showOnHome: _bool(json['show_on_home']),
@@ -221,6 +224,7 @@ class OnlineStoreListing {
         'name_translations': titleTranslations,
         'description_translations': descriptionTranslations,
         'badge_translations': badgeTranslations,
+        'detail_presentation': detailPresentation,
         'is_featured': isFeatured,
         'is_new': isNew,
         'show_on_home': showOnHome,
@@ -241,6 +245,7 @@ class OnlineStoreMedia {
     this.sourceType = 'product',
     this.sourceId,
     this.storeMediaPath,
+    this.mediaMetadata = const {},
   });
 
   final int sourceMediaId;
@@ -251,6 +256,11 @@ class OnlineStoreMedia {
   final String sourceType;
   final int? sourceId;
   final String? storeMediaPath;
+  final Map<String, dynamic> mediaMetadata;
+
+  String get mediaType => '${mediaMetadata['media_type'] ?? 'image'}';
+  String get role =>
+      '${mediaMetadata['role'] ?? (isMain ? 'main' : 'additional')}';
 
   factory OnlineStoreMedia.fromJson(Map<String, dynamic> json) =>
       OnlineStoreMedia(
@@ -266,12 +276,14 @@ class OnlineStoreMedia {
         sourceType: '${json['source_type'] ?? 'product'}',
         sourceId: json['source_id'] == null ? null : _int(json['source_id']),
         storeMediaPath: json['store_media_path']?.toString(),
+        mediaMetadata: onlineStoreMap(json['media_metadata']),
       );
 
   OnlineStoreMedia copyWith({
     int? sortOrder,
     bool? isMain,
     bool? isVisible,
+    Map<String, dynamic>? mediaMetadata,
   }) =>
       OnlineStoreMedia(
         sourceMediaId: sourceMediaId,
@@ -282,12 +294,14 @@ class OnlineStoreMedia {
         sourceType: sourceType,
         sourceId: sourceId,
         storeMediaPath: storeMediaPath,
+        mediaMetadata: mediaMetadata ?? this.mediaMetadata,
       );
 
   Map<String, dynamic> toRequestJson() => {
         'source_type': sourceType,
         'source_id': sourceId,
         'store_media_path': storeMediaPath,
+        if (mediaMetadata.isNotEmpty) 'media_metadata': mediaMetadata,
         'is_main': isMain,
         'is_visible': isVisible,
       };

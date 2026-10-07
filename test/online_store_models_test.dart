@@ -11,8 +11,22 @@ void main() {
       'readiness_issues': [],
       'base_prices': {'retail': 99},
       'availability': {'in_stock': true},
+      'detail_presentation': {
+        'quick_specs': [
+          {
+            'icon': 'speed',
+            'label_translations': {'ar': 'السرعة'},
+            'value_translations': {'ar': '25 كم/ساعة'},
+          },
+        ],
+      },
       'media': [
-        {'source_media_id': 3, 'sort_order': 0, 'is_main': true},
+        {
+          'source_media_id': 3,
+          'sort_order': 0,
+          'is_main': true,
+          'media_metadata': {'media_type': 'video', 'role': 'video'},
+        },
       ],
     });
 
@@ -20,6 +34,9 @@ void main() {
     expect(listing.basePrices['retail'], 99);
     expect(listing.availability['in_stock'], isTrue);
     expect(listing.media.single.isMain, isTrue);
+    expect(listing.media.single.mediaType, 'video');
+    expect(listing.media.single.role, 'video');
+    expect((listing.detailPresentation['quick_specs'] as List), hasLength(1));
   });
 
   test('parses unlinked, blocked and dual-role Store accounts once', () {
