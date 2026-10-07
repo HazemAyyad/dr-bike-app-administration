@@ -51,6 +51,26 @@ class OnlineStoreMediaController extends GetxController {
     }
   }
 
+  Future<void> importMissingProductMedia() async {
+    if (listingId <= 0) return;
+    saving.value = true;
+    error.value = null;
+    try {
+      await repository
+          .post('online-store/listings/$listingId/media/initialize');
+      await load(listingId);
+      Get.snackbar(
+          'تم تحديث الوسائط', 'تم استيراد صور وفيديوهات المنتج الناقصة.',
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      error.value = e.toString();
+      Get.snackbar('تعذر استيراد الوسائط', error.value!,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      saving.value = false;
+    }
+  }
+
   Future<void> addStoreVideo(XFile file) async {
     saving.value = true;
     error.value = null;

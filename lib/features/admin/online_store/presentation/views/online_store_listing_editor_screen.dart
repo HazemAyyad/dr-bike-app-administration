@@ -332,6 +332,7 @@ class _OnlineStoreListingEditorScreenState
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
+                _importProductMediaTile(),
                 _addImageTile(),
                 _addVideoTile(),
                 ...mediaController.items.map(_mediaTile),
@@ -339,6 +340,36 @@ class _OnlineStoreListingEditorScreenState
             ),
           );
         }),
+      );
+
+  Widget _importProductMediaTile() => InkWell(
+        onTap: mediaController.saving.value
+            ? null
+            : mediaController.importMissingProductMedia,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 118,
+          margin: const EdgeInsetsDirectional.only(end: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F0FF),
+            border: Border.all(color: const Color(0xFF7C3AED)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.sync_rounded, size: 32, color: Color(0xFF7C3AED)),
+              SizedBox(height: 6),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Text('استيراد وسائط المنتج',
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
       );
 
   Widget _addVideoTile() => InkWell(

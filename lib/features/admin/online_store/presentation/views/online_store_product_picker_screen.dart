@@ -266,6 +266,25 @@ class _OnlineStoreProductPickerScreenState
                       ),
                     ),
                   ),
+                if (product.videoUrl.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: OnlineStoreAdminUi.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: OnlineStoreAdminUi.border),
+                    ),
+                    child: const Row(children: [
+                      Icon(Icons.play_circle_outline,
+                          color: OnlineStoreAdminUi.accent),
+                      SizedBox(width: 8),
+                      Expanded(
+                          child: Text('سيتم استيراد فيديو المنتج تلقائيًا')),
+                    ]),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   _DetailChip(Icons.qr_code,
@@ -282,6 +301,8 @@ class _OnlineStoreProductPickerScreenState
                   if (product.hasVariants)
                     _DetailChip(Icons.style_outlined,
                         '${product.variants.length} مقاسات/خيارات'),
+                  if (product.videoUrl.isNotEmpty)
+                    const _DetailChip(Icons.videocam_outlined, 'فيديو'),
                 ]),
                 const SizedBox(height: 20),
                 const Text('تصنيف المنتج في المتجر',

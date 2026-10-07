@@ -21,6 +21,7 @@ class OnlineStoreProductCandidate {
     this.hasVariants = false,
     this.variants = const [],
     this.imageUrls = const [],
+    this.videoUrl = '',
   });
 
   final int id;
@@ -35,6 +36,7 @@ class OnlineStoreProductCandidate {
   final bool hasVariants;
   final List<Map<String, dynamic>> variants;
   final List<String> imageUrls;
+  final String videoUrl;
 
   String get displayName => nameAr.isNotEmpty ? nameAr : nameEn;
 
@@ -56,6 +58,8 @@ class OnlineStoreProductCandidate {
       json['normalImages'],
       json['product_image3d'],
       json['image3d'],
+      json['product_variantImages'],
+      json['variantImages'],
     ]) {
       if (source is List) {
         for (final item in source) {
@@ -96,6 +100,8 @@ class OnlineStoreProductCandidate {
           .map(onlineStoreMap)
           .toList(growable: false),
       imageUrls: images,
+      videoUrl:
+          '${json['product_video'] ?? json['videoUrl'] ?? json['video_url'] ?? ''}',
     );
   }
 }
@@ -176,7 +182,21 @@ class OnlineStoreListing {
   final int? onlineStockLimit;
   final String? updatedAt;
 
-  bool get canPublish => readinessState == 'ready' && readinessIssues.isEmpty;
+  bool get canPublish =>
+      (readinessState == 'complete' || readinessState == 'ready') &&
+      readinessIssues.isEmpty;
+  String get mainMediaUrl {
+    final available = media.where(
+      (item) => item.isVisible && item.url.trim().isNotEmpty,
+    );
+    if (available.isEmpty) return '';
+    return available
+        .firstWhere((item) => item.isMain, orElse: () => available.first)
+        .url;
+  }
+
+  num get retailPrice => _num(basePrices['retail']);
+  int get availableQuantity => _int(availability['available_qty']);
 
   factory OnlineStoreListing.fromJson(Map<String, dynamic> json) {
     final product = onlineStoreMap(json['product']);

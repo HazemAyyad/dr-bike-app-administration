@@ -39,6 +39,39 @@ void main() {
     expect((listing.detailPresentation['quick_specs'] as List), hasLength(1));
   });
 
+  test('product picker preserves all image sources and product video', () {
+    final product = OnlineStoreProductCandidate.fromJson({
+      'id': 31,
+      'nameAr': 'منتج متعدد الوسائط',
+      'product_viewImages': [
+        {'imageUrl': 'view.jpg'},
+      ],
+      'product_normalImages': [
+        {'imageUrl': 'normal.jpg'},
+      ],
+      'product_image3d': [
+        {'imageUrl': '3d.jpg'},
+      ],
+      'product_variantImages': ['variant.jpg'],
+      'product_video': 'product.mp4',
+    });
+
+    expect(
+        product.imageUrls, ['view.jpg', 'normal.jpg', '3d.jpg', 'variant.jpg']);
+    expect(product.videoUrl, 'product.mp4');
+  });
+
+  test('complete backend readiness is publishable', () {
+    final listing = OnlineStoreListing.fromJson({
+      'id': 1,
+      'product_id': 2,
+      'readiness_state': 'complete',
+      'readiness_issues': <dynamic>[],
+    });
+
+    expect(listing.canPublish, isTrue);
+  });
+
   test('parses unlinked, blocked and dual-role Store accounts once', () {
     final account = OnlineStoreAccount.fromJson({
       'id': 9,

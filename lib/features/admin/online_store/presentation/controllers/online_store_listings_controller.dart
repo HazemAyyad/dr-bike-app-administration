@@ -23,10 +23,14 @@ class OnlineStoreListingsController extends GetxController {
 
   List<OnlineStoreListing> get visibleItems {
     final term = search.value.trim().toLowerCase();
-    if (term.isEmpty) return items;
+    final selectedStatus = status.value;
     return items
+        .where(
+            (item) => selectedStatus == 'all' || item.status == selectedStatus)
         .where((item) =>
+            term.isEmpty ||
             item.productName.toLowerCase().contains(term) ||
+            item.productCode.toLowerCase().contains(term) ||
             '${item.productId}'.contains(term))
         .toList(growable: false);
   }
@@ -41,7 +45,7 @@ class OnlineStoreListingsController extends GetxController {
     loading.value = true;
     error.value = null;
     try {
-      items.assignAll((await repository.listings(status: status.value)).items);
+      items.assignAll(await repository.allListings());
     } catch (e) {
       error.value = e.toString();
     } finally {

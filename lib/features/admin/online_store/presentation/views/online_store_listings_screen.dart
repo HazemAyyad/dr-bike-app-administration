@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_listings_controller.dart';
@@ -42,8 +43,15 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
-                      sliver: SliverList(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 90),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 460,
+                          mainAxisExtent: 132,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
                         delegate: SliverChildBuilderDelegate(
                           (_, index) => _listingCard(
                               context, controller.visibleItems[index]),
@@ -100,39 +108,23 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
 
   Widget _listingCard(BuildContext context, OnlineStoreListing listing) => Card(
         color: OnlineStoreAdminUi.surface,
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: EdgeInsets.zero,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           side: const BorderSide(color: OnlineStoreAdminUi.border),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           onTap: () => Get.toNamed(
             AppRoutes.ONLINESTORELISTINGEDITOR,
             arguments: listing,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(8),
             child: Row(children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: listing.canPublish
-                      ? const Color(0xFFEAF7F0)
-                      : const Color(0xFFFFF5E7),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  listing.canPublish
-                      ? Icons.check_circle_outline
-                      : Icons.inventory_2_outlined,
-                  color: listing.canPublish
-                      ? OnlineStoreAdminUi.success
-                      : Colors.orange.shade800,
-                ),
-              ),
-              const SizedBox(width: 12),
+              _ListingMedia(listing: listing),
+              const SizedBox(width: 9),
               Expanded(
                   child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,10 +136,37 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w800),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        height: 1.25),
                   ),
-                  const SizedBox(height: 7),
-                  Wrap(spacing: 6, runSpacing: 6, children: [
+                  if (listing.productCode.isNotEmpty)
+                    Text('كود ${listing.productCode}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: OnlineStoreAdminUi.textSecondary)),
+                  const Spacer(),
+                  Row(children: [
+                    Text('${listing.retailPrice} ₪',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w800)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.inventory_2_outlined,
+                        size: 14, color: OnlineStoreAdminUi.textSecondary),
+                    const SizedBox(width: 3),
+                    Text('${listing.availableQuantity}',
+                        style: const TextStyle(fontSize: 11)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.perm_media_outlined,
+                        size: 14, color: OnlineStoreAdminUi.textSecondary),
+                    const SizedBox(width: 3),
+                    Text('${listing.media.length}',
+                        style: const TextStyle(fontSize: 11)),
+                  ]),
+                  const SizedBox(height: 5),
+                  Wrap(spacing: 5, runSpacing: 4, children: [
                     _StatusChip(_statusLabel(listing.status),
                         _statusColor(listing.status)),
                     _StatusChip(
@@ -162,7 +181,7 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                 ],
               )),
               const Icon(Icons.chevron_left,
-                  color: OnlineStoreAdminUi.textSecondary),
+                  size: 18, color: OnlineStoreAdminUi.textSecondary),
             ]),
           ),
         ),
@@ -194,13 +213,62 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: color.withValues(alpha: .09),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
             style: TextStyle(
-                color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+                color: color, fontSize: 10, fontWeight: FontWeight.w700)),
       );
+}
+
+class _ListingMedia extends StatelessWidget {
+  const _ListingMedia({required this.listing});
+
+  final OnlineStoreListing listing;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = listing.media.where(
+      (item) => item.isVisible && item.url.trim().isNotEmpty,
+    );
+    final media = available.isEmpty
+        ? null
+        : available.firstWhere((item) => item.isMain,
+            orElse: () => available.first);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 88,
+        height: double.infinity,
+        child: ColoredBox(
+          color: OnlineStoreAdminUi.surfaceMuted,
+          child: media == null
+              ? const Icon(Icons.inventory_2_outlined,
+                  color: OnlineStoreAdminUi.textSecondary)
+              : media.mediaType == 'video'
+                  ? const Stack(fit: StackFit.expand, children: [
+                      Icon(Icons.video_library_outlined,
+                          color: OnlineStoreAdminUi.accent, size: 34),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: 6),
+                          child: Text('فيديو', style: TextStyle(fontSize: 10)),
+                        ),
+                      ),
+                    ])
+                  : Image.network(
+                      ShowNetImage.getPhoto(media.url),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.broken_image_outlined,
+                          color: OnlineStoreAdminUi.textSecondary),
+                    ),
+        ),
+      ),
+    );
+  }
 }
