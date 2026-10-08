@@ -28,37 +28,6 @@ class OnlineStoreDashboardScreen
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(12),
                   children: [
-                    Row(children: [
-                      Expanded(
-                          child: _Summary(
-                              'المنشورة',
-                              summary?.countPath('listings', 'published') ?? 0,
-                              Icons.inventory_2_outlined,
-                              const Color(0xFF1D5D9B))),
-                      const SizedBox(width: 6),
-                      Expanded(
-                          child: _Summary(
-                              'الطلبات',
-                              summary?.countPath('orders', 'store_count') ?? 0,
-                              Icons.receipt_long_outlined,
-                              OnlineStoreAdminUi.accent)),
-                      const SizedBox(width: 6),
-                      Expanded(
-                          child: _Summary(
-                              'العروض',
-                              summary?.count('active_promotions') ?? 0,
-                              Icons.local_offer_outlined,
-                              OnlineStoreAdminUi.success)),
-                      const SizedBox(width: 6),
-                      Expanded(
-                          child: _Summary(
-                              'المراجعات',
-                              summary?.countPath('pending_reviews', 'value') ??
-                                  0,
-                              Icons.reviews_outlined,
-                              const Color(0xFF9A6700))),
-                    ]),
-                    const SizedBox(height: 14),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
                       child: Row(children: [
@@ -169,6 +138,9 @@ class OnlineStoreDashboardScreen
 
   List<_Destination> _destinations() => [
         if (OnlineStorePermissions.canView)
+          const _Destination('إحصائيات المتجر', AppRoutes.ONLINESTORESTATISTICS,
+              Icons.query_stats_outlined),
+        if (OnlineStorePermissions.canView)
           const _Destination('المنتجات المعروضة', AppRoutes.ONLINESTORELISTINGS,
               Icons.inventory_2_outlined),
         if (OnlineStorePermissions.canManageCategories)
@@ -251,34 +223,5 @@ class _ViewModeButton extends StatelessWidget {
             ),
           ),
         ),
-      );
-}
-
-class _Summary extends StatelessWidget {
-  const _Summary(this.label, this.value, this.icon, this.color);
-  final String label;
-  final int value;
-  final IconData icon;
-  final Color color;
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-        decoration: BoxDecoration(
-          color: OnlineStoreAdminUi.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE1E1E8)),
-        ),
-        child: Column(children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text('$value',
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 9, color: OnlineStoreAdminUi.textSecondary)),
-        ]),
       );
 }

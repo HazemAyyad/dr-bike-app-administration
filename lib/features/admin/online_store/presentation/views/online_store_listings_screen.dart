@@ -136,7 +136,12 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: OnlineStoreAdminUi.border),
+          side: BorderSide(
+            color: controller.focusListingId.value == listing.id
+                ? OnlineStoreAdminUi.accent
+                : OnlineStoreAdminUi.border,
+            width: controller.focusListingId.value == listing.id ? 2 : 1,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),

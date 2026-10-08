@@ -6,6 +6,7 @@ import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_resource_screen.dart';
 import '../widgets/online_store_discount_editor.dart';
 import '../widgets/online_store_target_picker.dart';
+import '../widgets/online_store_form_widgets.dart';
 import '../../data/online_store_models.dart';
 
 class OnlineStorePromotionsScreen
@@ -17,7 +18,6 @@ class OnlineStorePromotionsScreen
         title: 'عروض المتجر',
         icon: Icons.local_offer_outlined,
         canManage: OnlineStorePermissions.canManagePromotions,
-        subtitle: 'عالمي أو مستهدف • أولوية وجدولة • معاينة سعر للقراءة فقط',
         inspectLabel: 'معاينة التسعير',
         onInspect: (_) => _preview(),
         actions: const {
@@ -31,6 +31,93 @@ class OnlineStorePromotionsScreen
           kind: OnlineStoreDiscountKind.promotion,
           item: item,
         ),
+        cardBuilder: _promotionCard,
+      );
+
+  Widget _promotionCard(
+    BuildContext context,
+    OnlineStoreEntity item,
+    Widget trailing,
+  ) {
+    final active =
+        item.values['is_active'] == true || item.values['is_active'] == 1;
+    final type = '${item.values['discount_type'] ?? ''}';
+    final value = item.values['discount_value'] ?? 0;
+    final uses = int.tryParse('${item.values['redemptions_count'] ?? 0}') ?? 0;
+    final discountTotal = item.values['discount_total'] ?? 0;
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      child: ListTile(
+        dense: true,
+        visualDensity: const VisualDensity(vertical: -3),
+        contentPadding: const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 2),
+        onTap: OnlineStorePermissions.canManagePromotions
+            ? () async {
+                final payload = await showOnlineStoreDiscountEditor(
+                  context,
+                  controller: controller,
+                  kind: OnlineStoreDiscountKind.promotion,
+                  item: item,
+                );
+                if (payload != null) {
+                  await controller.updateItem(item.id, payload);
+                }
+              }
+            : null,
+        leading: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: const BoxDecoration(
+            color: OnlineStoreAdminUi.surfaceMuted,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.local_offer_outlined,
+              color: OnlineStoreAdminUi.accent),
+        ),
+        title: Row(children: [
+          Expanded(
+            child: Text(item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+          _badge(
+              active ? 'نشط' : 'متوقف',
+              active
+                  ? OnlineStoreAdminUi.success
+                  : OnlineStoreAdminUi.textSecondary),
+        ]),
+        subtitle: Text(
+          '${type == 'percentage' ? '$value%' : '$value ₪'}  •  $uses استخدام  •  وفر $discountTotal ₪',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11),
+        ),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton(
+            tooltip: 'سجل المستفيدين والإحصاءات',
+            onPressed: () => Get.to(() => OnlineStorePromotionHistoryScreen(
+                  promotion: item,
+                  controller: controller,
+                )),
+            icon: const Icon(Icons.history_rounded,
+                color: OnlineStoreAdminUi.accent),
+          ),
+          trailing,
+        ]),
+      ),
+    );
+  }
+
+  Widget _badge(String label, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .09),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: color.withValues(alpha: .25)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 9, fontWeight: FontWeight.w700)),
       );
 
   Future<void> _preview() async {
@@ -150,5 +237,118 @@ class OnlineStorePromotionsScreen
       ));
     }
     quantity.dispose();
+  }
+}
+
+class OnlineStorePromotionHistoryScreen extends StatelessWidget {
+  const OnlineStorePromotionHistoryScreen({
+    Key? key,
+    required this.promotion,
+    required this.controller,
+  }) : super(key: key);
+
+  final OnlineStoreEntity promotion;
+  final OnlineStorePromotionsController controller;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
+        appBar: AppBar(title: Text('مستفيدو ${promotion.label}')),
+        body: FutureBuilder<OnlineStorePromotionHistory>(
+          future: controller.redemptions(promotion.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('تعذر تحميل السجل: ${snapshot.error}'));
+            }
+            final history = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 2.4,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  children: [
+                    _PromotionStat(
+                        'مرات الاستفادة', history.summary['uses'] ?? 0),
+                    _PromotionStat(
+                        'المستخدمون', history.summary['unique_users'] ?? 0),
+                    _PromotionStat('القطع', history.summary['quantity'] ?? 0),
+                    _PromotionStat('إجمالي التوفير',
+                        '${history.summary['discount_total'] ?? 0} ₪'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (history.rows.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(32),
+                    child:
+                        Center(child: Text('لم يستفد أحد من هذا العرض بعد.')),
+                  )
+                else
+                  ...history.rows.map((row) => _PromotionHistoryRow(row)),
+              ],
+            );
+          },
+        ),
+      );
+}
+
+class _PromotionStat extends StatelessWidget {
+  const _PromotionStat(this.label, this.value);
+  final String label;
+  final dynamic value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: OnlineStoreAdminUi.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: OnlineStoreAdminUi.border),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: OnlineStoreAdminUi.textSecondary)),
+          Text('$value',
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        ]),
+      );
+}
+
+class _PromotionHistoryRow extends StatelessWidget {
+  const _PromotionHistoryRow(this.row);
+  final Map<String, dynamic> row;
+
+  @override
+  Widget build(BuildContext context) {
+    final user = onlineStoreMap(row['user']);
+    final customer = onlineStoreMap(row['customer']);
+    final seller = onlineStoreMap(row['seller']);
+    final order = onlineStoreMap(row['sales_order']);
+    final party = customer.isNotEmpty ? customer : seller;
+    final name =
+        '${party['name'] ?? party['nameAr'] ?? party['name_ar'] ?? user['name'] ?? 'مستخدم #${row['user_id'] ?? '—'}'}';
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(
+          'الطلب: ${order['serial_number'] ?? row['sales_order_id'] ?? '—'} • ${row['quantity'] ?? 0} قطعة\n${onlineStoreFriendlyDate(row['used_at'] ?? row['created_at'])}',
+        ),
+        isThreeLine: true,
+        trailing: Text('${row['discount_amount'] ?? 0} ₪',
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ import '../../../widgets/unified_partner_selector.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_accounts_controller.dart';
 import '../widgets/online_store_state_view.dart';
+import '../widgets/online_store_network_image.dart';
 import '../utils/online_store_admin_ui.dart';
 
 class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
@@ -74,9 +75,22 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
   Widget _accountCard(OnlineStoreAccount account) => Card(
         color: OnlineStoreAdminUi.surface,
         child: ExpansionTile(
-          leading: Icon(
-            account.isBlocked ? Icons.block : Icons.person_outline,
-            color: account.isBlocked ? Colors.red : null,
+          leading: CircleAvatar(
+            backgroundColor: OnlineStoreAdminUi.surfaceMuted,
+            foregroundColor:
+                account.isBlocked ? Colors.red : OnlineStoreAdminUi.accent,
+            child: account.profileImageUrl?.trim().isNotEmpty == true
+                ? ClipOval(
+                    child: OnlineStoreNetworkImage(
+                      path: account.profileImageUrl!,
+                      width: 40,
+                      height: 40,
+                      errorWidget: Icon(account.isBlocked
+                          ? Icons.block
+                          : Icons.person_outline),
+                    ),
+                  )
+                : Icon(account.isBlocked ? Icons.block : Icons.person_outline),
           ),
           title: Text(account.name,
               style: const TextStyle(fontWeight: FontWeight.w800)),

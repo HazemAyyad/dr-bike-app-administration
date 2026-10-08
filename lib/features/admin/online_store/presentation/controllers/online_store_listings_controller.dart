@@ -21,11 +21,12 @@ class OnlineStoreListingsController extends GetxController {
   final search = ''.obs;
   final searchOpen = false.obs;
   final items = <OnlineStoreListing>[].obs;
+  final focusListingId = Rxn<int>();
 
   List<OnlineStoreListing> get visibleItems {
     final term = search.value.trim().toLowerCase();
     final selectedStatus = status.value;
-    return items
+    final visible = items
         .where(
             (item) => selectedStatus == 'all' || item.status == selectedStatus)
         .where((item) =>
@@ -33,12 +34,25 @@ class OnlineStoreListingsController extends GetxController {
             item.productName.toLowerCase().contains(term) ||
             item.productCode.toLowerCase().contains(term) ||
             '${item.productId}'.contains(term))
-        .toList(growable: false);
+        .toList(growable: true);
+    final focused = focusListingId.value;
+    if (focused != null) {
+      visible.sort((a, b) {
+        if (a.id == focused) return -1;
+        if (b.id == focused) return 1;
+        return 0;
+      });
+    }
+    return visible;
   }
 
   @override
   void onInit() {
     super.onInit();
+    final arguments = Get.arguments;
+    if (arguments is Map) {
+      focusListingId.value = int.tryParse('${arguments['listing_id'] ?? ''}');
+    }
     load();
   }
 

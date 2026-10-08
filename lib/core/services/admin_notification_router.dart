@@ -88,6 +88,20 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'online_store_low_stock':
+          final listingId = int.tryParse(
+            raw['listing_id']?.toString() ??
+                raw['related_id']?.toString() ??
+                '',
+          );
+          if (listingId != null && listingId > 0) {
+            Get.toNamed(
+              AppRoutes.ONLINESTORELISTINGS,
+              arguments: {'listing_id': listingId},
+            );
+            return;
+          }
+          break;
         case 'employee_points_changed':
         case 'employee_reward_earned':
           if (_openEmployeePoints()) {

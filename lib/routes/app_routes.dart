@@ -56,6 +56,7 @@ class AppRoutes {
   static const APPDEVELOPMENTTASK = '/AppDevelopment/:id';
   static const METACATALOGSYNC = '/MetaCatalogSync';
   static const ONLINESTOREDASHBOARD = '/OnlineStoreDashboard';
+  static const ONLINESTORESTATISTICS = '/OnlineStoreStatistics';
   static const ONLINESTORELISTINGS = '/OnlineStoreListings';
   static const ONLINESTORELISTINGEDITOR = '/OnlineStoreListingEditor';
   static const ONLINESTOREPRODUCTPICKER = '/OnlineStoreProductPicker';

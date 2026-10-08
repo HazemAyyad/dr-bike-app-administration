@@ -57,6 +57,7 @@ import '../features/admin/online_store/presentation/views/online_store_promotion
 import '../features/admin/online_store/presentation/views/online_store_reports_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_reviews_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_settings_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_statistics_screen.dart';
 import '../features/technical_support/presentation/technical_support_screen.dart';
 import '../features/notes/presentation/notes_screen.dart';
 import '../features/smart_home/presentation/bindings/smart_home_binding.dart';
@@ -369,6 +370,11 @@ class AppPages {
     GetPage(
         name: AppRoutes.ONLINESTOREDASHBOARD,
         page: () => const OnlineStoreDashboardScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORESTATISTICS,
+        page: () => const OnlineStoreStatisticsScreen(),
         binding: OnlineStoreBinding(),
         transition: _transitionFadeIn),
     GetPage(

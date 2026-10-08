@@ -86,17 +86,41 @@ class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
                           .toList(growable: false),
                     ),
                     const SizedBox(height: 12),
-                    ..._policies.entries.expand((policy) => [
-                          Text(policy.value,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800)),
-                          ...enabledLanguages.map((language) => _translation(
-                                policy.key,
-                                language,
-                                '${policy.value} - ${_languages[language]}',
-                              )),
-                          const SizedBox(height: 10),
+                    DefaultTabController(
+                      key: ValueKey(enabledLanguages.join(':')),
+                      length: enabledLanguages.length,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: OnlineStoreAdminUi.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: OnlineStoreAdminUi.border),
+                        ),
+                        child: Column(children: [
+                          TabBar(
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.start,
+                            labelColor: OnlineStoreAdminUi.accent,
+                            unselectedLabelColor:
+                                OnlineStoreAdminUi.textSecondary,
+                            tabs: enabledLanguages
+                                .map((language) => Tab(
+                                      icon:
+                                          const Icon(Icons.language, size: 18),
+                                      text: _languages[language],
+                                    ))
+                                .toList(growable: false),
+                          ),
+                          SizedBox(
+                            height: 430,
+                            child: TabBarView(
+                              children: enabledLanguages
+                                  .map(_languageEditor)
+                                  .toList(growable: false),
+                            ),
+                          ),
                         ]),
+                      ),
+                    ),
                     const ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.visibility_outlined),
@@ -181,6 +205,30 @@ class OnlineStoreSettingsScreen extends GetView<OnlineStoreSettingsController> {
       },
     );
   }
+
+  Widget _languageEditor(String language) => SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'محتوى ${_languages[language]}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'أدخل سياسات هذه اللغة فقط، ثم انتقل إلى اللغة التالية.',
+              style: TextStyle(
+                  fontSize: 11, color: OnlineStoreAdminUi.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            ..._policies.entries.expand((policy) => [
+                  _translation(policy.key, language, policy.value),
+                  const SizedBox(height: 10),
+                ]),
+          ],
+        ),
+      );
 
   String _stateLabel(String state) {
     switch (state) {

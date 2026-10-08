@@ -336,6 +336,7 @@ class OnlineStoreAccount {
     required this.name,
     this.email,
     this.phone,
+    this.profileImageUrl,
     this.isBlocked = false,
     this.isLinkable = true,
     this.links = const [],
@@ -345,6 +346,7 @@ class OnlineStoreAccount {
   final String name;
   final String? email;
   final String? phone;
+  final String? profileImageUrl;
   final bool isBlocked;
   final bool isLinkable;
   final List<OnlineStoreAccountLink> links;
@@ -355,6 +357,7 @@ class OnlineStoreAccount {
         name: '${json['name'] ?? ''}',
         email: json['email']?.toString(),
         phone: json['phone']?.toString(),
+        profileImageUrl: json['profile_image_url']?.toString(),
         isBlocked: _bool(json['is_blocked']),
         isLinkable: json['is_linkable'] == null || _bool(json['is_linkable']),
         links: onlineStoreRows(json['links'])

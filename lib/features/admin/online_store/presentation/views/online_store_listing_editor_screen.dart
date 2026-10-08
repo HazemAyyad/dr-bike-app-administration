@@ -331,19 +331,33 @@ class _OnlineStoreListingEditorScreenState
           if (mediaController.loading.value) {
             return SizedBox(
               height: 142,
-              child: Row(
-                children: List.generate(
-                  3,
-                  (_) => Container(
-                    width: 112,
-                    margin: const EdgeInsetsDirectional.only(end: 8),
-                    decoration: BoxDecoration(
-                      color: muted,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: border),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final tileWidth = ((constraints.maxWidth - 16) / 3)
+                      .clamp(72.0, 112.0)
+                      .toDouble();
+                  return Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        3,
+                        (index) => Padding(
+                          padding: EdgeInsetsDirectional.only(
+                              end: index == 2 ? 0 : 8),
+                          child: Container(
+                            width: tileWidth,
+                            decoration: BoxDecoration(
+                              color: muted,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: border),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             );
           }
@@ -568,36 +582,48 @@ class _OnlineStoreListingEditorScreenState
                 style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             for (var index = 0; index < 3; index++) ...[
-              Row(children: [
-                SizedBox(
-                  width: 118,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: specIcons[index],
-                    decoration: const InputDecoration(labelText: 'الأيقونة'),
-                    items: const {
-                      'speed': 'السرعة',
-                      'battery': 'البطارية',
-                      'motor': 'المحرك',
-                      'range': 'المدى',
-                      'weight': 'الوزن',
-                      'warranty': 'الضمان',
-                      'custom': 'أخرى',
-                    }
-                        .entries
-                        .map((entry) => DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            ))
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => specIcons[index] = value ?? 'custom'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: _input(specLabels[index], 'العنوان')),
-                const SizedBox(width: 8),
-                Expanded(child: _input(specValues[index], 'القيمة')),
-              ]),
+              LayoutBuilder(builder: (context, constraints) {
+                final iconPicker = DropdownButtonFormField<String>(
+                  initialValue: specIcons[index],
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'الأيقونة'),
+                  items: const {
+                    'speed': 'السرعة',
+                    'battery': 'البطارية',
+                    'motor': 'المحرك',
+                    'range': 'المدى',
+                    'weight': 'الوزن',
+                    'warranty': 'الضمان',
+                    'custom': 'أخرى',
+                  }
+                      .entries
+                      .map((entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value,
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => specIcons[index] = value ?? 'custom'),
+                );
+                final textFields = Row(children: [
+                  Expanded(child: _input(specLabels[index], 'العنوان')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _input(specValues[index], 'القيمة')),
+                ]);
+                if (constraints.maxWidth < 480) {
+                  return Column(children: [
+                    iconPicker,
+                    const SizedBox(height: 8),
+                    textFields,
+                  ]);
+                }
+                return Row(children: [
+                  SizedBox(width: 118, child: iconPicker),
+                  const SizedBox(width: 8),
+                  Expanded(child: textFields),
+                ]);
+              }),
               const SizedBox(height: 10),
             ],
             _input(shippingWarrantyAr, 'الشحن والضمان', lines: 3),
@@ -640,9 +666,13 @@ class _OnlineStoreListingEditorScreenState
             child: Row(children: [
               Icon(icon, color: const Color(0xFF344054)),
               const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w800)),
+              Expanded(
+                child: Text(title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w800)),
+              ),
             ]),
           ),
           const Divider(height: 1),
