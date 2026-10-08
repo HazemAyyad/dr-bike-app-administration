@@ -135,70 +135,87 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
 
   Widget _filters({required VoidCallback onApplied}) => OnlineStoreFormSection(
         title: 'تصفية التقرير',
-        description: 'تؤثر المرشحات التالية في أرقام الطلبات والخصومات.',
         icon: Icons.filter_alt_outlined,
-        child: Wrap(spacing: 8, runSpacing: 8, children: [
-          SizedBox(
-            width: 180,
-            child: OnlineStoreDateTimeField(
-              controller: controller.fromController,
-              label: 'من تاريخ',
-              includeTime: false,
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            child: OnlineStoreDateTimeField(
-              controller: controller.toController,
-              label: 'إلى تاريخ',
-              includeTime: false,
-            ),
-          ),
-          _dropdown(
-            controller.origin.value,
-            const {'all': 'كل المصادر', 'admin': 'الإدارة', 'store': 'المتجر'},
-            (value) => controller.origin.value = value,
-          ),
-          _dropdown(
-            controller.accountType.value,
-            const {
-              'all': 'كل أنواع البيع',
-              'customer': 'تجزئة',
-              'seller': 'جملة'
-            },
-            (value) => controller.accountType.value = value,
-          ),
-          _dropdown(
-            controller.status.value,
-            const {
-              'all': 'كل الحالات',
-              'unconfirmed': 'غير مؤكد',
-              'confirmed': 'مؤكد',
-              'ready': 'جاهز',
-              'with_delivery': 'مع شركة التوصيل',
-              'delivered': 'تم التسليم',
-              'archived': 'مؤرشف',
-              'returned': 'مرتجع',
-              'canceled': 'ملغي',
-            },
-            (value) => controller.status.value = value,
-          ),
-          OutlinedButton.icon(
-            style: OnlineStoreAdminUi.actionButtonStyle,
-            onPressed: onApplied,
-            icon: const Icon(Icons.filter_alt_outlined),
-            label: const Text('تطبيق المرشحات'),
-          ),
-        ]),
+        child: SingleChildScrollView(
+          child: Column(children: [
+            Row(children: [
+              Expanded(
+                  child: OnlineStoreDateTimeField(
+                controller: controller.fromController,
+                label: 'من تاريخ',
+                includeTime: false,
+              )),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: OnlineStoreDateTimeField(
+                controller: controller.toController,
+                label: 'إلى تاريخ',
+                includeTime: false,
+              )),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                  child: _dropdown(
+                      'مصدر الطلب',
+                      controller.origin.value,
+                      const {
+                        'all': 'كل المصادر',
+                        'admin': 'الإدارة',
+                        'store': 'المتجر'
+                      },
+                      (value) => controller.origin.value = value)),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: _dropdown(
+                      'نوع البيع',
+                      controller.accountType.value,
+                      const {
+                        'all': 'كل الأنواع',
+                        'customer': 'تجزئة',
+                        'seller': 'جملة'
+                      },
+                      (value) => controller.accountType.value = value)),
+            ]),
+            const SizedBox(height: 8),
+            _dropdown(
+                'حالة الطلب',
+                controller.status.value,
+                const {
+                  'all': 'كل الحالات',
+                  'unconfirmed': 'غير مؤكد',
+                  'confirmed': 'مؤكد',
+                  'ready': 'جاهز',
+                  'with_delivery': 'مع شركة التوصيل',
+                  'delivered': 'تم التسليم',
+                  'archived': 'مؤرشف',
+                  'returned': 'مرتجع',
+                  'canceled': 'ملغي',
+                },
+                (value) => controller.status.value = value),
+            const SizedBox(height: 10),
+            SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OnlineStoreAdminUi.actionButtonStyle,
+                  onPressed: onApplied,
+                  icon: const Icon(Icons.filter_alt_outlined),
+                  label: const Text('تطبيق المرشحات'),
+                )),
+          ]),
+        ),
       );
 
   Widget _dropdown(
+    String label,
     String value,
     Map<String, String> options,
     ValueChanged<String> onChanged,
   ) =>
-      DropdownButton<String>(
-        value: value,
+      DropdownButtonFormField<String>(
+        initialValue: value,
+        isDense: true,
+        decoration: InputDecoration(labelText: label),
         items: options.entries
             .map((entry) =>
                 DropdownMenuItem(value: entry.key, child: Text(entry.value)))

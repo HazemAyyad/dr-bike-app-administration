@@ -91,7 +91,6 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
   late final TextEditingController url;
   late final TextEditingController startsAt;
   late final TextEditingController endsAt;
-  late final TextEditingController sortOrder;
   late String actionType;
   late String imagePath;
   late bool isActive;
@@ -114,8 +113,6 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
     url = TextEditingController(text: '${values['action_url'] ?? ''}');
     startsAt = TextEditingController(text: '${values['starts_at'] ?? ''}');
     endsAt = TextEditingController(text: '${values['ends_at'] ?? ''}');
-    sortOrder = TextEditingController(
-        text: '${values['sort_order'] ?? widget.controller.items.length}');
     actionType = '${values['action_type'] ?? 'none'}';
     imagePath = '${values['image_path'] ?? ''}';
     isActive = widget.item == null ||
@@ -134,7 +131,6 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
       url,
       startsAt,
       endsAt,
-      sortOrder,
     ]) {
       controller.dispose();
     }
@@ -220,7 +216,7 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
         'starts_at': startsAt.text.trim().isEmpty ? null : startsAt.text.trim(),
         'ends_at': endsAt.text.trim().isEmpty ? null : endsAt.text.trim(),
         'is_active': isActive,
-        'sort_order': int.tryParse(sortOrder.text.trim()) ?? 0,
+        if (widget.item != null) 'sort_order': values['sort_order'],
       });
     } catch (e) {
       if (mounted) setState(() => error = e.toString());

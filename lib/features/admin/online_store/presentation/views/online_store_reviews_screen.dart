@@ -6,6 +6,7 @@ import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_state_view.dart';
 import '../widgets/online_store_form_widgets.dart';
 import '../../data/online_store_models.dart';
+import '../../../../../../routes/app_routes.dart';
 
 class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
   const OnlineStoreReviewsScreen({Key? key}) : super(key: key);
@@ -89,23 +90,41 @@ class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
     final comment = '${values['comment'] ?? ''}'.trim();
     return Card(
       color: OnlineStoreAdminUi.surface,
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      margin: const EdgeInsets.fromLTRB(10, 3, 10, 5),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(10, 7, 6, 7),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const CircleAvatar(child: Icon(Icons.person_outline)),
-            const SizedBox(width: 10),
+            const CircleAvatar(
+                radius: 16, child: Icon(Icons.person_outline, size: 18)),
+            const SizedBox(width: 8),
             Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(customer,
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                  Text(product,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w800)),
+                  Text(product,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11,
                           color: OnlineStoreAdminUi.textSecondary)),
                 ])),
+            IconButton(
+              tooltip: 'فتح المنتج',
+              visualDensity: VisualDensity.compact,
+              onPressed: int.tryParse('${values['product_id']}') == null
+                  ? null
+                  : () => Get.toNamed(
+                        AppRoutes.PRODUCTDETAILSSCREEN,
+                        arguments: int.parse('${values['product_id']}'),
+                      ),
+              icon: const Icon(Icons.open_in_new, size: 19),
+            ),
             if (OnlineStorePermissions.canManageReviews)
               PopupMenuButton<String>(
                 onSelected: (status) => _moderate(review.id, status),
@@ -115,30 +134,26 @@ class OnlineStoreReviewsScreen extends GetView<OnlineStoreReviewsController> {
                 ],
               ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Row(children: [
-            ...List.generate(
-                5,
-                (index) => Icon(
-                      index < rating
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      size: 19,
-                      color: const Color(0xFFE0A100),
-                    )),
-            const SizedBox(width: 8),
+            const Icon(Icons.star_rounded, size: 17, color: Color(0xFFE0A100)),
+            const SizedBox(width: 3),
             Text('$rating/5',
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+                style:
+                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
             const Spacer(),
             Text(_statusLabel(review.status),
                 style:
                     const TextStyle(color: OnlineStoreAdminUi.textSecondary)),
           ]),
           if (comment.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(comment),
+            const SizedBox(height: 4),
+            Text(comment,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12)),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '${controller.verifiedPurchase(review) ? 'شراء موثّق • ' : ''}${onlineStoreFriendlyDate(values['created_at'])}',
             style: const TextStyle(

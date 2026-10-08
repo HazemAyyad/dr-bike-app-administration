@@ -16,7 +16,6 @@ class OnlineStoreHomeSectionsScreen
         title: 'أقسام واجهة المتجر',
         icon: Icons.view_carousel_outlined,
         canManage: OnlineStorePermissions.canManageContent,
-        subtitle: 'الأقسام التي يراها العميل في الصفحة الرئيسية',
         inspectLabel: 'إدارة العناصر اليدوية',
         onInspect: _manageItems,
         actions: const {OnlineStoreResourceAction.delete},
@@ -59,10 +58,6 @@ class OnlineStoreHomeSectionsScreen
           OnlineStoreFormField('selection_config.limit', 'عدد العناصر المعروضة',
               numeric: true),
           OnlineStoreFormField('is_visible', 'ظاهر', boolean: true),
-          OnlineStoreFormField('sort_order', 'موضع القسم',
-              numeric: true,
-              helperText:
-                  'الرقم الأصغر يظهر أولاً، أو رتّب بالسحب من القائمة.'),
         ],
       );
 

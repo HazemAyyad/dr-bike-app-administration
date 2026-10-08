@@ -54,15 +54,17 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
             })),
       );
 
-  Widget _filters({required VoidCallback onApplied}) => Padding(
-        padding: const EdgeInsets.all(10),
-        child: OnlineStoreFormSection(
-          title: 'تصفية السجل',
-          description: 'ابحث حسب نوع السجل أو العملية أو الموظف والفترة.',
-          icon: Icons.filter_alt_outlined,
-          child: Wrap(spacing: 8, runSpacing: 8, children: [
-            DropdownButton<String>(
-              value: controller.entityType.value,
+  Widget _filters({required VoidCallback onApplied}) => OnlineStoreFormSection(
+        title: 'تصفية السجل',
+        icon: Icons.filter_alt_outlined,
+        child: SingleChildScrollView(
+            child: Column(children: [
+          Row(children: [
+            Expanded(
+                child: DropdownButtonFormField<String>(
+              initialValue: controller.entityType.value,
+              isDense: true,
+              decoration: const InputDecoration(labelText: 'نوع السجل'),
               items: const [
                 'all',
                 'listing',
@@ -79,9 +81,13 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
                   .toList(),
               onChanged: (value) =>
                   controller.entityType.value = value ?? 'all',
-            ),
-            DropdownButton<String>(
-              value: controller.actionFilter.value,
+            )),
+            const SizedBox(width: 8),
+            Expanded(
+                child: DropdownButtonFormField<String>(
+              initialValue: controller.actionFilter.value,
+              isDense: true,
+              decoration: const InputDecoration(labelText: 'نوع العملية'),
               items: const [
                 'all',
                 'created',
@@ -102,39 +108,46 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
                   .toList(),
               onChanged: (value) =>
                   controller.actionFilter.value = value ?? 'all',
-            ),
-            SizedBox(
-              width: 125,
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'رقم الموظف'),
-                onChanged: (value) => controller.actorUserId.value = value,
-              ),
-            ),
-            SizedBox(
-              width: 170,
-              child: OnlineStoreDateTimeField(
-                controller: controller.fromController,
-                label: 'من تاريخ',
-                includeTime: false,
-              ),
-            ),
-            SizedBox(
-              width: 170,
-              child: OnlineStoreDateTimeField(
-                controller: controller.toController,
-                label: 'إلى تاريخ',
-                includeTime: false,
-              ),
-            ),
-            OutlinedButton.icon(
-              style: OnlineStoreAdminUi.actionButtonStyle,
-              onPressed: onApplied,
-              icon: const Icon(Icons.filter_alt_outlined),
-              label: const Text('تطبيق المرشحات'),
-            ),
+            )),
           ]),
-        ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'رقم الموظف (اختياري)',
+                prefixIcon: Icon(Icons.badge_outlined),
+              ),
+              onChanged: (value) => controller.actorUserId.value = value,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: OnlineStoreDateTimeField(
+              controller: controller.fromController,
+              label: 'من تاريخ',
+              includeTime: false,
+            )),
+            const SizedBox(width: 8),
+            Expanded(
+                child: OnlineStoreDateTimeField(
+              controller: controller.toController,
+              label: 'إلى تاريخ',
+              includeTime: false,
+            )),
+          ]),
+          const SizedBox(height: 10),
+          SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OnlineStoreAdminUi.actionButtonStyle,
+                onPressed: onApplied,
+                icon: const Icon(Icons.filter_alt_outlined),
+                label: const Text('تطبيق المرشحات'),
+              )),
+        ])),
       );
 
   Widget _eventCard(Map<String, dynamic> event) {

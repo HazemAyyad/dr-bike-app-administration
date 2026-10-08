@@ -16,7 +16,6 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
         title: 'كوبونات المتجر',
         icon: Icons.confirmation_number_outlined,
         canManage: OnlineStorePermissions.canManagePromotions,
-        subtitle: 'الأهلية والأهداف والحدود وسجل الاستخدام',
         actions: const {
           OnlineStoreResourceAction.activate,
           OnlineStoreResourceAction.deactivate,
@@ -47,6 +46,9 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
     return Card(
       color: OnlineStoreAdminUi.surface,
       child: ListTile(
+        dense: true,
+        visualDensity: const VisualDensity(vertical: -3),
+        contentPadding: const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 2),
         onTap: OnlineStorePermissions.canManagePromotions
             ? () async {
                 final payload = await showOnlineStoreDiscountEditor(
@@ -61,7 +63,7 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
               }
             : null,
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(7),
           decoration: const BoxDecoration(
             color: OnlineStoreAdminUi.surfaceMuted,
             shape: BoxShape.circle,
@@ -69,22 +71,23 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
           child: const Icon(Icons.confirmation_number_outlined,
               color: OnlineStoreAdminUi.accent),
         ),
-        title: Text(item.label,
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Wrap(spacing: 6, runSpacing: 5, children: [
-            _badge(type == 'percentage' ? '$value%' : '$value ₪',
-                OnlineStoreAdminUi.accent),
-            _badge(
-                active ? 'نشط' : 'متوقف',
-                active
-                    ? OnlineStoreAdminUi.success
-                    : OnlineStoreAdminUi.textSecondary),
-            _badge('استخدم $used', const Color(0xFF1D5D9B)),
-            _badge(
-                'متبقي ${remaining ?? 'غير محدود'}', const Color(0xFF7A5D00)),
-          ]),
+        title: Row(children: [
+          Expanded(
+              child: Text(item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800))),
+          _badge(
+              active ? 'نشط' : 'متوقف',
+              active
+                  ? OnlineStoreAdminUi.success
+                  : OnlineStoreAdminUi.textSecondary),
+        ]),
+        subtitle: Text(
+          '${type == 'percentage' ? '$value%' : '$value ₪'}  •  استُخدم $used  •  متبقي ${remaining ?? '∞'}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11),
         ),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
@@ -103,7 +106,7 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
   }
 
   Widget _badge(String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
         decoration: BoxDecoration(
           color: color.withValues(alpha: .09),
           borderRadius: BorderRadius.circular(30),
@@ -111,7 +114,7 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
         ),
         child: Text(label,
             style: TextStyle(
-                color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+                color: color, fontSize: 9, fontWeight: FontWeight.w700)),
       );
 }
 

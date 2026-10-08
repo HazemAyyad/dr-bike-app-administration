@@ -91,6 +91,7 @@ class OnlineStoreDialog extends StatelessWidget {
 Future<T?> showOnlineStoreBottomSheet<T>(
   BuildContext context, {
   required Widget child,
+  double heightFactor = .52,
 }) =>
     showModalBottomSheet<T>(
       context: context,
@@ -100,15 +101,29 @@ Future<T?> showOnlineStoreBottomSheet<T>(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+      builder: (_) => SizedBox(
+        height: MediaQuery.sizeOf(context).height * heightFactor,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 12,
+            ),
+            child: Column(children: [
+              Container(
+                width: 42,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: OnlineStoreAdminUi.border,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              Expanded(child: child),
+            ]),
           ),
-          child: child,
         ),
       ),
     );

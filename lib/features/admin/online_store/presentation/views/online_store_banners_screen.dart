@@ -39,6 +39,7 @@ class OnlineStoreBannersScreen extends GetView<OnlineStoreBannersController> {
         item.values['is_active'] == true || item.values['is_active'] == 1;
     final starts = '${item.values['starts_at'] ?? ''}';
     final ends = '${item.values['ends_at'] ?? ''}';
+    final clicks = int.tryParse('${item.values['click_count'] ?? 0}') ?? 0;
     final now = DateTime.now();
     final startDate = DateTime.tryParse(starts)?.toLocal();
     final endDate = DateTime.tryParse(ends)?.toLocal();
@@ -94,6 +95,15 @@ class OnlineStoreBannersScreen extends GetView<OnlineStoreBannersController> {
                             : OnlineStoreAdminUi.textSecondary,
                         fontWeight: FontWeight.w700,
                       )),
+                  Row(children: [
+                    const Icon(Icons.ads_click,
+                        size: 15, color: OnlineStoreAdminUi.accent),
+                    const SizedBox(width: 4),
+                    Text('$clicks ضغطة من تطبيق المتجر',
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: OnlineStoreAdminUi.textSecondary)),
+                  ]),
                   if (starts.isNotEmpty)
                     Text('يبدأ ${onlineStoreFriendlyDate(starts)}',
                         maxLines: 1,

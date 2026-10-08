@@ -16,7 +16,6 @@ Map<String, dynamic> onlineStoreCategoryPayload({
   required int? parentId,
   required bool isActive,
   required bool showOnHome,
-  required int sortOrder,
   required String imagePath,
 }) =>
     {
@@ -24,7 +23,6 @@ Map<String, dynamic> onlineStoreCategoryPayload({
       'parent_id': parentId,
       'is_active': isActive,
       'show_on_home': showOnHome,
-      'sort_order': sortOrder,
       'image_path': imagePath.isEmpty ? null : imagePath,
     };
 
@@ -37,7 +35,6 @@ class OnlineStoreCategoriesScreen
         title: 'تصنيفات المتجر',
         icon: Icons.account_tree_outlined,
         canManage: OnlineStorePermissions.canManageCategories,
-        subtitle: 'تصنيف مستقل عن تصنيفات المخزون وأقسامه',
         inspectLabel: 'تعيين قوائم المنتجات',
         onInspect: (item) => _assignListings(item.id),
         actions: const {OnlineStoreResourceAction.delete},
@@ -59,16 +56,24 @@ class OnlineStoreCategoriesScreen
         item.values['is_active'] == true || item.values['is_active'] == 1;
     final home =
         item.values['show_on_home'] == true || item.values['show_on_home'] == 1;
+    final products = int.tryParse('${item.values['memberships_count']}') ?? 0;
     return Card(
       color: OnlineStoreAdminUi.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: OnlineStoreAdminUi.border),
+      ),
       child: ListTile(
+        dense: true,
+        visualDensity: const VisualDensity(vertical: -1),
         onTap: OnlineStorePermissions.canManageCategories
             ? () => _editAndSave(context, item)
             : null,
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: SizedBox.square(
-            dimension: 56,
+            dimension: 48,
             child: imagePath.isEmpty
                 ? const ColoredBox(
                     color: OnlineStoreAdminUi.surfaceMuted,
@@ -81,17 +86,53 @@ class OnlineStoreCategoriesScreen
             style: const TextStyle(
                 color: OnlineStoreAdminUi.textPrimary,
                 fontWeight: FontWeight.w700)),
-        subtitle: Text([
-          if (parent.isNotEmpty) 'الأب: $parentName',
-          active ? 'نشط' : 'غير نشط',
-          home ? 'يظهر في الرئيسية' : 'لا يظهر في الرئيسية',
-          'موضع العرض: ${(int.tryParse('${item.values['sort_order']}') ?? 0) + 1}',
-          '${int.tryParse('${item.values['memberships_count']}') ?? 0} منتج',
-        ].join(' • ')),
-        trailing: trailing,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 5),
+          child: Wrap(spacing: 6, runSpacing: 4, children: [
+            _categoryBadge(
+                active ? 'نشط' : 'متوقف',
+                active
+                    ? OnlineStoreAdminUi.success
+                    : OnlineStoreAdminUi.textSecondary),
+            if (home) _categoryBadge('في الرئيسية', OnlineStoreAdminUi.accent),
+            _categoryBadge('$products منتج', const Color(0xFF1D5D9B)),
+            if (parent.isNotEmpty)
+              _categoryBadge(
+                  'ضمن $parentName', OnlineStoreAdminUi.textSecondary),
+          ]),
+        ),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (OnlineStorePermissions.canManageCategories)
+            IconButton(
+              tooltip: active ? 'إيقاف التصنيف' : 'تنشيط التصنيف',
+              visualDensity: VisualDensity.compact,
+              onPressed: () => controller.updateItem(item.id, {
+                'is_active': !active,
+              }),
+              icon: Icon(
+                active ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                color: active
+                    ? OnlineStoreAdminUi.textSecondary
+                    : OnlineStoreAdminUi.success,
+              ),
+            ),
+          trailing,
+        ]),
       ),
     );
   }
+
+  Widget _categoryBadge(String label, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: .22)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+      );
 
   Future<void> _editAndSave(
       BuildContext context, OnlineStoreEntity item) async {
@@ -109,8 +150,6 @@ class OnlineStoreCategoriesScreen
     final nameEn = TextEditingController(
         text:
             '${onlineStoreMap(item?.values['name_translations'])['en'] ?? ''}');
-    final sortOrder = TextEditingController(
-        text: '${item?.values['sort_order'] ?? controller.items.length}');
     int? parentId = int.tryParse('${item?.values['parent_id'] ?? ''}');
     var active = item == null ||
         item.values['is_active'] == true ||
@@ -184,15 +223,6 @@ class OnlineStoreCategoriesScreen
                 ],
                 onChanged: (value) => setState(() => parentId = value),
               ),
-              TextField(
-                controller: sortOrder,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'موضع التصنيف',
-                  helperText:
-                      'الرقم الأصغر يظهر أولاً. ويمكنك الترتيب بالسحب من القائمة.',
-                ),
-              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('نشط'),
@@ -237,7 +267,6 @@ class OnlineStoreCategoriesScreen
                             parentId: parentId,
                             isActive: active,
                             showOnHome: showOnHome,
-                            sortOrder: int.tryParse(sortOrder.text.trim()) ?? 0,
                             imagePath: imagePath,
                           ),
                         );
@@ -263,7 +292,6 @@ class OnlineStoreCategoriesScreen
     await Future<void>.delayed(const Duration(milliseconds: 250));
     nameAr.dispose();
     nameEn.dispose();
-    sortOrder.dispose();
     return result;
   }
 
@@ -339,19 +367,6 @@ class OnlineStoreCategoriesScreen
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('سيتم حذف «${item.label}» بعد معالجة الارتباطات.'),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: OnlineStoreAdminUi.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: OnlineStoreAdminUi.border),
-                  ),
-                  child: const Text(
-                    'إيقاف «نشط» يخفي التصنيف ومنتجاته التي لا تنتمي لتصنيف نشط آخر من تطبيق المتجر. خيار «يظهر في الرئيسية» يخص واجهة المتجر الرئيسية فقط.',
-                    style: TextStyle(color: OnlineStoreAdminUi.textSecondary),
-                  ),
-                ),
                 if (childrenCount > 0) ...[
                   const SizedBox(height: 12),
                   Text(

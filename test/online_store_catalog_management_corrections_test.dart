@@ -48,12 +48,12 @@ void main() {
       parentId: 3,
       isActive: true,
       showOnHome: false,
-      sortOrder: 8,
       imagePath: 'public/OnlineStore/Content/category.jpg',
     );
 
     expect(payload['image_path'], 'public/OnlineStore/Content/category.jpg');
     expect(payload['name_translations'], {'ar': 'قطع', 'en': 'Parts'});
+    expect(payload.containsKey('sort_order'), isFalse);
   });
 
   test('already listed products cannot create duplicate listings', () {
