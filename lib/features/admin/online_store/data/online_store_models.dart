@@ -155,6 +155,7 @@ class OnlineStoreListing {
     this.originalDescriptionTranslations = const {},
     this.productCode = '',
     this.onlineStockLimit,
+    this.viewCount = 0,
     this.updatedAt,
   });
 
@@ -180,6 +181,7 @@ class OnlineStoreListing {
   final Map<String, dynamic> originalDescriptionTranslations;
   final String productCode;
   final int? onlineStockLimit;
+  final int viewCount;
   final String? updatedAt;
 
   bool get canPublish =>
@@ -236,6 +238,7 @@ class OnlineStoreListing {
       onlineStockLimit: json['online_stock_limit'] == null
           ? null
           : _int(json['online_stock_limit']),
+      viewCount: _int(json['view_count']),
       updatedAt: json['updated_at']?.toString(),
     );
   }

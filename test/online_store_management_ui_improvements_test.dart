@@ -1,5 +1,7 @@
 import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_dashboard_controller.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_listings_controller.dart';
+import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_dashboard_screen.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_listings_screen.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/widgets/online_store_network_image.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/widgets/online_store_form_widgets.dart';
@@ -33,6 +35,7 @@ void main() {
           'display': {'name': 'منتج ${index + 1}'},
           'base_prices': {'retail': 100 + index},
           'availability': {'available_qty': 5},
+          'view_count': index == 0 ? 27 : index,
         },
       ),
     };
@@ -49,6 +52,56 @@ void main() {
     expect(delegate.crossAxisCount, 3);
     expect(delegate.mainAxisExtent, 218);
     expect(find.text('منتج 1'), findsOneWidget);
+    expect(find.text('27'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('date range fields stack instead of squeezing on phones',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final from = TextEditingController(text: '2026-10-01');
+    final to = TextEditingController(text: '2026-10-31');
+    addTearDown(from.dispose);
+    addTearDown(to.dispose);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: OnlineStoreDateRangeFields(
+            fromController: from,
+            toController: to,
+          ),
+        ),
+      ),
+    ));
+
+    final fields = find.byType(OnlineStoreDateTimeField);
+    expect(fields, findsNWidgets(2));
+    expect(tester.getTopLeft(fields.at(1)).dy,
+        greaterThan(tester.getBottomLeft(fields.at(0)).dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('management tools switch between list and icon grid',
+      (tester) async {
+    userType = 'admin';
+    Get.put(OnlineStoreDashboardController(FakeOnlineStoreRepository()));
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: OnlineStoreDashboardScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GridView), findsNothing);
+    await tester.tap(find.byTooltip('عرض شبكة'));
+    await tester.pump();
+
+    expect(find.byType(GridView), findsOneWidget);
+    expect(find.text('المنتجات المعروضة'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -41,6 +41,10 @@ typedef OnlineStoreResourceCardBuilder = Widget Function(
   OnlineStoreEntity item,
   Widget trailing,
 );
+typedef OnlineStoreResourceSubtitleBuilder = Widget Function(
+  BuildContext context,
+  OnlineStoreEntity item,
+);
 typedef OnlineStoreResourceDelete = Future<void> Function(
   BuildContext context,
   OnlineStoreEntity item,
@@ -61,6 +65,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     this.onReorder,
     this.editor,
     this.cardBuilder,
+    this.subtitleBuilder,
     this.onDelete,
     this.showReorderHint = true,
   }) : super(key: key);
@@ -76,6 +81,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
   final Future<void> Function(List<int> ids)? onReorder;
   final OnlineStoreResourceEditor? editor;
   final OnlineStoreResourceCardBuilder? cardBuilder;
+  final OnlineStoreResourceSubtitleBuilder? subtitleBuilder;
   final OnlineStoreResourceDelete? onDelete;
   final bool showReorderHint;
 
@@ -191,8 +197,9 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
         ),
         title: Text(item.label,
             style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(
-            subtitle ?? (item.status.isEmpty ? '#${item.id}' : item.status)),
+        subtitle: subtitleBuilder?.call(context, item) ??
+            Text(subtitle ??
+                (item.status.isEmpty ? '#${item.id}' : item.status)),
         trailing: trailing,
       ),
     );

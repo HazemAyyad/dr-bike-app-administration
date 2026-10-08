@@ -138,21 +138,10 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
         icon: Icons.filter_alt_outlined,
         child: SingleChildScrollView(
           child: Column(children: [
-            Row(children: [
-              Expanded(
-                  child: OnlineStoreDateTimeField(
-                controller: controller.fromController,
-                label: 'من تاريخ',
-                includeTime: false,
-              )),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: OnlineStoreDateTimeField(
-                controller: controller.toController,
-                label: 'إلى تاريخ',
-                includeTime: false,
-              )),
-            ]),
+            OnlineStoreDateRangeFields(
+              fromController: controller.fromController,
+              toController: controller.toController,
+            ),
             const SizedBox(height: 8),
             Row(children: [
               Expanded(

@@ -240,21 +240,13 @@ class _DiscountEditorDialogState extends State<_DiscountEditorDialog> {
               description:
                   'اترك التاريخين فارغين ليبقى ${isCoupon ? 'الكوبون' : 'العرض'} متاحاً دون مدة محددة.',
               icon: Icons.schedule_outlined,
-              child: Row(children: [
-                Expanded(
-                  child: OnlineStoreDateTimeField(
-                    controller: controllers['starts_at']!,
-                    label: 'تاريخ ووقت البداية',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OnlineStoreDateTimeField(
-                    controller: controllers['ends_at']!,
-                    label: 'تاريخ ووقت النهاية',
-                  ),
-                ),
-              ]),
+              child: OnlineStoreDateRangeFields(
+                fromController: controllers['starts_at']!,
+                toController: controllers['ends_at']!,
+                fromLabel: 'تاريخ ووقت البداية',
+                toLabel: 'تاريخ ووقت النهاية',
+                includeTime: true,
+              ),
             ),
             if (isCoupon) ...[
               _field('minimum_order', 'الحد الأدنى للطلب', numeric: true),

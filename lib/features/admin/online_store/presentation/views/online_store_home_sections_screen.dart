@@ -20,6 +20,7 @@ class OnlineStoreHomeSectionsScreen
         onInspect: _manageItems,
         actions: const {OnlineStoreResourceAction.delete},
         onReorder: controller.reorderSections,
+        subtitleBuilder: (_, section) => _sectionMeta(section),
         fields: const [
           OnlineStoreFormField('key', 'رمز القسم',
               helperText: 'اسم تقني قصير وثابت، مثل featured_bikes.'),
@@ -59,6 +60,44 @@ class OnlineStoreHomeSectionsScreen
               numeric: true),
           OnlineStoreFormField('is_visible', 'ظاهر', boolean: true),
         ],
+      );
+
+  Widget _sectionMeta(OnlineStoreEntity section) {
+    final views = int.tryParse('${section.values['view_count'] ?? 0}') ?? 0;
+    final visible = section.values['is_visible'] == true ||
+        section.values['is_visible'] == 1;
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Wrap(spacing: 7, runSpacing: 4, children: [
+        _sectionBadge(
+          visible ? 'ظاهر' : 'مخفي',
+          visible
+              ? OnlineStoreAdminUi.success
+              : OnlineStoreAdminUi.textSecondary,
+        ),
+        _sectionBadge('$views مشاهدة', OnlineStoreAdminUi.accent,
+            icon: Icons.visibility_outlined),
+      ]),
+    );
+  }
+
+  Widget _sectionBadge(String label, Color color, {IconData? icon}) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: .2)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 3),
+          ],
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+        ]),
       );
 
   Future<void> _manageItems(OnlineStoreEntity section) async {

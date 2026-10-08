@@ -287,25 +287,49 @@ class _ListingMedia extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        child: ColoredBox(
-          color: OnlineStoreAdminUi.surfaceMuted,
-          child: media == null
-              ? const Icon(Icons.inventory_2_outlined,
-                  color: OnlineStoreAdminUi.textSecondary)
-              : media.mediaType == 'video'
-                  ? const Stack(fit: StackFit.expand, children: [
-                      Icon(Icons.video_library_outlined,
-                          color: OnlineStoreAdminUi.accent, size: 34),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 6),
-                          child: Text('فيديو', style: TextStyle(fontSize: 10)),
+        child: Stack(fit: StackFit.expand, children: [
+          ColoredBox(
+            color: OnlineStoreAdminUi.surfaceMuted,
+            child: media == null
+                ? const Icon(Icons.inventory_2_outlined,
+                    color: OnlineStoreAdminUi.textSecondary)
+                : media.mediaType == 'video'
+                    ? const Stack(fit: StackFit.expand, children: [
+                        Icon(Icons.video_library_outlined,
+                            color: OnlineStoreAdminUi.accent, size: 34),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: 6),
+                            child:
+                                Text('فيديو', style: TextStyle(fontSize: 10)),
+                          ),
                         ),
-                      ),
-                    ])
-                  : OnlineStoreNetworkImage(path: media.url),
-        ),
+                      ])
+                    : OnlineStoreNetworkImage(path: media.url),
+          ),
+          PositionedDirectional(
+            top: 6,
+            end: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: .68),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.visibility_outlined,
+                    size: 12, color: Colors.white),
+                const SizedBox(width: 3),
+                Text('${listing.viewCount}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800)),
+              ]),
+            ),
+          ),
+        ]),
       ),
     );
   }

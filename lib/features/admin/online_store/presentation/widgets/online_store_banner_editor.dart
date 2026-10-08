@@ -288,19 +288,13 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
                 description:
                     'اختياري. اتركها فارغة ليظهر البانر دون مدة محددة.',
                 icon: Icons.schedule_outlined,
-                child: Row(children: [
-                  Expanded(
-                      child: OnlineStoreDateTimeField(
-                    controller: startsAt,
-                    label: 'تاريخ ووقت البداية',
-                  )),
-                  const SizedBox(width: 8),
-                  Expanded(
-                      child: OnlineStoreDateTimeField(
-                    controller: endsAt,
-                    label: 'تاريخ ووقت النهاية',
-                  )),
-                ])),
+                child: OnlineStoreDateRangeFields(
+                  fromController: startsAt,
+                  toController: endsAt,
+                  fromLabel: 'تاريخ ووقت البداية',
+                  toLabel: 'تاريخ ووقت النهاية',
+                  includeTime: true,
+                )),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('نشط'),

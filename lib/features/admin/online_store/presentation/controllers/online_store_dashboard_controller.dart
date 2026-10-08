@@ -9,6 +9,7 @@ class OnlineStoreDashboardController extends GetxController {
   final loading = false.obs;
   final error = RxnString();
   final summary = Rxn<OnlineStoreDashboardSummary>();
+  final toolsGrid = false.obs;
 
   @override
   void onInit() {

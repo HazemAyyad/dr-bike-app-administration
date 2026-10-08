@@ -93,7 +93,12 @@ class OnlineStoreDateTimeField extends StatelessWidget {
             decoration: InputDecoration(
               labelText: label,
               helperText: helpText,
-              prefixIcon: const Icon(Icons.event_outlined),
+              isDense: false,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+              prefixIcon: const Icon(Icons.event_outlined, size: 20),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 40, minHeight: 40),
               suffixIcon: value.text.isEmpty
                   ? const Icon(Icons.chevron_left)
                   : IconButton(
@@ -101,6 +106,8 @@ class OnlineStoreDateTimeField extends StatelessWidget {
                       onPressed: controller.clear,
                       icon: const Icon(Icons.close),
                     ),
+              suffixIconConstraints:
+                  const BoxConstraints(minWidth: 40, minHeight: 40),
             ),
             child: Text(
               value.text.isEmpty
@@ -108,10 +115,14 @@ class OnlineStoreDateTimeField extends StatelessWidget {
                   : onlineStoreFriendlyDate(value.text,
                       includeTime: includeTime),
               style: TextStyle(
+                fontSize: 13,
+                height: 1.25,
                 color: value.text.isEmpty
                     ? OnlineStoreAdminUi.textSecondary
                     : OnlineStoreAdminUi.textPrimary,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -168,6 +179,51 @@ class OnlineStoreDateTimeField extends StatelessWidget {
         ? result.toIso8601String().substring(0, 16).replaceFirst('T', ' ')
         : result.toIso8601String().substring(0, 10);
   }
+}
+
+class OnlineStoreDateRangeFields extends StatelessWidget {
+  const OnlineStoreDateRangeFields({
+    Key? key,
+    required this.fromController,
+    required this.toController,
+    this.fromLabel = 'من تاريخ',
+    this.toLabel = 'إلى تاريخ',
+    this.includeTime = false,
+  }) : super(key: key);
+
+  final TextEditingController fromController;
+  final TextEditingController toController;
+  final String fromLabel;
+  final String toLabel;
+  final bool includeTime;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final from = OnlineStoreDateTimeField(
+            controller: fromController,
+            label: fromLabel,
+            includeTime: includeTime,
+          );
+          final to = OnlineStoreDateTimeField(
+            controller: toController,
+            label: toLabel,
+            includeTime: includeTime,
+          );
+          if (constraints.maxWidth < 480) {
+            return Column(children: [
+              from,
+              const SizedBox(height: 10),
+              to,
+            ]);
+          }
+          return Row(children: [
+            Expanded(child: from),
+            const SizedBox(width: 10),
+            Expanded(child: to),
+          ]);
+        },
+      );
 }
 
 class OnlineStoreReorderHint extends StatelessWidget {
