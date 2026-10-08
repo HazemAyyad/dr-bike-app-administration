@@ -180,7 +180,10 @@ class _DiscountEditorDialogState extends State<_DiscountEditorDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) => OnlineStoreDialog(
+        icon: widget.kind == OnlineStoreDiscountKind.coupon
+            ? Icons.confirmation_number_outlined
+            : Icons.local_offer_outlined,
         title: Text(widget.item == null
             ? (isCoupon ? 'إضافة كوبون' : 'إضافة عرض')
             : (isCoupon ? 'تعديل الكوبون' : 'تعديل العرض')),

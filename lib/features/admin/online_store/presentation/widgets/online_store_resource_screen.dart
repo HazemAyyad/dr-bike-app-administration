@@ -41,6 +41,10 @@ typedef OnlineStoreResourceCardBuilder = Widget Function(
   OnlineStoreEntity item,
   Widget trailing,
 );
+typedef OnlineStoreResourceDelete = Future<void> Function(
+  BuildContext context,
+  OnlineStoreEntity item,
+);
 
 class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     extends GetView<T> {
@@ -57,6 +61,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     this.onReorder,
     this.editor,
     this.cardBuilder,
+    this.onDelete,
+    this.showReorderHint = true,
   }) : super(key: key);
 
   final String title;
@@ -70,11 +76,33 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
   final Future<void> Function(List<int> ids)? onReorder;
   final OnlineStoreResourceEditor? editor;
   final OnlineStoreResourceCardBuilder? cardBuilder;
+  final OnlineStoreResourceDelete? onDelete;
+  final bool showReorderHint;
 
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: OnlineStoreAdminUi.pageBackground,
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(
+          title: Obx(() => controller.searchOpen.value
+              ? TextField(
+                  controller: controller.search,
+                  autofocus: true,
+                  onChanged: (value) => controller.searchQuery.value = value,
+                  decoration: const InputDecoration(
+                    hintText: 'بحث...',
+                    border: InputBorder.none,
+                  ),
+                )
+              : Text(title)),
+          actions: [
+            Obx(() => IconButton(
+                  tooltip: controller.searchOpen.value ? 'إغلاق البحث' : 'بحث',
+                  onPressed: controller.toggleSearch,
+                  icon: Icon(
+                      controller.searchOpen.value ? Icons.close : Icons.search),
+                )),
+          ],
+        ),
         floatingActionButton: canManage && (fields.isNotEmpty || editor != null)
             ? FloatingActionButton.extended(
                 backgroundColor: OnlineStoreAdminUi.surface,
@@ -90,10 +118,13 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
         body: Obx(() => OnlineStoreStateView(
               loading: controller.loading.value,
               error: controller.error.value,
-              isEmpty: controller.items.isEmpty,
+              isEmpty: controller.visibleItems.isEmpty,
               onRetry: controller.load,
               child: Column(children: [
-                if (onReorder != null && canManage)
+                if (onReorder != null &&
+                    canManage &&
+                    showReorderHint &&
+                    controller.searchQuery.value.isEmpty)
                   const Padding(
                     padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
                     child: OnlineStoreReorderHint(compact: true),
@@ -101,14 +132,15 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
                 Expanded(
                     child: RefreshIndicator(
                   onRefresh: controller.load,
-                  child: onReorder == null
+                  child: onReorder == null ||
+                          controller.searchQuery.value.isNotEmpty
                       ? ListView.separated(
                           padding: const EdgeInsets.all(12),
-                          itemCount: controller.items.length,
+                          itemCount: controller.visibleItems.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 8),
-                          itemBuilder: (_, index) =>
-                              _resourceCard(context, controller.items[index]),
+                          itemBuilder: (_, index) => _resourceCard(
+                              context, controller.visibleItems[index]),
                         )
                       : ReorderableListView.builder(
                           padding: const EdgeInsets.all(12),
@@ -184,7 +216,11 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'delete') {
-              _confirmDelete(item);
+              if (onDelete != null) {
+                onDelete!(Get.context!, item);
+              } else {
+                _confirmDelete(item);
+              }
             }
             if (value == 'activate') {
               controller.action(item.id, 'activate');
@@ -211,7 +247,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
   }
 
   Future<void> _confirmDelete(OnlineStoreEntity item) async {
-    final accepted = await Get.dialog<bool>(AlertDialog(
+    final accepted = await Get.dialog<bool>(OnlineStoreDialog(
+      icon: Icons.delete_outline,
       title: const Text('تأكيد الحذف'),
       content: Text('هل تريد حذف «${item.label}»؟'),
       actions: [
@@ -261,7 +298,8 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
     final accepted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setState) => OnlineStoreDialog(
+          icon: icon,
           title: Text(item == null ? 'إضافة $title' : 'تعديل ${item.label}'),
           content: OnlineStoreDialogBody(
             child: Column(

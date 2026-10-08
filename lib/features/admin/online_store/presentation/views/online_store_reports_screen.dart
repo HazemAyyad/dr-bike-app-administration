@@ -12,7 +12,16 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: OnlineStoreAdminUi.pageBackground,
-        appBar: AppBar(title: const Text('تقارير المتجر')),
+        appBar: AppBar(
+          title: const Text('تقارير المتجر'),
+          actions: [
+            IconButton(
+              tooltip: 'تصفية التقرير',
+              onPressed: () => _showFilters(context),
+              icon: const Icon(Icons.filter_alt_outlined),
+            ),
+          ],
+        ),
         body: Obx(() {
           if (controller.loading.value) return const _ReportSkeleton();
           if (controller.error.value != null) {
@@ -36,10 +45,8 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(12),
               children: [
-                _filters(),
-                const SizedBox(height: 12),
                 Text(
-                  'آخر تحديث: ${_date(controller.data['generated_at'])}',
+                  'آخر تحديث: ${onlineStoreFriendlyDate(controller.data['generated_at'])}',
                   style: const TextStyle(
                       fontSize: 11, color: OnlineStoreAdminUi.textSecondary),
                 ),
@@ -118,7 +125,15 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
         }),
       );
 
-  Widget _filters() => OnlineStoreFormSection(
+  Future<void> _showFilters(BuildContext context) => showOnlineStoreBottomSheet(
+        context,
+        child: Obx(() => _filters(onApplied: () {
+              Navigator.pop(context);
+              controller.load();
+            })),
+      );
+
+  Widget _filters({required VoidCallback onApplied}) => OnlineStoreFormSection(
         title: 'تصفية التقرير',
         description: 'تؤثر المرشحات التالية في أرقام الطلبات والخصومات.',
         icon: Icons.filter_alt_outlined,
@@ -170,7 +185,7 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
           ),
           OutlinedButton.icon(
             style: OnlineStoreAdminUi.actionButtonStyle,
-            onPressed: controller.load,
+            onPressed: onApplied,
             icon: const Icon(Icons.filter_alt_outlined),
             label: const Text('تطبيق المرشحات'),
           ),
@@ -263,14 +278,6 @@ class OnlineStoreReportsScreen extends GetView<OnlineStoreReportsController> {
           ]),
         ),
       );
-
-  String _date(dynamic value) {
-    final parsed = DateTime.tryParse('$value')?.toLocal();
-    if (parsed == null) return '—';
-    String two(int number) => number.toString().padLeft(2, '0');
-    return '${parsed.year}/${two(parsed.month)}/${two(parsed.day)} '
-        '${two(parsed.hour)}:${two(parsed.minute)}';
-  }
 }
 
 class _MetricCard extends StatelessWidget {

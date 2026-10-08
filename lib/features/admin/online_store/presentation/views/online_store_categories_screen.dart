@@ -41,6 +41,7 @@ class OnlineStoreCategoriesScreen
         inspectLabel: 'تعيين قوائم المنتجات',
         onInspect: (item) => _assignListings(item.id),
         actions: const {OnlineStoreResourceAction.delete},
+        onDelete: _confirmDeleteCategory,
         onReorder: controller.reorderCategories,
         editor: _editCategory,
         cardBuilder: _categoryCard,
@@ -85,6 +86,7 @@ class OnlineStoreCategoriesScreen
           active ? 'نشط' : 'غير نشط',
           home ? 'يظهر في الرئيسية' : 'لا يظهر في الرئيسية',
           'موضع العرض: ${(int.tryParse('${item.values['sort_order']}') ?? 0) + 1}',
+          '${int.tryParse('${item.values['memberships_count']}') ?? 0} منتج',
         ].join(' • ')),
         trailing: trailing,
       ),
@@ -123,7 +125,8 @@ class OnlineStoreCategoriesScreen
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setState) => OnlineStoreDialog(
+          icon: Icons.category_outlined,
           title: Text(item == null ? 'إضافة تصنيف' : 'تعديل التصنيف'),
           content: OnlineStoreDialogBody(
             maxWidth: OnlineStoreAdminUi.dialogWideMaxWidth,
@@ -268,7 +271,8 @@ class OnlineStoreCategoriesScreen
     final listings = await controller.pickerListings();
     final selected = <int>{};
     final accepted = await Get.dialog<bool>(StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+      builder: (context, setState) => OnlineStoreDialog(
+        icon: Icons.inventory_2_outlined,
         title: const Text('تعيين قوائم للتصنيف'),
         content: SizedBox(
           width: OnlineStoreAdminUi.dialogWidth(context),
@@ -304,6 +308,102 @@ class OnlineStoreCategoriesScreen
     if (accepted == true) {
       await controller.replaceListings(categoryId, selected.toList());
       await controller.load();
+    }
+  }
+
+  Future<void> _confirmDeleteCategory(
+    BuildContext context,
+    OnlineStoreEntity item,
+  ) async {
+    final productsCount =
+        int.tryParse('${item.values['memberships_count'] ?? 0}') ?? 0;
+    final childrenCount =
+        int.tryParse('${item.values['children_count'] ?? 0}') ?? 0;
+    int? replacementId;
+    final candidates = controller.items
+        .where((candidate) =>
+            candidate.id != item.id &&
+            (candidate.values['is_active'] == true ||
+                candidate.values['is_active'] == 1))
+        .toList(growable: false);
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => OnlineStoreDialog(
+          icon: Icons.delete_outline,
+          title: const Text('حذف التصنيف ونقل المنتجات'),
+          content: OnlineStoreDialogBody(
+            maxWidth: OnlineStoreAdminUi.dialogCompactMaxWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('سيتم حذف «${item.label}» بعد معالجة الارتباطات.'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: OnlineStoreAdminUi.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: OnlineStoreAdminUi.border),
+                  ),
+                  child: const Text(
+                    'إيقاف «نشط» يخفي التصنيف ومنتجاته التي لا تنتمي لتصنيف نشط آخر من تطبيق المتجر. خيار «يظهر في الرئيسية» يخص واجهة المتجر الرئيسية فقط.',
+                    style: TextStyle(color: OnlineStoreAdminUi.textSecondary),
+                  ),
+                ),
+                if (childrenCount > 0) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'يوجد $childrenCount تصنيف فرعي. يجب نقله أو حذفه أولاً.',
+                    style: const TextStyle(color: OnlineStoreAdminUi.danger),
+                  ),
+                ],
+                if (productsCount > 0) ...[
+                  const SizedBox(height: 14),
+                  Text('يوجد $productsCount منتج. اختر التصنيف البديل:'),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    initialValue: replacementId,
+                    decoration: const InputDecoration(
+                      labelText: 'نقل المنتجات إلى',
+                      prefixIcon: Icon(Icons.drive_file_move_outline),
+                    ),
+                    items: candidates
+                        .map((candidate) => DropdownMenuItem(
+                              value: candidate.id,
+                              child: Text(candidate.label),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setState(() => replacementId = value),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            OutlinedButton.icon(
+              onPressed: childrenCount > 0 ||
+                      (productsCount > 0 && replacementId == null)
+                  ? null
+                  : () => Navigator.pop(dialogContext, true),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: OnlineStoreAdminUi.danger,
+                side: const BorderSide(color: OnlineStoreAdminUi.danger),
+              ),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('تأكيد الحذف'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (accepted == true) {
+      await controller.removeWithReplacement(item.id, replacementId);
     }
   }
 }

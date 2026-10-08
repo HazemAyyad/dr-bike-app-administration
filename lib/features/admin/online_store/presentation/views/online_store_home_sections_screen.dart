@@ -79,7 +79,8 @@ class OnlineStoreHomeSectionsScreen
       selected.add('${row['target_type']}:${row['target_id']}');
     }
     final accepted = await Get.dialog<bool>(StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+      builder: (context, setState) => OnlineStoreDialog(
+        icon: Icons.view_carousel_outlined,
         title: const Text('اختيار عناصر متوافقة'),
         content: SizedBox(
           width: OnlineStoreAdminUi.dialogWidth(context),

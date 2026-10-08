@@ -39,7 +39,8 @@ Future<List<OnlineStoreTargetOption>?> showOnlineStoreTargetPicker(
                 .toLowerCase()
                 .contains(query.toLowerCase()))
             .toList(growable: false);
-        return AlertDialog(
+        return OnlineStoreDialog(
+          icon: Icons.ads_click_outlined,
           title: Text(title),
           content: SizedBox(
             width: OnlineStoreAdminUi.dialogWidth(context),

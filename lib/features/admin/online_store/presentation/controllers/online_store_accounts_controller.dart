@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -15,6 +17,21 @@ class OnlineStoreAccountsController extends GetxController {
   final customerParties = <OnlineStoreParty>[].obs;
   final sellerParties = <OnlineStoreParty>[].obs;
   final partiesLoading = false.obs;
+  final searchOpen = false.obs;
+  Timer? _searchDebounce;
+
+  void onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), load);
+  }
+
+  void toggleSearch() {
+    searchOpen.toggle();
+    if (!searchOpen.value) {
+      search.clear();
+      load();
+    }
+  }
 
   @override
   void onInit() {
@@ -106,6 +123,7 @@ class OnlineStoreAccountsController extends GetxController {
 
   @override
   void onClose() {
+    _searchDebounce?.cancel();
     search.dispose();
     super.onClose();
   }

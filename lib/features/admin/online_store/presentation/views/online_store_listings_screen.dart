@@ -16,7 +16,29 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(
-          title: const Text('منتجات المتجر'),
+          title: Obx(() => controller.searchOpen.value
+              ? TextField(
+                  autofocus: true,
+                  onChanged: (value) => controller.search.value = value,
+                  decoration: const InputDecoration(
+                    hintText: 'ابحث باسم المنتج أو رقمه',
+                    border: InputBorder.none,
+                  ),
+                )
+              : const Text('منتجات المتجر')),
+          actions: [
+            Obx(() => IconButton(
+                  tooltip: controller.searchOpen.value ? 'إغلاق البحث' : 'بحث',
+                  onPressed: () {
+                    controller.searchOpen.toggle();
+                    if (!controller.searchOpen.value) {
+                      controller.search.value = '';
+                    }
+                  },
+                  icon: Icon(
+                      controller.searchOpen.value ? Icons.close : Icons.search),
+                )),
+          ],
         ),
         floatingActionButton: OnlineStorePermissions.canManageProducts
             ? FloatingActionButton.extended(
@@ -47,18 +69,18 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                       sliver: SliverLayoutBuilder(
                         builder: (context, constraints) {
                           final width = constraints.crossAxisExtent;
-                          final columns = width < 600
-                              ? 2
+                          final columns = width < 700
+                              ? 3
                               : width < 900
-                                  ? 3
+                                  ? 4
                                   : width < 1200
-                                      ? 4
-                                      : (width / 250).floor().clamp(5, 7);
+                                      ? 5
+                                      : (width / 220).floor().clamp(6, 8);
                           return SliverGrid(
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: columns,
-                              mainAxisExtent: 272,
+                              mainAxisExtent: 218,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                             ),
@@ -79,16 +101,6 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
   Widget _filters() => Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          TextField(
-            onChanged: (value) => controller.search.value = value,
-            decoration: const InputDecoration(
-              hintText: 'ابحث باسم المنتج أو رقمه',
-              prefixIcon: Icon(Icons.search),
-              filled: true,
-              fillColor: OnlineStoreAdminUi.surface,
-            ),
-          ),
-          const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(children: [
@@ -136,7 +148,7 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: _ListingMedia(listing: listing)),
             Padding(
-              padding: const EdgeInsets.fromLTRB(9, 7, 9, 9),
+              padding: const EdgeInsets.fromLTRB(6, 5, 6, 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -148,26 +160,26 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         height: 1.25),
                   ),
                   if (listing.productCode.isNotEmpty)
-                    Text('كود ${listing.productCode}',
+                    Text(listing.productCode,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 11,
                             color: OnlineStoreAdminUi.textSecondary)),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 3),
                   Row(children: [
                     Expanded(
                         child: Text('${listing.retailPrice} ₪',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w800))),
-                    const SizedBox(width: 5),
+                                fontSize: 10, fontWeight: FontWeight.w800))),
+                    const SizedBox(width: 3),
                     const Icon(Icons.inventory_2_outlined,
                         size: 14, color: OnlineStoreAdminUi.textSecondary),
                     const SizedBox(width: 3),
@@ -180,7 +192,7 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                     Text('${listing.media.length}',
                         style: const TextStyle(fontSize: 11)),
                   ]),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 3),
                   Row(children: [
                     _StatusChip(_statusLabel(listing.status),
                         _statusColor(listing.status)),

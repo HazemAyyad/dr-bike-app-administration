@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../controllers/online_store_media_controller.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_network_image.dart';
+import '../widgets/online_store_state_view.dart';
 
 class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
   const OnlineStoreMediaScreen({Key? key}) : super(key: key);
@@ -39,7 +40,7 @@ class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
       ),
       body: Obx(() {
         if (controller.loading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const OnlineStoreListSkeleton();
         }
         if (controller.error.value != null && controller.items.isEmpty) {
           return Center(child: Text(controller.error.value!));

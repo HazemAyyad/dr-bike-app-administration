@@ -14,20 +14,46 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: OnlineStoreAdminUi.pageBackground,
-        appBar: AppBar(title: const Text('حسابات المتجر المرتبطة')),
+        appBar: AppBar(
+          title: Obx(() => controller.searchOpen.value
+              ? TextField(
+                  controller: controller.search,
+                  autofocus: true,
+                  onChanged: controller.onSearchChanged,
+                  decoration: const InputDecoration(
+                    hintText: 'الاسم أو البريد أو الهاتف',
+                    border: InputBorder.none,
+                  ),
+                )
+              : const Text('حسابات المتجر المرتبطة')),
+          actions: [
+            Obx(() => IconButton(
+                  onPressed: controller.toggleSearch,
+                  tooltip: controller.searchOpen.value ? 'إغلاق البحث' : 'بحث',
+                  icon: Icon(
+                      controller.searchOpen.value ? Icons.close : Icons.search),
+                )),
+          ],
+        ),
         body: Column(children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: controller.search,
-              onSubmitted: (_) => controller.load(),
-              decoration: InputDecoration(
-                hintText: 'بحث بالاسم أو البريد أو الهاتف',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                    onPressed: controller.load,
-                    icon: const Icon(Icons.arrow_back)),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: OnlineStoreAdminUi.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: OnlineStoreAdminUi.border),
               ),
+              child: const Row(children: [
+                Icon(Icons.info_outline, color: OnlineStoreAdminUi.accent),
+                SizedBox(width: 10),
+                Expanded(
+                    child: Text(
+                  'هذا القسم يربط حساب تسجيل الدخول في تطبيق المتجر بسجل العميل أو المورد داخل النظام، ليستخدم الأسعار والرصيد وسياسة الائتمان الصحيحة.',
+                  style: TextStyle(color: OnlineStoreAdminUi.textSecondary),
+                )),
+              ]),
             ),
           ),
           Expanded(
@@ -117,7 +143,8 @@ class OnlineStoreAccountsScreen extends GetView<OnlineStoreAccountsController> {
     OnlineStoreParty? selected;
     await controller.loadParties(role);
     final confirmed = await Get.dialog<bool>(StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+      builder: (context, setState) => OnlineStoreDialog(
+        icon: Icons.link,
         title: const Text('إنشاء ربط صريح'),
         content: SizedBox(
             width: OnlineStoreAdminUi.dialogWidth(context),

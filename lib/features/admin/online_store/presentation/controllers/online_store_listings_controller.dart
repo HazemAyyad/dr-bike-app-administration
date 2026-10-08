@@ -19,6 +19,7 @@ class OnlineStoreListingsController extends GetxController {
   final error = RxnString();
   final status = 'all'.obs;
   final search = ''.obs;
+  final searchOpen = false.obs;
   final items = <OnlineStoreListing>[].obs;
 
   List<OnlineStoreListing> get visibleItems {

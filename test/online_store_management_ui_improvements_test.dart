@@ -2,6 +2,7 @@ import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/controllers/online_store_listings_controller.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/views/online_store_listings_screen.dart';
 import 'package:doctorbike/features/admin/online_store/presentation/widgets/online_store_network_image.dart';
+import 'package:doctorbike/features/admin/online_store/presentation/widgets/online_store_form_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -13,7 +14,7 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('store products use two columns on a narrow phone',
+  testWidgets('store products use three compact columns on a narrow phone',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
@@ -45,7 +46,8 @@ void main() {
     final grid = tester.widget<SliverGrid>(find.byType(SliverGrid));
     final delegate =
         grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-    expect(delegate.crossAxisCount, 2);
+    expect(delegate.crossAxisCount, 3);
+    expect(delegate.mainAxisExtent, 218);
     expect(find.text('منتج 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -58,5 +60,12 @@ void main() {
     );
     expect(
         isOnlineStoreSvgPath('images/categories/electric-bike.png'), isFalse);
+  });
+
+  test('store dates are rendered in a clear Arabic format', () {
+    expect(
+      onlineStoreFriendlyDate('2026-10-08 15:05'),
+      '8 أكتوبر 2026، 3:05 م',
+    );
   });
 }

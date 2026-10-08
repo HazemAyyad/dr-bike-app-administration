@@ -28,43 +28,35 @@ class OnlineStoreDashboardScreen
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(12),
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: OnlineStoreAdminUi.surfaceMuted,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: OnlineStoreAdminUi.border),
-                      ),
-                      child: const Row(children: [
-                        Icon(Icons.storefront_outlined,
-                            color: OnlineStoreAdminUi.accent, size: 30),
-                        SizedBox(width: 12),
-                        Expanded(
-                            child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('مركز التحكم بالمتجر',
-                                style: TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.w800)),
-                            SizedBox(height: 3),
-                            Text(
-                                'ابدأ بالمنتجات، ثم نظّم واجهة المتجر، وبعدها شغّل العروض وتابع النتائج.',
-                                style: TextStyle(
-                                    color: OnlineStoreAdminUi.textSecondary)),
-                          ],
-                        )),
-                      ]),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      _Summary('المنشورة',
-                          summary?.countPath('listings', 'published') ?? 0),
-                      _Summary('طلبات المتجر',
-                          summary?.countPath('orders', 'store_count') ?? 0),
-                      _Summary('عروض نشطة',
-                          summary?.count('active_promotions') ?? 0),
-                      _Summary('مراجعات معلقة',
-                          summary?.countPath('pending_reviews', 'value') ?? 0),
+                    Row(children: [
+                      Expanded(
+                          child: _Summary(
+                              'المنشورة',
+                              summary?.countPath('listings', 'published') ?? 0,
+                              Icons.inventory_2_outlined,
+                              const Color(0xFF1D5D9B))),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          child: _Summary(
+                              'الطلبات',
+                              summary?.countPath('orders', 'store_count') ?? 0,
+                              Icons.receipt_long_outlined,
+                              OnlineStoreAdminUi.accent)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          child: _Summary(
+                              'العروض',
+                              summary?.count('active_promotions') ?? 0,
+                              Icons.local_offer_outlined,
+                              OnlineStoreAdminUi.success)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          child: _Summary(
+                              'المراجعات',
+                              summary?.countPath('pending_reviews', 'value') ??
+                                  0,
+                              Icons.reviews_outlined,
+                              const Color(0xFF9A6700))),
                     ]),
                     const SizedBox(height: 14),
                     const Padding(
@@ -143,23 +135,30 @@ class _Destination {
 }
 
 class _Summary extends StatelessWidget {
-  const _Summary(this.label, this.value);
+  const _Summary(this.label, this.value, this.icon, this.color);
   final String label;
   final int value;
+  final IconData icon;
+  final Color color;
   @override
   Widget build(BuildContext context) => Container(
-        width: 158,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
         decoration: BoxDecoration(
           color: OnlineStoreAdminUi.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE1E1E8)),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
           Text('$value',
               style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          Text(label),
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 9, color: OnlineStoreAdminUi.textSecondary)),
         ]),
       );
 }

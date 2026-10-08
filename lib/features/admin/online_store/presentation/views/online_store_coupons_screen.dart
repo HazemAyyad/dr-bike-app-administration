@@ -6,6 +6,7 @@ import '../widgets/online_store_resource_screen.dart';
 import '../widgets/online_store_discount_editor.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../../data/online_store_models.dart';
+import '../widgets/online_store_form_widgets.dart';
 
 class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
   const OnlineStoreCouponsScreen({Key? key}) : super(key: key);
@@ -40,7 +41,9 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
     final type = '${item.values['discount_type'] ?? ''}';
     final value = item.values['discount_value'] ?? 0;
     final activeUses = item.values['active_redemptions_count'] ?? 0;
-    final totalDiscount = item.values['discount_total'] ?? 0;
+    final limit = int.tryParse('${item.values['total_usage_limit'] ?? ''}');
+    final used = int.tryParse('$activeUses') ?? 0;
+    final remaining = limit == null ? null : (limit - used).clamp(0, limit);
     return Card(
       color: OnlineStoreAdminUi.surface,
       child: ListTile(
@@ -68,14 +71,28 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
         ),
         title: Text(item.label,
             style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text(
-          '${type == 'percentage' ? '$value%' : '$value ₪'} • '
-          '${active ? 'نشط' : 'متوقف'} • $activeUses استخدام • خصم $totalDiscount ₪',
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Wrap(spacing: 6, runSpacing: 5, children: [
+            _badge(type == 'percentage' ? '$value%' : '$value ₪',
+                OnlineStoreAdminUi.accent),
+            _badge(
+                active ? 'نشط' : 'متوقف',
+                active
+                    ? OnlineStoreAdminUi.success
+                    : OnlineStoreAdminUi.textSecondary),
+            _badge('استخدم $used', const Color(0xFF1D5D9B)),
+            _badge(
+                'متبقي ${remaining ?? 'غير محدود'}', const Color(0xFF7A5D00)),
+          ]),
         ),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
             tooltip: 'سجل الاستخدام والإحصاءات',
-            onPressed: () => _showRedemptions(item),
+            onPressed: () => Get.to(() => OnlineStoreCouponHistoryScreen(
+                  coupon: item,
+                  controller: controller,
+                )),
             icon: const Icon(Icons.history_rounded,
                 color: OnlineStoreAdminUi.accent),
           ),
@@ -85,73 +102,90 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
     );
   }
 
-  Future<void> _showRedemptions(OnlineStoreEntity coupon) async {
-    final history = await controller.redemptions(coupon.id);
-    final rows = history.rows;
-    final summary = history.summary;
-    await Get.dialog(AlertDialog(
-      title: Text('سجل استخدام ${coupon.label}'),
-      content: SizedBox(
-        width: OnlineStoreAdminUi.dialogWidth(Get.context!),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(Get.context!).height * .72),
-          child: ListView(children: [
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _stat('تم تطبيقه', summary['applied_uses'] ?? 0),
-              _stat('محجوز للطلبات', summary['reserved_uses'] ?? 0),
-              _stat('المستخدمون', summary['unique_users'] ?? 0),
-              _stat('إجمالي الخصم', '${summary['discount_total'] ?? 0} ₪'),
-              _stat(
-                'المتبقي',
-                summary['remaining_uses'] ?? 'غير محدود',
-              ),
-            ]),
-            const SizedBox(height: 12),
-            if (rows.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('لم يُستخدم هذا الكوبون بعد.')),
-              )
-            else
-              ...rows.map((row) {
-                final user = onlineStoreMap(row['user']);
-                final customer = onlineStoreMap(row['customer']);
-                final seller = onlineStoreMap(row['seller']);
-                final order = onlineStoreMap(row['sales_order']);
-                final party = customer.isNotEmpty ? customer : seller;
-                final partyName =
-                    '${party['name'] ?? party['nameAr'] ?? party['name_ar'] ?? user['name'] ?? 'مستخدم #${row['user_id'] ?? '—'}'}';
-                final orderNumber =
-                    order['serial_number'] ?? row['sales_order_id'] ?? '—';
-                return Card(
-                  color: OnlineStoreAdminUi.surfaceMuted,
-                  child: ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(partyName),
-                    subtitle: Text(
-                      'الطلب: $orderNumber • ${_redemptionStatus('${row['status'] ?? ''}')}\n'
-                      '${row['applied_at'] ?? row['created_at'] ?? ''}',
-                    ),
-                    isThreeLine: true,
-                    trailing: Text('${row['discount_amount'] ?? 0} ₪',
-                        style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                );
-              }),
-          ]),
-        ),
-      ),
-      actions: [TextButton(onPressed: Get.back, child: const Text('إغلاق'))],
-    ));
-  }
-
-  Widget _stat(String label, dynamic value) => Container(
-        width: 145,
-        padding: const EdgeInsets.all(10),
+  Widget _badge(String label, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: OnlineStoreAdminUi.surfaceMuted,
-          borderRadius: BorderRadius.circular(10),
+          color: color.withValues(alpha: .09),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: color.withValues(alpha: .25)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+      );
+}
+
+class OnlineStoreCouponHistoryScreen extends StatelessWidget {
+  const OnlineStoreCouponHistoryScreen({
+    Key? key,
+    required this.coupon,
+    required this.controller,
+  }) : super(key: key);
+
+  final OnlineStoreEntity coupon;
+  final OnlineStoreCouponsController controller;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: OnlineStoreAdminUi.pageBackground,
+        appBar: AppBar(title: Text('سجل ${coupon.label}')),
+        body: FutureBuilder<OnlineStoreCouponHistory>(
+          future: controller.redemptions(coupon.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('تعذر تحميل السجل: ${snapshot.error}'));
+            }
+            final history = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 2.4,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  children: [
+                    _HistoryStat(
+                        'تم تطبيقه', history.summary['applied_uses'] ?? 0),
+                    _HistoryStat(
+                        'محجوز', history.summary['reserved_uses'] ?? 0),
+                    _HistoryStat(
+                        'المستخدمون', history.summary['unique_users'] ?? 0),
+                    _HistoryStat('المتبقي',
+                        history.summary['remaining_uses'] ?? 'غير محدود'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (history.rows.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: Text('لم يُستخدم هذا الكوبون بعد.')),
+                  )
+                else
+                  ...history.rows.map((row) => _HistoryRow(row)),
+              ],
+            );
+          },
+        ),
+      );
+}
+
+class _HistoryStat extends StatelessWidget {
+  const _HistoryStat(this.label, this.value);
+  final String label;
+  final dynamic value;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: OnlineStoreAdminUi.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: OnlineStoreAdminUi.border),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label,
@@ -159,15 +193,40 @@ class OnlineStoreCouponsScreen extends GetView<OnlineStoreCouponsController> {
                   fontSize: 11, color: OnlineStoreAdminUi.textSecondary)),
           Text('$value',
               style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         ]),
       );
+}
 
-  String _redemptionStatus(String value) =>
-      const {
-        'reserved': 'محجوز للطلب',
-        'applied': 'تم تطبيقه',
-        'released': 'أُلغي الحجز',
-      }[value] ??
-      'غير معروف';
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow(this.row);
+  final Map<String, dynamic> row;
+  @override
+  Widget build(BuildContext context) {
+    final user = onlineStoreMap(row['user']);
+    final customer = onlineStoreMap(row['customer']);
+    final seller = onlineStoreMap(row['seller']);
+    final order = onlineStoreMap(row['sales_order']);
+    final party = customer.isNotEmpty ? customer : seller;
+    final name =
+        '${party['name'] ?? party['nameAr'] ?? party['name_ar'] ?? user['name'] ?? 'مستخدم #${row['user_id'] ?? '—'}'}';
+    final status = const {
+          'reserved': 'محجوز للطلب',
+          'applied': 'تم تطبيقه',
+          'released': 'أُلغي الحجز'
+        }['${row['status'] ?? ''}'] ??
+        'غير معروف';
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(
+            'الطلب: ${order['serial_number'] ?? row['sales_order_id'] ?? '—'} • $status\n${onlineStoreFriendlyDate(row['applied_at'] ?? row['created_at'])}'),
+        isThreeLine: true,
+        trailing: Text('${row['discount_amount'] ?? 0} ₪',
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+      ),
+    );
+  }
 }

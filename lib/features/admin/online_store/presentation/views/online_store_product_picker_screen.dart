@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -9,6 +11,7 @@ import '../controllers/online_store_listings_controller.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_network_image.dart';
 import '../utils/online_store_permissions.dart';
+import '../widgets/online_store_state_view.dart';
 
 bool canCreateOnlineStoreListing(int productId, Set<int> listedProductIds) =>
     !listedProductIds.contains(productId);
@@ -28,9 +31,9 @@ class _OnlineStoreProductPickerScreenState
   Set<int> listedProductIds = const {};
   bool loading = false;
   String? error;
+  Timer? _searchDebounce;
 
   Future<void> _load() async {
-    FocusScope.of(context).unfocus();
     setState(() {
       loading = true;
       error = null;
@@ -60,10 +63,23 @@ class _OnlineStoreProductPickerScreenState
     _load();
   }
 
+  void _searchChanged(String _) {
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), _load);
+  }
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    search.dispose();
+    super.dispose();
   }
 
   @override
@@ -87,14 +103,9 @@ class _OnlineStoreProductPickerScreenState
                       onPressed: _clear,
                       icon: const Icon(Icons.clear),
                     ),
-                  IconButton(
-                    tooltip: 'بحث',
-                    onPressed: loading ? null : _load,
-                    icon: const Icon(Icons.search),
-                  ),
                 ]),
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: _searchChanged,
             ),
           ),
           Expanded(
@@ -103,7 +114,7 @@ class _OnlineStoreProductPickerScreenState
       );
 
   Widget _content() {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const OnlineStoreListSkeleton(compact: true);
     if (error != null) {
       return Center(
         child: SingleChildScrollView(
@@ -348,12 +359,6 @@ class _OnlineStoreProductPickerScreenState
     }
     if (!mounted) return;
     await Get.offNamed(AppRoutes.ONLINESTORELISTINGEDITOR, arguments: listing);
-  }
-
-  @override
-  void dispose() {
-    search.dispose();
-    super.dispose();
   }
 }
 

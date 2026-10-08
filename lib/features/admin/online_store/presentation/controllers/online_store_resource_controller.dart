@@ -14,6 +14,27 @@ class OnlineStoreResourceController extends GetxController {
   final error = RxnString();
   final items = <OnlineStoreEntity>[].obs;
   final search = TextEditingController();
+  final searchQuery = ''.obs;
+  final searchOpen = false.obs;
+
+  List<OnlineStoreEntity> get visibleItems {
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) return items;
+    return items.where((item) {
+      final haystack =
+          '${item.label} ${item.status} ${item.values.values.join(' ')}'
+              .toLowerCase();
+      return haystack.contains(query);
+    }).toList(growable: false);
+  }
+
+  void toggleSearch() {
+    searchOpen.toggle();
+    if (!searchOpen.value) {
+      search.clear();
+      searchQuery.value = '';
+    }
+  }
 
   @override
   void onInit() {

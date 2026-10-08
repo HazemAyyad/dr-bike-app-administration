@@ -13,9 +13,17 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: OnlineStoreAdminUi.pageBackground,
-        appBar: AppBar(title: const Text('سجل تدقيق المتجر')),
+        appBar: AppBar(
+          title: const Text('سجل تدقيق المتجر'),
+          actions: [
+            IconButton(
+              tooltip: 'تصفية السجل',
+              onPressed: () => _showFilters(context),
+              icon: const Icon(Icons.filter_alt_outlined),
+            ),
+          ],
+        ),
         body: Column(children: [
-          _filters(),
           Expanded(
             child: Obx(() => OnlineStoreStateView(
                   loading: controller.loading.value,
@@ -38,55 +46,63 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
         ]),
       );
 
-  Widget _filters() => Padding(
+  Future<void> _showFilters(BuildContext context) => showOnlineStoreBottomSheet(
+        context,
+        child: Obx(() => _filters(onApplied: () {
+              Navigator.pop(context);
+              controller.applyFilters();
+            })),
+      );
+
+  Widget _filters({required VoidCallback onApplied}) => Padding(
         padding: const EdgeInsets.all(10),
         child: OnlineStoreFormSection(
           title: 'تصفية السجل',
           description: 'ابحث حسب نوع السجل أو العملية أو الموظف والفترة.',
           icon: Icons.filter_alt_outlined,
           child: Wrap(spacing: 8, runSpacing: 8, children: [
-            Obx(() => DropdownButton<String>(
-                  value: controller.entityType.value,
-                  items: const [
-                    'all',
-                    'listing',
-                    'promotion',
-                    'coupon',
-                    'settings',
-                    'account_link',
-                    'credit_policy',
-                    'review',
-                    'pricing'
-                  ]
-                      .map((value) => DropdownMenuItem(
-                          value: value, child: Text(_entityLabel(value))))
-                      .toList(),
-                  onChanged: (value) =>
-                      controller.entityType.value = value ?? 'all',
-                )),
-            Obx(() => DropdownButton<String>(
-                  value: controller.actionFilter.value,
-                  items: const [
-                    'all',
-                    'created',
-                    'updated',
-                    'linked',
-                    'approved',
-                    'suspended',
-                    'activated',
-                    'deactivated',
-                    'published',
-                    'hidden',
-                    'status_changed',
-                    'moderated',
-                    'previewed'
-                  ]
-                      .map((value) => DropdownMenuItem(
-                          value: value, child: Text(_actionLabel(value))))
-                      .toList(),
-                  onChanged: (value) =>
-                      controller.actionFilter.value = value ?? 'all',
-                )),
+            DropdownButton<String>(
+              value: controller.entityType.value,
+              items: const [
+                'all',
+                'listing',
+                'promotion',
+                'coupon',
+                'settings',
+                'account_link',
+                'credit_policy',
+                'review',
+                'pricing'
+              ]
+                  .map((value) => DropdownMenuItem(
+                      value: value, child: Text(_entityLabel(value))))
+                  .toList(),
+              onChanged: (value) =>
+                  controller.entityType.value = value ?? 'all',
+            ),
+            DropdownButton<String>(
+              value: controller.actionFilter.value,
+              items: const [
+                'all',
+                'created',
+                'updated',
+                'linked',
+                'approved',
+                'suspended',
+                'activated',
+                'deactivated',
+                'published',
+                'hidden',
+                'status_changed',
+                'moderated',
+                'previewed'
+              ]
+                  .map((value) => DropdownMenuItem(
+                      value: value, child: Text(_actionLabel(value))))
+                  .toList(),
+              onChanged: (value) =>
+                  controller.actionFilter.value = value ?? 'all',
+            ),
             SizedBox(
               width: 125,
               child: TextField(
@@ -113,7 +129,7 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
             ),
             OutlinedButton.icon(
               style: OnlineStoreAdminUi.actionButtonStyle,
-              onPressed: controller.applyFilters,
+              onPressed: onApplied,
               icon: const Icon(Icons.filter_alt_outlined),
               label: const Text('تطبيق المرشحات'),
             ),
@@ -155,7 +171,7 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
             style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text(
           '${actor['name'] ?? 'موظف #${event['actor_user_id'] ?? '—'}'} • '
-          '${_date(event['occurred_at'])}\n'
+          '${onlineStoreFriendlyDate(event['occurred_at'])}\n'
           'رقم السجل: ${event['entity_id'] ?? '—'}',
         ),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -294,6 +310,8 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
           .map((entry) => '${_fieldLabel(entry.key)}: ${_value(entry.value)}')
           .join('، ');
     }
+    final raw = '$value';
+    if (DateTime.tryParse(raw) != null) return onlineStoreFriendlyDate(raw);
     return const {
           'draft': 'مسودة',
           'ready': 'جاهز',
@@ -315,13 +333,5 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
           'inactive': 'غير نشط',
         }['$value'] ??
         '$value';
-  }
-
-  String _date(dynamic value) {
-    final parsed = DateTime.tryParse('$value')?.toLocal();
-    if (parsed == null) return 'وقت غير محدد';
-    String two(int number) => number.toString().padLeft(2, '0');
-    return '${parsed.year}/${two(parsed.month)}/${two(parsed.day)} '
-        '${two(parsed.hour)}:${two(parsed.minute)}';
   }
 }

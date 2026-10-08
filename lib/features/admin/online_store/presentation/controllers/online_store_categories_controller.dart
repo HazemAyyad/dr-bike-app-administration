@@ -33,10 +33,17 @@ class OnlineStoreCategoriesController extends OnlineStoreResourceController {
 
   @override
   Future<bool> remove(int id) async {
+    return removeWithReplacement(id, null);
+  }
+
+  Future<bool> removeWithReplacement(int id, int? replacementCategoryId) async {
     saving.value = true;
     error.value = null;
     try {
-      final response = await repository.delete('$endpoint/$id');
+      final response = await repository.delete('$endpoint/$id', data: {
+        if (replacementCategoryId != null)
+          'replacement_category_id': replacementCategoryId,
+      });
       final disposition = '${onlineStoreMap(response['data'])['disposition']}';
       await load();
       if (disposition == 'deleted') {
@@ -54,7 +61,11 @@ class OnlineStoreCategoriesController extends OnlineStoreResourceController {
       final message = exception.toString().replaceFirst('Exception: ', '');
       error.value = message.contains('Move or remove child categories first')
           ? 'انقل التصنيفات الفرعية أو احذفها أولاً.'
-          : message;
+          : message.contains('Choose a destination category')
+              ? 'اختر التصنيف الذي ستنتقل إليه المنتجات أولاً.'
+              : message.contains('destination category must be active')
+                  ? 'يجب أن يكون التصنيف البديل نشطًا.'
+                  : message;
       Get.snackbar('تعذر حذف التصنيف', error.value!,
           snackPosition: SnackPosition.BOTTOM);
       return false;

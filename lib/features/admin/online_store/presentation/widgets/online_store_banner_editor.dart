@@ -114,10 +114,13 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
     url = TextEditingController(text: '${values['action_url'] ?? ''}');
     startsAt = TextEditingController(text: '${values['starts_at'] ?? ''}');
     endsAt = TextEditingController(text: '${values['ends_at'] ?? ''}');
-    sortOrder = TextEditingController(text: '${values['sort_order'] ?? 0}');
+    sortOrder = TextEditingController(
+        text: '${values['sort_order'] ?? widget.controller.items.length}');
     actionType = '${values['action_type'] ?? 'none'}';
     imagePath = '${values['image_path'] ?? ''}';
-    isActive = values['is_active'] == true || values['is_active'] == 1;
+    isActive = widget.item == null ||
+        values['is_active'] == true ||
+        values['is_active'] == 1;
     targetId = int.tryParse('${values['action_target_id'] ?? ''}');
   }
 
@@ -227,7 +230,8 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
+  Widget build(BuildContext context) => OnlineStoreDialog(
+        icon: Icons.image_outlined,
         title: Text(widget.item == null ? 'إضافة بانر' : 'تعديل البانر'),
         content: OnlineStoreDialogBody(
           maxWidth: OnlineStoreAdminUi.dialogWideMaxWidth,
@@ -258,8 +262,8 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
             ),
             _field(titleAr, 'العنوان العربي'),
             _field(titleEn, 'العنوان الإنجليزي'),
-            _field(contentAr, 'المحتوى العربي'),
-            _field(contentEn, 'المحتوى الإنجليزي'),
+            _field(contentAr, 'المحتوى العربي', maxLines: 4),
+            _field(contentEn, 'المحتوى الإنجليزي', maxLines: 4),
             DropdownButtonFormField<String>(
               initialValue: actionType,
               decoration: const InputDecoration(labelText: 'نوع الوجهة'),
@@ -301,10 +305,6 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
                     label: 'تاريخ ووقت النهاية',
                   )),
                 ])),
-            _field(sortOrder, 'موضع البانر',
-                numeric: true,
-                helper:
-                    'رقم أصغر يعني ظهوراً أبكر. يمكنك أيضاً السحب من قائمة البانرات.'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('نشط'),
@@ -340,9 +340,12 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
     String label, {
     bool numeric = false,
     String? helper,
+    int maxLines = 1,
   }) =>
       TextField(
         controller: controller,
+        minLines: maxLines,
+        maxLines: maxLines,
         keyboardType: numeric ? TextInputType.number : null,
         decoration: InputDecoration(
             labelText: label, helperText: helper, isDense: true),

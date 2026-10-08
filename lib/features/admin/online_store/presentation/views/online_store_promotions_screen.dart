@@ -45,7 +45,8 @@ class OnlineStorePromotionsScreen
     final quantity = TextEditingController(text: '1');
     String? role;
     final accepted = await Get.dialog<bool>(StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
+      builder: (context, setState) => OnlineStoreDialog(
+        icon: Icons.calculate_outlined,
         title: const Text('معاينة تسعير للقراءة فقط'),
         content: OnlineStoreDialogBody(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -140,7 +141,8 @@ class OnlineStorePromotionsScreen
           }
         ],
       });
-      await Get.dialog(AlertDialog(
+      await Get.dialog(OnlineStoreDialog(
+        icon: Icons.receipt_long_outlined,
         title: const Text('نتيجة المعاينة'),
         content:
             SingleChildScrollView(child: Text('${result['data'] ?? result}')),

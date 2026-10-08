@@ -232,7 +232,14 @@ class _OnlineStoreListingEditorScreenState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (loadingCategories)
-                      const LinearProgressIndicator()
+                      Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: muted,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: border),
+                        ),
+                      )
                     else if (categories.isEmpty)
                       const Text('لا توجد تصنيفات متجر فعالة.')
                     else
@@ -322,7 +329,23 @@ class _OnlineStoreListingEditorScreenState
         icon: Icons.image_outlined,
         child: Obx(() {
           if (mediaController.loading.value) {
-            return const LinearProgressIndicator();
+            return SizedBox(
+              height: 142,
+              child: Row(
+                children: List.generate(
+                  3,
+                  (_) => Container(
+                    width: 112,
+                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    decoration: BoxDecoration(
+                      color: muted,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: border),
+                    ),
+                  ),
+                ),
+              ),
+            );
           }
           return SizedBox(
             height: 142,

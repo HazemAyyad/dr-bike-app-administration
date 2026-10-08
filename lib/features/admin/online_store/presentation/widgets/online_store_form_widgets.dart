@@ -43,6 +43,31 @@ class OnlineStoreFormSection extends StatelessWidget {
       );
 }
 
+String onlineStoreFriendlyDate(Object? value, {bool includeTime = true}) {
+  final raw = '${value ?? ''}'.trim();
+  final date = DateTime.tryParse(raw)?.toLocal();
+  if (date == null) return raw.isEmpty ? 'غير محدد' : raw;
+  const months = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر'
+  ];
+  final day = '${date.day} ${months[date.month - 1]} ${date.year}';
+  if (!includeTime) return day;
+  final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$day، $hour:$minute ${date.hour < 12 ? 'ص' : 'م'}';
+}
+
 class OnlineStoreDateTimeField extends StatelessWidget {
   const OnlineStoreDateTimeField({
     Key? key,
@@ -58,25 +83,38 @@ class OnlineStoreDateTimeField extends StatelessWidget {
   final String? helpText;
 
   @override
-  Widget build(BuildContext context) => TextField(
-        controller: controller,
-        readOnly: true,
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: helpText,
-          prefixIcon: const Icon(Icons.event_outlined),
-          suffixIcon: controller.text.isEmpty
-              ? const Icon(Icons.chevron_left)
-              : IconButton(
-                  tooltip: 'مسح التاريخ',
-                  onPressed: () {
-                    controller.clear();
-                    (context as Element).markNeedsBuild();
-                  },
-                  icon: const Icon(Icons.close),
-                ),
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, _) => InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _pick(context),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: label,
+              helperText: helpText,
+              prefixIcon: const Icon(Icons.event_outlined),
+              suffixIcon: value.text.isEmpty
+                  ? const Icon(Icons.chevron_left)
+                  : IconButton(
+                      tooltip: 'مسح التاريخ',
+                      onPressed: controller.clear,
+                      icon: const Icon(Icons.close),
+                    ),
+            ),
+            child: Text(
+              value.text.isEmpty
+                  ? 'اضغط لاختيار التاريخ${includeTime ? ' والوقت' : ''}'
+                  : onlineStoreFriendlyDate(value.text,
+                      includeTime: includeTime),
+              style: TextStyle(
+                color: value.text.isEmpty
+                    ? OnlineStoreAdminUi.textSecondary
+                    : OnlineStoreAdminUi.textPrimary,
+              ),
+            ),
+          ),
         ),
-        onTap: () => _pick(context),
       );
 
   Future<void> _pick(BuildContext context) async {
@@ -90,6 +128,16 @@ class OnlineStoreDateTimeField extends StatelessWidget {
       helpText: label,
       cancelText: 'إلغاء',
       confirmText: 'اختيار',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: OnlineStoreAdminUi.accent,
+                surface: OnlineStoreAdminUi.modalSurface,
+                onSurface: OnlineStoreAdminUi.textPrimary,
+              ),
+        ),
+        child: child!,
+      ),
     );
     if (date == null || !context.mounted) return;
     var result = date;
@@ -101,6 +149,16 @@ class OnlineStoreDateTimeField extends StatelessWidget {
         helpText: 'اختيار الوقت',
         cancelText: 'إلغاء',
         confirmText: 'اختيار',
+        builder: (context, child) => Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: OnlineStoreAdminUi.accent,
+                  surface: OnlineStoreAdminUi.modalSurface,
+                  onSurface: OnlineStoreAdminUi.textPrimary,
+                ),
+          ),
+          child: child!,
+        ),
       );
       if (time == null) return;
       result =
