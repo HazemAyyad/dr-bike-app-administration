@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../../../core/helpers/show_net_image.dart';
-
 import '../controllers/online_store_media_controller.dart';
 import '../utils/online_store_admin_ui.dart';
+import '../widgets/online_store_network_image.dart';
 
 class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
   const OnlineStoreMediaScreen({Key? key}) : super(key: key);
@@ -78,8 +77,10 @@ class OnlineStoreMediaScreen extends GetView<OnlineStoreMediaController> {
                   child: ListTile(
                     leading: media.url.isEmpty
                         ? const Icon(Icons.image_outlined)
-                        : Image.network(ShowNetImage.getPhoto(media.url),
-                            width: 48, height: 48, fit: BoxFit.cover),
+                        : SizedBox.square(
+                            dimension: 48,
+                            child: OnlineStoreNetworkImage(path: media.url),
+                          ),
                     title: Text(media.isMain
                         ? 'الصورة الرئيسية'
                         : 'وسيط #${media.sourceMediaId}'),

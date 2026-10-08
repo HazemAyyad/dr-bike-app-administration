@@ -402,6 +402,33 @@ void main() {
         'public/OnlineStore/Content/banner.png');
     await file.delete();
   });
+
+  test('coupon history keeps user rows and authoritative summary', () async {
+    final fake = FakeOnlineStoreRepository();
+    fake.responses['GET ${EndPoints.onlineStoreCoupons}/7/redemptions'] = {
+      'data': [
+        {
+          'id': 3,
+          'user_id': 19,
+          'status': 'applied',
+          'discount_amount': '12.50',
+        }
+      ],
+      'meta': {'current_page': 1, 'last_page': 1},
+      'summary': {
+        'active_uses': 1,
+        'unique_users': 1,
+        'discount_total': 12.5,
+        'remaining_uses': 4,
+      },
+    };
+
+    final history = await OnlineStoreCouponsController(fake).redemptions(7);
+
+    expect(history.rows.single['user_id'], 19);
+    expect(history.summary['discount_total'], 12.5);
+    expect(fake.lastQuery, {'page': 1});
+  });
 }
 
 class _RecordingApiConsumer implements ApiConsumer {

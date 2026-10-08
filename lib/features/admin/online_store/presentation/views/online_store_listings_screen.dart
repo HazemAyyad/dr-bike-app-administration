@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../utils/online_store_permissions.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_state_view.dart';
+import '../widgets/online_store_network_image.dart';
 
 class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
   const OnlineStoreListingsScreen({Key? key}) : super(key: key);
@@ -44,19 +44,31 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                   else
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(10, 0, 10, 90),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 460,
-                          mainAxisExtent: 132,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (_, index) => _listingCard(
-                              context, controller.visibleItems[index]),
-                          childCount: controller.visibleItems.length,
-                        ),
+                      sliver: SliverLayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.crossAxisExtent;
+                          final columns = width < 600
+                              ? 2
+                              : width < 900
+                                  ? 3
+                                  : width < 1200
+                                      ? 4
+                                      : (width / 250).floor().clamp(5, 7);
+                          return SliverGrid(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: columns,
+                              mainAxisExtent: 272,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (_, index) => _listingCard(
+                                  context, controller.visibleItems[index]),
+                              childCount: controller.visibleItems.length,
+                            ),
+                          );
+                        },
                       ),
                     ),
                 ]),
@@ -120,14 +132,14 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
             AppRoutes.ONLINESTORELISTINGEDITOR,
             arguments: listing,
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(children: [
-              _ListingMedia(listing: listing),
-              const SizedBox(width: 9),
-              Expanded(
-                  child: Column(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: _ListingMedia(listing: listing)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(9, 7, 9, 9),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     listing.productName.isEmpty
@@ -147,18 +159,21 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                         style: const TextStyle(
                             fontSize: 11,
                             color: OnlineStoreAdminUi.textSecondary)),
-                  const Spacer(),
+                  const SizedBox(height: 5),
                   Row(children: [
-                    Text('${listing.retailPrice} ₪',
-                        style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w800)),
-                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text('${listing.retailPrice} ₪',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w800))),
+                    const SizedBox(width: 5),
                     const Icon(Icons.inventory_2_outlined,
                         size: 14, color: OnlineStoreAdminUi.textSecondary),
                     const SizedBox(width: 3),
                     Text('${listing.availableQuantity}',
                         style: const TextStyle(fontSize: 11)),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 5),
                     const Icon(Icons.perm_media_outlined,
                         size: 14, color: OnlineStoreAdminUi.textSecondary),
                     const SizedBox(width: 3),
@@ -166,24 +181,41 @@ class OnlineStoreListingsScreen extends GetView<OnlineStoreListingsController> {
                         style: const TextStyle(fontSize: 11)),
                   ]),
                   const SizedBox(height: 5),
-                  Wrap(spacing: 5, runSpacing: 4, children: [
+                  Row(children: [
                     _StatusChip(_statusLabel(listing.status),
                         _statusColor(listing.status)),
-                    _StatusChip(
+                    const Spacer(),
+                    Icon(
                       listing.canPublish
-                          ? 'جاهز للنشر'
-                          : '${listing.readinessIssues.length} ملاحظات للتجهيز',
-                      listing.canPublish
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_rounded,
+                      size: 15,
+                      color: listing.canPublish
                           ? OnlineStoreAdminUi.success
                           : Colors.orange.shade800,
                     ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        listing.canPublish
+                            ? 'جاهز'
+                            : '${listing.readinessIssues.length} ملاحظات',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: listing.canPublish
+                              ? OnlineStoreAdminUi.success
+                              : Colors.orange.shade800,
+                        ),
+                      ),
+                    ),
                   ]),
                 ],
-              )),
-              const Icon(Icons.chevron_left,
-                  size: 18, color: OnlineStoreAdminUi.textSecondary),
-            ]),
-          ),
+              ),
+            ),
+          ]),
         ),
       );
 
@@ -241,7 +273,7 @@ class _ListingMedia extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: SizedBox(
-        width: 88,
+        width: double.infinity,
         height: double.infinity,
         child: ColoredBox(
           color: OnlineStoreAdminUi.surfaceMuted,
@@ -260,13 +292,7 @@ class _ListingMedia extends StatelessWidget {
                         ),
                       ),
                     ])
-                  : Image.network(
-                      ShowNetImage.getPhoto(media.url),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                          Icons.broken_image_outlined,
-                          color: OnlineStoreAdminUi.textSecondary),
-                    ),
+                  : OnlineStoreNetworkImage(path: media.url),
         ),
       ),
     );

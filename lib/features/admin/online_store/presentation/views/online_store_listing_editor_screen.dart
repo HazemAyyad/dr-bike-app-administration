@@ -3,13 +3,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../controllers/online_store_media_controller.dart';
 import '../utils/online_store_feedback.dart';
 import '../utils/online_store_permissions.dart';
+import '../widgets/online_store_network_image.dart';
 
 class OnlineStoreListingEditorScreen extends StatefulWidget {
   const OnlineStoreListingEditorScreen({Key? key}) : super(key: key);
@@ -291,10 +291,7 @@ class _OnlineStoreListingEditorScreenState
                 height: 74,
                 child: main == null || main.url.isEmpty
                     ? const Icon(Icons.inventory_2_outlined, size: 34)
-                    : Image.network(ShowNetImage.getPhoto(main.url),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image_outlined)),
+                    : OnlineStoreNetworkImage(path: main.url),
               ),
             );
           }),
@@ -445,10 +442,7 @@ class _OnlineStoreListingEditorScreenState
                     )
                   : media.url.isEmpty
                       ? const ColoredBox(color: muted, child: Icon(Icons.image))
-                      : Image.network(ShowNetImage.getPhoto(media.url),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image_outlined))),
+                      : OnlineStoreNetworkImage(path: media.url)),
           Positioned(
             top: 6,
             right: 6,

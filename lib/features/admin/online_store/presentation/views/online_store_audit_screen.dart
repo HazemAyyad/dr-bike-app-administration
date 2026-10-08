@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../data/online_store_models.dart';
 import '../controllers/online_store_audit_controller.dart';
-import '../widgets/online_store_state_view.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_form_widgets.dart';
+import '../widgets/online_store_state_view.dart';
 
 class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
   const OnlineStoreAuditScreen({Key? key}) : super(key: key);
@@ -14,118 +15,189 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
         backgroundColor: OnlineStoreAdminUi.pageBackground,
         appBar: AppBar(title: const Text('سجل تدقيق المتجر')),
         body: Column(children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [
-              Obx(() => DropdownButton<String>(
-                    value: controller.entityType.value,
-                    items: const [
-                      'all',
-                      'listing',
-                      'promotion',
-                      'coupon',
-                      'settings',
-                      'account_link',
-                      'credit_policy',
-                      'review',
-                      'pricing'
-                    ]
-                        .map((v) => DropdownMenuItem(
-                            value: v, child: Text(_entityLabel(v))))
-                        .toList(),
-                    onChanged: (v) => controller.entityType.value = v ?? 'all',
-                  )),
-              Obx(() => DropdownButton<String>(
-                    value: controller.actionFilter.value,
-                    items: const [
-                      'all',
-                      'created',
-                      'updated',
-                      'linked',
-                      'approved',
-                      'suspended',
-                      'activated',
-                      'deactivated',
-                      'published',
-                      'hidden',
-                      'status_changed',
-                      'moderated',
-                      'previewed'
-                    ]
-                        .map((v) => DropdownMenuItem(
-                            value: v, child: Text(_actionLabel(v))))
-                        .toList(),
-                    onChanged: (v) =>
-                        controller.actionFilter.value = v ?? 'all',
-                  )),
-              SizedBox(
-                width: 110,
-                child: TextField(
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'رقم المنفذ'),
-                  onChanged: (v) => controller.actorUserId.value = v,
-                ),
-              ),
-              SizedBox(
-                  width: 170,
-                  child: OnlineStoreDateTimeField(
-                    controller: controller.fromController,
-                    label: 'من تاريخ',
-                    includeTime: false,
-                  )),
-              SizedBox(
-                  width: 170,
-                  child: OnlineStoreDateTimeField(
-                    controller: controller.toController,
-                    label: 'إلى تاريخ',
-                    includeTime: false,
-                  )),
-              OutlinedButton.icon(
-                style: OnlineStoreAdminUi.actionButtonStyle,
-                onPressed: controller.applyFilters,
-                icon: const Icon(Icons.filter_alt_outlined),
-                label: const Text('تطبيق'),
-              ),
-            ]),
-          ),
+          _filters(),
           Expanded(
-              child: Obx(() => OnlineStoreStateView(
-                    loading: controller.loading.value,
-                    error: controller.error.value,
-                    isEmpty: controller.items.isEmpty,
-                    onRetry: controller.applyFilters,
-                    child: RefreshIndicator(
-                        onRefresh: controller.applyFilters,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: controller.items.length,
-                          itemBuilder: (_, index) {
-                            final event = controller.items[index].values;
-                            return ExpansionTile(
-                              title: Text(
-                                  '${_actionLabel('${event['action'] ?? ''}')} • ${_entityLabel('${event['entity_type'] ?? ''}')} #${event['entity_id'] ?? '—'}'),
-                              subtitle: Text('${event['occurred_at'] ?? ''}'),
-                              children: [
-                                ListTile(
-                                    title: const Text('قبل (منقح)'),
-                                    subtitle: Text(
-                                        '${event['before_values'] ?? {}}')),
-                                ListTile(
-                                    title: const Text('بعد (منقح)'),
-                                    subtitle:
-                                        Text('${event['after_values'] ?? {}}')),
-                              ],
-                            );
-                          },
-                        )),
-                  ))),
+            child: Obx(() => OnlineStoreStateView(
+                  loading: controller.loading.value,
+                  error: controller.error.value,
+                  isEmpty: controller.items.isEmpty,
+                  onRetry: controller.applyFilters,
+                  child: RefreshIndicator(
+                    onRefresh: controller.applyFilters,
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                      itemCount: controller.items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, index) =>
+                          _eventCard(controller.items[index].values),
+                    ),
+                  ),
+                )),
+          ),
         ]),
       );
+
+  Widget _filters() => Padding(
+        padding: const EdgeInsets.all(10),
+        child: OnlineStoreFormSection(
+          title: 'تصفية السجل',
+          description: 'ابحث حسب نوع السجل أو العملية أو الموظف والفترة.',
+          icon: Icons.filter_alt_outlined,
+          child: Wrap(spacing: 8, runSpacing: 8, children: [
+            Obx(() => DropdownButton<String>(
+                  value: controller.entityType.value,
+                  items: const [
+                    'all',
+                    'listing',
+                    'promotion',
+                    'coupon',
+                    'settings',
+                    'account_link',
+                    'credit_policy',
+                    'review',
+                    'pricing'
+                  ]
+                      .map((value) => DropdownMenuItem(
+                          value: value, child: Text(_entityLabel(value))))
+                      .toList(),
+                  onChanged: (value) =>
+                      controller.entityType.value = value ?? 'all',
+                )),
+            Obx(() => DropdownButton<String>(
+                  value: controller.actionFilter.value,
+                  items: const [
+                    'all',
+                    'created',
+                    'updated',
+                    'linked',
+                    'approved',
+                    'suspended',
+                    'activated',
+                    'deactivated',
+                    'published',
+                    'hidden',
+                    'status_changed',
+                    'moderated',
+                    'previewed'
+                  ]
+                      .map((value) => DropdownMenuItem(
+                          value: value, child: Text(_actionLabel(value))))
+                      .toList(),
+                  onChanged: (value) =>
+                      controller.actionFilter.value = value ?? 'all',
+                )),
+            SizedBox(
+              width: 125,
+              child: TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'رقم الموظف'),
+                onChanged: (value) => controller.actorUserId.value = value,
+              ),
+            ),
+            SizedBox(
+              width: 170,
+              child: OnlineStoreDateTimeField(
+                controller: controller.fromController,
+                label: 'من تاريخ',
+                includeTime: false,
+              ),
+            ),
+            SizedBox(
+              width: 170,
+              child: OnlineStoreDateTimeField(
+                controller: controller.toController,
+                label: 'إلى تاريخ',
+                includeTime: false,
+              ),
+            ),
+            OutlinedButton.icon(
+              style: OnlineStoreAdminUi.actionButtonStyle,
+              onPressed: controller.applyFilters,
+              icon: const Icon(Icons.filter_alt_outlined),
+              label: const Text('تطبيق المرشحات'),
+            ),
+          ]),
+        ),
+      );
+
+  Widget _eventCard(Map<String, dynamic> event) {
+    final before = onlineStoreMap(event['before_values']);
+    final after = onlineStoreMap(event['after_values']);
+    final actor = onlineStoreMap(event['actor']);
+    final keys = <String>{...before.keys, ...after.keys}
+      ..removeWhere((key) => const {
+            'created_at',
+            'updated_at',
+            'created_by',
+            'updated_by',
+          }.contains(key));
+    final changed = keys
+        .where((key) => '${before[key]}' != '${after[key]}')
+        .toList(growable: false);
+    final action = _actionLabel('${event['action'] ?? ''}');
+    final entity = _entityLabel('${event['entity_type'] ?? ''}');
+
+    return Card(
+      color: OnlineStoreAdminUi.surface,
+      margin: EdgeInsets.zero,
+      child: ExpansionTile(
+        leading: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: const BoxDecoration(
+            color: OnlineStoreAdminUi.surfaceMuted,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.history_rounded,
+              color: OnlineStoreAdminUi.accent),
+        ),
+        title: Text('$action — $entity',
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(
+          '${actor['name'] ?? 'موظف #${event['actor_user_id'] ?? '—'}'} • '
+          '${_date(event['occurred_at'])}\n'
+          'رقم السجل: ${event['entity_id'] ?? '—'}',
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        children: [
+          if (changed.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Text('لا توجد تفاصيل إضافية قابلة للعرض.'),
+            )
+          else
+            ...changed.map((key) => Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 6),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: OnlineStoreAdminUi.surfaceMuted,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_fieldLabel(key),
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 5),
+                      if (before.containsKey(key))
+                        Text('قبل: ${_value(before[key])}',
+                            style: const TextStyle(
+                                color: OnlineStoreAdminUi.textSecondary)),
+                      if (after.containsKey(key))
+                        Text('بعد: ${_value(after[key])}'),
+                    ],
+                  ),
+                )),
+        ],
+      ),
+    );
+  }
 
   static String _entityLabel(String value) =>
       const {
         'all': 'كل أنواع السجلات',
-        'listing': 'منتج معروض',
+        'listing': 'منتج المتجر',
         'promotion': 'عرض ترويجي',
         'coupon': 'كوبون',
         'settings': 'إعدادات المتجر',
@@ -134,23 +206,122 @@ class OnlineStoreAuditScreen extends GetView<OnlineStoreAuditController> {
         'review': 'مراجعة عميل',
         'pricing': 'احتساب سعر',
       }[value] ??
-      value;
+      'سجل متجر';
 
   static String _actionLabel(String value) =>
       const {
         'all': 'كل العمليات',
-        'created': 'تمت الإضافة',
-        'updated': 'تم التعديل',
-        'linked': 'تم ربط الحساب',
-        'approved': 'تمت الموافقة',
-        'suspended': 'تم التعليق',
-        'activated': 'تم التفعيل',
-        'deactivated': 'تم الإيقاف',
-        'published': 'تم النشر',
-        'hidden': 'تم الإخفاء',
-        'status_changed': 'تغيّرت الحالة',
-        'moderated': 'تمت مراجعة المحتوى',
-        'previewed': 'تمت معاينة السعر',
+        'created': 'إضافة',
+        'updated': 'تعديل',
+        'linked': 'ربط حساب',
+        'approved': 'موافقة',
+        'suspended': 'تعليق',
+        'activated': 'تفعيل',
+        'deactivated': 'إيقاف',
+        'published': 'نشر',
+        'hidden': 'إخفاء',
+        'status_changed': 'تغيير الحالة',
+        'moderated': 'مراجعة محتوى',
+        'previewed': 'معاينة سعر',
       }[value] ??
-      (value.isEmpty ? 'عملية' : value);
+      'عملية';
+
+  String _fieldLabel(String value) =>
+      const {
+        'code': 'الرمز',
+        'status': 'الحالة',
+        'is_active': 'نشط',
+        'is_featured': 'مميز',
+        'is_new': 'جديد',
+        'show_on_home': 'يظهر في الرئيسية',
+        'show_as_offer': 'يظهر كعرض',
+        'sort_order': 'ترتيب العرض',
+        'readiness_state': 'حالة الجاهزية',
+        'readiness_issues': 'ملاحظات الجاهزية',
+        'published_at': 'وقت النشر',
+        'hidden_at': 'وقت الإخفاء',
+        'name_translations': 'الاسم',
+        'title_translations': 'العنوان',
+        'description_translations': 'الوصف',
+        'discount_type': 'نوع الخصم',
+        'discount_value': 'قيمة الخصم',
+        'minimum_order': 'الحد الأدنى للطلب',
+        'total_usage_limit': 'حد الاستخدام الكلي',
+        'per_user_usage_limit': 'حد الاستخدام لكل مستخدم',
+        'eligible_account_type': 'نوع الحساب المؤهل',
+        'applies_to': 'نوع السعر',
+        'scope': 'نطاق التطبيق',
+        'starts_at': 'يبدأ في',
+        'ends_at': 'ينتهي في',
+        'role': 'نوع الحساب',
+        'credit_limit': 'حد الائتمان',
+        'payment_terms_days': 'مهلة السداد بالأيام',
+        'is_eligible': 'مؤهل للائتمان',
+        'approved_at': 'وقت الموافقة',
+        'expires_at': 'انتهاء الموافقة',
+        'currency': 'العملة',
+        'store_enabled': 'المتجر مفعّل',
+        'maintenance_mode': 'وضع الصيانة',
+        'checkout_enabled': 'إتمام الطلبات مفعّل',
+        'cod_enabled': 'الدفع عند الاستلام مفعّل',
+        'guest_browsing_enabled': 'تصفح الزوار مفعّل',
+        'enabled_languages': 'اللغات المفعّلة',
+        'out_of_stock_behavior': 'سلوك نفاد المخزون',
+        'low_stock_threshold': 'حد المخزون المنخفض',
+        'account_source': 'مصدر الحساب',
+        'verified_at': 'وقت التحقق',
+        'rating': 'التقييم',
+        'is_verified_purchase': 'عملية شراء موثقة',
+        'moderated_by': 'راجعه الموظف',
+        'moderated_at': 'وقت المراجعة',
+        'moderation_reason': 'سبب المراجعة',
+        'reason': 'السبب',
+        'targets': 'الأهداف',
+      }[value] ??
+      value.replaceAll('_', ' ');
+
+  String _value(dynamic value) {
+    if (value == null) return 'غير محدد';
+    if (value is bool) return value ? 'نعم' : 'لا';
+    if (value is List) {
+      if (value.isEmpty) return 'لا يوجد';
+      return value.map(_value).join('، ');
+    }
+    if (value is Map) {
+      final map = onlineStoreMap(value);
+      if ('${map['ar'] ?? ''}'.trim().isNotEmpty) return '${map['ar']}';
+      return map.entries
+          .map((entry) => '${_fieldLabel(entry.key)}: ${_value(entry.value)}')
+          .join('، ');
+    }
+    return const {
+          'draft': 'مسودة',
+          'ready': 'جاهز',
+          'published': 'منشور',
+          'hidden': 'مخفي',
+          'pending': 'قيد الانتظار',
+          'approved': 'مقبول',
+          'rejected': 'مرفوض',
+          'percentage': 'نسبة مئوية',
+          'fixed': 'مبلغ ثابت',
+          'customer': 'تجزئة',
+          'seller': 'جملة',
+          'both': 'الجميع',
+          'retail': 'سعر التجزئة',
+          'wholesale': 'سعر الجملة',
+          'global': 'كل المتجر',
+          'targeted': 'عناصر محددة',
+          'active': 'نشط',
+          'inactive': 'غير نشط',
+        }['$value'] ??
+        '$value';
+  }
+
+  String _date(dynamic value) {
+    final parsed = DateTime.tryParse('$value')?.toLocal();
+    if (parsed == null) return 'وقت غير محدد';
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${parsed.year}/${two(parsed.month)}/${two(parsed.day)} '
+        '${two(parsed.hour)}:${two(parsed.minute)}';
+  }
 }

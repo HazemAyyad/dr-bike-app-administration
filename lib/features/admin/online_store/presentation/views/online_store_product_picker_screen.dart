@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../data/online_store_models.dart';
 import '../../domain/online_store_repository.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../utils/online_store_admin_ui.dart';
+import '../widgets/online_store_network_image.dart';
 import '../utils/online_store_permissions.dart';
 
 bool canCreateOnlineStoreListing(int productId, Set<int> listedProductIds) =>
@@ -163,14 +163,7 @@ class _OnlineStoreProductPickerScreenState
                     color: OnlineStoreAdminUi.surfaceMuted,
                     child: Icon(Icons.inventory_2_outlined),
                   )
-                : Image.network(
-                    ShowNetImage.getPhoto(product.imageUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const ColoredBox(
-                      color: OnlineStoreAdminUi.surfaceMuted,
-                      child: Icon(Icons.broken_image_outlined),
-                    ),
-                  ),
+                : OnlineStoreNetworkImage(path: product.imageUrl),
           ),
         ),
         title: Text(product.displayName.isEmpty
@@ -251,17 +244,9 @@ class _OnlineStoreProductPickerScreenState
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (_, index) => ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          ShowNetImage.getPhoto(product.imageUrls[index]),
+                        child: OnlineStoreNetworkImage(
+                          path: product.imageUrls[index],
                           width: 180,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox(
-                            width: 180,
-                            child: ColoredBox(
-                              color: OnlineStoreAdminUi.surfaceMuted,
-                              child: Icon(Icons.broken_image_outlined),
-                            ),
-                          ),
                         ),
                       ),
                     ),

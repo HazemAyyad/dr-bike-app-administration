@@ -87,8 +87,17 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
           SliverToBoxAdapter(
             child: SizedBox(height: 12.h),
           ),
-          const SliverToBoxAdapter(
-            child: ProductManagementToolbar(),
+          SliverToBoxAdapter(
+            child: GetBuilder<ProductManagementController>(
+              builder: (controller) {
+                final initialLoading = (controller.isLoading.value ||
+                        controller.isProductsLoading.value) &&
+                    controller.displayedProducts.isEmpty;
+                return initialLoading
+                    ? const _ProductManagementToolbarSkeleton()
+                    : const ProductManagementToolbar();
+              },
+            ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 8.h)),
           GetBuilder<ProductManagementController>(
@@ -257,6 +266,35 @@ class _ProductManagementSkeletonList extends StatelessWidget {
         (context, index) => const _ProductManagementSkeletonCard(),
         childCount: 12,
       ),
+    );
+  }
+}
+
+class _ProductManagementToolbarSkeleton extends StatelessWidget {
+  const _ProductManagementToolbarSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ThemeService.isDark.value
+        ? AppColors.customGreyColor4
+        : AppColors.whiteColor2;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Column(children: [
+        _SkeletonBlock(width: double.infinity, height: 42.h, color: color),
+        SizedBox(height: 10.h),
+        Row(children: [
+          Expanded(
+            child: _SkeletonBlock(
+              width: double.infinity,
+              height: 32.h,
+              color: color,
+            ),
+          ),
+          SizedBox(width: 10.w),
+          _SkeletonBlock(width: 44.w, height: 32.h, color: color),
+        ]),
+      ]),
     );
   }
 }

@@ -184,7 +184,7 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'delete') {
-              controller.remove(item.id);
+              _confirmDelete(item);
             }
             if (value == 'activate') {
               controller.action(item.id, 'activate');
@@ -208,6 +208,28 @@ class OnlineStoreResourceScreen<T extends OnlineStoreResourceController>
           ],
         ),
     ]);
+  }
+
+  Future<void> _confirmDelete(OnlineStoreEntity item) async {
+    final accepted = await Get.dialog<bool>(AlertDialog(
+      title: const Text('تأكيد الحذف'),
+      content: Text('هل تريد حذف «${item.label}»؟'),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: const Text('إلغاء'),
+        ),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: OnlineStoreAdminUi.danger,
+            side: const BorderSide(color: OnlineStoreAdminUi.danger),
+          ),
+          onPressed: () => Get.back(result: true),
+          child: const Text('حذف'),
+        ),
+      ],
+    ));
+    if (accepted == true) await controller.remove(item.id);
   }
 
   Future<void> _showEditor(BuildContext context,

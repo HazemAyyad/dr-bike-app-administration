@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../../../core/helpers/show_net_image.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_categories_controller.dart';
 import '../utils/online_store_permissions.dart';
 import '../utils/online_store_admin_ui.dart';
 import '../widgets/online_store_resource_screen.dart';
+import '../widgets/online_store_network_image.dart';
 
 Map<String, dynamic> onlineStoreCategoryPayload({
   required String nameAr,
@@ -73,10 +73,7 @@ class OnlineStoreCategoriesScreen
                     color: OnlineStoreAdminUi.surfaceMuted,
                     child: Icon(Icons.category_outlined),
                   )
-                : Image.network(ShowNetImage.getPhoto(imagePath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.broken_image_outlined)),
+                : OnlineStoreNetworkImage(path: imagePath),
           ),
         ),
         title: Text(item.label,
@@ -151,10 +148,7 @@ class OnlineStoreCategoriesScreen
                   child: pickedImage != null
                       ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
                       : imagePath.isNotEmpty
-                          ? Image.network(ShowNetImage.getPhoto(imagePath),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.broken_image_outlined))
+                          ? OnlineStoreNetworkImage(path: imagePath)
                           : const Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

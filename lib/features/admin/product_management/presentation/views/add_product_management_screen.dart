@@ -9,6 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/product_management_controller.dart';
 import '../widgets/product_development_product_picker.dart';
 import '../widgets/product_management_widget.dart';
+import '../../../../../core/services/theme_service.dart';
 
 class AddProductManagementScreen extends StatelessWidget {
   const AddProductManagementScreen({Key? key}) : super(key: key);
@@ -44,13 +45,16 @@ class AddProductManagementScreen extends StatelessWidget {
                   ),
                 if (controller.isEdit.value) SizedBox(height: 12.h),
                 if (!controller.isEdit.value)
-                  ProductDevelopmentProductPicker(
-                    products: controller.products,
-                    selectedProduct: controller.selectedProduct,
-                    onChanged: (value) {
-                      controller.selectProductForDevelopment(value);
-                    },
-                  ),
+                  controller.isProductsLoading.value &&
+                          controller.products.isEmpty
+                      ? const _ProductPickerSkeleton()
+                      : ProductDevelopmentProductPicker(
+                          products: controller.products,
+                          selectedProduct: controller.selectedProduct,
+                          onChanged: (value) {
+                            controller.selectProductForDevelopment(value);
+                          },
+                        ),
                 if (!controller.isEdit.value) SizedBox(height: 12.h),
                 CustomTextField(
                   label: 'details',
@@ -105,4 +109,83 @@ class AddProductManagementScreen extends StatelessWidget {
       }),
     );
   }
+}
+
+class _ProductPickerSkeleton extends StatelessWidget {
+  const _ProductPickerSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = ThemeService.isDark.value
+        ? AppColors.customGreyColor
+        : AppColors.whiteColor2;
+    final highlight = ThemeService.isDark.value
+        ? AppColors.customGreyColor4
+        : const Color(0xFFF7F7F7);
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: base,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(children: [
+        _AddScreenSkeletonBlock(
+          width: double.infinity,
+          height: 42.h,
+          color: highlight,
+        ),
+        SizedBox(height: 10.h),
+        for (var index = 0; index < 3; index++) ...[
+          Row(children: [
+            _AddScreenSkeletonBlock(
+              width: 44.w,
+              height: 44.w,
+              color: highlight,
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _AddScreenSkeletonBlock(
+                      width: double.infinity,
+                      height: 11.h,
+                      color: highlight,
+                    ),
+                    SizedBox(height: 7.h),
+                    _AddScreenSkeletonBlock(
+                      width: 100.w,
+                      height: 8.h,
+                      color: highlight,
+                    ),
+                  ]),
+            ),
+          ]),
+          if (index < 2) SizedBox(height: 10.h),
+        ],
+      ]),
+    );
+  }
+}
+
+class _AddScreenSkeletonBlock extends StatelessWidget {
+  const _AddScreenSkeletonBlock({
+    required this.width,
+    required this.height,
+    required this.color,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(6.r),
+        ),
+      );
 }

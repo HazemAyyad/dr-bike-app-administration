@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../../core/databases/api/end_points.dart';
-import '../../../../../../core/helpers/show_net_image.dart';
+import 'online_store_network_image.dart';
 import '../../data/online_store_models.dart';
 import '../controllers/online_store_banners_controller.dart';
 import 'online_store_target_picker.dart';
@@ -246,12 +246,7 @@ class _BannerEditorDialogState extends State<_BannerEditorDialog> {
                 child: pickedImage != null
                     ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
                     : imagePath.isNotEmpty
-                        ? Image.network(
-                            ShowNetImage.getPhoto(imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.broken_image_outlined),
-                          )
+                        ? OnlineStoreNetworkImage(path: imagePath)
                         : const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
