@@ -121,7 +121,8 @@ class SupportRealtimeService {
       return;
     }
     if ((event == 'support.message.created' ||
-            event == 'support.conversation.read') &&
+            event == 'support.conversation.read' ||
+            event == 'support.typing') &&
         data is Map) {
       onPayload(Map<String, dynamic>.from(data));
     }

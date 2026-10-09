@@ -153,6 +153,8 @@ class EndPoints {
       'support/conversations/$conversationId/messages/$messageId/reaction';
   static String supportConversationRead(int id) =>
       'support/conversations/$id/read';
+  static String supportConversationTyping(int id) =>
+      'support/conversations/$id/typing';
   static String supportConversationStatus(int id) =>
       'support/conversations/$id/status';
 

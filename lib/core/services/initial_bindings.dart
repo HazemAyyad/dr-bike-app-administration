@@ -59,6 +59,7 @@ const String onlineStoreReviewsManagePermissionName =
     'Online Store Reviews Manage';
 const String onlineStoreSettingsManagePermissionName =
     'Online Store Settings Manage';
+const String onlineStoreSupportPermissionName = 'Online Store Support';
 
 bool get canViewOnlineStore =>
     userType == 'admin' ||

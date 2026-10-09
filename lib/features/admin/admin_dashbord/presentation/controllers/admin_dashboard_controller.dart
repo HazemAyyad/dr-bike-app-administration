@@ -170,9 +170,14 @@ class AdminDashboardController extends GetxController
     },
     {
       'id': '49',
-      'title': 'technicalSupport',
+      'title': 'دعم الموظفين',
       'route': AppRoutes.TECHNICALSUPPORT,
       'badgeKey': 'technical_support',
+    },
+    {
+      'id': 'online_store_support',
+      'title': 'دعم المتجر',
+      'route': AppRoutes.STORESUPPORT,
     },
     {
       'id': '51',

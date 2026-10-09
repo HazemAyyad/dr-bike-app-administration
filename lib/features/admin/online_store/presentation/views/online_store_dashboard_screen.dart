@@ -137,6 +137,12 @@ class OnlineStoreDashboardScreen
   }
 
   List<_Destination> _destinations() => [
+        if (OnlineStorePermissions.canManageSupport)
+          const _Destination(
+            'دعم عملاء المتجر',
+            AppRoutes.STORESUPPORT,
+            Icons.support_agent_outlined,
+          ),
         if (OnlineStorePermissions.canView)
           const _Destination('إحصائيات المتجر', AppRoutes.ONLINESTORESTATISTICS,
               Icons.query_stats_outlined),

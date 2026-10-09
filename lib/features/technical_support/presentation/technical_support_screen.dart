@@ -12,6 +12,7 @@ import 'package:just_audio/just_audio.dart' as ja;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/services/support_realtime_service.dart';
@@ -23,9 +24,13 @@ import '../../../core/helpers/app_failure_notice.dart';
 
 class TechnicalSupportScreen extends StatefulWidget {
   final int? conversationId;
+  final String supportSource;
 
-  const TechnicalSupportScreen({Key? key, this.conversationId})
-      : super(key: key);
+  const TechnicalSupportScreen({
+    Key? key,
+    this.conversationId,
+    this.supportSource = 'employee',
+  }) : super(key: key);
 
   @override
   State<TechnicalSupportScreen> createState() => _TechnicalSupportScreenState();
@@ -38,18 +43,17 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   final messageController = TextEditingController();
   final messagesScrollController = ScrollController();
   final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
+  final uuid = const Uuid();
   late final RecorderController recorder;
 
   bool loading = true;
   bool sending = false;
   bool canManageSupport = false;
-  bool canManageEmployeeSupport = false;
-  bool canManageStoreSupport = false;
   bool recording = false;
   bool recordingPaused = false;
   Duration recordingDuration = Duration.zero;
   String status = 'all';
-  String source = 'all';
+  late String source;
   String assignment = 'all';
   bool needsReply = false;
   String? recordingPath;
@@ -61,6 +65,12 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Timer? recordingTimer;
   late final SupportRealtimeService realtime;
   SupportRealtimeState realtimeState = SupportRealtimeState.disconnected;
+  bool requesterIsTyping = false;
+  String typingActorName = '';
+  Timer? typingIdleTimer;
+  Timer? remoteTypingTimer;
+  DateTime? lastTypingSignal;
+  bool typingSent = false;
 
   static const pageColor = AppColors.operationalSurface;
   static const cardColor = Colors.white;
@@ -71,10 +81,15 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   static const composerColor = Color(0xfff8f7fc);
 
   bool get inConversation => widget.conversationId != null;
+  bool get isStoreSupport => widget.supportSource == 'online_store';
+  String get listRoute =>
+      isStoreSupport ? '/StoreSupport' : '/TechnicalSupport';
+  String get sectionTitle => isStoreSupport ? 'دعم المتجر' : 'دعم الموظفين';
 
   @override
   void initState() {
     super.initState();
+    source = widget.supportSource;
     recorder = RecorderController()
       ..androidEncoder = AndroidEncoder.aac
       ..androidOutputFormat = AndroidOutputFormat.mpeg4
@@ -102,6 +117,9 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   @override
   void dispose() {
     poller?.cancel();
+    typingIdleTimer?.cancel();
+    remoteTypingTimer?.cancel();
+    _stopTyping();
     realtime.dispose();
     recordingTimer?.cancel();
     recorder.dispose();
@@ -123,8 +141,6 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         assignment: assignment,
       );
       canManageSupport = result.canManage;
-      canManageEmployeeSupport = result.canManageEmployee;
-      canManageStoreSupport = result.canManageStore;
       conversations = result.items;
     } catch (e) {
       _message(e.toString());
@@ -150,6 +166,15 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
 
   void _onRealtimePayload(Map<String, dynamic> payload) {
     if (!mounted) return;
+    if (inConversation &&
+        payload.containsKey('is_typing') &&
+        _isRemoteTypingActor(payload['actor_type']?.toString() ?? '')) {
+      _setRemoteTyping(
+        payload['is_typing'] == true,
+        payload['actor_name']?.toString() ?? '',
+      );
+      return;
+    }
     if (!inConversation) {
       _loadList(silent: true);
       return;
@@ -166,9 +191,21 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       final message = SupportMessage.fromJson(
         Map<String, dynamic>.from(rawMessage),
       );
-      if (message.conversationId == widget.conversationId &&
-          !messages.any((row) => row.id == message.id)) {
-        messages = [...messages, message];
+      if (message.conversationId == widget.conversationId) {
+        final index = messages.indexWhere(
+          (row) =>
+              row.id == message.id ||
+              (message.clientMessageId.isNotEmpty &&
+                  row.clientMessageId == message.clientMessageId),
+        );
+        messages = [...messages];
+        if (index >= 0) {
+          messages[index] = message;
+        } else {
+          messages.add(message);
+        }
+        messages.sort(_messageOrder);
+        if (!_isMine(message)) _clearRemoteTyping();
         service.markRead(widget.conversationId!);
         _scrollToLatest();
       }
@@ -186,7 +223,16 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       final result = await service.getConversation(widget.conversationId!);
       canManageSupport = result.canManage;
       conversation = result.conversation;
-      messages = result.messages;
+      final pending = messages
+          .where((row) => row.delivery != SupportMessageDelivery.sent)
+          .where(
+            (row) => !result.messages.any(
+              (server) =>
+                  server.clientMessageId.isNotEmpty &&
+                  server.clientMessageId == row.clientMessageId,
+            ),
+          );
+      messages = [...result.messages, ...pending]..sort(_messageOrder);
       await service.markRead(widget.conversationId!);
       if (!openedAtLatestMessage || wasNearBottom) {
         openedAtLatestMessage = true;
@@ -228,7 +274,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       subjectController.clear();
       messageController.clear();
       if (mounted) Navigator.pop(context);
-      Get.toNamed('/TechnicalSupport/${created.id}');
+      Get.toNamed('$listRoute/${created.id}');
     } catch (e) {
       _message(e.toString());
     } finally {
@@ -236,24 +282,135 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     }
   }
 
-  Future<void> _sendMessage({List<String> files = const []}) async {
-    final text = messageController.text.trim();
-    if (text.isEmpty && files.isEmpty) return;
+  Future<void> _sendMessage({
+    List<String> files = const [],
+    SupportMessage? retry,
+  }) async {
+    final text = retry?.body ?? messageController.text.trim();
+    final localFiles = retry?.localFilePaths ?? files;
+    if (text.isEmpty && localFiles.isEmpty) return;
 
-    setState(() => sending = true);
+    final clientMessageId = retry?.clientMessageId ?? uuid.v4();
+    final optimistic = SupportMessage(
+      id: retry?.id ?? -DateTime.now().microsecondsSinceEpoch,
+      conversationId: widget.conversationId!,
+      senderUserId: 0,
+      senderEmployeeId: 0,
+      senderName: '',
+      senderType: canManageSupport ? 'support' : 'employee',
+      messageType: localFiles.isEmpty ? 'text' : 'document',
+      body: text,
+      attachments: const [],
+      reactions: const [],
+      myReaction: '',
+      createdAt: retry?.createdAt ?? DateTime.now(),
+      clientMessageId: clientMessageId,
+      delivery: SupportMessageDelivery.sending,
+      localFilePaths: localFiles,
+    );
+    setState(() {
+      messages = [
+        ...messages.where(
+          (row) => row.clientMessageId != clientMessageId,
+        ),
+        optimistic,
+      ]..sort(_messageOrder);
+      if (retry == null) messageController.clear();
+    });
+    _stopTyping();
+    _scrollToLatest();
     try {
-      await service.sendMessage(
+      final sent = await service.sendMessage(
         conversationId: widget.conversationId!,
         message: text,
-        files: files,
+        clientMessageId: clientMessageId,
+        files: localFiles,
       );
-      messageController.clear();
-      await _loadConversation(silent: true);
-    } catch (e) {
-      _message(e.toString());
-    } finally {
-      if (mounted) setState(() => sending = false);
+      if (!mounted) return;
+      setState(() {
+        messages = [
+          ...messages.where(
+            (row) => row.clientMessageId != clientMessageId,
+          ),
+          sent,
+        ]..sort(_messageOrder);
+      });
+      _scrollToLatest();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        messages = messages
+            .map(
+              (row) => row.clientMessageId == clientMessageId
+                  ? row.copyWith(delivery: SupportMessageDelivery.failed)
+                  : row,
+            )
+            .toList();
+      });
     }
+  }
+
+  static int _messageOrder(SupportMessage a, SupportMessage b) {
+    final time = (a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+        .compareTo(b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
+    return time != 0 ? time : a.id.compareTo(b.id);
+  }
+
+  void _composerChanged(String value) {
+    setState(() {});
+    if (value.trim().isEmpty || conversation?.status == 'closed') {
+      _stopTyping();
+      return;
+    }
+    final now = DateTime.now();
+    if (!typingSent ||
+        lastTypingSignal == null ||
+        now.difference(lastTypingSignal!) >= const Duration(seconds: 2)) {
+      typingSent = true;
+      lastTypingSignal = now;
+      _sendTyping(widget.conversationId!, true);
+    }
+    typingIdleTimer?.cancel();
+    typingIdleTimer = Timer(const Duration(seconds: 3), _stopTyping);
+  }
+
+  void _stopTyping() {
+    typingIdleTimer?.cancel();
+    final id = widget.conversationId;
+    if (!typingSent || id == null) return;
+    typingSent = false;
+    lastTypingSignal = null;
+    _sendTyping(id, false);
+  }
+
+  Future<void> _sendTyping(int id, bool value) async {
+    try {
+      await service.setTyping(id, value);
+    } catch (_) {}
+  }
+
+  bool _isRemoteTypingActor(String actorType) {
+    return canManageSupport ? actorType != 'support' : actorType == 'support';
+  }
+
+  void _setRemoteTyping(bool value, String actorName) {
+    remoteTypingTimer?.cancel();
+    setState(() {
+      requesterIsTyping = value;
+      if (actorName.isNotEmpty) typingActorName = actorName;
+    });
+    if (value) {
+      remoteTypingTimer = Timer(
+        const Duration(seconds: 6),
+        _clearRemoteTyping,
+      );
+    }
+  }
+
+  void _clearRemoteTyping() {
+    remoteTypingTimer?.cancel();
+    if (!mounted || !requesterIsTyping) return;
+    setState(() => requesterIsTyping = false);
   }
 
   Future<void> _pickFiles() async {
@@ -475,7 +632,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(inConversation ? 'الدعم الفني' : 'محادثات الدعم الفني'),
+            Text(inConversation ? sectionTitle : 'محادثات $sectionTitle'),
             Text(
               realtimeState == SupportRealtimeState.connected
                   ? 'متصل مباشرة'
@@ -523,33 +680,6 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                   spacing: 6.w,
                   runSpacing: 4.h,
                   children: [
-                    if (canManageEmployeeSupport)
-                      ChoiceChip(
-                        label: const Text('دعم الموظفين'),
-                        selected: source == 'employee',
-                        onSelected: (_) {
-                          setState(() => source = 'employee');
-                          _loadList();
-                        },
-                      ),
-                    if (canManageStoreSupport)
-                      ChoiceChip(
-                        label: const Text('دعم المتجر'),
-                        selected: source == 'online_store',
-                        onSelected: (_) {
-                          setState(() => source = 'online_store');
-                          _loadList();
-                        },
-                      ),
-                    if (canManageEmployeeSupport && canManageStoreSupport)
-                      ChoiceChip(
-                        label: const Text('الكل'),
-                        selected: source == 'all',
-                        onSelected: (_) {
-                          setState(() => source = 'all');
-                          _loadList();
-                        },
-                      ),
                     FilterChip(
                       label: const Text('بحاجة لرد'),
                       selected: needsReply,
@@ -669,7 +799,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         item.requesterName.isNotEmpty ? item.requesterName : item.employeeName;
     return InkWell(
       borderRadius: BorderRadius.circular(8.r),
-      onTap: () => Get.toNamed('/TechnicalSupport/${item.id}'),
+      onTap: () => Get.toNamed('$listRoute/${item.id}'),
       child: Container(
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
@@ -838,6 +968,20 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                   ),
                 ),
         ),
+        if (requesterIsTyping)
+          Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: EdgeInsets.fromLTRB(14.w, 5.h, 14.w, 2.h),
+            child: Text(
+              '${typingActorName.isEmpty ? (isStoreSupport ? 'الزبون' : 'الموظف') : typingActorName} يكتب الآن...',
+              style: TextStyle(
+                color: actionColor,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         _composer(),
       ],
     );
@@ -967,7 +1111,10 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: () => _showReactionPicker(message),
+        onLongPress:
+            message.id > 0 && message.delivery == SupportMessageDelivery.sent
+                ? () => _showReactionPicker(message)
+                : null,
         child: Container(
           constraints: BoxConstraints(maxWidth: Get.width * 0.8),
           margin: EdgeInsets.only(bottom: 8.h),
@@ -1002,6 +1149,11 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                 SizedBox(height: 8.h),
                 ...message.attachments.map(_attachmentTile),
               ],
+              if (message.localFilePaths.isNotEmpty &&
+                  message.attachments.isEmpty) ...[
+                SizedBox(height: 8.h),
+                ...message.localFilePaths.map(_localAttachmentTile),
+              ],
               if (message.reactions.isNotEmpty) ...[
                 SizedBox(height: 7.h),
                 _reactionSummary(message),
@@ -1016,6 +1168,21 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                   style: TextStyle(fontSize: 10.sp, color: mutedColor),
                 ),
               ),
+              if (message.delivery == SupportMessageDelivery.sending)
+                Text(
+                  'جاري الإرسال...',
+                  style: TextStyle(fontSize: 10.sp, color: mutedColor),
+                )
+              else if (message.delivery == SupportMessageDelivery.failed)
+                TextButton.icon(
+                  onPressed: () => _sendMessage(retry: message),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    foregroundColor: Colors.red.shade700,
+                  ),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('تعذر الإرسال · إعادة المحاولة'),
+                ),
             ],
           ),
         ),
@@ -1175,6 +1342,33 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     );
   }
 
+  Widget _localAttachmentTile(String path) {
+    final name = File(path).uri.pathSegments.last;
+    return Container(
+      margin: EdgeInsets.only(top: 4.h),
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.attach_file, size: 18, color: actionColor),
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              name.isEmpty ? 'ملف مرفق' : name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openAttachment(SupportAttachment attachment) async {
     if (attachment.type == 'image' && attachment.url.isNotEmpty) {
       await showDialog(
@@ -1234,7 +1428,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                       enabled: !disabled && !sending,
                       minLines: 1,
                       maxLines: 4,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: _composerChanged,
                       decoration: InputDecoration(
                         hintText: disabled ? 'المحادثة مغلقة' : 'اكتب رسالة',
                         filled: true,

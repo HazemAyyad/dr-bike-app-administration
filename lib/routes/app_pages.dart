@@ -472,13 +472,29 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.TECHNICALSUPPORT,
-      page: () => const TechnicalSupportScreen(),
+      page: () => const TechnicalSupportScreen(supportSource: 'employee'),
       transition: _transitionFadeIn,
     ),
     GetPage(
       name: AppRoutes.TECHNICALSUPPORTCONVERSATION,
       page: () => TechnicalSupportScreen(
         conversationId: int.tryParse(Get.parameters['id'] ?? ''),
+        supportSource: 'employee',
+      ),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.STORESUPPORT,
+      page: () => const TechnicalSupportScreen(
+        supportSource: 'online_store',
+      ),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.STORESUPPORTCONVERSATION,
+      page: () => TechnicalSupportScreen(
+        conversationId: int.tryParse(Get.parameters['id'] ?? ''),
+        supportSource: 'online_store',
       ),
       transition: _transitionFadeIn,
     ),

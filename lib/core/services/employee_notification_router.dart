@@ -40,7 +40,12 @@ class EmployeeNotificationRouter {
             '',
       );
       if (id != null && id > 0) {
-        Get.toNamed('/TechnicalSupport/$id');
+        final source = raw['source']?.toString() ?? '';
+        Get.toNamed(
+          source == 'online_store' || source == 'online_store_support'
+              ? '/StoreSupport/$id'
+              : '/TechnicalSupport/$id',
+        );
         return;
       }
     }

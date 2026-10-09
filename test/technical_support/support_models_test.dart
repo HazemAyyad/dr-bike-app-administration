@@ -2,7 +2,8 @@ import 'package:doctorbike/features/technical_support/data/support_service.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('store conversation parses requester, assignment, and product context', () {
+  test('store conversation parses requester, assignment, and product context',
+      () {
     final conversation = SupportConversation.fromJson({
       'id': 8,
       'source': 'online_store',
@@ -41,5 +42,30 @@ void main() {
     expect(conversation.source, 'employee');
     expect(conversation.employeeName, 'موظف');
     expect(conversation.productContext, isNull);
+  });
+
+  test('support message keeps optimistic identity and delivery state', () {
+    const optimistic = SupportMessage(
+      id: -1,
+      conversationId: 8,
+      senderUserId: 0,
+      senderEmployeeId: 0,
+      senderName: '',
+      senderType: 'support',
+      messageType: 'text',
+      body: 'مرحبا',
+      attachments: [],
+      reactions: [],
+      myReaction: '',
+      createdAt: null,
+      clientMessageId: 'fixed-id',
+      delivery: SupportMessageDelivery.sending,
+    );
+
+    final failed = optimistic.copyWith(
+      delivery: SupportMessageDelivery.failed,
+    );
+    expect(failed.clientMessageId, 'fixed-id');
+    expect(failed.delivery, SupportMessageDelivery.failed);
   });
 }

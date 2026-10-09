@@ -62,6 +62,8 @@ class SupportMessageReaction {
       );
 }
 
+enum SupportMessageDelivery { sending, sent, failed }
+
 class SupportMessage {
   final int id;
   final int conversationId;
@@ -75,6 +77,9 @@ class SupportMessage {
   final List<SupportMessageReaction> reactions;
   final String myReaction;
   final DateTime? createdAt;
+  final String clientMessageId;
+  final SupportMessageDelivery delivery;
+  final List<String> localFilePaths;
 
   const SupportMessage({
     required this.id,
@@ -89,7 +94,35 @@ class SupportMessage {
     required this.reactions,
     required this.myReaction,
     required this.createdAt,
+    this.clientMessageId = '',
+    this.delivery = SupportMessageDelivery.sent,
+    this.localFilePaths = const [],
   });
+
+  SupportMessage copyWith({
+    int? id,
+    List<SupportAttachment>? attachments,
+    List<SupportMessageReaction>? reactions,
+    String? myReaction,
+    SupportMessageDelivery? delivery,
+  }) =>
+      SupportMessage(
+        id: id ?? this.id,
+        conversationId: conversationId,
+        senderUserId: senderUserId,
+        senderEmployeeId: senderEmployeeId,
+        senderName: senderName,
+        senderType: senderType,
+        messageType: messageType,
+        body: body,
+        attachments: attachments ?? this.attachments,
+        reactions: reactions ?? this.reactions,
+        myReaction: myReaction ?? this.myReaction,
+        createdAt: createdAt,
+        clientMessageId: clientMessageId,
+        delivery: delivery ?? this.delivery,
+        localFilePaths: localFilePaths,
+      );
 
   factory SupportMessage.fromJson(Map<String, dynamic> json) => SupportMessage(
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
@@ -120,6 +153,7 @@ class SupportMessage {
             .toList(),
         myReaction: json['my_reaction']?.toString() ?? '',
         createdAt: _parseDate(json['created_at']),
+        clientMessageId: json['client_message_id']?.toString() ?? '',
       );
 }
 
@@ -307,11 +341,16 @@ class SupportService {
   Future<SupportMessage> sendMessage({
     required int conversationId,
     required String message,
+    required String clientMessageId,
     List<String> files = const [],
   }) async {
     final response = await _api.post(
       EndPoints.supportConversationMessages(conversationId),
-      data: await _formData(message: message, files: files),
+      data: await _formData(
+        message: message,
+        clientMessageId: clientMessageId,
+        files: files,
+      ),
     );
     return SupportMessage.fromJson(
       Map<String, dynamic>.from(response.data['support_message'] as Map),
@@ -320,6 +359,13 @@ class SupportService {
 
   Future<void> markRead(int id) async {
     await _api.post(EndPoints.supportConversationRead(id));
+  }
+
+  Future<void> setTyping(int id, bool isTyping) async {
+    await _api.post(
+      EndPoints.supportConversationTyping(id),
+      data: {'is_typing': isTyping},
+    );
   }
 
   Future<void> updateStatus(
@@ -350,12 +396,14 @@ class SupportService {
   Future<FormData> _formData({
     required String message,
     String? subject,
+    String? clientMessageId,
     List<String> files = const [],
   }) async {
     return FormData.fromMap({
       if (subject != null && subject.trim().isNotEmpty)
         'subject': subject.trim(),
       if (message.trim().isNotEmpty) 'message': message.trim(),
+      if (clientMessageId != null) 'client_message_id': clientMessageId,
       for (var i = 0; i < files.length; i++)
         'attachments[$i]':
             await (await MediaUploadPreparer.prepareAttachmentForUpload(

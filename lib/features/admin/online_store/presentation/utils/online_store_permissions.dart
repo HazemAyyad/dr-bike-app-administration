@@ -26,4 +26,5 @@ class OnlineStorePermissions {
       allows(onlineStoreReviewsManagePermissionName);
   static bool get canManageSettings =>
       allows(onlineStoreSettingsManagePermissionName);
+  static bool get canManageSupport => allows(onlineStoreSupportPermissionName);
 }

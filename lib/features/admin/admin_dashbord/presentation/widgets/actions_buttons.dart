@@ -231,6 +231,10 @@ class BuildActionButtons extends StatelessWidget {
     if (route == AppRoutes.TECHNICALSUPPORT) {
       return true;
     }
+    if (route == AppRoutes.STORESUPPORT) {
+      return userType == 'admin' ||
+          employeePermissionNames.contains(onlineStoreSupportPermissionName);
+    }
     if (route == AppRoutes.NOTES) {
       return true;
     }
@@ -578,7 +582,10 @@ IconData _actionIcon(String title) {
     case 'followUpDepartment':
       return Icons.pending_actions_outlined;
     case 'technicalSupport':
+    case 'دعم الموظفين':
       return Icons.support_agent_rounded;
+    case 'دعم المتجر':
+      return Icons.storefront_outlined;
     case 'suggestionBox':
       return Icons.lightbulb_outline_rounded;
     case 'مركز التواصل الاجتماعي':
