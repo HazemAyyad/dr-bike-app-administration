@@ -125,8 +125,13 @@ class SupportMessage {
 
 class SupportConversation {
   final int id;
+  final String source;
   final int employeeId;
   final String employeeName;
+  final String requesterName;
+  final String requesterEmail;
+  final String requesterPhone;
+  final Map<String, dynamic>? productContext;
   final String subject;
   final String status;
   final String priority;
@@ -134,15 +139,23 @@ class SupportConversation {
   final DateTime? lastMessageAt;
   final int employeeUnreadCount;
   final int supportUnreadCount;
+  final int requesterUnreadCount;
   final int messagesCount;
+  final int assignedToUserId;
+  final String assignedToName;
   final int employeeSuggestionId;
   final String suggestionTitle;
   final DateTime? createdAt;
 
   const SupportConversation({
     required this.id,
+    required this.source,
     required this.employeeId,
     required this.employeeName,
+    required this.requesterName,
+    required this.requesterEmail,
+    required this.requesterPhone,
+    required this.productContext,
     required this.subject,
     required this.status,
     required this.priority,
@@ -150,7 +163,10 @@ class SupportConversation {
     required this.lastMessageAt,
     required this.employeeUnreadCount,
     required this.supportUnreadCount,
+    required this.requesterUnreadCount,
     required this.messagesCount,
+    required this.assignedToUserId,
+    required this.assignedToName,
     required this.employeeSuggestionId,
     required this.suggestionTitle,
     required this.createdAt,
@@ -159,8 +175,15 @@ class SupportConversation {
   factory SupportConversation.fromJson(Map<String, dynamic> json) =>
       SupportConversation(
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        source: json['source']?.toString() ?? 'employee',
         employeeId: int.tryParse(json['employee_id']?.toString() ?? '') ?? 0,
         employeeName: json['employee_name']?.toString() ?? '',
+        requesterName: json['requester_name']?.toString() ?? '',
+        requesterEmail: json['requester_email']?.toString() ?? '',
+        requesterPhone: json['requester_phone']?.toString() ?? '',
+        productContext: json['product_context'] is Map
+            ? Map<String, dynamic>.from(json['product_context'] as Map)
+            : null,
         subject: json['subject']?.toString() ?? '',
         status: json['status']?.toString() ?? 'open',
         priority: json['priority']?.toString() ?? 'normal',
@@ -170,8 +193,13 @@ class SupportConversation {
             int.tryParse(json['employee_unread_count']?.toString() ?? '') ?? 0,
         supportUnreadCount:
             int.tryParse(json['support_unread_count']?.toString() ?? '') ?? 0,
+        requesterUnreadCount:
+            int.tryParse(json['requester_unread_count']?.toString() ?? '') ?? 0,
         messagesCount:
             int.tryParse(json['messages_count']?.toString() ?? '') ?? 0,
+        assignedToUserId:
+            int.tryParse(json['assigned_to_user_id']?.toString() ?? '') ?? 0,
+        assignedToName: json['assigned_to_name']?.toString() ?? '',
         employeeSuggestionId:
             int.tryParse(json['employee_suggestion_id']?.toString() ?? '') ?? 0,
         suggestionTitle: json['suggestion_title']?.toString() ?? '',
@@ -181,10 +209,14 @@ class SupportConversation {
 
 class SupportConversationListResult {
   final bool canManage;
+  final bool canManageEmployee;
+  final bool canManageStore;
   final List<SupportConversation> items;
 
   const SupportConversationListResult({
     required this.canManage,
+    required this.canManageEmployee,
+    required this.canManageStore,
     required this.items,
   });
 }
@@ -207,12 +239,18 @@ class SupportService {
   Future<SupportConversationListResult> getConversations({
     String? status,
     String? search,
+    String? source,
+    bool needsReply = false,
+    String? assignment,
   }) async {
     final response = await _api.get(
       EndPoints.supportConversations,
       queryParameters: {
         if (status != null && status != 'all') 'status': status,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (source != null && source != 'all') 'source': source,
+        if (needsReply) 'needs_reply': 1,
+        if (assignment != null && assignment != 'all') 'assignment': assignment,
       },
     );
     final raw = response.data;
@@ -220,6 +258,9 @@ class SupportService {
     final list = _extractList(raw, const ['conversations', 'data']);
     return SupportConversationListResult(
       canManage: canManage,
+      canManageEmployee:
+          raw is Map && raw['can_manage_employee_support'] == true,
+      canManageStore: raw is Map && raw['can_manage_store_support'] == true,
       items: list
           .whereType<Map>()
           .map(
@@ -281,9 +322,15 @@ class SupportService {
     await _api.post(EndPoints.supportConversationRead(id));
   }
 
-  Future<void> updateStatus(int id, String status) async {
-    await _api
-        .put(EndPoints.supportConversationStatus(id), data: {'status': status});
+  Future<void> updateStatus(
+    int id,
+    String status, {
+    bool assignToMe = false,
+  }) async {
+    await _api.put(
+      EndPoints.supportConversationStatus(id),
+      data: {'status': status, if (assignToMe) 'assign_to_me': true},
+    );
   }
 
   Future<SupportMessage> reactToMessage({

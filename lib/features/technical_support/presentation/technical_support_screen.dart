@@ -14,12 +14,13 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../core/services/initial_bindings.dart';
+import '../../../core/services/support_realtime_service.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../data/support_service.dart';
 
 import '../../../core/helpers/app_failure_notice.dart';
+
 class TechnicalSupportScreen extends StatefulWidget {
   final int? conversationId;
 
@@ -42,10 +43,15 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   bool loading = true;
   bool sending = false;
   bool canManageSupport = false;
+  bool canManageEmployeeSupport = false;
+  bool canManageStoreSupport = false;
   bool recording = false;
   bool recordingPaused = false;
   Duration recordingDuration = Duration.zero;
   String status = 'all';
+  String source = 'all';
+  String assignment = 'all';
+  bool needsReply = false;
   String? recordingPath;
   bool openedAtLatestMessage = false;
   List<SupportConversation> conversations = [];
@@ -53,6 +59,8 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   List<SupportMessage> messages = [];
   Timer? poller;
   Timer? recordingTimer;
+  late final SupportRealtimeService realtime;
+  SupportRealtimeState realtimeState = SupportRealtimeState.disconnected;
 
   static const pageColor = AppColors.operationalSurface;
   static const cardColor = Colors.white;
@@ -73,17 +81,28 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
       ..sampleRate = 48000
       ..bitRate = 128000;
+    realtime = SupportRealtimeService(
+      onPayload: _onRealtimePayload,
+      onState: (value) {
+        if (!mounted) return;
+        setState(() => realtimeState = value);
+        _configureFallbackPoller();
+      },
+      onReconnect: () => inConversation
+          ? _loadConversation(silent: true)
+          : _loadList(silent: true),
+    );
     inConversation ? _loadConversation() : _loadList();
-    if (inConversation) {
-      poller = Timer.periodic(const Duration(seconds: 5), (_) {
-        if (!sending && !recording) _loadConversation(silent: true);
-      });
-    }
+    inConversation
+        ? realtime.watchConversation(widget.conversationId!)
+        : realtime.watchInbox();
+    _configureFallbackPoller();
   }
 
   @override
   void dispose() {
     poller?.cancel();
+    realtime.dispose();
     recordingTimer?.cancel();
     recorder.dispose();
     messagesScrollController.dispose();
@@ -93,20 +112,68 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     super.dispose();
   }
 
-  Future<void> _loadList() async {
-    setState(() => loading = true);
+  Future<void> _loadList({bool silent = false}) async {
+    if (!silent) setState(() => loading = true);
     try {
       final result = await service.getConversations(
         status: status,
         search: searchController.text,
+        source: source,
+        needsReply: needsReply,
+        assignment: assignment,
       );
       canManageSupport = result.canManage;
+      canManageEmployeeSupport = result.canManageEmployee;
+      canManageStoreSupport = result.canManageStore;
       conversations = result.items;
     } catch (e) {
       _message(e.toString());
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) {
+        setState(() {
+          if (!silent) loading = false;
+        });
+      }
     }
+  }
+
+  void _configureFallbackPoller() {
+    poller?.cancel();
+    if (realtimeState == SupportRealtimeState.connected) return;
+    poller = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (sending || recording) return;
+      inConversation
+          ? _loadConversation(silent: true)
+          : _loadList(silent: true);
+    });
+  }
+
+  void _onRealtimePayload(Map<String, dynamic> payload) {
+    if (!mounted) return;
+    if (!inConversation) {
+      _loadList(silent: true);
+      return;
+    }
+    final rawConversation = payload['conversation'];
+    final rawMessage = payload['message'];
+    if (rawConversation is Map) {
+      final updated = SupportConversation.fromJson(
+        Map<String, dynamic>.from(rawConversation),
+      );
+      if (updated.id == widget.conversationId) conversation = updated;
+    }
+    if (rawMessage is Map) {
+      final message = SupportMessage.fromJson(
+        Map<String, dynamic>.from(rawMessage),
+      );
+      if (message.conversationId == widget.conversationId &&
+          !messages.any((row) => row.id == message.id)) {
+        messages = [...messages, message];
+        service.markRead(widget.conversationId!);
+        _scrollToLatest();
+      }
+    }
+    setState(() {});
   }
 
   Future<void> _loadConversation({bool silent = false}) async {
@@ -361,6 +428,20 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     }
   }
 
+  Future<void> _assignToMe() async {
+    if (conversation == null) return;
+    try {
+      await service.updateStatus(
+        conversation!.id,
+        conversation!.status,
+        assignToMe: true,
+      );
+      await _loadConversation();
+    } catch (e) {
+      _message(e.toString());
+    }
+  }
+
   Future<void> _reactToMessage(SupportMessage message, String reaction) async {
     try {
       final updated = await service.reactToMessage(
@@ -391,7 +472,18 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     return Scaffold(
       backgroundColor: pageColor,
       appBar: AppBar(
-        title: Text(inConversation ? 'الدعم الفني' : 'محادثات الدعم الفني'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(inConversation ? 'الدعم الفني' : 'محادثات الدعم الفني'),
+            Text(
+              realtimeState == SupportRealtimeState.connected
+                  ? 'متصل مباشرة'
+                  : 'إعادة الاتصال · تحديث احتياطي فعّال',
+              style: const TextStyle(fontSize: 10, color: Colors.white70),
+            ),
+          ],
+        ),
         backgroundColor: actionColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -424,61 +516,129 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         Container(
           padding: EdgeInsets.all(10.w),
           color: Colors.white,
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: TextField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: 'بحث',
-                    prefixIcon: const Icon(Icons.search, color: actionColor),
-                    filled: true,
-                    fillColor: pageColor,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                      borderSide: const BorderSide(color: borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                      borderSide: const BorderSide(color: borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                      borderSide: const BorderSide(color: actionColor),
-                    ),
-                  ),
-                  onSubmitted: (_) => _loadList(),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: pageColor,
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: status,
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('الكل')),
-                        DropdownMenuItem(value: 'open', child: Text('مفتوحة')),
-                        DropdownMenuItem(
-                            value: 'pending', child: Text('متابعة')),
-                        DropdownMenuItem(value: 'closed', child: Text('مغلقة')),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => status = value);
+              if (canManageSupport) ...[
+                Wrap(
+                  spacing: 6.w,
+                  runSpacing: 4.h,
+                  children: [
+                    if (canManageEmployeeSupport)
+                      ChoiceChip(
+                        label: const Text('دعم الموظفين'),
+                        selected: source == 'employee',
+                        onSelected: (_) {
+                          setState(() => source = 'employee');
+                          _loadList();
+                        },
+                      ),
+                    if (canManageStoreSupport)
+                      ChoiceChip(
+                        label: const Text('دعم المتجر'),
+                        selected: source == 'online_store',
+                        onSelected: (_) {
+                          setState(() => source = 'online_store');
+                          _loadList();
+                        },
+                      ),
+                    if (canManageEmployeeSupport && canManageStoreSupport)
+                      ChoiceChip(
+                        label: const Text('الكل'),
+                        selected: source == 'all',
+                        onSelected: (_) {
+                          setState(() => source = 'all');
+                          _loadList();
+                        },
+                      ),
+                    FilterChip(
+                      label: const Text('بحاجة لرد'),
+                      selected: needsReply,
+                      onSelected: (value) {
+                        setState(() => needsReply = value);
                         _loadList();
                       },
                     ),
-                  ),
+                    DropdownButton<String>(
+                      value: assignment,
+                      underline: const SizedBox.shrink(),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'all', child: Text('كل التعيينات')),
+                        DropdownMenuItem(
+                            value: 'mine', child: Text('المعيّنة لي')),
+                        DropdownMenuItem(
+                            value: 'unassigned', child: Text('غير معيّنة')),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => assignment = value);
+                        _loadList();
+                      },
+                    ),
+                  ],
                 ),
+                SizedBox(height: 6.h),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'بحث',
+                        prefixIcon:
+                            const Icon(Icons.search, color: actionColor),
+                        filled: true,
+                        fillColor: pageColor,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.w, vertical: 10.h),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: const BorderSide(color: borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: const BorderSide(color: actionColor),
+                        ),
+                      ),
+                      onSubmitted: (_) => _loadList(),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: pageColor,
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: status,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('الكل')),
+                            DropdownMenuItem(
+                                value: 'open', child: Text('مفتوحة')),
+                            DropdownMenuItem(
+                                value: 'pending', child: Text('متابعة')),
+                            DropdownMenuItem(
+                                value: 'closed', child: Text('مغلقة')),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => status = value);
+                            _loadList();
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -505,6 +665,8 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Widget _conversationCard(SupportConversation item) {
     final unread =
         canManageSupport ? item.supportUnreadCount : item.employeeUnreadCount;
+    final requester =
+        item.requesterName.isNotEmpty ? item.requesterName : item.employeeName;
     return InkWell(
       borderRadius: BorderRadius.circular(8.r),
       onTap: () => Get.toNamed('/TechnicalSupport/${item.id}'),
@@ -527,7 +689,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
             CircleAvatar(
               backgroundColor: actionColor,
               child: Text(
-                item.employeeName.isNotEmpty ? item.employeeName[0] : 'د',
+                requester.isNotEmpty ? requester[0] : 'د',
                 style: const TextStyle(color: Colors.white),
               ),
             ),
@@ -559,12 +721,38 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: mutedColor),
                   ),
-                  if (canManageSupport && item.employeeName.isNotEmpty)
+                  if (canManageSupport && requester.isNotEmpty)
                     Padding(
                       padding: EdgeInsets.only(top: 4.h),
-                      child: Text(
-                        item.employeeName,
-                        style: TextStyle(fontSize: 11.sp, color: mutedColor),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: item.source == 'online_store'
+                                  ? Colors.orange.shade50
+                                  : bubbleMine,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              item.source == 'online_store' ? 'المتجر' : 'موظف',
+                              style: TextStyle(fontSize: 10.sp),
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              requester,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: mutedColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -621,8 +809,8 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                         ),
                       ),
                       Text(
-                        canManageSupport && item.employeeName.isNotEmpty
-                            ? item.employeeName
+                        canManageSupport && item.requesterName.isNotEmpty
+                            ? '${item.requesterName}${item.requesterPhone.isEmpty ? '' : ' · ${item.requesterPhone}'}'
                             : _statusLabel(item.status),
                         style: TextStyle(fontSize: 11.sp, color: mutedColor),
                       ),
@@ -636,6 +824,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
               ],
             ),
           ),
+        if (item?.productContext != null) _productContextCard(item!),
         Expanded(
           child: messages.isEmpty
               ? const Center(child: Text('لا توجد رسائل بعد'))
@@ -659,6 +848,17 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (item.assignedToUserId == 0)
+          IconButton(
+            tooltip: 'تعيين المحادثة لي',
+            onPressed: sending ? null : _assignToMe,
+            icon: const Icon(Icons.person_add_alt_1_outlined),
+          )
+        else if (item.assignedToName.isNotEmpty)
+          Tooltip(
+            message: 'مُعيّنة إلى ${item.assignedToName}',
+            child: const Icon(Icons.person_outline, color: actionColor),
+          ),
         DecoratedBox(
           decoration: BoxDecoration(
             color: pageColor,
@@ -700,8 +900,67 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   }
 
   bool _isMine(SupportMessage message) {
-    if (userType == 'employee') return message.senderType == 'employee';
-    return message.senderType != 'employee';
+    return canManageSupport
+        ? message.senderType == 'support'
+        : message.senderType == 'employee';
+  }
+
+  Widget _productContextCard(SupportConversation item) {
+    final product = item.productContext!;
+    final name = (product['name_ar'] ??
+            product['name_en'] ??
+            product['name_he'] ??
+            'منتج المتجر')
+        .toString();
+    final image = product['primary_image']?.toString() ?? '';
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 0),
+      padding: EdgeInsets.all(9.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          if (image.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6.r),
+              child: Image.network(
+                image,
+                width: 46.w,
+                height: 46.w,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(Icons.two_wheeler),
+              ),
+            )
+          else
+            const Icon(Icons.two_wheeler, color: actionColor),
+          SizedBox(width: 9.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'استفسار عن منتج',
+                  style: TextStyle(fontSize: 10.sp, color: mutedColor),
+                ),
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _messageBubble(SupportMessage message, bool mine) {
