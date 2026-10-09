@@ -281,7 +281,7 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
                         .map((locale) => Tab(text: localeLabels[locale]))
                         .toList()),
                 SizedBox(
-                  height: 245,
+                  height: 280,
                   child: TabBarView(
                       children: locales
                           .map((locale) => Padding(
@@ -443,10 +443,17 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
         padding: const EdgeInsets.only(bottom: 10),
         child: DropdownButtonFormField<String>(
           initialValue: value,
+          isExpanded: true,
           decoration: InputDecoration(labelText: label),
           items: options.entries
-              .map((entry) =>
-                  DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+              .map((entry) => DropdownMenuItem(
+                    value: entry.key,
+                    child: Text(
+                      entry.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
               .toList(),
           onChanged: (next) {
             if (next != null) onChanged(next);
