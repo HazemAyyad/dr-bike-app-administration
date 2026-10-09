@@ -47,20 +47,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCFfHdsJ5-8umIBxBj7kYv6ZjiuJv0Vrz0',
-    appId: '1:903571759531:android:06947a50bebe0e6e4bb2ee',
-    messagingSenderId: '903571759531',
-    projectId: 'doctorbike-6e1b9',
-    storageBucket: 'doctorbike-6e1b9.firebasestorage.app',
+    apiKey: 'AIzaSyDge4XGPw6OVrvK_051-1ELHnU8EBIzah8',
+    appId: '1:960923193223:android:f026a525be6386c924cd22',
+    messagingSenderId: '960923193223',
+    projectId: 'drbike-7fa3a',
+    storageBucket: 'drbike-7fa3a.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBqe6b8kMvD7gfS_UIVVtp1rV5mcGxcG1M',
-    appId: '1:903571759531:ios:d2c4ae7c718c2fe54bb2ee',
-    messagingSenderId: '903571759531',
-    projectId: 'doctorbike-6e1b9',
-    storageBucket: 'doctorbike-6e1b9.firebasestorage.app',
-    iosBundleId: 'com.nofal.doctorbikee',
+    apiKey: 'AIzaSyBHTfwFtF-zzpa2Rs-Xs1likTgrMCfdGyU',
+    appId: '1:960923193223:ios:d469b0ccc2def00424cd22',
+    messagingSenderId: '960923193223',
+    projectId: 'drbike-7fa3a',
+    storageBucket: 'drbike-7fa3a.firebasestorage.app',
+    iosBundleId: 'com.application.doctorbike',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

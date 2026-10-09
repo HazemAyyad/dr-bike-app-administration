@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBqe6b8kMvD7gfS_UIVVtp1rV5mcGxcG1M</string>
+	<string>AIzaSyBHTfwFtF-zzpa2Rs-Xs1likTgrMCfdGyU</string>
 	<key>GCM_SENDER_ID</key>
-	<string>903571759531</string>
+	<string>960923193223</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.application.doctorbike</string>
 	<key>PROJECT_ID</key>
-	<string>doctorbike-6e1b9</string>
+	<string>drbike-7fa3a</string>
 	<key>STORAGE_BUCKET</key>
-	<string>doctorbike-6e1b9.firebasestorage.app</string>
+	<string>drbike-7fa3a.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:903571759531:ios:d2c4ae7c718c2fe54bb2ee</string>
+	<string>1:960923193223:ios:d469b0ccc2def00424cd22</string>
 </dict>
 </plist>
