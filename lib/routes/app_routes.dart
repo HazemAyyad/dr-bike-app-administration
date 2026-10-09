@@ -64,6 +64,7 @@ class AppRoutes {
   static const ONLINESTORECATEGORIES = '/OnlineStoreCategories';
   static const ONLINESTOREHOMESECTIONS = '/OnlineStoreHomeSections';
   static const ONLINESTOREBANNERS = '/OnlineStoreBanners';
+  static const ONLINESTOREPOPUPCAMPAIGNS = '/OnlineStorePopupCampaigns';
   static const ONLINESTOREPROMOTIONS = '/OnlineStorePromotions';
   static const ONLINESTORECOUPONS = '/OnlineStoreCoupons';
   static const ONLINESTOREACCOUNTS = '/OnlineStoreAccounts';

@@ -15,6 +15,7 @@ import '../controllers/online_store_home_sections_controller.dart';
 import '../controllers/online_store_listings_controller.dart';
 import '../controllers/online_store_media_controller.dart';
 import '../controllers/online_store_promotions_controller.dart';
+import '../controllers/online_store_popup_campaigns_controller.dart';
 import '../controllers/online_store_reports_controller.dart';
 import '../controllers/online_store_reviews_controller.dart';
 import '../controllers/online_store_settings_controller.dart';
@@ -38,6 +39,8 @@ class OnlineStoreBinding extends Bindings {
         fenix: true);
     Get.lazyPut(() => OnlineStoreBannersController(Get.find()), fenix: true);
     Get.lazyPut(() => OnlineStorePromotionsController(Get.find()), fenix: true);
+    Get.lazyPut(() => OnlineStorePopupCampaignsController(Get.find()),
+        fenix: true);
     Get.lazyPut(() => OnlineStoreCouponsController(Get.find()), fenix: true);
     Get.lazyPut(() => OnlineStoreAccountsController(Get.find()), fenix: true);
     Get.lazyPut(() => OnlineStoreCreditController(Get.find()), fenix: true);

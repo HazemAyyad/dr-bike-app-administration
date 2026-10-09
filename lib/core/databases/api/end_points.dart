@@ -636,6 +636,8 @@ class EndPoints {
   static const String onlineStoreHomeSections =
       '$onlineStoreBase/home-sections';
   static const String onlineStoreBanners = '$onlineStoreBase/banners';
+  static const String onlineStorePopupCampaigns =
+      '$onlineStoreBase/popup-campaigns';
   static const String onlineStoreContentImages =
       '$onlineStoreBase/content-images';
   static const String onlineStorePromotions = '$onlineStoreBase/promotions';
