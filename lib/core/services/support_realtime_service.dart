@@ -16,8 +16,17 @@ class SupportRealtimeService {
     required this.onReconnect,
   });
 
-  static const _key = String.fromEnvironment('REVERB_APP_KEY');
-  static const _host = String.fromEnvironment('REVERB_HOST');
+  // Pusher Channels and Reverb implement the same protocol. These production
+  // defaults use Pusher until Reverb can be hosted on a WebSocket-capable VPS;
+  // dart-defines can override them without changing the application code.
+  static const _key = String.fromEnvironment(
+    'REVERB_APP_KEY',
+    defaultValue: '9412537e6cb0209ec5e0',
+  );
+  static const _host = String.fromEnvironment(
+    'REVERB_HOST',
+    defaultValue: 'ws-ap2.pusher.com',
+  );
   static const _scheme = String.fromEnvironment(
     'REVERB_SCHEME',
     defaultValue: 'wss',
