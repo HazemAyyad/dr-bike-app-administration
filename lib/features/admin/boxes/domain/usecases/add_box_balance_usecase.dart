@@ -10,12 +10,14 @@ class AddBoxBalanceUsecase {
   Future<Either<Failure, String>> call({
     required String boxId,
     required String total,
+    required String direction,
     required String note,
     required String reasonCode,
   }) {
     return boxesRepository.addBoxBalance(
       boxId: boxId,
       total: total,
+      direction: direction,
       note: note,
       reasonCode: reasonCode,
     );

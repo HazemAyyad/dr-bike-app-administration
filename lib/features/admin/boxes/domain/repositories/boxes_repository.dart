@@ -27,6 +27,7 @@ abstract class BoxesRepository {
   Future<Either<Failure, String>> addBoxBalance({
     required String boxId,
     required String total,
+    required String direction,
     required String note,
     required String reasonCode,
   });

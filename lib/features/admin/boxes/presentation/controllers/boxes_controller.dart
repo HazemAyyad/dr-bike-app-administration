@@ -26,6 +26,7 @@ import '../../domain/usecases/get_shown_box_usecase.dart';
 import '../../domain/usecases/transfer_box_balance_usecase.dart';
 import 'boxes_serves.dart';
 import '../widgets/box_report_pdf_builder.dart';
+import '../utils/box_adjustment_amount_parser.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -449,28 +450,26 @@ class BoxesController extends GetxController {
         );
         return;
       }
-      final noteRequired = const {
-        'cash_overage',
-        'cash_shortage',
-        'accounting_correction',
-      }.contains(reason);
-      if (noteRequired && addBalanceNoteController.text.trim().isEmpty) {
+      final entered = parseBoxAdjustmentAmount(
+        addBalanceValueController.text,
+      );
+      if (entered == null) {
         AppFailureNotice.show(
           title: 'error'.tr,
-          message: 'الملاحظة مطلوبة لهذا النوع من التسوية.',
+          message: 'أدخل مبلغًا صحيحًا أكبر من صفر.',
         );
         return;
       }
+      FocusManager.instance.primaryFocus?.unfocus();
       isAddBoxLoading(true);
 
-      final entered = double.tryParse(addBalanceValueController.text) ?? 0;
-      final signedTotal = balanceAdjustmentDirection.value == 'subtract'
-          ? -entered.abs()
-          : entered.abs();
+      final direction = balanceAdjustmentDirection.value;
+      final signedTotal = direction == 'subtract' ? -entered : entered;
 
       final result = await addBoxBalanceUsecase.call(
         boxId: boxId,
         total: signedTotal.toString(),
+        direction: direction,
         note: addBalanceNoteController.text.trim(),
         reasonCode: reason,
       );
@@ -479,10 +478,15 @@ class BoxesController extends GetxController {
         (failure) {
           isAddBoxLoading(false);
           update();
+          final data = failure.data;
+          final serverMessage =
+              data is Map ? data['message']?.toString().trim() : null;
           Helpers.showCustomDialogError(
             context: context,
-            title: failure.errMessage,
-            message: "Unexpected error occurred",
+            title: 'error'.tr,
+            message: serverMessage != null && serverMessage.isNotEmpty
+                ? serverMessage
+                : failure.errMessage,
           );
         },
         (success) {

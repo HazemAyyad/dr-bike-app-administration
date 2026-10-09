@@ -214,12 +214,14 @@ class BoxesDatasource {
   Future<Map<String, dynamic>> addBoxBalance(
       {required String boxId,
       required String total,
+      required String direction,
       required String note,
       required String reasonCode}) async {
     try {
       final response = await api.post(EndPoints.addBoxBalance, data: {
         'box_id': boxId,
         'total': total,
+        'direction': direction,
         'note': note,
         'reason_code': reasonCode,
       });

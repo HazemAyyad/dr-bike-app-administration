@@ -24,7 +24,8 @@ class AddBalanceWidget extends GetView<BoxesController> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),
       ),
-      child: Padding(
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.all(15.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -33,13 +34,13 @@ class AddBalanceWidget extends GetView<BoxesController> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.add,
+                  Icons.account_balance_wallet_outlined,
                   size: 25.h,
                   color: AppColors.primaryColor,
                 ),
                 SizedBox(width: 5.w),
                 Text(
-                  'addBalance'.tr,
+                  'addOrWithdrawBalance'.tr,
                   style: textStyle.copyWith(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
@@ -129,11 +130,13 @@ class AddBalanceWidget extends GetView<BoxesController> {
                   ),
                   SizedBox(height: 12.h),
                   CustomTextField(
-                    label: 'note'.tr,
+                    label: '${'note'.tr} (${'optional'.tr})',
                     hintText: 'noteHint'.tr,
                     controller: controller.addBalanceNoteController,
                     minLines: 3,
                     maxLines: 5,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
                     validator: (_) => null,
                   ),
                 ],
