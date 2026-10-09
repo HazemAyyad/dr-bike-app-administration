@@ -55,6 +55,7 @@ import '../features/admin/online_store/presentation/views/online_store_media_scr
 import '../features/admin/online_store/presentation/views/online_store_product_picker_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_promotions_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_popup_campaigns_screen.dart';
+import '../features/admin/online_store/presentation/views/online_store_notification_broadcasts_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_reports_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_reviews_screen.dart';
 import '../features/admin/online_store/presentation/views/online_store_settings_screen.dart';
@@ -416,6 +417,11 @@ class AppPages {
     GetPage(
         name: AppRoutes.ONLINESTOREPOPUPCAMPAIGNS,
         page: () => const OnlineStorePopupCampaignsScreen(),
+        binding: OnlineStoreBinding(),
+        transition: _transitionFadeIn),
+    GetPage(
+        name: AppRoutes.ONLINESTORENOTIFICATIONBROADCASTS,
+        page: () => const OnlineStoreNotificationBroadcastsScreen(),
         binding: OnlineStoreBinding(),
         transition: _transitionFadeIn),
     GetPage(

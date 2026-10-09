@@ -88,6 +88,7 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
   late String frequency;
   late String actionType;
   late bool isActive;
+  late bool sendPush;
   int? targetId;
   XFile? pickedImage;
   bool saving = false;
@@ -121,7 +122,10 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
     frequency = '${values['display_frequency'] ?? 'once'}';
     actionType = '${values['action_type'] ?? 'none'}';
     targetId = int.tryParse('${values['action_target_id'] ?? ''}');
-    isActive = values['is_active'] == true || values['is_active'] == 1;
+    isActive = widget.item == null ||
+        values['is_active'] == true ||
+        values['is_active'] == 1;
+    sendPush = widget.item == null;
   }
 
   @override
@@ -220,6 +224,7 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
         'starts_at': startsAt.text.trim().isEmpty ? null : startsAt.text.trim(),
         'ends_at': endsAt.text.trim().isEmpty ? null : endsAt.text.trim(),
         'priority': int.tryParse(priority.text) ?? 0,
+        'send_push': sendPush,
       });
     } catch (exception) {
       if (mounted) setState(() => error = exception.toString());
@@ -395,7 +400,20 @@ class _PopupCampaignEditorState extends State<_PopupCampaignEditor> {
                 title: const Text('الحملة نشطة'),
                 subtitle: const Text('يمكن حفظها متوقفة وتجهيزها قبل النشر.'),
                 value: isActive,
-                onChanged: (value) => setState(() => isActive = value)),
+                onChanged: (value) => setState(() {
+                      isActive = value;
+                      if (!value) sendPush = false;
+                    })),
+            SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('إرسال Push للمستخدمين عند الحفظ'),
+                subtitle: Text(widget.item == null
+                    ? 'سيصل إشعار مرة واحدة لنفس جمهور الإعلان.'
+                    : 'فعّل هذا الخيار فقط إذا أردت إعادة إرسال الإعلان.'),
+                value: sendPush,
+                onChanged: isActive
+                    ? (value) => setState(() => sendPush = value)
+                    : null),
             if (error != null)
               Padding(
                   padding: const EdgeInsets.only(top: 8),

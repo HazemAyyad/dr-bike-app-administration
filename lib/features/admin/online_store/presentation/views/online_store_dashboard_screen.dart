@@ -153,6 +153,10 @@ class OnlineStoreDashboardScreen
               'البانرات', AppRoutes.ONLINESTOREBANNERS, Icons.image_outlined),
           const _Destination('الإعلانات المنبثقة',
               AppRoutes.ONLINESTOREPOPUPCAMPAIGNS, Icons.campaign_outlined),
+          const _Destination(
+              'إشعارات العملاء',
+              AppRoutes.ONLINESTORENOTIFICATIONBROADCASTS,
+              Icons.notifications_active_outlined),
         ],
         if (OnlineStorePermissions.canManagePromotions) ...[
           const _Destination('العروض', AppRoutes.ONLINESTOREPROMOTIONS,
