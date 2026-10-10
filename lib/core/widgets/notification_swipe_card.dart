@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'person_avatar_image.dart';
+
 class NotificationSwipeCard extends StatelessWidget {
   const NotificationSwipeCard({
     Key? key,
@@ -9,6 +11,7 @@ class NotificationSwipeCard extends StatelessWidget {
     required this.createdAt,
     required this.isRead,
     required this.icon,
+    this.avatarImageUrl,
     required this.accent,
     required this.onTap,
     required this.onMarkRead,
@@ -21,6 +24,7 @@ class NotificationSwipeCard extends StatelessWidget {
   final String createdAt;
   final bool isRead;
   final IconData icon;
+  final String? avatarImageUrl;
   final Color accent;
   final VoidCallback onTap;
   final Future<void> Function() onMarkRead;
@@ -95,7 +99,14 @@ class NotificationSwipeCard extends StatelessWidget {
                     color: accent.withValues(alpha: .11),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, color: accent, size: 19),
+                  child: avatarImageUrl?.trim().isNotEmpty == true
+                      ? PersonAvatarImage(
+                          imageUrl: avatarImageUrl,
+                          height: 36,
+                          width: 36,
+                          circular: true,
+                        )
+                      : Icon(icon, color: accent, size: 19),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

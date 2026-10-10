@@ -194,6 +194,12 @@ class AdminNotificationCenterScreen
                     final created = row['created_at']?.toString() ?? '';
                     final type = row['type']?.toString() ?? '';
                     final accent = _notificationColor(type);
+                    final rawData = row['data'];
+                    final data = rawData is Map
+                        ? Map<String, dynamic>.from(rawData)
+                        : <String, dynamic>{};
+                    final customerImageUrl =
+                        data['customer_image_url']?.toString().trim();
                     return NotificationSwipeCard(
                       notificationKey: 'admin_notification_$id',
                       title: title,
@@ -201,6 +207,9 @@ class AdminNotificationCenterScreen
                       createdAt: created,
                       isRead: read,
                       icon: _notificationIcon(type),
+                      avatarImageUrl: customerImageUrl?.isNotEmpty == true
+                          ? customerImageUrl
+                          : null,
                       accent: accent,
                       onMarkRead: () async {
                         final parsedId = int.tryParse('$id');
@@ -221,9 +230,8 @@ class AdminNotificationCenterScreen
                             controller.markRead(parsedId);
                           }
                         }
-                        final data = row['data'];
                         final Map<String, dynamic> payload = {
-                          if (data is Map) ...Map<String, dynamic>.from(data),
+                          ...data,
                           'type': row['type']?.toString() ?? '',
                           'related_type': row['related_type']?.toString() ?? '',
                           'related_id': row['related_id']?.toString() ?? '',
