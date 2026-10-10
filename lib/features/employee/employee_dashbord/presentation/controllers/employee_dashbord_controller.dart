@@ -388,6 +388,11 @@ class EmployeeDashbordController extends GetxController
       'badgeKey': 'technical_support',
     },
     {
+      'id': 'online_store_support',
+      'title': 'دعم المتجر',
+      'route': AppRoutes.STORESUPPORT,
+    },
+    {
       'id': '17',
       'title': 'مركز التواصل الاجتماعي',
       'route': AppRoutes.WHATSAPPCENTER,

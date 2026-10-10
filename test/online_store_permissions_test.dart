@@ -35,9 +35,16 @@ void main() {
           permissions: const [onlineStoreProductsManagePermissionName],
         ),
         isTrue);
+    expect(
+        OnlineStorePermissions.allows(
+          onlineStoreSupportPermissionName,
+          type: 'employee',
+          permissions: const [onlineStoreSupportPermissionName],
+        ),
+        isTrue);
   });
 
-  test('all seven permission names stay exact', () {
+  test('all eight permission names stay exact', () {
     expect({
       onlineStoreViewPermissionName,
       onlineStoreProductsManagePermissionName,
@@ -46,6 +53,7 @@ void main() {
       onlineStorePromotionsManagePermissionName,
       onlineStoreReviewsManagePermissionName,
       onlineStoreSettingsManagePermissionName,
-    }, hasLength(7));
+      onlineStoreSupportPermissionName,
+    }, hasLength(8));
   });
 }

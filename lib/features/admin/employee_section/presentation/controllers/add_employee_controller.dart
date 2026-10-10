@@ -761,6 +761,7 @@ class AddEmployeeController extends GetxController {
       'Social Center Facebook': 'communication',
       'Social Center Instagram': 'communication',
       'Technical Support': 'communication',
+      'Online Store Support': 'communication',
       'Notification Center Manage': 'communication',
       'Smart Home': 'smart_home',
     };
@@ -782,6 +783,7 @@ class AddEmployeeController extends GetxController {
       'Social Center Facebook': 2,
       'Social Center Instagram': 3,
       'Technical Support': 4,
+      'Online Store Support': 5,
     };
     grouped['communication']?.sort((a, b) => (socialOrder[a['nameEn']] ?? 99)
         .compareTo(socialOrder[b['nameEn']] ?? 99));
