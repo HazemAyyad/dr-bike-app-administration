@@ -68,4 +68,29 @@ void main() {
     expect(failed.clientMessageId, 'fixed-id');
     expect(failed.delivery, SupportMessageDelivery.failed);
   });
+
+  test('store support parses customer avatar and recent online presence', () {
+    final now = DateTime.now().toUtc();
+    final conversation = SupportConversation.fromJson({
+      'id': 12,
+      'source': 'online_store',
+      'status': 'open',
+      'priority': 'normal',
+      'requester_image_url': 'https://example.test/customer.jpg',
+      'requester_last_seen_at': now.toIso8601String(),
+      'requester_is_online': true,
+    });
+    final message = SupportMessage.fromJson({
+      'id': 15,
+      'conversation_id': 12,
+      'sender_type': 'store_customer',
+      'sender_image_url': 'https://example.test/customer.jpg',
+      'attachments': <dynamic>[],
+      'reactions': <dynamic>[],
+    });
+
+    expect(conversation.requesterImageUrl, contains('customer.jpg'));
+    expect(conversation.requesterIsOnline, isTrue);
+    expect(message.senderImageUrl, contains('customer.jpg'));
+  });
 }

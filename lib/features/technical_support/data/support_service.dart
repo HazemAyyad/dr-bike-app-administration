@@ -70,6 +70,7 @@ class SupportMessage {
   final int senderUserId;
   final int senderEmployeeId;
   final String senderName;
+  final String senderImageUrl;
   final String senderType;
   final String messageType;
   final String body;
@@ -87,6 +88,7 @@ class SupportMessage {
     required this.senderUserId,
     required this.senderEmployeeId,
     required this.senderName,
+    this.senderImageUrl = '',
     required this.senderType,
     required this.messageType,
     required this.body,
@@ -112,6 +114,7 @@ class SupportMessage {
         senderUserId: senderUserId,
         senderEmployeeId: senderEmployeeId,
         senderName: senderName,
+        senderImageUrl: senderImageUrl,
         senderType: senderType,
         messageType: messageType,
         body: body,
@@ -133,6 +136,7 @@ class SupportMessage {
         senderEmployeeId:
             int.tryParse(json['sender_employee_id']?.toString() ?? '') ?? 0,
         senderName: json['sender_name']?.toString() ?? '',
+        senderImageUrl: json['sender_image_url']?.toString() ?? '',
         senderType: json['sender_type']?.toString() ?? 'employee',
         messageType: json['message_type']?.toString() ?? 'text',
         body: json['body']?.toString() ?? '',
@@ -165,6 +169,9 @@ class SupportConversation {
   final String requesterName;
   final String requesterEmail;
   final String requesterPhone;
+  final String requesterImageUrl;
+  final DateTime? requesterLastSeenAt;
+  final bool requesterOnlineSnapshot;
   final Map<String, dynamic>? productContext;
   final String subject;
   final String status;
@@ -189,6 +196,9 @@ class SupportConversation {
     required this.requesterName,
     required this.requesterEmail,
     required this.requesterPhone,
+    this.requesterImageUrl = '',
+    this.requesterLastSeenAt,
+    this.requesterOnlineSnapshot = false,
     required this.productContext,
     required this.subject,
     required this.status,
@@ -206,6 +216,14 @@ class SupportConversation {
     required this.createdAt,
   });
 
+  bool get requesterIsOnline {
+    final lastSeen = requesterLastSeenAt;
+    if (lastSeen == null) return requesterOnlineSnapshot;
+    return lastSeen.isAfter(
+      DateTime.now().subtract(const Duration(minutes: 2)),
+    );
+  }
+
   factory SupportConversation.fromJson(Map<String, dynamic> json) =>
       SupportConversation(
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
@@ -215,6 +233,9 @@ class SupportConversation {
         requesterName: json['requester_name']?.toString() ?? '',
         requesterEmail: json['requester_email']?.toString() ?? '',
         requesterPhone: json['requester_phone']?.toString() ?? '',
+        requesterImageUrl: json['requester_image_url']?.toString() ?? '',
+        requesterLastSeenAt: _parseDate(json['requester_last_seen_at']),
+        requesterOnlineSnapshot: json['requester_is_online'] == true,
         productContext: json['product_context'] is Map
             ? Map<String, dynamic>.from(json['product_context'] as Map)
             : null,

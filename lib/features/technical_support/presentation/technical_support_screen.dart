@@ -17,6 +17,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/services/support_realtime_service.dart';
 import '../../../core/utils/app_colors.dart';
+import '../../../core/widgets/person_avatar_image.dart';
 import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../data/support_service.dart';
 
@@ -69,6 +70,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   String typingActorName = '';
   Timer? typingIdleTimer;
   Timer? remoteTypingTimer;
+  Timer? presenceRefreshTimer;
   DateTime? lastTypingSignal;
   bool typingSent = false;
 
@@ -112,6 +114,14 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         ? realtime.watchConversation(widget.conversationId!)
         : realtime.watchInbox();
     _configureFallbackPoller();
+    if (inConversation && isStoreSupport) {
+      presenceRefreshTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) {
+          if (mounted) setState(() {});
+        },
+      );
+    }
   }
 
   @override
@@ -119,6 +129,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     poller?.cancel();
     typingIdleTimer?.cancel();
     remoteTypingTimer?.cancel();
+    presenceRefreshTimer?.cancel();
     _stopTyping();
     realtime.dispose();
     recordingTimer?.cancel();
@@ -919,11 +930,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
             color: Colors.white,
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 18.r,
-                  backgroundColor: bubbleMine,
-                  child: const Icon(Icons.support_agent, color: actionColor),
-                ),
+                _requesterAvatar(item, 36.r),
                 SizedBox(width: 9.w),
                 Expanded(
                   child: Column(
@@ -938,11 +945,24 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
+                      if (canManageSupport && item.requesterName.isNotEmpty)
+                        Text(
+                          '${item.requesterName}${item.requesterPhone.isEmpty ? '' : ' · ${item.requesterPhone}'}',
+                          style: TextStyle(fontSize: 11.sp, color: mutedColor),
+                        ),
                       Text(
-                        canManageSupport && item.requesterName.isNotEmpty
-                            ? '${item.requesterName}${item.requesterPhone.isEmpty ? '' : ' · ${item.requesterPhone}'}'
+                        isStoreSupport
+                            ? _requesterPresenceLabel(item)
                             : _statusLabel(item.status),
-                        style: TextStyle(fontSize: 11.sp, color: mutedColor),
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: item.requesterIsOnline
+                              ? Colors.green.shade700
+                              : mutedColor,
+                          fontWeight: item.requesterIsOnline
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                        ),
                       ),
                     ],
                   ),
@@ -1107,85 +1127,192 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     );
   }
 
-  Widget _messageBubble(SupportMessage message, bool mine) {
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress:
-            message.id > 0 && message.delivery == SupportMessageDelivery.sent
-                ? () => _showReactionPicker(message)
-                : null,
-        child: Container(
-          constraints: BoxConstraints(maxWidth: Get.width * 0.8),
-          margin: EdgeInsets.only(bottom: 8.h),
-          padding: EdgeInsets.all(10.w),
+  String _requesterPresenceLabel(SupportConversation item) {
+    if (item.requesterIsOnline) return 'متصل الآن';
+    final lastSeen = item.requesterLastSeenAt;
+    if (lastSeen == null) return 'آخر اتصال غير متوفر';
+    return 'آخر اتصال: ${dateFormat.format(lastSeen)}';
+  }
+
+  Widget _requesterAvatar(SupportConversation item, double size) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          padding: EdgeInsets.all(1.5.w),
           decoration: BoxDecoration(
-            color: mine ? bubbleMine : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(10.r),
-              topRight: Radius.circular(10.r),
-              bottomLeft: Radius.circular(mine ? 10.r : 2.r),
-              bottomRight: Radius.circular(mine ? 2.r : 10.r),
-            ),
-            border: Border.all(color: mine ? bubbleMine : borderColor),
+            shape: BoxShape.circle,
+            color: Colors.white,
+            border: Border.all(color: borderColor),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (message.senderName.isNotEmpty)
-                Text(
-                  message.senderName,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: mine ? actionColor : mutedColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              if (message.body.isNotEmpty) ...[
-                SizedBox(height: 3.h),
-                Text(message.body, style: TextStyle(fontSize: 14.sp)),
-              ],
-              if (message.attachments.isNotEmpty) ...[
-                SizedBox(height: 8.h),
-                ...message.attachments.map(_attachmentTile),
-              ],
-              if (message.localFilePaths.isNotEmpty &&
-                  message.attachments.isEmpty) ...[
-                SizedBox(height: 8.h),
-                ...message.localFilePaths.map(_localAttachmentTile),
-              ],
-              if (message.reactions.isNotEmpty) ...[
-                SizedBox(height: 7.h),
-                _reactionSummary(message),
-              ],
-              SizedBox(height: 5.h),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: Text(
-                  message.createdAt == null
-                      ? ''
-                      : dateFormat.format(message.createdAt!),
-                  style: TextStyle(fontSize: 10.sp, color: mutedColor),
-                ),
-              ),
-              if (message.delivery == SupportMessageDelivery.sending)
-                Text(
-                  'جاري الإرسال...',
-                  style: TextStyle(fontSize: 10.sp, color: mutedColor),
-                )
-              else if (message.delivery == SupportMessageDelivery.failed)
-                TextButton.icon(
-                  onPressed: () => _sendMessage(retry: message),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    foregroundColor: Colors.red.shade700,
-                  ),
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('تعذر الإرسال · إعادة المحاولة'),
-                ),
-            ],
+          child: PersonAvatarImage(
+            imageUrl: item.requesterImageUrl,
+            width: size - 3.w,
+            height: size - 3.w,
+            circular: true,
           ),
         ),
+        if (isStoreSupport)
+          PositionedDirectional(
+            end: -1.w,
+            bottom: -1.h,
+            child: Container(
+              width: 11.w,
+              height: 11.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: item.requesterIsOnline
+                    ? Colors.green.shade500
+                    : Colors.grey.shade400,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _messageAvatar(SupportMessage message) {
+    const size = 34.0;
+    if (message.senderType == 'support') {
+      return Container(
+        width: size.w,
+        height: size.w,
+        padding: EdgeInsets.all(5.w),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(color: borderColor),
+        ),
+        child: Image.asset(
+          'assets/images/logo_no_name_white.png',
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
+    final imageUrl = message.senderImageUrl.isNotEmpty
+        ? message.senderImageUrl
+        : message.senderType == 'store_customer'
+            ? conversation?.requesterImageUrl ?? ''
+            : '';
+    return Container(
+      width: size.w,
+      height: size.w,
+      padding: EdgeInsets.all(1.5.w),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: borderColor),
+      ),
+      child: PersonAvatarImage(
+        imageUrl: imageUrl,
+        width: size.w - 3.w,
+        height: size.w - 3.w,
+        circular: true,
+      ),
+    );
+  }
+
+  Widget _messageBubble(SupportMessage message, bool mine) {
+    final bubble = GestureDetector(
+      onLongPress:
+          message.id > 0 && message.delivery == SupportMessageDelivery.sent
+              ? () => _showReactionPicker(message)
+              : null,
+      child: Container(
+        constraints: BoxConstraints(maxWidth: Get.width * 0.68),
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: mine ? bubbleMine : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(10.r),
+            topRight: Radius.circular(10.r),
+            bottomLeft: Radius.circular(mine ? 10.r : 2.r),
+            bottomRight: Radius.circular(mine ? 2.r : 10.r),
+          ),
+          border: Border.all(color: mine ? bubbleMine : borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (message.senderName.isNotEmpty)
+              Text(
+                message.senderName,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: mine ? actionColor : mutedColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            if (message.body.isNotEmpty) ...[
+              SizedBox(height: 3.h),
+              Text(message.body, style: TextStyle(fontSize: 14.sp)),
+            ],
+            if (message.attachments.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              ...message.attachments.map(_attachmentTile),
+            ],
+            if (message.localFilePaths.isNotEmpty &&
+                message.attachments.isEmpty) ...[
+              SizedBox(height: 8.h),
+              ...message.localFilePaths.map(_localAttachmentTile),
+            ],
+            if (message.reactions.isNotEmpty) ...[
+              SizedBox(height: 7.h),
+              _reactionSummary(message),
+            ],
+            SizedBox(height: 5.h),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(
+                message.createdAt == null
+                    ? ''
+                    : dateFormat.format(message.createdAt!),
+                style: TextStyle(fontSize: 10.sp, color: mutedColor),
+              ),
+            ),
+            if (message.delivery == SupportMessageDelivery.sending)
+              Text(
+                'جاري الإرسال...',
+                style: TextStyle(fontSize: 10.sp, color: mutedColor),
+              )
+            else if (message.delivery == SupportMessageDelivery.failed)
+              TextButton.icon(
+                onPressed: () => _sendMessage(retry: message),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  foregroundColor: Colors.red.shade700,
+                ),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('تعذر الإرسال · إعادة المحاولة'),
+              ),
+          ],
+        ),
+      ),
+    );
+    final avatar = _messageAvatar(message);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        textDirection: ui.TextDirection.ltr,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: mine
+            ? [
+                const Spacer(),
+                Flexible(child: bubble),
+                SizedBox(width: 7.w),
+                avatar,
+              ]
+            : [
+                avatar,
+                SizedBox(width: 7.w),
+                Flexible(child: bubble),
+                const Spacer(),
+              ],
       ),
     );
   }
