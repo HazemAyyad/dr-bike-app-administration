@@ -19,6 +19,9 @@ import '../../../core/services/support_realtime_service.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/widgets/person_avatar_image.dart';
 import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
+import '../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
+import '../../bottom_nav_bar/widgets/custom_bottom_nav_bar.dart';
+import '../../../routes/app_routes.dart';
 import '../data/support_service.dart';
 
 import '../../../core/helpers/app_failure_notice.dart';
@@ -40,6 +43,7 @@ class TechnicalSupportScreen extends StatefulWidget {
 class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   final service = SupportService();
   final searchController = TextEditingController();
+  final searchFocusNode = FocusNode();
   final subjectController = TextEditingController();
   final messageController = TextEditingController();
   final messagesScrollController = ScrollController();
@@ -57,6 +61,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   late String source;
   String assignment = 'all';
   bool needsReply = false;
+  bool searchVisible = false;
   String? recordingPath;
   bool openedAtLatestMessage = false;
   List<SupportConversation> conversations = [];
@@ -136,6 +141,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     recorder.dispose();
     messagesScrollController.dispose();
     searchController.dispose();
+    searchFocusNode.dispose();
     subjectController.dispose();
     messageController.dispose();
     super.dispose();
@@ -635,6 +641,132 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     );
   }
 
+  void _toggleSearch() {
+    final show = !searchVisible;
+    setState(() => searchVisible = show);
+    if (show) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => searchFocusNode.requestFocus(),
+      );
+      return;
+    }
+    searchFocusNode.unfocus();
+    if (searchController.text.isNotEmpty) {
+      searchController.clear();
+      _loadList();
+    }
+  }
+
+  Future<void> _openListFilters() async {
+    var nextStatus = status;
+    var nextAssignment = assignment;
+    var nextNeedsReply = needsReply;
+    final apply = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Container(
+            margin: EdgeInsets.all(12.w),
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: const Color(0xfff7f7f9),
+              borderRadius: BorderRadius.circular(18.r),
+              border: Border.all(color: borderColor),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'فلترة المحادثات',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xff202124),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Text('الحالة', style: TextStyle(fontSize: 12.sp)),
+                SizedBox(height: 5.h),
+                Wrap(
+                  spacing: 6.w,
+                  children: const {
+                    'all': 'الكل',
+                    'open': 'مفتوحة',
+                    'pending': 'متابعة',
+                    'closed': 'مغلقة',
+                  }.entries.map((entry) {
+                    return ChoiceChip(
+                      label: Text(entry.value),
+                      selected: nextStatus == entry.key,
+                      onSelected: (_) =>
+                          setSheetState(() => nextStatus = entry.key),
+                    );
+                  }).toList(),
+                ),
+                if (canManageSupport) ...[
+                  SizedBox(height: 10.h),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    activeThumbColor: actionColor,
+                    title: const Text('بحاجة لرد'),
+                    value: nextNeedsReply,
+                    onChanged: (value) =>
+                        setSheetState(() => nextNeedsReply = value),
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: nextAssignment,
+                    decoration: _sheetInputDecoration('التعيين'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'all',
+                        child: Text('كل التعيينات'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'mine',
+                        child: Text('المعيّنة لي'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'unassigned',
+                        child: Text('غير معيّنة'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setSheetState(() => nextAssignment = value);
+                      }
+                    },
+                  ),
+                ],
+                SizedBox(height: 14.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: actionColor,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('تطبيق'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (apply != true || !mounted) return;
+    setState(() {
+      status = nextStatus;
+      assignment = nextAssignment;
+      needsReply = nextNeedsReply;
+    });
+    await _loadList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -643,24 +775,43 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(inConversation ? sectionTitle : 'محادثات $sectionTitle'),
+            Text(
+              inConversation ? sectionTitle : 'محادثات $sectionTitle',
+              style: const TextStyle(
+                color: Color(0xff202124),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             Text(
               realtimeState == SupportRealtimeState.connected
                   ? 'متصل مباشرة'
                   : 'إعادة الاتصال · تحديث احتياطي فعّال',
-              style: const TextStyle(fontSize: 10, color: Colors.white70),
+              style: TextStyle(
+                fontSize: 10,
+                color: realtimeState == SupportRealtimeState.connected
+                    ? Colors.green.shade700
+                    : mutedColor,
+              ),
             ),
           ],
         ),
-        backgroundColor: actionColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xff202124),
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            tooltip: 'تحديث',
-            onPressed: inConversation ? _loadConversation : _loadList,
-            icon: const Icon(Icons.refresh),
-          ),
+          if (!inConversation) ...[
+            IconButton(
+              tooltip: searchVisible ? 'إغلاق البحث' : 'بحث',
+              onPressed: _toggleSearch,
+              icon: Icon(searchVisible ? Icons.close : Icons.search),
+            ),
+            IconButton(
+              tooltip: 'فلترة المحادثات',
+              onPressed: _openListFilters,
+              icon: const Icon(Icons.tune_rounded),
+            ),
+          ],
         ],
       ),
       floatingActionButton: inConversation || canManageSupport
@@ -675,114 +826,55 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
           : inConversation
               ? _conversationBody()
               : _listBody(),
+      bottomNavigationBar:
+          !inConversation && Get.isRegistered<BottomNavBarController>()
+              ? Listener(
+                  onPointerUp: (_) {
+                    Future<void>.delayed(Duration.zero, () {
+                      Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+                    });
+                  },
+                  child: const CustomBottomNavigationBar(),
+                )
+              : null,
     );
   }
 
   Widget _listBody() {
     return Column(
       children: [
-        Container(
-          padding: EdgeInsets.all(10.w),
-          color: Colors.white,
-          child: Column(
-            children: [
-              if (canManageSupport) ...[
-                Wrap(
-                  spacing: 6.w,
-                  runSpacing: 4.h,
-                  children: [
-                    FilterChip(
-                      label: const Text('بحاجة لرد'),
-                      selected: needsReply,
-                      onSelected: (value) {
-                        setState(() => needsReply = value);
-                        _loadList();
-                      },
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          alignment: Alignment.topCenter,
+          child: searchVisible
+              ? Container(
+                  color: Colors.white,
+                  padding: EdgeInsets.fromLTRB(10.w, 4.h, 10.w, 8.h),
+                  child: TextField(
+                    key: const Key('support-inbox-search'),
+                    controller: searchController,
+                    focusNode: searchFocusNode,
+                    textInputAction: TextInputAction.search,
+                    decoration: _sheetInputDecoration(
+                      'ابحث بالاسم أو الرسالة',
+                    ).copyWith(
+                      prefixIcon: const Icon(Icons.search, color: actionColor),
+                      suffixIcon: searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              onPressed: () {
+                                searchController.clear();
+                                setState(() {});
+                                _loadList();
+                              },
+                              icon: const Icon(Icons.close),
+                            ),
                     ),
-                    DropdownButton<String>(
-                      value: assignment,
-                      underline: const SizedBox.shrink(),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'all', child: Text('كل التعيينات')),
-                        DropdownMenuItem(
-                            value: 'mine', child: Text('المعيّنة لي')),
-                        DropdownMenuItem(
-                            value: 'unassigned', child: Text('غير معيّنة')),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => assignment = value);
-                        _loadList();
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-              ],
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'بحث',
-                        prefixIcon:
-                            const Icon(Icons.search, color: actionColor),
-                        filled: true,
-                        fillColor: pageColor,
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12.w, vertical: 10.h),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          borderSide: const BorderSide(color: borderColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          borderSide: const BorderSide(color: borderColor),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          borderSide: const BorderSide(color: actionColor),
-                        ),
-                      ),
-                      onSubmitted: (_) => _loadList(),
-                    ),
+                    onChanged: (_) => setState(() {}),
+                    onSubmitted: (_) => _loadList(),
                   ),
-                  SizedBox(width: 8.w),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: pageColor,
-                      borderRadius: BorderRadius.circular(8.r),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: status,
-                          items: const [
-                            DropdownMenuItem(value: 'all', child: Text('الكل')),
-                            DropdownMenuItem(
-                                value: 'open', child: Text('مفتوحة')),
-                            DropdownMenuItem(
-                                value: 'pending', child: Text('متابعة')),
-                            DropdownMenuItem(
-                                value: 'closed', child: Text('مغلقة')),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => status = value);
-                            _loadList();
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                )
+              : const SizedBox.shrink(),
         ),
         Expanded(
           child: conversations.isEmpty
@@ -791,9 +883,9 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                   color: actionColor,
                   onRefresh: _loadList,
                   child: ListView.separated(
-                    padding: EdgeInsets.all(10.w),
+                    padding: EdgeInsets.fromLTRB(8.w, 6.h, 8.w, 10.h),
                     itemCount: conversations.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                    separatorBuilder: (_, __) => SizedBox(height: 5.h),
                     itemBuilder: (context, index) =>
                         _conversationCard(conversations[index]),
                   ),
@@ -808,33 +900,70 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
         canManageSupport ? item.supportUnreadCount : item.employeeUnreadCount;
     final requester =
         item.requesterName.isNotEmpty ? item.requesterName : item.employeeName;
+    final productName =
+        item.productContext?['name_ar']?.toString().trim() ?? '';
+    final isProduct =
+        item.contextType == 'product' || item.productContext != null;
+    final contextLabel = isProduct
+        ? productName.isEmpty
+            ? 'محادثة منتج'
+            : 'منتج · $productName'
+        : 'محادثة عامة';
     return InkWell(
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(12.r),
       onTap: () => Get.toNamed('$listRoute/${item.id}'),
       child: Container(
-        padding: EdgeInsets.all(12.w),
+        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(12.r),
           border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              blurRadius: 5,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: actionColor,
-              child: Text(
-                requester.isNotEmpty ? requester[0] : 'د',
-                style: const TextStyle(color: Colors.white),
-              ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42.w,
+                  height: 42.w,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: PersonAvatarImage(
+                    imageUrl: item.requesterImageUrl,
+                    width: 42.w,
+                    height: 42.w,
+                    circular: true,
+                  ),
+                ),
+                if (isStoreSupport)
+                  PositionedDirectional(
+                    end: -1,
+                    bottom: 0,
+                    child: Container(
+                      width: 10.w,
+                      height: 10.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: item.requesterIsOnline
+                            ? Colors.green.shade600
+                            : Colors.grey.shade400,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 9.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,80 +972,119 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          item.subject.isEmpty ? 'طلب دعم فني' : item.subject,
+                          requester.isEmpty ? 'مستخدم المتجر' : requester,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 14.sp,
+                            fontSize: 13.5.sp,
                             fontWeight: FontWeight.w800,
+                            color: const Color(0xff202124),
                           ),
                         ),
                       ),
+                      if (item.lastMessageAt != null)
+                        Text(
+                          _compactDate(item.lastMessageAt!),
+                          style: TextStyle(
+                            color: mutedColor,
+                            fontSize: 9.5.sp,
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 3.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.lastMessage.isEmpty
+                              ? 'لم تُرسل رسائل بعد'
+                              : item.lastMessage,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: item.lastMessage.isEmpty
+                                ? mutedColor
+                                : const Color(0xff4b5563),
+                            fontSize: 11.5.sp,
+                            fontWeight:
+                                unread > 0 ? FontWeight.w700 : FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      if (unread > 0) ...[
+                        SizedBox(width: 6.w),
+                        Container(
+                          constraints: BoxConstraints(minWidth: 20.w),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 5.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: actionColor,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            unread > 99 ? '99+' : '$unread',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        isProduct
+                            ? Icons.inventory_2_outlined
+                            : Icons.chat_bubble_outline_rounded,
+                        size: 11.sp,
+                        color: mutedColor,
+                      ),
+                      SizedBox(width: 3.w),
+                      Flexible(
+                        child: Text(
+                          contextLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: mutedColor, fontSize: 9.5.sp),
+                        ),
+                      ),
+                      if (item.createdAt != null) ...[
+                        Text(
+                          '  ·  بدأت ${_compactDate(item.createdAt!)}',
+                          style: TextStyle(color: mutedColor, fontSize: 9.5.sp),
+                        ),
+                      ],
+                      const Spacer(),
                       _statusChip(item.status),
                     ],
                   ),
-                  SizedBox(height: 5.h),
-                  Text(
-                    item.lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: mutedColor),
-                  ),
-                  if (canManageSupport && requester.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: 4.h),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6.w,
-                              vertical: 2.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: item.source == 'online_store'
-                                  ? Colors.orange.shade50
-                                  : bubbleMine,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              item.source == 'online_store' ? 'المتجر' : 'موظف',
-                              style: TextStyle(fontSize: 10.sp),
-                            ),
-                          ),
-                          SizedBox(width: 6.w),
-                          Expanded(
-                            child: Text(
-                              requester,
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                color: mutedColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
             ),
-            if (unread > 0) ...[
-              SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade700,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '$unread',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
+  }
+
+  String _compactDate(DateTime value) {
+    final local = value.toLocal();
+    final now = DateTime.now();
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      return DateFormat('HH:mm').format(local);
+    }
+    if (local.year == now.year) return DateFormat('dd/MM').format(local);
+    return DateFormat('dd/MM/yy').format(local);
   }
 
   Widget _conversationBody() {

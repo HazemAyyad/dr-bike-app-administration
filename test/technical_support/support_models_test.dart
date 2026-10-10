@@ -7,6 +7,7 @@ void main() {
     final conversation = SupportConversation.fromJson({
       'id': 8,
       'source': 'online_store',
+      'context_type': 'product',
       'requester_name': 'عميل المتجر',
       'requester_phone': '0590000000',
       'subject': 'استفسار',
@@ -24,6 +25,7 @@ void main() {
     });
 
     expect(conversation.source, 'online_store');
+    expect(conversation.contextType, 'product');
     expect(conversation.requesterName, 'عميل المتجر');
     expect(conversation.assignedToUserId, 4);
     expect(conversation.productContext?['listing_id'], 31);

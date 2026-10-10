@@ -164,6 +164,7 @@ class SupportMessage {
 class SupportConversation {
   final int id;
   final String source;
+  final String contextType;
   final int employeeId;
   final String employeeName;
   final String requesterName;
@@ -191,6 +192,7 @@ class SupportConversation {
   const SupportConversation({
     required this.id,
     required this.source,
+    this.contextType = 'general',
     required this.employeeId,
     required this.employeeName,
     required this.requesterName,
@@ -228,6 +230,7 @@ class SupportConversation {
       SupportConversation(
         id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
         source: json['source']?.toString() ?? 'employee',
+        contextType: json['context_type']?.toString() ?? 'general',
         employeeId: int.tryParse(json['employee_id']?.toString() ?? '') ?? 0,
         employeeName: json['employee_name']?.toString() ?? '',
         requesterName: json['requester_name']?.toString() ?? '',
