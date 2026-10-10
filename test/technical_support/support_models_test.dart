@@ -1,7 +1,15 @@
+import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/features/technical_support/data/support_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('support presence endpoint is scoped to its conversation', () {
+    expect(
+      EndPoints.supportConversationPresence(17),
+      'support/conversations/17/presence',
+    );
+  });
+
   test('store conversation parses requester, assignment, and product context',
       () {
     final conversation = SupportConversation.fromJson({

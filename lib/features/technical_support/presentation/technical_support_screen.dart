@@ -76,6 +76,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Timer? typingIdleTimer;
   Timer? remoteTypingTimer;
   Timer? presenceRefreshTimer;
+  Timer? supportPresenceTimer;
   DateTime? lastTypingSignal;
   bool typingSent = false;
 
@@ -135,6 +136,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     typingIdleTimer?.cancel();
     remoteTypingTimer?.cancel();
     presenceRefreshTimer?.cancel();
+    supportPresenceTimer?.cancel();
     _stopTyping();
     realtime.dispose();
     recordingTimer?.cancel();
@@ -240,6 +242,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       final result = await service.getConversation(widget.conversationId!);
       canManageSupport = result.canManage;
       conversation = result.conversation;
+      _startSupportPresenceHeartbeat();
       final pending = messages
           .where((row) => row.delivery != SupportMessageDelivery.sent)
           .where(
@@ -261,6 +264,18 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       if (mounted && !silent) setState(() => loading = false);
       if (mounted && silent) setState(() {});
     }
+  }
+
+  void _startSupportPresenceHeartbeat() {
+    if (!inConversation || !isStoreSupport || !canManageSupport) return;
+    final id = widget.conversationId;
+    if (id == null || supportPresenceTimer != null) return;
+
+    service.updatePresence(id).catchError((_) {});
+    supportPresenceTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => service.updatePresence(id).catchError((_) {}),
+    );
   }
 
   void _scrollToLatest() {

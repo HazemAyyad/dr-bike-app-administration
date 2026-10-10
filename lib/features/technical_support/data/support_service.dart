@@ -392,6 +392,10 @@ class SupportService {
     );
   }
 
+  Future<void> updatePresence(int id) async {
+    await _api.post(EndPoints.supportConversationPresence(id));
+  }
+
   Future<void> updateStatus(
     int id,
     String status, {
