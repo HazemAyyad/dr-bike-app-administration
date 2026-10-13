@@ -2,8 +2,11 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/show_no_data.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
@@ -34,6 +37,13 @@ class BuyingScreen extends GetView<BillsController> {
           title: 'purchasesandReturns',
           action: false,
           actions: [
+            if (userType == 'admin')
+              IconButton(
+                tooltip: 'تصفير المشتريات التجريبية',
+                icon: const Icon(Icons.cleaning_services_outlined,
+                    color: AppColors.primaryColor),
+                onPressed: _openPurchaseResetPage,
+              ),
             Builder(
               builder: (topBarContext) {
                 final tabs = DefaultTabController.of(topBarContext);
@@ -74,6 +84,18 @@ class BuyingScreen extends GetView<BillsController> {
         ),
       ),
     );
+  }
+
+  Future<void> _openPurchaseResetPage() async {
+    final uri = Uri.parse(EndPoints.baserUrlForImage)
+        .resolve('security-center/purchases/reset');
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Show the same actionable message when the browser cannot open.
+    }
+    Get.snackbar(
+        'تعذر فتح الصفحة', 'افتح صفحة تصفير المشتريات من مركز الأمان.');
   }
 
   void _showPurchaseCreateActions(BuildContext context) {
