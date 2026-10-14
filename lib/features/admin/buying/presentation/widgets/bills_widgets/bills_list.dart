@@ -343,18 +343,17 @@ class _PurchaseBillCard extends GetView<BillsController> {
   }
 
   Future<void> _confirmPermanentDelete(BuildContext context) async {
-    final payload = await showDialog<Map<String, String>>(
+    final reason = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _PurchaseInvoiceDeleteDialog(billId: bill.id.toString()),
+      builder: (_) => PurchaseInvoiceDeleteDialog(billId: bill.id.toString()),
     );
-    if (payload == null || !context.mounted) return;
+    if (reason == null || !context.mounted) return;
 
     await controller.purgePurchaseInvoiceFromList(
       context,
       billId: bill.id.toString(),
-      password: payload['password']!,
-      reason: payload['reason']!,
+      reason: reason,
     );
   }
 
@@ -652,50 +651,45 @@ class _PurchaseStatusPill extends StatelessWidget {
       );
 }
 
-class _PurchaseInvoiceDeleteDialog extends StatefulWidget {
-  const _PurchaseInvoiceDeleteDialog({required this.billId});
+class PurchaseInvoiceDeleteDialog extends StatefulWidget {
+  const PurchaseInvoiceDeleteDialog({Key? key, required this.billId})
+      : super(key: key);
 
   final String billId;
 
   @override
-  State<_PurchaseInvoiceDeleteDialog> createState() =>
+  State<PurchaseInvoiceDeleteDialog> createState() =>
       _PurchaseInvoiceDeleteDialogState();
 }
 
 class _PurchaseInvoiceDeleteDialogState
-    extends State<_PurchaseInvoiceDeleteDialog> {
+    extends State<PurchaseInvoiceDeleteDialog> {
   static const _textColor = Color(0xFF1F2937);
   static const _mutedTextColor = Color(0xFF4B5563);
   static const _dangerColor = Color(0xFFB42318);
 
   final _reasonController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _canConfirm = false;
 
   @override
   void dispose() {
     _reasonController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
   void _validate() {
-    final next = _reasonController.text.trim().length >= 3 &&
-        _passwordController.text.isNotEmpty;
+    final next = _reasonController.text.trim().length >= 3;
     if (next != _canConfirm) setState(() => _canConfirm = next);
   }
 
   InputDecoration _fieldDecoration({
     required String label,
-    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: _mutedTextColor),
       filled: true,
       fillColor: Colors.white,
-      suffixIcon: suffixIcon,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10.r),
         borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
@@ -757,35 +751,6 @@ class _PurchaseInvoiceDeleteDialogState
               cursorColor: _dangerColor,
               decoration: _fieldDecoration(label: 'سبب الحذف'),
             ),
-            SizedBox(height: 10.h),
-            TextField(
-              controller: _passwordController,
-              onChanged: (_) => _validate(),
-              obscureText: _obscurePassword,
-              enableSuggestions: false,
-              autocorrect: false,
-              autofillHints: const [AutofillHints.password],
-              style: const TextStyle(color: _textColor),
-              cursorColor: _dangerColor,
-              decoration: _fieldDecoration(
-                label: 'كلمة مرور حسابك',
-                suffixIcon: IconButton(
-                  color: _mutedTextColor,
-                  tooltip: _obscurePassword
-                      ? 'إظهار كلمة المرور'
-                      : 'إخفاء كلمة المرور',
-                  onPressed: () => setState(
-                    () => _obscurePassword = !_obscurePassword,
-                  ),
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
-              onSubmitted: (_) => _submit(),
-            ),
           ],
         ),
       ),
@@ -812,9 +777,6 @@ class _PurchaseInvoiceDeleteDialogState
 
   void _submit() {
     if (!_canConfirm) return;
-    Navigator.of(context).pop({
-      'password': _passwordController.text,
-      'reason': _reasonController.text.trim(),
-    });
+    Navigator.of(context).pop(_reasonController.text.trim());
   }
 }
