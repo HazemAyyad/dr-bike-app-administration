@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -31,6 +32,9 @@ class BuildItem extends GetView<SalesController> {
               hintText: 'discountExample',
               controller: item.quantityController,
               keyboardType: TextInputType.number,
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(),
+              ],
               onChanged: (value) {
                 controller.calculateGrandTotal();
               },
@@ -43,7 +47,11 @@ class BuildItem extends GetView<SalesController> {
                 label: 'price',
                 hintText: 'totalExample',
                 controller: item.priceController,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 onChanged: (value) {
                   controller.calculateGrandTotal();
                 }),

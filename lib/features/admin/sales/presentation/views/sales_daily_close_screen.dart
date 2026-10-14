@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -784,7 +785,11 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                             label: 'salesDailyPhysicalCount'.tr,
                             hintText: '0',
                             controller: physicalCtrl,
-                            keyboardType: TextInputType.number,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: const [
+                              LocalizedNumberInputFormatter(decimal: true),
+                            ],
                             onChanged: (_) => setState(() {}),
                           ),
                         ),
@@ -794,7 +799,11 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                             label: 'salesDailyFloatToKeep'.tr,
                             hintText: '0',
                             controller: floatCtrl,
-                            keyboardType: TextInputType.number,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: const [
+                              LocalizedNumberInputFormatter(decimal: true),
+                            ],
                             onChanged: (_) => setState(() {}),
                           ),
                         ),

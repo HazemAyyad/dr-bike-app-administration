@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/features/admin/sales_orders/data/models/sales_order_model.dart';
@@ -84,6 +86,9 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
                     controller: fee,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: const [
+                      LocalizedNumberInputFormatter(decimal: true),
+                    ],
                     decoration: const InputDecoration(
                       labelText: 'أجرة التكسي الافتراضية',
                       helperText: 'يمكن للموظف تعديلها عند تسليم الطلبية',
@@ -158,7 +163,7 @@ Future<DeliveryCompanyModel?> showDeliveryCompanyEditorDialog(
                         'default_carrier_fee':
                             type == 'office' || fee.text.trim().isEmpty
                                 ? null
-                                : double.tryParse(fee.text.trim()),
+                                : tryParseLocalizedAmount(fee.text),
                         'contact_name': contact.text.trim().isEmpty
                             ? null
                             : contact.text.trim(),

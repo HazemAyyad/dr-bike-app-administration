@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -561,11 +563,15 @@ class _MaintenanceDailyHistoryScreenState
         title: const Text('فتح صندوق الصيانة اليومي'),
         content: TextField(
           autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: const [
+            LocalizedNumberInputFormatter(decimal: true),
+          ],
           onChanged: (value) => openingBalance = value,
           onSubmitted: (value) => Navigator.pop(
             dialogContext,
-            double.tryParse(value.trim()) ?? 0,
+            tryParseLocalizedAmount(value) ?? 0,
           ),
           decoration: const InputDecoration(
             labelText: 'رصيد الافتتاح',
@@ -581,7 +587,7 @@ class _MaintenanceDailyHistoryScreenState
           FilledButton(
             onPressed: () => Navigator.pop(
               dialogContext,
-              double.tryParse(openingBalance.trim()) ?? 0,
+              tryParseLocalizedAmount(openingBalance) ?? 0,
             ),
             child: const Text('فتح الصندوق'),
           ),

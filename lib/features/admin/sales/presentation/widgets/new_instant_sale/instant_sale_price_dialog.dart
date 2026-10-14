@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -132,6 +133,9 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
                 controller: _retailCtrl,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _onSave(),
                 decoration: InstantSaleDialogShell.fieldDecoration(

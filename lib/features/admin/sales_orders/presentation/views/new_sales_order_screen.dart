@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -273,7 +274,7 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _field(qtyController, 'quantity'.tr, number: true),
-                _field(priceController, 'price'.tr, number: true),
+                _field(priceController, 'price'.tr, number: true, decimal: true),
               ],
             ),
             actions: [
@@ -377,12 +378,18 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, {bool number = false}) {
+  Widget _field(TextEditingController c, String label,
+      {bool number = false, bool decimal = false}) {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: TextField(
         controller: c,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
+        keyboardType: number
+            ? TextInputType.numberWithOptions(decimal: decimal)
+            : TextInputType.text,
+        inputFormatters: number
+            ? [LocalizedNumberInputFormatter(decimal: decimal)]
+            : null,
         style: TextStyle(
             color: SalesOrdersController.textPrimary, fontSize: 14.sp),
         decoration: InputDecoration(

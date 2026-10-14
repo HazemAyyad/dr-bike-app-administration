@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:doctorbike/core/databases/api/api_consumer.dart';
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
@@ -2680,7 +2682,7 @@ class SalesController extends GetxController
         map['payment_box_name'] = boxName;
       }
       final cash = live['payment_box_value']?.toString() ?? '0';
-      map['payment_box_value'] = cash.replaceAll(',', '').replaceAll('،', '');
+      map['payment_box_value'] = SalesAmountFormat.parse(cash).toString();
     }
 
     applyBuyerFromPayment(live);
@@ -4448,11 +4450,8 @@ class SalesController extends GetxController
       instantSalePaidAmount.value = 0;
       return;
     }
-    final raw = payment.cashValueController.text
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .trim();
-    instantSalePaidAmount.value = double.tryParse(raw) ?? 0;
+    instantSalePaidAmount.value =
+        SalesAmountFormat.parse(payment.cashValueController.text);
   }
 
   /// Same as [refreshInstantSalePaymentSummary] but for flows using a custom payment controller tag
@@ -4463,11 +4462,8 @@ class SalesController extends GetxController
       return;
     }
     final payment = Get.find<PaymentController>(tag: paymentTag);
-    final raw = payment.cashValueController.text
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .trim();
-    instantSalePaidAmount.value = double.tryParse(raw) ?? 0;
+    instantSalePaidAmount.value =
+        SalesAmountFormat.parse(payment.cashValueController.text);
   }
 
   void syncPaymentCashFromTotal({bool onlyIfCashEmpty = false}) {
@@ -4478,11 +4474,8 @@ class SalesController extends GetxController
     final payment = _instantSalePayment;
     if (payment == null) return;
 
-    final current = payment.cashValueController.text
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .trim();
-    final currentAmount = double.tryParse(current) ?? 0;
+    final current = payment.cashValueController.text.trim();
+    final currentAmount = SalesAmountFormat.parse(current);
     final exceedsInvoiceTotal = currentAmount > totalCost.value + 0.0001;
     if (isClosedDayAdministrativeCorrection &&
         _instantSalePaymentAmountTouched) {
@@ -4627,7 +4620,7 @@ class SalesController extends GetxController
         final buyer = payment.buildInstantSaleBuyerPayload();
         if (isClosedDayAdministrativeCorrection) {
           buyer['payment_box_value'] =
-              rawPaidText.replaceAll(',', '').replaceAll('،', '').trim();
+              SalesAmountFormat.parse(rawPaidText).toString();
         }
         _instantSaleEditZeroDebug(
           'skip pre-receive and save invoice directly',
@@ -6527,8 +6520,7 @@ class _RestorationCostsDialogState extends State<_RestorationCostsDialog> {
   void _submit() {
     final result = <int, double>{};
     for (final id in widget.lineIds) {
-      final raw = _controllers[id]!.text.trim().replaceAll(',', '.');
-      final value = double.tryParse(raw);
+      final value = tryParseLocalizedAmount(_controllers[id]!.text);
       if (value == null || value < 0) {
         setState(() {
           _validationMessage = 'أدخل تكلفة صحيحة لكل الأصناف قبل المتابعة.';
@@ -6614,9 +6606,11 @@ class _RestorationCostsDialogState extends State<_RestorationCostsDialog> {
                           const SizedBox(height: 10),
                           TextField(
                             controller: _controllers[id],
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: const [
+                              LocalizedNumberInputFormatter(decimal: true),
+                            ],
                             style: const TextStyle(color: Color(0xFF111827)),
                             decoration: const InputDecoration(
                               labelText: 'تكلفة الوحدة وقت البيع',

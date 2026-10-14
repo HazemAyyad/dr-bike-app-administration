@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
@@ -200,6 +201,9 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                                 hintText: '1',
                                 controller: _qtyController,
                                 keyboardType: TextInputType.number,
+                                inputFormatters: const [
+                                  LocalizedNumberInputFormatter(),
+                                ],
                               ),
                             ),
                             SizedBox(width: 10.w),
@@ -209,7 +213,11 @@ class _AddProductSheetState extends State<_AddProductSheet> {
                                 label: 'price',
                                 hintText: '0',
                                 controller: _priceController,
-                                keyboardType: TextInputType.number,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: const [
+                                  LocalizedNumberInputFormatter(decimal: true),
+                                ],
                               ),
                             ),
                           ],

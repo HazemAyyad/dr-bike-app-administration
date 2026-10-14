@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
 class DailySessionPayload {
@@ -469,23 +470,11 @@ class DailyCashCountRow {
   }
 
   static String cleanRequestAmount(String value) {
-    var text = value.replaceAll(' ', '').trim();
-    text = text.replaceAll('٬', ',').replaceAll('،', ',');
-
-    final hasDot = text.contains('.');
-    final commaCount = ','.allMatches(text).length;
-    if (!hasDot && commaCount == 1 && RegExp(r',\d{1,2}$').hasMatch(text)) {
-      return text.replaceAll(',', '.');
-    }
-
-    if (hasDot &&
-        commaCount > 0 &&
-        text.lastIndexOf(',') > text.lastIndexOf('.')) {
-      return text.replaceAll('.', '').replaceAll(',', '.');
-    }
-
-    return text.replaceAll(',', '');
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    return tryParseLocalizedAmount(text)?.toString() ?? text;
   }
+
 }
 
 class DailySessionSummaryModel {

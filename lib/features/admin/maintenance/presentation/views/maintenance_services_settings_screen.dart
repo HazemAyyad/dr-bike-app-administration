@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -396,7 +398,7 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
         serviceId: widget.service?.id,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        price: double.tryParse(_priceController.text.trim()) ?? 0,
+        price: tryParseLocalizedAmount(_priceController.text) ?? 0,
         isActive: _isActive,
         media: _newMedia,
         keepMediaIds: _keepMediaIds.toList(),
@@ -476,12 +478,15 @@ class _MaintenanceServiceEditorState extends State<_MaintenanceServiceEditor> {
                   controller: _priceController,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: const [
+                    LocalizedNumberInputFormatter(decimal: true),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'قيمة العمل بالشيكل',
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) =>
-                      double.tryParse(value?.trim() ?? '') == null
+                      tryParseLocalizedAmount(value) == null
                           ? 'أدخل رقم صحيح'
                           : null,
                 ),

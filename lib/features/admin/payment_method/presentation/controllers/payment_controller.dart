@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -250,7 +251,7 @@ class PaymentController extends GetxController {
     }
 
     final cashRaw =
-        cashValueController.text.replaceAll(',', '').replaceAll('،', '').trim();
+        _saleCashValue();
 
     final hasPartner = id.isNotEmpty;
 
@@ -294,7 +295,7 @@ class PaymentController extends GetxController {
     }
 
     final cashRaw =
-        cashValueController.text.replaceAll(',', '').replaceAll('،', '').trim();
+        _saleCashValue();
     final normalizedCash = _normalizeAmountDigits(cashRaw);
 
     return {
@@ -308,6 +309,12 @@ class PaymentController extends GetxController {
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
       if (normalizedCash.isNotEmpty) 'payment_box_value': normalizedCash,
     };
+  }
+
+  String _saleCashValue() {
+    final raw = cashValueController.text.trim();
+    if (raw.isEmpty) return raw;
+    return tryParseLocalizedAmount(raw)?.toString() ?? raw;
   }
 
   String _normalizeAmountDigits(String value) {
@@ -408,10 +415,9 @@ class PaymentController extends GetxController {
 
     isLoading(true);
     try {
-      var sanitizedCash = cashValueController.text
-          .replaceAll(',', '')
-          .replaceAll('،', '')
-          .trim();
+      var sanitizedCash = forInstantSale
+          ? _saleCashValue()
+          : cashValueController.text.replaceAll(',', '').replaceAll('،', '').trim();
       if (forInstantSale &&
           boxIdController.text.trim().isNotEmpty &&
           sanitizedCash.isEmpty) {

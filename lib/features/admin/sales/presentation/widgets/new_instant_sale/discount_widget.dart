@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -28,7 +29,11 @@ class DiscountWidget extends GetView<SalesController> {
                 label: 'discount',
                 hintText: 'discountExample',
                 controller: controller.discountController,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 onChanged: (value) {
                   controller.calculateGrandTotal();
                 },
@@ -46,7 +51,11 @@ class DiscountWidget extends GetView<SalesController> {
                   hintText:
                       SalesAmountFormat.display(controller.totalCost.value),
                   controller: controller.totalController,
-                  keyboardType: TextInputType.number,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: const [
+                    LocalizedNumberInputFormatter(decimal: true),
+                  ],
                   validator: (p0) => null,
                   onChanged: (value) {
                     controller.setAdministrativeInvoiceTotal(value);
@@ -311,7 +320,11 @@ class _InstantSaleNotesRepeater extends GetView<SalesController> {
                       label: 'additionalPrice',
                       hintText: '0',
                       controller: amountController,
-                      keyboardType: TextInputType.number,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: const [
+                        LocalizedNumberInputFormatter(decimal: true),
+                      ],
                       validator: (_) => null,
                     ),
                     SizedBox(height: 14.h),

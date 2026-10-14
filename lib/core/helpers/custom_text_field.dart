@@ -20,6 +20,7 @@ class CustomTextField extends StatefulWidget {
     this.fillColor,
     this.labelColor,
     this.keyboardType,
+    this.inputFormatters,
     this.textInputAction,
     this.validator,
     this.hintColor,
@@ -48,6 +49,7 @@ class CustomTextField extends StatefulWidget {
   final bool enabled;
   final Color? fillColor;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final TextInputAction? textInputAction;
   final Color? labelColor;
   final String? Function(String?)? validator;
@@ -204,6 +206,7 @@ class _CustomTextFieldState extends State<CustomTextField>
         Container(
           decoration: widget.decoration,
           child: TextFormField(
+            inputFormatters: widget.inputFormatters,
             focusNode: _focusNode,
             onChanged: widget.onChanged,
             minLines: widget.minLines ?? 1,

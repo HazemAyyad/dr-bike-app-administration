@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -240,7 +241,11 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
             SizedBox(height: 12.h),
             TextField(
               controller: controller.deliveryFeeController,
-              keyboardType: TextInputType.number,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               style: TextStyle(
                 color: SalesOrdersController.textPrimary,
                 fontSize: 14.sp,

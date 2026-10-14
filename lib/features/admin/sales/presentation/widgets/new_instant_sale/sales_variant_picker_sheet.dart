@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -483,6 +484,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
                       Expanded(
                         child: _numberField(
                           controller: draft.priceController,
+                          decimal: true,
                           label: 'price'.tr,
                           enabled: !blockedOutOfStock,
                           onChanged: (_) {
@@ -602,13 +604,15 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
   Widget _numberField({
     required TextEditingController controller,
     required String label,
+    bool decimal = false,
     required bool enabled,
     required ValueChanged<String> onChanged,
   }) {
     return TextField(
       controller: controller,
       enabled: enabled,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+      inputFormatters: [LocalizedNumberInputFormatter(decimal: decimal)],
       textAlign: TextAlign.center,
       onChanged: onChanged,
       decoration: InputDecoration(

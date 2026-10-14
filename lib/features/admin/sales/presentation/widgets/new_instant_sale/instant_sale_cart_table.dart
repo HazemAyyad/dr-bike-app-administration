@@ -1,6 +1,6 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -385,9 +385,10 @@ class _PriceField extends StatelessWidget {
       child: TextField(
         controller: line.priceController,
         textAlign: TextAlign.center,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+        keyboardType:
+            const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: const [
+          LocalizedNumberInputFormatter(decimal: true),
         ],
         style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600),
         decoration: InputDecoration(

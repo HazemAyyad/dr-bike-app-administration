@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -42,6 +43,9 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
               controller: orders.deliveryFeeController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               onChanged: (_) => orders.onDeliveryFeeChanged(),
               decoration: const InputDecoration(
                 labelText: 'رسوم التوصيل المحمّلة على الزبون',

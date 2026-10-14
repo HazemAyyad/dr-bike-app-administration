@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -185,7 +186,11 @@ class SalesOrderDeliverySection extends GetView<SalesOrdersController> {
             SizedBox(height: 12.h),
             TextField(
               controller: controller.deliveryFeeController,
-              keyboardType: TextInputType.number,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               style: TextStyle(
                 color: SalesOrdersController.textPrimary,
                 fontSize: 14.sp,

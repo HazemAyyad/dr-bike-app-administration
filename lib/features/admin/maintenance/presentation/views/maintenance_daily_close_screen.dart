@@ -1,5 +1,6 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -146,7 +147,7 @@ class _MaintenanceDailyCloseScreenState
       (_source['note'] ?? _currencyRow['employee_note'] ?? '').toString();
 
   double _parse(TextEditingController controller) =>
-      double.tryParse(controller.text.trim().replaceAll(',', '')) ?? 0;
+      tryParseLocalizedAmount(controller.text) ?? 0;
 
   double get _physical => _parse(_physicalCtrl);
   double get _floatToKeep => _parse(_floatCtrl);
@@ -445,13 +446,14 @@ class _MaintenanceDailyCloseScreenState
     return TextFormField(
       controller: controller,
       readOnly: readOnly,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+      keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: const [
+        LocalizedNumberInputFormatter(decimal: true),
       ],
       onChanged: (_) => setState(() {}),
       validator: (value) {
-        final amount = double.tryParse((value ?? '').replaceAll(',', ''));
+        final amount = tryParseLocalizedAmount(value);
         if (amount == null || amount < 0) return 'قيمة غير صحيحة';
         return null;
       },

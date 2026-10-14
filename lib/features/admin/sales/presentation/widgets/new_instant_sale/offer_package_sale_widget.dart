@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -124,6 +125,9 @@ class _PackageSaleQuantityRow extends StatelessWidget {
                 hintText: '1',
                 controller: item.quantityController,
                 keyboardType: TextInputType.number,
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(),
+                ],
                 onChanged: (_) {
                   controller.calculateGrandTotal();
                   controller.instantSaleFormKey.currentState?.validate();
@@ -140,6 +144,9 @@ class _PackageSaleQuantityRow extends StatelessWidget {
                 controller: item.priceController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 enabled: false,
                 validator: (_) => null,
               ),

@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -22,35 +24,8 @@ class SalesDailyStatusBar extends GetView<SalesController> {
   final Future<void> Function()? onOpened;
   final bool autoOpen;
 
-  double _parseOpeningAmount(String? value) {
-    const eastern = {
-      '٠': '0',
-      '١': '1',
-      '٢': '2',
-      '٣': '3',
-      '٤': '4',
-      '٥': '5',
-      '٦': '6',
-      '٧': '7',
-      '٨': '8',
-      '٩': '9',
-      '۰': '0',
-      '۱': '1',
-      '۲': '2',
-      '۳': '3',
-      '۴': '4',
-      '۵': '5',
-      '۶': '6',
-      '۷': '7',
-      '۸': '8',
-      '۹': '9',
-    };
-    var text = DailyCashCountRow.cleanRequestAmount(value ?? '');
-    eastern.forEach((from, to) {
-      text = text.replaceAll(from, to);
-    });
-    return double.tryParse(text) ?? 0;
-  }
+  double _parseOpeningAmount(String? value) =>
+      tryParseLocalizedAmount(value) ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -355,9 +330,11 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                           TextField(
                             controller: controllers[row.currency],
                             style: const TextStyle(color: dialogTitleColor),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: const [
+                              LocalizedNumberInputFormatter(decimal: true),
+                            ],
                             decoration: InputDecoration(
                               labelText: 'salesDailyCountedOpening'.tr,
                               labelStyle:
@@ -379,9 +356,11 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                         padding: EdgeInsets.only(bottom: 12.h),
                         child: TextField(
                           controller: ordersControllers[row.currency],
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: const [
+                            LocalizedNumberInputFormatter(decimal: true),
+                          ],
                           decoration: InputDecoration(
                             labelText: 'رصيد الافتتاح — ${row.currency}',
                             helperText:

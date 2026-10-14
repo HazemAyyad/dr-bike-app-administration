@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -233,7 +234,11 @@ class MaintenanceProductsSection extends StatelessWidget {
     return TextField(
       controller: controller,
       enabled: enabled,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: const [
+        LocalizedNumberInputFormatter(decimal: true),
+      ],
       style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
       decoration: InputDecoration(
         isDense: true,
@@ -563,6 +568,7 @@ class _ProductsTable extends StatelessWidget {
         enabled: enabled,
         textAlign: TextAlign.center,
         keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+        inputFormatters: [LocalizedNumberInputFormatter(decimal: decimal)],
         style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           isDense: true,
@@ -768,7 +774,11 @@ class _ServicesTable extends StatelessWidget {
         initialValue: initialValue,
         enabled: enabled,
         textAlign: TextAlign.center,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        keyboardType:
+            const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: const [
+          LocalizedNumberInputFormatter(decimal: true),
+        ],
         style: TextStyle(
           fontSize: 10.sp,
           fontWeight: FontWeight.w800,
@@ -920,7 +930,11 @@ class _AdditionalChargeAmountFieldState
     return TextFormField(
       controller: _controller,
       enabled: widget.enabled,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType:
+          const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: const [
+        LocalizedNumberInputFormatter(decimal: true),
+      ],
       onTap: () => _controller.selection = TextSelection(
         baseOffset: 0,
         extentOffset: _controller.text.length,

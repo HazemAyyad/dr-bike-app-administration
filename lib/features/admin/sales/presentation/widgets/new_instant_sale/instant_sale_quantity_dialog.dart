@@ -1,5 +1,5 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -113,8 +113,10 @@ class _InstantSaleQuantityDialogState extends State<_InstantSaleQuantityDialog> 
                 controller: _controller,
                 autofocus: true,
                 keyboardType: TextInputType.number,
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(),
+                ],
                 maxLength: 4,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
                 scrollPadding: EdgeInsets.only(bottom: 120.h),

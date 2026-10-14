@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'dart:math';
 
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
@@ -801,7 +803,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
 
   Future<void> submit() async {
     final receivedCash = parsedCashReceived;
-    final fee = double.tryParse(carrierFee.text.trim()) ?? 0;
+    final fee = tryParseLocalizedAmount(carrierFee.text) ?? 0;
     final settledAmount = receivedCash + fee;
     if (receivedCash < 0 ||
         settledAmount <= 0 ||
@@ -820,7 +822,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
     var sum = 0.0;
     for (final o in widget.orders) {
       final id = (o['id'] as num).toInt();
-      final amount = double.tryParse(allocations[id]!.text.trim()) ?? -1;
+      final amount = tryParseLocalizedAmount(allocations[id]!.text) ?? -1;
       if (amount < 0 ||
           amount > number(o['carrier_receivable_balance']) + .001) {
         Get.snackbar(
@@ -867,9 +869,9 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
   }
 
   double get parsedCashReceived =>
-      double.tryParse(cashReceived.text.trim()) ?? 0;
+      tryParseLocalizedAmount(cashReceived.text) ?? 0;
 
-  double get parsedCarrierFee => double.tryParse(carrierFee.text.trim()) ?? 0;
+  double get parsedCarrierFee => tryParseLocalizedAmount(carrierFee.text) ?? 0;
 
   double get settlementAmount => parsedCashReceived + parsedCarrierFee;
 
@@ -1226,7 +1228,11 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
       TextField(
         controller: controller,
         onChanged: (_) => _redistributeAfterAmountChange(),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        keyboardType:
+            const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: const [
+          LocalizedNumberInputFormatter(decimal: true),
+        ],
         decoration: InputDecoration(
           labelText: label,
           helperText: helper,
@@ -1240,7 +1246,7 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
   Widget _allocationRow(Map<String, dynamic> order) {
     final id = (order['id'] as num).toInt();
     final balance = number(order['carrier_receivable_balance']);
-    final allocated = double.tryParse(allocations[id]?.text.trim() ?? '') ?? 0;
+    final allocated = tryParseLocalizedAmount(allocations[id]?.text) ?? 0;
     final remaining = (balance - allocated).clamp(0, balance).toDouble();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -1304,6 +1310,9 @@ class _BatchSettlementState extends State<BatchSettlementDialog> {
               onChanged: (_) => setState(() {}),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 suffixText: '₪',

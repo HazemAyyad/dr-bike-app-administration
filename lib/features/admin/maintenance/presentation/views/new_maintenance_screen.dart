@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -253,6 +255,9 @@ class _MaintenancePaymentsSection extends StatelessWidget {
               autofocus: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               decoration: const InputDecoration(
                 labelText: 'قيمة العربون',
                 suffixText: 'شيكل',
@@ -278,7 +283,7 @@ class _MaintenancePaymentsSection extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final amount = double.tryParse(amountController.text.trim()) ?? 0;
+    final amount = tryParseLocalizedAmount(amountController.text) ?? 0;
     if (amount <= 0) {
       AppFailureNotice.show(
         title: 'خطأ',

@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:doctorbike/core/databases/api/dio_consumer.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
@@ -84,6 +86,9 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
                   controller: threshold,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: const [
+                    LocalizedNumberInputFormatter(decimal: true),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'حد تنبيه فرق الإغلاق',
                     border: OutlineInputBorder(),
@@ -95,6 +100,9 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
                     controller: entry.value,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: const [
+                      LocalizedNumberInputFormatter(decimal: true),
+                    ],
                     decoration: InputDecoration(
                       labelText: 'أعلى عهدة متبقية — ${entry.key}',
                       border: const OutlineInputBorder(),
@@ -110,10 +118,10 @@ class _SalesSettingsScreenState extends State<SalesSettingsScreen> {
           TextButton(onPressed: Get.back, child: const Text('إلغاء')),
           FilledButton(
             onPressed: () {
-              final thresholdValue = double.tryParse(threshold.text.trim());
+              final thresholdValue = tryParseLocalizedAmount(threshold.text);
               final maxFloats = <String, double>{};
               for (final entry in controllers.entries) {
-                final value = double.tryParse(entry.value.text.trim());
+                final value = tryParseLocalizedAmount(entry.value.text);
                 if (value == null || value < 0) {
                   Get.snackbar('تنبيه', 'أدخل قيمة صحيحة لـ ${entry.key}');
                   return;

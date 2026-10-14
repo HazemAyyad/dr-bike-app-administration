@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
@@ -1391,7 +1392,7 @@ class SalesOrdersController extends GetxController {
 
   void onDeliveryFeeChanged() {
     manualDeliveryFee.value =
-        double.tryParse(deliveryFeeController.text.trim()) ?? 0;
+        tryParseLocalizedAmount(deliveryFeeController.text) ?? 0;
     if (manualDeliveryFee.value <= 0) {
       priceIncludesDelivery.value = false;
     }
@@ -1928,7 +1929,7 @@ class SalesOrdersController extends GetxController {
       if (selectedDeliveryCompanyId.value != null)
         'delivery_company_id': selectedDeliveryCompanyId.value,
       'carrier_delivery_cost':
-          double.tryParse(carrierDeliveryCostController.text.trim()) ?? 0,
+          tryParseLocalizedAmount(carrierDeliveryCostController.text) ?? 0,
     };
     if (isSelectedCompanyTaxi) {
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
@@ -1979,9 +1980,9 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> settle(int orderId) async {
-    final amount = double.tryParse(settleAmountController.text.trim()) ?? 0;
+    final amount = tryParseLocalizedAmount(settleAmountController.text) ?? 0;
     final carrierFee =
-        double.tryParse(settleCarrierFeeController.text.trim()) ?? 0;
+        tryParseLocalizedAmount(settleCarrierFeeController.text) ?? 0;
     final boxId = int.tryParse(settleBoxIdController.text.trim());
     final order = detail.value;
     final source = (order?.carrierReceivableBalance ?? 0) > 0

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
 import 'dart:core';
 
 import 'package:dio/dio.dart';
@@ -172,33 +173,9 @@ class SalesDatasource {
   }
 
   String _cleanAmount(String value) {
-    const eastern = {
-      '٠': '0',
-      '١': '1',
-      '٢': '2',
-      '٣': '3',
-      '٤': '4',
-      '٥': '5',
-      '٦': '6',
-      '٧': '7',
-      '٨': '8',
-      '٩': '9',
-      '۰': '0',
-      '۱': '1',
-      '۲': '2',
-      '۳': '3',
-      '۴': '4',
-      '۵': '5',
-      '۶': '6',
-      '۷': '7',
-      '۸': '8',
-      '۹': '9',
-    };
-    var text = value.trim().replaceAll(',', '').replaceAll('،', '');
-    eastern.forEach((from, to) {
-      text = text.replaceAll(from, to);
-    });
-    return text;
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    return tryParseLocalizedAmount(text)?.toString() ?? text;
   }
 
   // add profit sale
@@ -677,7 +654,7 @@ class SalesDatasource {
         additionalNotesMap['additional_notes[$i][text]'] =
             note['text']?.toString() ?? '';
         additionalNotesMap['additional_notes[$i][amount]'] =
-            note['amount']?.toString() ?? '0';
+            _cleanAmount(note['amount']?.toString() ?? '0');
       }
 
       final otherProductsMap = <String, dynamic>{};
@@ -686,7 +663,7 @@ class SalesDatasource {
         otherProductsMap['other_products[$i][product_id]'] =
             row['product_id']?.toString() ?? '';
         otherProductsMap['other_products[$i][cost]'] =
-            row['cost']?.toString() ?? '0';
+            _cleanAmount(row['cost']?.toString() ?? '0');
         otherProductsMap['other_products[$i][quantity]'] =
             row['quantity']?.toString() ?? '1';
         otherProductsMap['other_products[$i][type]'] =
@@ -719,13 +696,13 @@ class SalesDatasource {
         else
           'product_id': resolvedProductId,
         'quantity': resolvedQuantity,
-        'cost': resolvedCost,
+        'cost': _cleanAmount(resolvedCost),
         if (resolvedSizeColorId != null && resolvedSizeColorId.isNotEmpty)
           'size_color_id': resolvedSizeColorId,
         if (resolvedSizeId != null && resolvedSizeId.isNotEmpty)
           'size_id': resolvedSizeId,
-        'discount': discount,
-        'total_cost': totalCost,
+        'discount': _cleanAmount(discount),
+        'total_cost': _cleanAmount(totalCost),
         'notes': note,
         ...additionalNotesMap,
         'type': type,
@@ -740,7 +717,7 @@ class SalesDatasource {
         if (paymentBoxName != null && paymentBoxName.isNotEmpty)
           'payment_box_name': paymentBoxName,
         if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
-          'payment_box_value': paymentBoxValue,
+          'payment_box_value': _cleanAmount(paymentBoxValue),
         if (closedDayEditMode != null && closedDayEditMode.isNotEmpty)
           'closed_day_edit_mode': closedDayEditMode,
         if (closedDayEditReason != null && closedDayEditReason.isNotEmpty)
@@ -760,7 +737,7 @@ class SalesDatasource {
           'paymentBoxValueSent': data['payment_box_value'],
           'totalCost': totalCost,
           'quantity': resolvedQuantity,
-          'cost': resolvedCost,
+          'cost': _cleanAmount(resolvedCost),
           'data': data,
         });
       }
@@ -915,13 +892,13 @@ class SalesDatasource {
         EndPoints.editInstantSale,
         data: {
           'instant_sale_id': instantSaleId,
-          'cost': cost,
+          'cost': _cleanAmount(cost),
           'quantity': quantity,
-          'total_cost': totalCost,
+          'total_cost': _cleanAmount(totalCost),
           if (notes != null) 'notes': notes,
           if (paymentBoxValue != null)
             'payment_box_value':
-                paymentBoxValue.replaceAll(',', '').replaceAll('،', '').trim(),
+                _cleanAmount(paymentBoxValue),
         },
       );
       return response.data;

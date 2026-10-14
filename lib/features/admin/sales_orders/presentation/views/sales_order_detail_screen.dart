@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/utils/localized_number.dart';
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/video_view.dart';
@@ -2564,6 +2566,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                             child: TextField(
                               controller: entry.value,
                               keyboardType: TextInputType.number,
+                              inputFormatters: const [
+                                LocalizedNumberInputFormatter(),
+                              ],
                               textAlign: TextAlign.center,
                               decoration: InputDecoration(
                                 hintText: '0/$max',
@@ -2933,6 +2938,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   autofocus: estimate == null,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: const [
+                    LocalizedNumberInputFormatter(decimal: true),
+                  ],
                   style: const TextStyle(color: Color(0xFF1F2937)),
                   decoration: InputDecoration(
                     labelText: 'تكلفة الجهة على المحل',
@@ -3719,7 +3727,11 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         SizedBox(height: 12.h),
                         TextField(
                           controller: controller.settleAmountController,
-                          keyboardType: TextInputType.number,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: const [
+                            LocalizedNumberInputFormatter(decimal: true),
+                          ],
                           style: const TextStyle(
                             color: SalesOrdersController.textPrimary,
                           ),
@@ -3734,8 +3746,11 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           SizedBox(height: 12.h),
                           TextField(
                             controller: controller.settleCarrierFeeController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            inputFormatters: const [
+                              LocalizedNumberInputFormatter(decimal: true),
+                            ],
                             decoration: const InputDecoration(
                               labelText: 'أجرة الشركة المخصومة',
                               helperText:
@@ -3748,13 +3763,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           ),
                           SizedBox(height: 8.h),
                           Builder(builder: (_) {
-                            final gross = double.tryParse(controller
-                                    .settleAmountController.text
-                                    .trim()) ??
+                            final gross = tryParseLocalizedAmount(controller.settleAmountController.text) ??
                                 0;
-                            final fee = double.tryParse(controller
-                                    .settleCarrierFeeController.text
-                                    .trim()) ??
+                            final fee = tryParseLocalizedAmount(controller.settleCarrierFeeController.text) ??
                                 0;
                             final net = (gross - fee).clamp(0, double.infinity);
                             return Text(
@@ -3825,13 +3836,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         SizedBox(height: 12.h),
                         ElevatedButton(
                           onPressed: () {
-                            final entered = double.tryParse(controller
-                                    .settleAmountController.text
-                                    .trim()) ??
+                            final entered = tryParseLocalizedAmount(controller.settleAmountController.text) ??
                                 0;
-                            final fee = double.tryParse(controller
-                                    .settleCarrierFeeController.text
-                                    .trim()) ??
+                            final fee = tryParseLocalizedAmount(controller.settleCarrierFeeController.text) ??
                                 0;
                             if (entered <= 0 ||
                                 entered > settlementBalance + .001) {

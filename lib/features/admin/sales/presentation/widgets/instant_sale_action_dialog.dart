@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -231,7 +232,11 @@ class _InstantSaleEditDialogState extends State<_InstantSaleEditDialog> {
               SizedBox(height: 14.h),
               TextField(
                 controller: costCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 style: fieldStyle,
                 decoration: InstantSaleActionDialog._fieldDecoration('price'.tr),
               ),
@@ -239,6 +244,9 @@ class _InstantSaleEditDialogState extends State<_InstantSaleEditDialog> {
               TextField(
                 controller: qtyCtrl,
                 keyboardType: TextInputType.number,
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(),
+                ],
                 style: fieldStyle,
                 decoration:
                     InstantSaleActionDialog._fieldDecoration('quantity'.tr),
@@ -246,14 +254,22 @@ class _InstantSaleEditDialogState extends State<_InstantSaleEditDialog> {
               SizedBox(height: 10.h),
               TextField(
                 controller: totalCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 style: fieldStyle,
                 decoration: InstantSaleActionDialog._fieldDecoration('total'.tr),
               ),
               SizedBox(height: 10.h),
               TextField(
                 controller: paidCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: const [
+                  LocalizedNumberInputFormatter(decimal: true),
+                ],
                 style: fieldStyle,
                 decoration:
                     InstantSaleActionDialog._fieldDecoration('paidAmount'.tr),

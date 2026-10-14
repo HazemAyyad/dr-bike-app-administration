@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -110,7 +111,11 @@ class InstantSalePaymentSection extends StatelessWidget {
                       label: 'cashValue',
                       hintText: 'totalExample',
                       controller: controller.cashValueController,
-                      keyboardType: TextInputType.number,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: const [
+                        LocalizedNumberInputFormatter(decimal: true),
+                      ],
                       onChanged: (_) {
                         if (paymentTag == kInstantSalePaymentTag) {
                           sales.markInstantSalePaymentAmountTouched();

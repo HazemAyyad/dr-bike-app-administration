@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/localized_number_input_formatter.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
@@ -248,6 +249,9 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
               controller: sales.discountController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               onChanged: (_) => sales.calculateGrandTotal(),
               decoration: fieldDecoration.copyWith(labelText: 'الخصم'),
             ),
@@ -266,6 +270,9 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
               controller: payment.cashValueController,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: const [
+                LocalizedNumberInputFormatter(decimal: true),
+              ],
               onChanged: (_) => sales.refreshInstantSalePaymentSummaryForTag(
                   kSalesOrderPaymentTag),
               decoration: fieldDecoration.copyWith(labelText: 'المبلغ النقدي'),
