@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:doctorbike/core/databases/api/api_consumer.dart';
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/errors/error_model.dart';
@@ -83,7 +85,7 @@ class SalesOrdersDatasource {
   }
 
   Future<SalesOrderDetailModel> createOrder(Map<String, dynamic> body) async {
-    final raw = await api.post(EndPoints.salesOrder, data: body);
+    final raw = await api.post(EndPoints.salesOrder, data: _orderBody(body));
     final response = _asMap(raw);
     _ensureSuccess(response);
     return SalesOrderDetailModel.fromJson(
@@ -176,10 +178,10 @@ class SalesOrdersDatasource {
   ) async {
     final raw = await api.post(
       EndPoints.salesOrderUpdate,
-      data: {
+      data: _orderBody({
         'sales_order_id': orderId,
         ...body,
-      },
+      }),
     );
     final response = _asMap(raw);
     _ensureSuccess(response);
@@ -188,12 +190,54 @@ class SalesOrdersDatasource {
     );
   }
 
-  Future<void> deleteOrder(int orderId) async {
+  dynamic _orderBody(Map<String, dynamic> body) {
+    final images = body['note_images'] as List<MultipartFile>? ?? const [];
+    if (images.isEmpty) return body;
+    final payload = Map<String, dynamic>.from(body)..remove('note_images');
+    final form = FormData.fromMap({
+      'order_data': jsonEncode(payload),
+      if (body['sales_order_id'] != null)
+        'sales_order_id': body['sales_order_id'],
+    });
+    for (final image in images) {
+      form.files.add(MapEntry('note_images[]', image));
+    }
+    return form;
+  }
+
+  Future<void> deleteOrder(int orderId,
+      {bool force = false, String? reason, String? password}) async {
     final raw = await api.post(
       EndPoints.salesOrderDelete,
-      data: {'sales_order_id': orderId},
+      data: {
+        'sales_order_id': orderId,
+        'force': force,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason,
+        if (force) 'password': password,
+      },
     );
     _ensureSuccess(_asMap(raw));
+  }
+
+  Future<Map<String, dynamic>> deletionPreview(int orderId) async {
+    final response = _asMap(await api.get(EndPoints.salesOrderDeletePreview,
+        queryParameters: {'sales_order_id': orderId}));
+    _ensureSuccess(response);
+    return Map<String, dynamic>.from(response['data'] as Map);
+  }
+
+  Future<SalesOrderDetailModel> addNote(int orderId, String scope, String note,
+      List<MultipartFile> images) async {
+    final form = FormData.fromMap(
+        {'sales_order_id': orderId, 'scope': scope, 'note': note});
+    for (final image in images) {
+      form.files.add(MapEntry('images[]', image));
+    }
+    final response = _asMap(await api.post(EndPoints.salesOrderNote,
+        data: form, isFormData: false));
+    _ensureSuccess(response);
+    return SalesOrderDetailModel.fromJson(
+        Map<String, dynamic>.from(response['sales_order'] as Map));
   }
 
   Future<SalesOrderDetailModel> uploadMedia(

@@ -89,6 +89,7 @@ class SalesOrderItemModel {
   final int returnedQty;
   final double unitPrice;
   final double lineTotal;
+  final bool isHidden;
 
   SalesOrderItemModel({
     required this.id,
@@ -105,6 +106,7 @@ class SalesOrderItemModel {
     this.returnedQty = 0,
     required this.unitPrice,
     required this.lineTotal,
+    this.isHidden = false,
   });
 
   int get pendingDeliverQty => quantity - deliveredQty;
@@ -127,6 +129,7 @@ class SalesOrderItemModel {
       returnedQty: json['returned_qty'] as int? ?? 0,
       unitPrice: (json['unit_price'] as num?)?.toDouble() ?? 0,
       lineTotal: (json['line_total'] as num?)?.toDouble() ?? 0,
+      isHidden: json['is_hidden'] == true || json['is_hidden'] == 1,
     );
   }
 }
@@ -304,6 +307,36 @@ class SalesOrderHandoverModel {
   bool get isShiply => deliveryCompanyCode == 'shiply';
 }
 
+class SalesOrderNoteModel {
+  const SalesOrderNoteModel(
+      {required this.id,
+      required this.scope,
+      required this.note,
+      required this.userName,
+      required this.createdAt,
+      required this.images});
+  final int id;
+  final String scope;
+  final String note;
+  final String userName;
+  final String createdAt;
+  final List<String> images;
+
+  factory SalesOrderNoteModel.fromJson(Map<String, dynamic> json) =>
+      SalesOrderNoteModel(
+        id: (json['id'] as num).toInt(),
+        scope: json['scope']?.toString() ?? 'external',
+        note: json['note']?.toString() ?? '',
+        userName: json['user_name']?.toString() ?? '—',
+        createdAt: json['created_at']?.toString() ?? '',
+        images: (json['images'] as List? ?? const [])
+            .whereType<Map>()
+            .map((row) => row['url']?.toString() ?? '')
+            .where((url) => url.isNotEmpty)
+            .toList(),
+      );
+}
+
 class SalesOrderDetailModel {
   final int id;
   final String? serialNumber;
@@ -333,6 +366,7 @@ class SalesOrderDetailModel {
   final double settlementCarrierFeeTotal;
   final int? paymentBoxId;
   final String? notes;
+  final List<SalesOrderNoteModel> noteLog;
   final int? instantSaleId;
   final String? instantSaleSerial;
   final String? trackingNumber;
@@ -394,6 +428,7 @@ class SalesOrderDetailModel {
     this.settlementCarrierFeeTotal = 0,
     this.paymentBoxId,
     this.notes,
+    this.noteLog = const [],
     this.instantSaleId,
     this.instantSaleSerial,
     this.trackingNumber,
@@ -487,6 +522,10 @@ class SalesOrderDetailModel {
           (json['settlement_carrier_fee_total'] as num?)?.toDouble() ?? 0,
       paymentBoxId: json['payment_box_id'] as int?,
       notes: json['notes'] as String?,
+      noteLog: (json['note_log'] as List? ?? const [])
+          .map((row) => SalesOrderNoteModel.fromJson(
+              Map<String, dynamic>.from(row as Map)))
+          .toList(),
       instantSaleId: json['instant_sale_id'] as int?,
       instantSaleSerial: json['instant_sale_serial'] as String?,
       trackingNumber: json['tracking_number'] as String?,

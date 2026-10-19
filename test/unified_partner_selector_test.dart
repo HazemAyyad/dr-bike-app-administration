@@ -250,6 +250,87 @@ void main() {
     expect(tester.widget<TextFormField>(field).controller!.text,
         'مورد نتيجة البحث');
   });
+  testWidgets(
+      'preserves a filtered result through blur and a parent rebuild during touch',
+      (tester) async {
+    final revision = ValueNotifier<int>(0);
+    addTearDown(revision.dispose);
+    final sellers = List.generate(
+        12, (i) => _Partner(i + 1, i == 11 ? 'المورد المطلوب' : 'مورد $i'));
+    _Partner? selected;
+    await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+                home: Scaffold(
+                    body: ValueListenableBuilder<int>(
+              valueListenable: revision,
+              builder: (_, __, ___) => UnifiedPartnerSelector<_Partner>(
+                  customers: const [],
+                  sellers: sellers,
+                  selected: selected,
+                  selectedIsSeller: true,
+                  idOf: (p) => p.id,
+                  nameOf: (p) => p.name,
+                  phoneOf: (p) => p.phone,
+                  onSelected: (p, _) => selected = p,
+                  onCleared: () => selected = null),
+            )))));
+    final field = find.byType(TextFormField);
+    await tester.tap(field);
+    await tester.enterText(field, 'المطلوب');
+    await tester.pump();
+    final gesture = await tester
+        .startGesture(tester.getCenter(find.text('المورد المطلوب')));
+    FocusManager.instance.primaryFocus?.unfocus();
+    revision.value++;
+    await tester.pump();
+    expect(tester.widget<TextFormField>(field).controller!.text, 'المطلوب');
+    await tester.pump(const Duration(milliseconds: 250));
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(selected?.id, 12);
+    expect(
+        tester.widget<TextFormField>(field).controller!.text, 'المورد المطلوب');
+  });
+  testWidgets(
+      'clearing a partner does not erase a new query after an asynchronous refresh',
+      (tester) async {
+    const old = _Partner(1, 'زبون قديم');
+    const next = _Partner(2, 'زبون جديد');
+    _Partner? selected = old;
+    await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        builder: (_, __) => MaterialApp(
+                home: Scaffold(
+                    body: StatefulBuilder(
+              builder: (context, setHostState) =>
+                  UnifiedPartnerSelector<_Partner>(
+                      customers: const [old, next],
+                      sellers: const [],
+                      selected: selected,
+                      selectedIsSeller: false,
+                      idOf: (p) => p.id,
+                      nameOf: (p) => p.name,
+                      phoneOf: (p) => p.phone,
+                      onSelected: (p, _) => setHostState(() => selected = p),
+                      onCleared: () async {
+                        setHostState(() => selected = null);
+                        await Future<void>.delayed(
+                            const Duration(milliseconds: 250));
+                      }),
+            )))));
+    await tester.tap(find.byTooltip('إلغاء الاختيار'));
+    await tester.pump();
+    final field = find.byType(TextFormField);
+    await tester.enterText(field, 'جديد');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<TextFormField>(field).controller!.text, 'جديد');
+    await tester.tap(find.text('زبون جديد'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(selected, same(next));
+  });
 }
 
 class _Partner {

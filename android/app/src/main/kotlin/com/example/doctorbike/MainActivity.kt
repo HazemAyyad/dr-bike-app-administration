@@ -4,6 +4,7 @@ import android.app.KeyguardManager
 import android.app.Activity
 import android.media.AudioManager
 import android.content.Context
+import android.content.ClipData
 import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.net.Uri
@@ -29,6 +30,8 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.lifecycle.Lifecycle
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -174,6 +177,8 @@ class MainActivity : FlutterFragmentActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appLauncherChannelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "whatsAppApps" -> result.success(installedWhatsAppPackages())
+                    "shareWhatsAppPdf" -> shareWhatsAppPdf(call, result)
                     "openWhatsApp" -> openPreferredWhatsApp(
                         call.argument<String>("phone") ?: "",
                         result,
@@ -234,6 +239,48 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun installedWhatsAppPackages(): List<String> =
+        listOf("com.whatsapp", "com.whatsapp.w4b").filter { name ->
+            try {
+                packageManager.getPackageInfo(name, 0)
+                true
+            } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+                false
+            }
+        }
+
+    private fun shareWhatsAppPdf(call: io.flutter.plugin.common.MethodCall, result: MethodChannel.Result) {
+        val target = call.argument<String>("package") ?: ""
+        val bytes = call.argument<ByteArray>("bytes")
+        val phone = (call.argument<String>("phone") ?: "").filter(Char::isDigit)
+        if (target !in installedWhatsAppPackages() || bytes == null || bytes.isEmpty()
+            || phone.length !in 8..15) {
+            result.success(false)
+            return
+        }
+        try {
+            val directory = File(cacheDir, "invoice-share").apply { mkdirs() }
+            val filename = (call.argument<String>("filename") ?: "invoice.pdf")
+                .replace(Regex("[^A-Za-z0-9_.-]"), "_")
+            val file = File(directory, "${System.currentTimeMillis()}_$filename")
+            file.writeBytes(bytes)
+            val uri = FileProvider.getUriForFile(this, "$packageName.invoice-files", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                setPackage(target)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                // WhatsApp may still ask the user to confirm the recipient.
+                putExtra("jid", "$phone@s.whatsapp.net")
+                clipData = ClipData.newRawUri("invoice.pdf", uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(intent)
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("PDF_SHARE_FAILED", "تعذر فتح واتساب لمشاركة الفاتورة", null)
+        }
     }
 
     private fun openPreferredWhatsApp(phone: String, result: MethodChannel.Result) {

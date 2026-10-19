@@ -10,6 +10,7 @@ import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_shiply_address_fields.dart';
+import '../widgets/sales_order_draft_notes.dart';
 
 class NewSalesOrderScreen extends StatefulWidget {
   const NewSalesOrderScreen({Key? key}) : super(key: key);
@@ -190,13 +191,7 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
             ),
           ),
           SizedBox(height: 10.h),
-          TextField(
-            controller: controller.notesController,
-            maxLines: 2,
-            decoration: _inputDecoration().copyWith(
-              hintText: 'note'.tr,
-            ),
-          ),
+          const SalesOrderDraftNotes(),
         ],
       ),
     );
@@ -274,7 +269,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _field(qtyController, 'quantity'.tr, number: true),
-                _field(priceController, 'price'.tr, number: true, decimal: true),
+                _field(priceController, 'price'.tr,
+                    number: true, decimal: true),
               ],
             ),
             actions: [
@@ -387,9 +383,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
         keyboardType: number
             ? TextInputType.numberWithOptions(decimal: decimal)
             : TextInputType.text,
-        inputFormatters: number
-            ? [LocalizedNumberInputFormatter(decimal: decimal)]
-            : null,
+        inputFormatters:
+            number ? [LocalizedNumberInputFormatter(decimal: decimal)] : null,
         style: TextStyle(
             color: SalesOrdersController.textPrimary, fontSize: 14.sp),
         decoration: InputDecoration(

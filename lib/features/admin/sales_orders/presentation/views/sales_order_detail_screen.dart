@@ -11,6 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -22,7 +23,7 @@ import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
 import '../widgets/sales_order_origin_badge.dart';
-import '../widgets/sales_order_invoice_pdf.dart';
+
 import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
@@ -111,9 +112,9 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               icon: const Icon(Icons.picture_as_pdf_outlined),
               onSelected: (value) {
                 if (value == 'print') {
-                  SalesOrderInvoicePdf.print(order);
+                  controller.showShareSheet(order.id, printOnly: true);
                 } else {
-                  SalesOrderInvoicePdf.share(order);
+                  controller.showShareSheet(order.id);
                 }
               },
               itemBuilder: (_) => const [
@@ -178,6 +179,49 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     ],
                     SizedBox(height: 12.h),
                     _nextStepCard(order),
+                    const SizedBox(height: 12),
+                    Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: SalesOrdersController.cardGray,
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text('الملاحظات (${order.noteLog.length})',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800)),
+                              if ((order.notes ?? '').trim().isNotEmpty)
+                                Text(order.notes!),
+                              Wrap(spacing: 8, children: [
+                                TextButton.icon(
+                                    onPressed: () => controller.showOrderNotes(
+                                        order.id,
+                                        scope: 'internal'),
+                                    icon: const Icon(Icons.edit_note),
+                                    label: const Text('ملاحظات داخلية وصور')),
+                                TextButton.icon(
+                                    onPressed: () =>
+                                        controller.showOrderNotes(order.id),
+                                    icon: const Icon(Icons.comment_outlined),
+                                    label: const Text('تعليقات خارجية وصور')),
+                              ]),
+                              if (order.status == 'unconfirmed' &&
+                                  userType == 'admin')
+                                TextButton.icon(
+                                    onPressed: () async {
+                                      final deleted = await controller
+                                          .requestDeleteOrder(order.id,
+                                              force: true);
+                                      if (deleted && mounted) Get.back();
+                                    },
+                                    icon: const Icon(
+                                        Icons.delete_forever_outlined,
+                                        color: Color(0xFFB91C1C)),
+                                    label: const Text('حذف إجباري',
+                                        style: TextStyle(
+                                            color: Color(0xFFB91C1C)))),
+                            ])),
                     if (order.childOrders.isNotEmpty) ...[
                       SizedBox(height: 12.h),
                       _childOrdersCard(order),
@@ -2477,30 +2521,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   }
 
   Future<void> _confirmDeleteUnconfirmed(SalesOrderDetailModel order) async {
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: const Text('حذف الطلبية غير المؤكدة؟'),
-        content: const Text(
-          'سيتم حذف الطلبية نهائيًا وتحرير الكمية المحجوزة. لا يمكن التراجع عن هذا الإجراء.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text('تراجع'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-            ),
-            onPressed: () => Get.back(result: true),
-            child: const Text('حذف نهائي'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    final deleted = await controller.deleteUnconfirmedOrder(order.id);
-    if (deleted) Get.back();
+    final deleted = await controller.requestDeleteOrder(order.id);
+    if (deleted && mounted) Get.back();
   }
 
   void _showQtySheet(SalesOrderDetailModel order, String mode) {
@@ -3727,8 +3749,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         SizedBox(height: 12.h),
                         TextField(
                           controller: controller.settleAmountController,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
                           inputFormatters: const [
                             LocalizedNumberInputFormatter(decimal: true),
                           ],
@@ -3746,8 +3768,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           SizedBox(height: 12.h),
                           TextField(
                             controller: controller.settleCarrierFeeController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: const [
                               LocalizedNumberInputFormatter(decimal: true),
                             ],
@@ -3763,9 +3785,11 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           ),
                           SizedBox(height: 8.h),
                           Builder(builder: (_) {
-                            final gross = tryParseLocalizedAmount(controller.settleAmountController.text) ??
+                            final gross = tryParseLocalizedAmount(
+                                    controller.settleAmountController.text) ??
                                 0;
-                            final fee = tryParseLocalizedAmount(controller.settleCarrierFeeController.text) ??
+                            final fee = tryParseLocalizedAmount(controller
+                                    .settleCarrierFeeController.text) ??
                                 0;
                             final net = (gross - fee).clamp(0, double.infinity);
                             return Text(
@@ -3836,9 +3860,11 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         SizedBox(height: 12.h),
                         ElevatedButton(
                           onPressed: () {
-                            final entered = tryParseLocalizedAmount(controller.settleAmountController.text) ??
+                            final entered = tryParseLocalizedAmount(
+                                    controller.settleAmountController.text) ??
                                 0;
-                            final fee = tryParseLocalizedAmount(controller.settleCarrierFeeController.text) ??
+                            final fee = tryParseLocalizedAmount(controller
+                                    .settleCarrierFeeController.text) ??
                                 0;
                             if (entered <= 0 ||
                                 entered > settlementBalance + .001) {

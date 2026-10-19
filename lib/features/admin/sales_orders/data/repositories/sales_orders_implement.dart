@@ -40,7 +40,13 @@ abstract class SalesOrdersRepository {
 
   Future<Either<Failure, SalesOrderDetailModel>> confirmOrder(int orderId);
 
-  Future<Either<Failure, void>> deleteOrder(int orderId);
+  Future<Either<Failure, void>> deleteOrder(int orderId,
+      {bool force = false, String? reason, String? password});
+
+  Future<Either<Failure, Map<String, dynamic>>> deletionPreview(int orderId);
+
+  Future<Either<Failure, SalesOrderDetailModel>> addNote(
+      int orderId, String scope, String note, List<MultipartFile> images);
 
   Future<Either<Failure, SalesOrderDetailModel>> markReady(int orderId);
 
@@ -255,8 +261,19 @@ class SalesOrdersImplement implements SalesOrdersRepository {
       _guard(() => datasource.postAction(EndPoints.salesOrderConfirm, orderId));
 
   @override
-  Future<Either<Failure, void>> deleteOrder(int orderId) =>
-      _guard(() => datasource.deleteOrder(orderId));
+  Future<Either<Failure, void>> deleteOrder(int orderId,
+          {bool force = false, String? reason, String? password}) =>
+      _guard(() => datasource.deleteOrder(orderId,
+          force: force, reason: reason, password: password));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> deletionPreview(int orderId) =>
+      _guard(() => datasource.deletionPreview(orderId));
+
+  @override
+  Future<Either<Failure, SalesOrderDetailModel>> addNote(
+          int orderId, String scope, String note, List<MultipartFile> images) =>
+      _guard(() => datasource.addNote(orderId, scope, note, images));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> markReady(int orderId) =>

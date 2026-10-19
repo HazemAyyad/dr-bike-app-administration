@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../routes/app_routes.dart';
@@ -197,21 +198,38 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
                   action: () => controller.confirmOrder(order.id),
                 ),
               ),
+            ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: const Text('فاتورة PDF ومشاركة'),
+                onTap: () {
+                  Get.back();
+                  controller.showShareSheet(order.id);
+                }),
+            ListTile(
+                leading: const Icon(Icons.comment_outlined),
+                title: const Text('الملاحظات والصور'),
+                onTap: () {
+                  Get.back();
+                  controller.showOrderNotes(order.id);
+                }),
             if (order.status == 'unconfirmed')
               ListTile(
-                leading:
-                    const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                title: const Text('حذف الطلبية نهائيًا'),
-                onTap: () => _runQuickAction(
-                  context,
-                  title: 'حذف الطلبية غير المؤكدة؟',
-                  message:
-                      'سيتم حذف الطلبية وتحرير الكمية المحجوزة. لا يمكن التراجع عن هذا الإجراء.',
-                  action: () async {
-                    await controller.deleteUnconfirmedOrder(order.id);
-                  },
-                ),
-              ),
+                  leading: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red),
+                  title: const Text('حذف الطلبية'),
+                  onTap: () {
+                    Get.back();
+                    controller.requestDeleteOrder(order.id);
+                  }),
+            if (order.status == 'unconfirmed' && userType == 'admin')
+              ListTile(
+                  leading: const Icon(Icons.delete_forever_outlined,
+                      color: Colors.red),
+                  title: const Text('حذف إجباري'),
+                  onTap: () {
+                    Get.back();
+                    controller.requestDeleteOrder(order.id, force: true);
+                  }),
             if (order.status == 'confirmed')
               ListTile(
                 leading:

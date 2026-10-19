@@ -22,6 +22,8 @@ import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_checkout_totals.dart';
 import '../widgets/sales_order_partner_selector.dart';
 
+import '../widgets/sales_order_draft_notes.dart';
+
 /// مراجعة الطلبية قبل الحفظ — نفس تدفق البيع الفوري.
 class SalesOrderCheckoutScreen extends StatefulWidget {
   const SalesOrderCheckoutScreen({Key? key}) : super(key: key);
@@ -204,7 +206,8 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                 SizedBox(height: 10.h),
                 _financialFieldsRow(),
                 SizedBox(height: 16.h),
-                // Notes are not needed for sales orders at the moment.
+                const SalesOrderDraftNotes(),
+                SizedBox(height: 12.h),
                 Divider(color: Colors.grey.shade300, height: 1),
                 SizedBox(height: 12.h),
                 const SalesOrderCheckoutTotals(),

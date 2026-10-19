@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../data/models/sales_order_model.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 
 class SalesOrderInvoicePdf {
   SalesOrderInvoicePdf._();
@@ -14,7 +15,8 @@ class SalesOrderInvoicePdf {
   static final _muted = PdfColor.fromHex('#6B7280');
   static final _row = PdfColor.fromHex('#F9FAFB');
 
-  static Future<Uint8List> build(SalesOrderDetailModel order) async {
+  static Future<Uint8List> build(SalesOrderDetailModel order,
+      {bool includeNotes = false, bool includeProductImages = false}) async {
     final regular = pw.Font.ttf(
       await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf'),
     );
@@ -28,6 +30,36 @@ class SalesOrderInvoicePdf {
       logo = pw.MemoryImage(data.buffer.asUint8List());
     } catch (_) {}
 
+    final rows = invoiceItems(order.items);
+    final images = <int, pw.ImageProvider>{};
+    if (includeProductImages) {
+      for (final item in rows) {
+        final raw = item.productImage ?? '';
+        if (raw.isEmpty ||
+            raw == 'no image' ||
+            images.containsKey(item.productId)) {
+          continue;
+        }
+        try {
+          images[item.productId] =
+              await networkImage(ShowNetImage.getPhoto(raw))
+                  .timeout(const Duration(seconds: 8));
+        } catch (_) {}
+      }
+    }
+    final noteImages = <int, List<pw.ImageProvider>>{};
+    if (includeNotes) {
+      for (final note in order.noteLog) {
+        final loaded = <pw.ImageProvider>[];
+        for (final url in note.images) {
+          try {
+            loaded.add(
+                await networkImage(url).timeout(const Duration(seconds: 8)));
+          } catch (_) {}
+        }
+        noteImages[note.id] = loaded;
+      }
+    }
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
@@ -44,6 +76,10 @@ class SalesOrderInvoicePdf {
         ),
         build: (_) => [
           _header(order, logo, bold),
+          pw.Container(
+              margin: const pw.EdgeInsets.symmetric(vertical: 10),
+              height: 1.3,
+              color: _brand),
           pw.SizedBox(height: 10),
           pw.Center(
             child: pw.Text('فاتورة طلبية مبيعات',
@@ -51,7 +87,7 @@ class SalesOrderInvoicePdf {
           ),
           pw.SizedBox(height: 10),
           _meta(order, bold),
-          if ((order.notes ?? '').trim().isNotEmpty) ...[
+          if (includeNotes && (order.notes ?? '').trim().isNotEmpty) ...[
             pw.SizedBox(height: 10),
             _sectionTitle('ملاحظات', bold),
             pw.Container(
@@ -66,9 +102,25 @@ class SalesOrderInvoicePdf {
           ],
           pw.SizedBox(height: 12),
           _sectionTitle('الأصناف', bold),
-          _items(order, bold),
+          _items(rows, bold, images, includeProductImages),
           pw.SizedBox(height: 12),
           _totals(order, bold),
+          if (includeNotes) ...[
+            for (final note in order.noteLog) ...[
+              pw.SizedBox(height: 10),
+              _sectionTitle(
+                  '${note.scope == 'internal' ? 'ملاحظة داخلية' : 'تعليق'} - ${note.userName}',
+                  bold),
+              if (note.note.isNotEmpty) pw.Text(note.note),
+              pw.Wrap(spacing: 6, runSpacing: 6, children: [
+                for (final image in noteImages[note.id] ?? <pw.ImageProvider>[])
+                  pw.Container(
+                      width: 145,
+                      height: 110,
+                      child: pw.Image(image, fit: pw.BoxFit.contain)),
+              ]),
+            ],
+          ],
         ],
       ),
     );
@@ -170,27 +222,98 @@ class SalesOrderInvoicePdf {
         child: pw.Text(title, style: pw.TextStyle(font: bold, color: _brand)),
       );
 
-  static pw.Widget _items(SalesOrderDetailModel order, pw.Font bold) {
-    final rows = order.items
-        .asMap()
-        .entries
-        .map((entry) => [
-              _money(entry.value.lineTotal),
-              _money(entry.value.unitPrice),
-              '${entry.value.quantity}',
-              entry.value.productName ?? '—',
-              '${entry.key + 1}',
-            ])
-        .toList();
+  /// The server statement hides operational rows and merges equal item/variant prices.
+  static List<SalesOrderItemModel> invoiceItems(
+      List<SalesOrderItemModel> items) {
+    final grouped = <String, SalesOrderItemModel>{};
+    for (final item in items.where((item) => !item.isHidden)) {
+      final key = [
+        item.productId,
+        item.sizeId,
+        item.sizeColorId,
+        item.productName,
+        item.unitPrice
+      ].join('|');
+      final old = grouped[key];
+      grouped[key] = old == null
+          ? item
+          : SalesOrderItemModel(
+              id: old.id,
+              productId: old.productId,
+              productName: old.productName,
+              productImage: old.productImage ?? item.productImage,
+              sizeId: old.sizeId,
+              sizeColorId: old.sizeColorId,
+              sizeLabel: old.sizeLabel,
+              colorLabel: old.colorLabel,
+              quantity: old.quantity + item.quantity,
+              deliveredQty: old.deliveredQty + item.deliveredQty,
+              dispatchedQty: old.dispatchedQty + item.dispatchedQty,
+              returnedQty: old.returnedQty + item.returnedQty,
+              unitPrice: old.unitPrice,
+              lineTotal: old.lineTotal + item.lineTotal,
+            );
+    }
+    return grouped.values.toList();
+  }
+
+  static pw.Widget _items(List<SalesOrderItemModel> items, pw.Font bold,
+      Map<int, pw.ImageProvider> images, bool includeImages) {
+    final rows = items.asMap().entries.map((entry) {
+      final item = entry.value;
+      final variant = [item.sizeLabel, item.colorLabel]
+          .whereType<String>()
+          .where((label) => label.trim().isNotEmpty)
+          .join(' / ');
+      return <dynamic>[
+        _money(item.lineTotal),
+        _money(item.unitPrice),
+        '${item.quantity}',
+        if (includeImages) images[item.productId],
+        [item.productName ?? '—', if (variant.isNotEmpty) variant].join('\n'),
+        '${entry.key + 1}',
+      ];
+    }).toList();
+    final headers = [
+      'الإجمالي',
+      'السعر',
+      'الكمية',
+      if (includeImages) 'الصورة',
+      'الصنف',
+      '#'
+    ];
     return pw.TableHelper.fromTextArray(
-      headers: const ['الإجمالي', 'السعر', 'الكمية', 'الصنف', '#'],
-      data: rows,
+      headers: headers,
+      data: [
+        for (final row in rows)
+          [
+            for (final cell in row)
+              if (cell is pw.ImageProvider)
+                pw.SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: pw.Image(cell, fit: pw.BoxFit.contain))
+              else
+                pw.Text(cell?.toString() ?? '—',
+                    textAlign: pw.TextAlign.center,
+                    textDirection: pw.TextDirection.rtl),
+          ]
+      ],
+      tableDirection: pw.TextDirection.ltr,
+      headerDirection: pw.TextDirection.rtl,
+      cellPadding: const pw.EdgeInsets.all(6),
+      cellAlignment: pw.Alignment.center,
       headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
       headerDecoration: pw.BoxDecoration(color: _brand),
       oddRowDecoration: pw.BoxDecoration(color: _row),
       border: pw.TableBorder.all(color: _border),
-      cellAlignment: pw.Alignment.center,
-      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(62),
+        1: const pw.FixedColumnWidth(60),
+        2: const pw.FixedColumnWidth(36),
+        if (includeImages) 3: const pw.FixedColumnWidth(48),
+        headers.length - 1: const pw.FixedColumnWidth(22)
+      },
     );
   }
 
@@ -202,9 +325,21 @@ class SalesOrderInvoicePdf {
             pw.Expanded(
                 child: pw.Text(label,
                     style: strong ? pw.TextStyle(font: bold) : null)),
-            pw.Text('${_money(value)} ₪',
-                textDirection: pw.TextDirection.rtl,
-                style: strong ? pw.TextStyle(font: bold, color: _brand) : null),
+            pw.Directionality(
+              textDirection: pw.TextDirection.ltr,
+              child: pw.Row(mainAxisSize: pw.MainAxisSize.min, children: [
+                pw.Text(_money(value),
+                    style: strong
+                        ? pw.TextStyle(font: bold, color: _brand)
+                        : null),
+                pw.SizedBox(width: 4),
+                pw.Text('شيكل',
+                    textDirection: pw.TextDirection.rtl,
+                    style: strong
+                        ? pw.TextStyle(font: bold, color: _brand)
+                        : null),
+              ]),
+            ),
           ]),
         );
     return pw.Container(
@@ -217,9 +352,14 @@ class SalesOrderInvoicePdf {
         line('التوصيل', order.customerDeliveryFee),
         line('الخصم', order.discount),
         line('الإجمالي', order.total, strong: true),
-        line('دخل صندوق المحل', order.settlementCashTotal),
-        line('دين على الزبون', order.customerDebtBalance),
-        line('في ذمة شركة التوصيل', order.carrierReceivableBalance),
+        if (order.paymentAmount > 0)
+          line(
+              order.status == 'unconfirmed'
+                  ? 'الدفعة المحددة'
+                  : 'الدفعة المسجلة',
+              order.paymentAmount),
+        if (order.customerDebtBalance > 0)
+          line('المتبقي على الزبون', order.customerDebtBalance),
       ]),
     );
   }
@@ -235,6 +375,8 @@ class SalesOrderInvoicePdf {
       'review': 'قيد المراجعة',
       'delivered': 'مسلّمة',
       'partial_return': 'إرجاع جزئي',
+      'partial_delivered': 'تسليم جزئي',
+      'alternative_return': 'مرتجع استبدال',
       'returned': 'مرتجعة',
       'postponed': 'مؤجلة',
       'stuck': 'متعثرة',

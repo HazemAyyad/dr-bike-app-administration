@@ -64,6 +64,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   bool _showResults = false;
   bool _isInteractingWithResults = false;
   bool _isCommittingSelection = false;
+  bool _isEditingSearch = false;
   _PartnerIdentity? _committingIdentity;
   Timer? _blurTimer;
 
@@ -81,7 +82,11 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
       _blurTimer?.cancel();
       _blurTimer = Timer(const Duration(milliseconds: 120), () {
         if (mounted && !_focusNode.hasFocus && !_isInteractingWithResults) {
-          setState(() => _showResults = false);
+          setState(() {
+            _showResults = false;
+            _isEditingSearch = false;
+            if (!_isCommittingSelection) _syncSelectedText();
+          });
         }
       });
     });
@@ -91,6 +96,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   void didUpdateWidget(covariant UnifiedPartnerSelector<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_focusNode.hasFocus) return;
+    if (_isEditingSearch || _isInteractingWithResults) return;
 
     // Some consumers update the partner type and id through separate reactive
     // values. Ignore the transient rebuild between those updates so it cannot
@@ -151,6 +157,7 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   Future<void> _select(_PartnerEntry<T> entry) async {
     if (_isCommittingSelection) return;
     _isCommittingSelection = true;
+    _isEditingSearch = false;
     _committingIdentity = _identityOf(entry);
     _blurTimer?.cancel();
     final name = widget.nameOf(entry.value);
@@ -172,11 +179,11 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
   }
 
   Future<void> _clear({bool keepFocus = false}) async {
-    await widget.onCleared?.call();
-    if (!mounted) return;
+    _isEditingSearch = false;
     _searchController.clear();
     if (keepFocus) _focusNode.requestFocus();
     setState(() => _showResults = keepFocus);
+    await widget.onCleared?.call();
   }
 
   Future<void> _showAddMenu() async {
@@ -214,173 +221,185 @@ class _UnifiedPartnerSelectorState<T> extends State<UnifiedPartnerSelector<T>> {
     final rows = _results();
     final padding = widget.compact ? 10.r : 12.r;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.showTitle)
-          Row(
-            children: [
-              Icon(Icons.people_alt_outlined,
-                  size: 19.sp, color: AppColors.primaryColor),
-              SizedBox(width: 6.w),
-              Text(widget.title,
-                  style:
-                      TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
-              if (widget.requiredSelection)
-                Text(' *',
-                    style: TextStyle(color: Colors.red, fontSize: 13.sp)),
-              const Spacer(),
-              if (selected != null)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryColor.withValues(alpha: .08),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Text(
-                    widget.selectedIsSeller ? 'مورد / تاجر' : 'زبون',
+    return TextFieldTapRegion(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.showTitle)
+            Row(
+              children: [
+                Icon(Icons.people_alt_outlined,
+                    size: 19.sp, color: AppColors.primaryColor),
+                SizedBox(width: 6.w),
+                Text(widget.title,
                     style: TextStyle(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryColor,
+                        fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                if (widget.requiredSelection)
+                  Text(' *',
+                      style: TextStyle(color: Colors.red, fontSize: 13.sp)),
+                const Spacer(),
+                if (selected != null)
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withValues(alpha: .08),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      widget.selectedIsSeller ? 'مورد / تاجر' : 'زبون',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        if (widget.showTitle) SizedBox(height: 8.h),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                enabled: widget.enabled,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: AppColors.customGreyColor7,
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: selected == null
-                      ? null
-                      : IconButton(
-                          tooltip: 'إلغاء الاختيار',
-                          onPressed: () => _clear(keepFocus: true),
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                  hintText: widget.hintText,
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: padding,
-                    vertical: 12.h,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (_) => widget.requiredSelection && selected == null
-                    ? 'اختر زبونًا أو موردًا'
-                    : null,
-                onChanged: (_) {
-                  if (_isCommittingSelection) return;
-                  if (selected != null) widget.onCleared?.call();
-                  setState(() => _showResults = true);
-                },
-                onTapOutside: (_) => _focusNode.unfocus(),
-              ),
+              ],
             ),
-            if (widget.onAddRequested != null) ...[
-              SizedBox(width: 6.w),
-              IconButton(
-                tooltip: 'إضافة زبون أو مورد',
-                onPressed: widget.enabled ? _showAddMenu : null,
-                icon: Icon(
-                  Icons.add_circle_sharp,
-                  color: widget.enabled
-                      ? AppColors.primaryColor
-                      : Colors.grey.shade400,
-                  size: 30.sp,
-                ),
-              ),
-            ],
-          ],
-        ),
-        if (_showResults && widget.enabled)
-          Listener(
-            onPointerDown: (_) => _isInteractingWithResults = true,
-            onPointerUp: (_) => _isInteractingWithResults = false,
-            onPointerCancel: (_) => _isInteractingWithResults = false,
-            child: Container(
-              width: double.infinity,
-              constraints: BoxConstraints(maxHeight: 220.h),
-              margin: EdgeInsets.only(top: 6.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: AppColors.operationalCardBorder),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: .06),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: rows.isEmpty
-                  ? Padding(
-                      padding: EdgeInsets.all(14.r),
-                      child: const Text('لا توجد نتائج'),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: rows.length,
-                      findChildIndexCallback: (key) {
-                        if (key is! ValueKey<_PartnerIdentity>) return null;
-                        final index = rows.indexWhere(
-                          (entry) => _identityOf(entry) == key.value,
-                        );
-                        return index < 0 ? null : index;
-                      },
-                      itemBuilder: (_, index) {
-                        final entry = rows[index];
-                        final phone = widget.phoneOf(entry.value).trim();
-                        return Column(
-                          key: ValueKey(_identityOf(entry)),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              dense: true,
-                              leading: Icon(
-                                entry.isSeller
-                                    ? Icons.storefront_outlined
-                                    : Icons.person_outline_rounded,
-                                color: AppColors.primaryColor,
-                              ),
-                              title: Text(
-                                widget.nameOf(entry.value),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700),
-                              ),
-                              subtitle: Text([
-                                entry.isSeller ? 'مورد / تاجر' : 'زبون',
-                                if (phone.isNotEmpty) phone,
-                              ].join(' • ')),
-                              onTap: () => _select(entry),
-                            ),
-                            if (index < rows.length - 1)
-                              const Divider(height: 1),
-                          ],
-                        );
-                      },
+          if (widget.showTitle) SizedBox(height: 8.h),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  enabled: widget.enabled,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.customGreyColor7,
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: selected == null
+                        ? null
+                        : IconButton(
+                            tooltip: 'إلغاء الاختيار',
+                            onPressed: () => _clear(keepFocus: true),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    hintText: widget.hintText,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: padding,
+                      vertical: 12.h,
                     ),
-            ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(11.r),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  validator: (_) => widget.requiredSelection && selected == null
+                      ? 'اختر زبونًا أو موردًا'
+                      : null,
+                  onChanged: (_) {
+                    if (_isCommittingSelection) return;
+                    if (selected != null &&
+                        _searchController.text == widget.nameOf(selected)) {
+                      return;
+                    }
+                    _isEditingSearch = true;
+                    if (selected != null) widget.onCleared?.call();
+                    setState(() => _showResults = true);
+                  },
+                  onTapOutside: (_) {
+                    _isEditingSearch = false;
+                    _focusNode.unfocus();
+                    if (mounted) setState(() => _showResults = false);
+                  },
+                ),
+              ),
+              if (widget.onAddRequested != null) ...[
+                SizedBox(width: 6.w),
+                IconButton(
+                  tooltip: 'إضافة زبون أو مورد',
+                  onPressed: widget.enabled ? _showAddMenu : null,
+                  icon: Icon(
+                    Icons.add_circle_sharp,
+                    color: widget.enabled
+                        ? AppColors.primaryColor
+                        : Colors.grey.shade400,
+                    size: 30.sp,
+                  ),
+                ),
+              ],
+            ],
           ),
-      ],
+          if (_showResults && widget.enabled)
+            Listener(
+              onPointerDown: (_) => _isInteractingWithResults = true,
+              onPointerUp: (_) => _isInteractingWithResults = false,
+              onPointerCancel: (_) => _isInteractingWithResults = false,
+              child: Container(
+                width: double.infinity,
+                constraints: BoxConstraints(maxHeight: 220.h),
+                margin: EdgeInsets.only(top: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: AppColors.operationalCardBorder),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: .06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: rows.isEmpty
+                    ? Padding(
+                        padding: EdgeInsets.all(14.r),
+                        child: const Text('لا توجد نتائج'),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: rows.length,
+                        findChildIndexCallback: (key) {
+                          if (key is! ValueKey<_PartnerIdentity>) return null;
+                          final index = rows.indexWhere(
+                            (entry) => _identityOf(entry) == key.value,
+                          );
+                          return index < 0 ? null : index;
+                        },
+                        itemBuilder: (_, index) {
+                          final entry = rows[index];
+                          final phone = widget.phoneOf(entry.value).trim();
+                          return Column(
+                            key: ValueKey(_identityOf(entry)),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                dense: true,
+                                leading: Icon(
+                                  entry.isSeller
+                                      ? Icons.storefront_outlined
+                                      : Icons.person_outline_rounded,
+                                  color: AppColors.primaryColor,
+                                ),
+                                title: Text(
+                                  widget.nameOf(entry.value),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700),
+                                ),
+                                subtitle: Text([
+                                  entry.isSeller ? 'مورد / تاجر' : 'زبون',
+                                  if (phone.isNotEmpty) phone,
+                                ].join(' • ')),
+                                onTap: () => _select(entry),
+                              ),
+                              if (index < rows.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          );
+                        },
+                      ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -6,8 +6,7 @@ import 'package:dio/dio.dart' as dio;
 import 'package:doctorbike/core/errors/failure.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/media_permissions.dart';
 import '../../../../../core/media/media_upload_preparer.dart';
@@ -23,6 +22,10 @@ import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart'
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
+import '../widgets/sales_order_invoice_pdf.dart';
+import '../widgets/sales_order_notes_sheet.dart';
+import '../widgets/sales_order_delete_dialog.dart';
+import '../widgets/sales_order_modal_theme.dart';
 import '../widgets/sales_order_notice.dart';
 import '../widgets/sales_order_reserved_stock_dialog.dart';
 
@@ -111,6 +114,7 @@ class SalesOrdersController extends GetxController {
   final settleCarrierFeeController = TextEditingController(text: '0');
   final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
+  final draftNoteImages = <XFile>[].obs;
   final searchController = TextEditingController();
   Timer? _searchDebounce;
 
@@ -515,6 +519,7 @@ class SalesOrdersController extends GetxController {
     deliveryFeeController.text = '0';
     totalController.clear();
     notesController.clear();
+    draftNoteImages.clear();
     selectedCityId.value = null;
     selectedShiplyCityId.value = null;
     selectedShiplyVillageId.value = null;
@@ -1469,6 +1474,24 @@ class SalesOrdersController extends GetxController {
       body['acknowledge_negative_stock'] = true;
     }
 
+    if (draftNoteImages.isNotEmpty) {
+      isSubmitting.value = true;
+      try {
+        final files = <dio.MultipartFile>[];
+        for (final image in draftNoteImages) {
+          final prepared = await MediaUploadPreparer.prepareImageForUpload(
+              image,
+              profile: ImageUploadProfile.receipt);
+          files.add(await prepared.toMultipartFile());
+        }
+        body['note_images'] = files;
+      } catch (_) {
+        isSubmitting.value = false;
+        SalesOrderNotice.error(
+            'تعذر تجهيز صور الملاحظات؛ لم تحفظ الطلبية. أعد المحاولة.');
+        return false;
+      }
+    }
     isSubmitting.value = true;
     final result = editId != null
         ? await repository.updateOrder(editId, body)
@@ -2188,17 +2211,107 @@ class SalesOrdersController extends GetxController {
     }
   }
 
-  Future<bool> deleteUnconfirmedOrder(int orderId) async {
+  Future<bool> requestDeleteOrder(int orderId, {bool force = false}) async {
+    final result = await repository.deletionPreview(orderId);
+    return await result.fold(
+      (failure) async {
+        SalesOrderNotice.error(_humanizeFailure(failure));
+        return false;
+      },
+      (preview) async {
+        if (preview['can_delete'] != true ||
+            (preview['requires_force'] == true && !force)) {
+          SalesOrderNotice.error('${preview['message']}');
+          return false;
+        }
+        return await Get.dialog<bool>(
+                SalesOrderModalTheme(
+                    child: SalesOrderDeleteDialog(
+                        preview: preview,
+                        force: force,
+                        onDelete: (reason, password) => deleteUnconfirmedOrder(
+                            orderId,
+                            force: force,
+                            reason: reason,
+                            password: password))),
+                barrierDismissible: false) ??
+            false;
+      },
+    );
+  }
+
+  Future<void> pickDraftNoteImages({required bool camera}) async {
+    if (isSubmitting.value || draftNoteImages.length >= 5) return;
+    try {
+      if (camera && !await ensureCameraPermission()) return;
+      final picked = camera
+          ? [await ImagePicker().pickImage(source: ImageSource.camera)]
+              .whereType<XFile>()
+              .toList()
+          : await ImagePicker().pickMultiImage();
+      draftNoteImages.addAll(picked.take(5 - draftNoteImages.length));
+    } catch (_) {
+      SalesOrderNotice.error('تعذر اختيار الصورة');
+    }
+  }
+
+  Future<void> showOrderNotes(int orderId, {String scope = 'external'}) async {
+    final result = await repository.getOrder(orderId);
+    await result.fold(
+      (failure) async => SalesOrderNotice.error(_humanizeFailure(failure)),
+      (order) async {
+        await Get.bottomSheet<void>(
+            SalesOrderModalTheme(
+                child: SalesOrderNotesSheet(
+                    order: order,
+                    initialScope: scope,
+                    onSave: (scope, text, images) =>
+                        saveOrderNote(orderId, scope, text, images))),
+            isScrollControlled: true);
+      },
+    );
+  }
+
+  Future<SalesOrderDetailModel?> saveOrderNote(
+      int orderId, String scope, String text, List<XFile> images) async {
+    try {
+      final files = <dio.MultipartFile>[];
+      for (final image in images) {
+        final prepared = await MediaUploadPreparer.prepareImageForUpload(image,
+            profile: ImageUploadProfile.receipt);
+        files.add(await prepared.toMultipartFile());
+      }
+      final result = await repository.addNote(orderId, scope, text, files);
+      return result.fold(
+        (failure) {
+          SalesOrderNotice.error(_humanizeFailure(failure));
+          return null;
+        },
+        (order) {
+          if (detail.value?.id == order.id) detail.value = order;
+          SalesOrderNotice.success('تم حفظ الملاحظة والصور');
+          return order;
+        },
+      );
+    } catch (_) {
+      SalesOrderNotice.error('تعذر تجهيز الصور أو حفظ الملاحظة. أعد المحاولة.');
+      return null;
+    }
+  }
+
+  Future<bool> deleteUnconfirmedOrder(int orderId,
+      {bool force = false, String? reason, String? password}) async {
     isSubmitting.value = true;
     try {
-      final result = await repository.deleteOrder(orderId);
+      final result = await repository.deleteOrder(orderId,
+          force: force, reason: reason, password: password);
       return await result.fold(
         (failure) async {
           SalesOrderNotice.error(_humanizeFailure(failure));
           return false;
         },
         (_) async {
-          detail.value = null;
+          if (detail.value?.id == orderId) detail.value = null;
           await loadOrders();
           SalesOrderNotice.success('تم حذف الطلبية غير المؤكدة');
           return true;
@@ -2288,53 +2401,23 @@ class SalesOrdersController extends GetxController {
     selectedOrderIds.refresh();
   }
 
-  Future<void> shareOrderVia(int orderId, String channel) async {
-    isSubmitting.value = true;
-    final result = await repository.fetchStatement(orderId);
-    isSubmitting.value = false;
-
+  Future<void> showShareSheet(int orderId, {bool printOnly = false}) async {
+    final result = await repository.getOrder(orderId);
     await result.fold(
-      (f) async => SalesOrderNotice.error(f.errMessage),
-      (report) async {
-        final pdfUrl = report['pdf_url']?.toString() ?? '';
-        final serial = report['serial_number']?.toString() ?? '#$orderId';
-        final total = report['total']?.toString() ?? '';
-        final message = '${'salesOrderShareIntro'.tr} $serial\n'
-            '${'total'.tr}: $total ₪\n$pdfUrl';
-
-        final phone =
-            detail.value?.customerPhone?.replaceAll(RegExp(r'\D'), '') ?? '';
-
-        if (channel == 'sms') {
-          if (phone.isNotEmpty) {
-            final uri =
-                Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri);
-              return;
-            }
+      (failure) async => SalesOrderNotice.error(_humanizeFailure(failure)),
+      (order) async {
+        if (printOnly) {
+          try {
+            await SalesOrderInvoicePdf.print(order);
+          } catch (_) {
+            SalesOrderNotice.error('تعذر تجهيز الفاتورة للطباعة');
           }
-          await SharePlus.instance.share(ShareParams(text: message));
-          return;
+        } else {
+          await Get.bottomSheet<void>(
+              SalesOrderModalTheme(child: SalesOrderShareSheet(order: order)),
+              isScrollControlled: true);
         }
-
-        if (phone.isNotEmpty) {
-          final uri = Uri.parse(
-              'https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-            return;
-          }
-        }
-        await SharePlus.instance.share(ShareParams(text: message));
       },
-    );
-  }
-
-  void showShareSheet(int orderId) {
-    Get.bottomSheet(
-      SalesOrderShareSheet(orderId: orderId),
-      isScrollControlled: true,
     );
   }
 

@@ -154,7 +154,9 @@ class _SalesOrdersPurgeBackupsDialogState
                       final available = backup['status'] == 'available';
                       final mode = backup['mode'] == 'orders_only_reset'
                           ? 'طلبيات فقط + تصفير العدادات'
-                          : 'حذف مع عكس الآثار';
+                          : backup['mode'] == 'unconfirmed_delete'
+                              ? 'حذف طلبية غير مؤكدة'
+                              : 'حذف مع عكس الآثار';
                       return ListTile(
                         leading: Icon(
                           available ? Icons.inventory_2_outlined : Icons.check,

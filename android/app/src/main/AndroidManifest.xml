@@ -61,6 +61,15 @@
             android:authorities="${applicationId}.notification-sounds"
             android:exported="true"
             android:grantUriPermissions="true" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.invoice-files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/invoice_file_paths" />
+        </provider>
         <activity
             android:name="com.application.doctorbike.MainActivity"
             android:exported="true"
