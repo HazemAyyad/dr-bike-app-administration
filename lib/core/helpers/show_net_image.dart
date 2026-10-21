@@ -6,13 +6,13 @@ import '../utils/assets_manger.dart';
 enum ProductImageSource {
   /// مسار يبدأ بـ `Images/Items/` — صور الأرشيف المنقولة إلى Laravel public
   legacyDotNetStore,
+
   /// مسار يبدأ بـ `storage/product-uploads` — صور محلية في Laravel
   laravelStorage,
   unknown,
 }
 
-/// يزيل تكرار `public/` عندما يكون [baserUrlForImage] يُنهي بـ `/public/`
-/// والمسار القادم من Laravel يبدأ بـ `public/...` (فيصبح `/public/public/...`).
+/// يزيل بادئة `public/` القديمة من مسارات الوسائط النسبية القادمة من Laravel.
 String _normalizeRelativeMediaPath(String raw) {
   var p = raw.trim();
   if (p.startsWith('http://') || p.startsWith('https://')) return p;
@@ -39,7 +39,7 @@ class ShowNetImage {
         if (uri.host == 'mjsall-001-site1.jtempurl.com') {
           return ProductImageSource.legacyDotNetStore;
         }
-        if (uri.host.contains('dr-bike.duosparktech.com') ||
+        if (uri.host == 'dr-bike.shop' ||
             uri.path.contains('/storage/product-uploads')) {
           return ProductImageSource.laravelStorage;
         }
@@ -67,7 +67,8 @@ class ShowNetImage {
 
     // Archive images: Images/Items/...
     if (normLower.startsWith('images/items/')) {
-      final thumbPath = normalized.replaceFirst('Images/Items/', 'Images/Items/thumb/');
+      final thumbPath =
+          normalized.replaceFirst('Images/Items/', 'Images/Items/thumb/');
       final base = EndPoints.baserUrlForImage;
       return base.endsWith('/') ? '$base$thumbPath' : '$base/$thumbPath';
     }

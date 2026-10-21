@@ -3,10 +3,9 @@
 class EndPoints {
   /// ثابت: لا تربطه بـ [startApp] لأن أول قراءة لـ Firebase قد تجعل baseUrl فارغاً
   /// فيتجه Dio إلى نفس أصل الويب (localhost) ويبدو اللوجين عالقاً.
-  /// يطابق مسار Laravel على الاستضافة: /public/api/...
-  static const String baserUrl = "https://dr-bike.duosparktech.com/public/api/";
-  static const String baserUrlForImage =
-      "https://dr-bike.duosparktech.com/public/";
+  /// يطابق مسار Laravel على الاستضافة: /api/...
+  static const String baserUrl = "https://dr-bike.shop/api/";
+  static const String baserUrlForImage = "https://dr-bike.shop/";
 
   /// صور المتجر القديم (.NET): المسارات النسبية `Images/Items/...` لا تُخزَّن على Laravel.
   static const String legacyStoreImageBaseUrl =
