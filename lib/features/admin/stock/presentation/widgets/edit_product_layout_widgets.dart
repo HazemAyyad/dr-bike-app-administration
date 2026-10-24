@@ -93,8 +93,12 @@ class EditProductHero extends StatelessWidget {
               children: chips,
             );
           }),
-          SizedBox(height: 12.h),
-          CategorySelectorSection(controller: controller),
+          Obx(() => controller.purchaseProductCreationMode.value
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: EdgeInsets.only(top: 12.h),
+                  child: CategorySelectorSection(controller: controller),
+                )),
         ],
       ),
     );

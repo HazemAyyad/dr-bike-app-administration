@@ -123,7 +123,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   final RxList<String> selectedSubCategoryIds = <String>[].obs;
 
-  /// Main category from API `category_id` (required on save); subcategories are optional.
+  /// Main category is optional when creating a product from a purchase.
   final Rxn<String> selectedMainCategoryId = Rxn<String>();
 
   final List<XFile> pendingNormalImages = [];
@@ -3380,7 +3380,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       return;
     }
     final mid = selectedMainCategoryId.value?.trim();
-    if (mid == null || mid.isEmpty) {
+    if (!purchaseProductCreationMode.value && (mid == null || mid.isEmpty)) {
       AppFailureNotice.show(
         title: 'error'.tr,
         message: 'mainCategoryRequired'.tr,
