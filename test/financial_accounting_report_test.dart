@@ -141,6 +141,22 @@ void main() {
         expect(c.rows, isNotEmpty);
         expect(find.byType(AccountingReportPreview), findsOneWidget);
         expect(find.byType(PdfPreview), findsOneWidget);
+        if (width > 1000) {
+          c.changed(() => c.currency = 'دولار');
+          await tester.pump();
+          expect(c.pending, isTrue);
+          expect(tester.widget<IconButton>(accountingShareButton).onPressed,
+              isNotNull);
+          await tester.tap(accountingShareButton);
+          await settleAccountingPreview(tester);
+          expect(accountingPrinting.shareCalls, 1);
+          expect(
+              accountingPrinting.sharedBytes!.sublist(0, 4), [37, 80, 68, 70]);
+          expect(FinancialAccountingExport.document(c).currency, 'شيكل');
+          expect(c.exporting, isFalse);
+          c.changed(() => c.currency = 'شيكل');
+          await tester.pump();
+        }
         await revealAccountingDetail(tester, find.text('تفاصيل الحركات'));
         await tester.tap(find.text('تفاصيل الحركات'));
         await tester.pumpAndSettle();

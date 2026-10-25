@@ -22,21 +22,17 @@ class FinancialAccountingScreen extends GetView<FinancialAccountingController> {
           final busy = c.loading || c.exporting;
           return Scaffold(
             appBar: AppBar(title: Text(c.title), actions: [
+              IconButton(
+                tooltip: 'مشاركة التقرير المعروض',
+                onPressed: !busy && c.report != null
+                    ? () => _export(c, 'share')
+                    : null,
+                icon: const Icon(Icons.ios_share_outlined),
+              ),
               PopupMenuButton<String>(
                 tooltip: 'تصدير التقرير',
-                enabled: !busy && c.report != null && !c.pending,
-                onSelected: (v) async {
-                  c.changed(() => c.exporting = true);
-                  try {
-                    await FinancialAccountingExport.export(c, v);
-                  } catch (_) {
-                    AppFailureNotice.show(
-                        title: 'تعذر التصدير',
-                        message: 'تعذر تجهيز التقرير. حاول مرة أخرى.');
-                  } finally {
-                    c.changed(() => c.exporting = false);
-                  }
-                },
+                enabled: !busy && c.report != null,
+                onSelected: (v) => _export(c, v),
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'download', child: Text('تنزيل PDF')),
                   PopupMenuItem(value: 'share', child: Text('مشاركة PDF')),
@@ -44,7 +40,7 @@ class FinancialAccountingScreen extends GetView<FinancialAccountingController> {
                   PopupMenuItem(
                       value: 'csv', child: Text('تنزيل CSV لـ Excel')),
                 ],
-                icon: const Icon(Icons.ios_share_outlined),
+                icon: const Icon(Icons.more_vert),
               ),
             ]),
             body: Directionality(
@@ -136,6 +132,19 @@ class FinancialAccountingScreen extends GetView<FinancialAccountingController> {
           );
         },
       );
+
+  Future<void> _export(FinancialAccountingController c, String action) async {
+    if (c.loading || c.exporting || c.report == null) return;
+    c.changed(() => c.exporting = true);
+    try {
+      await FinancialAccountingExport.export(c, action);
+    } catch (_) {
+      AppFailureNotice.show(
+          title: 'تعذر التصدير', message: 'تعذر تجهيز التقرير. حاول مرة أخرى.');
+    } finally {
+      c.changed(() => c.exporting = false);
+    }
+  }
 
   Widget _filters(
           BuildContext context, FinancialAccountingController c, bool busy) =>

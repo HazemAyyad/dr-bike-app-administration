@@ -126,6 +126,8 @@ void main() {
         c.columns.take(4), ['م', 'الشهر / السنة', 'المبيعات', 'خصم المبيعات']);
     expect(c.cells(c.rows.first).take(2), ['1', '2026-01']);
     expect(SalesAccountingExport.document(c).columns, c.columns);
+    expect(SalesAccountingExport.document(c).title, 'تقرير مبيعات');
+    expect(c.cells(c.summary, total: true).take(2), ['', 'الإجمالي']);
     c.selectGroup('day');
     expect(c.sort, 'label');
     expect(c.columns,
@@ -202,6 +204,46 @@ void main() {
       await Directory(evidence).create(recursive: true);
       await File('$evidence/long-currencies.pdf').writeAsBytes(bytes);
     }
+  });
+
+  testWidgets('visible share works for the displayed report and in fullscreen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 950);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = Get.put(SalesAccountingController(
+        service: SalesAccountingApiService(api: _ReportApi())));
+    await tester
+        .pumpWidget(const GetMaterialApp(home: SalesAccountingScreen()));
+    await tester.pump();
+    await revealAccountingDetail(tester, find.text('فتح التقرير بملء الشاشة'));
+    await settleAccountingPreview(tester);
+    c.changed(() => c.currency = 'دولار');
+    await tester.pump();
+    expect(c.hasPendingFilters, isTrue);
+    expect(
+        tester.widget<IconButton>(accountingShareButton).onPressed, isNotNull);
+    c.changed(() => c.isExporting = true);
+    await tester.pump();
+    expect(tester.widget<IconButton>(accountingShareButton).onPressed, isNull);
+    c.changed(() => c.isExporting = false);
+    await tester.pump();
+    await tester.tap(accountingShareButton);
+    await settleAccountingPreview(tester);
+    expect(accountingPrinting.shareCalls, 1);
+    expect(accountingPrinting.sharedBytes!.sublist(0, 4), [37, 80, 68, 70]);
+    expect(SalesAccountingExport.document(c).currency, 'شيكل');
+    expect(c.isExporting, isFalse);
+    await revealAccountingDetail(tester, find.text('فتح التقرير بملء الشاشة'));
+    await tester.tap(find.text('فتح التقرير بملء الشاشة'));
+    await settleAccountingPreview(tester);
+    expect(accountingShareButton, findsOneWidget);
+    await tester.tap(accountingShareButton);
+    await settleAccountingPreview(tester);
+    expect(accountingPrinting.shareCalls, 2);
+    expect(accountingPrinting.sharedFilename, 'sales_accounting.pdf');
+    expect(tester.takeException(), isNull);
   });
 
   for (final mode in ['customer', 'month', 'multi']) {

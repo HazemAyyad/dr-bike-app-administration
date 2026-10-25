@@ -71,7 +71,7 @@ class SalesAccountingExport {
     final summary = c.summaryFor(section);
     return AccountingReportDocument(
       kind: 'sales_accounting',
-      title: c.reportTitle,
+      title: 'تقرير مبيعات',
       from: '${c.applied['from_date']}',
       to: '${c.applied['to_date']}',
       currency: '${section['currency']}',

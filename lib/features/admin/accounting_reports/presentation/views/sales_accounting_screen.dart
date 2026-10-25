@@ -17,9 +17,16 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
             appBar: AppBar(
               title: const Text('تقارير محاسبية'),
               actions: [
+                IconButton(
+                  tooltip: 'مشاركة التقرير المعروض',
+                  onPressed: !busy && c.report != null
+                      ? () => _export(c, 'share')
+                      : null,
+                  icon: const Icon(Icons.ios_share_outlined),
+                ),
                 PopupMenuButton<String>(
                   tooltip: 'تصدير التقرير',
-                  enabled: !busy && c.report != null && !c.hasPendingFilters,
+                  enabled: !busy && c.report != null,
                   onSelected: (action) => _export(c, action),
                   itemBuilder: (_) => const [
                     PopupMenuItem(value: 'download', child: Text('تنزيل PDF')),
@@ -28,7 +35,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                     PopupMenuItem(
                         value: 'csv', child: Text('تنزيل CSV لـ Excel')),
                   ],
-                  icon: const Icon(Icons.ios_share_outlined),
+                  icon: const Icon(Icons.more_vert),
                 ),
               ],
             ),
@@ -515,6 +522,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
   }
 
   Future<void> _export(SalesAccountingController c, String action) async {
+    if (c.isLoading || c.isExporting || c.report == null) return;
     c.changed(() => c.isExporting = true);
     try {
       await SalesAccountingExport.export(c, action);
@@ -546,7 +554,7 @@ class _SalesTable extends StatelessWidget {
           color: header
               ? AppColors.primaryColor
               : total
-                  ? theme.colorScheme.surfaceContainerHighest
+                  ? const Color(0xFFE5E7EB)
                   : alternate
                       ? theme.colorScheme.surfaceContainerLow
                       : theme.colorScheme.surface,
@@ -567,7 +575,11 @@ class _SalesTable extends StatelessWidget {
                         textAlign: i == 0 ? TextAlign.start : TextAlign.center,
                         style: TextStyle(
                             fontSize: 12,
-                            color: header ? Colors.white : null,
+                            color: header
+                                ? Colors.white
+                                : total
+                                    ? const Color(0xFF111827)
+                                    : null,
                             fontWeight: header || total
                                 ? FontWeight.bold
                                 : FontWeight.normal)),

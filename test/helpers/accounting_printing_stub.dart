@@ -10,6 +10,18 @@ import 'package:printing/src/interface.dart';
 /// documents are checked separately using a real PDF renderer.
 class AccountingPrintingStub extends PrintingPlatform {
   int rasterCalls = 0;
+  int shareCalls = 0;
+  Uint8List? sharedBytes;
+  String? sharedFilename;
+
+  @override
+  Future<bool> sharePdf(Uint8List bytes, String filename, Rect bounds,
+      String? subject, String? body, List<String>? emails) async {
+    shareCalls++;
+    sharedBytes = bytes;
+    sharedFilename = filename;
+    return true;
+  }
 
   @override
   Future<PrintingInfo> info() async => const PrintingInfo(canRaster: true);
@@ -26,8 +38,12 @@ class AccountingPrintingStub extends PrintingPlatform {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+late AccountingPrintingStub accountingPrinting;
+Finder get accountingShareButton => find.byWidgetPredicate((widget) =>
+    widget is IconButton && widget.tooltip == 'مشاركة التقرير المعروض');
 void installAccountingPrintingStub() {
-  PrintingPlatform.instance = AccountingPrintingStub();
+  accountingPrinting = AccountingPrintingStub();
+  PrintingPlatform.instance = accountingPrinting;
 }
 
 Future<void> settleAccountingPreview(WidgetTester tester) async {
@@ -37,7 +53,8 @@ Future<void> settleAccountingPreview(WidgetTester tester) async {
     await tester.pump(const Duration(milliseconds: 150));
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 80)));
-    if (find.byType(PdfPreview).evaluate().isNotEmpty &&
+    if (attempt >= 4 &&
+        find.byType(PdfPreview).evaluate().isNotEmpty &&
         find.byType(CircularProgressIndicator).evaluate().isEmpty) {
       break;
     }

@@ -280,9 +280,9 @@ class SalesAccountingController extends GetxController {
       [
         if (isMonthly) ...[
           total
-              ? 'الإجمالي'
+              ? ''
               : '${sequence ?? rows.indexWhere((r) => r['key'] == row['key']) + 1}',
-          total ? '' : '${row['label'] ?? ''}',
+          total ? 'الإجمالي' : '${row['label'] ?? ''}',
         ] else
           total ? 'الإجمالي' : '${row['label'] ?? ''}',
         amount(row['gross_sales']),

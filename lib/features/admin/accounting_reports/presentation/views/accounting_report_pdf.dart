@@ -145,9 +145,9 @@ class AccountingReportPdf {
               child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                   children: [
-                    pw.Text('من تاريخ: ${data.from}    إلى تاريخ: ${data.to}'),
+                    pw.Text('من: ${data.from}    إلى: ${data.to}'),
                     pw.SizedBox(height: 5),
-                    pw.Text('العملة: ${data.currency}    تاريخ الإصدار: $date'),
+                    pw.Text('العملة: ${data.currency}    تاريخ الطباعة: $date'),
                     pw.SizedBox(height: 5),
                     pw.Text(data.selection),
                   ])),
@@ -171,6 +171,14 @@ class AccountingReportPdf {
             headerStyle:
                 pw.TextStyle(font: bold, fontSize: 9, color: PdfColors.white),
             cellStyle: const pw.TextStyle(fontSize: 8),
+            // The header is row 0; the last data row contains the totals.
+            cellDecoration: (_, __, row) => row == data.rows.length
+                ? pw.BoxDecoration(color: PdfColor.fromHex('#E5E7EB'))
+                : const pw.BoxDecoration(),
+            textStyleBuilder: (_, __, row) => row == data.rows.length
+                ? pw.TextStyle(
+                    font: bold, fontSize: 8, color: PdfColors.grey900)
+                : null,
             headerDecoration: pw.BoxDecoration(color: brand),
             oddRowDecoration:
                 pw.BoxDecoration(color: PdfColor.fromHex('#F9FAFB')),
