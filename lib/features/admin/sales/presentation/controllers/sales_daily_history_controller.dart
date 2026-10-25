@@ -1,10 +1,10 @@
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
+import '../binding/sales_binding.dart';
 
 class SalesDailyHistoryController extends GetxController {
   final SalesDatasource datasource;
@@ -55,7 +55,7 @@ class SalesDailyHistoryController extends GetxController {
 class SalesDailyHistoryBinding extends Bindings {
   @override
   void dependencies() {
-    AppDependencyRegistry.ensureSales();
+    SalesBinding().dependencies();
     Get.lazyPut(
       () => SalesDailyHistoryController(
         datasource: Get.find<SalesDatasource>(),

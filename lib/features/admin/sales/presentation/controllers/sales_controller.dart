@@ -50,6 +50,7 @@ import '../models/instant_sale_cart_line.dart';
 import '../utils/box_log_note_format.dart';
 import '../utils/instant_sale_display.dart';
 import '../utils/sales_amount_format.dart';
+import '../utils/sale_drawer_access.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../widgets/instant_sale_action_dialog.dart';
@@ -947,22 +948,8 @@ class SalesController extends GetxController
     if (salesOrders) {
       return true;
     }
-    await loadDailySession();
-    final payload = dailySessionPayload.value;
+    final payload = await prepareSaleDrawer(this);
     if (payload == null) return false;
-
-    if (payload.canRequestOpen || payload.needsManualOpen) {
-      await Get.toNamed(
-        AppRoutes.SALESDAILYHISTORYSCREEN,
-        arguments: {
-          'sessionType': 'instant_sales',
-          'openDrawer': true,
-          'returnRoute': item['route'],
-          'returnArguments': Map<String, String>.from(item),
-        },
-      );
-      return false;
-    }
 
     if (!payload.allowsSales) {
       showSalesBlockedMessage();
@@ -973,37 +960,10 @@ class SalesController extends GetxController
   }
 
   Future<bool> ensureSalesOrderCanBeConfirmed() async {
-    var payload = await loadSalesOrdersDailySession();
+    final payload = await prepareSaleDrawer(this, salesOrders: true);
+    if (payload == null) return false;
 
-    if (payload == null) {
-      AppFailureNotice.show(
-        title: 'error'.tr,
-        message: 'salesOrdersDailyNoSessionOpen'.tr,
-      );
-      return false;
-    }
-
-    if (payload.canRequestOpen || payload.needsManualOpen) {
-      final opened = await Get.toNamed<bool>(
-        AppRoutes.SALESDAILYHISTORYSCREEN,
-        arguments: {
-          'sessionType': 'sales_orders',
-          'openDrawer': true,
-          'returnResultOnOpen': true,
-        },
-      );
-      if (opened != true) {
-        AppFailureNotice.show(
-          title: 'تنبيه',
-          message: 'يجب فتح صندوق الطلبيات أولًا لإتمام تأكيد الطلبية.',
-        );
-        return false;
-      }
-
-      payload = await loadSalesOrdersDailySession();
-    }
-
-    if (payload == null || !payload.allowsSales) {
+    if (!payload.allowsSales) {
       showSalesBlockedMessage(salesOrders: true);
       return false;
     }
@@ -1044,7 +1004,11 @@ class SalesController extends GetxController
     }
 
     await loadDailySession();
-    final payload = dailySessionPayload.value;
+    var payload = dailySessionPayload.value;
+    if (payload?.canFinalizeClosing == true && !payload!.allowsSales) {
+      payload = await prepareSaleDrawer(this);
+      if (payload == null) return false;
+    }
 
     if (payload != null && payload.allowsSales) {
       final payment = _instantSalePayment;

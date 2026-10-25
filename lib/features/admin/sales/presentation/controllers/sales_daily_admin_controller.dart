@@ -77,9 +77,10 @@ class SalesDailyAdminController extends GetxController {
     );
   }
 
-  Future<void> approveClosing({
+  Future<bool> approveClosing({
     required int requestId,
     required List<Map<String, dynamic>> transfers,
+    bool showSuccess = true,
   }) async {
     isProcessing(true);
     try {
@@ -89,13 +90,15 @@ class SalesDailyAdminController extends GetxController {
       );
       await loadAll();
       await _refreshSalesScreenIfOpen();
-      _showSuccess(message);
+      if (showSuccess) _showSuccess(message);
+      return true;
     } catch (e) {
       Helpers.showCustomDialogError(
         context: Get.overlayContext ?? Get.context!,
         title: 'error'.tr,
         message: e.toString(),
       );
+      return false;
     } finally {
       isProcessing(false);
     }

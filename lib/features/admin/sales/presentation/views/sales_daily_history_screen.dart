@@ -58,6 +58,13 @@ class _SalesDailyHistoryScreenState extends State<SalesDailyHistoryScreen> {
         : allowedTypes.isEmpty
             ? ''
             : allowedTypes.first;
+    if (_canAccessSales) {
+      final needsInitialization = Get.isPrepared<SalesController>();
+      final salesController = Get.find<SalesController>();
+      if (!needsInitialization) {
+        salesController.loadDailySession();
+      }
+    }
     AppDependencyRegistry.ensureChecks();
     AppDependencyRegistry.ensureBoxes();
     if (_canAccessMaintenance) {

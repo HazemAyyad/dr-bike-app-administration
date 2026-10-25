@@ -11,6 +11,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/open_desktop_window_button.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/sales_controller.dart';
+import '../utils/sale_drawer_access.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_package_card.dart';
@@ -100,6 +101,18 @@ class _InstantSaleProductPickerScreenState
       controller.ensurePickerPartnersLoaded();
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!_maintenanceFlow &&
+          !_salesOrderFlow &&
+          !_adjustmentFlow &&
+          controller.activeEditInstantSaleId.value == null) {
+        await controller.loadDailySession();
+        if (!mounted) return;
+        final payload = controller.dailySessionPayload.value;
+        if (payload?.canFinalizeClosing == true && !payload!.allowsSales) {
+          final ready = await prepareSaleDrawer(controller);
+          if (!mounted || ready?.allowsSales != true) return;
+        }
+      }
       if (Get.isRegistered<SalesOrdersController>() ||
           Get.isPrepared<SalesOrdersController>()) {
         Get.find<SalesOrdersController>().scheduleStockAvailabilityRefresh(
