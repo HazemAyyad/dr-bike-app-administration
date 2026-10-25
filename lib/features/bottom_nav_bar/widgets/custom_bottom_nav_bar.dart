@@ -1,3 +1,4 @@
+import '../../../core/services/admin_section_permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -72,40 +73,43 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     label: 'home'.tr,
                     onTap: () => _selectPage(0),
                   ),
-                  role == 'admin'
-                      ? BuildNavItem(
-                          icon: Icons.bar_chart_rounded,
-                          isSelected: controller.currentIndex.value == 1,
-                          label: 'statistics'.tr,
-                          onTap: () {
-                            CountersController(
-                              getReportInformationUsecase:
-                                  GetReportInformationUsecase(
-                                countersRepository:
-                                    Get.find<CountrersImplement>(),
-                              ),
-                              getReportByType: GetReportByTypeUsecase(
-                                countersRepository:
-                                    Get.find<CountrersImplement>(),
-                              ),
-                            ).getReportInformation();
-                            _selectPage(1);
-                          },
-                        )
-                      : BuildNavItem(
-                          icon: Icons.task_alt_rounded,
-                          isSelected: controller.currentIndex.value == 1,
-                          label: 'tasks'.tr,
-                          onTap: () {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              Get.find<EmployeeDashbordController>()
-                                  .scrollToToday();
-                            });
-                            _selectPage(1);
-                          },
-                        ),
+                  if (role != 'admin' ||
+                      AdminSectionPermissions.allows('reports'))
+                    role == 'admin'
+                        ? BuildNavItem(
+                            icon: Icons.bar_chart_rounded,
+                            isSelected: controller.currentIndex.value == 1,
+                            label: 'statistics'.tr,
+                            onTap: () {
+                              CountersController(
+                                getReportInformationUsecase:
+                                    GetReportInformationUsecase(
+                                  countersRepository:
+                                      Get.find<CountrersImplement>(),
+                                ),
+                                getReportByType: GetReportByTypeUsecase(
+                                  countersRepository:
+                                      Get.find<CountrersImplement>(),
+                                ),
+                              ).getReportInformation();
+                              _selectPage(1);
+                            },
+                          )
+                        : BuildNavItem(
+                            icon: Icons.task_alt_rounded,
+                            isSelected: controller.currentIndex.value == 1,
+                            label: 'tasks'.tr,
+                            onTap: () {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Get.find<EmployeeDashbordController>()
+                                    .scrollToToday();
+                              });
+                              _selectPage(1);
+                            },
+                          ),
                   if (role == 'admin') SizedBox(width: 52.w),
-                  if (role == 'admin')
+                  if (role == 'admin' &&
+                      AdminSectionPermissions.allows('employees'))
                     BuildNavItem(
                       icon: Icons.groups_2_outlined,
                       isSelected: controller.currentIndex.value == 2,

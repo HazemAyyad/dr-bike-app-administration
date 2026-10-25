@@ -83,6 +83,7 @@ class AdminDashboardImplement implements AdminDashboardRepository {
     required List<String> buttonOrderKeys,
     int? quickAccessCount,
     bool? showAttentionSection,
+    List<String>? hiddenSectionKeys,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -91,6 +92,7 @@ class AdminDashboardImplement implements AdminDashboardRepository {
           buttonOrderKeys: buttonOrderKeys,
           quickAccessCount: quickAccessCount,
           showAttentionSection: showAttentionSection,
+          hiddenSectionKeys: hiddenSectionKeys,
         );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

@@ -1,3 +1,5 @@
+import '../../../../../core/services/admin_section_permissions.dart';
+import '../../../../../core/services/session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -222,7 +224,51 @@ class AdminDashboardController extends GetxController
   final RxInt dashboardQuickAccessCount = 7.obs;
   final RxBool isDashboardReorderMode = false.obs;
   final RxBool isDashboardPreparing = true.obs;
-  final RxBool showDashboardAttentionSection = true.obs;
+  final RxBool showDashboardAttentionSection = false.obs;
+  final RxList<String> hiddenDashboardSections = <String>['overview'].obs;
+
+  static const dashboardSectionLabels = {
+    'attention': 'الإجراءات التي تحتاج متابعة',
+    'overview': 'نظرة سريعة',
+    'quick_access': 'الوصول السريع',
+    'all_sections': 'كل الأقسام',
+  };
+
+  bool isDashboardSectionVisible(String key) => key == 'attention'
+      ? showDashboardAttentionSection.value
+      : !hiddenDashboardSections.contains(key);
+
+  Future<void> setDashboardSectionVisible(String key, bool visible) async {
+    if (key == 'attention') {
+      await setDashboardAttentionSectionVisible(visible);
+      return;
+    }
+    if (isUiPreferencesSaving.value) return;
+    final previous = hiddenDashboardSections.toList();
+    if (visible) {
+      hiddenDashboardSections.remove(key);
+    } else if (!hiddenDashboardSections.contains(key)) {
+      hiddenDashboardSections.add(key);
+    }
+    update();
+    isUiPreferencesSaving.value = true;
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        hiddenDashboardButtonKeys.toList(),
+        buttonOrderKeys: dashboardButtonOrderKeys.toList(),
+        hiddenSectionKeys: hiddenDashboardSections.toList(),
+      );
+      hiddenDashboardSections.assignAll(saved.hiddenSectionKeys);
+    } catch (_) {
+      hiddenDashboardSections.assignAll(previous);
+      AppFailureNotice.show(
+          title: 'error'.tr, message: 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      isUiPreferencesSaving.value = false;
+      update();
+    }
+  }
+
   final RxString dashboardSectionsSearch = ''.obs;
   final RxBool isDashboardSectionsSearchOpen = false.obs;
   final RxString dashboardUserName = ''.obs;
@@ -303,7 +349,8 @@ class AdminDashboardController extends GetxController
   }
 
   bool isDashboardButtonHidden(Map<String, dynamic> button) {
-    return hiddenDashboardButtonKeys.contains(dashboardButtonKey(button));
+    return !AdminSectionPermissions.allowsRoute(button['route']?.toString()) ||
+        hiddenDashboardButtonKeys.contains(dashboardButtonKey(button));
   }
 
   Future<void> loadUiPreferences() async {
@@ -315,6 +362,7 @@ class AdminDashboardController extends GetxController
       dashboardQuickAccessCount.value =
           preferences.quickAccessCount.clamp(3, 7);
       showDashboardAttentionSection.value = preferences.showAttentionSection;
+      hiddenDashboardSections.assignAll(preferences.hiddenSectionKeys);
       update();
     } catch (_) {
       hiddenDashboardButtonKeys.clear();
@@ -369,12 +417,14 @@ class AdminDashboardController extends GetxController
         const [],
         buttonOrderKeys: const [],
         quickAccessCount: 7,
-        showAttentionSection: true,
+        showAttentionSection: false,
+        hiddenSectionKeys: const ['overview'],
       );
       hiddenDashboardButtonKeys.assignAll(saved.hiddenButtonKeys);
       dashboardButtonOrderKeys.assignAll(saved.buttonOrderKeys);
       dashboardQuickAccessCount.value = saved.quickAccessCount.clamp(3, 7);
       showDashboardAttentionSection.value = saved.showAttentionSection;
+      hiddenDashboardSections.assignAll(saved.hiddenSectionKeys);
     } catch (_) {
       hiddenDashboardButtonKeys.assignAll(previous);
       AppFailureNotice.show(
@@ -550,7 +600,14 @@ class AdminDashboardController extends GetxController
   List<Map<String, String>> get visibleAdminAddList {
     final enabled = AppSettingsService.instance.adminFabOptions;
     return adminAddList
-        .where((item) => enabled.contains(item['settingKey'] ?? item['title']))
+        .where((item) =>
+            enabled.contains(item['settingKey'] ?? item['title']) &&
+            (item['route'] != AppRoutes.CREATETASKSCREEN ||
+                AdminSectionPermissions.allows(
+                    item['settingKey'] == 'addNewPrivateTask'
+                        ? 'special_tasks'
+                        : 'employee_tasks')) &&
+            AdminSectionPermissions.allowsRoute(item['route']))
         .toList(growable: false);
   }
 
@@ -721,6 +778,11 @@ class AdminDashboardController extends GetxController
   // get Main Dashboard Data
   MainDashboardDataModel? mainDashboardDataModel;
   Future<void> getMainDashboardData() async {
+    if (AdminSectionPermissions.isRestricted) {
+      mainDashboardDataModel = null;
+      update();
+      return;
+    }
     isLoading(true);
     final result = await getMainDashboardDataUsecase.call();
     mainDashboardDataModel = result;
@@ -729,6 +791,7 @@ class AdminDashboardController extends GetxController
   }
 
   Future<void> refreshDashboard() async {
+    await SessionService.validateAndRefreshSession();
     await Future.wait([
       getMainDashboardData(),
       loadUiPreferences(),
@@ -757,7 +820,9 @@ class AdminDashboardController extends GetxController
 
   Future<void> loadDashboardUser() async {
     dashboardUserName.value = userName;
-    dashboardUserRole.value = userType == 'admin' ? 'مدير النظام' : '';
+    dashboardUserRole.value = userType == 'admin'
+        ? (AdminSectionPermissions.isManager ? 'مدير النظام' : 'أدمن')
+        : '';
     dashboardUserImage.value = '';
     try {
       final saved = await UserData.getSavedUser();
@@ -867,7 +932,8 @@ class AdminDashboardController extends GetxController
   }
 
   Future<void> _showPendingClosingPromptIfNeeded() async {
-    if (userType != 'admin' ||
+    if (!AdminSectionPermissions.allows('sales') ||
+        userType != 'admin' ||
         _closingPromptShownForCurrentResume ||
         _checkingClosingRequests) {
       return;

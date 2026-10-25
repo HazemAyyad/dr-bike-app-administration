@@ -161,6 +161,7 @@ class AuthImplement implements AuthRepository {
             userdata.employeePermissions.map((p) => p.permissionId).toList();
         syncSessionIdentity(
           type: userdata.user.type,
+          adminSections: userdata.user.adminSections,
           name: userdata.user.name,
           permissionIds: permissionIds,
           permissionNamesEn: userdata.employeePermissions

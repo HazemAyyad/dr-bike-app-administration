@@ -28,7 +28,8 @@ class BuildStatisticsCards extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (alertsCount > 0) ...[
+          if (controller.showDashboardAttentionSection.value &&
+              alertsCount > 0) ...[
             _DashboardAttentionCard(
               items: attentionItems,
               total: alertsCount,
@@ -36,56 +37,58 @@ class BuildStatisticsCards extends StatelessWidget {
             ),
             SizedBox(height: DashboardDesignTokens.upperSectionSpacing.h),
           ],
-          const DashboardSectionHeader(
-            title: 'نظرة سريعة',
-            icon: Icons.bar_chart_rounded,
-          ),
-          SizedBox(height: 10.h),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 320 ? 4 : 2;
-              return GridView.count(
-                padding: EdgeInsets.zero,
-                crossAxisCount: columns,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: DashboardDesignTokens.cardSpacing.h,
-                crossAxisSpacing: DashboardDesignTokens.cardSpacing.w,
-                childAspectRatio: columns == 4 ? 1.02 : 1.75,
-                children: [
-                  _OverviewItem(
-                    title: 'لنا',
-                    value: data?.totalDebtsOwedToUs,
-                    icon: Icons.north_rounded,
-                    accent: DashboardDesignTokens.success,
-                    onTap: () => _showDebtSummary(context,
-                        data?.debtSummary ?? const DashboardDebtSummary()),
-                  ),
-                  _OverviewItem(
-                    title: 'علينا',
-                    value: data?.totalDebtsWeOwe,
-                    icon: Icons.south_rounded,
-                    accent: DashboardDesignTokens.danger,
-                    onTap: () => _showDebtSummary(context,
-                        data?.debtSummary ?? const DashboardDebtSummary()),
-                  ),
-                  _OverviewItem(
-                    title: 'المصاريف',
-                    value: data?.totalExpenses,
-                    icon: Icons.receipt_long_outlined,
-                    accent: DashboardDesignTokens.primary,
-                  ),
-                  _OverviewItem(
-                    title: 'المنتجات',
-                    value: data?.totalProducts,
-                    icon: Icons.view_in_ar_outlined,
-                    accent: DashboardDesignTokens.info,
-                    showCurrency: false,
-                  ),
-                ],
-              );
-            },
-          ),
+          if (controller.isDashboardSectionVisible('overview')) ...[
+            const DashboardSectionHeader(
+              title: 'نظرة سريعة',
+              icon: Icons.bar_chart_rounded,
+            ),
+            SizedBox(height: 10.h),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 320 ? 4 : 2;
+                return GridView.count(
+                  padding: EdgeInsets.zero,
+                  crossAxisCount: columns,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: DashboardDesignTokens.cardSpacing.h,
+                  crossAxisSpacing: DashboardDesignTokens.cardSpacing.w,
+                  childAspectRatio: columns == 4 ? 1.02 : 1.75,
+                  children: [
+                    _OverviewItem(
+                      title: 'لنا',
+                      value: data?.totalDebtsOwedToUs,
+                      icon: Icons.north_rounded,
+                      accent: DashboardDesignTokens.success,
+                      onTap: () => _showDebtSummary(context,
+                          data?.debtSummary ?? const DashboardDebtSummary()),
+                    ),
+                    _OverviewItem(
+                      title: 'علينا',
+                      value: data?.totalDebtsWeOwe,
+                      icon: Icons.south_rounded,
+                      accent: DashboardDesignTokens.danger,
+                      onTap: () => _showDebtSummary(context,
+                          data?.debtSummary ?? const DashboardDebtSummary()),
+                    ),
+                    _OverviewItem(
+                      title: 'المصاريف',
+                      value: data?.totalExpenses,
+                      icon: Icons.receipt_long_outlined,
+                      accent: DashboardDesignTokens.primary,
+                    ),
+                    _OverviewItem(
+                      title: 'المنتجات',
+                      value: data?.totalProducts,
+                      icon: Icons.view_in_ar_outlined,
+                      accent: DashboardDesignTokens.info,
+                      showCurrency: false,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ],
       );
     });

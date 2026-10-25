@@ -1,3 +1,4 @@
+import '../../../../../core/services/admin_section_permissions.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/admin_notification_api_service.dart';
@@ -8,6 +9,10 @@ class AdminNotificationBadgeController extends GetxController {
 
   @override
   Future<void> refresh() async {
+    if (AdminSectionPermissions.isRestricted) {
+      unreadCount.value = 0;
+      return;
+    }
     if (userType != 'admin') {
       unreadCount.value = 0;
       return;

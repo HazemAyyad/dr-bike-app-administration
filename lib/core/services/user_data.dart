@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../features/auth/data/models/user_model.dart';
 import 'employee_wifi_presence_service.dart';
 import 'initial_bindings.dart';
+import 'admin_section_permissions.dart';
 
 class UserData {
   static String userToken = '';
@@ -118,6 +119,7 @@ class UserData {
     employeePermissions = [];
     employeePermissionNames = [];
     employeeCanDelegatePermissions = false;
+    AdminSectionPermissions.sync('', null);
     userType = '';
     sessionUserType.value = '';
   }

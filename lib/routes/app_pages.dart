@@ -1,3 +1,4 @@
+import '../core/services/admin_section_permissions.dart';
 import 'dart:ui';
 
 import 'package:get/get.dart';
@@ -1487,5 +1488,10 @@ class AppPages {
       page: () => const ContactUsScreen(),
       transition: _transitionCircularReveal,
     ),
-  ];
+  ]
+      .map((page) => page.copy(middlewares: [
+            ...?page.middlewares,
+            AdminSectionRouteGuard(),
+          ]))
+      .toList();
 }

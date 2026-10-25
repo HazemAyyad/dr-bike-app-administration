@@ -126,6 +126,7 @@ class ImpersonationService {
 
     syncSessionIdentity(
       type: 'employee',
+      adminSections: userModel.user.adminSections,
       name: userModel.user.name,
       permissionIds:
           userModel.employeePermissions.map((p) => p.permissionId).toList(),
@@ -208,6 +209,7 @@ class ImpersonationService {
     if (userdata != null) {
       syncSessionIdentity(
         type: userdata.user.type,
+        adminSections: userdata.user.adminSections,
         name: userdata.user.name,
         permissionIds:
             userdata.employeePermissions.map((p) => p.permissionId).toList(),

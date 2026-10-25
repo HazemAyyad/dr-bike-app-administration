@@ -1,3 +1,4 @@
+import '../../../core/services/admin_section_permissions.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/biometric_prompt_service.dart';
 import 'package:doctorbike/features/admin/debts/data/repositories/debts_implement.dart';
@@ -53,6 +54,11 @@ class BottomNavBarController extends GetxController {
 
   // دالة لتغيير الصفحة الحالية
   void changePage(int index) {
+    if (userType == 'admin' &&
+        ((index == 1 && !AdminSectionPermissions.allows('reports')) ||
+            (index == 2 && !AdminSectionPermissions.allows('employees')))) {
+      return;
+    }
     currentIndex.value = index;
   }
 
@@ -68,6 +74,11 @@ class BottomNavBarController extends GetxController {
   }
 
   Widget _getPage(int index, String role) {
+    if (role == 'admin' &&
+        ((index == 1 && !AdminSectionPermissions.allows('reports')) ||
+            (index == 2 && !AdminSectionPermissions.allows('employees')))) {
+      index = 0;
+    }
     switch (index) {
       case 0:
         if (role == 'admin') {

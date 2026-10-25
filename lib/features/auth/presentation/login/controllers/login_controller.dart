@@ -290,6 +290,7 @@ class LoginController extends GetxController {
 
     syncSessionIdentity(
       type: userdata.user.type,
+      adminSections: userdata.user.adminSections,
       name: userdata.user.name,
       permissionIds:
           userdata.employeePermissions.map((p) => p.permissionId).toList(),

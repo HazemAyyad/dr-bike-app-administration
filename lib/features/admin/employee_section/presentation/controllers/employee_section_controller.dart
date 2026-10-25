@@ -1,3 +1,4 @@
+import '../../../../../core/services/admin_section_permissions.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -52,6 +53,7 @@ import 'employee_service.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class EmployeeSectionController extends GetxController
     with GetTickerProviderStateMixin {
   final PaySalaryToEmployeeUsecase paySalaryEmployee;
@@ -207,7 +209,7 @@ class EmployeeSectionController extends GetxController
 
     tabs.assignAll(nextTabs);
     visibleTabIndexes.assignAll(nextIndexes);
-    if ((actionTab.value == adminsTab && userType != 'admin') ||
+    if ((actionTab.value == adminsTab && !AdminSectionPermissions.isManager) ||
         (actionTab.value == suspendedEmployeesTab && !canViewEmployees)) {
       actionTab.value = -1;
     }
@@ -301,7 +303,7 @@ class EmployeeSectionController extends GetxController
           return canCreateEmployees;
         }
         if (route == AppRoutes.ADDEDITADMINSCREEN) {
-          return userType == 'admin';
+          return AdminSectionPermissions.isManager;
         }
 
         return true;
@@ -519,6 +521,7 @@ class EmployeeSectionController extends GetxController
   }
 
   Future<void> getAdminUsers() async {
+    if (!AdminSectionPermissions.isManager) return;
     final showLoader = employeeService.adminList.isEmpty;
     if (showLoader) isLoading(true);
     try {
@@ -550,9 +553,9 @@ class EmployeeSectionController extends GetxController
     final result = await manageAdminUserUsecase.delete(adminId: adminId);
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (success) async {
         AppSuccessNotice.show(
           title: 'success'.tr,
@@ -571,9 +574,9 @@ class EmployeeSectionController extends GetxController
     final result = await manageAdminUserUsecase.toggleBlock(adminId: adminId);
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (success) async {
         AppSuccessNotice.show(
           title: 'success'.tr,
@@ -598,9 +601,9 @@ class EmployeeSectionController extends GetxController
     );
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (success) async {
         AppSuccessNotice.show(
           title: 'success'.tr,
@@ -1265,7 +1268,7 @@ class EmployeeSectionController extends GetxController
     if (canViewEmployeesLogs) {
       getLogs();
     }
-    if (userType == 'admin') {
+    if (AdminSectionPermissions.isManager) {
       await getAdminUsers();
     }
     isLoading(false);
@@ -1293,7 +1296,7 @@ class EmployeeSectionController extends GetxController
     if (canViewEmployeesLogs) {
       getLogs();
     }
-    if (userType == 'admin') {
+    if (AdminSectionPermissions.isManager) {
       getAdminUsers();
     }
     animController = AnimationController(

@@ -94,7 +94,11 @@ class AdminDashboardDatasource {
         buttonOrderKeys:
             order.map((item) => item.toString()).toList(growable: false),
         quickAccessCount: quickAccessCount.clamp(3, 7),
-        showAttentionSection: adminDashboard['show_attention_section'] != false,
+        showAttentionSection: adminDashboard['show_attention_section'] == true,
+        hiddenSectionKeys: (adminDashboard['hidden_section_keys'] as List? ??
+                const ['overview'])
+            .map((e) => e.toString())
+            .toList(),
       );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};
@@ -113,6 +117,7 @@ class AdminDashboardDatasource {
     required List<String> buttonOrderKeys,
     int? quickAccessCount,
     bool? showAttentionSection,
+    List<String>? hiddenSectionKeys,
   }) async {
     try {
       final response = await api.put(
@@ -125,6 +130,8 @@ class AdminDashboardDatasource {
               'quick_access_count': quickAccessCount,
             if (showAttentionSection != null)
               'show_attention_section': showAttentionSection,
+            if (hiddenSectionKeys != null)
+              'hidden_section_keys': hiddenSectionKeys,
           },
         },
       );
@@ -144,7 +151,12 @@ class AdminDashboardDatasource {
         quickAccessCount: savedQuickAccessCount.clamp(3, 7),
         showAttentionSection: adminDashboard['show_attention_section'] ??
             showAttentionSection ??
-            true,
+            false,
+        hiddenSectionKeys: (adminDashboard['hidden_section_keys'] as List? ??
+                hiddenSectionKeys ??
+                const ['overview'])
+            .map((e) => e.toString())
+            .toList(),
       );
     } on DioException catch (e) {
       final data = e.response?.data ?? {};

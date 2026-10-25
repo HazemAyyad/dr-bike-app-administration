@@ -60,6 +60,7 @@ class UserDataModel {
   final String type;
   final String? fcmToken;
   final EmployeeModel employee;
+  final List<String>? adminSections;
 
   UserDataModel({
     required this.id,
@@ -75,6 +76,7 @@ class UserDataModel {
     required this.type,
     this.fcmToken,
     required this.employee,
+    this.adminSections,
   });
 
   factory UserDataModel.fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,9 @@ class UserDataModel {
       updatedAt: asString(json[ApiKey.updated_at]),
       type: asString(json[ApiKey.type]),
       fcmToken: asNullableString(json[ApiKey.fcm_token]),
+      adminSections: json['admin_sections'] is List
+          ? (json['admin_sections'] as List).map((e) => e.toString()).toList()
+          : null,
       employee: EmployeeModel.fromJson(
         emp is Map ? Map<String, dynamic>.from(emp) : <String, dynamic>{},
       ),
@@ -113,6 +118,7 @@ class UserDataModel {
       ApiKey.type: type,
       ApiKey.fcm_token: fcmToken,
       ApiKey.employee: employee.toJson(),
+      'admin_sections': adminSections,
     };
   }
 }

@@ -19,6 +19,7 @@ abstract class AdminDashboardRepository {
     required List<String> buttonOrderKeys,
     int? quickAccessCount,
     bool? showAttentionSection,
+    List<String>? hiddenSectionKeys,
   });
 }
 
@@ -27,11 +28,13 @@ class DashboardUiPreferences {
   final List<String> buttonOrderKeys;
   final int quickAccessCount;
   final bool showAttentionSection;
+  final List<String> hiddenSectionKeys;
 
   const DashboardUiPreferences({
     this.hiddenButtonKeys = const [],
     this.buttonOrderKeys = const [],
     this.quickAccessCount = 7,
-    this.showAttentionSection = true,
+    this.showAttentionSection = false,
+    this.hiddenSectionKeys = const ['overview'],
   });
 }

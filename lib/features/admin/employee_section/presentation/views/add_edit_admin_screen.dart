@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/validator/validator.dart';
 import '../controllers/add_admin_controller.dart';
+import 'admin_section_permissions_screen.dart';
 
 class AddEditAdminScreen extends GetView<AddAdminController> {
   const AddEditAdminScreen({Key? key}) : super(key: key);
@@ -24,6 +25,18 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
+              if (controller.isEdit && controller.editingAdmin != null)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings_outlined),
+                  title: const Text('صلاحيات الأقسام'),
+                  subtitle: const Text(
+                      'تحديد الأقسام التي يستطيع هذا الأدمن الوصول إليها'),
+                  trailing: const Icon(Icons.chevron_left),
+                  onTap: () => Get.to(() => AdminSectionPermissionsScreen(
+                        adminId: controller.editingAdmin!.id,
+                        adminName: controller.editingAdmin!.name,
+                      )),
+                ),
               CustomTextField(
                 isRequired: true,
                 controller: controller.nameController,

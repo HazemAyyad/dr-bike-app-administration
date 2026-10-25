@@ -1,10 +1,10 @@
+import '../../../../../core/services/admin_section_permissions.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/person_avatar_helper.dart';
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
@@ -49,7 +49,12 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                 height: DashboardDesignTokens
                                     .headerContentSpacing.h,
                               ),
-                              const BuildStatisticsCards(),
+                              if (!AdminSectionPermissions.isRestricted &&
+                                  (controller.isDashboardSectionVisible(
+                                          'overview') ||
+                                      controller
+                                          .showDashboardAttentionSection.value))
+                                const BuildStatisticsCards(),
                               SizedBox(
                                 height:
                                     DashboardDesignTokens.upperSectionSpacing.h,
@@ -71,7 +76,15 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                           'title': 'إضافة اختصار',
                                           'route': '',
                                         });
-                                  final allSectionSource = buttons;
+                                  final showQuick =
+                                      controller.isDashboardSectionVisible(
+                                          'quick_access');
+                                  final showAll =
+                                      controller.isDashboardSectionVisible(
+                                          'all_sections');
+                                  final allSectionSource = showQuick
+                                      ? buttons.skip(quickCount).toList()
+                                      : buttons;
                                   final remaining = controller
                                       .filterDashboardButtons(allSectionSource);
                                   final badges = controller
@@ -80,52 +93,54 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                                       const <String, int>{};
                                   return Column(
                                     children: [
-                                      BuildActionButtons(
-                                        buttons: quick,
-                                        badges: badges,
-                                        onReorder:
-                                            controller.reorderDashboardButton,
-                                        sectionTitle: 'الوصول السريع',
-                                        sectionIcon: Icons.bolt_rounded,
-                                        dashboardStyle:
-                                            DashboardButtonStyle.quickAccess,
-                                        headerAction: TextButton(
-                                          onPressed: () =>
+                                      if (showQuick)
+                                        BuildActionButtons(
+                                          buttons: quick,
+                                          badges: badges,
+                                          onReorder:
+                                              controller.reorderDashboardButton,
+                                          sectionTitle: 'الوصول السريع',
+                                          sectionIcon: Icons.bolt_rounded,
+                                          dashboardStyle:
+                                              DashboardButtonStyle.quickAccess,
+                                          headerAction: TextButton(
+                                            onPressed: () =>
+                                                _showCustomizeDashboardDialog(
+                                              context,
+                                            ),
+                                            style: TextButton.styleFrom(
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              foregroundColor:
+                                                  DashboardDesignTokens.primary,
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6.w,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'تخصيص الاختصارات',
+                                              style: TextStyle(
+                                                fontSize: 9.5.sp,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          reorderMode: controller
+                                              .isDashboardReorderMode.value,
+                                          onReorderStarted:
+                                              controller.startDashboardReorder,
+                                          onReorderFinished:
+                                              controller.finishDashboardReorder,
+                                          onAddShortcut: () =>
                                               _showCustomizeDashboardDialog(
                                             context,
                                           ),
-                                          style: TextButton.styleFrom(
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            foregroundColor:
-                                                DashboardDesignTokens.primary,
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 6.w,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'تخصيص الاختصارات',
-                                            style: TextStyle(
-                                              fontSize: 9.5.sp,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
                                         ),
-                                        reorderMode: controller
-                                            .isDashboardReorderMode.value,
-                                        onReorderStarted:
-                                            controller.startDashboardReorder,
-                                        onReorderFinished:
-                                            controller.finishDashboardReorder,
-                                        onAddShortcut: () =>
-                                            _showCustomizeDashboardDialog(
-                                          context,
-                                        ),
-                                      ),
-                                      if (allSectionSource.isNotEmpty ||
-                                          controller
-                                              .isDashboardSectionsSearchOpen
-                                              .value) ...[
+                                      if (showAll &&
+                                          (allSectionSource.isNotEmpty ||
+                                              controller
+                                                  .isDashboardSectionsSearchOpen
+                                                  .value)) ...[
                                         SizedBox(
                                           height: DashboardDesignTokens
                                               .sectionSpacing.h,
@@ -188,6 +203,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
   void _showCustomizeDashboardDialog(BuildContext context) {
     Get.dialog(
       Dialog(
+        backgroundColor: const Color(0xFFF4F4F6),
         insetPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 24.h),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         child: ConstrainedBox(
@@ -222,10 +238,36 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                 ),
                 SizedBox(height: 12.h),
                 GetBuilder<AdminDashboardController>(
+                  builder: (controller) => Column(
+                    children: AdminDashboardController
+                        .dashboardSectionLabels.entries
+                        .where((entry) =>
+                            !AdminSectionPermissions.isRestricted ||
+                            (entry.key != 'attention' &&
+                                entry.key != 'overview'))
+                        .map((entry) => SwitchListTile.adaptive(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              activeThumbColor: AppColors.primaryColor,
+                              title: Text(entry.value,
+                                  style: const TextStyle(
+                                      color: Color(0xFF252631))),
+                              value: controller
+                                  .isDashboardSectionVisible(entry.key),
+                              onChanged: controller.isUiPreferencesSaving.value
+                                  ? null
+                                  : (visible) =>
+                                      controller.setDashboardSectionVisible(
+                                          entry.key, visible),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                GetBuilder<AdminDashboardController>(
                   builder: (controller) => Container(
                     padding: EdgeInsets.all(10.r),
                     decoration: BoxDecoration(
-                      color: AppColors.operationalPurple.withValues(alpha: .06),
+                      color: const Color(0xFFE9EAEE),
                       borderRadius: BorderRadius.circular(10.r),
                     ),
                     child: Row(
@@ -294,48 +336,57 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                 SizedBox(height: 6.h),
                 Flexible(
                   child: GetBuilder<AdminDashboardController>(
-                    builder: (controller) => ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: controller.buttons.length,
-                      separatorBuilder: (_, __) => Divider(
-                        height: 1,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor
-                            : AppColors.customGreyColor3,
-                      ),
-                      itemBuilder: (context, index) {
-                        final button = controller.buttons[index];
-                        final isVisible =
-                            !controller.isDashboardButtonHidden(button);
-                        return SwitchListTile.adaptive(
-                          value: isVisible,
-                          onChanged: controller.isUiPreferencesSaving.value
-                              ? null
-                              : (value) => controller.setDashboardButtonVisible(
-                                    button,
-                                    value,
+                    builder: (controller) {
+                      final buttons = controller.buttons
+                          .where((button) =>
+                              AdminSectionPermissions.allowsRoute(
+                                  button['route']?.toString()))
+                          .toList();
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: buttons.length,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor
+                              : AppColors.customGreyColor3,
+                        ),
+                        itemBuilder: (context, index) {
+                          final button = buttons[index];
+                          final isVisible =
+                              !controller.isDashboardButtonHidden(button);
+                          return SwitchListTile.adaptive(
+                            value: isVisible,
+                            onChanged: controller.isUiPreferencesSaving.value
+                                ? null
+                                : (value) =>
+                                    controller.setDashboardButtonVisible(
+                                      button,
+                                      value,
+                                    ),
+                            contentPadding: EdgeInsets.zero,
+                            activeThumbColor: AppColors.primaryColor,
+                            title: Text(
+                              (button['title']?.toString() ?? '').tr,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                          contentPadding: EdgeInsets.zero,
-                          activeThumbColor: AppColors.primaryColor,
-                          title: Text(
-                            (button['title']?.toString() ?? '').tr,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        );
-                      },
-                    ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
                 SizedBox(height: 10.h),
-                Row(
+                OverflowBar(
+                  alignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(
                       onPressed: () =>
@@ -343,7 +394,6 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                       icon: const Icon(Icons.restart_alt_rounded),
                       label: Text('resetDashboardSections'.tr),
                     ),
-                    const Spacer(),
                     TextButton(
                       onPressed: Get.back,
                       child: Text('close'.tr),
@@ -416,7 +466,7 @@ class _AdminDashboardHeader extends GetView<AdminDashboardController> {
             ],
           ),
         ),
-        if (userType == 'admin') ...[
+        if (AdminSectionPermissions.isManager) ...[
           Obx(() {
             final badgeController =
                 Get.isRegistered<AdminNotificationBadgeController>()
@@ -433,13 +483,13 @@ class _AdminDashboardHeader extends GetView<AdminDashboardController> {
             );
           }),
           SizedBox(width: 8.w),
-          _HeaderCircleAction(
-            tooltip: 'customizeDashboard'.tr,
-            icon: Icons.tune_rounded,
-            onTap: onCustomize,
-          ),
-          SizedBox(width: 8.w),
         ],
+        _HeaderCircleAction(
+          tooltip: 'customizeDashboard'.tr,
+          icon: Icons.tune_rounded,
+          onTap: onCustomize,
+        ),
+        SizedBox(width: 8.w),
         _HeaderCircleAction(
           tooltip: dark ? 'الوضع النهاري' : 'الوضع الليلي',
           icon: dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,

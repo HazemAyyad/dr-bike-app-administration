@@ -10,12 +10,14 @@ class SaveAdminUiPreferencesUsecase {
     required List<String> buttonOrderKeys,
     int? quickAccessCount,
     bool? showAttentionSection,
+    List<String>? hiddenSectionKeys,
   }) {
     return adminDashboardRepository.saveDashboardUiPreferences(
       hiddenButtonKeys: hiddenButtonKeys,
       buttonOrderKeys: buttonOrderKeys,
       quickAccessCount: quickAccessCount,
       showAttentionSection: showAttentionSection,
+      hiddenSectionKeys: hiddenSectionKeys,
     );
   }
 }

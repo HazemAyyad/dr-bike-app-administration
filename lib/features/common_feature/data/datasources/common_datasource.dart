@@ -135,6 +135,7 @@ class CommonDatasource {
             userdata.employeePermissions.map((p) => p.permissionId).toList();
         syncSessionIdentity(
           type: userdata.user.type,
+          adminSections: userdata.user.adminSections,
           permissionIds: permissionIds,
           permissionNamesEn: userdata.employeePermissions
               .map((p) => p.permissionNameEn)

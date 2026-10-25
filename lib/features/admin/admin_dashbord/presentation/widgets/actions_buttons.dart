@@ -1,3 +1,4 @@
+import '../../../../../core/services/admin_section_permissions.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -62,6 +63,9 @@ class BuildActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final filteredButtons = userType == 'admin'
         ? buttons
+            .where((button) => AdminSectionPermissions.allowsRoute(
+                button['route']?.toString()))
+            .toList()
         : buttons
             .where((x) => _canShowButton(x, employeePermissions ?? const []))
             .toList();

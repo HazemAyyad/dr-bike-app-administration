@@ -1,3 +1,4 @@
+import '../../../../../core/services/admin_section_permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -64,7 +65,7 @@ class _EmployeeSectionScreenState extends State<EmployeeSectionScreen> {
             icon: Icons.redeem_rounded,
             onPressed: () => Get.toNamed(AppRoutes.POINTSTABLE),
           ),
-          if (userType == 'admin')
+          if (AdminSectionPermissions.isManager)
             _AppBarCompactIconButton(
               tooltip: 'admins'.tr,
               icon: Icons.admin_panel_settings_rounded,

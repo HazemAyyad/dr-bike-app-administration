@@ -21,6 +21,7 @@ import 'employee_wifi_presence_service.dart';
 import 'impersonation_state.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
+import 'admin_section_permissions.dart';
 import 'user_data.dart';
 
 String userType = '';
@@ -229,7 +230,8 @@ bool hasEmployeePermissionName(String name) =>
     userType == 'admin' || employeePermissionNames.contains(name);
 
 bool get canDelegateEmployeePermissions =>
-    userType == 'admin' || employeeCanDelegatePermissions;
+    AdminSectionPermissions.isManager ||
+    (userType == 'employee' && employeeCanDelegatePermissions);
 
 bool get hasAnyEmployeeSectionDetailedPermission =>
     employeePermissionNames
@@ -256,12 +258,12 @@ bool get canViewEmployees =>
     employeePermissions.contains(employeesSectionPermissionId);
 
 bool get canCreateEmployees =>
-    userType == 'admin' ||
+    AdminSectionPermissions.isManager ||
     employeePermissionNames.contains(employeesCreatePermissionName) ||
     employeePermissions.contains(employeesCreatePermissionId);
 
 bool get canEditEmployeesBasic =>
-    userType == 'admin' ||
+    AdminSectionPermissions.isManager ||
     employeePermissionNames.contains(employeesEditBasicPermissionName) ||
     employeePermissions.contains(employeesEditBasicPermissionId);
 
@@ -535,13 +537,16 @@ void syncSessionIdentity({
   List<int>? permissionIds,
   List<String>? permissionNamesEn,
   bool? canDelegatePermissions,
+  List<String>? adminSections,
 }) {
   final previousType = userType;
+  final previousAdminSectionsRevision = AdminSectionPermissions.revision.value;
   final previousPermissionIds = List<int>.from(employeePermissions);
   final previousPermissionNames = List<String>.from(employeePermissionNames);
   final previousCanDelegate = employeeCanDelegatePermissions;
 
   if (type != null) {
+    AdminSectionPermissions.sync(type, adminSections);
     userType = type;
     sessionUserType.value = type;
   }
@@ -568,6 +573,7 @@ void syncSessionIdentity({
           previousPermissionNames.length != employeePermissionNames.length ||
           !previousPermissionNames.every(employeePermissionNames.contains);
   if (previousType != userType ||
+      previousAdminSectionsRevision != AdminSectionPermissions.revision.value ||
       permissionsChanged ||
       previousCanDelegate != employeeCanDelegatePermissions) {
     sessionEpoch.value++;
@@ -669,6 +675,7 @@ class InitialBindings implements Bindings {
         ..addAll(userdata.employeePermissions.map((p) => p.permissionId));
       syncSessionIdentity(
         type: userdata.user.type,
+        adminSections: userdata.user.adminSections,
         name: userdata.user.name,
         permissionIds:
             userdata.employeePermissions.map((p) => p.permissionId).toList(),
