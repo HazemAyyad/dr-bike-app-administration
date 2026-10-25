@@ -53,8 +53,8 @@ Future<void> revealAccountingDetail(WidgetTester tester, Finder target) async {
       .first);
   for (var attempt = 0; attempt < 6 && target.evaluate().isEmpty; attempt++) {
     scroll.position.jumpTo(scroll.position.maxScrollExtent);
-    await tester.pumpAndSettle();
+    await settleAccountingPreview(tester);
   }
   await tester.ensureVisible(target);
-  await tester.pumpAndSettle();
+  await settleAccountingPreview(tester);
 }

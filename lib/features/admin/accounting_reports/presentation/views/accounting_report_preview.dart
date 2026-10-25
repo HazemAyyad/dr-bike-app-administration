@@ -6,10 +6,14 @@ import 'accounting_report_pdf.dart';
 
 class AccountingReportPreview extends StatefulWidget {
   const AccountingReportPreview(
-      {Key? key, required this.snapshot, required this.document})
+      {Key? key,
+      required this.snapshot,
+      required this.document,
+      this.documents})
       : super(key: key);
   final Object snapshot;
   final AccountingReportDocument document;
+  final List<AccountingReportDocument>? documents;
   @override
   State<AccountingReportPreview> createState() =>
       _AccountingReportPreviewState();
@@ -20,14 +24,14 @@ class _AccountingReportPreviewState extends State<AccountingReportPreview> {
   @override
   void initState() {
     super.initState();
-    _bytes = AccountingReportPdf.build(widget.document);
+    _bytes = _buildDocument();
   }
 
   @override
   void didUpdateWidget(AccountingReportPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.snapshot, widget.snapshot)) {
-      _bytes = AccountingReportPdf.build(widget.document);
+      _bytes = _buildDocument();
     }
   }
 
@@ -56,8 +60,7 @@ class _AccountingReportPreviewState extends State<AccountingReportPreview> {
         if (snapshot.hasError) {
           return Center(
               child: TextButton.icon(
-                  onPressed: () => setState(() =>
-                      _bytes = AccountingReportPdf.build(widget.document)),
+                  onPressed: () => setState(() => _bytes = _buildDocument()),
                   icon: const Icon(Icons.refresh),
                   label: const Text('تعذر تجهيز التقرير • إعادة المحاولة')));
         }
@@ -86,4 +89,6 @@ class _AccountingReportPreviewState extends State<AccountingReportPreview> {
       });
 
   Future<Uint8List> _layout(PdfPageFormat _) => _bytes;
+  Future<Uint8List> _buildDocument() =>
+      AccountingReportPdf.buildAll(widget.documents ?? [widget.document]);
 }

@@ -78,8 +78,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                         Text(c.reportTitle,
                             style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 4),
-                        Text(
-                            '${c.period}   •   العملة: ${c.report!['currency']}'),
+                        Text('${c.period}   •   العملة: ${c.currencyLabel}'),
                         if (c.hasPendingFilters)
                           const Padding(
                             padding: EdgeInsets.only(top: 8),
@@ -90,21 +89,30 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                         const SizedBox(height: 12),
                         AccountingReportPreview(
                             snapshot: c.report!,
-                            document: SalesAccountingExport.document(c)),
+                            document: SalesAccountingExport.document(c),
+                            documents: SalesAccountingExport.documents(c)),
                         Card(
                             child: ExpansionTile(
                           title: const Text('تفاصيل الحركات'),
                           childrenPadding: const EdgeInsets.all(12),
                           children: [
-                            _summary(context, c),
-                            const SizedBox(height: 12),
-                            if (c.rows.isEmpty)
-                              const Padding(
-                                  padding: EdgeInsets.all(24),
-                                  child:
-                                      Text('لا توجد حركات ضمن الفترة المختارة'))
-                            else
-                              _SalesTable(controller: c),
+                            for (final section in c.currencyReports) ...[
+                              Text('العملة: ${section['currency']}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              _summary(context, c,
+                                  summaryOverride: c.summaryFor(section)),
+                              const SizedBox(height: 12),
+                              if (c.rowsFor(section).isEmpty)
+                                const Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Text(
+                                        'لا توجد حركات ضمن الفترة المختارة'))
+                              else
+                                _SalesTable(controller: c, section: section),
+                              const SizedBox(height: 20),
+                            ],
                           ],
                         )),
                         const SizedBox(height: 12),
@@ -147,15 +155,28 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
             return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const Text('طريقة عرض التقرير',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 6, children: [
+                    for (final item in SalesAccountingController.groups.entries)
+                      ChoiceChip(
+                          label: Text(item.value),
+                          selected: c.groupBy == item.key,
+                          onSelected:
+                              busy ? null : (_) => c.selectGroup(item.key)),
+                  ]),
+                  const SizedBox(height: 12),
                   Wrap(spacing: 12, runSpacing: 12, children: [
                     SizedBox(
                       width: fieldWidth,
                       child: _dropdown(
-                        label: 'تجميع التقرير',
-                        value: c.groupBy,
-                        options: SalesAccountingController.groups,
-                        onChanged:
-                            busy ? null : (v) => c.changed(() => c.groupBy = v),
+                        label: 'العملة',
+                        value: c.currency,
+                        options: SalesAccountingController.currencies,
+                        onChanged: busy
+                            ? null
+                            : (v) => c.changed(() => c.currency = v),
                       ),
                     ),
                     SizedBox(
@@ -197,6 +218,17 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                       ),
                     ),
                     SizedBox(
+                        width: fieldWidth,
+                        child: OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () =>
+                                  _pickPerson(context, c, representative: true),
+                          icon: const Icon(Icons.badge_outlined),
+                          label: Text(_representativeLabel(c),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        )),
+                    SizedBox(
                       width: fieldWidth,
                       child: _dropdown(
                         label: 'الترتيب',
@@ -206,8 +238,54 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                             busy ? null : (v) => c.changed(() => c.sort = v),
                       ),
                     ),
+                    for (final minimum in [true, false])
+                      SizedBox(
+                          width: fieldWidth,
+                          child: TextFormField(
+                            initialValue: minimum ? c.minAmount : c.maxAmount,
+                            enabled: !busy,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            decoration: InputDecoration(
+                                labelText: minimum ? 'من قيمة' : 'إلى قيمة',
+                                helperText: 'قيمة الفاتورة / المرتجع',
+                                border: const OutlineInputBorder(),
+                                isDense: true),
+                            onChanged: (v) => c.changed(() {
+                              if (minimum) {
+                                c.minAmount = v;
+                              } else {
+                                c.maxAmount = v;
+                              }
+                            }),
+                          )),
                   ]),
                   const SizedBox(height: 8),
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('عرض الحركات بالعملات الأخرى'),
+                    subtitle:
+                        const Text('كشف وإجماليات مستقلة لكل عملة، بدون تحويل'),
+                    value: c.includeOtherCurrencies,
+                    onChanged: busy
+                        ? null
+                        : (v) => c.changed(
+                            () => c.includeOtherCurrencies = v ?? false),
+                  ),
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('نقدي'),
+                    subtitle: const Text(
+                        'فواتير مدفوعة بالكامل ومرتجعات مستردة نقدًا بالكامل'),
+                    value: c.cashOnly,
+                    onChanged: busy
+                        ? null
+                        : (v) => c.changed(() => c.cashOnly = v ?? false),
+                  ),
                   CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
@@ -296,8 +374,8 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
     return 'حساب محدد • تغيير';
   }
 
-  Future<void> _pickPerson(
-      BuildContext context, SalesAccountingController c) async {
+  Future<void> _pickPerson(BuildContext context, SalesAccountingController c,
+      {bool representative = false}) async {
     String query = '';
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -312,12 +390,15 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
             child: SizedBox(
               height: MediaQuery.sizeOf(sheetContext).height * .65,
               child: StatefulBuilder(builder: (context, setState) {
-                final people = c.people
+                final people = (representative ? c.representatives : c.people)
                     .where((p) => '${p['name']}'.contains(query.trim()))
                     .toList();
                 return Column(children: [
-                  const Text('اختيار الزبون / الطرف',
-                      style: TextStyle(
+                  Text(
+                      representative
+                          ? 'اختيار المندوب • موظف المبيعات'
+                          : 'اختيار الزبون / الطرف',
+                      style: const TextStyle(
                           color: Colors.black87, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   TextField(
@@ -332,8 +413,11 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                     onChanged: (v) => setState(() => query = v),
                   ),
                   ListTile(
-                    title: const Text('كل الزبائن والأطراف',
-                        style: TextStyle(color: Colors.black87)),
+                    title: Text(
+                        representative
+                            ? 'كل موظفي المبيعات'
+                            : 'كل الزبائن والأطراف',
+                        style: const TextStyle(color: Colors.black87)),
                     onTap: () => Navigator.pop(context, ''),
                   ),
                   Expanded(
@@ -342,9 +426,13 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                     itemBuilder: (context, i) => ListTile(
                       title: Text('${people[i]['name']}',
                           style: const TextStyle(color: Colors.black87)),
-                      subtitle: Text(
-                          people[i]['type'] == 'seller' ? 'مورد / طرف' : 'زبون',
-                          style: const TextStyle(color: Colors.black54)),
+                      subtitle: representative
+                          ? null
+                          : Text(
+                              people[i]['type'] == 'seller'
+                                  ? 'مورد / طرف'
+                                  : 'زبون',
+                              style: const TextStyle(color: Colors.black54)),
                       onTap: () =>
                           Navigator.pop(context, '${people[i]['key']}'),
                     ),
@@ -356,11 +444,30 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
         ),
       ),
     );
-    if (selected != null) c.changed(() => c.personKey = selected);
+    if (selected != null) {
+      c.changed(() {
+        if (representative) {
+          c.representativeId = selected;
+        } else {
+          c.personKey = selected;
+        }
+      });
+    }
   }
 
-  Widget _summary(BuildContext context, SalesAccountingController c) {
-    final summary = c.summary;
+  String _representativeLabel(SalesAccountingController c) {
+    if (c.representativeId.isEmpty) return 'المندوب • كل موظفي المبيعات';
+    for (final person in c.representatives) {
+      if ('${person['key']}' == c.representativeId) {
+        return 'المندوب: ${person['name']}';
+      }
+    }
+    return 'مندوب محدد • تغيير';
+  }
+
+  Widget _summary(BuildContext context, SalesAccountingController c,
+      {Map<String, dynamic>? summaryOverride}) {
+    final summary = summaryOverride ?? c.summary;
     final items = <String, String>{
       'عدد الفواتير': '${(summary['invoice_count'] as num?)?.toInt() ?? 0}',
       'المبيعات بعد الخصم':
@@ -421,13 +528,15 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
 }
 
 class _SalesTable extends StatelessWidget {
-  const _SalesTable({required this.controller});
+  const _SalesTable({required this.controller, required this.section});
   final SalesAccountingController controller;
+  final Map<String, dynamic> section;
 
   @override
   Widget build(BuildContext context) {
-    final rows = controller.rows;
+    final rows = controller.rowsFor(section);
     final columns = controller.columns;
+    final widths = controller.columnWidths;
     final theme = Theme.of(context);
     Widget line(List<String> cells,
             {bool header = false,
@@ -444,7 +553,7 @@ class _SalesTable extends StatelessWidget {
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             for (var i = 0; i < cells.length; i++)
               SizedBox(
-                width: i == 0 ? 190 : 124,
+                width: widths[i],
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -472,7 +581,7 @@ class _SalesTable extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: 190 + (columns.length - 1) * 124,
+          width: widths.fold<double>(0, (sum, width) => sum + width),
           child: Column(children: [
             line(columns, header: true),
             SizedBox(
@@ -480,11 +589,12 @@ class _SalesTable extends StatelessWidget {
               child: ListView.builder(
                 itemExtent: 56,
                 itemCount: rows.length,
-                itemBuilder: (_, i) =>
-                    line(controller.cells(rows[i]), alternate: i.isOdd),
+                itemBuilder: (_, i) => line(
+                    controller.cells(rows[i], sequence: i + 1),
+                    alternate: i.isOdd),
               ),
             ),
-            line(controller.cells(controller.summary, total: true),
+            line(controller.cells(controller.summaryFor(section), total: true),
                 total: true),
           ]),
         ),

@@ -105,66 +105,176 @@ void main() {
     expect(SalesAccountingExport.buildCsv(c), contains('"-30.00"'));
   });
 
-  for (final size in [const Size(320, 740), const Size(1280, 900)]) {
-    testWidgets('accounting report is readable at ${size.width}',
-        (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final c = Get.put(SalesAccountingController(
+  test('monthly layout has month rows and restores currency and value limits',
+      () async {
+    final api = _ReportApi();
+    final c = SalesAccountingController(
+        service: SalesAccountingApiService(api: api),
+        savedFilters: {
+          'group_by': 'month',
+          'sort': 'label',
+          'currency': 'دولار',
+          'min_amount': 100,
+          'max_amount': 200,
+        });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(api.request!['currency'], 'دولار');
+    expect(api.request!['min_amount'], 100);
+    expect(c.hasPendingFilters, isFalse);
+    expect(
+        c.columns.take(4), ['م', 'الشهر / السنة', 'المبيعات', 'خصم المبيعات']);
+    expect(c.cells(c.rows.first).take(2), ['1', '2026-01']);
+    expect(SalesAccountingExport.document(c).columns, c.columns);
+    c.selectGroup('day');
+    expect(c.sort, 'label');
+    expect(c.columns,
+        contains('الشهر / السنة')); // Applied layout stays until reload.
+    await c.load();
+    expect(c.columns, isNot(contains('الشهر / السنة')));
+    final calls = api.calls;
+    c.minAmount = '٢٠١';
+    await c.load();
+    expect(api.calls, calls);
+    expect(c.error, isNotNull);
+    c.minAmount = 'abc';
+    expect(c.hasPendingFilters, isTrue);
+  });
+
+  test(
+      'employee and other-currency choices persist without combining currency totals',
+      () async {
+    final api = _ReportApi();
+    final c = SalesAccountingController(
+        service: SalesAccountingApiService(api: api),
+        savedFilters: {
+          'group_by': 'month',
+          'include_other_currencies': 1,
+          'representative_id': '7',
+        });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(api.request!['representative_id'], '7');
+    expect(api.request!['include_other_currencies'], 1);
+    expect(c.hasPendingFilters, isFalse);
+    expect(c.currencyReports, hasLength(2));
+    final docs = SalesAccountingExport.documents(c);
+    expect(docs.map((d) => d.currency), ['شيكل', 'دولار']);
+    expect(docs.last.summary['المبيعات بعد الخصم'], '50.00');
+    expect(docs.last.rows.first[0], '1');
+    expect(docs.first.selection, contains('موظف تجريبي'));
+    final csv = SalesAccountingExport.buildCsv(c);
+    expect(csv, contains('العملة: شيكل'));
+    expect(csv, contains('العملة: دولار'));
+    c.changed(() {
+      c.includeOtherCurrencies = false;
+      c.representativeId = '';
+    });
+    expect(c.hasPendingFilters, isTrue);
+    expect(SalesAccountingExport.buildCsv(c), csv);
+    await c.load();
+    expect(c.currencyReports, hasLength(1));
+  });
+
+  test(
+      'long currency statements generate a combined PDF without losing sections',
+      () async {
+    final c = SalesAccountingController(
         service: SalesAccountingApiService(api: _ReportApi()),
         savedFilters: {
-          'from_date': '2026-01-01',
-          'to_date': '2026-10-25',
           'group_by': 'customer',
-          'include_returns': 1,
-          'sort': 'sales_desc',
-        },
-      ));
-      final boundary = GlobalKey();
-      await tester.pumpWidget(GetMaterialApp(
-        locale: const Locale('ar'),
-        theme: ThemeData(fontFamily: 'AccountingAlmarai'),
-        home: RepaintBoundary(
-            key: boundary, child: const SalesAccountingScreen()),
-      ));
-      await settleAccountingPreview(tester);
-      expect(find.text('تقارير محاسبية'), findsOneWidget);
-      expect(find.text('تذكّر خياراتي'), findsOneWidget);
-      expect(c.rows, hasLength(2));
-      expect(find.byType(AccountingReportPreview), findsOneWidget);
-      expect(find.byType(PdfPreview), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await revealAccountingDetail(tester, find.text('تفاصيل الحركات'));
-      await tester.tap(find.text('تفاصيل الحركات'));
-      await tester.pumpAndSettle();
-      expect(find.text('الإجمالي'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      final evidence = Platform.environment['ACCOUNTING_REPORT_EVIDENCE_DIR'];
-      if (evidence != null) {
-        final render = boundary.currentContext!.findRenderObject()
-            as RenderRepaintBoundary;
-        await tester.runAsync(() async {
-          final image = await render.toImage(pixelRatio: 1);
-          final bytes =
-              (await image.toByteData(format: ui.ImageByteFormat.png))!;
-          final dir = Directory(evidence);
-          await dir.create(recursive: true);
-          await File('${dir.path}/accounting-${size.width.toInt()}.png')
-              .writeAsBytes(bytes.buffer.asUint8List());
-          image.dispose();
-          if (size.width > 1000) {
-            final pdf = await SalesAccountingExport.buildPdf(c);
-            expect(pdf.sublist(0, 4), [37, 80, 68, 70]);
-            await File('${dir.path}/accounting-report.pdf').writeAsBytes(pdf);
-            await File('${dir.path}/accounting-report.csv')
-                .writeAsString(SalesAccountingExport.buildCsv(c));
-          }
+          'include_other_currencies': 1,
         });
-      }
-    });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    final first = (c.report!['currency_reports'] as List).first as Map;
+    final original =
+        Map<String, dynamic>.from((first['rows'] as List).first as Map);
+    first['rows'] = [
+      for (var i = 0; i < 180; i++)
+        {...original, 'key': 'customer:$i', 'label': 'زبون تجريبي ${i + 1}'}
+    ];
+    final bytes = await SalesAccountingExport.buildPdf(c);
+    expect(bytes.sublist(0, 4), [37, 80, 68, 70]);
+    expect(SalesAccountingExport.documents(c), hasLength(2));
+    final evidence = Platform.environment['ACCOUNTING_REPORT_EVIDENCE_DIR'];
+    if (evidence != null) {
+      await Directory(evidence).create(recursive: true);
+      await File('$evidence/long-currencies.pdf').writeAsBytes(bytes);
+    }
+  });
+
+  for (final mode in ['customer', 'month', 'multi']) {
+    final grouping = mode == 'multi' ? 'month' : mode;
+    for (final size in [const Size(320, 740), const Size(1280, 900)]) {
+      testWidgets('$mode accounting report is readable at ${size.width}',
+          (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final c = Get.put(SalesAccountingController(
+          service: SalesAccountingApiService(api: _ReportApi()),
+          savedFilters: {
+            'from_date': '2026-01-01',
+            'to_date': '2026-10-25',
+            'group_by': grouping,
+            'include_returns': 1,
+            'sort': 'sales_desc',
+            'include_other_currencies': mode == 'multi' ? 1 : 0,
+          },
+        ));
+        final boundary = GlobalKey();
+        await tester.pumpWidget(GetMaterialApp(
+          locale: const Locale('ar'),
+          theme: ThemeData(fontFamily: 'AccountingAlmarai'),
+          home: RepaintBoundary(
+              key: boundary, child: const SalesAccountingScreen()),
+        ));
+        await tester.pump();
+        expect(find.text('تقارير محاسبية'), findsOneWidget);
+        expect(find.text('تذكّر خياراتي'), findsOneWidget);
+        expect(c.rows, hasLength(2));
+        await revealAccountingDetail(
+            tester, find.text('فتح التقرير بملء الشاشة'));
+        await settleAccountingPreview(tester);
+        expect(find.byType(AccountingReportPreview), findsOneWidget);
+        expect(find.byType(PdfPreview), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (grouping == 'month') {
+          expect(c.columns, contains('الشهر / السنة'));
+          expect(c.columns, isNot(contains('الزبون / الطرف')));
+        }
+        await revealAccountingDetail(tester, find.text('تفاصيل الحركات'));
+        await tester.tap(find.text('تفاصيل الحركات'));
+        await tester.pumpAndSettle();
+        expect(find.text('الإجمالي'), findsNWidgets(mode == 'multi' ? 2 : 1));
+        expect(tester.takeException(), isNull);
+
+        final evidence = Platform.environment['ACCOUNTING_REPORT_EVIDENCE_DIR'];
+        if (evidence != null) {
+          final render = boundary.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
+          await tester.runAsync(() async {
+            final image = await render.toImage(pixelRatio: 1);
+            final bytes =
+                (await image.toByteData(format: ui.ImageByteFormat.png))!;
+            final dir = Directory(evidence);
+            await dir.create(recursive: true);
+            await File('${dir.path}/accounting-$mode-${size.width.toInt()}.png')
+                .writeAsBytes(bytes.buffer.asUint8List());
+            image.dispose();
+            if (size.width > 1000) {
+              final pdf = await SalesAccountingExport.buildPdf(c);
+              expect(pdf.sublist(0, 4), [37, 80, 68, 70]);
+              await File('${dir.path}/accounting-$mode.pdf').writeAsBytes(pdf);
+              await File('${dir.path}/accounting-$mode.csv')
+                  .writeAsString(SalesAccountingExport.buildCsv(c));
+            }
+          });
+        }
+      });
+    }
   }
 }
 
@@ -182,8 +292,8 @@ class _ReportApi extends Fake implements ApiConsumer {
     calls++;
     if (fail) throw Exception('الخادم غير متاح');
     final row = <String, dynamic>{
-      'key': 'customer:1',
-      'label': 'زبون تجريبي',
+      'key': request!['group_by'] == 'month' ? '2026-01' : 'customer:1',
+      'label': request!['group_by'] == 'month' ? '2026-01' : 'زبون تجريبي',
       'invoice_count': 2,
       'gross_sales': 1000,
       'sales_discount': 100,
@@ -194,14 +304,17 @@ class _ReportApi extends Fake implements ApiConsumer {
       'sales_share': 100,
       'return_rate': 10,
     };
-    return Response<dynamic>(
+    final response = Response<dynamic>(
       requestOptions: RequestOptions(path: path),
       data: {
         'status': 'success',
         'data': {
           'filters': {
             ...request!,
-            'include_returns': request!['include_returns'] == 1
+            'include_returns': request!['include_returns'] == 1,
+            'cash_only': request!['cash_only'] == 1,
+            'include_other_currencies':
+                request!['include_other_currencies'] == 1,
           },
           'summary': {
             ...row,
@@ -215,8 +328,10 @@ class _ReportApi extends Fake implements ApiConsumer {
             row,
             {
               ...row,
-              'key': 'customer:2',
-              'label': 'مرتجع من فترة سابقة',
+              'key': request!['group_by'] == 'month' ? '2026-02' : 'customer:2',
+              'label': request!['group_by'] == 'month'
+                  ? '2026-02'
+                  : 'مرتجع من فترة سابقة',
               'gross_sales': 0,
               'invoice_count': 0,
               'sales_discount': 0,
@@ -228,13 +343,51 @@ class _ReportApi extends Fake implements ApiConsumer {
               'return_rate': null,
             }
           ],
-          'currency': 'شيكل',
+          'currency': request!['currency'] ?? 'شيكل',
           'people': [
             {'key': 'customer:1', 'name': 'زبون تجريبي', 'type': 'customer'}
+          ],
+          'representatives': [
+            {'key': '7', 'name': 'موظف تجريبي'}
           ],
           'notes': ['نسبة المرتجعات من مبيعات الصف نفسه.'],
         }
       },
     );
+    final report = response.data['data'] as Map<String, dynamic>;
+    report['currency_reports'] = [
+      {
+        'currency': report['currency'],
+        'rows': report['rows'],
+        'summary': report['summary']
+      },
+      if (request!['include_other_currencies'] == 1)
+        {
+          'currency': 'دولار',
+          'rows': [
+            {
+              ...row,
+              'gross_sales': 50,
+              'sales_discount': 0,
+              'sales_total': 50,
+              'returns_total': 0,
+              'net_sales': 50,
+              'invoice_count': 1,
+              'return_rate': 0
+            }
+          ],
+          'summary': {
+            ...row,
+            'gross_sales': 50,
+            'sales_discount': 0,
+            'sales_total': 50,
+            'returns_total': 0,
+            'net_sales': 50,
+            'invoice_count': 1,
+            'return_rate': 0
+          }
+        },
+    ];
+    return response;
   }
 }
