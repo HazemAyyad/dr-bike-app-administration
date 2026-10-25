@@ -607,6 +607,7 @@ IconData _actionIcon(String title) {
     case 'financialMatters':
       return Icons.account_balance_outlined;
     case 'التقارير':
+    case 'تقارير محاسبية':
       return Icons.analytics_outlined;
     case 'dailyBoxes':
       return Icons.today_outlined;
@@ -633,6 +634,7 @@ Color _dashboardAccent(String title) {
     case 'dailyBoxes':
       return DashboardDesignTokens.warning;
     case 'التقارير':
+    case 'تقارير محاسبية':
       return DashboardDesignTokens.reports;
     case 'debts':
     case 'employeeTasks':

@@ -86,6 +86,11 @@ class AdminDashboardController extends GetxController
     },
     {'id': '73', 'title': 'التقارير', 'route': AppRoutes.REPORTSSCREEN},
     {
+      'id': 'accounting_reports',
+      'title': 'تقارير محاسبية',
+      'route': AppRoutes.ACCOUNTINGREPORTSSCREEN,
+    },
+    {
       'id': '9',
       'title': 'generalData',
       'route': AppRoutes.GENERALDATALISTSCREEN

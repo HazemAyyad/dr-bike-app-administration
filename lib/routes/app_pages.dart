@@ -88,6 +88,11 @@ import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart'
 import '../features/admin/counters/presentation/binding/counters_binding.dart';
 import '../features/admin/counters/presentation/views/counters_screen.dart';
 import '../features/admin/reports/presentation/bindings/reports_binding.dart';
+import '../features/admin/accounting_reports/presentation/bindings/sales_accounting_binding.dart';
+import '../features/admin/accounting_reports/presentation/views/sales_accounting_screen.dart';
+import '../features/admin/accounting_reports/presentation/views/accounting_reports_screen.dart';
+import '../features/admin/accounting_reports/presentation/views/financial_accounting_screen.dart';
+import '../features/admin/accounting_reports/presentation/bindings/financial_accounting_binding.dart';
 import '../features/admin/reports/presentation/views/reports_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
 import '../features/admin/create_tasks/presentation/binding/task_recurrence_binding.dart';
@@ -1398,6 +1403,29 @@ class AppPages {
     ),
 
     // Reports
+    GetPage(
+      name: AppRoutes.ACCOUNTINGREPORTSSCREEN,
+      page: () => const AccountingReportsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESACCOUNTINGSCREEN,
+      page: () => const SalesAccountingScreen(),
+      binding: SalesAccountingBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EXPENSEACCOUNTINGSCREEN,
+      page: () => const FinancialAccountingScreen(type: 'expenses'),
+      binding: FinancialAccountingBinding('expenses'),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.INCOMEACCOUNTINGSCREEN,
+      page: () => const FinancialAccountingScreen(type: 'income'),
+      binding: FinancialAccountingBinding('income'),
+      transition: _transitionFadeIn,
+    ),
     GetPage(
       name: AppRoutes.REPORTSSCREEN,
       page: () => const ReportsScreen(),
