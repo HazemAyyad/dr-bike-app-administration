@@ -6,6 +6,7 @@ import 'package:doctorbike/core/helpers/app_failure_notice.dart';
 import 'package:doctorbike/core/helpers/app_success_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -1336,10 +1337,46 @@ class _PurchaseProductCard extends GetView<BillsController> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _PurchaseSelectButton(
-                                selected: inCart,
-                                onTap: onTap,
-                              ),
+                              if (product.hasVariants)
+                                _PurchaseSelectButton(
+                                  selected: inCart,
+                                  onTap: onTap,
+                                )
+                              else ...[
+                                _PurchaseQuantityButton(
+                                  icon: Icons.remove,
+                                  tooltip: 'تقليل الكمية',
+                                  onTap: inCart
+                                      ? () => controller
+                                          .decrementPurchaseProduct(product.id)
+                                      : null,
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    key: ValueKey(
+                                        'purchase_quantity_${product.id}'),
+                                    onTap: () => _editQuantity(context, qty),
+                                    child: Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          '$qty',
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                _PurchaseQuantityButton(
+                                  icon: Icons.add,
+                                  tooltip: 'زيادة الكمية',
+                                  onTap: () => controller
+                                      .incrementPurchaseProduct(product),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -1362,6 +1399,126 @@ class _PurchaseProductCard extends GetView<BillsController> {
     if (section.isEmpty) return code;
     if (code.isEmpty) return section;
     return '$section - $code';
+  }
+
+  Future<void> _editQuantity(BuildContext context, int quantity) async {
+    final result = await showDialog<int>(
+      context: context,
+      builder: (_) => _PurchaseQuantityDialog(
+        productName: product.nameAr,
+        quantity: quantity,
+      ),
+    );
+    if (result != null) controller.setPurchaseProductQuantity(product, result);
+  }
+}
+
+class _PurchaseQuantityDialog extends StatefulWidget {
+  const _PurchaseQuantityDialog({
+    required this.productName,
+    required this.quantity,
+  });
+
+  final String productName;
+  final int quantity;
+
+  @override
+  State<_PurchaseQuantityDialog> createState() =>
+      _PurchaseQuantityDialogState();
+}
+
+class _PurchaseQuantityDialogState extends State<_PurchaseQuantityDialog> {
+  late final _quantityController = TextEditingController(
+    text: widget.quantity.toString(),
+  );
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_formKey.currentState!.validate()) {
+      Navigator.of(context).pop(int.parse(_quantityController.text.trim()));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = Theme.of(context).colorScheme.onSurface;
+    return AlertDialog(
+      backgroundColor: dark ? Colors.grey.shade900 : Colors.grey.shade100,
+      title: Text(widget.productName, style: TextStyle(color: foreground)),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _quantityController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          textAlign: TextAlign.center,
+          style: TextStyle(color: foreground),
+          decoration: const InputDecoration(labelText: 'الكمية'),
+          validator: (value) => int.tryParse(value?.trim() ?? '') == null
+              ? 'أدخل كمية صحيحة'
+              : null,
+          onFieldSubmitted: (_) => _save(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('إلغاء', style: TextStyle(color: foreground)),
+        ),
+        FilledButton(
+          onPressed: _save,
+          style: FilledButton.styleFrom(
+            backgroundColor: dark ? Colors.grey.shade700 : Colors.grey.shade300,
+            foregroundColor: foreground,
+          ),
+          child: const Text('حفظ'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PurchaseQuantityButton extends StatelessWidget {
+  const _PurchaseQuantityButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(5.r),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(5.r),
+          child: SizedBox(
+            width: 23.w,
+            height: 22.h,
+            child: Icon(
+              icon,
+              size: 14.sp,
+              color: onTap == null ? Colors.grey : AppColors.primaryColor,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

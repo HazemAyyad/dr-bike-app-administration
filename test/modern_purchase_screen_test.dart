@@ -64,6 +64,59 @@ void main() {
       expect(find.text('فرامل أمامية'), findsOneWidget);
     });
 
+    testWidgets('quantity controls update the cart and remove at zero',
+        (tester) async {
+      final controller = _putController(
+        productsLoader: () async => [_product('1', 'بطارية دراجة')],
+      );
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('زيادة الكمية'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('زيادة الكمية'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCartQtyForProduct('1'), 2);
+      expect(controller.totalCost.value, 24);
+
+      await tester.tap(find.byTooltip('تقليل الكمية'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCartQtyForProduct('1'), 1);
+      await tester.tap(find.byTooltip('تقليل الكمية'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCart, isEmpty);
+      expect(controller.totalCost.value, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'quantity number accepts direct entry and validates empty input',
+        (tester) async {
+      final controller = _putController(
+        productsLoader: () async => [_product('1', 'بطارية دراجة')],
+      );
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('purchase_quantity_1')));
+      await tester.pumpAndSettle();
+      final input = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(input, '');
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+      expect(find.text('أدخل كمية صحيحة'), findsOneWidget);
+      expect(controller.purchaseCart, isEmpty);
+
+      await tester.enterText(input, '25');
+      await tester.tap(find.text('حفظ'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCartQtyForProduct('1'), 25);
+      expect(controller.totalCost.value, 300);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders empty state when no products exist', (tester) async {
       _putController(productsLoader: () async => <ProductModel>[]);
 

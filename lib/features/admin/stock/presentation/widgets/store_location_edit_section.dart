@@ -1,3 +1,4 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import '../../../../../core/helpers/outline_input_style.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
+import '../../data/models/store_section_model.dart';
 import 'product_location_badge.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
@@ -93,6 +95,26 @@ class StoreLocationPickerTile extends GetView<StockController> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Obx(() {
+      if (controller.purchaseProductCreationMode.value) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            StoreLocationDropdown(
+              sections: controller.storeSections.toList(),
+              selectedId: controller.selectedProductStoreSectionId.value,
+              onChanged: controller.setProductStoreSection,
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: showCreateStoreSectionDialog,
+                icon: const Icon(Icons.add),
+                label: Text('newStoreSection'.tr),
+              ),
+            ),
+          ],
+        );
+      }
       final sectionName = controller.selectedProductSectionName;
       final productCode = controller.editingProductId.value != null
           ? controller.productDetails.value?.productCode
@@ -151,6 +173,64 @@ class StoreLocationPickerTile extends GetView<StockController> {
   }
 }
 
+class StoreLocationDropdown extends StatelessWidget {
+  const StoreLocationDropdown({
+    Key? key,
+    required this.sections,
+    required this.selectedId,
+    required this.onChanged,
+  }) : super(key: key);
+
+  final List<StoreSectionModel> sections;
+  final String? selectedId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      StoreSectionModel(id: '', name: 'بدون موقع'),
+      ...sections.where((section) => section.isActive),
+    ];
+    final selected = options.firstWhere(
+      (section) => section.id == selectedId,
+      orElse: () => options.first,
+    );
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DropdownSearch<StoreSectionModel>(
+      selectedItem: selected,
+      items: (filter, _) => options,
+      itemAsString: (section) => section.name,
+      compareFn: (a, b) => a.id == b.id,
+      popupProps: PopupProps.menu(
+        showSearchBox: true,
+        showSelectedItems: true,
+        searchDelay: Duration.zero,
+        constraints: const BoxConstraints(maxHeight: 320),
+        menuProps: MenuProps(
+          backgroundColor: dark ? Colors.grey.shade900 : Colors.grey.shade100,
+        ),
+        searchFieldProps: TextFieldProps(
+          decoration: OutlineInputStyle.merge(
+            context,
+            hintText: 'ابحث عن الموقع في المحل',
+            base: const InputDecoration(prefixIcon: Icon(Icons.search)),
+          ),
+        ),
+        emptyBuilder: (_, __) =>
+            const Center(child: Text('لا توجد مواقع مطابقة')),
+      ),
+      decoratorProps: DropDownDecoratorProps(
+        decoration: OutlineInputStyle.merge(
+          context,
+          labelText: 'storeSection'.tr,
+        ),
+      ),
+      onChanged: (section) =>
+          onChanged(section == null || section.id.isEmpty ? null : section.id),
+    );
+  }
+}
+
 Future<void> showStoreLocationPickerSheet(BuildContext context) async {
   final controller = Get.find<StockController>();
   await controller.ensureStoreSectionsLoaded();
@@ -187,34 +267,9 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
                   ),
                 ],
               ),
-              DropdownButtonFormField<String?>(
-                key: ValueKey(controller.selectedProductStoreSectionId.value),
-                initialValue: controller.selectedProductStoreSectionId.value,
-                isExpanded: true,
-                decoration: OutlineInputStyle.merge(
-                  context,
-                  labelText: 'storeSection'.tr,
-                ),
-                items: [
-                  DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text(
-                      'all'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  ...sections.map(
-                    (s) => DropdownMenuItem(
-                      value: s.id,
-                      child: Text(
-                        s.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
+              StoreLocationDropdown(
+                sections: sections,
+                selectedId: controller.selectedProductStoreSectionId.value,
                 onChanged: controller.setProductStoreSection,
               ),
               SizedBox(height: 12.h),

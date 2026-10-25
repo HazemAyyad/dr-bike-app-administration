@@ -526,6 +526,26 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     addProductToPurchaseCart(product);
   }
 
+  void setPurchaseProductQuantity(ProductModel product, int quantity) {
+    if (quantity < 0 || product.hasVariants) return;
+    final items = purchaseCartItemsForProduct(product.id);
+    if (quantity == 0) {
+      for (final item in items) {
+        removePurchaseCartItem(item);
+      }
+      return;
+    }
+    final item = items.isEmpty ? _createPurchaseCartItem(product) : items.first;
+    item.quantityController.text = quantity.toString();
+    if (items.isEmpty) {
+      purchaseCart.add(item);
+      loadPurchasePriceIntelligence(product.id);
+    }
+    purchaseCart.refresh();
+    calculatePurchaseCartTotal();
+    update();
+  }
+
   void togglePurchaseProductSelection(ProductModel product) {
     final index =
         purchaseCart.indexWhere((item) => item.product.id == product.id);
