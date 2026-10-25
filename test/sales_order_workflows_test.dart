@@ -243,9 +243,9 @@ void main() {
     expect(Theme.of(context).brightness, Brightness.light);
     await tester.enterText(find.byType(TextField), 'تعليق جديد');
     await tester.pump();
-    await tester.ensureVisible(find.text('حفظ الملاحظة والصور'));
+    await tester.ensureVisible(find.text('حفظ الملاحظة'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('حفظ الملاحظة والصور'));
+    await tester.tap(find.text('حفظ الملاحظة'));
     await tester.pumpAndSettle();
     expect(savedScope, 'external');
     expect(savedText, 'تعليق جديد');

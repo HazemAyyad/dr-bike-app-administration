@@ -1,8 +1,10 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class WhatsAppCapture {
   const WhatsAppCapture({required this.path, required this.mediaKind});
 
@@ -15,11 +17,13 @@ class WhatsAppCameraScreen extends StatefulWidget {
     Key? key,
     this.allowPhoto = true,
     this.allowVideo = true,
+    this.allowGallery = false,
   })  : assert(allowPhoto || allowVideo),
         super(key: key);
 
   final bool allowPhoto;
   final bool allowVideo;
+  final bool allowGallery;
 
   @override
   State<WhatsAppCameraScreen> createState() => _WhatsAppCameraScreenState();
@@ -34,6 +38,7 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
   int _cameraIndex = 0;
   FlashMode _flash = FlashMode.off;
   Object? _error;
+  bool _pickingGallery = false;
 
   @override
   void initState() {
@@ -63,7 +68,7 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
     final camera = CameraController(
       _cameras[index],
       ResolutionPreset.high,
-      enableAudio: true,
+      enableAudio: widget.allowVideo,
     );
     await camera.initialize();
     await camera.setFlashMode(_flash);
@@ -113,6 +118,32 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
     _flash = _flash == FlashMode.off ? FlashMode.auto : FlashMode.off;
     await camera.setFlashMode(_flash);
     if (mounted) setState(() {});
+  }
+
+  Future<void> _pickGallery() async {
+    if (_recording || _pickingGallery) return;
+    setState(() => _pickingGallery = true);
+    try {
+      final picker = ImagePicker();
+      final file = widget.allowPhoto && widget.allowVideo
+          ? await picker.pickMedia()
+          : widget.allowPhoto
+              ? await picker.pickImage(source: ImageSource.gallery)
+              : await picker.pickVideo(source: ImageSource.gallery);
+      if (file == null || !mounted) return;
+      final video = file.mimeType?.startsWith('video/') == true ||
+          RegExp(r'\.(mp4|mov|m4v|webm|3gp)$', caseSensitive: false)
+              .hasMatch(file.path);
+      Get.back(
+          result: WhatsAppCapture(
+              path: file.path, mediaKind: video ? 'video' : 'image'));
+    } catch (_) {
+      if (mounted) {
+        AppFailureNotice.show(title: 'خطأ', message: 'تعذر فتح المعرض');
+      }
+    } finally {
+      if (mounted) setState(() => _pickingGallery = false);
+    }
   }
 
   @override
@@ -184,7 +215,17 @@ class _WhatsAppCameraScreenState extends State<WhatsAppCameraScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        const SizedBox(width: 48),
+                        if (widget.allowGallery)
+                          IconButton(
+                            tooltip: 'المعرض',
+                            onPressed: _recording || _pickingGallery
+                                ? null
+                                : _pickGallery,
+                            icon: const Icon(Icons.photo_library_outlined,
+                                color: Colors.white),
+                          )
+                        else
+                          const SizedBox(width: 48),
                         GestureDetector(
                           onTap: _capture,
                           child: Container(

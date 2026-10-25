@@ -188,7 +188,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text('الملاحظات (${order.noteLog.length})',
+                              Text(
+                                  'الملاحظات (${order.internalNotesCount + order.externalNotesCount})',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w800)),
                               if ((order.notes ?? '').trim().isNotEmpty)
@@ -199,12 +200,14 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                         order.id,
                                         scope: 'internal'),
                                     icon: const Icon(Icons.edit_note),
-                                    label: const Text('ملاحظات داخلية وصور')),
+                                    label: Text(
+                                        'داخلية (${order.internalNotesCount})')),
                                 TextButton.icon(
                                     onPressed: () =>
                                         controller.showOrderNotes(order.id),
                                     icon: const Icon(Icons.comment_outlined),
-                                    label: const Text('تعليقات خارجية وصور')),
+                                    label: Text(
+                                        'خارجية (${order.externalNotesCount})')),
                               ]),
                               if (order.status == 'unconfirmed' &&
                                   userType == 'admin')

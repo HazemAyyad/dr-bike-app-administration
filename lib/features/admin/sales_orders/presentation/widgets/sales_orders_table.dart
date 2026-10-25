@@ -14,6 +14,7 @@ import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import 'sales_order_status_ui.dart';
 import 'sales_order_origin_badge.dart';
+import 'sales_order_notes_badges.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -207,7 +208,7 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
                 }),
             ListTile(
                 leading: const Icon(Icons.comment_outlined),
-                title: const Text('الملاحظات والصور'),
+                title: const Text('الملاحظات والمرفقات'),
                 onTap: () {
                   Get.back();
                   controller.showOrderNotes(order.id);
@@ -725,6 +726,17 @@ class _OrderCard extends StatelessWidget {
                         SalesOrderOriginBadge(origin: order.origin),
                       ],
                     ),
+                    if (order.hasNotes) ...[
+                      const SizedBox(height: 6),
+                      SalesOrderNotesBadges(
+                        internalCount: order.internalNotesCount,
+                        externalCount: order.externalNotesCount,
+                        onSelected: bulk
+                            ? null
+                            : (scope) => Get.find<SalesOrdersController>()
+                                .showOrderNotes(order.id, scope: scope),
+                      ),
+                    ],
                     SizedBox(height: 4.h),
                     Row(
                       children: [

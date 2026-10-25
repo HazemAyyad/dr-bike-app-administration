@@ -26,6 +26,10 @@ class SalesOrderListItemModel {
   final String? deliveryCompanyName;
   final String? deliveryCompanyCode;
   final bool reservesStock;
+  final int internalNotesCount;
+  final int externalNotesCount;
+
+  bool get hasNotes => internalNotesCount + externalNotesCount > 0;
 
   SalesOrderListItemModel({
     required this.id,
@@ -45,6 +49,8 @@ class SalesOrderListItemModel {
     this.deliveryCompanyName,
     this.deliveryCompanyCode,
     this.reservesStock = true,
+    this.internalNotesCount = 0,
+    this.externalNotesCount = 0,
   });
 
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
@@ -70,8 +76,33 @@ class SalesOrderListItemModel {
       reservesStock: json['reserves_stock'] == null ||
           json['reserves_stock'] == true ||
           json['reserves_stock'] == 1,
+      internalNotesCount: (json['internal_notes_count'] as num?)?.toInt() ?? 0,
+      externalNotesCount: (json['external_notes_count'] as num?)?.toInt() ?? 0,
     );
   }
+
+  SalesOrderListItemModel withNoteCounts(int internal, int external) =>
+      SalesOrderListItemModel(
+        id: id,
+        serialNumber: serialNumber,
+        status: status,
+        origin: origin,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        cityName: cityName,
+        total: total,
+        customerDebtBalance: customerDebtBalance,
+        carrierReceivableBalance: carrierReceivableBalance,
+        paymentType: paymentType,
+        createdAt: createdAt,
+        createdByName: createdByName,
+        deliveryCompanyId: deliveryCompanyId,
+        deliveryCompanyName: deliveryCompanyName,
+        deliveryCompanyCode: deliveryCompanyCode,
+        reservesStock: reservesStock,
+        internalNotesCount: internal,
+        externalNotesCount: external,
+      );
 }
 
 class SalesOrderItemModel {
@@ -314,13 +345,19 @@ class SalesOrderNoteModel {
       required this.note,
       required this.userName,
       required this.createdAt,
-      required this.images});
+      required this.images,
+      this.attachments = const []});
   final int id;
   final String scope;
   final String note;
   final String userName;
   final String createdAt;
   final List<String> images;
+  final List<SalesOrderNoteAttachmentModel> attachments;
+
+  List<SalesOrderNoteAttachmentModel> get media => attachments.isNotEmpty
+      ? attachments
+      : images.map((url) => SalesOrderNoteAttachmentModel(url: url)).toList();
 
   factory SalesOrderNoteModel.fromJson(Map<String, dynamic> json) =>
       SalesOrderNoteModel(
@@ -334,10 +371,29 @@ class SalesOrderNoteModel {
             .map((row) => row['url']?.toString() ?? '')
             .where((url) => url.isNotEmpty)
             .toList(),
+        attachments: (json['attachments'] as List? ?? const [])
+            .whereType<Map>()
+            .where((row) => (row['url']?.toString() ?? '').isNotEmpty)
+            .map((row) => SalesOrderNoteAttachmentModel(
+                url: row['url'].toString(),
+                type: row['type']?.toString() ?? 'image'))
+            .toList(),
       );
 }
 
+class SalesOrderNoteAttachmentModel {
+  const SalesOrderNoteAttachmentModel({required this.url, this.type = 'image'});
+  final String url;
+  final String type;
+  bool get isVideo => type == 'video';
+}
+
 class SalesOrderDetailModel {
+  int get internalNotesCount =>
+      noteLog.where((note) => note.scope == 'internal').length +
+      ((notes ?? '').trim().isEmpty ? 0 : 1);
+  int get externalNotesCount =>
+      noteLog.where((note) => note.scope == 'external').length;
   final int id;
   final String? serialNumber;
   final String status;

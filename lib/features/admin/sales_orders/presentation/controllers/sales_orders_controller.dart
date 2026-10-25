@@ -24,6 +24,7 @@ import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
 import '../widgets/sales_order_invoice_pdf.dart';
 import '../widgets/sales_order_notes_sheet.dart';
+import '../widgets/sales_order_note_media.dart';
 import '../widgets/sales_order_delete_dialog.dart';
 import '../widgets/sales_order_modal_theme.dart';
 import '../widgets/sales_order_notice.dart';
@@ -114,7 +115,7 @@ class SalesOrdersController extends GetxController {
   final settleCarrierFeeController = TextEditingController(text: '0');
   final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
-  final draftNoteImages = <XFile>[].obs;
+  final draftNoteMedia = <WhatsAppCapture>[].obs;
   final searchController = TextEditingController();
   Timer? _searchDebounce;
 
@@ -519,7 +520,7 @@ class SalesOrdersController extends GetxController {
     deliveryFeeController.text = '0';
     totalController.clear();
     notesController.clear();
-    draftNoteImages.clear();
+    draftNoteMedia.clear();
     selectedCityId.value = null;
     selectedShiplyCityId.value = null;
     selectedShiplyVillageId.value = null;
@@ -1434,6 +1435,7 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<bool> submitCreateOrderFromCheckout(SalesController sales) async {
+    if (isPickingNoteMedia.value) return false;
     final body = await _buildCheckoutBody(sales);
     if (body == null) return false;
 
@@ -1474,21 +1476,18 @@ class SalesOrdersController extends GetxController {
       body['acknowledge_negative_stock'] = true;
     }
 
-    if (draftNoteImages.isNotEmpty) {
+    if (draftNoteMedia.isNotEmpty) {
       isSubmitting.value = true;
       try {
         final files = <dio.MultipartFile>[];
-        for (final image in draftNoteImages) {
-          final prepared = await MediaUploadPreparer.prepareImageForUpload(
-              image,
-              profile: ImageUploadProfile.receipt);
-          files.add(await prepared.toMultipartFile());
+        for (final media in draftNoteMedia) {
+          files.add(await _prepareNoteAttachment(media));
         }
         body['note_images'] = files;
       } catch (_) {
         isSubmitting.value = false;
         SalesOrderNotice.error(
-            'تعذر تجهيز صور الملاحظات؛ لم تحفظ الطلبية. أعد المحاولة.');
+            'تعذر تجهيز مرفقات الملاحظات؛ لم تحفظ الطلبية. أعد المحاولة.');
         return false;
       }
     }
@@ -2240,19 +2239,35 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<void> pickDraftNoteImages({required bool camera}) async {
-    if (isSubmitting.value || draftNoteImages.length >= 5) return;
-    try {
-      if (camera && !await ensureCameraPermission()) return;
-      final picked = camera
-          ? [await ImagePicker().pickImage(source: ImageSource.camera)]
-              .whereType<XFile>()
-              .toList()
-          : await ImagePicker().pickMultiImage();
-      draftNoteImages.addAll(picked.take(5 - draftNoteImages.length));
-    } catch (_) {
-      SalesOrderNotice.error('تعذر اختيار الصورة');
+  final isPickingNoteMedia = false.obs;
+
+  Future<void> pickDraftNoteMedia({required bool camera}) async {
+    if (isSubmitting.value ||
+        isPickingNoteMedia.value ||
+        draftNoteMedia.length >= 5) {
+      return;
     }
+    isPickingNoteMedia.value = true;
+    try {
+      final picked = await pickSalesOrderNoteMedia(
+          camera: camera, remaining: 5 - draftNoteMedia.length);
+      draftNoteMedia.addAll(picked);
+    } catch (_) {
+      SalesOrderNotice.error('تعذر اختيار المرفقات');
+    } finally {
+      isPickingNoteMedia.value = false;
+    }
+  }
+
+  Future<dio.MultipartFile> _prepareNoteAttachment(
+      WhatsAppCapture media) async {
+    final file = XFile(media.path);
+    final prepared = media.mediaKind == 'video'
+        ? await MediaUploadPreparer.prepareVideoForUpload(file,
+            maxBytes: 50 * 1024 * 1024)
+        : await MediaUploadPreparer.prepareImageForUpload(file,
+            profile: ImageUploadProfile.receipt);
+    return prepared.toMultipartFile();
   }
 
   Future<void> showOrderNotes(int orderId, {String scope = 'external'}) async {
@@ -2272,29 +2287,33 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<SalesOrderDetailModel?> saveOrderNote(
-      int orderId, String scope, String text, List<XFile> images) async {
+  Future<SalesOrderDetailModel?> saveOrderNote(int orderId, String scope,
+      String text, List<WhatsAppCapture> images) async {
     try {
       final files = <dio.MultipartFile>[];
       for (final image in images) {
-        final prepared = await MediaUploadPreparer.prepareImageForUpload(image,
-            profile: ImageUploadProfile.receipt);
-        files.add(await prepared.toMultipartFile());
+        files.add(await _prepareNoteAttachment(image));
       }
       final result = await repository.addNote(orderId, scope, text, files);
-      return result.fold(
+      return result.fold<SalesOrderDetailModel?>(
         (failure) {
           SalesOrderNotice.error(_humanizeFailure(failure));
           return null;
         },
         (order) {
           if (detail.value?.id == order.id) detail.value = order;
-          SalesOrderNotice.success('تم حفظ الملاحظة والصور');
+          final index = orders.indexWhere((item) => item.id == order.id);
+          if (index >= 0) {
+            orders[index] = orders[index].withNoteCounts(
+                order.internalNotesCount, order.externalNotesCount);
+          }
+          SalesOrderNotice.success('تم حفظ الملاحظة والمرفقات');
           return order;
         },
       );
     } catch (_) {
-      SalesOrderNotice.error('تعذر تجهيز الصور أو حفظ الملاحظة. أعد المحاولة.');
+      SalesOrderNotice.error(
+          'تعذر تجهيز المرفقات أو حفظ الملاحظة. أعد المحاولة.');
       return null;
     }
   }
