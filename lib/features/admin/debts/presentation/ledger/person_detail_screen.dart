@@ -365,7 +365,7 @@ class _BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: Get.find<DebtLedgerController>().takenLabel.value,
+                  label: Get.find<DebtLedgerController>().takenLabel,
                   amount: totalTaken,
                   currency: currency,
                   color: LedgerColors.takenGreen,
@@ -378,7 +378,7 @@ class _BalanceCard extends StatelessWidget {
               ),
               Expanded(
                 child: _StatColumn(
-                  label: Get.find<DebtLedgerController>().givenLabel.value,
+                  label: Get.find<DebtLedgerController>().givenLabel,
                   amount: totalGiven,
                   currency: currency,
                   color: LedgerColors.givenRed,
@@ -725,7 +725,7 @@ class _BottomActions extends StatelessWidget {
           children: [
             Expanded(
               child: _LedgerActionButton(
-                label: controller.givenLabel.value,
+                label: controller.givenLabel,
                 color: LedgerColors.givenRed,
                 onPressed: () => controller.openTransactionEntry(type: 'given'),
               ),
@@ -733,7 +733,7 @@ class _BottomActions extends StatelessWidget {
             SizedBox(width: 12.w),
             Expanded(
               child: _LedgerActionButton(
-                label: controller.takenLabel.value,
+                label: controller.takenLabel,
                 color: LedgerColors.takenGreen,
                 onPressed: () => controller.openTransactionEntry(type: 'taken'),
               ),

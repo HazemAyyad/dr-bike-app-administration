@@ -5,12 +5,15 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/debt_ledger_models.dart';
+import '../../data/models/debt_ledger_labels.dart';
 
 abstract class DebtLedgerRepository {
-  Future<Either<Failure, Map<String, String>>> getDebtLabels();
-  Future<Either<Failure, Map<String, String>>> saveDebtLabels({
+  Future<Either<Failure, DebtLedgerLabels>> getDebtLabels();
+  Future<Either<Failure, DebtLedgerLabels>> saveDebtLabels({
     required String takenLabel,
     required String givenLabel,
+    String scope = 'general',
+    bool useGeneral = false,
   });
   Future<Either<Failure, LedgerSummary>> getSummary();
   Future<Either<Failure, List<LedgerPerson>>> getPeople({

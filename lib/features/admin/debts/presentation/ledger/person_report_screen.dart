@@ -192,7 +192,7 @@ class _ReportHeader extends StatelessWidget {
           children: [
             Expanded(
               child: _ReportStat(
-                label: controller.takenLabel.value,
+                label: controller.takenLabel,
                 amount: stats.totalTaken,
                 currency: currency,
                 color: LedgerColors.takenGreen,
@@ -201,7 +201,7 @@ class _ReportHeader extends StatelessWidget {
             Container(width: 1, height: 52.h, color: Colors.grey.shade200),
             Expanded(
               child: _ReportStat(
-                label: controller.givenLabel.value,
+                label: controller.givenLabel,
                 amount: stats.totalGiven,
                 currency: currency,
                 color: LedgerColors.givenRed,

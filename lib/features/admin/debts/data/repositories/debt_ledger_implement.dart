@@ -8,6 +8,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../data/datasources/debt_ledger_datasource.dart';
 import '../../data/models/debt_ledger_models.dart';
+import '../../data/models/debt_ledger_labels.dart';
 import '../../domain/repositories/debt_ledger_repository.dart';
 
 class DebtLedgerImplement implements DebtLedgerRepository {
@@ -19,17 +20,14 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     required this.datasource,
   });
 
-  Map<String, String> _labelsFromResponse(Map<String, dynamic> data) {
+  DebtLedgerLabels _labelsFromResponse(Map<String, dynamic> data) {
     final payload = data['data'] as Map? ?? const {};
     final labels = payload['debt_ledger'] as Map? ?? const {};
-    return {
-      'taken_label': labels['taken_label']?.toString() ?? 'أخذت',
-      'given_label': labels['given_label']?.toString() ?? 'أعطيت',
-    };
+    return DebtLedgerLabels.fromJson(labels);
   }
 
   @override
-  Future<Either<Failure, Map<String, String>>> getDebtLabels() async {
+  Future<Either<Failure, DebtLedgerLabels>> getDebtLabels() async {
     if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
     try {
       final data = await datasource.getDebtLabels();
@@ -44,15 +42,19 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, String>>> saveDebtLabels({
+  Future<Either<Failure, DebtLedgerLabels>> saveDebtLabels({
     required String takenLabel,
     required String givenLabel,
+    String scope = 'general',
+    bool useGeneral = false,
   }) async {
     if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
     try {
       final data = await datasource.saveDebtLabels(
         takenLabel: takenLabel,
         givenLabel: givenLabel,
+        scope: scope,
+        useGeneral: useGeneral,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(

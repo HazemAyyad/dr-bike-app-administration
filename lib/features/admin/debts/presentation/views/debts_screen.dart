@@ -145,7 +145,7 @@ class _SummaryCard extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryItem(
-                label: controller.takenLabel.value,
+                label: controller.takenLabel,
                 amount: taken,
                 currency: currency,
                 color: LedgerColors.takenGreen,
@@ -154,7 +154,7 @@ class _SummaryCard extends StatelessWidget {
             Container(width: 1, height: 40.h, color: Colors.grey.shade300),
             Expanded(
               child: _SummaryItem(
-                label: controller.givenLabel.value,
+                label: controller.givenLabel,
                 amount: given,
                 currency: currency,
                 color: LedgerColors.givenRed,
@@ -381,7 +381,7 @@ class _PersonRow extends StatelessWidget {
     final currency = controller.selectedCurrency.value;
     final balance = person.balance;
     final balanceColor = controller.balanceColor(balance);
-    final balanceLabel = controller.balanceTypeLabel(balance);
+    final balanceLabel = controller.balanceTypeLabel(balance, person: person);
     final lastActivity = controller.formatLastTransactionTime(last);
 
     return InkWell(

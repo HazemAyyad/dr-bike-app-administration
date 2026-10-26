@@ -33,8 +33,8 @@ class PeriodFilterSheet extends StatelessWidget {
     ];
     final debtTypeOptions = <Map<String, String>>[
       {'key': 'all', 'label': 'all'.tr},
-      {'key': 'taken', 'label': 'took'.tr},
-      {'key': 'given', 'label': 'gave'.tr},
+      {'key': 'taken', 'label': controller.takenLabel},
+      {'key': 'given', 'label': controller.givenLabel},
       {'key': 'settled', 'label': 'ledgerDebtTypeSettled'.tr},
     ];
     final balanceScopeOptions = <Map<String, String>>[

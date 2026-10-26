@@ -17,13 +17,24 @@ class DebtLabelsSettingsSheet extends StatefulWidget {
 class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   late final TextEditingController takenController;
   late final TextEditingController givenController;
+  late String scope;
+  final Map<String, List<String>> drafts = {};
+
+  static const scopes = {
+    'general': 'عام / باقي الحسابات',
+    'customers': 'العملاء',
+    'sellers': 'الموردون',
+    'private': 'خاص',
+  };
 
   @override
   void initState() {
     super.initState();
     final ledger = Get.find<DebtLedgerController>();
-    takenController = TextEditingController(text: ledger.takenLabel.value);
-    givenController = TextEditingController(text: ledger.givenLabel.value);
+    scope = ledger.tabLabelScope;
+    final labels = ledger.debtLabels.value.forScope(scope);
+    takenController = TextEditingController(text: labels.taken);
+    givenController = TextEditingController(text: labels.given);
   }
 
   @override
@@ -73,11 +84,52 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                   ],
                 ),
                 Text(
-                  'غيّر الكلمات التي تظهر في القسم والتقارير. يمكنك الرجوع للوضع الافتراضي في أي وقت.',
+                  'اختر نوع الحساب وغيّر مسمياته، ثم احفظ لهذا النوع. النوع غير المخصص يستخدم المسميات العامة. لا تتغير مبالغ الحركات أو أرصدتها.',
                   style:
                       TextStyle(color: Colors.grey.shade600, fontSize: 12.sp),
                 ),
                 SizedBox(height: 18.h),
+                Obx(() => DropdownButtonFormField<String>(
+                      initialValue: scope,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'تخصيص المسميات لـ',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: scopes.entries
+                          .map((entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ))
+                          .toList(),
+                      onChanged: ledger.isSavingDebtLabels.value
+                          ? null
+                          : (value) {
+                              if (value == null || value == scope) return;
+                              drafts[scope] = [
+                                takenController.text,
+                                givenController.text
+                              ];
+                              final labels =
+                                  ledger.debtLabels.value.forScope(value);
+                              setState(() {
+                                scope = value;
+                                takenController.text =
+                                    drafts[value]?[0] ?? labels.taken;
+                                givenController.text =
+                                    drafts[value]?[1] ?? labels.given;
+                              });
+                            },
+                    )),
+                SizedBox(height: 18.h),
+                if (scope != 'general')
+                  Obx(() => TextButton.icon(
+                        onPressed: ledger.isSavingDebtLabels.value
+                            ? null
+                            : () => _save(useGeneral: true),
+                        icon: const Icon(Icons.link),
+                        label: const Text('استخدام المسميات العامة'),
+                      )),
                 TextField(
                   controller: takenController,
                   maxLength: 30,
@@ -98,7 +150,10 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                   ),
                 ),
                 SizedBox(height: 8.h),
-                Obx(() => Row(
+                Obx(() => Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 12.w,
+                      runSpacing: 8.h,
                       children: [
                         TextButton.icon(
                           onPressed: ledger.isSavingDebtLabels.value
@@ -110,7 +165,6 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                           icon: const Icon(Icons.restart_alt),
                           label: const Text('الافتراضي'),
                         ),
-                        const Spacer(),
                         FilledButton.icon(
                           onPressed:
                               ledger.isSavingDebtLabels.value ? null : _save,
@@ -129,7 +183,7 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                               : const Icon(Icons.save_outlined),
                           label: Text(ledger.isSavingDebtLabels.value
                               ? 'جاري الحفظ...'
-                              : 'حفظ'),
+                              : 'حفظ لهذا النوع'),
                         ),
                       ],
                     )),
@@ -141,12 +195,14 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
     );
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool useGeneral = false}) async {
     FocusScope.of(context).unfocus();
     final ledger = Get.find<DebtLedgerController>();
     final saved = await ledger.saveDebtLabels(
       takenController.text,
       givenController.text,
+      scope: scope,
+      useGeneral: useGeneral,
     );
     if (!mounted) return;
     if (saved) {

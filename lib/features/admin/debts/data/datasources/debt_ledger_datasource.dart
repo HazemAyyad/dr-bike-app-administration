@@ -25,13 +25,22 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> saveDebtLabels({
     required String takenLabel,
     required String givenLabel,
+    String scope = 'general',
+    bool useGeneral = false,
   }) async {
     final response = await api.put(
       EndPoints.adminUiPreferences,
       data: {
         'debt_ledger': {
-          'taken_label': takenLabel,
-          'given_label': givenLabel,
+          if (scope == 'general') ...{
+            'taken_label': takenLabel,
+            'given_label': givenLabel,
+          } else
+            'by_type': {
+              scope: useGeneral
+                  ? null
+                  : {'taken_label': takenLabel, 'given_label': givenLabel},
+            },
         },
       },
     );

@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/debt_ledger_models.dart';
+import '../../data/models/debt_ledger_labels.dart';
 import '../../domain/repositories/debt_ledger_repository.dart';
 import '../../../maintenance/presentation/binding/maintenance_binding.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
@@ -108,8 +109,34 @@ class DebtLedgerController extends GetxController {
 
   static const List<String> ledgerCurrencies = ['شيكل', 'دولار', 'دينار'];
   final RxString selectedCurrency = 'شيكل'.obs;
-  final RxString takenLabel = 'أخذت'.obs;
-  final RxString givenLabel = 'أعطيت'.obs;
+  final debtLabels = const DebtLedgerLabels().obs;
+  String get takenLabel => debtLabels.value.forScope(activeLabelScope).taken;
+  String get givenLabel => debtLabels.value.forScope(activeLabelScope).given;
+
+  String get tabLabelScope => isPrivateTab
+      ? 'private'
+      : isCustomerTab
+          ? 'customers'
+          : 'sellers';
+
+  String labelScopeForPerson(int id, bool isCustomer) {
+    final category = privateCategory;
+    if (category != null &&
+        (isCustomer
+            ? category.customerIds.contains(id)
+            : category.sellerIds.contains(id))) {
+      return 'private';
+    }
+    return isCustomer ? 'customers' : 'sellers';
+  }
+
+  String get activeLabelScope {
+    final person = selectedPerson;
+    return person == null
+        ? tabLabelScope
+        : person.labelScope ??
+            labelScopeForPerson(person.id, person.isCustomer);
+  }
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -140,7 +167,9 @@ class DebtLedgerController extends GetxController {
       Rxn<LedgerPersonArchiveDetail>();
   final RxBool personDeletedLoading = false.obs;
 
-  LedgerPersonInfo? selectedPerson;
+  final _selectedPerson = Rxn<LedgerPersonInfo>();
+  LedgerPersonInfo? get selectedPerson => _selectedPerson.value;
+  set selectedPerson(LedgerPersonInfo? value) => _selectedPerson.value = value;
   bool get isCustomerTab => currentTab.value == 0;
 
   bool get isPrivateTab => currentTab.value == 2;
@@ -296,30 +325,21 @@ class DebtLedgerController extends GetxController {
     isLoading(false);
   }
 
-  String labelForType(String type) =>
-      type == 'taken' ? takenLabel.value : givenLabel.value;
+  String labelForType(String type, {String? scope}) {
+    final labels = debtLabels.value.forScope(scope ?? activeLabelScope);
+    return type == 'taken' ? labels.taken : labels.given;
+  }
 
   Future<void> loadDebtLabels() async {
     final result = await repository.getDebtLabels();
     result.fold(
-      (_) {
-        takenLabel.value = 'أخذت';
-        givenLabel.value = 'أعطيت';
-      },
-      (labels) {
-        takenLabel.value =
-            labels['taken_label']?.toString().trim().isNotEmpty == true
-                ? labels['taken_label'].toString().trim()
-                : 'أخذت';
-        givenLabel.value =
-            labels['given_label']?.toString().trim().isNotEmpty == true
-                ? labels['given_label'].toString().trim()
-                : 'أعطيت';
-      },
+      (_) {},
+      (labels) => debtLabels.value = labels,
     );
   }
 
-  Future<bool> saveDebtLabels(String taken, String given) async {
+  Future<bool> saveDebtLabels(String taken, String given,
+      {String scope = 'general', bool useGeneral = false}) async {
     if (isSavingDebtLabels.value) return false;
     final nextTaken = taken.trim().isEmpty ? 'أخذت' : taken.trim();
     final nextGiven = given.trim().isEmpty ? 'أعطيت' : given.trim();
@@ -329,19 +349,20 @@ class DebtLedgerController extends GetxController {
       final result = await repository.saveDebtLabels(
         takenLabel: nextTaken,
         givenLabel: nextGiven,
+        scope: scope,
+        useGeneral: useGeneral,
       );
       var saved = false;
       result.fold(
         (failure) => debtLabelsSaveError.value = failure.errMessage,
         (labels) {
-          takenLabel.value =
-              labels['taken_label']?.toString().trim().isNotEmpty == true
-                  ? labels['taken_label'].toString().trim()
-                  : nextTaken;
-          givenLabel.value =
-              labels['given_label']?.toString().trim().isNotEmpty == true
-                  ? labels['given_label'].toString().trim()
-                  : nextGiven;
+          if (scope != 'general' &&
+              labels.byType.containsKey(scope) == useGeneral) {
+            debtLabelsSaveError.value =
+                'يلزم تحديث الخادم لدعم تخصيص المسميات حسب نوع الحساب.';
+            return;
+          }
+          debtLabels.value = labels;
           saved = true;
         },
       );
@@ -610,7 +631,11 @@ class DebtLedgerController extends GetxController {
       phone: phone,
       personType: personType,
     );
-    await Get.to(() => const PersonDetailScreen());
+    try {
+      await Get.to(() => const PersonDetailScreen());
+    } finally {
+      selectedPerson = null;
+    }
     await loadMainData();
   }
 
@@ -648,7 +673,8 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> loadPersonDetail() async {
-    if (selectedPerson == null) return;
+    final person = selectedPerson;
+    if (person == null) return;
     personLoading(true);
     final result = await repository.getPerson(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
@@ -664,6 +690,10 @@ class DebtLedgerController extends GetxController {
         message: failure.errMessage,
       ),
       (data) {
+        if (selectedPerson?.id != person.id ||
+            selectedPerson?.personType != person.personType) {
+          return;
+        }
         personDetail.value = data;
         selectedPerson = data.person;
       },
@@ -1590,8 +1620,8 @@ class DebtLedgerController extends GetxController {
       currency: currency,
       takenCount: takenCount,
       givenCount: givenCount,
-      takenLabel: 'took'.tr,
-      givenLabel: 'gave'.tr,
+      takenLabel: takenLabel,
+      givenLabel: givenLabel,
       transactionsWord: 'ledgerTransactionsWord'.tr,
     );
 
@@ -1732,9 +1762,12 @@ class DebtLedgerController extends GetxController {
   }
 
   /// تسمية الرصيد في القائمة الرئيسية: موجب = أخذت (أخضر)، سالب = أعطيت (أحمر).
-  String balanceTypeLabel(double balance) {
-    if (balance > 0) return 'took'.tr;
-    if (balance < 0) return 'gave'.tr;
+  String balanceTypeLabel(double balance, {LedgerPerson? person}) {
+    final scope = person == null
+        ? tabLabelScope
+        : labelScopeForPerson(person.id, person.isCustomer);
+    if (balance > 0) return labelForType('taken', scope: scope);
+    if (balance < 0) return labelForType('given', scope: scope);
     return '';
   }
 }
@@ -2002,7 +2035,7 @@ class TransactionCalculatorController extends GetxController {
             () => LedgerTransactionSuccessScreen(
               personName: personName,
               type: type,
-              typeLabel: tx.typeLabel,
+              typeLabel: ledger.labelForType(type),
               amount: tx.amount,
               currency: tx.currency,
               balanceAfter: tx.balanceAfter,

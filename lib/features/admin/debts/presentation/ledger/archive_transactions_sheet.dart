@@ -226,7 +226,7 @@ class _ArchiveSelectableRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    transaction.typeLabel,
+                    Get.find<DebtLedgerController>().labelForType(transaction.type),
                     style: TextStyle(fontSize: 12.sp, color: color),
                   ),
                 ],

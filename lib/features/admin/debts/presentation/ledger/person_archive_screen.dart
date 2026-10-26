@@ -104,7 +104,7 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
           final cur = controller.selectedCurrency.value;
           final stats = detail.balanceFor(cur);
           final balanceColor = controller.balanceColor(stats.balance);
-          final typeHint = stats.balance >= 0 ? 'took'.tr : 'gave'.tr;
+          final typeHint = controller.labelForType(stats.balance >= 0 ? 'taken' : 'given');
           final manualTransactions =
               detail.transactions.where((tx) => tx.isManual).toList();
 
@@ -328,7 +328,7 @@ class _ArchivedRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    transaction.typeLabel,
+                    Get.find<DebtLedgerController>().labelForType(transaction.type),
                     style: TextStyle(fontSize: 12.sp, color: color),
                   ),
                 ],

@@ -78,7 +78,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(
-                                tx.typeLabel,
+                                controller.labelForType(tx.type),
                                 style: TextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,

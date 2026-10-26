@@ -61,7 +61,7 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
           final cur = controller.selectedCurrency.value;
           final stats = detail.balanceFor(cur);
           final balanceColor = controller.balanceColor(stats.balance);
-          final typeHint = stats.balance >= 0 ? 'took'.tr : 'gave'.tr;
+          final typeHint = controller.labelForType(stats.balance >= 0 ? 'taken' : 'given');
 
           return ListView(
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
@@ -228,7 +228,7 @@ class _DeletedRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  transaction.typeLabel,
+                  Get.find<DebtLedgerController>().labelForType(transaction.type),
                   style: TextStyle(fontSize: 12.sp, color: color),
                 ),
                 if (transaction.note != null &&

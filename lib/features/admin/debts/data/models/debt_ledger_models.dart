@@ -313,6 +313,7 @@ class LedgerPersonInfo {
   final String personType;
   final String? notes;
   final String? collectionReminderAt;
+  final String? labelScope;
 
   LedgerPersonInfo({
     required this.id,
@@ -321,6 +322,7 @@ class LedgerPersonInfo {
     required this.personType,
     this.notes,
     this.collectionReminderAt,
+    this.labelScope,
   });
 
   factory LedgerPersonInfo.fromJson(Map<String, dynamic> json) {
@@ -331,6 +333,7 @@ class LedgerPersonInfo {
       personType: json['person_type']?.toString() ?? 'customer',
       notes: json['notes']?.toString(),
       collectionReminderAt: json['collection_reminder_at']?.toString(),
+      labelScope: json['label_scope']?.toString(),
     );
   }
 
@@ -344,6 +347,7 @@ class LedgerPersonInfo {
       name: name,
       phone: phone,
       personType: personType,
+      labelScope: labelScope,
       notes: notes ?? this.notes,
       collectionReminderAt: clearCollectionReminder
           ? null
