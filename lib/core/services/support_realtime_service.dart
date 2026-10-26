@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../databases/api/end_points.dart';
+import '../databases/api/api_request_backoff.dart';
 import 'user_data.dart';
 
 enum SupportRealtimeState { disconnected, connecting, connected }
@@ -105,7 +106,13 @@ class SupportRealtimeService {
     }
     if (event == 'pusher:connection_established' && data is Map) {
       _socketId = data['socket_id']?.toString();
-      await _subscribe();
+      try {
+        await _subscribe();
+      } catch (_) {
+        await _subscription?.cancel();
+        await _socket?.sink.close();
+        _scheduleReconnect();
+      }
       return;
     }
     if (event == 'pusher:ping') {
@@ -134,7 +141,8 @@ class SupportRealtimeService {
     final socketId = _socketId;
     if (channel == null || socketId == null) return;
     final token = await UserData.getUserToken();
-    final response = await Dio().post<Map<String, dynamic>>(
+    final client = Dio()..interceptors.add(ApiRequestBackoffInterceptor());
+    final response = await client.post<Map<String, dynamic>>(
       '${EndPoints.baserUrl}broadcasting/auth',
       data: {'socket_id': socketId, 'channel_name': channel},
       options: Options(
@@ -168,7 +176,9 @@ class SupportRealtimeService {
     _ping?.cancel();
     _retry?.cancel();
     _attempt++;
-    _retry = Timer(Duration(seconds: _attempt.clamp(1, 15)), _connect);
+    final retryDelay = Duration(seconds: _attempt.clamp(1, 15));
+    final cooldown = ApiRequestBackoff.instance.remaining;
+    _retry = Timer(cooldown > retryDelay ? cooldown : retryDelay, _connect);
   }
 
   Future<void> dispose() async {

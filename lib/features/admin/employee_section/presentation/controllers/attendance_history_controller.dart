@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:printing/printing.dart';
@@ -13,8 +11,11 @@ import '../../data/models/employee_advances_model.dart';
 import '../../domain/usecases/get_employee_attendance_history_usecase.dart';
 import '../../utils/employee_attendance_history_pdf_helper.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
+import '../../../../../core/services/foreground_poller.dart';
+import '../../../../../core/services/coalesced_refresh.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class AttendanceHistoryController extends GetxController {
   AttendanceHistoryController({
     required this.employeeId,
@@ -50,7 +51,9 @@ class AttendanceHistoryController extends GetxController {
 
   bool get isCustomRange => customFrom.value != null && customTo.value != null;
 
-  Timer? _liveRefreshTimer;
+  ForegroundPoller? _liveRefreshTimer;
+  final _historyLoad = CoalescedRefresh();
+  String? _historyRoute;
 
   String get _todayDateKey {
     final now = DateTime.now();
@@ -72,21 +75,28 @@ class AttendanceHistoryController extends GetxController {
   void onInit() {
     super.onInit();
     load();
-    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (_shouldLiveRefresh) {
-        load(silent: true);
-      }
-    });
+    _liveRefreshTimer = ForegroundPoller(
+      interval: const Duration(seconds: 60),
+      isVisible: () => Get.currentRoute == _historyRoute,
+      task: () async {
+        if (_shouldLiveRefresh) await load(silent: true);
+      },
+    )..start();
   }
 
   @override
   void onClose() {
-    _liveRefreshTimer?.cancel();
+    _liveRefreshTimer?.dispose();
     super.onClose();
   }
 
   /// تحميل البيانات بناءً على الشهر والسنة المختارَيْن
-  Future<void> load({bool silent = false}) async {
+  Future<void> load({bool silent = false}) {
+    _historyRoute ??= Get.currentRoute;
+    return _historyLoad.run(() => _load(silent: silent), queueIfBusy: !silent);
+  }
+
+  Future<void> _load({required bool silent}) async {
     if (employeeId.isEmpty) return;
     try {
       if (!silent) isLoading.value = true;

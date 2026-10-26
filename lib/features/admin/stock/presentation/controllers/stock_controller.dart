@@ -235,6 +235,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxSet<String> locationPriceSavingKeys = <String>{}.obs;
   int locationProductsPage = 1;
   int locationProductsLastPage = 1;
+  bool _selectingAllLocationProducts = false;
 
   final RxBool locationSelectionActive = false.obs;
   final RxBool deleteSelectionActive = false.obs;
@@ -368,21 +369,43 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> toggleAllLocationDeleteProducts() async {
-    if (!canSelectAllLocationDeleteProducts) return;
-    while (locationProductsPage < locationProductsLastPage) {
-      await loadMoreLocationFilterProducts();
+    if (!canSelectAllLocationDeleteProducts ||
+        _selectingAllLocationProducts ||
+        locationProductsLoadingMore.value) {
+      return;
     }
-    final productIds = locationFilterProducts
-        .map((product) => product.productId)
-        .where((id) => id.isNotEmpty)
-        .toList(growable: false);
-    if (allLocationDeleteProductsSelected) {
-      selectedProductIds.removeWhere(productIds.contains);
-      if (selectedProductIds.isEmpty) {
-        exitDeleteSelection();
+    _selectingAllLocationProducts = true;
+    final sectionId = selectedLocationSectionId.value;
+    try {
+      while (locationProductsPage < locationProductsLastPage) {
+        final previousPage = locationProductsPage;
+        await loadMoreLocationFilterProducts();
+        if (selectedLocationSectionId.value != sectionId ||
+            !canSelectAllLocationDeleteProducts) {
+          return;
+        }
+        if (locationProductsPage <= previousPage) {
+          AppFailureNotice.show(
+            title: 'error'.tr,
+            message: 'تعذر تحميل كل المنتجات. جرّب تحديد الكل مرة أخرى.',
+          );
+          return;
+        }
       }
-    } else {
-      selectedProductIds.assignAll(productIds.toSet().toList());
+      final productIds = locationFilterProducts
+          .map((product) => product.productId)
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
+      if (allLocationDeleteProductsSelected) {
+        selectedProductIds.removeWhere(productIds.contains);
+        if (selectedProductIds.isEmpty) {
+          exitDeleteSelection();
+        }
+      } else {
+        selectedProductIds.assignAll(productIds.toSet().toList());
+      }
+    } finally {
+      _selectingAllLocationProducts = false;
     }
   }
 
@@ -837,6 +860,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         page: next,
         perPage: locationTableView.value ? 40 : 15,
       );
+      if (selectedLocationSectionId.value != sectionId) return;
       for (final p in res.products) {
         if (!locationFilterProducts.any((x) => x.productId == p.productId)) {
           locationFilterProducts.add(p);

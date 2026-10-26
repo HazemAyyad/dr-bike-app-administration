@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,8 +8,11 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/stock_images_export_model.dart';
 import '../controllers/stock_controller.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
+import '../../../../../core/services/foreground_poller.dart';
+import '../../../../../core/services/coalesced_refresh.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockImagesExportsScreen extends StatefulWidget {
   const StockImagesExportsScreen({Key? key}) : super(key: key);
 
@@ -25,27 +26,37 @@ class _StockImagesExportsScreenState extends State<StockImagesExportsScreen> {
   final RxList<StockImagesExportModel> exports = <StockImagesExportModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxSet<String> deletingIds = <String>{}.obs;
-  Timer? _timer;
+  ForegroundPoller? _timer;
+  final _exportsLoad = CoalescedRefresh();
 
   @override
   void initState() {
     super.initState();
     _loadExports();
-    _timer = Timer.periodic(const Duration(seconds: 8), (_) {
-      if (exports.any((e) => e.isRunning)) {
-        _loadExports(silent: true);
-      }
-    });
+    _timer = ForegroundPoller(
+      interval: const Duration(seconds: 8),
+      isVisible: () => mounted && ModalRoute.of(context)?.isCurrent == true,
+      task: () async {
+        if (exports.any((e) => e.isRunning)) {
+          await _loadExports(silent: true);
+        }
+      },
+    )..start();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _timer?.dispose();
     super.dispose();
   }
 
-  Future<void> _loadExports({bool silent = false}) async {
-    if (isLoading.value && !silent) return;
+  Future<void> _loadExports({bool silent = false}) {
+    return _exportsLoad.run(() => _fetchExports(silent: silent),
+        queueIfBusy: !silent);
+  }
+
+  Future<void> _fetchExports({required bool silent}) async {
+    if (!mounted) return;
     try {
       if (!silent) isLoading(true);
       final rows =

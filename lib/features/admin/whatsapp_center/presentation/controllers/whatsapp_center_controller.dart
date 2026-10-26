@@ -19,6 +19,8 @@ import 'package:flutter_svg/flutter_svg.dart' as svg;
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/foreground_poller.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
@@ -37,7 +39,7 @@ class WhatsAppCenterController extends GetxController {
   final loadingMoreConversations = false.obs;
   final searchingConversations = false.obs;
   final hasMoreConversations = false.obs;
-  Timer? _conversationsRefreshTimer;
+  ForegroundPoller? _conversationsRefreshTimer;
   Timer? _conversationSearchDebounce;
   bool _refreshingConversations = false;
   int _conversationPage = 1;
@@ -68,10 +70,12 @@ class WhatsAppCenterController extends GetxController {
     super.onInit();
     conversationsScrollController.addListener(_onConversationsScroll);
     refreshCurrent();
-    _conversationsRefreshTimer = Timer.periodic(
-      const Duration(seconds: 10),
-      (_) => _refreshConversationsSilently(),
-    );
+    _conversationsRefreshTimer = ForegroundPoller(
+      interval: const Duration(seconds: 10),
+      task: _refreshConversationsSilently,
+      isVisible: () =>
+          Uri.parse(Get.currentRoute).path == AppRoutes.WHATSAPPCENTER,
+    )..start();
   }
 
   Future<void> selectTab(int index) async {
@@ -131,8 +135,6 @@ class WhatsAppCenterController extends GetxController {
       error.value = null;
       _conversationPage = 1;
       hasMoreConversations.value = false;
-      _conversationThumbnails.clear();
-      _conversationAudioDurations.clear();
     }
 
     try {
@@ -223,8 +225,6 @@ class WhatsAppCenterController extends GetxController {
           1;
       hasMoreConversations.value =
           selectedChannel.value == 'whatsapp' && lastPage > 1;
-      _conversationThumbnails.clear();
-      _conversationAudioDurations.clear();
     } catch (_) {
       // Periodic refresh stays silent; manual refresh still reports errors.
     } finally {
@@ -255,13 +255,16 @@ class WhatsAppCenterController extends GetxController {
         final directory = await getTemporaryDirectory();
         final file = File('${directory.path}/whatsapp-list-$messageId.mp4');
         await file.writeAsBytes(bytes, flush: true);
-        return VideoThumbnail.thumbnailData(
+        final thumbnail = await VideoThumbnail.thumbnailData(
           video: file.path,
           imageFormat: ImageFormat.JPEG,
           maxWidth: 180,
           quality: 68,
         );
+        if (thumbnail == null) _conversationThumbnails.remove(messageId);
+        return thumbnail;
       } catch (_) {
+        _conversationThumbnails.remove(messageId);
         return null;
       }
     });
@@ -283,6 +286,7 @@ class WhatsAppCenterController extends GetxController {
         await file.writeAsBytes(bytes, flush: true);
         return await player.setFilePath(file.path);
       } catch (_) {
+        _conversationAudioDurations.remove(messageId);
         return null;
       } finally {
         await player.dispose();
@@ -634,7 +638,7 @@ class WhatsAppCenterController extends GetxController {
 
   @override
   void onClose() {
-    _conversationsRefreshTimer?.cancel();
+    _conversationsRefreshTimer?.dispose();
     _conversationSearchDebounce?.cancel();
     conversationsScrollController.removeListener(_onConversationsScroll);
     conversationsScrollController.dispose();

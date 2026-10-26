@@ -7,6 +7,7 @@ import '../../../../../core/services/employee_wifi_presence_service.dart';
 import '../../../../../core/services/impersonation_state.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/session_service.dart';
+import '../../../../../core/services/foreground_poller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -158,13 +159,17 @@ class EmployeeDashbordController extends GetxController
     );
   }
 
-  Timer? _attendanceLiveTimer;
+  ForegroundPoller? _attendanceLiveTimer;
 
   void _startAttendanceLiveRefresh() {
-    _attendanceLiveTimer?.cancel();
-    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      refreshTodayAttendance(silent: true);
-    });
+    _attendanceLiveTimer?.dispose();
+    _attendanceLiveTimer = ForegroundPoller(
+      interval: const Duration(seconds: 60),
+      // Native Wi-Fi presence remains active in the background; this only
+      // refreshes attendance displayed inside the app.
+      isVisible: () => true,
+      task: () => refreshTodayAttendance(silent: true),
+    )..start();
   }
 
   /// Keeps the home timer in sync with QR / fingerprint / admin attendance.
@@ -1191,7 +1196,7 @@ class EmployeeDashbordController extends GetxController
   @override
   void onClose() {
     WidgetsBinding.instance.removeObserver(this);
-    _attendanceLiveTimer?.cancel();
+    _attendanceLiveTimer?.dispose();
     EmployeeWifiPresenceService.instance.stop();
     animController.dispose();
     opacityAnimation.isDismissed;

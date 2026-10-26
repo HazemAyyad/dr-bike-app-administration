@@ -50,6 +50,16 @@
                 android:textColor="#677085"
                 android:textSize="11sp" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/smart_device_widget_refresh"
+            android:layout_width="32dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="4dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/widget_smart_device_refresh"
+            android:padding="6dp"
+            android:src="@drawable/widget_smart_refresh" />
     </LinearLayout>
 
     <LinearLayout
@@ -122,4 +132,15 @@
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/smart_device_widget_last_updated"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="end"
+        android:maxLines="1"
+        android:textColor="#677085"
+        android:textSize="10sp" />
 </LinearLayout>

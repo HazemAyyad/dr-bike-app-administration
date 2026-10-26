@@ -19,6 +19,8 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
 import '../../../../../core/media/media_upload_preparer.dart';
 import '../../../../../core/media/prepared_upload.dart';
+import '../../../../../core/services/foreground_poller.dart';
+import '../../../../../core/services/coalesced_refresh.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
@@ -62,7 +64,8 @@ class WhatsAppConversationController extends GetxController {
   final recordingLocked = false.obs;
   final recordingDuration = Duration.zero.obs;
   Timer? _recordingTimer;
-  Timer? _refreshTimer;
+  ForegroundPoller? _refreshTimer;
+  final _conversationLoad = CoalescedRefresh();
   Timer? _typingDebounce;
   DateTime? _lastTypingSentAt;
   int _nextLocalMessageId = -1;
@@ -86,13 +89,22 @@ class WhatsAppConversationController extends GetxController {
     input.addListener(_onTextChanged);
     scrollController.addListener(_syncJumpButton);
     load();
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => load(silent: true),
-    );
+    _refreshTimer = ForegroundPoller(
+      interval: const Duration(seconds: 5),
+      task: () => load(silent: true, queueIfBusy: false),
+      isVisible: () =>
+          Uri.parse(Get.currentRoute).path ==
+          AppRoutes.WHATSAPPCONVERSATION.replaceFirst(':id', '$id'),
+    )..start();
   }
 
-  Future<void> load({bool silent = false}) async {
+  Future<void> load({bool silent = false, bool queueIfBusy = true}) {
+    return _conversationLoad.run(() => _load(silent: silent),
+        queueIfBusy: queueIfBusy);
+  }
+
+  Future<void> _load({required bool silent}) async {
+    if (isClosed) return;
     final wasNearBottom = !scrollController.hasClients ||
         scrollController.position.maxScrollExtent -
                 scrollController.position.pixels <
@@ -1016,7 +1028,7 @@ class WhatsAppConversationController extends GetxController {
 
   @override
   void onClose() {
-    _refreshTimer?.cancel();
+    _refreshTimer?.dispose();
     _typingDebounce?.cancel();
     _recordingTimer?.cancel();
     input.removeListener(_onTextChanged);

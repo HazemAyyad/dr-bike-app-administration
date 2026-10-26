@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/helpers/app_success_notice.dart';
 import '../../../../core/services/final_classes.dart';
 import '../../../../core/services/initial_bindings.dart';
+import '../../../../core/errors/expentions.dart';
 import '../../data/smart_home_api_service.dart';
 import '../../data/smart_home_native_service.dart';
 import '../../data/tuya_device_capability_resolver.dart';
@@ -292,7 +293,10 @@ class SmartHomeController extends GetxController {
       devices.assignAll(bootstrap.devices);
       scenes.assignAll(bootstrap.scenes);
       return true;
-    } catch (_) {
+    } on ServerException catch (e) {
+      // Legacy endpoints are only needed on servers without bootstrap support.
+      // An outage or rate limit must not fan out into several more requests.
+      if (e.errorModel.status != 404 && e.errorModel.status != 405) rethrow;
       await _loadLegacyData(loadOwners: loadOwners);
       return false;
     }
@@ -1187,7 +1191,7 @@ class SmartHomeController extends GetxController {
       );
       final native = await nativeService.getDeviceStatus(
         tuyaDeviceId: loaded.tuyaDeviceId,
-        tuyaHomeId: _tuyaHomeIdForDevice(loaded),
+        tuyaHomeId: tuyaHomeIdForDevice(loaded),
       );
       var merged = loaded;
       if (native.success) {
@@ -1220,7 +1224,7 @@ class SmartHomeController extends GetxController {
         _deviceRefreshFailures[loaded.id] = {
           'code': native.code,
           'message': native.message,
-          'tuya_home_id': _tuyaHomeIdForDevice(loaded),
+          'tuya_home_id': tuyaHomeIdForDevice(loaded),
         };
         await _logDeviceControl(
           device: loaded,
@@ -1438,7 +1442,7 @@ class SmartHomeController extends GetxController {
     try {
       final native = await nativeService.removeDevice(
         tuyaDeviceId: device.tuyaDeviceId,
-        tuyaHomeId: _tuyaHomeIdForDevice(device),
+        tuyaHomeId: tuyaHomeIdForDevice(device),
       );
       final tuyaAlreadyGone =
           native.code == 'device_not_found' || native.code == '11002';
@@ -1590,7 +1594,7 @@ class SmartHomeController extends GetxController {
       );
       final native = await nativeService.publishDps(
         tuyaDeviceId: controlDevice.tuyaDeviceId,
-        tuyaHomeId: _tuyaHomeIdForDevice(controlDevice),
+        tuyaHomeId: tuyaHomeIdForDevice(controlDevice),
         dpId: function.dpId,
         code: function.code,
         type: function.type,
@@ -1798,7 +1802,7 @@ class SmartHomeController extends GetxController {
         if (device.tuyaDeviceId.trim().isEmpty) {
           continue;
         }
-        final tuyaHomeId = _tuyaHomeIdForDevice(device);
+        final tuyaHomeId = tuyaHomeIdForDevice(device);
         if (tuyaHomeId.trim().isEmpty) continue;
         final retryAfter = _deviceStatusRetryAfter[device.id];
         if (!force &&
@@ -1975,7 +1979,7 @@ class SmartHomeController extends GetxController {
     }
   }
 
-  String _tuyaHomeIdForDevice(SmartDeviceModel device) {
+  String tuyaHomeIdForDevice(SmartDeviceModel device) {
     final metadataHomeId = _tuyaHomeIdFromMetadata(device.rawMetadata);
     if (metadataHomeId.isNotEmpty) return metadataHomeId;
 

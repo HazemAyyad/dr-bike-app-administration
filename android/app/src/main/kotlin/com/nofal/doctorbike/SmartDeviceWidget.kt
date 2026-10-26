@@ -4,6 +4,8 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -23,6 +25,11 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
+import java.util.Date
+import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 class SmartDeviceWidget : AppWidgetProvider() {
     override fun onUpdate(
@@ -41,6 +48,10 @@ class SmartDeviceWidget : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        if (intent.action == ACTION_REFRESH_STATUS) {
+            refreshDeviceStatus(context, intent)
+            return
+        }
         if (intent.action != ACTION_TOGGLE_SWITCH) return
 
         val index = intent.getIntExtra(EXTRA_SWITCH_INDEX, -1)
@@ -79,6 +90,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
             payload.put(dpId, nextValue)
         }
         if (payload.length() == 0) return
+        bumpActionVersion(widgetId)
         val pendingResult = goAsync()
 
         data.put(KEY_STATUS, "جاري التنفيذ...")
@@ -132,6 +144,132 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 }
             },
         )
+    }
+
+    private fun refreshDeviceStatus(context: Context, intent: Intent) {
+        val widgetId = intent.getIntExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID,
+        )
+        val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context) ?: return
+        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID ||
+            !refreshingWidgets.add(widgetId)) return
+
+        val version = actionVersions[widgetId] ?: 0L
+        val pending = goAsync()
+        val finished = AtomicBoolean(false)
+        val handler = Handler(Looper.getMainLooper())
+        var timeout: Runnable? = null
+        val finish = {
+            if (finished.compareAndSet(false, true)) {
+                timeout?.let { handler.removeCallbacks(it) }
+                refreshingWidgets.remove(widgetId)
+                refreshWidget(context, widgetId)
+                pending.finish()
+            }
+        }
+        val fail = { message: String ->
+            if (!finished.get()) {
+                // A later toggle owns its status; never overwrite it with an
+                // older refresh, or replace the last successful timestamp.
+                if ((actionVersions[widgetId] ?: 0L) == version) {
+                    readWidgetData(context, widgetId)?.let { current ->
+                        current.put(KEY_STATUS, message)
+                        saveWidgetData(context, widgetId, current)
+                    }
+                }
+                finish()
+            }
+        }
+        timeout = Runnable { fail("انتهت مهلة التحديث") }
+        handler.postDelayed(timeout, 9_000L)
+        data.put(KEY_STATUS, "جاري تحديث الحالة...")
+        saveWidgetData(context, widgetId, data)
+        refreshWidget(context, widgetId)
+
+        val deviceId = data.optString(KEY_TUYA_DEVICE_ID)
+        val homeId = data.optString(KEY_TUYA_HOME_ID).toLongOrNull()
+        if (deviceId.isBlank() || homeId == null || homeId <= 0L) {
+            fail("أعد إضافة التطبيق المصغر لتحديث حالته")
+            return
+        }
+        val fetch = fetch@{
+            if (finished.get()) return@fetch
+            val home = ThingHomeSdk.newHomeInstance(homeId)
+            home.getHomeDetail(object : IThingHomeResultCallback {
+                override fun onSuccess(bean: HomeBean) {
+                    try {
+                        if (finished.get()) return
+                        if ((actionVersions[widgetId] ?: 0L) != version) {
+                            finish()
+                            return
+                        }
+                        // Read the fetched home, never the widget's saved state.
+                        val device = (bean.deviceList.orEmpty() + bean.sharedDeviceList.orEmpty())
+                            .firstOrNull { it.devId == deviceId }
+                        if (device == null) {
+                            fail("الجهاز غير موجود في المنزل")
+                            return
+                        }
+                        val current = readWidgetData(context, widgetId)
+                        if (current == null) {
+                            finish()
+                            return
+                        }
+                        val switches = current.optJSONArray(KEY_SWITCHES) ?: JSONArray()
+                        if (device.isOnline == true) {
+                            val values = (0 until switches.length()).map { index ->
+                                val dpId = switches.optJSONObject(index)?.optString("dp_id")
+                                switchBoolean(device.dps?.get(dpId))
+                            }
+                            if (values.any { it == null }) {
+                                fail("تعذر قراءة حالة المفاتيح")
+                                return
+                            }
+                            values.forEachIndexed { index, value ->
+                                switches.optJSONObject(index)?.put("active", value)
+                            }
+                        }
+                        current.put(KEY_SWITCHES, switches)
+                        current.put(KEY_STATUS, if (device.isOnline == true) "متصل" else "غير متصل")
+                        current.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis())
+                        saveWidgetData(context, widgetId, current)
+                        finish()
+                    } catch (error: Exception) {
+                        Log.e(TAG, "widget refresh failed widgetId=$widgetId", error)
+                        fail("تعذر تحديث الحالة")
+                    } finally {
+                        home.onDestroy()
+                    }
+                }
+
+                override fun onError(code: String?, error: String?) {
+                    Log.e(TAG, "widget refresh failed widgetId=$widgetId code=$code error=$error")
+                    home.onDestroy()
+                    fail("تعذر تحديث الحالة")
+                }
+            })
+        }
+        val countryCode = data.optString(KEY_TUYA_COUNTRY_CODE)
+        val uid = data.optString(KEY_TUYA_UID)
+        val password = data.optString(KEY_TUYA_PASSWORD)
+        try {
+            if (countryCode.isBlank() || uid.isBlank() || password.isBlank()) {
+                fetch()
+            } else {
+                ThingHomeSdk.getUserInstance().loginOrRegisterWithUid(
+                    countryCode, uid, password,
+                    object : ILoginCallback {
+                        override fun onSuccess(user: User) { fetch() }
+                        override fun onError(code: String?, error: String?) {
+                            fail("تعذر تسجيل Tuya")
+                        }
+                    },
+                )
+            }
+        } catch (error: Exception) {
+            fail("تعذر تحديث الحالة")
+        }
     }
 
     private fun publishToggle(
@@ -206,16 +344,18 @@ class SmartDeviceWidget : AppWidgetProvider() {
             payload,
             object : IResultCallback {
                 override fun onSuccess() {
+                    bumpActionVersion(widgetId)
                     Log.d(TAG, "publish succeeded widgetId=$widgetId deviceId=$tuyaDeviceId")
+                    val data = readWidgetData(context, widgetId) ?: JSONObject()
+                    val latestSwitches = data.optJSONArray(KEY_SWITCHES) ?: switches
                     if (switchIndex == null) {
-                        for (index in 0 until switches.length()) {
-                            switches.optJSONObject(index)?.put("active", nextValue)
+                        for (index in 0 until latestSwitches.length()) {
+                            latestSwitches.optJSONObject(index)?.put("active", nextValue)
                         }
                     } else {
-                        switches.optJSONObject(switchIndex)?.put("active", nextValue)
+                        latestSwitches.optJSONObject(switchIndex)?.put("active", nextValue)
                     }
-                    val data = readWidgetData(context, widgetId) ?: JSONObject()
-                    data.put(KEY_SWITCHES, switches)
+                    data.put(KEY_SWITCHES, latestSwitches)
                     data.put(KEY_STATUS, "متصل")
                     saveWidgetData(context, widgetId, data)
                     refreshWidget(context, widgetId)
@@ -265,6 +405,13 @@ class SmartDeviceWidget : AppWidgetProvider() {
 
         val views = RemoteViews(context.packageName, R.layout.smart_device_widget).apply {
             setTextViewText(R.id.smart_device_widget_name, name)
+            val updatedAt = data?.optLong(KEY_LAST_UPDATED_AT, 0L) ?: 0L
+            val updatedLabel = if (updatedAt > 0L) {
+                SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(updatedAt))
+            } else "—"
+            setTextViewText(R.id.smart_device_widget_last_updated, "آخر تحديث: $updatedLabel")
+            setOnClickPendingIntent(R.id.smart_device_widget_refresh, statusRefreshIntent(context, widgetId))
+            setInt(R.id.smart_device_widget_refresh, "setImageAlpha", if (refreshingWidgets.contains(widgetId)) 90 else 255)
             setTextViewText(
                 R.id.smart_device_widget_subtitle,
                 listOf(room, status).filter { it.isNotBlank() }.joinToString(" • "),
@@ -305,7 +452,10 @@ class SmartDeviceWidget : AppWidgetProvider() {
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         val editor = widgetPreferences(context).edit()
-        appWidgetIds.forEach { editor.remove(widgetKey(it)) }
+        appWidgetIds.forEach {
+            editor.remove(widgetKey(it))
+            actionVersions.remove(it)
+        }
         editor.apply()
         super.onDeleted(context, appWidgetIds)
     }
@@ -325,6 +475,18 @@ class SmartDeviceWidget : AppWidgetProvider() {
         )
     }
 
+    private fun statusRefreshIntent(context: Context, widgetId: Int): PendingIntent {
+        val intent = Intent(context, SmartDeviceWidget::class.java).apply {
+            action = ACTION_REFRESH_STATUS
+            data = Uri.parse("doctorbike://smart_device/$widgetId/refresh")
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        return PendingIntent.getBroadcast(
+            context, widgetId, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     private fun refreshWidget(context: Context, widgetId: Int) {
         val manager = AppWidgetManager.getInstance(context)
         updateWidget(context, manager, widgetId)
@@ -340,6 +502,23 @@ class SmartDeviceWidget : AppWidgetProvider() {
         private const val TAG = "SmartDeviceWidgetFlow"
         private const val ACTION_TOGGLE_SWITCH =
             "com.application.doctorbike.SMART_DEVICE_WIDGET_TOGGLE"
+        private const val ACTION_REFRESH_STATUS =
+            "com.application.doctorbike.SMART_DEVICE_WIDGET_REFRESH"
+        private val refreshingWidgets = ConcurrentHashMap.newKeySet<Int>()
+        private val actionVersions = ConcurrentHashMap<Int, Long>()
+        private fun bumpActionVersion(widgetId: Int) = synchronized(actionVersions) {
+            actionVersions[widgetId] = (actionVersions[widgetId] ?: 0L) + 1L
+        }
+        private fun switchBoolean(value: Any?): Boolean? = when (value) {
+            is Boolean -> value
+            is Number -> when (value.toInt()) { 0 -> false; 1 -> true; else -> null }
+            is String -> when (value.lowercase(Locale.ROOT)) {
+                "true", "1" -> true
+                "false", "0" -> false
+                else -> null
+            }
+            else -> null
+        }
         private const val EXTRA_SWITCH_INDEX = "switch_index"
         private const val ALL_SWITCHES_INDEX = -2
         private const val WIDGET_PREFS = "smart_device_widget_instances"
@@ -348,6 +527,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
         private const val KEY_NAME = "name"
         private const val KEY_ROOM = "room"
         private const val KEY_STATUS = "status"
+        private const val KEY_LAST_UPDATED_AT = "last_status_refresh_at"
         private const val KEY_TUYA_DEVICE_ID = "tuya_device_id"
         private const val KEY_TUYA_HOME_ID = "tuya_home_id"
         private const val KEY_TUYA_COUNTRY_CODE = "tuya_country_code"

@@ -8,6 +8,7 @@ import '../../services/languague_service.dart';
 import '../../services/session_service.dart';
 import '../../services/user_data.dart';
 import 'api_consumer.dart';
+import 'api_request_backoff.dart';
 import 'end_points.dart';
 
 class DioConsumer extends ApiConsumer {
@@ -23,6 +24,7 @@ class DioConsumer extends ApiConsumer {
       'Accept': 'application/json',
       'lang': getx.Get.find<LanguageController>().getLang(),
     };
+    dio.interceptors.add(ApiRequestBackoffInterceptor());
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {

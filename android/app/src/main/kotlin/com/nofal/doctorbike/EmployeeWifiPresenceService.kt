@@ -21,6 +21,9 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 class EmployeeWifiPresenceService : Service() {
     private val handler = Handler(Looper.getMainLooper())
@@ -28,6 +31,8 @@ class EmployeeWifiPresenceService : Service() {
     private var running = false
     private var apiBaseUrl: String = ""
     private var token: String = ""
+    @Volatile private var retryAfterMillis = 0L
+    private var consecutiveFailures = 0
 
     private val tick = object : Runnable {
         override fun run() {
@@ -53,6 +58,10 @@ class EmployeeWifiPresenceService : Service() {
         val incomingBaseUrl = intent?.getStringExtra(EXTRA_BASE_URL)
         val incomingToken = intent?.getStringExtra(EXTRA_TOKEN)
         if (!incomingBaseUrl.isNullOrBlank() && !incomingToken.isNullOrBlank()) {
+            if (incomingToken != token || incomingBaseUrl != apiBaseUrl) {
+                consecutiveFailures = 0
+                retryAfterMillis = 0L
+            }
             apiBaseUrl = incomingBaseUrl
             token = incomingToken
             prefs.edit()
@@ -90,6 +99,7 @@ class EmployeeWifiPresenceService : Service() {
     private fun sendPresence() {
         val base = apiBaseUrl.trimEnd('/')
         if (base.isBlank() || token.isBlank()) return
+        if (System.currentTimeMillis() < retryAfterMillis) return
 
         val status = readNetworkStatus()
         executor.execute {
@@ -115,12 +125,39 @@ class EmployeeWifiPresenceService : Service() {
                     writer.flush()
                 }
                 val code = connection.responseCode
+                val retryAfter = connection.getHeaderField("Retry-After")
                 connection.disconnect()
+                when {
+                    code in 200..299 -> {
+                        consecutiveFailures = 0
+                        retryAfterMillis = 0L
+                    }
+                    code == 401 || code == 403 || code == 419 ||
+                        code == 429 || code == 502 || code == 503 || code == 504 ->
+                        pauseAfterFailure(retryAfter)
+                }
                 Log.d(TAG, "presence sent code=$code ssid=${status.ssid}")
             } catch (e: Exception) {
+                pauseAfterFailure(null)
                 Log.d(TAG, "presence send failed: ${e.message}")
             }
         }
+    }
+
+    private fun pauseAfterFailure(retryAfter: String?) {
+        consecutiveFailures = (consecutiveFailures + 1).coerceAtMost(5)
+        val now = System.currentTimeMillis()
+        val serverDelay = retryAfter?.trim()?.let { value ->
+            value.toLongOrNull()?.coerceIn(0L, 86400L)?.times(1000L)
+                ?: runCatching {
+                    SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+                        .apply { timeZone = TimeZone.getTimeZone("GMT") }
+                        .parse(value)?.time?.minus(now)
+                }.getOrNull()
+        } ?: 0L
+        val backoff = (INTERVAL_MS * (1L shl (consecutiveFailures - 1)))
+            .coerceAtMost(15 * INTERVAL_MS)
+        retryAfterMillis = now + maxOf(backoff, serverDelay)
     }
 
     private fun readNetworkStatus(): WifiPresenceStatus {

@@ -16,6 +16,8 @@ import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/services/support_realtime_service.dart';
+import '../../../core/services/foreground_poller.dart';
+import '../../../core/services/coalesced_refresh.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/widgets/person_avatar_image.dart';
 import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
@@ -67,7 +69,9 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   List<SupportConversation> conversations = [];
   SupportConversation? conversation;
   List<SupportMessage> messages = [];
-  Timer? poller;
+  ForegroundPoller? poller;
+  final _listLoad = CoalescedRefresh();
+  final _conversationLoad = CoalescedRefresh();
   Timer? recordingTimer;
   late final SupportRealtimeService realtime;
   SupportRealtimeState realtimeState = SupportRealtimeState.disconnected;
@@ -76,7 +80,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Timer? typingIdleTimer;
   Timer? remoteTypingTimer;
   Timer? presenceRefreshTimer;
-  Timer? supportPresenceTimer;
+  ForegroundPoller? supportPresenceTimer;
   DateTime? lastTypingSignal;
   bool typingSent = false;
 
@@ -132,11 +136,11 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
 
   @override
   void dispose() {
-    poller?.cancel();
+    poller?.dispose();
     typingIdleTimer?.cancel();
     remoteTypingTimer?.cancel();
     presenceRefreshTimer?.cancel();
-    supportPresenceTimer?.cancel();
+    supportPresenceTimer?.dispose();
     _stopTyping();
     realtime.dispose();
     recordingTimer?.cancel();
@@ -149,7 +153,13 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     super.dispose();
   }
 
-  Future<void> _loadList({bool silent = false}) async {
+  Future<void> _loadList({bool silent = false, bool queueIfBusy = true}) {
+    return _listLoad.run(() => _fetchList(silent: silent),
+        queueIfBusy: queueIfBusy);
+  }
+
+  Future<void> _fetchList({required bool silent}) async {
+    if (!mounted) return;
     if (!silent) setState(() => loading = true);
     try {
       final result = await service.getConversations(
@@ -173,14 +183,23 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   }
 
   void _configureFallbackPoller() {
-    poller?.cancel();
-    if (realtimeState == SupportRealtimeState.connected) return;
-    poller = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (sending || recording) return;
-      inConversation
-          ? _loadConversation(silent: true)
-          : _loadList(silent: true);
-    });
+    if (realtimeState == SupportRealtimeState.connected) {
+      poller?.dispose();
+      poller = null;
+      return;
+    }
+    // Reconnect state changes must not keep postponing the fallback refresh.
+    if (poller != null) return;
+    poller = ForegroundPoller(
+      interval: const Duration(seconds: 20),
+      isVisible: () => mounted && ModalRoute.of(context)?.isCurrent == true,
+      task: () async {
+        if (sending || recording) return;
+        await (inConversation
+            ? _loadConversation(silent: true, queueIfBusy: false)
+            : _loadList(silent: true, queueIfBusy: false));
+      },
+    )..start();
   }
 
   void _onRealtimePayload(Map<String, dynamic> payload) {
@@ -232,7 +251,14 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     setState(() {});
   }
 
-  Future<void> _loadConversation({bool silent = false}) async {
+  Future<void> _loadConversation(
+      {bool silent = false, bool queueIfBusy = true}) {
+    return _conversationLoad.run(() => _fetchConversation(silent: silent),
+        queueIfBusy: queueIfBusy);
+  }
+
+  Future<void> _fetchConversation({required bool silent}) async {
+    if (!mounted) return;
     final wasNearBottom = !messagesScrollController.hasClients ||
         messagesScrollController.position.maxScrollExtent -
                 messagesScrollController.position.pixels <
@@ -272,10 +298,11 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     if (id == null || supportPresenceTimer != null) return;
 
     service.updatePresence(id).catchError((_) {});
-    supportPresenceTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => service.updatePresence(id).catchError((_) {}),
-    );
+    supportPresenceTimer = ForegroundPoller(
+      interval: const Duration(seconds: 30),
+      isVisible: () => mounted && ModalRoute.of(context)?.isCurrent == true,
+      task: () => service.updatePresence(id),
+    )..start();
   }
 
   void _scrollToLatest() {
