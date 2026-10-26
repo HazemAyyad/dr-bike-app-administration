@@ -28,13 +28,21 @@ class AddAdminController extends GetxController {
 
   final isLoading = false.obs;
 
-  bool get isEdit => Get.arguments?['isEdit'] == true;
-  AdminUserModel? get editingAdmin =>
-      Get.arguments?['admin'] as AdminUserModel?;
+  bool _isEdit = false;
+  AdminUserModel? _editingAdmin;
+
+  bool get isEdit => _isEdit;
+  AdminUserModel? get editingAdmin => _editingAdmin;
 
   @override
   void onInit() {
     super.onInit();
+    final arguments = Get.arguments;
+    if (arguments is Map) {
+      _isEdit = arguments['isEdit'] == true;
+      final selectedAdmin = arguments['admin'];
+      _editingAdmin = selectedAdmin is AdminUserModel ? selectedAdmin : null;
+    }
     final admin = editingAdmin;
     if (isEdit && admin != null) {
       nameController.text = admin.name;

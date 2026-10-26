@@ -246,44 +246,52 @@ class _AdminActionsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
 
-    return Container(
-      margin: EdgeInsets.all(16.w),
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
+    return Padding(
+      padding: EdgeInsets.all(16.w),
+      child: Material(
+        color: isDark ? AppColors.customGreyColor : const Color(0xFFF4F4F6),
         borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit_outlined),
-            title: Text('edit'.tr),
-            onTap: onEdit,
-          ),
-          ListTile(
-            leading: const Icon(Icons.engineering_outlined),
-            title: const Text('دور تطوير التطبيق'),
-            subtitle: Text(_roleLabel(admin.developmentRole)),
-            onTap: onDevelopmentRole,
-          ),
-          ListTile(
-            leading: Icon(
-              admin.isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
-              color:
-                  admin.isBlocked ? AppColors.customGreen1 : AppColors.redColor,
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.h),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: Text('edit'.tr),
+                  onTap: onEdit,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.engineering_outlined),
+                  title: const Text('دور تطوير التطبيق'),
+                  subtitle: Text(_roleLabel(admin.developmentRole)),
+                  onTap: onDevelopmentRole,
+                ),
+                ListTile(
+                  leading: Icon(
+                    admin.isBlocked
+                        ? Icons.lock_open_outlined
+                        : Icons.block_outlined,
+                    color: admin.isBlocked
+                        ? AppColors.customGreen1
+                        : AppColors.redColor,
+                  ),
+                  title: Text(admin.isBlocked ? 'unblock'.tr : 'block'.tr),
+                  onTap: onToggleBlock,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline,
+                      color: AppColors.redColor),
+                  title: Text('delete'.tr,
+                      style: const TextStyle(color: AppColors.redColor)),
+                  onTap: onDelete,
+                ),
+              ],
             ),
-            title: Text(admin.isBlocked ? 'unblock'.tr : 'block'.tr),
-            onTap: onToggleBlock,
           ),
-          ListTile(
-            leading:
-                const Icon(Icons.delete_outline, color: AppColors.redColor),
-            title: Text('delete'.tr,
-                style: const TextStyle(color: AppColors.redColor)),
-            onTap: onDelete,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -308,53 +316,59 @@ class _DevelopmentRoleSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
 
-    return Container(
-      margin: EdgeInsets.all(16.w),
-      padding: EdgeInsets.symmetric(vertical: 8.h),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
+    return Padding(
+      padding: EdgeInsets.all(16.w),
+      child: Material(
+        color: isDark ? AppColors.customGreyColor : const Color(0xFFF4F4F6),
         borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            child: Row(
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.h),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.engineering_outlined),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Text(
-                    'دور تطوير التطبيق',
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
+                Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.engineering_outlined),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          'دور تطوير التطبيق',
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                _RoleTile(
+                  value: 'none',
+                  label: 'بدون',
+                  currentRole: currentRole,
+                  onSelect: onSelect,
+                ),
+                _RoleTile(
+                  value: 'owner',
+                  label: 'صاحب التطبيق',
+                  currentRole: currentRole,
+                  onSelect: onSelect,
+                ),
+                _RoleTile(
+                  value: 'developer',
+                  label: 'مبرمج',
+                  currentRole: currentRole,
+                  onSelect: onSelect,
                 ),
               ],
             ),
           ),
-          _RoleTile(
-            value: 'none',
-            label: 'بدون',
-            currentRole: currentRole,
-            onSelect: onSelect,
-          ),
-          _RoleTile(
-            value: 'owner',
-            label: 'صاحب التطبيق',
-            currentRole: currentRole,
-            onSelect: onSelect,
-          ),
-          _RoleTile(
-            value: 'developer',
-            label: 'مبرمج',
-            currentRole: currentRole,
-            onSelect: onSelect,
-          ),
-        ],
+        ),
       ),
     );
   }

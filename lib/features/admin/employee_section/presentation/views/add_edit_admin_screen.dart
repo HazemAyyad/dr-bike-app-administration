@@ -15,6 +15,7 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
   @override
   Widget build(BuildContext context) {
     final title = controller.isEdit ? 'editAdmin'.tr : 'addNewAdmin'.tr;
+    final admin = controller.editingAdmin;
 
     return Scaffold(
       appBar: CustomAppBar(title: title, action: false),
@@ -25,7 +26,7 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
-              if (controller.isEdit && controller.editingAdmin != null)
+              if (controller.isEdit && admin != null)
                 ListTile(
                   leading: const Icon(Icons.admin_panel_settings_outlined),
                   title: const Text('صلاحيات الأقسام'),
@@ -33,8 +34,8 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                       'تحديد الأقسام التي يستطيع هذا الأدمن الوصول إليها'),
                   trailing: const Icon(Icons.chevron_left),
                   onTap: () => Get.to(() => AdminSectionPermissionsScreen(
-                        adminId: controller.editingAdmin!.id,
-                        adminName: controller.editingAdmin!.name,
+                        adminId: admin.id,
+                        adminName: admin.name,
                       )),
                 ),
               CustomTextField(
