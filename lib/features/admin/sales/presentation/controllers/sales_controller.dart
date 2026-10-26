@@ -2343,10 +2343,8 @@ class SalesController extends GetxController
   void setCartLineQuantity(int index, int qty) {
     if (index < 0 || index >= cartLines.length) return;
     final line = cartLines[index];
-    final stock = line.stock;
-    final safe = salesOrderStockMode.value && !isAdjustmentInstantSale
-        ? qty.clamp(1, stock > 0 ? stock : 1)
-        : qty.clamp(1, 999999);
+    // The quantity dialog already confirms stock shortages before applying it.
+    final safe = qty.clamp(1, 999999);
     line.quantityController.text = safe.toString();
     _refreshTierPriceForCartLine(line);
     line.recalculateTotal();
@@ -4274,6 +4272,7 @@ class SalesController extends GetxController
   void clearCartLines({bool deferDispose = true}) {
     final oldLines = List<InstantSaleCartLine>.from(cartLines);
     cartLines.clear();
+    _syncCartLineTotalWorkers();
     bumpCartRevision();
 
     void disposeLines() {
@@ -4778,6 +4777,24 @@ class SalesController extends GetxController
   double get instantSaleRemainingAmount =>
       (totalCost.value - instantSalePaidAmount.value).clamp(0, double.infinity);
   final RxDouble packageLineTotal = 0.0.obs;
+  final Map<InstantSaleCartLine, Worker> _cartLineTotalWorkers = {};
+
+  void _syncCartLineTotalWorkers() {
+    final activeLines = cartLines.where((line) => !line.isDisposed).toSet();
+    for (final line in _cartLineTotalWorkers.keys.toList()) {
+      if (!activeLines.contains(line)) {
+        _cartLineTotalWorkers.remove(line)?.dispose();
+      }
+    }
+    for (final line in activeLines) {
+      _cartLineTotalWorkers.putIfAbsent(
+        line,
+        () => ever(line.lineTotal, (_) {
+          if (!_controllerDisposed) calculateGrandTotal();
+        }),
+      );
+    }
+  }
 
   void setAdministrativeInvoiceTotal(String value) {
     if (!isClosedDayAdministrativeCorrection) return;
@@ -4789,6 +4806,9 @@ class SalesController extends GetxController
   }
 
   void calculateGrandTotal() {
+    // Price and quantity controllers can change outside a field's onChanged.
+    // Keep the invoice total in sync with the current cart in every edit flow.
+    _syncCartLineTotalWorkers();
     double total = 0;
 
     if (hasSelectedPackage) {
@@ -6283,6 +6303,10 @@ class SalesController extends GetxController
     _controllerDisposed = true;
     _addMenuAnimationWorker?.dispose();
     _itemsTotalWorker?.dispose();
+    for (final worker in _cartLineTotalWorkers.values) {
+      worker.dispose();
+    }
+    _cartLineTotalWorkers.clear();
     discountController.removeListener(_scheduleLocalInstantSaleDraftSave);
     animController.dispose();
     discountController.dispose();
