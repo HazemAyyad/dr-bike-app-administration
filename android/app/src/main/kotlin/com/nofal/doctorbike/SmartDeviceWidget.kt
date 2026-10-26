@@ -25,9 +25,6 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
-import java.util.Date
-import java.util.Locale
-import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -76,7 +73,13 @@ class SmartDeviceWidget : AppWidgetProvider() {
         val anyActive = (0 until switches.length()).any {
             switches.optJSONObject(it)?.optBoolean("active", false) == true
         }
-        val nextValue = if (toggleAll) !anyActive else !selectedItem!!.optBoolean("active", false)
+        val explicitTarget = if (intent.hasExtra(EXTRA_TARGET_STATE)) {
+            intent.getBooleanExtra(EXTRA_TARGET_STATE, false)
+        } else null
+        val nextValue = SmartWidgetPresentation.desiredState(
+            if (toggleAll) anyActive else selectedItem!!.optBoolean("active", false),
+            explicitTarget,
+        )
         val payload = JSONObject()
         if (toggleAll) {
             for (itemIndex in 0 until switches.length()) {
@@ -94,6 +97,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
         val pendingResult = goAsync()
 
         data.put(KEY_STATUS, "جاري التنفيذ...")
+        data.put(KEY_STATE_CONFIRMED, false)
         saveWidgetData(context, widgetId, data)
         refreshWidget(context, widgetId)
 
@@ -137,8 +141,11 @@ class SmartDeviceWidget : AppWidgetProvider() {
 
                 override fun onError(code: String?, error: String?) {
                     Log.e(TAG, "Tuya login failed widgetId=$widgetId code=$code error=$error")
-                    data.put(KEY_STATUS, "تعذر تسجيل Tuya")
-                    saveWidgetData(context, widgetId, data)
+                    val current = readWidgetData(context, widgetId) ?: data
+                    current.put(KEY_STATUS, "تعذر تسجيل Tuya")
+                    current.put(KEY_STATE_CONFIRMED, false)
+                    current.remove(KEY_REQUESTED_DPS)
+                    saveWidgetData(context, widgetId, current)
                     refreshWidget(context, widgetId)
                     pendingResult.finish()
                 }
@@ -152,8 +159,13 @@ class SmartDeviceWidget : AppWidgetProvider() {
             AppWidgetManager.INVALID_APPWIDGET_ID,
         )
         val data = readWidgetData(context, widgetId) ?: legacyWidgetData(context) ?: return
-        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID ||
-            !refreshingWidgets.add(widgetId)) return
+        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        if (!refreshingWidgets.add(widgetId)) {
+            if (intent.getBooleanExtra(EXTRA_VERIFY_COMMAND, false)) {
+                pendingVerifications.add(widgetId)
+            }
+            return
+        }
 
         val version = actionVersions[widgetId] ?: 0L
         val pending = goAsync()
@@ -166,6 +178,10 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 refreshingWidgets.remove(widgetId)
                 refreshWidget(context, widgetId)
                 pending.finish()
+                if (pendingVerifications.remove(widgetId) &&
+                    readWidgetData(context, widgetId) != null) {
+                    requestStatusVerification(context, widgetId)
+                }
             }
         }
         val fail = { message: String ->
@@ -175,6 +191,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
                 if ((actionVersions[widgetId] ?: 0L) == version) {
                     readWidgetData(context, widgetId)?.let { current ->
                         current.put(KEY_STATUS, message)
+                        current.put(KEY_STATE_CONFIRMED, false)
                         saveWidgetData(context, widgetId, current)
                     }
                 }
@@ -184,6 +201,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
         timeout = Runnable { fail("انتهت مهلة التحديث") }
         handler.postDelayed(timeout, 9_000L)
         data.put(KEY_STATUS, "جاري تحديث الحالة...")
+        data.put(KEY_STATE_CONFIRMED, false)
         saveWidgetData(context, widgetId, data)
         refreshWidget(context, widgetId)
 
@@ -220,7 +238,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
                         if (device.isOnline == true) {
                             val values = (0 until switches.length()).map { index ->
                                 val dpId = switches.optJSONObject(index)?.optString("dp_id")
-                                switchBoolean(device.dps?.get(dpId))
+                                SmartWidgetPresentation.switchBoolean(device.dps?.get(dpId))
                             }
                             if (values.any { it == null }) {
                                 fail("تعذر قراءة حالة المفاتيح")
@@ -230,9 +248,26 @@ class SmartDeviceWidget : AppWidgetProvider() {
                                 switches.optJSONObject(index)?.put("active", value)
                             }
                         }
+                        val expectedJson = current.optJSONObject(KEY_REQUESTED_DPS)
+                        val commandMatches = expectedJson == null ||
+                            SmartWidgetPresentation.requestedStatesMatch(
+                                expectedJson.keys().asSequence().associateWith {
+                                    expectedJson.getBoolean(it)
+                                },
+                                device.dps.orEmpty(),
+                            )
+                        val online = device.isOnline == true
                         current.put(KEY_SWITCHES, switches)
-                        current.put(KEY_STATUS, if (device.isOnline == true) "متصل" else "غير متصل")
-                        current.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis())
+                        current.put(KEY_STATE_CONFIRMED, online && commandMatches)
+                        current.put(KEY_STATUS, when {
+                            !online -> "غير متصل"
+                            !commandMatches -> "لم يؤكد الجهاز تنفيذ الأمر"
+                            else -> "متصل"
+                        })
+                        if (online) {
+                            current.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis())
+                            current.remove(KEY_REQUESTED_DPS)
+                        }
                         saveWidgetData(context, widgetId, current)
                         finish()
                     } catch (error: Exception) {
@@ -356,11 +391,14 @@ class SmartDeviceWidget : AppWidgetProvider() {
                         latestSwitches.optJSONObject(switchIndex)?.put("active", nextValue)
                     }
                     data.put(KEY_SWITCHES, latestSwitches)
-                    data.put(KEY_STATUS, "متصل")
+                    data.put(KEY_STATUS, "تم إرسال الأمر؛ جارٍ التأكد")
+                    data.put(KEY_STATE_CONFIRMED, false)
+                    data.put(KEY_REQUESTED_DPS, JSONObject(payload))
                     saveWidgetData(context, widgetId, data)
                     refreshWidget(context, widgetId)
                     device.onDestroy()
                     onDone()
+                    requestStatusVerification(context, widgetId)
                 }
 
                 override fun onError(code: String?, error: String?) {
@@ -376,6 +414,8 @@ class SmartDeviceWidget : AppWidgetProvider() {
     private fun markToggleFailure(context: Context, widgetId: Int) {
         val data = readWidgetData(context, widgetId) ?: JSONObject()
         data.put(KEY_STATUS, "تعذر التنفيذ")
+        data.put(KEY_STATE_CONFIRMED, false)
+        data.remove(KEY_REQUESTED_DPS)
         saveWidgetData(context, widgetId, data)
         refreshWidget(context, widgetId)
     }
@@ -394,6 +434,7 @@ class SmartDeviceWidget : AppWidgetProvider() {
         val name = data?.optString(KEY_NAME)?.takeIf { it.isNotBlank() } ?: "جهاز ذكي"
         val room = data?.optString(KEY_ROOM).orEmpty()
         val status = data?.optString(KEY_STATUS)?.takeIf { it.isNotBlank() } ?: "غير معروف"
+        val confirmed = data?.optBoolean(KEY_STATE_CONFIRMED, false) == true
         val deviceId = data?.optInt(KEY_DEVICE_ID) ?: 0
         val switches = data?.optJSONArray(KEY_SWITCHES) ?: JSONArray()
         val switchViewIds = intArrayOf(
@@ -406,15 +447,16 @@ class SmartDeviceWidget : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.smart_device_widget).apply {
             setTextViewText(R.id.smart_device_widget_name, name)
             val updatedAt = data?.optLong(KEY_LAST_UPDATED_AT, 0L) ?: 0L
-            val updatedLabel = if (updatedAt > 0L) {
-                SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(updatedAt))
-            } else "—"
-            setTextViewText(R.id.smart_device_widget_last_updated, "آخر تحديث: $updatedLabel")
+            val updatedLabel = SmartWidgetPresentation.formatLastRead(updatedAt)
+            setTextViewText(R.id.smart_device_widget_last_updated, "آخر قراءة: $updatedLabel")
             setOnClickPendingIntent(R.id.smart_device_widget_refresh, statusRefreshIntent(context, widgetId))
             setInt(R.id.smart_device_widget_refresh, "setImageAlpha", if (refreshingWidgets.contains(widgetId)) 90 else 255)
             setTextViewText(
                 R.id.smart_device_widget_subtitle,
-                listOf(room, status).filter { it.isNotBlank() }.joinToString(" • "),
+                listOf(
+                    if (confirmed) "آخر حالة معروفة" else "الحالة غير مؤكدة",
+                    status, room,
+                ).filter { it.isNotBlank() }.joinToString(" • "),
             )
             val openIntent = HomeWidgetLaunchIntent.getActivity(
                 context,
@@ -423,9 +465,14 @@ class SmartDeviceWidget : AppWidgetProvider() {
             )
             setOnClickPendingIntent(R.id.smart_device_widget_container, openIntent)
             if (switches.length() > 0) {
+                val target = !(0 until switches.length()).any {
+                    switches.optJSONObject(it)?.optBoolean("active", false) == true
+                }
+                setContentDescription(R.id.smart_device_widget_power,
+                    if (target) "تشغيل كل المفاتيح" else "إطفاء كل المفاتيح")
                 setOnClickPendingIntent(
                     R.id.smart_device_widget_power,
-                    toggleIntent(context, widgetId, ALL_SWITCHES_INDEX),
+                    toggleIntent(context, widgetId, ALL_SWITCHES_INDEX, target),
                 )
             }
 
@@ -435,15 +482,24 @@ class SmartDeviceWidget : AppWidgetProvider() {
                     setViewVisibility(viewId, View.INVISIBLE)
                 } else {
                     val active = item.optBoolean("active", false)
+                    val target = !active
+                    val action = if (target) "تشغيل" else "إطفاء"
+                    val label = item.optString("label", "مفتاح ${index + 1}")
                     setViewVisibility(viewId, View.VISIBLE)
-                    setTextViewText(viewId, item.optString("label", "مفتاح ${index + 1}"))
-                    setTextColor(viewId, Color.parseColor(if (active) "#148B69" else "#5E6878"))
+                    setTextViewText(viewId, "$action • $label")
+                    setContentDescription(viewId, "$action، $label، " +
+                        if (confirmed) "آخر حالة معروفة" else "الحالة غير مؤكدة")
+                    setTextColor(viewId, Color.parseColor(if (confirmed && active) "#148B69" else "#5E6878"))
                     setInt(
                         viewId,
                         "setBackgroundResource",
-                        if (active) R.drawable.widget_smart_switch_on else R.drawable.widget_smart_switch_off,
+                        when {
+                            !confirmed -> R.drawable.widget_smart_switch_unknown
+                            active -> R.drawable.widget_smart_switch_on
+                            else -> R.drawable.widget_smart_switch_off
+                        },
                     )
-                    setOnClickPendingIntent(viewId, toggleIntent(context, widgetId, index))
+                    setOnClickPendingIntent(viewId, toggleIntent(context, widgetId, index, target))
                 }
             }
         }
@@ -455,16 +511,18 @@ class SmartDeviceWidget : AppWidgetProvider() {
         appWidgetIds.forEach {
             editor.remove(widgetKey(it))
             actionVersions.remove(it)
+            pendingVerifications.remove(it)
         }
         editor.apply()
         super.onDeleted(context, appWidgetIds)
     }
 
-    private fun toggleIntent(context: Context, widgetId: Int, index: Int): PendingIntent {
+    private fun toggleIntent(context: Context, widgetId: Int, index: Int, target: Boolean): PendingIntent {
         val intent = Intent(context, SmartDeviceWidget::class.java).apply {
             action = ACTION_TOGGLE_SWITCH
-            data = Uri.parse("doctorbike://smart_device/$widgetId/toggle/$index")
+            data = Uri.parse("doctorbike://smart_device/$widgetId/toggle/$index/${if (target) "on" else "off"}")
             putExtra(EXTRA_SWITCH_INDEX, index)
+            putExtra(EXTRA_TARGET_STATE, target)
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         }
         return PendingIntent.getBroadcast(
@@ -473,6 +531,14 @@ class SmartDeviceWidget : AppWidgetProvider() {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
+
+    private fun requestStatusVerification(context: Context, widgetId: Int) {
+        context.sendBroadcast(Intent(context, SmartDeviceWidget::class.java).apply {
+            action = ACTION_REFRESH_STATUS
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            putExtra(EXTRA_VERIFY_COMMAND, true)
+        })
     }
 
     private fun statusRefreshIntent(context: Context, widgetId: Int): PendingIntent {
@@ -505,21 +571,14 @@ class SmartDeviceWidget : AppWidgetProvider() {
         private const val ACTION_REFRESH_STATUS =
             "com.application.doctorbike.SMART_DEVICE_WIDGET_REFRESH"
         private val refreshingWidgets = ConcurrentHashMap.newKeySet<Int>()
+        private val pendingVerifications = ConcurrentHashMap.newKeySet<Int>()
         private val actionVersions = ConcurrentHashMap<Int, Long>()
         private fun bumpActionVersion(widgetId: Int) = synchronized(actionVersions) {
             actionVersions[widgetId] = (actionVersions[widgetId] ?: 0L) + 1L
         }
-        private fun switchBoolean(value: Any?): Boolean? = when (value) {
-            is Boolean -> value
-            is Number -> when (value.toInt()) { 0 -> false; 1 -> true; else -> null }
-            is String -> when (value.lowercase(Locale.ROOT)) {
-                "true", "1" -> true
-                "false", "0" -> false
-                else -> null
-            }
-            else -> null
-        }
         private const val EXTRA_SWITCH_INDEX = "switch_index"
+        private const val EXTRA_TARGET_STATE = "target_state"
+        private const val EXTRA_VERIFY_COMMAND = "verify_command"
         private const val ALL_SWITCHES_INDEX = -2
         private const val WIDGET_PREFS = "smart_device_widget_instances"
         private const val PENDING_PREFS = "smart_device_widget_pending"
@@ -528,6 +587,8 @@ class SmartDeviceWidget : AppWidgetProvider() {
         private const val KEY_ROOM = "room"
         private const val KEY_STATUS = "status"
         private const val KEY_LAST_UPDATED_AT = "last_status_refresh_at"
+        private const val KEY_STATE_CONFIRMED = "state_confirmed"
+        private const val KEY_REQUESTED_DPS = "requested_dps"
         private const val KEY_TUYA_DEVICE_ID = "tuya_device_id"
         private const val KEY_TUYA_HOME_ID = "tuya_home_id"
         private const val KEY_TUYA_COUNTRY_CODE = "tuya_country_code"
