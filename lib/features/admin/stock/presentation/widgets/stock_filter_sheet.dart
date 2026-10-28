@@ -25,6 +25,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
   String? subCategoryId;
   String? storeSectionId;
   String? costPriceStatus;
+  String? stockStatus;
   DateTime? dateFrom;
   DateTime? dateTo;
   String sortKey = 'latest';
@@ -40,6 +41,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
         ? null
         : sectionFilter;
     costPriceStatus = f.costPriceStatus;
+    stockStatus = f.stockStatus;
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;
     if (f.sortBy == 'name') {
@@ -72,10 +74,12 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
       sortDirection = 'asc';
     }
     return StockProductFilters(
+      search: controller.productListFilters.value.search,
       categoryId: categoryId,
       subCategoryId: subCategoryId,
       storeSectionId: storeSectionId,
       costPriceStatus: userType == 'admin' ? costPriceStatus : null,
+      stockStatus: stockStatus,
       dateFrom: dateFrom,
       dateTo: dateTo,
       sortBy: sortBy,
@@ -196,6 +200,19 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
               ),
               SizedBox(height: 12.h),
             ],
+            _dropdown<String?>(
+              label: 'stockQuantityStatus'.tr,
+              value: stockStatus,
+              items: [
+                DropdownMenuItem<String?>(value: null, child: Text('all'.tr)),
+                DropdownMenuItem<String?>(
+                    value: 'zero', child: Text('zeroStockQuantity'.tr)),
+                DropdownMenuItem<String?>(
+                    value: 'negative', child: Text('negativeStockQuantity'.tr)),
+              ],
+              onChanged: (value) => setState(() => stockStatus = value),
+            ),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 Expanded(
