@@ -866,28 +866,29 @@ class _PurchaseProductsContent extends GetView<BillsController> {
       itemCount: products.length,
       itemBuilder: (_, index) {
         final product = products[index];
+        Future<void> openVariants() async {
+          final selections = await showPurchaseVariantPickerSheet(
+            context: context,
+            product: product,
+            initialItems: controller.purchaseCartItemsForProduct(product.id),
+            onCreate: ({required size, required color, required retailPrice}) =>
+                controller.createPurchaseVariant(
+                    product: product,
+                    size: size,
+                    color: color,
+                    retailPrice: retailPrice),
+          );
+          if (selections != null) {
+            controller.syncPurchaseProductVariants(product, selections);
+          }
+        }
+
         return _PurchaseProductCard(
           product: product,
+          onLongPress: openVariants,
           onTap: () async {
             if (product.hasVariants && product.sizes.isNotEmpty) {
-              final selections = await showPurchaseVariantPickerSheet(
-                context: context,
-                product: product,
-                initialItems:
-                    controller.purchaseCartItemsForProduct(product.id),
-                onCreate: (
-                        {required size,
-                        required color,
-                        required retailPrice}) =>
-                    controller.createPurchaseVariant(
-                        product: product,
-                        size: size,
-                        color: color,
-                        retailPrice: retailPrice),
-              );
-              if (selections != null) {
-                controller.syncPurchaseProductVariants(product, selections);
-              }
+              await openVariants();
               return;
             }
             controller.togglePurchaseProductSelection(product);
@@ -1187,10 +1188,12 @@ class _PurchaseProductCard extends GetView<BillsController> {
   const _PurchaseProductCard({
     required this.product,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final ProductModel product;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1222,6 +1225,7 @@ class _PurchaseProductCard extends GetView<BillsController> {
                   flex: 5,
                   child: InkWell(
                     onTap: onTap,
+                    onLongPress: onLongPress,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -1310,6 +1314,7 @@ class _PurchaseProductCard extends GetView<BillsController> {
                         Expanded(
                           child: InkWell(
                             onTap: onTap,
+                            onLongPress: onLongPress,
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.center,

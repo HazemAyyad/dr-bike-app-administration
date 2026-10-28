@@ -114,10 +114,20 @@ class _PurchaseVariantPickerSheetState
         existing.first.selected = true;
       } else {
         added = true;
+        PurchaseCartItemModel? initial;
+        if (drafts.isEmpty) {
+          for (final item in widget.initialItems) {
+            if (item.sizeColorId == null) {
+              initial = item;
+              break;
+            }
+          }
+        }
         drafts.add(_VariantDraft(
           size: option.size,
           variant: option.variant,
           defaultPrice: widget.product.purchaseCost,
+          initial: initial,
         )..selected = true);
       }
     });

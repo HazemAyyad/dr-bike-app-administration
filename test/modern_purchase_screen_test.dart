@@ -33,6 +33,97 @@ void main() {
   tearDown(Get.reset);
 
   group('Modern purchase creation screen', () {
+    for (final hasVariants in [false, true]) {
+      testWidgets(
+          'long press opens variants without toggling product (variants: $hasVariants)',
+          (tester) async {
+        final product = _product('1', 'بطارية دراجة').copyWith(
+          hasVariants: hasVariants,
+          sizes: hasVariants
+              ? const [
+                  ProductSizeVariant(id: '10', size: 'M', colorSizes: [
+                    ProductColorVariant(
+                        id: '20',
+                        sizeId: '10',
+                        colorAr: 'أحمر',
+                        stock: 5,
+                        normailPrice: 30),
+                  ]),
+                ]
+              : const [],
+        );
+        final controller =
+            _putController(productsLoader: () async => [product]);
+        await _pumpScreen(tester);
+        await tester.pumpAndSettle();
+        await tester.longPress(find.text('بطارية دراجة'));
+        await tester.pumpAndSettle();
+        expect(find.text('اختر الأحجام والألوان'), findsOneWidget);
+        expect(find.text('إضافة لون أو حجم'), findsOneWidget);
+        expect(controller.purchaseCart, isEmpty);
+        expect(find.text(hasVariants ? 'M / أحمر' : 'لا توجد أحجام أو ألوان'),
+            findsOneWidget);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+        expect(controller.purchaseCart, isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets(
+        'first variant replaces a plain cart row and preserves quantity and price',
+        (tester) async {
+      final product = _product('1', 'بطارية دراجة');
+      final controller = _putController(
+        productsLoader: () async => [product],
+        createVariant: (payload) async => PurchaseVariantOption(
+          size: ProductSizeVariant(
+              id: '10', size: payload['size'] as String, colorSizes: const []),
+          variant: ProductColorVariant(
+              id: '20',
+              sizeId: '10',
+              colorAr: payload['color'] as String,
+              stock: 0,
+              normailPrice: 30),
+        ),
+      );
+      await _pumpScreen(tester);
+      await tester.pumpAndSettle();
+      // Ordinary taps still select a plain product immediately.
+      await tester.tap(find.text('بطارية دراجة'));
+      await tester.pumpAndSettle();
+      controller.purchaseCart.single.quantityController.text = '7';
+      controller.purchaseCart.single.priceController.text = '15';
+      await tester.longPress(find.text('بطارية دراجة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تأكيد الاختيار (0)'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCart.single.quantity, 7);
+      await tester.longPress(find.text('بطارية دراجة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('إضافة لون أو حجم'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+          find.byKey(const Key('purchase_variant_size')), 'XL');
+      await tester.enterText(
+          find.byKey(const Key('purchase_variant_color')), 'أزرق');
+      await tester.tap(find.text('حفظ واختيار'));
+      await tester.pumpAndSettle();
+      expect(find.text('XL / أزرق'), findsOneWidget);
+      expect(controller.purchaseCart.single.sizeColorId, isNull);
+      await tester.tap(find.text('تأكيد الاختيار (1)'));
+      await tester.pumpAndSettle();
+      expect(controller.purchaseCart.length, 1);
+      expect(controller.purchaseCart.single.sizeColorId, '20');
+      expect(controller.purchaseCart.single.quantity, 7);
+      expect(controller.purchaseCart.single.unitPrice, 15);
+      expect(controller.totalCost.value, 105);
+      await tester.longPress(find.text('بطارية دراجة'));
+      await tester.pumpAndSettle();
+      expect(find.text('XL / أزرق'), findsOneWidget);
+      expect(find.text('تأكيد الاختيار (1)'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
     testWidgets(
         'failed creation and duplicate choice preserve existing purchase quantities',
         (tester) async {

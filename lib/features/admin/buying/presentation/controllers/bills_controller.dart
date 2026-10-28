@@ -511,8 +511,9 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         .where(
           (item) =>
               item.product.id == product.id &&
-              item.sizeColorId != null &&
-              !selectedIds.contains(item.sizeColorId),
+              ((item.sizeColorId == null && selections.isNotEmpty) ||
+                  (item.sizeColorId != null &&
+                      !selectedIds.contains(item.sizeColorId))),
         )
         .toList();
     for (final item in removed) {
