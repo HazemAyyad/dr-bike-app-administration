@@ -9,12 +9,20 @@ import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/bills_repository.dart';
 import '../datasources/bills_datasource.dart';
 import '../../../sales/data/models/product_model.dart';
+import '../../../sales/data/models/product_variant_model.dart';
 
 class BillsImplement implements BillsRepository {
   final NetworkInfo networkInfo;
   final BillsDatasource billsDataSource;
 
   BillsImplement({required this.networkInfo, required this.billsDataSource});
+
+  @override
+  Future<PurchaseVariantOption> createPurchaseVariant(
+      Map<String, dynamic> payload) async {
+    if (!await networkInfo.isConnected) throw NoConnectionFailure();
+    return billsDataSource.createPurchaseVariant(payload);
+  }
 
   @override
   Future<Map<String, dynamic>> purchaseQuickCreateOptions() async {

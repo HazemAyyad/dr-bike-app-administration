@@ -234,6 +234,43 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   Future<Map<String, dynamic>> loadPurchaseQuickCreateOptions() =>
       purchaseWorkflowUsecase.quickCreateOptions();
 
+  Future<PurchaseVariantOption> createPurchaseVariant({
+    required ProductModel product,
+    required String size,
+    required String color,
+    required double retailPrice,
+  }) async {
+    final option = await purchaseWorkflowUsecase.createVariant({
+      'product_id': product.id,
+      'size': size,
+      'color': color,
+      'retail_price': retailPrice,
+    });
+    final index = products.indexWhere((row) => row.id == product.id);
+    final current = index < 0 ? product : products[index];
+    final sizes = [...current.sizes];
+    final sizeIndex = sizes.indexWhere((row) => row.id == option.size.id);
+    final colors = sizeIndex < 0
+        ? <ProductColorVariant>[]
+        : [...sizes[sizeIndex].colorSizes];
+    colors.removeWhere((row) => row.id == option.variant.id);
+    colors.add(option.variant);
+    final updatedSize = ProductSizeVariant(
+      id: option.size.id,
+      size: option.size.size,
+      colorSizes: colors,
+    );
+    if (sizeIndex < 0) {
+      sizes.add(updatedSize);
+    } else {
+      sizes[sizeIndex] = updatedSize;
+    }
+    final updated = current.copyWith(hasVariants: true, sizes: sizes);
+    if (index >= 0) products[index] = updated;
+    update();
+    return option;
+  }
+
   Future<ProductModel?> quickCreatePurchaseProduct(
       Map<String, dynamic> payload) async {
     try {

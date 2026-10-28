@@ -324,6 +324,12 @@ class _ModernPurchaseScreenState extends State<_ModernPurchaseScreen> {
         context: context,
         product: created,
         initialItems: controller.purchaseCartItemsForProduct(created.id),
+        onCreate: ({required size, required color, required retailPrice}) =>
+            controller.createPurchaseVariant(
+                product: created!,
+                size: size,
+                color: color,
+                retailPrice: retailPrice),
       );
       if (selections != null) {
         controller.syncPurchaseProductVariants(created, selections);
@@ -869,6 +875,15 @@ class _PurchaseProductsContent extends GetView<BillsController> {
                 product: product,
                 initialItems:
                     controller.purchaseCartItemsForProduct(product.id),
+                onCreate: (
+                        {required size,
+                        required color,
+                        required retailPrice}) =>
+                    controller.createPurchaseVariant(
+                        product: product,
+                        size: size,
+                        color: color,
+                        retailPrice: retailPrice),
               );
               if (selections != null) {
                 controller.syncPurchaseProductVariants(product, selections);

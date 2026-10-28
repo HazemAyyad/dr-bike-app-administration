@@ -4,11 +4,15 @@ import 'package:dio/dio.dart';
 import '../../../../../core/errors/failure.dart';
 import '../repositories/bills_repository.dart';
 import '../../../sales/data/models/product_model.dart';
+import '../../../sales/data/models/product_variant_model.dart';
 
 class PurchaseWorkflowUsecase {
   final BillsRepository billsRepository;
 
   PurchaseWorkflowUsecase({required this.billsRepository});
+
+  Future<PurchaseVariantOption> createVariant(Map<String, dynamic> payload) =>
+      billsRepository.createPurchaseVariant(payload);
 
   Future<Map<String, dynamic>> quickCreateOptions() =>
       billsRepository.purchaseQuickCreateOptions();

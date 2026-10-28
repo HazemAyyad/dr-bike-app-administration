@@ -194,6 +194,8 @@ class ProductModel {
   }
 
   ProductModel copyWith({
+    bool? hasVariants,
+    List<ProductSizeVariant>? sizes,
     double? unitPrice,
     double? wholesalePrice,
     double? customPrice,
@@ -227,8 +229,8 @@ class ProductModel {
       productCode: productCode ?? this.productCode,
       storeSectionId: storeSectionId ?? this.storeSectionId,
       storeSectionName: storeSectionName ?? this.storeSectionName,
-      hasVariants: hasVariants,
-      sizes: sizes,
+      hasVariants: hasVariants ?? this.hasVariants,
+      sizes: sizes ?? this.sizes,
     );
   }
 

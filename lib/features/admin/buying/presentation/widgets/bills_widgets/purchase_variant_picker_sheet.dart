@@ -6,12 +6,15 @@ import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../sales/data/models/product_model.dart';
 import '../../../../sales/data/models/product_variant_model.dart';
 import '../../controllers/bills_controller.dart';
+import 'purchase_variant_create_dialog.dart';
 
 import '../../../../../../core/helpers/app_failure_notice.dart';
+
 Future<List<PurchaseVariantSelection>?> showPurchaseVariantPickerSheet({
   required BuildContext context,
   required ProductModel product,
   required List<PurchaseCartItemModel> initialItems,
+  required CreatePurchaseVariant onCreate,
 }) {
   return showModalBottomSheet<List<PurchaseVariantSelection>>(
     context: context,
@@ -20,6 +23,7 @@ Future<List<PurchaseVariantSelection>?> showPurchaseVariantPickerSheet({
     builder: (_) => _PurchaseVariantPickerSheet(
       product: product,
       initialItems: initialItems,
+      onCreate: onCreate,
     ),
   );
 }
@@ -55,10 +59,12 @@ class _PurchaseVariantPickerSheet extends StatefulWidget {
   const _PurchaseVariantPickerSheet({
     required this.product,
     required this.initialItems,
+    required this.onCreate,
   });
 
   final ProductModel product;
   final List<PurchaseCartItemModel> initialItems;
+  final CreatePurchaseVariant onCreate;
 
   @override
   State<_PurchaseVariantPickerSheet> createState() =>
@@ -67,6 +73,7 @@ class _PurchaseVariantPickerSheet extends StatefulWidget {
 
 class _PurchaseVariantPickerSheetState
     extends State<_PurchaseVariantPickerSheet> {
+  final _scrollController = ScrollController();
   late final List<_VariantDraft> drafts = [
     for (final size in widget.product.sizes)
       for (final variant in size.colorSizes)
@@ -85,8 +92,50 @@ class _PurchaseVariantPickerSheetState
     return null;
   }
 
+  Future<void> _addVariant() async {
+    final option = await showDialog<PurchaseVariantOption>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PurchaseVariantCreateDialog(
+        sizes: {
+          ...widget.product.sizes.map((size) => size.size),
+          ...drafts.map((draft) => draft.size.size),
+        }.toList(),
+        defaultRetailPrice: widget.product.unitPrice,
+        onCreate: widget.onCreate,
+      ),
+    );
+    if (!mounted || option == null) return;
+    var added = false;
+    setState(() {
+      final existing =
+          drafts.where((draft) => draft.variant.id == option.variant.id);
+      if (existing.isNotEmpty) {
+        existing.first.selected = true;
+      } else {
+        added = true;
+        drafts.add(_VariantDraft(
+          size: option.size,
+          variant: option.variant,
+          defaultPrice: widget.product.purchaseCost,
+        )..selected = true);
+      }
+    });
+    if (added) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     for (final draft in drafts) {
       draft.dispose();
     }
@@ -168,10 +217,19 @@ class _PurchaseVariantPickerSheetState
                 ],
               ),
             ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
+              child: OutlinedButton.icon(
+                onPressed: _addVariant,
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة لون أو حجم'),
+              ),
+            ),
             Expanded(
               child: drafts.isEmpty
                   ? const Center(child: Text('لا توجد أحجام أو ألوان'))
                   : ListView.separated(
+                      controller: _scrollController,
                       padding: EdgeInsets.symmetric(horizontal: 10.w),
                       itemCount: drafts.length,
                       separatorBuilder: (_, __) => SizedBox(height: 6.h),

@@ -8,11 +8,27 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../presentation/controllers/bills_controller.dart';
 import '../../../sales/data/models/product_model.dart';
+import '../../../sales/data/models/product_variant_model.dart';
 
 class BillsDatasource {
   final ApiConsumer api;
 
   BillsDatasource({required this.api});
+
+  Future<PurchaseVariantOption> createPurchaseVariant(
+      Map<String, dynamic> payload) async {
+    final response =
+        await api.post('purchase/products/variants', data: payload);
+    final raw = asMap(response.data);
+    if (raw['status'] != 'success') {
+      throw ServerException(ErrorModel(
+        errorMessage: asString(raw['message'], 'تعذر إضافة اللون والحجم'),
+        status: 422,
+        data: raw,
+      ));
+    }
+    return PurchaseVariantOption.fromJson(raw);
+  }
 
   Future<Map<String, dynamic>> purchaseQuickCreateOptions() async {
     final response = await api.get(EndPoints.purchaseQuickCreateOptions);

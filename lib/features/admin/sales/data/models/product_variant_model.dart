@@ -1,5 +1,18 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
+class PurchaseVariantOption {
+  final ProductSizeVariant size;
+  final ProductColorVariant variant;
+
+  const PurchaseVariantOption({required this.size, required this.variant});
+
+  factory PurchaseVariantOption.fromJson(Map<String, dynamic> json) =>
+      PurchaseVariantOption(
+        size: ProductSizeVariant.fromJson(asMap(json['size'])),
+        variant: ProductColorVariant.fromJson(asMap(json['variant'])),
+      );
+}
+
 class ProductSizeVariant {
   final String id;
   final String size;
