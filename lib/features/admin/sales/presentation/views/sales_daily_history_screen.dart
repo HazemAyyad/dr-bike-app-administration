@@ -346,19 +346,7 @@ class _InlineClosingRequests extends StatelessWidget {
                         style: FilledButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                         ),
-                        onPressed: () {
-                          final needsTransfers = request.cashCounts.any(
-                                (row) => row.amountToTransfer > 0,
-                              ) ||
-                              request.salesOrdersCashCounts.any(
-                                (row) => row.amountToTransfer > 0,
-                              );
-                          if (needsTransfers) {
-                            _showClosingDetails(context, request);
-                          } else {
-                            sales.approveDailyClosingInline(request);
-                          }
-                        },
+                        onPressed: () => _showClosingDetails(context, request),
                         icon: const Icon(Icons.check_rounded),
                         label: const Text('موافقة وإغلاق'),
                       ),

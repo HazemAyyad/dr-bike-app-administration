@@ -897,8 +897,7 @@ class SalesDatasource {
           'total_cost': _cleanAmount(totalCost),
           if (notes != null) 'notes': notes,
           if (paymentBoxValue != null)
-            'payment_box_value':
-                _cleanAmount(paymentBoxValue),
+            'payment_box_value': _cleanAmount(paymentBoxValue),
         },
       );
       return response.data;
@@ -1060,6 +1059,24 @@ class SalesDatasource {
         if (transfers != null) 'transfers': transfers,
         if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
           'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<String> correctDailyClosingTransfer({
+    required int closingRequestId,
+    required String action,
+    required String reason,
+    List<Map<String, dynamic>> transfers = const [],
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyClosingCorrectTransfer,
+      data: {
+        'closing_request_id': closingRequestId,
+        'action': action,
+        'reason': reason.trim(),
+        if (action == 'redirect') 'transfers': transfers,
       },
     );
     return _messageFromResponse(response.data);

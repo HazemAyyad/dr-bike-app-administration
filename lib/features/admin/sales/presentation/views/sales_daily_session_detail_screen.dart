@@ -15,6 +15,15 @@ import '../widgets/sales_daily_session_orders_log.dart';
 import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_daily_ui_widgets.dart';
 import '../widgets/sales_skeleton_widgets.dart';
+import '../widgets/sales_daily_transfer_correction_sheet.dart';
+import '../controllers/sales_controller.dart';
+import '../controllers/sales_daily_history_controller.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/presentation/controllers/boxes_controller.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
 
 class SalesDailySessionDetailScreen extends StatefulWidget {
   const SalesDailySessionDetailScreen({Key? key}) : super(key: key);
@@ -32,6 +41,7 @@ class _SalesDailySessionDetailScreenState
   bool _maintenanceMode = false;
   final _searchController = TextEditingController();
   String _query = '';
+  bool _openingCorrection = false;
 
   @override
   void initState() {
@@ -45,10 +55,10 @@ class _SalesDailySessionDetailScreenState
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool forceRefresh = false}) async {
     final args = Get.arguments;
     _maintenanceMode = args is Map && args['maintenance'] == true;
-    if (args is DailySessionDetailModel) {
+    if (args is DailySessionDetailModel && !forceRefresh) {
       setState(() {
         _detail = args;
         _loading = false;
@@ -56,7 +66,11 @@ class _SalesDailySessionDetailScreenState
       return;
     }
 
-    final rawId = args is Map ? args['session_id'] : args;
+    final rawId = args is DailySessionDetailModel
+        ? args.session.id
+        : args is Map
+            ? args['session_id']
+            : args;
     final sessionId = rawId is int ? rawId : int.tryParse('$rawId');
     if (sessionId == null) {
       setState(() {
@@ -258,11 +272,77 @@ class _SalesDailySessionDetailScreenState
         if (detail.closingRequests.isNotEmpty) ...[
           SalesDailySectionTitle(title: 'salesDailyClosingHistory'.tr),
           ...detail.closingRequests.map(
-            (request) => SalesDailyClosingTile(request: request),
+            (request) => SalesDailyClosingTile(
+              request: request,
+              onRedirect: !_maintenanceMode &&
+                      detail.canCorrectTransfers &&
+                      request.status == 'approved' &&
+                      request.transfers.isNotEmpty
+                  ? () => _correctTransfer(request, false)
+                  : null,
+              onReturnToReview: !_maintenanceMode &&
+                      detail.canCorrectTransfers &&
+                      request.status == 'approved' &&
+                      detail.canReturnToReview
+                  ? () => _correctTransfer(request, true)
+                  : null,
+              returnToReviewBlocked: !_maintenanceMode &&
+                  detail.canCorrectTransfers &&
+                  request.status == 'approved' &&
+                  !detail.canReturnToReview,
+            ),
           ),
         ],
       ],
     );
+  }
+
+  Future<void> _correctTransfer(
+      DailyClosingHistoryModel request, bool reverse) async {
+    if (_openingCorrection) return;
+    _openingCorrection = true;
+    try {
+      AppDependencyRegistry.ensureSales();
+      var boxes = <ShownBoxesModel>[];
+      if (!reverse) {
+        AppDependencyRegistry.ensureBoxes();
+        boxes = await GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
+        ).call(screen: 0);
+      }
+      if (!mounted) return;
+      final changed = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (_) => SalesDailyTransferCorrectionSheet(
+          request: request,
+          datasource: Get.find<SalesDatasource>(),
+          returnToReview: reverse,
+          boxes: boxes,
+        ),
+      );
+      if (changed != true || !mounted) return;
+      await _load(forceRefresh: true);
+      if (Get.isRegistered<SalesController>()) {
+        await Get.find<SalesController>().loadDailySession();
+      }
+      if (Get.isRegistered<SalesDailyHistoryController>()) {
+        await Get.find<SalesDailyHistoryController>().loadAll();
+      }
+      if (Get.isRegistered<BoxesController>()) {
+        await Get.find<BoxesController>().getAllBoxes();
+      }
+      if (mounted) {
+        AppSuccessNotice.show(
+            title: 'تم', message: 'تم حفظ التصحيح في سجل الإغلاق والترحيل.');
+      }
+    } catch (e) {
+      if (mounted) AppFailureNotice.show(title: 'خطأ', message: e.toString());
+    } finally {
+      _openingCorrection = false;
+    }
   }
 }
 

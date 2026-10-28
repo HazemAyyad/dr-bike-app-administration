@@ -71,6 +71,14 @@ class SalesDailyRequestStatusBadge extends StatelessWidget {
         color = Colors.red.shade700;
         label = 'salesDailyRequestRejected'.tr;
         break;
+      case 'superseded':
+        color = Colors.blue.shade700;
+        label = 'تم تصحيح ترحيله';
+        break;
+      case 'reversed':
+        color = Colors.red.shade700;
+        label = 'تم عكس الإغلاق';
+        break;
       default:
         color = Colors.orange.shade800;
         label = 'salesDailyRequestPending'.tr;
@@ -529,10 +537,18 @@ class SalesDailyDetailHeader extends StatelessWidget {
 }
 
 class SalesDailyClosingTile extends StatelessWidget {
-  const SalesDailyClosingTile({Key? key, required this.request})
+  const SalesDailyClosingTile(
+      {Key? key,
+      required this.request,
+      this.onRedirect,
+      this.onReturnToReview,
+      this.returnToReviewBlocked = false})
       : super(key: key);
 
   final DailyClosingHistoryModel request;
+  final VoidCallback? onRedirect;
+  final VoidCallback? onReturnToReview;
+  final bool returnToReviewBlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -613,6 +629,41 @@ class SalesDailyClosingTile extends StatelessWidget {
               (row) => _ClosingCashCountSummary(row: row),
             ),
           ],
+          if (request.reviewedAt != null)
+            Text('وقت الاعتماد: ${_shortTime(request.reviewedAt!)}',
+                style: TextStyle(fontSize: 10.sp)),
+          ...request.transfers.map((transfer) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 5.h),
+                child: Text(
+                  '${transfer['amount']} ${transfer['currency']}\n'
+                  'من: ${transfer['from_box_name'] ?? '#${transfer['from_box_id']}'}\n'
+                  'إلى: ${transfer['to_box_name'] ?? '#${transfer['to_box_id']}'}',
+                  style:
+                      TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600),
+                ),
+              )),
+          if (request.reviewNotes?.trim().isNotEmpty == true)
+            Text(request.reviewNotes!, style: TextStyle(fontSize: 11.sp)),
+          if (onRedirect != null ||
+              onReturnToReview != null ||
+              returnToReviewBlocked)
+            Wrap(spacing: 8.w, children: [
+              if (onRedirect != null)
+                TextButton.icon(
+                  onPressed: onRedirect,
+                  icon: const Icon(Icons.swap_horiz),
+                  label: const Text('تصحيح صندوق الترحيل'),
+                ),
+              TextButton.icon(
+                onPressed: onReturnToReview,
+                icon: const Icon(Icons.undo),
+                label: const Text('عكس الإغلاق وإعادة المراجعة'),
+              ),
+            ]),
+          if (returnToReviewBlocked)
+            Text('إعادة المراجعة غير متاحة لوجود جلسة أحدث أو جلسة نشطة أخرى.',
+                style:
+                    TextStyle(fontSize: 10.sp, color: Colors.orange.shade800)),
         ],
       ),
     );

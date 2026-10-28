@@ -11,8 +11,9 @@ import '../controllers/sales_daily_admin_controller.dart';
 import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 
-
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/helpers/app_success_notice.dart';
+
 class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   const SalesDailyAdminScreen({Key? key}) : super(key: key);
 
@@ -185,7 +186,7 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
       }
     }
 
-    return showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -199,7 +200,8 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 14.h,
           ),
           decoration: BoxDecoration(
-            color: continueAfterApproval ? const Color(0xFFF3F4F6) : Colors.white,
+            color:
+                continueAfterApproval ? const Color(0xFFF3F4F6) : Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
             border: Border.all(color: Colors.grey.shade300),
           ),
@@ -210,17 +212,15 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (continueAfterApproval) ...[
-                      Text(
-                        'مراجعة طلب الإغلاق والترحيل',
-                        style: TextStyle(
-                          color: const Color(0xFF111827),
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    Text(
+                      'مراجعة طلب الإغلاق والترحيل',
+                      style: TextStyle(
+                        color: const Color(0xFF111827),
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
                       ),
-                      SizedBox(height: 8.h),
-                    ],
+                    ),
+                    SizedBox(height: 8.h),
                     Text(
                       item.employeeName ?? '',
                       style: TextStyle(
@@ -297,6 +297,9 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                                 '${'salesDailyPhysicalCount'.tr}: ${row.physicalCount}',
                               ),
                               Text(
+                                '${'salesDailyFloatToKeep'.tr}: ${row.floatToKeep}',
+                              ),
+                              Text(
                                 '${'salesDailyAmountToTransfer'.tr}: ${row.amountToTransfer}',
                               ),
                               if (row.varianceAlert)
@@ -338,22 +341,27 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: controller.isProcessing.value || submitting
-                                ? null
-                                : () async {
-                                    Navigator.pop(ctx);
-                                    await controller.rejectClosing(item.id);
-                                  },
+                            onPressed:
+                                controller.isProcessing.value || submitting
+                                    ? null
+                                    : () async {
+                                        Navigator.pop(ctx);
+                                        await controller.rejectClosing(item.id);
+                                      },
                             child: Text('reject'.tr),
                           ),
                         ),
                         SizedBox(width: 10.w),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: controller.isProcessing.value || submitting
+                            onPressed: controller.isProcessing.value ||
+                                    submitting
                                 ? null
                                 : () async {
-                                    if (submitting || controller.isProcessing.value) return;
+                                    if (submitting ||
+                                        controller.isProcessing.value) {
+                                      return;
+                                    }
                                     final allCounts = [
                                       ...item.cashCounts,
                                       ...item.salesOrdersCashCounts,
@@ -366,7 +374,9 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                                     if (missingTransfer) {
                                       AppFailureNotice.show(
                                         title: 'error'.tr,
-                                        message: 'salesDailyTransferTargetRequired'.tr,
+                                        message:
+                                            'salesDailyTransferTargetRequired'
+                                                .tr,
                                       );
                                       return;
                                     }
@@ -384,30 +394,23 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
                                         'to_box_id': toBoxId,
                                       });
                                     }
-                                    if (continueAfterApproval) {
-                                      setState(() => submitting = true);
-                                      final approved = await controller.approveClosing(
-                                        requestId: item.id,
-                                        transfers: list,
-                                        showSuccess: false,
-                                      );
-                                      if (!ctx.mounted) return;
-                                      if (approved) {
-                                        Navigator.pop(ctx, true);
-                                      } else {
-                                        setState(() => submitting = false);
-                                      }
+                                    setState(() => submitting = true);
+                                    final approved =
+                                        await controller.approveClosing(
+                                      requestId: item.id,
+                                      transfers: list,
+                                      showSuccess: false,
+                                    );
+                                    if (!ctx.mounted) return;
+                                    if (approved) {
+                                      Navigator.pop(ctx, true);
                                     } else {
-                                      Navigator.pop(ctx);
-                                      await controller.approveClosing(
-                                        requestId: item.id,
-                                        transfers: list,
-                                      );
+                                      setState(() => submitting = false);
                                     }
                                   },
                             child: Text(continueAfterApproval
                                 ? 'موافقة وترحيل ومتابعة'
-                                : 'approve'.tr),
+                                : 'تأكيد الإغلاق والترحيل'),
                           ),
                         ),
                       ],
@@ -420,6 +423,13 @@ class SalesDailyClosingRequestsList extends StatelessWidget {
         );
       },
     );
+    if (result == true && !continueAfterApproval) {
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: 'تمت الموافقة على إغلاق الصندوق',
+      );
+    }
+    return result;
   }
 }
 

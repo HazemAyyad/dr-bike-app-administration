@@ -474,7 +474,6 @@ class DailyCashCountRow {
     if (text.isEmpty) return text;
     return tryParseLocalizedAmount(text)?.toString() ?? text;
   }
-
 }
 
 class DailySessionSummaryModel {
@@ -889,6 +888,8 @@ class DailySessionDetailModel {
   final List<DailyClosingHistoryModel> closingRequests;
   final int salesOrdersCount;
   final List<DailySessionOrderLogRow> salesOrders;
+  final bool canCorrectTransfers;
+  final bool canReturnToReview;
 
   const DailySessionDetailModel({
     required this.session,
@@ -901,6 +902,8 @@ class DailySessionDetailModel {
     this.closingRequests = const [],
     this.salesOrdersCount = 0,
     this.salesOrders = const [],
+    this.canCorrectTransfers = false,
+    this.canReturnToReview = false,
   });
 
   factory DailySessionDetailModel.fromJson(Map<String, dynamic> json) {
@@ -938,6 +941,8 @@ class DailySessionDetailModel {
         (Map<String, dynamic> m) => DailyClosingHistoryModel.fromJson(m),
       ),
       salesOrdersCount: asInt(json['sales_orders_count']),
+      canCorrectTransfers: json['can_correct_transfers'] == true,
+      canReturnToReview: json['can_return_to_review'] == true,
       salesOrders: mapList(
         json['sales_orders'],
         (Map<String, dynamic> m) => DailySessionOrderLogRow.fromJson(m),

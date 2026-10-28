@@ -718,6 +718,8 @@ class EndPoints {
   static const String salesDailyClosingDirect = 'sales/daily-closing/direct';
   static const String salesDailyClosingApprove = 'sales/daily-closing/approve';
   static const String salesDailyClosingReject = 'sales/daily-closing/reject';
+  static const String salesDailyClosingCorrectTransfer =
+      'sales/daily-closing/correct-transfer';
   static const String salesDailyReopenRequest = 'sales/daily-reopen/request';
   static const String salesDailyReopenPending = 'sales/daily-reopen/pending';
   static const String salesDailyReopenApprove = 'sales/daily-reopen/approve';

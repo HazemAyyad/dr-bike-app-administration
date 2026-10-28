@@ -1,9 +1,11 @@
 import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/translations_service.dart';
+import 'package:doctorbike/features/admin/boxes/data/models/get_shown_boxes_model.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
 import 'package:doctorbike/features/admin/sales/data/models/daily_session_model.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_daily_history_controller.dart';
+import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_daily_admin_controller.dart';
 import 'package:doctorbike/features/admin/sales/presentation/views/sales_daily_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +17,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader('Almarai')
-          ..addFont(rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf')))
+          ..addFont(
+              rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf')))
         .load();
   });
   setUp(() => Get.testMode = true);
@@ -69,6 +72,16 @@ void main() {
       expect(find.text('طلبات إغلاق صندوق المبيعات (1)'), findsOneWidget);
       expect(find.text('موظف الاختبار'), findsOneWidget);
       expect(find.text('موافقة وإغلاق'), findsOneWidget);
+      final review = _ReviewController();
+      Get.put<SalesDailyAdminController>(review);
+      await tester.ensureVisible(find.text('موافقة وإغلاق'));
+      await tester.tap(find.text('موافقة وإغلاق'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('مراجعة طلب الإغلاق والترحيل'), findsOneWidget);
+      expect(review.approvals, 0);
+      Get.back();
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
@@ -123,6 +136,31 @@ class _HistoryController extends SalesDailyHistoryController {
 }
 
 class _UnusedDatasource implements SalesDatasource {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ReviewController extends GetxController
+    implements SalesDailyAdminController {
+  int approvals = 0;
+  @override
+  final isProcessing = false.obs;
+  @override
+  final shownBoxes = <ShownBoxesModel>[].obs;
+
+  @override
+  Future<void> loadAll() async {}
+
+  @override
+  Future<bool> approveClosing({
+    required int requestId,
+    required List<Map<String, dynamic>> transfers,
+    bool showSuccess = true,
+  }) async {
+    approvals++;
+    return true;
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

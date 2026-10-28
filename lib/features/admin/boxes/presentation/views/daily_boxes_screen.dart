@@ -14,6 +14,8 @@ import '../../../maintenance/presentation/controllers/maintenance_controller.dar
 import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../../sales/data/datasources/sales_datasources.dart';
 import '../../../sales/data/models/daily_session_model.dart';
+import '../../../sales/presentation/widgets/sales_daily_ui_widgets.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
@@ -23,6 +25,7 @@ import '../widgets/transfer_balance_widget.dart';
 import '../widgets/box_report_filter_sheet.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class DailyBoxesScreen extends StatefulWidget {
   const DailyBoxesScreen({Key? key}) : super(key: key);
 
@@ -263,7 +266,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
     AppDependencyRegistry.ensureSales();
     final ds = Get.find<SalesDatasource>();
 
-    await showModalBottomSheet<void>(
+    final manageClosing = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
@@ -288,6 +291,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                   dateText: _dateText,
                   scrollController: scrollController,
                   mode: mode,
+                  onManageClosing: () => Navigator.pop(ctx, true),
                 );
               },
             );
@@ -295,6 +299,11 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
         );
       },
     );
+    if (manageClosing == true && mounted) {
+      await Get.toNamed(AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+          arguments: session.id);
+      if (mounted) await _loadSalesSessions();
+    }
   }
 
   Future<void> _showMaintenanceSessionDetails(
@@ -382,9 +391,9 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
 
     result.fold(
       (failure) => AppFailureNotice.show(
-  title: 'error'.tr,
-  message: failure.errMessage,
-),
+        title: 'error'.tr,
+        message: failure.errMessage,
+      ),
       (invoice) => showMaintenanceInvoiceSheet(context, invoice),
     );
   }
@@ -1118,6 +1127,7 @@ class _SalesSessionDetailSheet extends StatelessWidget {
     required this.dateText,
     required this.scrollController,
     this.mode = _DailySessionViewMode.sales,
+    this.onManageClosing,
   });
 
   final DailySessionDetailModel detail;
@@ -1125,6 +1135,7 @@ class _SalesSessionDetailSheet extends StatelessWidget {
   final String Function(String? value) dateText;
   final ScrollController scrollController;
   final _DailySessionViewMode mode;
+  final VoidCallback? onManageClosing;
 
   bool get _isMaintenance => mode == _DailySessionViewMode.maintenance;
   bool get _isOrders => mode == _DailySessionViewMode.orders;
@@ -1311,34 +1322,16 @@ class _SalesSessionDetailSheet extends StatelessWidget {
             style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
           ),
           SizedBox(height: 8.h),
-          ...detail.closingRequests.map(
-            (request) => Card(
-              elevation: 0,
-              child: Padding(
-                padding: EdgeInsets.all(10.w),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DetailLine(
-                      label: 'status'.tr,
-                      value: request.status,
-                    ),
-                    _DetailLine(
-                      label: 'salesDailyRequestedAt'.tr,
-                      value: dateText(request.requestedAt),
-                    ),
-                    ...request.cashCounts.map(
-                      (row) => _DetailLine(
-                        label: row.currency,
-                        value:
-                            '${'salesDailyPhysicalCount'.tr}: ${amount(row.physicalCount)} | ${'salesDailyVariance'.tr}: ${amount(row.variance)}',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          if (onManageClosing != null)
+            TextButton.icon(
+              onPressed: onManageClosing,
+              icon: const Icon(Icons.history),
+              label: Text(detail.canCorrectTransfers
+                  ? 'سجل الترحيل وتصحيح الإغلاق'
+                  : 'تفاصيل سجل الترحيل'),
             ),
-          ),
+          ...detail.closingRequests
+              .map((request) => SalesDailyClosingTile(request: request)),
         ],
       ],
     );

@@ -7,17 +7,15 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../boxes/data/models/get_shown_boxes_model.dart';
-import '../../../boxes/data/repositories/boxes_implement.dart';
-import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
+import '../controllers/sales_daily_admin_controller.dart';
+import 'sales_daily_admin_screen.dart';
 import '../utils/sales_amount_format.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 import '../../../../../core/helpers/app_success_notice.dart';
@@ -49,9 +47,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   DailySessionPayload? _adminPayload;
   int? _targetSessionId;
   final Set<String> _expandedCurrencies = {};
-  final Map<String, int?> _transferTargets = {};
-  List<ShownBoxesModel> _shownBoxes = [];
-  bool _loadingBoxes = false;
+  bool _awaitingReview = false;
 
   bool get _canFinalizeClosing => _payload?.canFinalizeClosing ?? false;
 
@@ -170,27 +166,6 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       _ordersNotes[row.currency] = TextEditingController();
     }
     _controllersReady = _physical.isNotEmpty || _ordersPhysical.isNotEmpty;
-    if (_canFinalizeClosing) {
-      _loadShownBoxes();
-    }
-  }
-
-  Future<void> _loadShownBoxes() async {
-    setState(() => _loadingBoxes = true);
-    try {
-      AppDependencyRegistry.ensureBoxes();
-      final boxes = await GetShownBoxUsecase(
-        boxesRepository: Get.find<BoxesImplement>(),
-      ).call(screen: 0);
-      if (!mounted) return;
-      setState(() {
-        _shownBoxes = boxes;
-        _loadingBoxes = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loadingBoxes = false);
-    }
   }
 
   @override
@@ -285,7 +260,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       return _scaffold(const SalesDailyCloseSkeleton());
     }
 
-    if (payload.isClosingRequested && !payload.canFinalizeClosing) {
+    if (payload.isClosingRequested || _awaitingReview) {
       return _scaffold(
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -315,7 +290,13 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                     TextStyle(fontSize: 13.sp, height: 1.5, color: _mutedColor),
               ),
               SizedBox(height: 24.h),
-              AppButton(text: 'back'.tr, onPressed: Get.back),
+              if (_canFinalizeClosing)
+                AppButton(
+                  text: 'مراجعة واعتماد الإغلاق',
+                  onPressed: _submitting ? null : _reviewPendingClosing,
+                )
+              else
+                AppButton(text: 'back'.tr, onPressed: Get.back),
             ],
           ),
         ),
@@ -361,9 +342,9 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             SizedBox(height: 24.h),
             AppButton(
               text: _canFinalizeClosing
-                  ? 'salesDailyFinalizeClosing'.tr
+                  ? 'مراجعة واعتماد الإغلاق'
                   : 'salesDailySubmitClosing'.tr,
-              onPressed: _submitting || _loadingBoxes ? null : _submit,
+              onPressed: _submitting ? null : _submit,
             ),
             SizedBox(height: 16.h),
           ],
@@ -785,8 +766,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                             label: 'salesDailyPhysicalCount'.tr,
                             hintText: '0',
                             controller: physicalCtrl,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: const [
                               LocalizedNumberInputFormatter(decimal: true),
                             ],
@@ -799,8 +780,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                             label: 'salesDailyFloatToKeep'.tr,
                             hintText: '0',
                             controller: floatCtrl,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: const [
                               LocalizedNumberInputFormatter(decimal: true),
                             ],
@@ -824,39 +805,12 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                         maxLines: 2,
                       ),
                     ],
-                    if (_canFinalizeClosing && transfer > 0) ...[
-                      SizedBox(height: 8.h),
-                      _transferPicker(row.currency, transfer),
-                    ],
                   ],
                 ),
               ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _transferPicker(String currency, double transferAmount) {
-    final boxes = _shownBoxes.where((box) => box.currency == currency).toList();
-    final selectedId = _transferTargets[currency];
-    ShownBoxesModel? selected;
-    if (selectedId != null) {
-      selected = boxes.firstWhereOrNull((box) => box.boxId == selectedId);
-    }
-
-    return CustomDropdownFieldWithSearch(
-      tital: 'boxName'.tr,
-      hint: 'boxNameExample',
-      items: boxes,
-      value: selected,
-      onChanged: (value) {
-        setState(() {
-          _transferTargets[currency] = (value as ShownBoxesModel?)?.boxId;
-        });
-      },
-      itemAsString: (item) => item.boxName,
-      compareFn: (a, b) => a.boxId == b.boxId,
     );
   }
 
@@ -948,6 +902,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   }
 
   Future<void> _submit() async {
+    if (_submitting) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final payload = _payload;
@@ -1035,64 +990,6 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       );
     }
 
-    if (_canFinalizeClosing) {
-      for (final row in payload.currencies) {
-        final physical = _parse(_physical[row.currency]?.text);
-        final floatKeep = _parse(_float[row.currency]?.text);
-        final transfer =
-            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
-        if (transfer > 0 && _transferTargets[row.currency] == null) {
-          AppFailureNotice.show(
-            title: 'error'.tr,
-            message: 'salesDailyTransferTargetRequired'.tr,
-          );
-          return;
-        }
-      }
-      for (final row in payload.salesOrdersCurrencies) {
-        final physical = _parse(_ordersPhysical[row.currency]?.text);
-        final floatKeep = _parse(_ordersFloat[row.currency]?.text);
-        final transfer =
-            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
-        if (transfer > 0 && _transferTargets[row.currency] == null) {
-          AppFailureNotice.show(
-            title: 'error'.tr,
-            message: 'salesDailyTransferTargetRequired'.tr,
-          );
-          return;
-        }
-      }
-    }
-
-    final transfers = <Map<String, dynamic>>[];
-    if (_canFinalizeClosing) {
-      for (final row in payload.currencies) {
-        final physical = _parse(_physical[row.currency]?.text);
-        final floatKeep = _parse(_float[row.currency]?.text);
-        final transfer =
-            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
-        if (transfer <= 0) continue;
-        final toBoxId = _transferTargets[row.currency];
-        if (toBoxId == null) continue;
-        transfers.add({
-          'currency': row.currency,
-          'to_box_id': toBoxId,
-        });
-      }
-      for (final row in payload.salesOrdersCurrencies) {
-        if (transfers.any((item) => item['currency'] == row.currency)) {
-          continue;
-        }
-        final physical = _parse(_ordersPhysical[row.currency]?.text);
-        final floatKeep = _parse(_ordersFloat[row.currency]?.text);
-        if (physical - floatKeep <= 0) continue;
-        final toBoxId = _transferTargets[row.currency];
-        if (toBoxId != null) {
-          transfers.add({'currency': row.currency, 'to_box_id': toBoxId});
-        }
-      }
-    }
-
     setState(() => _submitting = true);
     try {
       final lateReason =
@@ -1106,22 +1003,21 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         return;
       }
 
-      final message = _canFinalizeClosing
-          ? await controller.directCloseDailySession(
-              cashCounts: counts,
-              salesOrdersCashCounts: ordersCounts,
-              sessionId: sessionId,
-              transfers: transfers,
-            )
-          : await controller.submitDailyClosing(
-              cashCounts: counts,
-              salesOrdersCashCounts: ordersCounts,
-              lateCloseReason: lateReason,
-              sessionId: sessionId,
-            );
+      final canReview = _canFinalizeClosing;
+      final message = await controller.submitDailyClosing(
+        cashCounts: counts,
+        salesOrdersCashCounts: ordersCounts,
+        lateCloseReason: lateReason,
+        sessionId: sessionId,
+      );
       if (!mounted) return;
-      Get.back();
-      _showSuccess(message);
+      if (canReview) {
+        setState(() => _awaitingReview = true);
+        await _openClosingReview(sessionId);
+      } else {
+        Get.back();
+        _showSuccess(message);
+      }
     } catch (e) {
       if (!mounted) return;
       Helpers.showCustomDialogError(
@@ -1132,5 +1028,53 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _reviewPendingClosing() async {
+    if (_submitting) return;
+    final sessionId = _targetSessionId ?? _payload?.session?.id;
+    if (sessionId == null) return;
+    setState(() => _submitting = true);
+    try {
+      await _openClosingReview(sessionId);
+    } catch (e) {
+      if (!mounted) return;
+      AppFailureNotice.show(title: 'error'.tr, message: e.toString());
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _openClosingReview(int sessionId) async {
+    final datasource = Get.find<SalesDatasource>();
+    final payload = await datasource.getDailySessionClosePayload(sessionId);
+    if (!mounted) return;
+    final requestId = payload.pendingClosingRequestId;
+    setState(() {
+      _adminPayload = payload;
+      _awaitingReview = payload.isClosingRequested;
+    });
+    if (requestId == null) {
+      throw Exception('لا يوجد طلب إغلاق بانتظار المراجعة لهذه الجلسة.');
+    }
+    if (!Get.isRegistered<SalesDailyAdminController>()) {
+      SalesDailyAdminBinding().dependencies();
+    }
+    final admin = Get.find<SalesDailyAdminController>();
+    await admin.loadAll();
+    if (!mounted) return;
+    final request = admin.closingRequests.firstWhereOrNull(
+      (item) => item.id == requestId,
+    );
+    if (request == null) {
+      throw Exception('تعذر تحميل طلب الإغلاق للمراجعة. حاول مجددًا.');
+    }
+    final approved = await SalesDailyClosingRequestsList.showClosingSheet(
+      context,
+      admin,
+      request,
+    );
+    if (!mounted) return;
+    if (approved == true) Get.back();
   }
 }
