@@ -38,6 +38,19 @@ class SalesAccountingController extends GetxController {
   bool isExporting = false;
   String? error;
   Map<String, dynamic>? report;
+  static const _allColumnIds = {
+    'sequence',
+    'label',
+    'gross_sales',
+    'sales_discount',
+    'sales_total',
+    'returns_total',
+    'net_sales',
+    'sales_share',
+    'return_rate',
+  };
+  Set<String> _selectedColumnIds = {..._allColumnIds};
+  Set<String> _appliedColumnIds = {..._allColumnIds};
 
   @override
   void onInit() {
@@ -66,6 +79,14 @@ class SalesAccountingController extends GetxController {
       }
       minAmount = '${saved['min_amount'] ?? ''}';
       maxAmount = '${saved['max_amount'] ?? ''}';
+      if (saved['columns'] is List) {
+        final restored = (saved['columns'] as List)
+            .whereType<String>()
+            .where(_allColumnIds.contains)
+            .toSet();
+        if (restored.isNotEmpty) _selectedColumnIds = restored;
+      }
+      _ensureVisibleColumn();
       remember = true;
     }
     load();
@@ -108,7 +129,59 @@ class SalesAccountingController extends GetxController {
   void selectGroup(String value) => changed(() {
         groupBy = value;
         sort = value == 'customer' ? 'sales_desc' : 'label';
+        _ensureVisibleColumn();
       });
+
+  Map<String, String> _columnLabels(String group, bool returns) => {
+        if (group == 'month') 'sequence': 'م',
+        'label': group == 'month'
+            ? 'الشهر / السنة'
+            : group == 'customer'
+                ? 'الزبون / الطرف'
+                : 'التاريخ',
+        'gross_sales': group == 'month' ? 'المبيعات' : 'المبيعات قبل الخصم',
+        'sales_discount': 'خصم المبيعات',
+        if (group != 'month') 'sales_total': 'المبيعات بعد الخصم',
+        if (returns) 'returns_total': 'المرتجعات',
+        if (group == 'month' || returns) 'net_sales': 'صافي المبيعات',
+        'sales_share': 'حصة المبيعات %',
+        if (returns) 'return_rate': 'نسبة المرتجعات %',
+      };
+
+  Map<String, String> get availableColumns =>
+      _columnLabels(groupBy, includeReturns);
+  bool isColumnSelected(String id) => _selectedColumnIds.contains(id);
+  int get selectedColumnCount =>
+      availableColumns.keys.where(isColumnSelected).length;
+  void _ensureVisibleColumn() {
+    if (selectedColumnCount == 0) _selectedColumnIds.add('label');
+  }
+
+  void selectColumn(String id, bool selected) {
+    if (!availableColumns.containsKey(id) ||
+        (!selected && isColumnSelected(id) && selectedColumnCount == 1)) {
+      return;
+    }
+    changed(() =>
+        selected ? _selectedColumnIds.add(id) : _selectedColumnIds.remove(id));
+  }
+
+  void selectAllColumns() =>
+      changed(() => _selectedColumnIds = {..._allColumnIds});
+  void selectReturns(bool value) => changed(() {
+        includeReturns = value;
+        _ensureVisibleColumn();
+      });
+
+  Map<String, dynamic> get _preferences => {
+        ...filters,
+        'columns': _selectedColumnIds.toList(),
+      };
+  List<String> get columnIds =>
+      _columnLabels('${applied['group_by']}', returnsVisible)
+          .keys
+          .where(_appliedColumnIds.contains)
+          .toList();
 
   Map<String, dynamic> get applied =>
       Map<String, dynamic>.from(report?['filters'] as Map? ?? {});
@@ -116,6 +189,8 @@ class SalesAccountingController extends GetxController {
   bool get hasPendingFilters =>
       report != null &&
       (valueRangeError != null ||
+          _selectedColumnIds.length != _appliedColumnIds.length ||
+          !_selectedColumnIds.containsAll(_appliedColumnIds) ||
           filters.entries.any((entry) {
             final other = applied[entry.key];
             if (entry.key == 'min_amount' || entry.key == 'max_amount') {
@@ -179,14 +254,19 @@ class SalesAccountingController extends GetxController {
       update();
       return;
     }
+    _ensureVisibleColumn();
     final requested = Map<String, dynamic>.from(filters);
+    final requestedColumns = {..._selectedColumnIds};
     isLoading = true;
     error = null;
     update();
     try {
       report = await service.load(requested);
+      _appliedColumnIds = requestedColumns;
       if (persistFilters != null) {
-        await persistFilters!(remember ? requested : null);
+        await persistFilters!(remember
+            ? {...requested, 'columns': requestedColumns.toList()}
+            : null);
       }
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
@@ -218,7 +298,7 @@ class SalesAccountingController extends GetxController {
   Future<void> setRemember(bool value) async {
     remember = value;
     update();
-    await persistFilters?.call(value ? filters : null);
+    await persistFilters?.call(value ? _preferences : null);
   }
 
   static String amount(dynamic value) =>
@@ -228,39 +308,17 @@ class SalesAccountingController extends GetxController {
 
   bool get isMonthly => applied['group_by'] == 'month';
   List<double> get columnWidths => [
-        for (var i = 0; i < columns.length; i++)
-          isMonthly
-              ? (i == 0
-                  ? 72
-                  : i == 1
-                      ? 150
-                      : 124)
-              : (i == 0 ? 190 : 124)
+        for (final id in columnIds)
+          id == 'sequence'
+              ? 72
+              : id == 'label'
+                  ? (isMonthly ? 150 : 190)
+                  : 124
       ];
-  List<String> get columns => isMonthly
-      ? [
-          'م',
-          'الشهر / السنة',
-          'المبيعات',
-          'خصم المبيعات',
-          if (returnsVisible) ...['المرتجعات', 'خصم المرتجعات'],
-          'صافي المبيعات',
-          'حصة المبيعات %',
-          if (returnsVisible) 'نسبة المرتجعات %',
-        ]
-      : [
-          applied['group_by'] == 'customer' ? 'الزبون / الطرف' : 'التاريخ',
-          'المبيعات قبل الخصم',
-          'خصم المبيعات',
-          'المبيعات بعد الخصم',
-          if (returnsVisible) ...[
-            'المرتجعات',
-            'خصم المرتجعات',
-            'صافي المبيعات'
-          ],
-          'حصة المبيعات %',
-          if (returnsVisible) 'نسبة المرتجعات %',
-        ];
+  List<String> get columns {
+    final labels = _columnLabels('${applied['group_by']}', returnsVisible);
+    return columnIds.map((id) => labels[id]!).toList();
+  }
 
   Map<String, String> get activeSummaryCardsForDocument =>
       summaryCards(summary);
@@ -278,22 +336,16 @@ class SalesAccountingController extends GetxController {
   List<String> cells(Map<String, dynamic> row,
           {bool total = false, int? sequence}) =>
       [
-        if (isMonthly) ...[
-          total
-              ? ''
-              : '${sequence ?? rows.indexWhere((r) => r['key'] == row['key']) + 1}',
-          total ? 'الإجمالي' : '${row['label'] ?? ''}',
-        ] else
-          total ? 'الإجمالي' : '${row['label'] ?? ''}',
-        amount(row['gross_sales']),
-        amount(row['sales_discount']),
-        if (!isMonthly) amount(row['sales_total']),
-        if (returnsVisible) ...[
-          amount(row['returns_total']),
-          amount(row['return_discount']),
-        ],
-        if (isMonthly || returnsVisible) amount(row['net_sales']),
-        percentage(row['sales_share']),
-        if (returnsVisible) percentage(row['return_rate']),
+        for (final id in columnIds)
+          if (id == 'sequence')
+            total
+                ? (columnIds.contains('label') ? '' : 'الإجمالي')
+                : '${sequence ?? rows.indexWhere((r) => r['key'] == row['key']) + 1}'
+          else if (id == 'label')
+            total ? 'الإجمالي' : '${row['label'] ?? ''}'
+          else if (id == 'sales_share' || id == 'return_rate')
+            percentage(row[id])
+          else
+            amount(row[id]),
       ];
 }

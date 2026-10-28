@@ -90,7 +90,7 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                           const Padding(
                             padding: EdgeInsets.only(top: 8),
                             child: Text(
-                                'تغيّرت الفلاتر. اضغط تطبيق لتحديث النتائج.',
+                                'تغيّرت خيارات التقرير. اضغط تطبيق لتحديث النتائج.',
                                 style: TextStyle(color: Color(0xFF985300))),
                           ),
                         const SizedBox(height: 12),
@@ -299,10 +299,10 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                     controlAffinity: ListTileControlAffinity.leading,
                     title: const Text('احتساب مردودات المبيعات'),
                     value: c.includeReturns,
-                    onChanged: busy
-                        ? null
-                        : (v) => c.changed(() => c.includeReturns = v ?? false),
+                    onChanged: busy ? null : (v) => c.selectReturns(v ?? false),
                   ),
+                  const Divider(),
+                  _columns(c, busy),
                   CheckboxListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
@@ -330,6 +330,42 @@ class SalesAccountingScreen extends GetView<SalesAccountingController> {
                 ]);
           }),
         ),
+      );
+
+  Widget _columns(SalesAccountingController c, bool busy) => ExpansionTile(
+        key: const ValueKey('sales-report-column-picker'),
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 12),
+        title: const Text('أعمدة التقرير',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+            '${c.selectedColumnCount} من ${c.availableColumns.length} أعمدة • اختر عمودًا واحدًا على الأقل'),
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: busy ? null : c.selectAllColumns,
+              icon: const Icon(Icons.select_all),
+              label: const Text('عرض كل الأعمدة'),
+            ),
+          ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Wrap(spacing: 8, runSpacing: 6, children: [
+              for (final item in c.availableColumns.entries)
+                FilterChip(
+                  key: ValueKey('sales-report-column-${item.key}'),
+                  label: Text(item.value),
+                  selected: c.isColumnSelected(item.key),
+                  onSelected: busy ||
+                          (c.isColumnSelected(item.key) &&
+                              c.selectedColumnCount == 1)
+                      ? null
+                      : (value) => c.selectColumn(item.key, value),
+                ),
+            ]),
+          ),
+        ],
       );
 
   Widget _dropdown(
@@ -544,6 +580,7 @@ class _SalesTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = controller.rowsFor(section);
     final columns = controller.columns;
+    final columnIds = controller.columnIds;
     final widths = controller.columnWidths;
     final theme = Theme.of(context);
     Widget line(List<String> cells,
@@ -566,13 +603,15 @@ class _SalesTable extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                   child: Directionality(
-                    textDirection: i == 0 || header
+                    textDirection: columnIds[i] == 'label' || header
                         ? TextDirection.rtl
                         : TextDirection.ltr,
                     child: Text(cells[i],
                         maxLines: header ? null : 2,
                         overflow: header ? null : TextOverflow.ellipsis,
-                        textAlign: i == 0 ? TextAlign.start : TextAlign.center,
+                        textAlign: columnIds[i] == 'label'
+                            ? TextAlign.start
+                            : TextAlign.center,
                         style: TextStyle(
                             fontSize: 12,
                             color: header

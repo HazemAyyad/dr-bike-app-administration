@@ -92,6 +92,193 @@ void main() {
     expect(c.isLoading, isFalse);
   });
 
+  test('column choices persist locally and apply with the report snapshot',
+      () async {
+    final api = _ReportApi();
+    Map<String, dynamic>? saved;
+    final c = SalesAccountingController(
+      service: SalesAccountingApiService(api: api),
+      savedFilters: {
+        'include_returns': 1,
+        'columns': [
+          'label',
+          'returns_total',
+          'net_sales',
+          'return_discount',
+          'unknown'
+        ],
+      },
+      persistFilters: (value) async => saved = value,
+    );
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(api.request!.containsKey('columns'), isFalse);
+    expect(c.columnIds, ['label', 'returns_total', 'net_sales']);
+    expect(c.columns, ['الزبون / الطرف', 'المرتجعات', 'صافي المبيعات']);
+    expect(c.cells(c.rows.first), ['زبون تجريبي', '90.00', '810.00']);
+    expect(c.cells(c.summary, total: true), ['الإجمالي', '120.00', '780.00']);
+    expect(saved!['columns'], ['label', 'returns_total', 'net_sales']);
+    final csv = SalesAccountingExport.buildCsv(c);
+    c.selectColumn('returns_total', false);
+    expect(c.hasPendingFilters, isTrue);
+    expect(SalesAccountingExport.buildCsv(c), csv);
+    await c.load();
+    expect(c.hasPendingFilters, isFalse);
+    expect(c.columns, ['الزبون / الطرف', 'صافي المبيعات']);
+    expect(SalesAccountingExport.document(c).rows.first,
+        ['زبون تجريبي', '810.00']);
+    expect(SalesAccountingExport.buildCsv(c), isNot(contains('"المرتجعات"')));
+    await c.setRemember(true);
+    expect(saved!['columns'], ['label', 'net_sales']);
+    final restored = SalesAccountingController(
+        service: SalesAccountingApiService(api: _ReportApi()),
+        savedFilters: saved);
+    restored.onInit();
+    await Future<void>.delayed(Duration.zero);
+    expect(restored.columnIds, ['label', 'net_sales']);
+    await c.setRemember(false);
+    expect(saved, isNull);
+  });
+
+  test(
+      'every grouping projects matching cells and widths for one, two, three or all columns',
+      () async {
+    for (final group in SalesAccountingController.groups.keys) {
+      final c = SalesAccountingController(
+          service: SalesAccountingApiService(api: _ReportApi()),
+          savedFilters: {'group_by': group, 'include_returns': 1});
+      c.onInit();
+      await Future<void>.delayed(Duration.zero);
+      expect(c.columns, isNot(contains('خصم المرتجعات')));
+      expect(c.availableColumns.keys, isNot(contains('return_discount')));
+      for (final ids in [
+        ['label'],
+        ['label', 'net_sales'],
+        ['gross_sales', 'returns_total', 'net_sales'],
+      ]) {
+        c.selectAllColumns();
+        for (final id in c.availableColumns.keys) {
+          if (!ids.contains(id)) c.selectColumn(id, false);
+        }
+        await c.load();
+        expect(c.columnIds, ids);
+        final doc = SalesAccountingExport.document(c);
+        expect(doc.columns, hasLength(ids.length));
+        expect(c.columnWidths, hasLength(ids.length));
+        for (final row in doc.rows) {
+          expect(row, hasLength(ids.length));
+        }
+        if (ids.length == 3) {
+          expect(doc.rows.first, ['1000.00', '90.00', '810.00']);
+          expect(doc.rows.last, ['1000.00', '120.00', '780.00']);
+        }
+      }
+      c.selectAllColumns();
+      await c.load();
+      expect(c.columnIds.length, c.availableColumns.length);
+      expect(c.hasPendingFilters, isFalse);
+    }
+  });
+
+  test(
+      'the last column stays selected and hidden-only selections recover across layouts',
+      () async {
+    final c = SalesAccountingController(
+        service: SalesAccountingApiService(api: _ReportApi()),
+        savedFilters: {
+          'group_by': 'month',
+          'columns': ['sequence']
+        });
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    c.selectColumn('sequence', false);
+    expect(c.selectedColumnCount, 1);
+    expect(c.cells(c.summary, total: true), ['الإجمالي']);
+    c.selectGroup('day');
+    expect(c.selectedColumnCount, 1);
+    await c.load();
+    expect(c.columnIds, ['label']);
+    c.selectReturns(true);
+    c.selectColumn('returns_total', true);
+    c.selectColumn('label', false);
+    c.selectReturns(false);
+    expect(c.isColumnSelected('label'), isTrue);
+    await c.load();
+    expect(c.columnIds, ['label']);
+  });
+
+  test('custom column layouts generate PDFs with two, three and all columns',
+      () async {
+    final c = SalesAccountingController(
+        service: SalesAccountingApiService(api: _ReportApi()),
+        savedFilters: {'group_by': 'month', 'include_returns': 1});
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    for (final layout in ['two', 'three', 'all']) {
+      c.selectAllColumns();
+      if (layout != 'all') {
+        final ids = [
+          'label',
+          'net_sales',
+          if (layout == 'three') 'returns_total'
+        ];
+        for (final id in c.availableColumns.keys) {
+          if (!ids.contains(id)) c.selectColumn(id, false);
+        }
+      }
+      await c.load();
+      final bytes = await SalesAccountingExport.buildPdf(c);
+      expect(bytes.sublist(0, 4), [37, 80, 68, 70]);
+      final evidence = Platform.environment['ACCOUNTING_REPORT_EVIDENCE_DIR'];
+      if (evidence != null) {
+        await Directory(evidence).create(recursive: true);
+        await File('$evidence/columns-$layout.pdf').writeAsBytes(bytes);
+      }
+    }
+  });
+
+  for (final width in [320.0, 1280.0]) {
+    testWidgets('column picker applies a subset and restores all at $width',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 950);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final c = Get.put(SalesAccountingController(
+          service: SalesAccountingApiService(api: _ReportApi()),
+          savedFilters: {
+            'columns': ['label', 'sales_total', 'sales_discount']
+          }));
+      await tester
+          .pumpWidget(const GetMaterialApp(home: SalesAccountingScreen()));
+      await tester.pump();
+      final picker = find.byKey(const ValueKey('sales-report-column-picker'));
+      await revealAccountingDetail(tester, picker);
+      await tester.tap(find.text('أعمدة التقرير'));
+      await tester.pumpAndSettle();
+      final discount =
+          find.byKey(const ValueKey('sales-report-column-sales_discount'));
+      await revealAccountingDetail(tester, discount);
+      await tester.tap(discount);
+      await tester.pump();
+      expect(c.selectedColumnCount, 2);
+      expect(c.columnIds, hasLength(3));
+      final apply = find.text('تطبيق وعرض التقرير');
+      await revealAccountingDetail(tester, apply);
+      await tester.tap(apply);
+      await settleAccountingPreview(tester);
+      expect(c.columnIds, ['label', 'sales_total']);
+      expect(SalesAccountingExport.document(c).columns,
+          ['الزبون / الطرف', 'المبيعات بعد الخصم']);
+      final all = find.text('عرض كل الأعمدة');
+      await revealAccountingDetail(tester, all);
+      await tester.tap(all);
+      await tester.pump();
+      expect(c.selectedColumnCount, c.availableColumns.length);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   test('CSV keeps negative amounts numeric and protects account names',
       () async {
     final c = SalesAccountingController(
