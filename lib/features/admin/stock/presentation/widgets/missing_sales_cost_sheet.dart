@@ -170,6 +170,10 @@ class _MissingSalesCostSheetState extends State<MissingSalesCostSheet> {
                                   '${row['invoice_number']} — ${row['sold_at'] ?? ''}'),
                               subtitle: Text(
                                   'الكمية المباعة: ${row['quantity']}، الناقصة: ${row['missing_quantity']}\n'
+                                  '${row['sale_price_included_in_package'] == true ? 'سعر البيع: ضمن سعر الباكيج' : 'سعر بيع القطعة المسجل: ${row['sale_unit_price'] ?? 'غير مسجل'} ${row['currency']}'}\n'
+                                  'إجمالي بيع الصنف قبل خصم الفاتورة: ${row['sale_line_total'] ?? 'غير مسجل'} ${row['currency']}\n'
+                                  'إجمالي الفاتورة: ${row['invoice_total'] ?? 'غير مسجل'} ${row['currency']}'
+                                  '${(row['invoice_discount'] as num? ?? 0) > 0 ? ' — خصم الفاتورة: ${row['invoice_discount']}' : ''}\n'
                                   'التكلفة المعروفة: ${row['known_cost']} ${row['currency']}\n'
                                   'التكلفة بعد التصحيح: ${row['new_total_cost']} ${row['currency']}\n'
                                   'انخفاض الربح: ${row['added_cost']} ${row['currency']}'

@@ -45,6 +45,7 @@ class _StockMovementsFilterSheetState extends State<StockMovementsFilterSheet> {
     'cost_revaluation': 'stockMoveTypeCostRevaluation',
     'cost_initialization': 'stockMoveTypeCostInitialization',
     'sale_cost_correction': 'stockMoveTypeSaleCostCorrection',
+    'cost_reference': 'stockMoveTypeCostReference',
     'import': 'stockMoveTypeImport',
     'price_update': 'stockMoveTypePriceUpdate',
     'product_update': 'stockMoveTypeProductUpdate',

@@ -2241,6 +2241,7 @@ const Map<String, String> en = {
   'stockMoveTypeCostRevaluation': 'Inventory cost revaluation',
   'stockMoveTypeCostInitialization': 'Missing inventory cost entry',
   'stockMoveTypeSaleCostCorrection': 'Missing sales cost correction',
+  'stockMoveTypeCostReference': 'Reference unit cost',
   'stockMoveTypeImport': 'Import',
   'stockMoveTypeAssemblyComponent': 'Product assembly - component deducted',
   'stockMoveTypeAssemblyOutput': 'Product assembly - output added',

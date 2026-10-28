@@ -30,6 +30,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(ds.previews, 1);
     expect(ds.applications, 0);
+    expect(find.textContaining('الكمية المباعة: 2'), findsOneWidget);
+    expect(
+        find.textContaining('سعر بيع القطعة المسجل: 50 شيكل'), findsOneWidget);
+    expect(find.textContaining('إجمالي بيع الصنف قبل خصم الفاتورة: 100 شيكل'),
+        findsOneWidget);
+    expect(find.textContaining('إجمالي الفاتورة: 150 شيكل — خصم الفاتورة: 25'),
+        findsOneWidget);
     expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
         isNull);
     final boxes = find.byType(CheckboxListTile);
@@ -158,6 +165,10 @@ class _Datasource implements StockDatasource {
                 'sold_at': '2026-10-20',
                 'quantity': 2,
                 'missing_quantity': 2,
+                'sale_unit_price': 50,
+                'sale_line_total': 100,
+                'invoice_total': 150,
+                'invoice_discount': 25,
                 'known_cost': 0,
                 'new_total_cost': 20,
                 'added_cost': 20,

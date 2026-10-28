@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/app_failure_notice.dart';
+import '../../../../../core/utils/localized_number.dart';
 
 class InventoryCostRevaluationResult {
   const InventoryCostRevaluationResult({
@@ -23,6 +24,7 @@ Future<InventoryCostRevaluationResult?> showInventoryCostRevaluationSheet({
   double? currentUnitCost,
   String currency = 'شيكل',
   bool initializeMissingCost = false,
+  bool referenceOnly = false,
 }) {
   return showModalBottomSheet<InventoryCostRevaluationResult>(
     context: context,
@@ -34,6 +36,7 @@ Future<InventoryCostRevaluationResult?> showInventoryCostRevaluationSheet({
       currentUnitCost: currentUnitCost,
       currency: currency,
       initializeMissingCost: initializeMissingCost,
+      referenceOnly: referenceOnly,
     ),
   );
 }
@@ -45,6 +48,7 @@ class _InventoryCostRevaluationSheet extends StatefulWidget {
     this.currentUnitCost,
     required this.currency,
     required this.initializeMissingCost,
+    required this.referenceOnly,
   });
 
   final String title;
@@ -52,6 +56,7 @@ class _InventoryCostRevaluationSheet extends StatefulWidget {
   final double? currentUnitCost;
   final String currency;
   final bool initializeMissingCost;
+  final bool referenceOnly;
 
   @override
   State<_InventoryCostRevaluationSheet> createState() =>
@@ -82,17 +87,20 @@ class _InventoryCostRevaluationSheetState
   }
 
   void submit() {
-    final cost =
-        double.tryParse(costController.text.trim().replaceAll(',', '.'));
+    final cost = tryParseLocalizedAmount(costController.text);
     final reason = reasonController.text.trim();
-    if (cost == null || (widget.initializeMissingCost ? cost <= 0 : cost < 0)) {
+    if (cost == null ||
+        !cost.isFinite ||
+        ((widget.initializeMissingCost || widget.referenceOnly)
+            ? cost <= 0
+            : cost < 0)) {
       AppFailureNotice.show(title: 'خطأ', message: 'أدخل تكلفة وحدة صحيحة.');
       return;
     }
     if (reason.isEmpty) {
       AppFailureNotice.show(
         title: 'خطأ',
-        message: widget.initializeMissingCost
+        message: widget.initializeMissingCost || widget.referenceOnly
             ? 'سبب إدخال التكلفة مطلوب.'
             : 'سبب إعادة التقييم مطلوب.',
       );
@@ -129,9 +137,11 @@ class _InventoryCostRevaluationSheetState
                 children: [
                   Expanded(
                     child: Text(
-                      widget.initializeMissingCost
-                          ? 'إدخال تكلفة المخزون الناقصة'
-                          : 'إعادة تقييم تكلفة المخزون',
+                      widget.referenceOnly
+                          ? 'تسجيل تكلفة مرجعية'
+                          : widget.initializeMissingCost
+                              ? 'إدخال تكلفة المخزون الناقصة'
+                              : 'إعادة تقييم تكلفة المخزون',
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
@@ -149,9 +159,11 @@ class _InventoryCostRevaluationSheetState
               if (widget.subtitle?.isNotEmpty == true) Text(widget.subtitle!),
               const SizedBox(height: 8),
               Text(
-                widget.initializeMissingCost
-                    ? 'سيتم إنشاء تغطية محاسبية للكمية الناقصة فقط، من دون تغيير كمية المخزون.'
-                    : 'هذه العملية لا تغيّر الكمية؛ تسجل فرق القيمة وسجل التدقيق فقط.',
+                widget.referenceOnly
+                    ? 'سيُحفظ سعر مرجعي للصنف ورصيده صفر. لا يغيّر قيمة المخزون أو تكلفة المبيعات السابقة؛ تُراجع المبيعات بشكل منفصل.'
+                    : widget.initializeMissingCost
+                        ? 'سيتم إنشاء تغطية محاسبية للكمية الناقصة فقط، من دون تغيير كمية المخزون.'
+                        : 'هذه العملية لا تغيّر الكمية؛ تسجل فرق القيمة وسجل التدقيق فقط.',
               ),
               SizedBox(height: 12.h),
               TextField(
@@ -159,9 +171,11 @@ class _InventoryCostRevaluationSheetState
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: widget.initializeMissingCost
-                      ? 'تكلفة وحدة المخزون الناقص'
-                      : 'تكلفة الوحدة الجديدة',
+                  labelText: widget.referenceOnly
+                      ? 'تكلفة الوحدة المرجعية'
+                      : widget.initializeMissingCost
+                          ? 'تكلفة وحدة المخزون الناقص'
+                          : 'تكلفة الوحدة الجديدة',
                   suffixText: widget.currency,
                   border: const OutlineInputBorder(),
                 ),
@@ -170,9 +184,10 @@ class _InventoryCostRevaluationSheetState
               TextField(
                 controller: reasonController,
                 decoration: InputDecoration(
-                  labelText: widget.initializeMissingCost
-                      ? 'سبب إدخال التكلفة'
-                      : 'سبب إعادة التقييم',
+                  labelText:
+                      widget.initializeMissingCost || widget.referenceOnly
+                          ? 'سبب إدخال التكلفة'
+                          : 'سبب إعادة التقييم',
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -188,9 +203,11 @@ class _InventoryCostRevaluationSheetState
               SizedBox(height: 14.h),
               FilledButton(
                 onPressed: submit,
-                child: Text(widget.initializeMissingCost
-                    ? 'تسجيل تكلفة المخزون'
-                    : 'تسجيل إعادة التقييم'),
+                child: Text(widget.referenceOnly
+                    ? 'حفظ التكلفة المرجعية'
+                    : widget.initializeMissingCost
+                        ? 'تسجيل تكلفة المخزون'
+                        : 'تسجيل إعادة التقييم'),
               ),
             ],
           ),

@@ -441,6 +441,12 @@ class ProductDetailsScreen extends GetView<StockController> {
     var currency = product.inventory?.currency ?? 'شيكل';
     var initializeMissingCost =
         (product.inventory?.missingCostQuantity ?? 0) > 0.0001;
+    var referenceOnly =
+        (product.inventory?.quantityOnHand ?? 0).abs() <= 0.0001;
+    if (referenceOnly) {
+      currentCost = product.inventory?.referenceUnitCost;
+      currency = product.inventory?.referenceCostCurrency ?? currency;
+    }
     if (_productHasVariants(product)) {
       final target = await showStockVariantAdjustSheet(
         context: context,
@@ -455,6 +461,11 @@ class ProductDetailsScreen extends GetView<StockController> {
           currentCost = variant.averageUnitCost;
           currency = variant.currency;
           initializeMissingCost = variant.missingCostQuantity > 0.0001;
+          referenceOnly = variant.quantityOnHand.abs() <= 0.0001;
+          if (referenceOnly) {
+            currentCost = variant.referenceUnitCost;
+            currency = variant.referenceCostCurrency ?? currency;
+          }
           break;
         }
       }
@@ -467,9 +478,10 @@ class ProductDetailsScreen extends GetView<StockController> {
       currentUnitCost: initializeMissingCost ? null : currentCost,
       currency: currency,
       initializeMissingCost: initializeMissingCost,
+      referenceOnly: referenceOnly,
     );
     if (result == null) return;
-    if (initializeMissingCost) {
+    if (initializeMissingCost || referenceOnly) {
       await controller.initializeProductInventoryCost(
         productId: product.id,
         sizeColorId: sizeColorId,
@@ -477,6 +489,7 @@ class ProductDetailsScreen extends GetView<StockController> {
         reason: result.reason,
         notes: result.notes,
         currency: currency,
+        referenceOnly: referenceOnly,
       );
     } else {
       await controller.updateProductCostPrice(

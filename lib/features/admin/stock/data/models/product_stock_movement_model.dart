@@ -157,6 +157,7 @@ class ProductStockMovementModel {
       'cost_revaluation': 'stockMoveTypeCostRevaluation',
       'cost_initialization': 'stockMoveTypeCostInitialization',
       'sale_cost_correction': 'stockMoveTypeSaleCostCorrection',
+      'cost_reference': 'stockMoveTypeCostReference',
       'import': 'stockMoveTypeImport',
       'assembly_component': 'stockMoveTypeAssemblyComponent',
       'assembly_output': 'stockMoveTypeAssemblyOutput',

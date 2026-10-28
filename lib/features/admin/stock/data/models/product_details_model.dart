@@ -316,6 +316,8 @@ class InventorySummary {
   final List<InventoryCostLayerDetails> costLayers;
   final List<InventoryAuditEntry> recentMovements;
   final List<InventoryAuditEntry> lastAdjustments;
+  final double? referenceUnitCost;
+  final String? referenceCostCurrency;
 
   const InventorySummary({
     required this.quantityOnHand,
@@ -332,6 +334,8 @@ class InventorySummary {
     required this.costLayers,
     required this.recentMovements,
     required this.lastAdjustments,
+    this.referenceUnitCost,
+    this.referenceCostCurrency,
   });
 
   factory InventorySummary.fromJson(Map<String, dynamic> json) {
@@ -368,6 +372,10 @@ class InventorySummary {
         json['last_adjustments'],
         (item) => InventoryAuditEntry.fromJson(item),
       ),
+      referenceUnitCost: json['reference_unit_cost'] == null
+          ? null
+          : asDouble(json['reference_unit_cost']),
+      referenceCostCurrency: asNullableString(json['reference_cost_currency']),
     );
   }
 
@@ -386,6 +394,8 @@ class InventorySummary {
         'cost_layers': costLayers.map((e) => e.toJson()).toList(),
         'recent_movements': recentMovements.map((e) => e.toJson()).toList(),
         'last_adjustments': lastAdjustments.map((e) => e.toJson()).toList(),
+        'reference_unit_cost': referenceUnitCost,
+        'reference_cost_currency': referenceCostCurrency,
       };
 }
 
@@ -474,6 +484,8 @@ class InventoryIdentitySummary {
   final double? averageUnitCost;
   final double? nextFifoUnitCost;
   final bool coverageComplete;
+  final double? referenceUnitCost;
+  final String? referenceCostCurrency;
 
   const InventoryIdentitySummary({
     this.sizeColorId,
@@ -486,6 +498,8 @@ class InventoryIdentitySummary {
     this.averageUnitCost,
     this.nextFifoUnitCost,
     required this.coverageComplete,
+    this.referenceUnitCost,
+    this.referenceCostCurrency,
   });
 
   factory InventoryIdentitySummary.fromJson(Map<String, dynamic> json) =>
@@ -506,6 +520,11 @@ class InventoryIdentitySummary {
             ? null
             : asDouble(json['next_fifo_unit_cost']),
         coverageComplete: json['cost_coverage_complete'] == true,
+        referenceUnitCost: json['reference_unit_cost'] == null
+            ? null
+            : asDouble(json['reference_unit_cost']),
+        referenceCostCurrency:
+            asNullableString(json['reference_cost_currency']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -519,6 +538,8 @@ class InventoryIdentitySummary {
         'average_inventory_unit_cost': averageUnitCost,
         'next_fifo_unit_cost': nextFifoUnitCost,
         'cost_coverage_complete': coverageComplete,
+        'reference_unit_cost': referenceUnitCost,
+        'reference_cost_currency': referenceCostCurrency,
       };
 }
 

@@ -95,6 +95,11 @@ class InventorySummarySection extends StatelessWidget {
             money(inventory.nextFifoUnitCost, inventory.currency)),
       if (showCost && hasMissingCost)
         MapEntry('كمية بلا تكلفة', qty(inventory.missingCostQuantity)),
+      if (showCost && inventory.referenceUnitCost != null)
+        MapEntry(
+            'تكلفة الوحدة المرجعية',
+            money(inventory.referenceUnitCost,
+                inventory.referenceCostCurrency ?? inventory.currency)),
     ];
 
     return Container(
@@ -161,7 +166,8 @@ class InventorySummarySection extends StatelessWidget {
                   title: Text('${variant.sizeLabel} / ${variant.colorLabel}'),
                   subtitle: showCost
                       ? Text(
-                          'المتوسط: ${money(variant.averageUnitCost, variant.currency)}')
+                          'المتوسط: ${money(variant.averageUnitCost, variant.currency)}'
+                          '${variant.referenceUnitCost == null ? '' : '\nالمرجعية: ${money(variant.referenceUnitCost, variant.referenceCostCurrency ?? variant.currency)}'}')
                       : null,
                   trailing: Text(qty(variant.quantityOnHand),
                       style: const TextStyle(fontWeight: FontWeight.w900)),
@@ -186,13 +192,17 @@ class InventorySummarySection extends StatelessWidget {
                 ),
               if (showCost &&
                   canAdjustInventoryCost &&
-                  inventory.quantityOnHand > 0.0001)
+                  (inventory.quantityOnHand >= 0 || inventory.hasVariants))
                 OutlinedButton.icon(
                   onPressed: onRevalue,
                   icon: const Icon(Icons.price_change_outlined),
-                  label: Text(hasMissingCost
-                      ? 'إدخال سعر التكلفة'
-                      : 'إعادة تقييم التكلفة'),
+                  label: Text(inventory.hasVariants
+                      ? 'إدخال أو تعديل التكلفة'
+                      : inventory.quantityOnHand.abs() <= 0.0001
+                          ? 'تسجيل تكلفة مرجعية'
+                          : hasMissingCost
+                              ? 'إدخال سعر التكلفة'
+                              : 'إعادة تقييم التكلفة'),
                 ),
               if (showCost &&
                   canAdjustInventoryCost &&

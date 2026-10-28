@@ -2292,6 +2292,7 @@ const Map<String, String> ar = {
   'stockMoveTypeCostRevaluation': 'إعادة تقييم تكلفة المخزون',
   'stockMoveTypeCostInitialization': 'إدخال تكلفة مخزون ناقصة',
   'stockMoveTypeSaleCostCorrection': 'تصحيح تكلفة مبيعات ناقصة',
+  'stockMoveTypeCostReference': 'تسجيل تكلفة مرجعية',
   'stockMoveTypeImport': 'استيراد',
   'stockMoveTypeAssemblyComponent': 'تركيب منتج - خصم مكوّن',
   'stockMoveTypeAssemblyOutput': 'تركيب منتج - إضافة المنتج المركّب',

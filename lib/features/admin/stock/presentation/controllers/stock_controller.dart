@@ -2602,6 +2602,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required String reason,
     String? notes,
     String currency = 'شيكل',
+    bool referenceOnly = false,
   }) async {
     try {
       await stockDatasource.initializeProductInventoryCost(
@@ -2611,12 +2612,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         reason: reason,
         notes: notes,
         currency: currency,
+        referenceOnly: referenceOnly,
       );
       await getProductDetails(productId: productId);
       await reloadProductsList();
       AppSuccessNotice.show(
         title: 'success'.tr,
-        message: 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
+        message: referenceOnly
+            ? 'تم حفظ التكلفة المرجعية والكمية بقيت صفرًا.'
+            : 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
       );
       return true;
     } on ServerException catch (e) {

@@ -107,6 +107,9 @@ class _ProductInventoryCostSheetState
     String? subtitle;
     var currency = inventory.currency;
     var missingQuantity = inventory.missingCostQuantity;
+    var referenceOnly = inventory.quantityOnHand.abs() <= 0.0001;
+    double? referenceCost = inventory.referenceUnitCost;
+    if (referenceOnly) currency = inventory.referenceCostCurrency ?? currency;
 
     if (inventory.hasVariants) {
       final target = await showStockVariantAdjustSheet(
@@ -117,7 +120,9 @@ class _ProductInventoryCostSheetState
       final identity = inventory.variants.firstWhereOrNull(
         (item) => item.sizeColorId == target.sizeColorId,
       );
-      if (identity == null || identity.missingCostQuantity <= 0.0001) {
+      if (identity == null ||
+          (identity.quantityOnHand.abs() > 0.0001 &&
+              identity.missingCostQuantity <= 0.0001)) {
         AppFailureNotice.show(
           title: 'تنبيه',
           message: 'هذا المتغير مغطى بالتكلفة؛ اختر متغيرًا ناقص التكلفة.',
@@ -128,6 +133,9 @@ class _ProductInventoryCostSheetState
       subtitle = target.subtitle;
       currency = identity.currency;
       missingQuantity = identity.missingCostQuantity;
+      referenceOnly = identity.quantityOnHand.abs() <= 0.0001;
+      referenceCost = identity.referenceUnitCost;
+      if (referenceOnly) currency = identity.referenceCostCurrency ?? currency;
     }
 
     final result = await showInventoryCostRevaluationSheet(
@@ -135,10 +143,12 @@ class _ProductInventoryCostSheetState
       title: currentProduct.nameAr,
       subtitle: [
         if (subtitle != null) subtitle,
-        'الكمية الناقصة: ${_qty(missingQuantity)}',
+        if (!referenceOnly) 'الكمية الناقصة: ${_qty(missingQuantity)}',
       ].join(' • '),
       currency: currency,
       initializeMissingCost: true,
+      referenceOnly: referenceOnly,
+      currentUnitCost: referenceOnly ? referenceCost : null,
     );
     if (result == null || !mounted) return;
 
@@ -151,12 +161,15 @@ class _ProductInventoryCostSheetState
         reason: result.reason,
         notes: result.notes,
         currency: currency,
+        referenceOnly: referenceOnly,
       );
       await _load();
       await widget.onCostChanged?.call();
       AppSuccessNotice.show(
         title: 'success'.tr,
-        message: 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
+        message: referenceOnly
+            ? 'تم حفظ التكلفة المرجعية والكمية بقيت صفرًا.'
+            : 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
       );
     } on ServerException catch (e) {
       AppFailureNotice.show(
@@ -254,6 +267,13 @@ class _ProductInventoryCostSheetState
                         'متوسط تكلفة الوحدة',
                         _money(inventory.averageUnitCost, inventory.currency),
                       ),
+                      if (inventory.referenceUnitCost != null)
+                        _CostRow(
+                            'تكلفة الوحدة المرجعية',
+                            _money(
+                                inventory.referenceUnitCost,
+                                inventory.referenceCostCurrency ??
+                                    inventory.currency)),
                       if (inventory.costingMethod == 'fifo')
                         _CostRow(
                           'تكلفة وحدة FIFO التالية',
@@ -303,14 +323,23 @@ class _ProductInventoryCostSheetState
                               ),
                             ),
                             trailing: Text(
-                              _money(variant.averageUnitCost, variant.currency),
+                              variant.quantityOnHand.abs() <= 0.0001 &&
+                                      variant.referenceUnitCost != null
+                                  ? 'مرجعية: ${_money(variant.referenceUnitCost, variant.referenceCostCurrency ?? variant.currency)}'
+                                  : _money(variant.averageUnitCost,
+                                      variant.currency),
                               style:
                                   const TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
                         ),
                       ],
-                      if (!inventory.coverageComplete &&
+                      if ((inventory.missingCostQuantity > 0.0001 ||
+                              (inventory.hasVariants
+                                  ? inventory.variants.any(
+                                      (v) => v.quantityOnHand.abs() <= 0.0001)
+                                  : inventory.quantityOnHand.abs() <=
+                                      0.0001)) &&
                           canAdjustInventoryCost) ...[
                         SizedBox(height: 12.h),
                         FilledButton.icon(
@@ -325,7 +354,10 @@ class _ProductInventoryCostSheetState
                                   ),
                                 )
                               : const Icon(Icons.price_change_outlined),
-                          label: const Text('إدخال سعر التكلفة الناقص'),
+                          label: Text(!inventory.hasVariants &&
+                                  inventory.quantityOnHand.abs() <= 0.0001
+                              ? 'تسجيل تكلفة مرجعية'
+                              : 'إدخال سعر التكلفة الناقص'),
                         ),
                       ],
                       if (canAdjustInventoryCost) ...[

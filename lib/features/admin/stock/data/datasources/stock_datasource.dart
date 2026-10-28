@@ -1910,6 +1910,7 @@ class StockDatasource {
     required String reason,
     String? notes,
     String currency = 'شيكل',
+    bool referenceOnly = false,
   }) async {
     try {
       final response = await api.post(
@@ -1922,6 +1923,7 @@ class StockDatasource {
           'reason': reason,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
           'currency': currency,
+          if (referenceOnly) 'reference_only': true,
         },
       );
       final raw = response.data;
