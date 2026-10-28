@@ -1951,6 +1951,50 @@ class StockDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> reviewMissingSalesCost({
+    required String productId,
+    String? sizeColorId,
+    required double unitCost,
+    required String currency,
+    List<int>? saleIds,
+    String? reviewToken,
+    String? reason,
+  }) async {
+    final data = <String, dynamic>{
+      'product_id': productId,
+      if (sizeColorId != null) 'size_color_id': sizeColorId,
+      'unit_cost': unitCost,
+      'currency': currency,
+      if (saleIds != null) 'sale_ids': saleIds,
+      if (reviewToken != null) 'review_token': reviewToken,
+      if (reason != null) 'reason': reason.trim(),
+    };
+    try {
+      final response = saleIds == null
+          ? await api.get(EndPoints.productMissingSalesCost,
+              queryParameters: data)
+          : await api.post(EndPoints.productInitializeSalesCost, data: data);
+      final raw = response.data;
+      if (raw is! Map || raw['status'] != 'success') {
+        throw ServerException(ErrorModel(
+            errorMessage: raw is Map
+                ? '${raw['message'] ?? 'تعذر مراجعة تكلفة المبيعات.'}'
+                : 'تعذر مراجعة تكلفة المبيعات.',
+            status: 422,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {}));
+      }
+      return Map<String, dynamic>.from(raw['result'] as Map);
+    } on DioException catch (e) {
+      final raw = e.response?.data;
+      throw ServerException(ErrorModel(
+          errorMessage: raw is Map
+              ? '${raw['message'] ?? 'تعذر تسجيل تكلفة المبيعات.'}'
+              : 'تعذر الاتصال بالخادم.',
+          status: e.response?.statusCode ?? 500,
+          data: raw is Map ? Map<String, dynamic>.from(raw) : {}));
+    }
+  }
+
   Future<StockMovementsPageResult> getProductStockMovements({
     required String productId,
     int page = 1,

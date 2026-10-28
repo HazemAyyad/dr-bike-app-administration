@@ -2240,6 +2240,7 @@ const Map<String, String> en = {
   'stockMoveTypeOpeningStock': 'Opening stock',
   'stockMoveTypeCostRevaluation': 'Inventory cost revaluation',
   'stockMoveTypeCostInitialization': 'Missing inventory cost entry',
+  'stockMoveTypeSaleCostCorrection': 'Missing sales cost correction',
   'stockMoveTypeImport': 'Import',
   'stockMoveTypeAssemblyComponent': 'Product assembly - component deducted',
   'stockMoveTypeAssemblyOutput': 'Product assembly - output added',

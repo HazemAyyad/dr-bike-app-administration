@@ -12,6 +12,7 @@ import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/product_details_model.dart';
 import 'inventory_cost_revaluation_sheet.dart';
 import 'stock_variant_adjust_sheet.dart';
+import 'missing_sales_cost_sheet.dart';
 
 Future<void> showProductInventoryCostSheet({
   required BuildContext context,
@@ -325,6 +326,28 @@ class _ProductInventoryCostSheetState
                                 )
                               : const Icon(Icons.price_change_outlined),
                           label: const Text('إدخال سعر التكلفة الناقص'),
+                        ),
+                      ],
+                      if (canAdjustInventoryCost) ...[
+                        SizedBox(height: 8.h),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.history),
+                          label: const Text('إدخال تكلفة المبيعات الناقصة'),
+                          onPressed: saving
+                              ? null
+                              : () async {
+                                  final changed =
+                                      await showMissingSalesCostSheet(
+                                          context: context, product: product!);
+                                  if (changed == true && mounted) {
+                                    await _load();
+                                    await widget.onCostChanged?.call();
+                                    AppSuccessNotice.show(
+                                        title: 'تم',
+                                        message:
+                                            'تم تسجيل تكلفة المبيعات المحددة.');
+                                  }
+                                },
                         ),
                       ],
                     ],

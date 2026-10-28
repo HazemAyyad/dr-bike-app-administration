@@ -2291,6 +2291,7 @@ const Map<String, String> ar = {
   'stockMoveTypeOpeningStock': 'رصيد افتتاحي',
   'stockMoveTypeCostRevaluation': 'إعادة تقييم تكلفة المخزون',
   'stockMoveTypeCostInitialization': 'إدخال تكلفة مخزون ناقصة',
+  'stockMoveTypeSaleCostCorrection': 'تصحيح تكلفة مبيعات ناقصة',
   'stockMoveTypeImport': 'استيراد',
   'stockMoveTypeAssemblyComponent': 'تركيب منتج - خصم مكوّن',
   'stockMoveTypeAssemblyOutput': 'تركيب منتج - إضافة المنتج المركّب',

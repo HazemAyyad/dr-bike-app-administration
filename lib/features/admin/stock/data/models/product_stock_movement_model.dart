@@ -156,6 +156,7 @@ class ProductStockMovementModel {
       'opening_stock': 'stockMoveTypeOpeningStock',
       'cost_revaluation': 'stockMoveTypeCostRevaluation',
       'cost_initialization': 'stockMoveTypeCostInitialization',
+      'sale_cost_correction': 'stockMoveTypeSaleCostCorrection',
       'import': 'stockMoveTypeImport',
       'assembly_component': 'stockMoveTypeAssemblyComponent',
       'assembly_output': 'stockMoveTypeAssemblyOutput',

@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:image_picker/image_picker.dart';
+import '../widgets/product_photo_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -1010,7 +1011,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> pickNormalImages() async {
-    final files = await ImagePicker().pickMultiImage();
+    final files = await pickProductPhotos();
     if (files.isNotEmpty) {
       pendingNormalImages.addAll(files);
       update();
@@ -1018,7 +1019,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> pickViewImages() async {
-    final files = await ImagePicker().pickMultiImage();
+    final files = await pickProductPhotos();
     if (files.isNotEmpty) {
       pendingViewImages.addAll(files);
       update();
@@ -1026,7 +1027,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> pickThreeDImages() async {
-    final files = await ImagePicker().pickMultiImage();
+    final files = await pickProductPhotos();
     if (files.isNotEmpty) {
       pendingThreeDImages.addAll(files);
       update();
@@ -1246,11 +1247,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (sizeIdx < 0 || sizeIdx >= items.length) return;
     final colors = items[sizeIdx].colors;
     if (colorIdx < 0 || colorIdx >= colors.length) return;
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
+    final files = await pickProductPhotos(multiple: false);
+    if (files.isEmpty) return;
+    final picked = files.single;
     colors[colorIdx].pendingImage = picked;
     update();
   }

@@ -11,11 +11,13 @@ class InventorySummarySection extends StatelessWidget {
     required this.product,
     required this.onAdjust,
     required this.onRevalue,
+    this.onInitializeSalesCost,
   }) : super(key: key);
 
   final ProductDetailsModel product;
   final VoidCallback onAdjust;
   final VoidCallback onRevalue;
+  final VoidCallback? onInitializeSalesCost;
 
   String money(double? value, String currency) =>
       value == null ? '—' : '${value.toStringAsFixed(2)} $currency';
@@ -191,6 +193,14 @@ class InventorySummarySection extends StatelessWidget {
                   label: Text(hasMissingCost
                       ? 'إدخال سعر التكلفة'
                       : 'إعادة تقييم التكلفة'),
+                ),
+              if (showCost &&
+                  canAdjustInventoryCost &&
+                  onInitializeSalesCost != null)
+                OutlinedButton.icon(
+                  onPressed: onInitializeSalesCost,
+                  icon: const Icon(Icons.history),
+                  label: const Text('إدخال تكلفة المبيعات الناقصة'),
                 ),
             ],
           ),

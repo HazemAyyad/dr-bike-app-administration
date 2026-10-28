@@ -10,6 +10,7 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/stock_controller.dart';
+import 'product_photo_picker.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
@@ -213,11 +214,9 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   }
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
+    final files = await pickProductPhotos(multiple: false);
+    if (files.isEmpty || !mounted) return;
+    final picked = files.single;
     setState(() {
       _pendingImage = picked;
       _clearImage = false;

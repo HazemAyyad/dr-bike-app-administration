@@ -23,6 +23,7 @@ import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
 import '../widgets/inventory_summary_section.dart';
 import '../widgets/inventory_cost_revaluation_sheet.dart';
+import '../widgets/missing_sales_cost_sheet.dart';
 import '../utils/open_product_purchase.dart';
 import 'product_assembly_operations_screen.dart';
 
@@ -566,6 +567,16 @@ class ProductDetailsScreen extends GetView<StockController> {
                             _openProductQuickAdjust(context, product),
                         onRevalue: () =>
                             _openInventoryCostRevaluation(context, product),
+                        onInitializeSalesCost: () async {
+                          final changed = await showMissingSalesCostSheet(
+                              context: context, product: product);
+                          if (changed == true) {
+                            await controller.getProductDetails(
+                                productId: product.id);
+                            await controller
+                                .refreshVisibleProductsAfterCostChange();
+                          }
+                        },
                       ),
                       SizedBox(height: 12.h),
                       _SizeColorDetailsTable(product: product),
