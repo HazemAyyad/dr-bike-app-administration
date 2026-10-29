@@ -62,6 +62,21 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0" AND NOT DEFINED CMAKE_POLICY_VERSIO
 endif()
 include(flutter/generated_plugins.cmake)
 
+# These older WinRT plugins still include experimental/coroutine. MSVC 14.51
+# rejects it with STL1011 unless this temporary compatibility switch is set.
+if(MSVC)
+  foreach(legacy_winrt_plugin IN ITEMS
+      audioplayers_windows_plugin
+      local_auth_windows_plugin
+      permission_handler_windows_plugin
+      flutter_local_notifications_windows)
+    if(TARGET ${legacy_winrt_plugin})
+      target_compile_definitions(${legacy_winrt_plugin} PRIVATE
+        _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+    endif()
+  endforeach()
+endif()
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
