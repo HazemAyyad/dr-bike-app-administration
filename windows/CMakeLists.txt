@@ -55,6 +55,11 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# Firebase's bundled C++ SDK still declares CMake 3.1. CMake 4 removed
+# compatibility below 3.5; apply the policy floor to third-party plugins.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0" AND NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif()
 include(flutter/generated_plugins.cmake)
 
 
