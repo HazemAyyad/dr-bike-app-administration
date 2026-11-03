@@ -199,8 +199,19 @@ void _showMovementDetails(BuildContext context, BoxLogModel log) {
     MapEntry('طريقة الدفع', log.paymentMethod ?? '—'),
     MapEntry('رقم الفاتورة', log.invoiceNumber ?? '—'),
     MapEntry('رقم الصيانة', log.maintenanceId ?? '—'),
-    MapEntry('الرصيد قبل الحركة', log.boxBalanceBefore?.toString() ?? '—'),
-    MapEntry('الرصيد بعد الحركة', log.boxBalanceAfter?.toString() ?? '—'),
+    if (log.type != 'transfer' || log.boxBalanceBefore != null) ...[
+      MapEntry('الرصيد قبل الحركة', log.boxBalanceBefore?.toString() ?? '—'),
+      MapEntry('الرصيد بعد الحركة', log.boxBalanceAfter?.toString() ?? '—'),
+    ],
+    if (log.fromBoxBalanceBefore != null ||
+        log.fromBoxBalanceAfter != null) ...[
+      MapEntry('رصيد المرسل قبل', log.fromBoxBalanceBefore?.toString() ?? '—'),
+      MapEntry('رصيد المرسل بعد', log.fromBoxBalanceAfter?.toString() ?? '—'),
+    ],
+    if (log.toBoxBalanceBefore != null || log.toBoxBalanceAfter != null) ...[
+      MapEntry('رصيد المستقبِل قبل', log.toBoxBalanceBefore?.toString() ?? '—'),
+      MapEntry('رصيد المستقبِل بعد', log.toBoxBalanceAfter?.toString() ?? '—'),
+    ],
     MapEntry('تؤثر على الكاش', log.affectsCashBalance ? 'نعم' : 'لا'),
     MapEntry('التاريخ', log.createdAt.toLocal().toString()),
   ];

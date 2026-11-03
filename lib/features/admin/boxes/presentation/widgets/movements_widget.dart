@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../domain/entity/all_boxes_logs_entity.dart';
+import 'movement_balances.dart';
 
 class MovementsWidget extends StatelessWidget {
   const MovementsWidget(
@@ -87,6 +88,7 @@ class MovementsWidget extends StatelessWidget {
                             .format(box.createdAt.toLocal()),
                         style: TextStyle(color: muted, fontSize: 9.sp)),
                   ]),
+                  MovementBalances(log: box),
                 ])),
             SizedBox(width: 7.w),
             Text(

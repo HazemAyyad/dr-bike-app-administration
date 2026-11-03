@@ -30,6 +30,10 @@ class BoxLog {
   final bool affectsCashBalance;
   final double? boxBalanceBefore;
   final double? boxBalanceAfter;
+  final double? fromBoxBalanceBefore;
+  final double? fromBoxBalanceAfter;
+  final double? toBoxBalanceBefore;
+  final double? toBoxBalanceAfter;
 
   final Box? fromBox;
   final Box? toBox;
@@ -53,6 +57,10 @@ class BoxLog {
     this.affectsCashBalance = true,
     this.boxBalanceBefore,
     this.boxBalanceAfter,
+    this.fromBoxBalanceBefore,
+    this.fromBoxBalanceAfter,
+    this.toBoxBalanceBefore,
+    this.toBoxBalanceAfter,
     this.fromBox,
     this.toBox,
     this.box,

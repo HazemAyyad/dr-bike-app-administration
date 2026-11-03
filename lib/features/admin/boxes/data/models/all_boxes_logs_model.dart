@@ -21,6 +21,10 @@ class BoxLogModel extends BoxLog {
     required bool affectsCashBalance,
     required double? boxBalanceBefore,
     required double? boxBalanceAfter,
+    double? fromBoxBalanceBefore,
+    double? fromBoxBalanceAfter,
+    double? toBoxBalanceBefore,
+    double? toBoxBalanceAfter,
     required Box? fromBox,
     required Box? toBox,
     required Box? box,
@@ -42,6 +46,10 @@ class BoxLogModel extends BoxLog {
           affectsCashBalance: affectsCashBalance,
           boxBalanceBefore: boxBalanceBefore,
           boxBalanceAfter: boxBalanceAfter,
+          fromBoxBalanceBefore: fromBoxBalanceBefore,
+          fromBoxBalanceAfter: fromBoxBalanceAfter,
+          toBoxBalanceBefore: toBoxBalanceBefore,
+          toBoxBalanceAfter: toBoxBalanceAfter,
           fromBox: fromBox,
           toBox: toBox,
           box: box,
@@ -74,6 +82,18 @@ class BoxLogModel extends BoxLog {
       boxBalanceAfter: j['box_balance_after'] == null
           ? null
           : asDouble(j['box_balance_after']),
+      fromBoxBalanceBefore: j['from_box_balance_before'] == null
+          ? null
+          : asDouble(j['from_box_balance_before']),
+      fromBoxBalanceAfter: j['from_box_balance_after'] == null
+          ? null
+          : asDouble(j['from_box_balance_after']),
+      toBoxBalanceBefore: j['to_box_balance_before'] == null
+          ? null
+          : asDouble(j['to_box_balance_before']),
+      toBoxBalanceAfter: j['to_box_balance_after'] == null
+          ? null
+          : asDouble(j['to_box_balance_after']),
       fromBox: j['from_box'] != null
           ? BoxModel.fromJson(asMap(j['from_box']))
           : null,
@@ -101,6 +121,10 @@ class BoxLogModel extends BoxLog {
       'affects_cash_balance': affectsCashBalance,
       'box_balance_before': boxBalanceBefore,
       'box_balance_after': boxBalanceAfter,
+      'from_box_balance_before': fromBoxBalanceBefore,
+      'from_box_balance_after': fromBoxBalanceAfter,
+      'to_box_balance_before': toBoxBalanceBefore,
+      'to_box_balance_after': toBoxBalanceAfter,
       'from_box': fromBox is BoxModel ? (fromBox as BoxModel).toJson() : null,
       'to_box': toBox is BoxModel ? (toBox as BoxModel).toJson() : null,
       'box': box is BoxModel ? (box as BoxModel).toJson() : null,

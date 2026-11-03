@@ -15,6 +15,7 @@ import 'package:doctorbike/core/utils/app_colors.dart';
 import '../../domain/entity/all_boxes_logs_entity.dart';
 import '../controllers/boxes_controller.dart';
 import '../widgets/box_report_filter_sheet.dart';
+import '../widgets/movement_balances.dart';
 
 class EditBoxesScreen extends StatefulWidget {
   const EditBoxesScreen({Key? key}) : super(key: key);
@@ -849,7 +850,11 @@ class _MovementProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final outgoing = log.type == 'minus' || log.value < 0;
+    final outgoing = log.type == 'transfer' &&
+            log.boxBalanceBefore != null &&
+            log.boxBalanceAfter != null
+        ? log.boxBalanceAfter! < log.boxBalanceBefore!
+        : log.type == 'minus' || log.value < 0;
     final amountColor = log.type == 'transfer'
         ? AppColors.customOrange3
         : outgoing
@@ -939,6 +944,7 @@ class _MovementProfileCard extends StatelessWidget {
                         fontSize: 10.sp,
                       ),
                     ),
+                  MovementBalances(log: log),
                 ],
               ),
             ),
@@ -954,14 +960,6 @@ class _MovementProfileCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (log.boxBalanceAfter != null)
-                  Text(
-                    'بعدها ${NumberFormat('#,##0.##').format(log.boxBalanceAfter)}',
-                    style: TextStyle(
-                      color: AppColors.customGreyColor5,
-                      fontSize: 9.5.sp,
-                    ),
-                  ),
               ],
             ),
           ],
