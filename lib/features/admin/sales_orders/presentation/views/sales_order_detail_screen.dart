@@ -929,6 +929,23 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     return Column(
       children: [
         _totalLine('subtotal'.tr, order.subtotal),
+        if (order.additionalNotes.isNotEmpty) ...[
+          Padding(
+            padding: EdgeInsets.only(top: 8.h, bottom: 6.h),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text('additionalNotes'.tr,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryColor,
+                  )),
+            ),
+          ),
+          for (final note in order.additionalNotes)
+            _totalLine(note.text.trim().isEmpty ? '-' : note.text, note.amount),
+          _totalLine('notesTotal'.tr, order.additionalNotesTotal),
+        ],
         if (order.discount > 0)
           _totalLine('discount'.tr, -order.discount, muted: true),
         if (hasShiplyFeeBreakdown) ...[
@@ -2824,7 +2841,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         await controller.loadLookups();
       }
       controller.preloadShiplyAddressFromOrder(current);
-      final parcelPrice = current.subtotal - current.discount;
+      final parcelPrice = current.netPrice;
       final saved = await Get.dialog<bool>(
         SalesOrderShiplyAddressDialog(
           orderId: order.id,
@@ -2907,7 +2924,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
 
     if (controller.needsShiplyAddress(current)) {
       controller.preloadShiplyAddressFromOrder(current);
-      final parcelPrice = current.subtotal - current.discount;
+      final parcelPrice = current.netPrice;
       final saved = await Get.dialog<bool>(
         SalesOrderShiplyAddressDialog(
           orderId: order.id,
@@ -3535,8 +3552,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     children: [
                       Obx(() {
                         final current = controller.detail.value ?? order;
-                        final productsTotal =
-                            current.subtotal - current.discount;
+                        final productsTotal = current.netPrice;
                         return Column(
                           children: [
                             _handoverAmountRow(

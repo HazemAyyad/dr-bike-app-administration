@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
+import '../utils/sales_amount_format.dart';
 
 /// Date navigation for sales lists and composition filters for instant sales.
 class SalesInvoicesToolbar extends GetView<SalesController> {
@@ -13,10 +14,20 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final _ = controller.salesListRevision.value;
       final isProfitSales = controller.currentTab.value == 1;
       final dateLabel = isProfitSales
           ? controller.selectedProfitSalesDateLabel
           : controller.selectedInstantSalesDateLabel;
+      final total = isProfitSales
+          ? controller.profitSalesDayTotal
+          : controller.instantSalesDayTotal;
+      final searching = (isProfitSales
+              ? controller.profitSalesSearchQuery.value
+              : controller.instantSalesSearchQuery.value)
+          .trim()
+          .isNotEmpty;
+      final totalLabel = searching ? 'إجمالي نتائج البحث' : 'إجمالي اليوم';
 
       return Padding(
         padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 4.h),
@@ -40,8 +51,9 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                         ? controller.pickProfitSalesDate(context)
                         : controller.pickInstantSalesDate(context),
                     child: Container(
-                      height: 42.h,
-                      padding: EdgeInsets.symmetric(horizontal: 12.w),
+                      constraints: BoxConstraints(minHeight: 54.h),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                       decoration: BoxDecoration(
                         color: ThemeService.isDark.value
                             ? AppColors.customGreyColor
@@ -59,11 +71,12 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                             color: AppColors.primaryColor,
                             size: 19.sp,
                           ),
-                          SizedBox(width: 8.w),
+                          SizedBox(width: 6.w),
                           Flexible(
+                            flex: 3,
                             child: Text(
                               dateLabel,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 13.sp,
@@ -71,6 +84,48 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                                 color: ThemeService.isDark.value
                                     ? AppColors.whiteColor
                                     : AppColors.darkColor,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 30.h,
+                            margin: EdgeInsets.symmetric(horizontal: 8.w),
+                            color:
+                                AppColors.primaryColor.withValues(alpha: 0.18),
+                          ),
+                          Flexible(
+                            flex: 2,
+                            child: Semantics(
+                              label:
+                                  '$totalLabel: ${SalesAmountFormat.display(total)} شيكل',
+                              excludeSemantics: true,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    totalLabel,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: ThemeService.isDark.value
+                                          ? AppColors.whiteColor
+                                          : AppColors.darkColor,
+                                    ),
+                                  ),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      '${SalesAmountFormat.display(total)} ₪',
+                                      textDirection: TextDirection.ltr,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

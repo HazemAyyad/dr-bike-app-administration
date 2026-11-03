@@ -103,6 +103,20 @@ class SalesOrderInvoicePdf {
           pw.SizedBox(height: 12),
           _sectionTitle('الأصناف', bold),
           _items(rows, bold, images, includeProductImages),
+          if (order.additionalNotes.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            _sectionTitle('ملاحظات إضافية', bold),
+            for (final note in order.additionalNotes)
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                child: pw.Row(children: [
+                  pw.Expanded(
+                      child: pw.Text(note.text.isEmpty ? '-' : note.text)),
+                  pw.Text('${_money(note.amount)} شيكل',
+                      style: pw.TextStyle(font: bold)),
+                ]),
+              ),
+          ],
           pw.SizedBox(height: 12),
           _totals(order, bold),
           if (includeNotes) ...[
@@ -349,6 +363,8 @@ class SalesOrderInvoicePdf {
           pw.BoxDecoration(color: _row, border: pw.Border.all(color: _border)),
       child: pw.Column(children: [
         line('المجموع', order.subtotal),
+        if (order.additionalNotesTotal > 0)
+          line('مجموع الملاحظات', order.additionalNotesTotal),
         line('التوصيل', order.customerDeliveryFee),
         line('الخصم', order.discount),
         line('الإجمالي', order.total, strong: true),

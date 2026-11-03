@@ -89,14 +89,17 @@ void main() {
         customerName: 'زبون تجريبي',
         customerPhone: '+972 599123456',
         customerAddress: 'رام الله - عنوان تجريبي',
-        total: 815,
+        total: 830.5,
         subtotal: 800,
         discount: 10,
-        calculatedTotal: 815,
+        calculatedTotal: 830.5,
         customerDeliveryFee: 25,
         paymentType: 'mixed',
         paymentAmount: 100,
         notes: 'ملاحظة داخلية لا ترسل افتراضياً',
+        additionalNotes: const [
+          SalesOrderAdditionalNote(text: 'تركيب', amount: 15.5),
+        ],
         createdAt: '2026-10-19 20:00:00',
         items: List.generate(
             80,
@@ -126,6 +129,9 @@ void main() {
     await source.createOrder({
       'customer_name': 'تجربة',
       'total': '12.50',
+      'additional_notes': [
+        {'text': 'تركيب', 'amount': 15.5}
+      ],
       'items': [
         {'product_id': 9, 'quantity': 2, 'unit_price': '6.25'}
       ],
@@ -139,6 +145,8 @@ void main() {
             form.fields.singleWhere((entry) => entry.key == 'order_data').value)
         as Map;
     expect(payload['total'], '12.50');
+    expect((payload['additional_notes'] as List).single,
+        {'text': 'تركيب', 'amount': 15.5});
     expect((payload['items'] as List).single['quantity'], 2);
     expect(payload.containsKey('note_images'), isFalse);
     expect(api.path, EndPoints.salesOrder);
@@ -150,6 +158,7 @@ void main() {
     final api = _RecordingApi();
     await SalesOrdersDatasource(api: api).updateOrder(43, {
       'notes': 'تجربة',
+      'additional_notes': [],
       'note_images': [
         MultipartFile.fromBytes([1], filename: 'note.jpg')
       ]
@@ -159,6 +168,11 @@ void main() {
         contains(isA<MapEntry<String, String>>()
             .having((entry) => entry.key, 'key', 'sales_order_id')
             .having((entry) => entry.value, 'value', '43')));
+    final payload = jsonDecode((api.data as FormData)
+        .fields
+        .singleWhere((entry) => entry.key == 'order_data')
+        .value) as Map;
+    expect(payload['additional_notes'], isEmpty);
   });
 
   test('image-only external note uses the note endpoint and parses its history',

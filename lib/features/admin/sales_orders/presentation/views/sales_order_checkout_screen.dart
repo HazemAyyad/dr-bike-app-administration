@@ -16,6 +16,7 @@ import '../../../payment_method/domain/usecases/add_payment_usecase.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/add_new_instant_sale.dart';
+import '../../../sales/presentation/widgets/new_instant_sale/discount_widget.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../controllers/sales_orders_controller.dart';
@@ -205,6 +206,8 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                 ),
                 SizedBox(height: 10.h),
                 _financialFieldsRow(),
+                SizedBox(height: 16.h),
+                const InstantSaleNotesRepeater(),
                 SizedBox(height: 16.h),
                 const SalesOrderDraftNotes(),
                 SizedBox(height: 12.h),

@@ -23,6 +23,7 @@ import '../../../sales_orders/presentation/widgets/sales_order_partner_selector.
 import '../../../../../core/helpers/app_success_notice.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
   const InstantSaleProductPickerScreen({Key? key}) : super(key: key);
@@ -678,7 +679,8 @@ class _InstantSaleProductPickerScreenState
                     SizedBox(
                       height: 46.h,
                       child: OutlinedButton(
-                        onPressed: canContinue
+                        onPressed: (canContinue ||
+                                controller.instantSaleNotesTotal > 0)
                             ? orders.suspendOrderDraftFromPicker
                             : null,
                         style: OutlinedButton.styleFrom(
@@ -724,7 +726,7 @@ class _InstantSaleProductPickerScreenState
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                       ),
-                      onPressed: canContinue
+                      onPressed: (_salesOrderFlow || canContinue)
                           ? () {
                               if (_salesOrderFlow) {
                                 controller.openSalesOrderCheckout();
@@ -738,7 +740,9 @@ class _InstantSaleProductPickerScreenState
                           : null,
                       child: Text(
                         _salesOrderFlow
-                            ? 'instantSaleContinue'.tr
+                            ? (canContinue
+                                ? 'instantSaleContinue'.tr
+                                : 'طلبية خدمة')
                             : controller.maintenancePickerFlow.value
                                 ? 'confirm'.tr
                                 : 'instantSaleContinue'.tr,

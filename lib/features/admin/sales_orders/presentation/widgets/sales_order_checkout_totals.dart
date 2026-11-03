@@ -21,7 +21,10 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
       final itemsTotal = sales.totalCost.value;
       final deliveryFee = orders.selectedCityDeliveryFee;
       final discount = SalesAmountFormat.parse(sales.discountController.text);
-      final subtotal = itemsTotal + discount;
+      final notesTotal = sales.instantSaleNotesTotal;
+      final subtotal = sales.cartLines
+          .where((line) => !line.isDisposed && !line.isProjectSale.value)
+          .fold<double>(0, (sum, line) => sum + line.lineTotal.value);
       final grandTotal = itemsTotal + deliveryFee;
       final quotedDeliveryFee = orders.shiplyQuotedDeliveryFee.value;
 
@@ -35,6 +38,7 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
         child: Column(
           children: [
             _line('سعر المنتجات قبل الخصم', subtotal),
+            if (notesTotal > 0) _line('notesTotal'.tr, notesTotal),
             if (discount > 0) _line('discount'.tr, -discount, muted: true),
             _line('صافي سعر الطلب', itemsTotal),
             _line('رسوم التوصيل على الزبون', deliveryFee),

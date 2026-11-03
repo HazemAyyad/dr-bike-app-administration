@@ -811,6 +811,32 @@ class SalesController extends GetxController
   int get visibleProfitSalesCount => salesService.filterProfitSalesTasks.values
       .fold<int>(0, (total, sales) => total + sales.length);
 
+  /// The whole selected day, regardless of the composition filter. Search
+  /// results can span several days, so their total includes all returned days.
+  double get instantSalesDayTotal {
+    final searching = instantSalesSearchQuery.value.trim().isNotEmpty;
+    final selected = _dateOnly(selectedInstantSalesDate.value);
+    return salesService.instantSalesTasks.values
+        .expand((sales) => sales)
+        .where((sale) =>
+            !sale.isCancelled &&
+            (searching || _dateOnly(sale.date) == selected))
+        .fold<double>(
+            0, (total, sale) => total + SalesAmountFormat.parse(sale.totalCost));
+  }
+
+  double get profitSalesDayTotal {
+    final searching = profitSalesSearchQuery.value.trim().isNotEmpty;
+    final selected = _dateOnly(selectedProfitSalesDate.value);
+    return salesService.filterProfitSalesTasks.values
+        .expand((sales) => sales)
+        .where((sale) =>
+            !sale.isCancelled &&
+            (searching || _dateOnly(sale.createdAt) == selected))
+        .fold<double>(
+            0, (total, sale) => total + SalesAmountFormat.parse(sale.totalCost));
+  }
+
   int instantSalesCompositionCount(int mode) {
     if (mode == 0) return visibleInstantSalesCount;
     return orderedInstantSalesGroups
@@ -2411,16 +2437,6 @@ class SalesController extends GetxController
   }
 
   void openSalesOrderCheckout() {
-    final hasProducts = cartLines.where((l) => !l.isDisposed).isNotEmpty;
-
-    if (!hasProducts) {
-      AppFailureNotice.show(
-        title: 'error'.tr,
-        message: 'instantSaleCartEmpty'.tr,
-      );
-      return;
-    }
-
     syncCartToItems();
     Get.toNamed(AppRoutes.SALESORDERCHECKOUTSCREEN);
   }
@@ -3047,6 +3063,12 @@ class SalesController extends GetxController
     await ensurePickerPartnersLoaded();
 
     discountController.text = SalesAmountFormat.display(order.discount);
+    for (final note in order.additionalNotes) {
+      instantSaleNotes.add(InstantSaleNoteLine(
+        text: note.text,
+        amount: note.amount.toString(),
+      ));
+    }
 
     final orderPartnerType =
         order.partnerType ?? (order.customerId != null ? 'customer' : null);
@@ -5424,6 +5446,7 @@ class SalesController extends GetxController
     if (clearCache) {
       salesService.instantSalesTasks.clear();
       salesService.filterInstantSalesTasks.clear();
+      salesListRevision.value++;
     }
     final shouldShowLoader =
         showLoading || salesService.instantSalesTasks.isEmpty;
@@ -5442,6 +5465,7 @@ class SalesController extends GetxController
         salesService.instantSalesTasks.clear();
       }
       _groupInstantSalesIntoMaps(sales);
+      salesListRevision.value++;
     } catch (e) {
       // Background list load — must not crash handover or other flows.
       assert(() {
@@ -5462,6 +5486,7 @@ class SalesController extends GetxController
     if (clearCache) {
       salesService.profitSalesTasks.clear();
       salesService.filterProfitSalesTasks.clear();
+      salesListRevision.value++;
     }
     if (showLoading) {
       isLoading(true);
@@ -5484,6 +5509,7 @@ class SalesController extends GetxController
             .add(profitSale);
       }
       _syncFilteredProfitSales();
+      salesListRevision.value++;
     } catch (e) {
       assert(() {
         debugPrint('[SalesController.fetchProfitSales] $e');

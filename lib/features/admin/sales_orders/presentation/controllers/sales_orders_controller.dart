@@ -610,7 +610,7 @@ class SalesOrdersController extends GetxController {
       },
       (updatedOrder) {
         detail.value = updatedOrder;
-        final parcelPrice = updatedOrder.subtotal - updatedOrder.discount;
+        final parcelPrice = updatedOrder.netPrice;
         selectPartnerAddress(
           address,
           parcelPrice: parcelPrice > 0 ? parcelPrice : updatedOrder.total,
@@ -699,7 +699,7 @@ class SalesOrdersController extends GetxController {
           (address) => address.id == order.partnerAddressId,
         );
         if (selectedAddress != null) {
-          final parcelPrice = order.subtotal - order.discount;
+          final parcelPrice = order.netPrice;
           selectPartnerAddress(
             selectedAddress,
             parcelPrice: parcelPrice > 0 ? parcelPrice : order.total,
@@ -725,7 +725,9 @@ class SalesOrdersController extends GetxController {
   void suspendOrderDraftFromPicker() {
     if (!Get.isRegistered<SalesController>()) return;
     final sales = Get.find<SalesController>();
-    if (sales.cartDistinctCount <= 0) return;
+    if (sales.cartDistinctCount <= 0 && sales.instantSaleNotesTotal <= 0) {
+      return;
+    }
     hasSuspendedDraft.value = true;
     Get.back();
     SalesOrderNotice.success('salesOrderDraftSuspended'.tr);
@@ -1021,7 +1023,7 @@ class SalesOrdersController extends GetxController {
         order.shiplyVillageId == null) {
       return null;
     }
-    final parcelPrice = order.subtotal - order.discount;
+    final parcelPrice = order.netPrice;
     final result = await repository.calculateShiplyDeliveryFee(
       villageId: order.shiplyVillageId!,
       price: parcelPrice > 0 ? parcelPrice : order.total,
@@ -1443,7 +1445,9 @@ class SalesOrdersController extends GetxController {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
     final editId = activeEditSalesOrderId.value;
-    if (editId == null) {
+    if (items.isEmpty) {
+      body['reserve_stock'] = false;
+    } else if (editId == null) {
       final reserveStock = await _confirmStockReservationChoice();
       if (reserveStock == null) return false;
       body['reserve_stock'] = reserveStock;
@@ -1451,29 +1455,31 @@ class SalesOrdersController extends GetxController {
       body['reserve_stock'] = activeEditReservesStock.value ?? true;
     }
 
-    final stockCheck = await repository.checkStock(
-      items: items,
-      salesOrderId: editId,
-    );
+    if (items.isNotEmpty) {
+      final stockCheck = await repository.checkStock(
+        items: items,
+        salesOrderId: editId,
+      );
 
-    SalesOrderStockCheckResult? stockCheckResult;
-    final stockCheckFailed = stockCheck.fold(
-      (f) {
-        SalesOrderNotice.error(_humanizeFailure(f));
-        return true;
-      },
-      (check) {
-        stockCheckResult = check;
-        return false;
-      },
-    );
-    if (stockCheckFailed) return false;
+      SalesOrderStockCheckResult? stockCheckResult;
+      final stockCheckFailed = stockCheck.fold(
+        (f) {
+          SalesOrderNotice.error(_humanizeFailure(f));
+          return true;
+        },
+        (check) {
+          stockCheckResult = check;
+          return false;
+        },
+      );
+      if (stockCheckFailed) return false;
 
-    if (stockCheckResult!.hasConflicts) {
-      final confirmed =
-          await _confirmReservedStockConflicts(stockCheckResult!.conflicts);
-      if (!confirmed) return false;
-      body['acknowledge_negative_stock'] = true;
+      if (stockCheckResult!.hasConflicts) {
+        final confirmed =
+            await _confirmReservedStockConflicts(stockCheckResult!.conflicts);
+        if (!confirmed) return false;
+        body['acknowledge_negative_stock'] = true;
+      }
     }
 
     if (draftNoteMedia.isNotEmpty) {
@@ -1726,15 +1732,9 @@ class SalesOrdersController extends GetxController {
   Future<Map<String, dynamic>?> _buildCheckoutBody(
       SalesController sales) async {
     sales.calculateGrandTotal();
-    final lines = sales.cartLines.where((l) => !l.isDisposed).toList();
-    if (lines.isEmpty) {
-      SalesOrderNotice.error('salesOrderAddItem'.tr);
-      return null;
-    }
-
     final items = _itemsFromSalesCart(sales);
-    if (items.isEmpty) {
-      SalesOrderNotice.error('salesOrderAddItem'.tr);
+    if (items.isEmpty && sales.instantSaleNotesTotal <= 0) {
+      SalesOrderNotice.error('أضف منتجًا أو ملاحظة خدمة مع مبلغها');
       return null;
     }
 
@@ -1822,6 +1822,7 @@ class SalesOrdersController extends GetxController {
       'price_includes_delivery': priceIncludesDelivery.value,
       'total': total,
       'notes': notesController.text.trim(),
+      'additional_notes': sales.instantSaleNotesPayload(),
       'items': items,
     };
   }

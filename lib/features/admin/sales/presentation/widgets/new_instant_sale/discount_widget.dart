@@ -67,7 +67,7 @@ class DiscountWidget extends GetView<SalesController> {
         ),
         SizedBox(height: 10.h),
         if (showNotes) ...[
-          _InstantSaleNotesRepeater(),
+          const InstantSaleNotesRepeater(),
           SizedBox(height: 20.h),
         ],
         if (showHints) ...[
@@ -106,7 +106,10 @@ class DiscountWidget extends GetView<SalesController> {
   }
 }
 
-class _InstantSaleNotesRepeater extends GetView<SalesController> {
+/// Shared by instant-sale and sales-order checkout, including the edit sheet.
+class InstantSaleNotesRepeater extends GetView<SalesController> {
+  const InstantSaleNotesRepeater({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Obx(

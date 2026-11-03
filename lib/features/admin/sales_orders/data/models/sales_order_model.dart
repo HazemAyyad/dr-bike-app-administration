@@ -388,7 +388,25 @@ class SalesOrderNoteAttachmentModel {
   bool get isVideo => type == 'video';
 }
 
+class SalesOrderAdditionalNote {
+  const SalesOrderAdditionalNote({required this.text, required this.amount});
+
+  final String text;
+  final double amount;
+
+  factory SalesOrderAdditionalNote.fromJson(Map<String, dynamic> json) =>
+      SalesOrderAdditionalNote(
+        text: json['text']?.toString() ?? '',
+        amount: double.tryParse('${json['amount'] ?? 0}') ?? 0,
+      );
+}
+
 class SalesOrderDetailModel {
+  double get additionalNotesTotal =>
+      additionalNotes.fold<double>(0, (sum, note) => sum + note.amount);
+  double get netPrice => (subtotal + additionalNotesTotal - discount)
+      .clamp(0, double.infinity)
+      .toDouble();
   int get internalNotesCount =>
       noteLog.where((note) => note.scope == 'internal').length +
       ((notes ?? '').trim().isEmpty ? 0 : 1);
@@ -422,6 +440,7 @@ class SalesOrderDetailModel {
   final double settlementCarrierFeeTotal;
   final int? paymentBoxId;
   final String? notes;
+  final List<SalesOrderAdditionalNote> additionalNotes;
   final List<SalesOrderNoteModel> noteLog;
   final int? instantSaleId;
   final String? instantSaleSerial;
@@ -484,6 +503,7 @@ class SalesOrderDetailModel {
     this.settlementCarrierFeeTotal = 0,
     this.paymentBoxId,
     this.notes,
+    this.additionalNotes = const [],
     this.noteLog = const [],
     this.instantSaleId,
     this.instantSaleSerial,
@@ -578,6 +598,11 @@ class SalesOrderDetailModel {
           (json['settlement_carrier_fee_total'] as num?)?.toDouble() ?? 0,
       paymentBoxId: json['payment_box_id'] as int?,
       notes: json['notes'] as String?,
+      additionalNotes: (json['additional_notes'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) =>
+              SalesOrderAdditionalNote.fromJson(Map<String, dynamic>.from(row)))
+          .toList(),
       noteLog: (json['note_log'] as List? ?? const [])
           .map((row) => SalesOrderNoteModel.fromJson(
               Map<String, dynamic>.from(row as Map)))
