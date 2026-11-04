@@ -15,6 +15,7 @@ import '../models/all_stock_products_model.dart';
 import '../models/stock_products_page_result.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
+
 class StockImplement implements StockRepository {
   final NetworkInfo networkInfo;
   final StockDatasource stockDataSource;
@@ -138,12 +139,13 @@ class StockImplement implements StockRepository {
 
   @override
   Future<List<AllStockProductsModel>> searchProducts(
-      {required String name}) async {
+      {required String name, String? saleStatus}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await stockDataSource.searchProducts(name: name);
+      final result = await stockDataSource.searchProducts(
+          name: name, saleStatus: saleStatus);
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

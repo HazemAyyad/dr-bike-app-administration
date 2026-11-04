@@ -9,6 +9,7 @@ class AllStockProductsModel {
   final String productId;
   final String name;
   final String stock;
+  final bool isSaleBlocked;
   final String productMinSalePrice;
   final double normailPrice;
   final double wholesalePrice;
@@ -36,6 +37,7 @@ class AllStockProductsModel {
     required this.productId,
     required this.name,
     required this.stock,
+    this.isSaleBlocked = false,
     required this.productMinSalePrice,
     this.normailPrice = 0,
     this.wholesalePrice = 0,
@@ -67,6 +69,7 @@ class AllStockProductsModel {
             .toList()
         : <ProductTagModel>[];
     return AllStockProductsModel(
+      isSaleBlocked: asBool(json['is_sale_blocked']),
       closeoutId: asInt(json['closeout_id']),
       closeoutStatus: asString(json['closeout_status'], 'unarchived'),
       productId: asString(json['product_id'], '0'),
@@ -123,6 +126,7 @@ class AllStockProductsModel {
       productId: productId,
       name: name,
       stock: stock,
+      isSaleBlocked: isSaleBlocked,
       productMinSalePrice: productMinSalePrice ?? this.productMinSalePrice,
       normailPrice: normailPrice ?? this.normailPrice,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
@@ -153,6 +157,7 @@ class AllStockProductsModel {
       'product_id': productId,
       'product_name': name,
       'product_stock': stock,
+      'is_sale_blocked': isSaleBlocked,
       'product_min_sale_price': productMinSalePrice,
       'product_wholesale_price': wholesalePrice,
       'product_price': price,

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../controllers/stock_controller.dart';
 import 'negative_stock_tab.dart';
+import 'sale_blocked_products_tab.dart';
 import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_location_tab.dart';
@@ -18,6 +19,13 @@ class GridViewItems extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      if (controller.isSaleBlockedTab) {
+        return SliverToBoxAdapter(
+          child: SaleBlockedProductsTab(
+            key: ValueKey(controller.saleBlockedRefreshVersion.value),
+          ),
+        );
+      }
       if (controller.isNegativeStockTab) {
         return const SliverToBoxAdapter(child: NegativeStockTab());
       }

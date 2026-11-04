@@ -13,6 +13,7 @@ class ProductDetailsModel {
   String nameEng;
   String? nameAbree;
   String? isShow;
+  bool isSaleBlocked;
   String? descriptionAr;
   String? descriptionEng;
   String? descriptionAbree;
@@ -71,6 +72,7 @@ class ProductDetailsModel {
     required this.nameEng,
     this.nameAbree,
     this.isShow,
+    this.isSaleBlocked = false,
     this.descriptionAr,
     this.descriptionEng,
     this.descriptionAbree,
@@ -168,6 +170,7 @@ class ProductDetailsModel {
       nameEng: asString(j['nameEng']),
       nameAbree: asNullableString(j['nameAbree']),
       isShow: asNullableString(j['isShow']),
+      isSaleBlocked: asBool(j['is_sale_blocked']),
       descriptionAr: asNullableString(j['descriptionAr']),
       descriptionEng: asNullableString(j['descriptionEng']),
       descriptionAbree: asNullableString(j['descriptionAbree']),
@@ -245,6 +248,7 @@ class ProductDetailsModel {
     data['nameEng'] = nameEng;
     data['nameAbree'] = nameAbree;
     data['isShow'] = isShow;
+    data['is_sale_blocked'] = isSaleBlocked;
     data['descriptionAr'] = descriptionAr;
     data['descriptionEng'] = descriptionEng;
     data['descriptionAbree'] = descriptionAbree;

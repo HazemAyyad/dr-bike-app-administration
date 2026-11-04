@@ -103,6 +103,36 @@ void main() {
         isNot(contains('stock_status')));
   });
 
+  for (final status in ['allowed', 'blocked']) {
+    testWidgets('sale status filter applies $status and survives reopening',
+        (tester) async {
+      final controller = _Controller();
+      await _open(tester, controller);
+      final dropdown = find.byWidgetPredicate((w) =>
+          w is DropdownButton<String?> &&
+          (w.items?.any((item) => item.value == 'blocked') ?? false));
+      await tester.ensureVisible(dropdown);
+      await tester.tap(dropdown);
+      await tester.pumpAndSettle();
+      final label = status == 'blocked' ? 'ممنوع من البيع' : 'مسموح بالبيع';
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('apply'.tr));
+      await tester.tap(find.text('apply'.tr));
+      await tester.pumpAndSettle();
+      expect(controller.productListFilters.value.saleStatus, status);
+      expect(controller.productListFilters.value.search, 'فرامل');
+      expect(controller.productListFilters.value.categoryId, '1');
+      expect(
+          controller.productListFilters.value
+              .toQueryParams(page: 1)['sale_status'],
+          status);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<DropdownButton<String?>>(dropdown).value, status);
+    });
+  }
+
   test(
       'search and location copies preserve stock filter until explicitly cleared',
       () {

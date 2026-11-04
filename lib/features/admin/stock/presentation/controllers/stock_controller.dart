@@ -158,6 +158,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       'offerPackages',
       'deletedProducts',
       if (userType == 'admin') 'negativeStock',
+      'الممنوع من البيع',
     ],
     if (canQuickEditProducts) 'quickEditProducts',
   ].obs;
@@ -170,6 +171,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       employeePermissionNames.contains('Stock');
 
   bool get canAccessFullStock => StockController._canAccessFullStock;
+
+  bool get isSaleBlockedTab =>
+      tabs.contains('الممنوع من البيع') &&
+      currentTab.value == tabs.indexOf('الممنوع من البيع');
+
+  final saleBlockedRefreshVersion = 0.obs;
 
   bool get isQuickEditTab =>
       currentTab.value == tabs.indexOf('quickEditProducts');
@@ -184,7 +191,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       exitDeleteSelection();
     }
     currentTab.value = index;
-    if (isNegativeStockTab) {
+    if (isSaleBlockedTab) {
+      saleBlockedRefreshVersion.value++;
+    } else if (isNegativeStockTab) {
       if (negativeStockItems.isEmpty) {
         Future<void>(() async => loadNegativeStock());
       }
@@ -1566,6 +1575,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
     if (currentTab.value == 3 ||
         currentTab.value == 4 ||
+        isSaleBlockedTab ||
         isNegativeStockTab ||
         isQuickEditTab) {
       if (currentTab.value == 3 &&
@@ -1691,6 +1701,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     _resetPaginationForCurrentTab();
     allProducts.clear();
     await getAllProducts();
+    if (stockSearchActiveQuery.value.trim().isNotEmpty) {
+      await getSearchProducts(name: stockSearchActiveQuery.value);
+    }
   }
 
   Future<void> clearProductFilters() async {
@@ -1699,6 +1712,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     _resetPaginationForCurrentTab();
     allProducts.clear();
     await getAllProducts();
+    if (stockSearchActiveQuery.value.trim().isNotEmpty) {
+      await getSearchProducts(name: stockSearchActiveQuery.value);
+    }
   }
 
   Future<void> applyStoreLocationFilterFromFab({
@@ -1715,6 +1731,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       storeSectionId: sectionId,
       costPriceStatus: base.costPriceStatus,
       stockStatus: base.stockStatus,
+      saleStatus: base.saleStatus,
       dateFrom: base.dateFrom,
       dateTo: base.dateTo,
       sortBy: base.sortBy,
@@ -1734,6 +1751,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         subCategoryId: base.subCategoryId,
         costPriceStatus: base.costPriceStatus,
         stockStatus: base.stockStatus,
+        saleStatus: base.saleStatus,
         dateFrom: base.dateFrom,
         dateTo: base.dateTo,
         sortBy: base.sortBy,
@@ -1744,6 +1762,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> pullToRefresh() async {
     _resetPaginationForCurrentTab();
+    if (isSaleBlockedTab) {
+      saleBlockedRefreshVersion.value++;
+      return;
+    }
     if (isNegativeStockTab) {
       await loadNegativeStock();
       return;
@@ -2437,7 +2459,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   // Get stock list for the active tab only (avoids 3× API calls and rate limits).
   Future<void> getAllProducts({bool isRefresh = false}) async {
     final tab = currentTab.value;
-    if (tab == 3 || tab == 4 || isNegativeStockTab) {
+    if (tab == 3 || tab == 4 || isNegativeStockTab || isSaleBlockedTab) {
       isLoading(false);
       isLoadingMore(false);
       return;
@@ -2509,6 +2531,34 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Rxn<ProductDetailsModel> productDetails = Rxn<ProductDetailsModel>();
+
+  Future<bool> setProductSaleBlocked(
+      ProductDetailsModel product, bool blocked) async {
+    try {
+      await stockDatasource.setProductSaleBlocked(
+          productId: product.id, blocked: blocked);
+      await getProductDetails(productId: product.id);
+      saleBlockedRefreshVersion.value++;
+      await reloadProductsList();
+      if (stockSearchActiveQuery.value.trim().isNotEmpty) {
+        await getSearchProducts(name: stockSearchActiveQuery.value);
+      }
+      AppSuccessNotice.show(
+        title: 'success'.tr,
+        message: blocked ? 'تم منع المنتج من البيع' : 'تم السماح ببيع المنتج',
+      );
+      return true;
+    } on ServerException catch (e) {
+      AppFailureNotice.show(
+          title: 'error'.tr, message: e.errorModel.errorMessage);
+      return false;
+    } catch (_) {
+      AppFailureNotice.show(
+          title: 'error'.tr, message: 'تعذر تحديث حالة البيع');
+      return false;
+    }
+  }
+
   // get product details
   Future<void> getProductDetails({required String productId}) async {
     isProductLoading(true);
@@ -2751,7 +2801,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final requestId = ++_stockSearchRequestSerial;
     isSearchLoading(true);
     try {
-      final result = await searchProductsUsecase.call(name: query);
+      final result = await searchProductsUsecase.call(
+        name: query,
+        saleStatus:
+            currentTab.value == 0 ? productListFilters.value.saleStatus : null,
+      );
       if (requestId != _stockSearchRequestSerial ||
           stockSearchActiveQuery.value.trim() != query) {
         return;

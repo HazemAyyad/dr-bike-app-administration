@@ -24,6 +24,7 @@ import '../widgets/stock_variant_adjust_sheet.dart';
 import '../widgets/inventory_summary_section.dart';
 import '../widgets/inventory_cost_revaluation_sheet.dart';
 import '../widgets/missing_sales_cost_sheet.dart';
+import '../widgets/product_sale_status_card.dart';
 import '../utils/open_product_purchase.dart';
 import 'product_assembly_operations_screen.dart';
 
@@ -571,6 +572,10 @@ class ProductDetailsScreen extends GetView<StockController> {
                     children: [
                       SizedBox(height: 6.h),
                       _ProductDetailsHero(product: product),
+                      if (controller.canAccessFullStock) ...[
+                        SizedBox(height: 8.h),
+                        ProductSaleStatusCard(product: product),
+                      ],
                       SizedBox(height: 8.h),
                       _ProductOverviewGrid(product: product),
                       SizedBox(height: 12.h),

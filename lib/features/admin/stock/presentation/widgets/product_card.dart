@@ -398,6 +398,20 @@ class BuildProductCard extends GetView<StockController> {
             ),
           ),
         ),
+        if (product.isSaleBlocked)
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: Tooltip(
+              message: 'ممنوع من البيع',
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                    color: Colors.white, shape: BoxShape.circle),
+                child: const Icon(Icons.block, color: Colors.red, size: 20),
+              ),
+            ),
+          ),
         if (locationCodeLabel != null)
           Positioned(
             top: isLandscapePhone ? 3 : 3.h,

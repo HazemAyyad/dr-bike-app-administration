@@ -40,6 +40,37 @@ class StockDatasource {
 
   StockDatasource({required this.api});
 
+  Future<void> setProductSaleBlocked({
+    required String productId,
+    required bool blocked,
+  }) async {
+    try {
+      final response = await api.post('product/sale-status', data: {
+        'product_id': productId,
+        'is_sale_blocked': blocked,
+      });
+      final raw = response.data;
+      if (raw is! Map || raw['status'] != 'success') {
+        throw ServerException(ErrorModel(
+          errorMessage: raw is Map
+              ? (raw['message']?.toString() ?? 'تعذر تعديل حالة البيع')
+              : 'تعذر تعديل حالة البيع',
+          status: 422,
+          data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+        ));
+      }
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      throw ServerException(ErrorModel(
+        errorMessage: body is Map
+            ? (body['message']?.toString() ?? 'تعذر تعديل حالة البيع')
+            : 'تعذر الاتصال بالخادم',
+        status: e.response?.statusCode ?? 500,
+        data: body is Map ? Map<String, dynamic>.from(body) : {},
+      ));
+    }
+  }
+
   Future<Uint8List> exportProductsCsv({StockProductFilters? filters}) async {
     try {
       final response = await api.get(
@@ -819,10 +850,13 @@ class StockDatasource {
 
   // search products
   Future<List<AllStockProductsModel>> searchProducts(
-      {required String name}) async {
+      {required String name, String? saleStatus}) async {
     try {
-      final response = await api
-          .post(EndPoints.searchProducts, queryParameters: {'name': name});
+      final response =
+          await api.post(EndPoints.searchProducts, queryParameters: {
+        'name': name,
+        if (saleStatus != null) 'sale_status': saleStatus,
+      });
       return mapListFromResponseKey(
         response.data,
         'products',

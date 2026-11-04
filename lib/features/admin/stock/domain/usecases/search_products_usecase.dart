@@ -8,7 +8,9 @@ class SearchProductsUsecase {
 
   Future<List<AllStockProductsModel>> call({
     required String name,
+    String? saleStatus,
   }) async {
-    return await stockRepository.searchProducts(name: name);
+    return await stockRepository.searchProducts(
+        name: name, saleStatus: saleStatus);
   }
 }

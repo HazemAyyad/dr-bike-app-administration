@@ -26,6 +26,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
   String? storeSectionId;
   String? costPriceStatus;
   String? stockStatus;
+  String? saleStatus;
   DateTime? dateFrom;
   DateTime? dateTo;
   String sortKey = 'latest';
@@ -42,6 +43,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
         : sectionFilter;
     costPriceStatus = f.costPriceStatus;
     stockStatus = f.stockStatus;
+    saleStatus = f.saleStatus;
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;
     if (f.sortBy == 'name') {
@@ -80,6 +82,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
       storeSectionId: storeSectionId,
       costPriceStatus: userType == 'admin' ? costPriceStatus : null,
       stockStatus: stockStatus,
+      saleStatus: saleStatus,
       dateFrom: dateFrom,
       dateTo: dateTo,
       sortBy: sortBy,
@@ -211,6 +214,19 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
                     value: 'negative', child: Text('negativeStockQuantity'.tr)),
               ],
               onChanged: (value) => setState(() => stockStatus = value),
+            ),
+            SizedBox(height: 12.h),
+            _dropdown<String?>(
+              label: 'حالة البيع',
+              value: saleStatus,
+              items: const [
+                DropdownMenuItem<String?>(value: null, child: Text('الكل')),
+                DropdownMenuItem<String?>(
+                    value: 'allowed', child: Text('مسموح بالبيع')),
+                DropdownMenuItem<String?>(
+                    value: 'blocked', child: Text('ممنوع من البيع')),
+              ],
+              onChanged: (value) => setState(() => saleStatus = value),
             ),
             SizedBox(height: 12.h),
             Row(

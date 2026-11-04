@@ -36,7 +36,8 @@ abstract class StockRepository {
   /// Main categories only (`get/all/categories`).
   Future<List<ProductModel>> getMainCategories();
 
-  Future<List<AllStockProductsModel>> searchProducts({required String name});
+  Future<List<AllStockProductsModel>> searchProducts(
+      {required String name, String? saleStatus});
 
   Future<Either<Failure, String>> addCombination({
     required String productId,
