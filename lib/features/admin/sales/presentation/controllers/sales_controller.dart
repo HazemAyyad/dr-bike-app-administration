@@ -23,6 +23,7 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../general_data_list/data/datasources/general_data_list_datasource.dart';
 import '../../../general_data_list/domain/entity/add_person_entity.dart';
+import '../../../widgets/quick_partner_dialog.dart';
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
@@ -3672,32 +3673,27 @@ class SalesController extends GetxController
 
   Future<void> openAddPickerPartner(bool isSeller) async {
     final isCustomer = !isSeller;
-    final currentIds = (isCustomer ? pickerCustomersList : pickerSellersList)
-        .map((item) => item.id)
-        .toSet();
-    await Get.toNamed(
-      AppRoutes.ADDNEWCUSTOMERSCREEN,
-      arguments: {
-        'sellerId': '',
-        'employeeId': '',
-        'popOnceOnSuccess': true,
-        'employeeType': isCustomer ? 'customer' : 'seller',
-      },
-    );
-    final refreshed = await allCustomersSellersUsecase.call(
-      endPoint: isCustomer ? EndPoints.all_customers : EndPoints.all_sellers,
-    );
-    if (isCustomer) {
-      pickerCustomersList.assignAll(refreshed);
-    } else {
-      pickerSellersList.assignAll(refreshed);
-    }
-    final added = refreshed.where((item) => !currentIds.contains(item.id));
-    if (added.isEmpty) return;
+    final result = await showQuickPartnerDialog(isCustomer: isCustomer);
+    if (result == null) return;
+    (isCustomer ? pickerCustomersList : pickerSellersList)
+        .insert(0, result.partner);
     pickerPartnerIsCustomer.value = isCustomer;
-    await onPickerPartnerSelected(
-      added.reduce((first, second) => first.id > second.id ? first : second),
-    );
+    await onPickerPartnerSelected(result.partner);
+    applyQuickPartnerAddress(result);
+  }
+
+  void applyQuickPartnerAddress(QuickPartnerResult result) {
+    final orders = SalesOrderStockContext.controller;
+    if (orders == null) return;
+    orders.clearPartnerAddress();
+    orders.partnerAddresses.clear();
+    orders.customerNameController.text = result.partner.name;
+    orders.customerPhoneController.text = result.partner.phone;
+    final address = result.address;
+    if (address != null) {
+      orders.partnerAddresses.add(address);
+      orders.selectPartnerAddress(address, parcelPrice: totalCost.value);
+    }
   }
 
   final RxBool pickerQuickAddLoading = false.obs;

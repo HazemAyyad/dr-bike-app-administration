@@ -5,11 +5,12 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
+import '../../../widgets/quick_partner_dialog.dart';
+import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../domain/usecases/add_payment_usecase.dart';
 
 class PaymentController extends GetxController {
@@ -135,60 +136,23 @@ class PaymentController extends GetxController {
     allSellersList.assignAll(resultSellers);
   }
 
-  Set<int> _partnerIds(bool isCustomer) {
-    final list = isCustomer ? allCustomersList : allSellersList;
-    return list.map((e) => e.id).toSet();
-  }
-
-  Future<void> _refreshPartnerList({required bool isCustomer}) async {
-    if (isCustomer) {
-      final customers = await allCustomersSellersUsecase.call(
-        endPoint: EndPoints.all_customers,
-      );
-      allCustomersList.assignAll(customers);
-      return;
-    }
-    final sellers = await allCustomersSellersUsecase.call(
-      endPoint: EndPoints.all_sellers,
-    );
-    allSellersList.assignAll(sellers);
-  }
-
-  void _selectNewlyAddedPartner({
-    required bool isCustomer,
-    required Set<int> previousIds,
-  }) {
-    final list = isCustomer ? allCustomersList : allSellersList;
-    final newcomers = list.where((e) => !previousIds.contains(e.id)).toList();
-    if (newcomers.isEmpty) return;
-    final pick = newcomers.length == 1
-        ? newcomers.first
-        : newcomers.reduce((a, b) => a.id > b.id ? a : b);
-    onPartnerSelected(pick);
-  }
-
-  /// فتح شاشة إضافة زبون/تاجر ثم تحديث القائمة عند العودة (بيع فوري وغيره).
+  /// إضافة مبسطة ثم اختيار الشخص الجديد في الفاتورة.
   Future<void> openAddPartnerScreen() async {
     final isCustomer = selectedCustomersSellers.value;
-    final previousIds = _partnerIds(isCustomer);
-
-    final result = await Get.toNamed(
-      AppRoutes.ADDNEWCUSTOMERSCREEN,
-      arguments: {
-        'sellerId': '',
-        'employeeId': '',
-        'employeeType': isCustomer ? 'customer' : 'seller',
-        'popOnceOnSuccess': true,
-      },
-    );
-
-    await _refreshPartnerList(isCustomer: isCustomer);
-
-    if (result is Map && result['added'] == true) {
-      _selectNewlyAddedPartner(
-        isCustomer: isCustomer,
-        previousIds: previousIds,
-      );
+    final result = await showQuickPartnerDialog(isCustomer: isCustomer);
+    if (result == null) return;
+    (isCustomer ? allCustomersList : allSellersList).insert(0, result.partner);
+    onPartnerSelected(result.partner);
+    if (Get.isRegistered<SalesController>()) {
+      final sales = Get.find<SalesController>();
+      sales.pickerPartnerIsCustomer.value = isCustomer;
+      final list =
+          isCustomer ? sales.pickerCustomersList : sales.pickerSellersList;
+      if (!list.any((item) => item.id == result.partner.id)) {
+        list.insert(0, result.partner);
+      }
+      await sales.onPickerPartnerSelected(result.partner);
+      sales.applyQuickPartnerAddress(result);
     }
   }
 
