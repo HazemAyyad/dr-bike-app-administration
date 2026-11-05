@@ -86,6 +86,132 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+
+  for (final orders in [false, true]) {
+    testWidgets(
+        'drawer banner shows another employee and live status, orders: $orders',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      final previousUserType = userType;
+      final previousPermissions = employeePermissionNames;
+      userType = 'employee';
+      employeePermissionNames = ['Sales'];
+      addTearDown(() {
+        userType = previousUserType;
+        employeePermissionNames = previousPermissions;
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final sales = _DailySalesController();
+      Get.put<SalesController>(sales);
+      final history =
+          Get.put<SalesDailyHistoryController>(_HistoryController());
+      final payload = orders
+          ? sales.salesOrdersDailySessionPayload
+          : sales.dailySessionPayload;
+      final type = orders ? 'sales_orders' : 'instant_sales';
+      const balance = DailyCurrencyRow(
+        currency: 'شيكل',
+        dailyBoxId: 12,
+        dailyBoxName: 'صندوق محمود',
+        systemBalance: 325,
+      );
+      DailySessionPayload activePayload(String status,
+              {bool previousDay = false}) =>
+          DailySessionPayload(
+            session: DailySessionInfo(
+              id: 70,
+              sessionType: type,
+              businessDate: '2026-11-05',
+              status: status,
+              allowsSales: status == 'open',
+              employeeName: 'محمود صاحب الصندوق',
+              openedAt: '2026-11-05 09:30:00',
+              isBlockingPreviousDay: previousDay,
+            ),
+            blockedByOtherSession: true,
+            blockedByEmployeeName: 'محمود صاحب الصندوق',
+            currencies: orders ? const [] : const [balance],
+            salesOrdersCurrencies: orders ? const [balance] : const [],
+          );
+      payload.value = activePayload('open');
+
+      await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(390, 844),
+        builder: (_, __) => GetMaterialApp(
+          translations: Translation(),
+          locale: const Locale('ar'),
+          theme: ThemeData(fontFamily: 'Almarai'),
+          home: const SalesDailyHistoryScreen(),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      if (orders) {
+        await tester.tap(find.text('صندوق الطلبيات'));
+        await tester.pumpAndSettle();
+      }
+
+      // Employees can have an empty overview while using a shared drawer.
+      expect(find.text('صاحب الصندوق: محمود صاحب الصندوق'), findsOneWidget);
+      expect(find.text('نشط — مفتوح الآن'), findsOneWidget);
+      expect(find.text('325.00 ₪'), findsOneWidget);
+      expect(find.text('تقديم طلب إغلاق الصندوق'), findsNothing);
+
+      // A closed session belonging to the viewer must not replace the shared one.
+      history.todayOverview.value = DailyTodayOverviewModel(
+        businessDate: '2026-11-05',
+        sessions: [
+          DailySessionSummaryModel(
+            id: 50,
+            userId: 2,
+            sessionType: type,
+            businessDate: '2026-11-05',
+            status: 'closed',
+            employeeName: 'صاحب جلسة سابقة',
+          ),
+        ],
+      );
+      payload.value = activePayload('closing_requested');
+      await tester.pumpAndSettle();
+      expect(find.text('صاحب الصندوق: محمود صاحب الصندوق'), findsOneWidget);
+      expect(find.text('بانتظار مراجعة طلب الإغلاق'), findsOneWidget);
+      expect(find.text('طلب الإغلاق قيد مراجعة الإدارة'), findsOneWidget);
+      expect(find.text('325.00 ₪'), findsOneWidget);
+      expect(find.text('تقديم طلب إغلاق الصندوق'), findsNothing);
+
+      payload.value = activePayload('open', previousDay: true);
+      await tester.pumpAndSettle();
+      expect(find.text('نشط — جلسة يوم سابق'), findsOneWidget);
+
+      const expected = DailyExpectedOpeningCount(
+        currency: 'شيكل',
+        expectedAmount: 75,
+        previousSessionId: 70,
+        previousEmployeeName: 'محمود صاحب الصندوق',
+        previousBusinessDate: '2026-11-05',
+      );
+      payload.value = DailySessionPayload(
+        canRequestOpen: true,
+        expectedOpeningCounts: orders ? const [] : const [expected],
+        expectedSalesOrdersOpeningCounts: orders ? const [expected] : const [],
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('مغلق — تم اعتماد الإغلاق'), findsOneWidget);
+      expect(find.text('آخر إغلاق: محمود صاحب الصندوق'), findsOneWidget);
+      expect(find.text('75.00 ₪'), findsOneWidget);
+
+      history.todayOverview.value = const DailyTodayOverviewModel(
+        businessDate: '2026-11-05',
+      );
+      payload.value = const DailySessionPayload(canRequestOpen: true);
+      await tester.pumpAndSettle();
+      expect(find.text('غير مفتوح — لم تبدأ جلسة بعد'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }
 
 class _DailySalesController extends GetxController implements SalesController {

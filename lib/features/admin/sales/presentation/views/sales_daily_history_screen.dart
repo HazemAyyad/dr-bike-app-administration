@@ -496,25 +496,38 @@ class _ActiveDrawerBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orders = type == 'sales_orders';
-    final closing = session?.isClosingRequested ?? false;
-    final open = session?.isOpen ?? false;
+    // The overview can contain only the viewer's sessions. The current payload
+    // also includes the shared drawer opened by another employee.
+    final current = payload?.session;
+    final summary =
+        current == null || current.id == session?.id ? session : null;
+    final sessionStatus = current?.status ?? summary?.status;
+    final closing = sessionStatus == 'closing_requested';
+    final open = sessionStatus == 'open';
+    final hasActiveSession = open || closing;
+    final expectedRows = orders
+        ? payload?.expectedSalesOrdersOpeningCounts
+        : payload?.expectedOpeningCounts;
+    final expected = expectedRows
+        ?.firstWhereOrNull((currency) => currency.currency == 'شيكل');
+    final closed = sessionStatus == 'closed' ||
+        (!hasActiveSession && expected?.previousSessionId != null);
+    final previousDay = current?.isBlockingPreviousDay == true;
     final color = closing
         ? Colors.orange
         : open
             ? Colors.green
             : Colors.redAccent;
     final status = closing
-        ? 'بانتظار الإغلاق'
+        ? 'بانتظار مراجعة طلب الإغلاق'
         : open
-            ? 'مفتوح الآن'
-            : 'لا يوجد صندوق مفتوح';
-    final hasActiveSession = open || closing;
-    final shekel = session?.currencies
-        .firstWhereOrNull((currency) => currency.currency == 'شيكل');
-    final expectedRows = orders
-        ? payload?.expectedSalesOrdersOpeningCounts
-        : payload?.expectedOpeningCounts;
-    final expected = expectedRows
+            ? (previousDay ? 'نشط — جلسة يوم سابق' : 'نشط — مفتوح الآن')
+            : closed
+                ? 'مغلق — تم اعتماد الإغلاق'
+                : 'غير مفتوح — لم تبدأ جلسة بعد';
+    final currentRows =
+        orders ? payload?.salesOrdersCurrencies : payload?.currencies;
+    final shekel = (current == null ? summary?.currencies : currentRows)
         ?.firstWhereOrNull((currency) => currency.currency == 'شيكل');
     final balance = hasActiveSession
         ? (shekel?.systemBalance ?? 0)
@@ -523,8 +536,19 @@ class _ActiveDrawerBanner extends StatelessWidget {
         ? 'الرصيد المتوقع الحالي'
         : 'الموجود في الصندوق قبل فتح الجلسة';
     final employeeName = hasActiveSession
-        ? session?.employeeName
-        : expected?.previousEmployeeName;
+        ? (current?.employeeName ??
+            payload?.blockedByEmployeeName ??
+            summary?.employeeName)
+        : (expected?.previousEmployeeName ??
+            current?.employeeName ??
+            summary?.employeeName);
+    final businessDate = hasActiveSession
+        ? (current?.businessDate ?? summary?.businessDate)
+        : (expected?.previousBusinessDate ??
+            current?.businessDate ??
+            summary?.businessDate);
+    final canClose = current?.canRequestClosing ?? summary?.canClose ?? false;
+    final sessionId = current?.id ?? summary?.id;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -615,25 +639,34 @@ class _ActiveDrawerBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     hasActiveSession
-                        ? 'فتحه: ${employeeName ?? '—'}'
+                        ? 'صاحب الصندوق: ${employeeName ?? '—'}'
                         : 'آخر إغلاق: ${employeeName ?? '—'}',
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.white, fontSize: 11.sp),
                   ),
                 ),
                 const Icon(Icons.schedule_outlined, color: Colors.white70),
                 SizedBox(width: 4.w),
-                Text(
-                  hasActiveSession
-                      ? _time(session?.openedAt)
-                      : (expected?.previousBusinessDate ?? '—'),
-                  style: TextStyle(color: Colors.white, fontSize: 11.sp),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      businessDate ?? '—',
+                      style: TextStyle(color: Colors.white, fontSize: 11.sp),
+                    ),
+                    if (hasActiveSession)
+                      Text(
+                        _time(current?.openedAt ?? summary?.openedAt),
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 10.sp),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
-          if (session?.canClose == true) ...[
+          if (canClose && open) ...[
             SizedBox(height: 7.h),
             SizedBox(
               width: double.infinity,
@@ -645,17 +678,13 @@ class _ActiveDrawerBanner extends StatelessWidget {
                 ),
                 onPressed: () => Get.toNamed(
                   AppRoutes.SALESDAILYCLOSESCREEN,
-                  arguments: session!.id,
+                  arguments: sessionId,
                 ),
                 icon: const Icon(Icons.lock_clock_outlined),
-                label: Text(
-                  session!.isClosingRequested
-                      ? 'طلب الإغلاق قيد المراجعة'
-                      : 'تقديم طلب إغلاق الصندوق',
-                ),
+                label: const Text('تقديم طلب إغلاق الصندوق'),
               ),
             ),
-          ] else if (session?.isClosingRequested == true) ...[
+          ] else if (closing) ...[
             SizedBox(height: 7.h),
             Container(
               width: double.infinity,
@@ -672,7 +701,7 @@ class _ActiveDrawerBanner extends StatelessWidget {
                     TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
               ),
             ),
-          ] else if (canOpen) ...[
+          ] else if (!hasActiveSession && canOpen) ...[
             SizedBox(height: 7.h),
             SizedBox(
               width: double.infinity,
