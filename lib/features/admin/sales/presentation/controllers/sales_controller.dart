@@ -3533,6 +3533,9 @@ class SalesController extends GetxController
   bool _administrativeTotalTouched = false;
   bool get isClosedDayAdministrativeCorrection =>
       _closedDayEditMode == 'administrative_correction';
+  bool get isUnpaidClosedDayCorrection =>
+      isClosedDayAdministrativeCorrection &&
+      SalesAmountFormat.parse(_paymentBoxValue ?? '') == 0;
   final Map<int, double> _restorationUnitCosts = <int, double>{};
   final Map<int, Map<String, String>> _originalEditLineDetails =
       <int, Map<String, String>>{};

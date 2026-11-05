@@ -128,7 +128,10 @@ class InstantSalePaymentSection extends StatelessWidget {
                   ],
                 );
               }
-              return const _MissingDailySalesBoxNotice();
+              return paymentTag == kInstantSalePaymentTag &&
+                      sales.isUnpaidClosedDayCorrection
+                  ? const SizedBox.shrink()
+                  : const _MissingDailySalesBoxNotice();
             },
           ),
         if (showPaymentFields)
