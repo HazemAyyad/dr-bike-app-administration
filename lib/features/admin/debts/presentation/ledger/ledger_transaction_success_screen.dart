@@ -40,10 +40,8 @@ class _LedgerTransactionSuccessScreenState
   Timer? _autoCloseTimer;
   bool _userInteracted = false;
 
-  bool get _isTaken => widget.type == 'taken';
-
   Color get _amountColor =>
-      _isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+      Get.find<DebtLedgerController>().transactionColor(widget.type);
 
   @override
   void initState() {
@@ -76,8 +74,8 @@ class _LedgerTransactionSuccessScreenState
 
   void _share() {
     final text = '${widget.personName}\n'
-        '${widget.typeLabel}: ${LedgerFormat.money(widget.amount, currency: widget.currency)}\n'
-        '${LedgerFormat.labeled('ledgerBalance'.tr, widget.balanceAfter, currency: widget.currency)}\n'
+        '${widget.typeLabel} ${widget.type == 'taken' ? '+' : '−'}${LedgerFormat.money(widget.amount, currency: widget.currency)}\n'
+        '${Get.find<DebtLedgerController>().balanceText(widget.balanceAfter, currency: widget.currency)}\n'
         '${widget.timeLabel}';
 
     SharePlus.instance.share(ShareParams(text: text));
@@ -123,7 +121,8 @@ class _LedgerTransactionSuccessScreenState
                       personName: widget.personName,
                       timeLabel: widget.timeLabel,
                       typeLabel: widget.typeLabel,
-                      amount: widget.amount,
+                      amountText:
+                          '${widget.type == 'taken' ? '+' : '−'}${LedgerFormat.money(widget.amount, currency: widget.currency)}',
                       currency: widget.currency,
                       amountColor: _amountColor,
                       balanceAfter: widget.balanceAfter,
@@ -164,7 +163,7 @@ class _SuccessCard extends StatelessWidget {
   final String personName;
   final String timeLabel;
   final String typeLabel;
-  final double amount;
+  final String amountText;
   final String currency;
   final Color amountColor;
   final double balanceAfter;
@@ -174,7 +173,7 @@ class _SuccessCard extends StatelessWidget {
     required this.personName,
     required this.timeLabel,
     required this.typeLabel,
-    required this.amount,
+    required this.amountText,
     required this.currency,
     required this.amountColor,
     required this.balanceAfter,
@@ -231,7 +230,8 @@ class _SuccessCard extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           Text(
-            LedgerFormat.money(amount, currency: currency),
+            amountText,
+            textDirection: TextDirection.ltr,
             style: TextStyle(
               fontSize: 36.sp,
               fontWeight: FontWeight.bold,
@@ -248,8 +248,7 @@ class _SuccessCard extends StatelessWidget {
               border: Border.all(color: balanceColor.withValues(alpha: 0.35)),
             ),
             child: Text(
-              LedgerFormat.labeled(
-                'ledgerBalance'.tr,
+              Get.find<DebtLedgerController>().balanceText(
                 balanceAfter,
                 currency: currency,
               ),

@@ -157,6 +157,10 @@ class _PerformanceReminderSheetState extends State<PerformanceReminderSheet> {
                           givenCount: givenCount,
                           takenLabel: controller.takenLabel,
                           givenLabel: controller.givenLabel,
+                          supplier: controller.isSupplierAccount,
+                          privateAccount:
+                              controller.activeLabelScope == 'private',
+                          currency: controller.selectedCurrency.value,
                           transactionsWord: 'ledgerTransactionsWord'.tr,
                         ),
                       ),

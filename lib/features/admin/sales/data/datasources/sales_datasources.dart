@@ -246,6 +246,20 @@ class SalesDatasource {
     }
   }
 
+  Future<ProfitSale> getProfitSale(int id) async {
+    final response = await api.get(
+      EndPoints.showProfitSale,
+      queryParameters: {'profit_sale_id': id},
+    );
+    final data = response.data;
+    if (data is! Map || data['profit_sale_details'] is! Map) {
+      throw StateError('Profit sale $id is unavailable');
+    }
+    return ProfitSale.fromJson(
+      Map<String, dynamic>.from(data['profit_sale_details'] as Map),
+    );
+  }
+
   // get profit sales
   Future<List<ProfitSale>> getProfitSales({
     String? date,

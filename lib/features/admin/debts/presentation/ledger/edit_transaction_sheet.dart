@@ -242,19 +242,22 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ChoiceChip(
-                    label: Obx(() => Text(
-                        Get.find<DebtLedgerController>().takenLabel)),
+                    label: Obx(() =>
+                        Text(Get.find<DebtLedgerController>().takenLabel)),
                     selected: type == 'taken',
-                    selectedColor:
-                        LedgerColors.takenGreen.withValues(alpha: 0.2),
+                    selectedColor: Get.find<DebtLedgerController>()
+                        .transactionColor('taken')
+                        .withValues(alpha: 0.2),
                     onSelected: (_) => setState(() => type = 'taken'),
                   ),
                   SizedBox(width: 8.w),
                   ChoiceChip(
-                    label: Obx(() => Text(
-                        Get.find<DebtLedgerController>().givenLabel)),
+                    label: Obx(() =>
+                        Text(Get.find<DebtLedgerController>().givenLabel)),
                     selected: type == 'given',
-                    selectedColor: LedgerColors.givenRed.withValues(alpha: 0.2),
+                    selectedColor: Get.find<DebtLedgerController>()
+                        .transactionColor('given')
+                        .withValues(alpha: 0.2),
                     onSelected: (_) => setState(() => type = 'given'),
                   ),
                 ],

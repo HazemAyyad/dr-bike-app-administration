@@ -15,6 +15,9 @@ class LedgerShareImageHelper {
     required String transactionValueLabel,
     required double amount,
     required bool isTaken,
+    String amountPrefix = '',
+    Color? amountColor,
+    String currency = 'شيكل',
   }) async {
     try {
       return await _controller.captureFromWidget(
@@ -28,6 +31,9 @@ class LedgerShareImageHelper {
               transactionValueLabel: transactionValueLabel,
               amount: amount,
               isTaken: isTaken,
+              amountPrefix: amountPrefix,
+              amountColor: amountColor,
+              currency: currency,
             ),
           ),
         ),
@@ -45,6 +51,8 @@ class LedgerShareImageHelper {
     required String balanceLabel,
     required double amount,
     required bool isTaken,
+    Color? amountColor,
+    String currency = 'شيكل',
   }) {
     return captureTransactionVoucher(
       personName: personName,
@@ -52,6 +60,8 @@ class LedgerShareImageHelper {
       transactionValueLabel: balanceLabel,
       amount: amount,
       isTaken: isTaken,
+      amountColor: amountColor,
+      currency: currency,
     );
   }
 
@@ -68,6 +78,8 @@ class LedgerShareImageHelper {
     required String givenLabel,
     required String transactionsWord,
     String currency = 'شيكل',
+    bool supplier = false,
+    bool privateAccount = false,
   }) async {
     try {
       return await _controller.captureFromWidget(
@@ -88,6 +100,8 @@ class LedgerShareImageHelper {
               givenLabel: givenLabel,
               transactionsWord: transactionsWord,
               currency: currency,
+              supplier: supplier,
+              privateAccount: privateAccount,
             ),
           ),
         ),

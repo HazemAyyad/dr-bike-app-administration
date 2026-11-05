@@ -311,6 +311,8 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   Future<Either<Failure, LedgerCreateResult>> createTransaction({
     int? customerId,
     int? sellerId,
+    int? linkedInvoiceId,
+    String? receiptRequestId,
     required String type,
     required String amount,
     required String transactionDate,
@@ -326,6 +328,8 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       final data = await datasource.createTransaction(
         customerId: customerId,
         sellerId: sellerId,
+        linkedInvoiceId: linkedInvoiceId,
+        receiptRequestId: receiptRequestId,
         type: type,
         amount: amount,
         transactionDate: transactionDate,

@@ -68,6 +68,8 @@ class SalesImplement implements SalesRepository {
     }
   }
 
+  Future<ProfitSale> getProfitSale(int id) => salesDatasource.getProfitSale(id);
+
   // get profit sales
   @override
   Future<List<ProfitSale>> getProfitSales(

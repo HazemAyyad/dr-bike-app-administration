@@ -61,7 +61,7 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
           final cur = controller.selectedCurrency.value;
           final stats = detail.balanceFor(cur);
           final balanceColor = controller.balanceColor(stats.balance);
-          final typeHint = controller.labelForType(stats.balance >= 0 ? 'taken' : 'given');
+          final typeHint = controller.balanceLabel(stats.balance);
 
           return ListView(
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
@@ -203,8 +203,8 @@ class _DeletedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTaken = transaction.isTaken;
-    final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final controller = Get.find<DebtLedgerController>();
+    final color = LedgerColors.entry(transaction.kind);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -216,11 +216,8 @@ class _DeletedRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LedgerFormat.money(
-                    transaction.amount,
-                    currency: transaction.currency,
-                    fractionDigits: 1,
-                  ),
+                  controller.entryAmount(transaction),
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
@@ -228,7 +225,7 @@ class _DeletedRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  Get.find<DebtLedgerController>().labelForType(transaction.type),
+                  controller.entryLabel(transaction),
                   style: TextStyle(fontSize: 12.sp, color: color),
                 ),
                 if (transaction.note != null &&
@@ -258,15 +255,15 @@ class _DeletedRow extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
               Text(
-                LedgerFormat.labeled(
-                  'ledgerBalance'.tr,
+                Get.find<DebtLedgerController>().balanceText(
                   transaction.balanceAfter,
                   currency: transaction.currency,
                   fractionDigits: 1,
                 ),
                 style: TextStyle(
                   fontSize: 11.sp,
-                  color: Colors.grey.shade500,
+                  color: Get.find<DebtLedgerController>()
+                      .balanceColor(transaction.balanceAfter),
                 ),
               ),
             ],

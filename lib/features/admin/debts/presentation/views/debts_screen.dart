@@ -121,10 +121,10 @@ class _SummaryCard extends StatelessWidget {
       final currency = controller.selectedCurrency.value;
       final visiblePeople = controller.filteredPeople;
       final taken = visiblePeople
-          .where((person) => person.balance > 0)
-          .fold<double>(0, (sum, person) => sum + person.balance);
-      final given = visiblePeople
           .where((person) => person.balance < 0)
+          .fold<double>(0, (sum, person) => sum + person.balance.abs());
+      final given = visiblePeople
+          .where((person) => person.balance > 0)
           .fold<double>(0, (sum, person) => sum + person.balance.abs());
 
       return Container(
@@ -145,7 +145,7 @@ class _SummaryCard extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryItem(
-                label: controller.takenLabel,
+                label: 'لك',
                 amount: taken,
                 currency: currency,
                 color: LedgerColors.takenGreen,
@@ -154,7 +154,7 @@ class _SummaryCard extends StatelessWidget {
             Container(width: 1, height: 40.h, color: Colors.grey.shade300),
             Expanded(
               child: _SummaryItem(
-                label: controller.givenLabel,
+                label: 'عليك',
                 amount: given,
                 currency: currency,
                 color: LedgerColors.givenRed,
@@ -223,11 +223,11 @@ class _SearchRow extends StatelessWidget {
           ),
         ),
         SizedBox(width: 4.w),
-        IconButton(
-          tooltip: 'ledgerAddDebt'.tr,
+        TextButton.icon(
           onPressed: controller.openPickPersonForDebt,
+          label: const Text('كشف حساب'),
           icon: Icon(
-            Icons.person_add_alt_1,
+            Icons.receipt_long_outlined,
             color: LedgerColors.primaryBlue,
             size: 26.sp,
           ),
@@ -380,7 +380,7 @@ class _PersonRow extends StatelessWidget {
     final last = person.lastTransaction;
     final currency = controller.selectedCurrency.value;
     final balance = person.balance;
-    final balanceColor = controller.balanceColor(balance);
+    final balanceColor = controller.balanceColor(balance, person: person);
     final balanceLabel = controller.balanceTypeLabel(balance, person: person);
     final lastActivity = controller.formatLastTransactionTime(last);
 
@@ -452,7 +452,7 @@ class _PersonRow extends StatelessWidget {
               children: [
                 Text(
                   LedgerFormat.money(
-                    person.balance,
+                    person.balance.abs(),
                     currency: currency,
                     fractionDigits: 1,
                   ),

@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_activity_section.dart';
 import 'ledger_colors.dart';
-import 'ledger_format.dart';
 import 'receipt_media_thumb.dart';
 
 class TransactionDetailScreen extends GetView<DebtLedgerController> {
@@ -22,12 +21,10 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
         );
       }
 
-      final isTaken = tx.isTaken;
-      final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+      final color = LedgerColors.entry(tx.kind);
       final personName = controller.selectedPerson?.name ?? '';
       final balanceColor = controller.balanceColor(tx.balanceAfter);
-      final canOpenPurchaseInvoice = tx.source == 'purchase_payment' ||
-          tx.source == 'purchase_initial_payment' ||
+      final canOpenPurchaseInvoice = tx.invoiceSource == 'purchase_invoice' ||
           tx.source == 'purchase_invoice';
 
       return Directionality(
@@ -78,7 +75,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(
-                                controller.labelForType(tx.type),
+                                controller.entryLabel(tx),
                                 style: TextStyle(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
@@ -87,8 +84,8 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                               SizedBox(width: 10.w),
                               Text(
-                                LedgerFormat.money(tx.amount,
-                                    currency: tx.currency, fractionDigits: 1),
+                                controller.entryAmount(tx),
+                                textDirection: TextDirection.ltr,
                                 style: TextStyle(
                                   fontSize: 36.sp,
                                   fontWeight: FontWeight.bold,
@@ -112,8 +109,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                             ),
                             child: Text(
-                              LedgerFormat.labeled(
-                                'ledgerBalance'.tr,
+                              controller.balanceText(
                                 tx.balanceAfter,
                                 currency: tx.currency,
                                 fractionDigits: 1,
@@ -191,7 +187,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                                 size: 18.sp,
                               ),
                               label: Text(
-                                'فتح فاتورة الشراء #${tx.sourceId ?? ''}',
+                                'فتح فاتورة الشراء #${tx.invoiceSourceId ?? tx.sourceId ?? ''}',
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w700,
@@ -199,6 +195,15 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                             ),
                           ],
+                          if (tx.isInvoiceReceipt ||
+                              (tx.invoiceSourceId != null &&
+                                  !canOpenPurchaseInvoice))
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  controller.openReceiptInvoice(tx),
+                              icon: const Icon(Icons.receipt_long_outlined),
+                              label: const Text('فتح فاتورة المبيعات'),
+                            ),
                           if (tx.receiptImages.isNotEmpty) ...[
                             SizedBox(height: 16.h),
                             Text(
@@ -214,13 +219,14 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                             _ReceiptImagesGallery(images: tx.receiptImages),
                           ],
                           SizedBox(height: 20.h),
-                          Obx(
-                            () => LedgerActivitySection(
-                              entries: controller.transactionActivity,
-                              loading:
-                                  controller.transactionActivityLoading.value,
+                          if (tx.id > 0)
+                            Obx(
+                              () => LedgerActivitySection(
+                                entries: controller.transactionActivity,
+                                loading:
+                                    controller.transactionActivityLoading.value,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),

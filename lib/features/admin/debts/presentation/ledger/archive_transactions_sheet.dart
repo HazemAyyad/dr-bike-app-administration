@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
-import 'ledger_format.dart';
 
 import '../../../../../core/helpers/app_failure_notice.dart';
 
@@ -204,8 +203,8 @@ class _ArchiveSelectableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTaken = transaction.isTaken;
-    final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final controller = Get.find<DebtLedgerController>();
+    final color = LedgerColors.entry(transaction.kind);
 
     return InkWell(
       onTap: () => onChanged(!selected),
@@ -218,7 +217,8 @@ class _ArchiveSelectableRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    LedgerFormat.shekel1(transaction.amount),
+                    controller.entryAmount(transaction),
+                    textDirection: TextDirection.ltr,
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
@@ -226,7 +226,7 @@ class _ArchiveSelectableRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    Get.find<DebtLedgerController>().labelForType(transaction.type),
+                    controller.entryLabel(transaction),
                     style: TextStyle(fontSize: 12.sp, color: color),
                   ),
                 ],
@@ -244,14 +244,15 @@ class _ArchiveSelectableRow extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  LedgerFormat.labeled(
-                    'ledgerBalance'.tr,
+                  Get.find<DebtLedgerController>().balanceText(
                     transaction.balanceAfter,
+                    currency: transaction.currency,
                     fractionDigits: 1,
                   ),
                   style: TextStyle(
                     fontSize: 11.sp,
-                    color: Colors.grey.shade500,
+                    color: Get.find<DebtLedgerController>()
+                        .balanceColor(transaction.balanceAfter),
                   ),
                 ),
               ],

@@ -234,6 +234,8 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> createTransaction({
     int? customerId,
     int? sellerId,
+    int? linkedInvoiceId,
+    String? receiptRequestId,
     required String type,
     required String amount,
     required String transactionDate,
@@ -246,6 +248,9 @@ class DebtLedgerDatasource {
       final payload = <String, dynamic>{
         if (customerId != null) 'customer_id': customerId.toString(),
         if (sellerId != null) 'seller_id': sellerId.toString(),
+        if (linkedInvoiceId != null)
+          'linked_invoice_id': linkedInvoiceId.toString(),
+        if (receiptRequestId != null) 'receipt_request_id': receiptRequestId,
         'type': type,
         'amount': amount,
         if (currency != null && currency.isNotEmpty) 'currency': currency,

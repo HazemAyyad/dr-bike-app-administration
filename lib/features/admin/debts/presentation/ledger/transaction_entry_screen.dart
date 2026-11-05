@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
 import 'receipt_media_thumb.dart';
@@ -16,6 +17,7 @@ class TransactionEntryScreen extends StatelessWidget {
   final bool isCustomer;
   final int personId;
   final String initialCurrency;
+  final LedgerTransaction? invoice;
 
   const TransactionEntryScreen({
     Key? key,
@@ -24,6 +26,7 @@ class TransactionEntryScreen extends StatelessWidget {
     required this.isCustomer,
     required this.personId,
     required this.initialCurrency,
+    this.invoice,
   }) : super(key: key);
 
   @override
@@ -44,6 +47,7 @@ class TransactionEntryScreen extends StatelessWidget {
         isCustomer: isCustomer,
         personId: personId,
         initialCurrency: initialCurrency,
+        invoice: invoice,
       ),
       tag: tag,
     );
@@ -104,15 +108,16 @@ class TransactionEntryScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               child: Column(
                 children: [
+                  if (invoice != null)
+                    Text(invoice!.sourceLabel ?? 'فاتورة مبيعات'),
                   Obx(
                     () => Text(
                       calc.display.value,
                       style: TextStyle(
                         fontSize: 40.sp,
                         fontWeight: FontWeight.bold,
-                        color: calc.transactionType.value == 'taken'
-                            ? LedgerColors.takenGreen
-                            : LedgerColors.givenRed,
+                        color: Get.find<DebtLedgerController>()
+                            .transactionColor(calc.transactionType.value),
                       ),
                     ),
                   ),
@@ -134,27 +139,29 @@ class TransactionEntryScreen extends StatelessWidget {
                     children: [
                       Obx(
                         () => ChoiceChip(
-                          label: Text(Get.find<DebtLedgerController>()
-                              .takenLabel),
+                          label: Text(ledger.voucherLabel('taken')),
                           selected: calc.transactionType.value == 'taken',
-                          selectedColor:
-                              LedgerColors.takenGreen.withValues(alpha: 0.2),
-                          onSelected: (_) =>
-                              calc.transactionType.value = 'taken',
+                          selectedColor: Get.find<DebtLedgerController>()
+                              .transactionColor('taken')
+                              .withValues(alpha: 0.2),
+                          onSelected: invoice == null
+                              ? (_) => calc.transactionType.value = 'taken'
+                              : null,
                         ),
                       ),
                       SizedBox(width: 8.w),
-                      Obx(
-                        () => ChoiceChip(
-                          label: Text(Get.find<DebtLedgerController>()
-                              .givenLabel),
-                          selected: calc.transactionType.value == 'given',
-                          selectedColor:
-                              LedgerColors.givenRed.withValues(alpha: 0.2),
-                          onSelected: (_) =>
-                              calc.transactionType.value = 'given',
+                      if (invoice == null)
+                        Obx(
+                          () => ChoiceChip(
+                            label: Text(ledger.voucherLabel('given')),
+                            selected: calc.transactionType.value == 'given',
+                            selectedColor: Get.find<DebtLedgerController>()
+                                .transactionColor('given')
+                                .withValues(alpha: 0.2),
+                            onSelected: (_) =>
+                                calc.transactionType.value = 'given',
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   SizedBox(height: 8.h),

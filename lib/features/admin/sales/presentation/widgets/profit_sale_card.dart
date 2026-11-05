@@ -286,8 +286,8 @@ String _formatProfitSaleTime(ProfitSale sale) {
   return '$hour:$minute';
 }
 
-void showProfitSaleDetailsModal(BuildContext context, ProfitSale sale) {
-  showModalBottomSheet<void>(
+Future<void> showProfitSaleDetailsModal(BuildContext context, ProfitSale sale) {
+  return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

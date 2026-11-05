@@ -47,7 +47,7 @@ class PersonReportScreen extends StatelessWidget {
           final currency = controller.selectedCurrency.value;
           final stats = controller.personCurrencyBalance ??
               detail.balanceFor(controller.selectedCurrency.value);
-          final transactions = detail.transactions;
+          final transactions = detail.statement;
 
           return Stack(
             children: [
@@ -192,19 +192,19 @@ class _ReportHeader extends StatelessWidget {
           children: [
             Expanded(
               child: _ReportStat(
-                label: controller.takenLabel,
+                label: 'إضافات للرصيد',
                 amount: stats.totalTaken,
                 currency: currency,
-                color: LedgerColors.takenGreen,
+                color: LedgerColors.primaryBlue,
               ),
             ),
             Container(width: 1, height: 52.h, color: Colors.grey.shade200),
             Expanded(
               child: _ReportStat(
-                label: controller.givenLabel,
+                label: 'خصومات من الرصيد',
                 amount: stats.totalGiven,
                 currency: currency,
-                color: LedgerColors.givenRed,
+                color: LedgerColors.primaryBlue,
               ),
             ),
           ],
@@ -216,7 +216,7 @@ class _ReportHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'ledgerBalance'.tr,
+              controller.balanceLabel(stats.balance),
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14.sp,
@@ -370,7 +370,7 @@ class _ReportTransactionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<DebtLedgerController>();
     final isTaken = transaction.isTaken;
-    final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final color = LedgerColors.entry(transaction.kind);
 
     return InkWell(
       onTap: () => controller.openTransactionDetail(transaction),
@@ -433,11 +433,8 @@ class _ReportTransactionRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  LedgerFormat.money(
-                    transaction.amount,
-                    currency: transaction.currency,
-                    fractionDigits: 1,
-                  ),
+                  controller.entryAmount(transaction),
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     color: color,
                     fontSize: 17.sp,
@@ -446,7 +443,7 @@ class _ReportTransactionRow extends StatelessWidget {
                 ),
                 SizedBox(height: 3.h),
                 Text(
-                  controller.labelForType(transaction.type),
+                  controller.entryLabel(transaction),
                   style:
                       TextStyle(color: Colors.grey.shade500, fontSize: 12.sp),
                 ),

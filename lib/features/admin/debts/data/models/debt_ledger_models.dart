@@ -252,6 +252,10 @@ class LedgerPersonDetail {
   final Map<String, LedgerCurrencyBalance> balancesByCurrency;
   final int activeTransactionsCount;
   final List<LedgerTransaction> transactions;
+  final List<LedgerTransaction>? statementTransactions;
+
+  List<LedgerTransaction> get statement =>
+      statementTransactions ?? transactions;
 
   LedgerPersonDetail({
     required this.person,
@@ -261,6 +265,7 @@ class LedgerPersonDetail {
     this.balancesByCurrency = const {},
     required this.activeTransactionsCount,
     required this.transactions,
+    this.statementTransactions,
   });
 
   LedgerCurrencyBalance balanceFor(String currency) {
@@ -302,6 +307,10 @@ class LedgerPersonDetail {
       balancesByCurrency: balancesByCurrency,
       activeTransactionsCount: json['active_transactions_count'] as int? ?? 0,
       transactions: list,
+      statementTransactions: (json['statement_transactions'] as List<dynamic>?)
+          ?.map(
+              (row) => LedgerTransaction.fromJson(row as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -379,6 +388,11 @@ class LedgerTransaction {
   final int? sourceId;
   final String? sourceLabel;
   final String currency;
+  final String? entryKind;
+  final bool isInvoiceReceipt;
+  final double? invoiceRemaining;
+  final String? invoiceSource;
+  final int? invoiceSourceId;
 
   LedgerTransaction({
     required this.id,
@@ -396,6 +410,11 @@ class LedgerTransaction {
     this.sourceId,
     this.sourceLabel,
     this.currency = 'شيكل',
+    this.entryKind,
+    this.isInvoiceReceipt = false,
+    this.invoiceRemaining,
+    this.invoiceSource,
+    this.invoiceSourceId,
   });
 
   factory LedgerTransaction.fromJson(Map<String, dynamic> json) {
@@ -428,10 +447,51 @@ class LedgerTransaction {
           ? null
           : int.tryParse(json['source_id'].toString()),
       sourceLabel: json['source_label']?.toString(),
+      entryKind: json['entry_kind']?.toString(),
+      isInvoiceReceipt: json['is_invoice_receipt'] == true,
+      invoiceRemaining:
+          double.tryParse(json['invoice_remaining']?.toString() ?? ''),
+      invoiceSource: json['invoice_source']?.toString(),
+      invoiceSourceId:
+          int.tryParse(json['invoice_source_id']?.toString() ?? ''),
     );
   }
 
   bool get isTaken => type == 'taken';
+
+  String get kind {
+    if (entryKind != null) return entryKind!;
+    switch (source ?? 'manual') {
+      case '':
+      case 'manual':
+        return isTaken ? 'receipt' : 'payment';
+      case 'instant_sale':
+      case 'profit_sale':
+      case 'maintenance':
+        return 'sales_invoice';
+      case 'sales_order':
+        return isTaken ? 'receipt' : 'sales_invoice';
+      case 'purchase_invoice':
+        return 'purchase_invoice';
+      case 'purchase_payment':
+      case 'purchase_initial_payment':
+      case 'purchase_account_payment':
+      case 'outgoing_check':
+      case 'incoming_check_disposal':
+        return 'payment';
+      case 'incoming_check':
+      case 'purchase_refund':
+        return 'receipt';
+      default:
+        return 'adjustment';
+    }
+  }
+
+  String get amountPrefix {
+    if (kind == 'receipt') return '+';
+    if (kind == 'payment') return '−';
+    return '';
+  }
 
   bool get isManual => source == null || source == '' || source == 'manual';
 

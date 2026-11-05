@@ -15,6 +15,9 @@ class LedgerShareVoucherWidget extends StatelessWidget {
   final String transactionValueLabel;
   final double amount;
   final bool isTaken;
+  final String amountPrefix;
+  final Color? amountColor;
+  final String currency;
 
   const LedgerShareVoucherWidget({
     Key? key,
@@ -23,12 +26,15 @@ class LedgerShareVoucherWidget extends StatelessWidget {
     required this.transactionValueLabel,
     required this.amount,
     required this.isTaken,
+    this.amountPrefix = '',
+    this.amountColor,
+    this.currency = 'شيكل',
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final amountColor =
-        isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final color = amountColor ??
+        (isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed);
 
     return SizedBox(
       width: cardWidth,
@@ -83,11 +89,12 @@ class LedgerShareVoucherWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       _centeredText(
-                        LedgerFormat.shekel2(amount),
+                        '$amountPrefix${LedgerFormat.money(amount, currency: currency)}',
+                        textDirection: TextDirection.ltr,
                         style: TextStyle(
                           fontSize: 44,
                           fontWeight: FontWeight.bold,
-                          color: amountColor,
+                          color: color,
                           height: 1.1,
                         ),
                       ),
@@ -110,13 +117,17 @@ class LedgerShareVoucherWidget extends StatelessWidget {
     );
   }
 
-  Widget _centeredText(String text, {required TextStyle style}) {
+  Widget _centeredText(
+    String text, {
+    required TextStyle style,
+    TextDirection textDirection = TextDirection.rtl,
+  }) {
     return SizedBox(
       width: cardWidth - 40,
       child: Text(
         text,
         textAlign: TextAlign.center,
-        textDirection: TextDirection.rtl,
+        textDirection: textDirection,
         style: style,
       ),
     );

@@ -32,9 +32,10 @@ class PeriodFilterSheet extends StatelessWidget {
       {'key': 'alphabetical', 'label': 'ledgerSortAlphabetical'.tr},
     ];
     final debtTypeOptions = <Map<String, String>>[
+      {'key': 'open', 'label': 'الديون المفتوحة'},
       {'key': 'all', 'label': 'all'.tr},
-      {'key': 'taken', 'label': controller.takenLabel},
-      {'key': 'given', 'label': controller.givenLabel},
+      {'key': 'given', 'label': 'لنا'},
+      {'key': 'taken', 'label': 'علينا'},
       {'key': 'settled', 'label': 'ledgerDebtTypeSettled'.tr},
     ];
     final balanceScopeOptions = <Map<String, String>>[

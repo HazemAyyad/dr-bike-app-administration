@@ -66,6 +66,8 @@ abstract class DebtLedgerRepository {
   Future<Either<Failure, LedgerCreateResult>> createTransaction({
     int? customerId,
     int? sellerId,
+    int? linkedInvoiceId,
+    String? receiptRequestId,
     required String type,
     required String amount,
     required String transactionDate,

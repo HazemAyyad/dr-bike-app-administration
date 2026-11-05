@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -17,7 +18,9 @@ import '../../domain/repositories/debt_ledger_repository.dart';
 import '../../../maintenance/presentation/binding/maintenance_binding.dart';
 import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
 import '../../../sales/presentation/binding/sales_binding.dart';
+import '../../../sales/data/repositories/sales_implement.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
+import '../../../sales/presentation/widgets/profit_sale_card.dart';
 import '../../../buying/presentation/binding/buying_binding.dart';
 import '../../../buying/presentation/controllers/bills_controller.dart';
 import '../ledger/edit_transaction_sheet.dart';
@@ -147,7 +150,7 @@ class DebtLedgerController extends GetxController {
   final RxString selectedPeriod = 'all'.obs;
   final RxString selectedBalanceScope = 'full'.obs;
   final RxString selectedSort = 'newest'.obs;
-  final RxString selectedDebtType = 'all'.obs;
+  final RxString selectedDebtType = 'open'.obs;
   final RxnInt selectedCategoryId = RxnInt();
   final RxList<ContactCategory> categories = <ContactCategory>[].obs;
   final Rxn<DateTime> customStartDate = Rxn<DateTime>();
@@ -264,7 +267,9 @@ class DebtLedgerController extends GetxController {
       case 'given':
         return person.balance < 0;
       case 'settled':
-        return person.balance.abs() < 0.001;
+        return person.balance.abs() < 0.005;
+      case 'open':
+        return person.balance.abs() >= 0.005;
       case 'all':
       default:
         return true;
@@ -885,10 +890,13 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> openTransactionDetail(LedgerTransaction transaction) async {
-    if (await _openLinkedSource(transaction)) return;
+    if (!transaction.isInvoiceReceipt && await _openLinkedSource(transaction)) {
+      await loadPersonDetail();
+      return;
+    }
 
     selectedTransaction.value = transaction;
-    loadTransactionActivity(transaction.id);
+    if (transaction.id > 0) loadTransactionActivity(transaction.id);
     Get.to(() => const TransactionDetailScreen())?.then((changed) {
       if (changed == true) {
         loadPersonDetail();
@@ -897,14 +905,25 @@ class DebtLedgerController extends GetxController {
     });
   }
 
-  Future<bool> _openLinkedSource(LedgerTransaction transaction) async {
-    final sourceId = transaction.sourceId;
+  Future<bool> _openLinkedSource(LedgerTransaction transaction) =>
+      _openSource(transaction.source, transaction.sourceId);
+
+  Future<void> openReceiptInvoice(LedgerTransaction transaction) async {
+    await _openSource(
+      transaction.invoiceSource ?? transaction.source,
+      transaction.invoiceSourceId ?? transaction.sourceId,
+    );
+  }
+
+  Future<bool> _openSource(String? source, int? sourceId) async {
     if (sourceId == null || sourceId <= 0) return false;
 
-    switch (transaction.source) {
+    switch (source) {
       case 'instant_sale':
-      case 'profit_sale':
         await _openInstantSaleInvoice(sourceId);
+        return true;
+      case 'profit_sale':
+        await _openProfitSaleInvoice(sourceId);
         return true;
       case 'sales_order':
         await Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN,
@@ -944,6 +963,22 @@ class DebtLedgerController extends GetxController {
     );
   }
 
+  Future<void> _openProfitSaleInvoice(int sourceId) async {
+    SalesBinding().dependencies();
+    try {
+      final sale = await Get.find<SalesImplement>().getProfitSale(sourceId);
+      final context = Get.context;
+      if (context != null && context.mounted) {
+        await showProfitSaleDetailsModal(context, sale);
+      }
+    } catch (_) {
+      AppFailureNotice.show(
+        title: 'error'.tr,
+        message: 'تعذّر فتح فاتورة البيع الربحي.',
+      );
+    }
+  }
+
   Future<void> _openMaintenanceInvoice(int sourceId) async {
     if (!Get.isRegistered<MaintenanceController>() &&
         !Get.isPrepared<MaintenanceController>()) {
@@ -978,7 +1013,8 @@ class DebtLedgerController extends GetxController {
   Future<void> openPurchaseInvoiceFromTransaction(
     LedgerTransaction transaction,
   ) async {
-    final sourceId = transaction.sourceId;
+    final sourceId = transaction.invoiceSourceId ??
+        (transaction.kind == 'purchase_invoice' ? transaction.sourceId : null);
     if (sourceId == null || sourceId <= 0) return;
     await _openPurchaseInvoice(sourceId);
   }
@@ -1131,14 +1167,10 @@ class DebtLedgerController extends GetxController {
       linkResult.fold((_) {}, (url) => shareUrl = url);
     }
 
-    final amountLine = LedgerFormat.money(
-      tx.amount,
-      currency: tx.currency,
-      fractionDigits: 2,
-    );
+    final amountLine = entryAmount(tx);
     final separator = '──────────────';
     final buffer = StringBuffer()
-      ..writeln('ledgerShareYouHaveTransaction'.tr)
+      ..writeln(entryLabel(tx))
       ..writeln(separator)
       ..writeln(amountLine)
       ..writeln(separator);
@@ -1179,9 +1211,12 @@ class DebtLedgerController extends GetxController {
     final imageBytes = await LedgerShareImageHelper.captureTransactionVoucher(
       personName: person.name,
       timeLabel: formatTransactionTime(tx),
-      transactionValueLabel: 'ledgerTransactionValue'.tr,
+      transactionValueLabel: entryLabel(tx),
       amount: tx.amount,
       isTaken: tx.isTaken,
+      amountPrefix: tx.amountPrefix,
+      amountColor: LedgerColors.entry(tx.kind),
+      currency: tx.currency,
     );
 
     File? voucherFile;
@@ -1370,7 +1405,8 @@ class DebtLedgerController extends GetxController {
     );
   }
 
-  void openTransactionEntry({required String type}) {
+  void openTransactionEntry(
+      {required String type, LedgerTransaction? invoice}) {
     if (selectedPerson == null) return;
     Get.to(
       () => TransactionEntryScreen(
@@ -1378,7 +1414,8 @@ class DebtLedgerController extends GetxController {
         type: type,
         isCustomer: selectedPerson!.isCustomer,
         personId: selectedPerson!.id,
-        initialCurrency: selectedCurrency.value,
+        initialCurrency: invoice?.currency ?? selectedCurrency.value,
+        invoice: invoice,
       ),
     )?.then((saved) {
       if (saved == true) {
@@ -1541,8 +1578,8 @@ class DebtLedgerController extends GetxController {
   String buildPerformanceReminderSmsMessage(String shareUrl) {
     final currency = selectedCurrency.value;
     final balance = personCurrencyBalance?.balance ?? 0;
-    final amount = LedgerFormat.money(
-      balance.abs(),
+    final amount = balanceText(
+      balance,
       currency: currency,
       fractionDigits: 2,
     );
@@ -1561,8 +1598,8 @@ class DebtLedgerController extends GetxController {
       ..writeln('ledgerReminderWhatsappBody'.tr)
       ..writeln(separator)
       ..writeln(
-        LedgerFormat.money(
-          balance.abs(),
+        balanceText(
+          balance,
           currency: currency,
           fractionDigits: 2,
         ),
@@ -1622,6 +1659,8 @@ class DebtLedgerController extends GetxController {
       givenCount: givenCount,
       takenLabel: takenLabel,
       givenLabel: givenLabel,
+      supplier: isSupplierAccount,
+      privateAccount: activeLabelScope == 'private',
       transactionsWord: 'ledgerTransactionsWord'.tr,
     );
 
@@ -1675,7 +1714,7 @@ class DebtLedgerController extends GetxController {
     final currency = selectedCurrency.value;
     final balance = personCurrencyBalance?.balance ?? 0;
     final message =
-        '${'ledgerReportShareIntro'.tr} ${LedgerFormat.money(balance, currency: currency, fractionDigits: 2)}\n'
+        '${'ledgerReportShareIntro'.tr} ${balanceText(balance, currency: currency)}\n'
         '${'ledgerViewAllTransactions'.tr}\n$shareUrl';
 
     final phone = selectedPerson?.phone?.replaceAll(RegExp(r'\D'), '') ?? '';
@@ -1700,9 +1739,11 @@ class DebtLedgerController extends GetxController {
     final imageBytes = await LedgerShareImageHelper.captureReportVoucher(
       personName: person.name,
       timeLabel: formatReminderTime(),
-      balanceLabel: 'ledgerBalance'.tr,
+      balanceLabel: balanceLabel(balance),
       amount: balance.abs(),
       isTaken: balance > 0,
+      amountColor: balanceColor(balance),
+      currency: currency,
     );
 
     File? voucherFile;
@@ -1755,20 +1796,51 @@ class DebtLedgerController extends GetxController {
     return DateFormat('yyyy-MM-dd').format(date);
   }
 
-  Color balanceColor(double balance) {
-    if (balance > 0) return const Color(0xFF1B8A4A);
-    if (balance < 0) return const Color(0xFFC62828);
-    return const Color(0xFF757575);
+  bool get isSupplierAccount => selectedPerson != null
+      ? !selectedPerson!.isCustomer
+      : currentTab.value == 1;
+
+  Color transactionColor(String type) => LedgerColors.transaction(type);
+
+  String voucherLabel(String type) => type == 'taken' ? 'سند قبض' : 'سند دفع';
+
+  String entryLabel(LedgerTransaction transaction) {
+    switch (transaction.kind) {
+      case 'receipt':
+        return voucherLabel('taken');
+      case 'payment':
+        return voucherLabel('given');
+      case 'sales_invoice':
+        return 'فاتورة مبيعات';
+      case 'purchase_invoice':
+        return 'فاتورة شراء';
+      default:
+        return transaction.sourceLabel ?? labelForType(transaction.type);
+    }
   }
 
-  /// تسمية الرصيد في القائمة الرئيسية: موجب = أخذت (أخضر)، سالب = أعطيت (أحمر).
+  String entryAmount(LedgerTransaction transaction, {int fractionDigits = 2}) =>
+      '${transaction.amountPrefix}${LedgerFormat.money(transaction.amount, currency: transaction.currency, fractionDigits: fractionDigits)}';
+
+  Color balanceColor(double balance, {LedgerPerson? person}) =>
+      LedgerColors.signedAmount(balance,
+          supplier: person == null ? isSupplierAccount : !person.isCustomer);
+
+  String balanceLabel(double balance, {LedgerPerson? person}) =>
+      LedgerFormat.balanceLabel(balance,
+          supplier: person == null ? isSupplierAccount : !person.isCustomer,
+          privateAccount: person == null
+              ? activeLabelScope == 'private'
+              : labelScopeForPerson(person.id, person.isCustomer) == 'private');
+
+  String balanceText(double balance,
+          {String currency = 'شيكل', int fractionDigits = 2}) =>
+      LedgerFormat.labeled(balanceLabel(balance), balance.abs(),
+          currency: currency, fractionDigits: fractionDigits);
+
+  /// Balance ownership is independent of customizable transaction names.
   String balanceTypeLabel(double balance, {LedgerPerson? person}) {
-    final scope = person == null
-        ? tabLabelScope
-        : labelScopeForPerson(person.id, person.isCustomer);
-    if (balance > 0) return labelForType('taken', scope: scope);
-    if (balance < 0) return labelForType('given', scope: scope);
-    return '';
+    return balanceLabel(balance, person: person);
   }
 }
 
@@ -1781,6 +1853,8 @@ class TransactionCalculatorController extends GetxController {
   final bool isCustomer;
   final int personId;
   final String initialCurrency;
+  final LedgerTransaction? invoice;
+  final String _receiptRequestId = const Uuid().v4();
 
   TransactionCalculatorController({
     required this.repository,
@@ -1790,6 +1864,7 @@ class TransactionCalculatorController extends GetxController {
     required this.isCustomer,
     required this.personId,
     required this.initialCurrency,
+    this.invoice,
   });
 
   final RxList<ShownBoxesModel> allBoxes = <ShownBoxesModel>[].obs;
@@ -1825,7 +1900,9 @@ class TransactionCalculatorController extends GetxController {
   }
 
   void _applyBoxFilter() {
-    shownBoxesList.assignAll(allBoxes);
+    shownBoxesList.assignAll(invoice == null
+        ? allBoxes
+        : allBoxes.where((box) => box.currency == initialCurrency));
   }
 
   String get effectiveCurrency =>
@@ -2005,6 +2082,8 @@ class TransactionCalculatorController extends GetxController {
       final result = await repository.createTransaction(
         customerId: isCustomer ? personId : null,
         sellerId: isCustomer ? null : personId,
+        linkedInvoiceId: invoice?.id,
+        receiptRequestId: invoice == null ? null : _receiptRequestId,
         type: type,
         amount: amount.toStringAsFixed(2),
         currency: effectiveCurrency,
@@ -2035,7 +2114,7 @@ class TransactionCalculatorController extends GetxController {
             () => LedgerTransactionSuccessScreen(
               personName: personName,
               type: type,
-              typeLabel: ledger.labelForType(type),
+              typeLabel: ledger.voucherLabel(type),
               amount: tx.amount,
               currency: tx.currency,
               balanceAfter: tx.balanceAfter,

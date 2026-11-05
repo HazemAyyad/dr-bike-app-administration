@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'ledger_format.dart';
 
 class DebtLedgerPdf {
   static const _purple = PdfColor.fromInt(0xFF6B65BD);
@@ -53,6 +54,12 @@ class DebtLedgerPdf {
     final transactions =
         (report['transactions'] as List? ?? const []).whereType<Map>().toList();
     final person = Map<String, dynamic>.from(report['person'] as Map? ?? {});
+    final supplier = person['person_type'] == 'seller';
+    final privateAccount = person['label_scope'] == 'private';
+    final balance = double.tryParse('${report['balance']}') ?? 0;
+    final balanceLabel = LedgerFormat.balanceLabel(balance,
+        supplier: supplier, privateAccount: privateAccount);
+    final payable = balance > 0;
     final currency = _currency(report['period_label']?.toString() ?? '');
     final takenLabel =
         report['taken_label']?.toString().trim().isNotEmpty == true
@@ -92,29 +99,34 @@ class DebtLedgerPdf {
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
                 _stat('إجمالي $takenLabel', report['total_taken'], currency,
-                    PdfColors.green700, bold),
+                    _ink, bold),
                 _stat('إجمالي $givenLabel', report['total_given'], currency,
-                    PdfColors.red700, bold),
+                    _ink, bold),
                 _stat(
-                    'صافي الرصيد', report['balance'], currency, _purple, bold),
+                    balanceLabel,
+                    balance.abs(),
+                    currency,
+                    balance.abs() < 0.005
+                        ? PdfColors.grey600
+                        : payable
+                            ? PdfColors.red700
+                            : PdfColors.green700,
+                    bold),
               ]),
         ),
         pw.SizedBox(height: 16),
         if (isSummary)
-          ..._summaryTransactions(
-                  transactions, currency, bold, takenLabel, givenLabel)
+          ..._summaryTransactions(transactions, currency, bold)
               .map((row) => pw.Center(
                     child: pw.SizedBox(width: 410, child: row),
                   ))
         else ...[
-          _detailTableHeader(bold, takenLabel, givenLabel),
+          _detailTableHeader(bold),
           ...transactions.asMap().entries.expand((entry) {
             final tx = entry.value;
             final id = tx['id']?.toString() ?? '';
-            final taken = tx['type'] == 'taken';
             final widgets = <pw.Widget>[
-              _transaction(entry.key + 1, tx, taken, currency, bold, takenLabel,
-                  givenLabel)
+              _transaction(entry.key + 1, tx, currency, bold)
             ];
             final detail = details[id];
             if (detail is Map) {
@@ -187,30 +199,25 @@ class DebtLedgerPdf {
             style: pw.TextStyle(font: bold, fontSize: 12, color: color)),
       ]);
 
-  static pw.Widget _transaction(int index, Map tx, bool taken, String currency,
-          pw.Font bold, String takenLabel, String givenLabel) =>
+  static pw.Widget _transaction(
+          int index, Map tx, String currency, pw.Font bold) =>
       _detailTableRow([
         '$index',
         tx['transaction_date']?.toString() ?? '—',
-        (tx['note']?.toString().trim() ?? '').isEmpty
-            ? '—'
-            : _displayText(tx['note']),
-        taken ? _money(tx['amount']) : '—',
-        taken ? '—' : _money(tx['amount']),
-        '${_money(tx['balance_after'])} $currency',
-      ], bold);
+        _statementDescription(tx),
+        _statementAmount(tx),
+        _statementBalance(tx, currency),
+      ], bold, amountColor: _statementAmountColor(tx));
 
-  static pw.Widget _detailTableHeader(
-          pw.Font bold, String takenLabel, String givenLabel) =>
-      _detailTableRow(
-        ['#', 'التاريخ', 'البيان', takenLabel, givenLabel, 'الرصيد'],
+  static pw.Widget _detailTableHeader(pw.Font bold) => _detailTableRow(
+        ['#', 'التاريخ', 'البيان', 'المبلغ', 'الرصيد'],
         bold,
         header: true,
       );
 
   static pw.Widget _detailTableRow(List<String> values, pw.Font bold,
-      {bool header = false}) {
-    const widths = [1, 3, 10, 2, 2, 3];
+      {bool header = false, PdfColor amountColor = _ink}) {
+    const widths = [1, 3, 10, 3, 4];
     return pw.Container(
       decoration: pw.BoxDecoration(
           color: header ? _purple : PdfColors.white,
@@ -225,13 +232,19 @@ class DebtLedgerPdf {
                         horizontal: 4, vertical: 5),
                     child: pw.Text(values[index],
                         maxLines: 2,
+                        textDirection:
+                            !header && index == 3 ? pw.TextDirection.ltr : null,
                         textAlign: index == 2
                             ? pw.TextAlign.right
                             : pw.TextAlign.center,
                         style: pw.TextStyle(
-                          font: header || index == 5 ? bold : null,
+                          font: header || index == 4 ? bold : null,
                           fontSize: 8,
-                          color: header ? PdfColors.white : _ink,
+                          color: header
+                              ? PdfColors.white
+                              : index == 3
+                                  ? amountColor
+                                  : _ink,
                         )),
                   ),
                 )),
@@ -243,34 +256,31 @@ class DebtLedgerPdf {
     List<Map> transactions,
     String currency,
     pw.Font bold,
-    String takenLabel,
-    String givenLabel,
   ) {
-    final headers = ['التاريخ', 'البيان', takenLabel, givenLabel, 'الرصيد'];
+    final headers = ['التاريخ', 'البيان', 'المبلغ', 'الرصيد'];
     return [
       _summaryRow(headers, _purple, bold, PdfColors.white),
       ...transactions.asMap().entries.map((entry) {
         final tx = entry.value;
-        final taken = tx['type'] == 'taken';
-        final note = tx['note']?.toString().trim() ?? '';
         return _summaryRow(
           [
             tx['transaction_date']?.toString() ?? '—',
-            note.isEmpty ? '—' : _displayText(note),
-            taken ? _money(tx['amount']) : '—',
-            taken ? '—' : _money(tx['amount']),
-            '${_money(tx['balance_after'])} $currency',
+            _statementDescription(tx),
+            _statementAmount(tx),
+            _statementBalance(tx, currency),
           ],
           entry.key.isEven ? PdfColors.white : _soft,
           bold,
           _ink,
+          amountColor: _statementAmountColor(tx),
         );
       }),
     ];
   }
 
   static pw.Widget _summaryRow(List<String> values, PdfColor background,
-          pw.Font bold, PdfColor color) =>
+          pw.Font bold, PdfColor color,
+          {PdfColor? amountColor}) =>
       pw.Container(
         color: background,
         child: pw.Row(children: [
@@ -278,11 +288,15 @@ class DebtLedgerPdf {
               flex: 5,
               child: _summaryCell(values[0], bold: bold, color: color)),
           pw.Expanded(flex: 10, child: _summaryCell(values[1], color: color)),
-          pw.Expanded(flex: 5, child: _summaryCell(values[2], color: color)),
-          pw.Expanded(flex: 5, child: _summaryCell(values[3], color: color)),
+          pw.Expanded(
+            flex: 5,
+            child: _summaryCell(values[2],
+                color: amountColor ?? color,
+                direction: amountColor == null ? null : pw.TextDirection.ltr),
+          ),
           pw.Expanded(
               flex: 6,
-              child: _summaryCell(values[4], bold: bold, color: color)),
+              child: _summaryCell(values[3], bold: bold, color: color)),
         ]),
       );
 
@@ -290,6 +304,7 @@ class DebtLedgerPdf {
     String value, {
     pw.Font? bold,
     PdfColor color = _ink,
+    pw.TextDirection? direction,
     pw.Alignment alignment = pw.Alignment.centerRight,
   }) =>
       pw.Container(
@@ -297,10 +312,40 @@ class DebtLedgerPdf {
         padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
         child: pw.Text(
           value,
+          textDirection: direction,
           maxLines: 2,
           style: pw.TextStyle(font: bold, fontSize: 8, color: color),
         ),
       );
+
+  static String _statementDescription(Map tx) => [
+        tx['entry_label'],
+        tx['source_label'],
+        tx['note'],
+      ]
+          .whereType<String>()
+          .where((value) => value.trim().isNotEmpty)
+          .map(_displayText)
+          .join(' • ');
+
+  static String _statementAmount(Map tx) =>
+      '${tx['amount_prefix'] ?? ''}${_money(tx['amount'])}';
+
+  static PdfColor _statementAmountColor(Map tx) {
+    if (tx['entry_kind'] == 'receipt') return PdfColors.green700;
+    if (tx['entry_kind'] == 'payment') return PdfColors.red700;
+    return _ink;
+  }
+
+  static String _statementBalance(Map tx, String currency) {
+    final balance = double.tryParse('${tx['balance_after']}') ?? 0;
+    final label = balance == 0
+        ? 'مسدّد'
+        : balance > 0
+            ? 'عليك'
+            : 'لك';
+    return '$label ${_money(balance.abs())} $currency';
+  }
 
   static pw.Widget _sourceDetail(Map detail, String currency,
       Map<String, pw.ImageProvider?> images, pw.Font bold, bool includeImages) {

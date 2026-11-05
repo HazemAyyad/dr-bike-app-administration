@@ -139,6 +139,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     SizedBox(height: 16.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _QuickAction(
                           icon: Icons.note_alt_outlined,
@@ -168,25 +169,26 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                           label: 'ledgerReport'.tr,
                           onTap: () => Get.to(() => const PersonReportScreen()),
                         ),
-                      ],
+                      ].map((action) => Expanded(child: action)).toList(),
                     ),
                     SizedBox(height: 20.h),
                     Obx(
                       () {
                         final cur = c.selectedCurrency.value;
                         final count =
-                            c.personDetail.value?.transactions.length ?? 0;
+                            c.personDetail.value?.statement.length ?? 0;
                         return Row(
                           children: [
-                            Text(
-                              '${'ledgerTransactions'.tr} ($count) — $cur',
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w600,
-                                color: LedgerColors.primaryBlue,
+                            Expanded(
+                              child: Text(
+                                'كشف الحساب ($count) — $cur',
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: LedgerColors.primaryBlue,
+                                ),
                               ),
                             ),
-                            const Spacer(),
                             InkWell(
                               onTap: c.openArchiveSheet,
                               borderRadius: BorderRadius.circular(8.r),
@@ -211,8 +213,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     ),
                     SizedBox(height: 10.h),
                     Obx(() {
-                      final txs =
-                          c.personDetail.value?.transactions ?? const [];
+                      final txs = c.personDetail.value?.statement ?? const [];
                       if (txs.isEmpty) {
                         return Padding(
                           padding: EdgeInsets.symmetric(vertical: 32.h),
@@ -233,6 +234,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                               (tx) => _TransactionCard(
                                 transaction: tx,
                                 onTap: () => c.openTransactionDetail(tx),
+                                onCollect: (tx.invoiceRemaining ?? 0) > 0
+                                    ? () => c.openTransactionEntry(
+                                          type: 'taken',
+                                          invoice: tx,
+                                        )
+                                    : null,
                               ),
                             )
                             .toList(),
@@ -365,10 +372,10 @@ class _BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: Get.find<DebtLedgerController>().takenLabel,
+                  label: 'إضافات للرصيد',
                   amount: totalTaken,
                   currency: currency,
-                  color: LedgerColors.takenGreen,
+                  color: LedgerColors.primaryBlue,
                 ),
               ),
               Container(
@@ -378,17 +385,17 @@ class _BalanceCard extends StatelessWidget {
               ),
               Expanded(
                 child: _StatColumn(
-                  label: Get.find<DebtLedgerController>().givenLabel,
+                  label: 'خصومات من الرصيد',
                   amount: totalGiven,
                   currency: currency,
-                  color: LedgerColors.givenRed,
+                  color: LedgerColors.primaryBlue,
                 ),
               ),
             ],
           ),
           SizedBox(height: 16.h),
           Text(
-            'ledgerBalance'.tr,
+            Get.find<DebtLedgerController>().balanceLabel(balance),
             style: TextStyle(
               fontSize: 14.sp,
               color: Colors.grey.shade600,
@@ -397,7 +404,8 @@ class _BalanceCard extends StatelessWidget {
           ),
           SizedBox(height: 6.h),
           Text(
-            LedgerFormat.money(balance, currency: currency, fractionDigits: 1),
+            LedgerFormat.money(balance.abs(),
+                currency: currency, fractionDigits: 1),
             style: TextStyle(
               fontSize: 34.sp,
               fontWeight: FontWeight.bold,
@@ -501,6 +509,7 @@ class _QuickAction extends StatelessWidget {
           SizedBox(height: 6.h),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12.sp,
               color: Theme.of(context).brightness == Brightness.dark
@@ -517,19 +526,19 @@ class _QuickAction extends StatelessWidget {
 class _TransactionCard extends StatelessWidget {
   final LedgerTransaction transaction;
   final VoidCallback onTap;
+  final VoidCallback? onCollect;
 
   const _TransactionCard({
     required this.transaction,
     required this.onTap,
+    this.onCollect,
   });
 
   @override
   Widget build(BuildContext context) {
     final ledger = Get.find<DebtLedgerController>();
-    final isTaken = transaction.isTaken;
-    final typeColor = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
-    final balanceAfterColor =
-        LedgerColors.signedAmount(transaction.balanceAfter);
+    final typeColor = LedgerColors.entry(transaction.kind);
+    final balanceAfterColor = ledger.balanceColor(transaction.balanceAfter);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
@@ -568,54 +577,39 @@ class _TransactionCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 4.w,
+                                  runSpacing: 4.h,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        Get.find<DebtLedgerController>()
-                                            .labelForType(transaction.type),
-                                        style: TextStyle(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.w600,
-                                          color: typeColor,
-                                        ),
+                                    Text(
+                                      ledger.entryLabel(transaction),
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: typeColor,
                                       ),
                                     ),
                                     SizedBox(width: 8.w),
                                     Text(
-                                      LedgerFormat.money(
-                                        transaction.amount,
-                                        currency: transaction.currency,
-                                      ),
+                                      ledger.entryAmount(transaction),
+                                      textDirection: TextDirection.ltr,
                                       style: TextStyle(
                                         fontSize: 18.sp,
                                         fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white
-                                            : Colors.black87,
+                                        color: typeColor,
                                       ),
                                     ),
                                     SizedBox(width: 4.w),
-                                    Icon(
-                                      isTaken
-                                          ? Icons.south_east
-                                          : Icons.north_east,
-                                      size: 15.sp,
-                                      color: typeColor,
-                                    ),
                                   ],
                                 ),
                                 SizedBox(height: 4.h),
                                 Text(
-                                  LedgerFormat.labeled(
-                                    'ledgerBalanceBefore'.tr,
-                                    transaction.balanceBefore,
-                                    currency: transaction.currency,
-                                  ),
+                                  '${'ledgerBalanceBefore'.tr}: ${ledger.balanceText(transaction.balanceBefore, currency: transaction.currency)}',
                                   style: TextStyle(
                                     fontSize: 12.sp,
-                                    color: Colors.grey.shade600,
+                                    color: ledger.balanceColor(
+                                        transaction.balanceBefore),
                                   ),
                                 ),
                                 SizedBox(height: 4.h),
@@ -630,16 +624,29 @@ class _TransactionCard extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 16.w),
-                          Text(
-                            LedgerFormat.money(
-                              transaction.balanceAfter,
-                              currency: transaction.currency,
-                              fractionDigits: 1,
-                            ),
-                            style: TextStyle(
-                              fontSize: 17.sp,
-                              fontWeight: FontWeight.bold,
-                              color: balanceAfterColor,
+                          SizedBox(
+                            width: 105.w,
+                            child: Column(
+                              children: [
+                                Text(
+                                    ledger
+                                        .balanceLabel(transaction.balanceAfter),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: 11.sp,
+                                        color: balanceAfterColor)),
+                                Text(
+                                  LedgerFormat.money(
+                                      transaction.balanceAfter.abs(),
+                                      currency: transaction.currency,
+                                      fractionDigits: 1),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontSize: 17.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: balanceAfterColor),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -659,6 +666,23 @@ class _TransactionCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (transaction.invoiceRemaining != null)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(transaction.invoiceRemaining! < 0.005
+                          ? 'مدفوعة بالكامل'
+                          : 'متبقي على الفاتورة ${LedgerFormat.money(transaction.invoiceRemaining!, currency: transaction.currency)}'),
+                      if (onCollect != null)
+                        TextButton(
+                            onPressed: onCollect,
+                            child: const Text('سند قبض على الفاتورة')),
+                    ],
+                  ),
+                ),
               if (transaction.receiptImages.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 12.h),
@@ -725,16 +749,16 @@ class _BottomActions extends StatelessWidget {
           children: [
             Expanded(
               child: _LedgerActionButton(
-                label: controller.givenLabel,
-                color: LedgerColors.givenRed,
+                label: controller.voucherLabel('given'),
+                color: controller.transactionColor('given'),
                 onPressed: () => controller.openTransactionEntry(type: 'given'),
               ),
             ),
             SizedBox(width: 12.w),
             Expanded(
               child: _LedgerActionButton(
-                label: controller.takenLabel,
-                color: LedgerColors.takenGreen,
+                label: controller.voucherLabel('taken'),
+                color: controller.transactionColor('taken'),
                 onPressed: () => controller.openTransactionEntry(type: 'taken'),
               ),
             ),

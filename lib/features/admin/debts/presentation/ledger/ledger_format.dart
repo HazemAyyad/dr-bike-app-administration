@@ -1,5 +1,14 @@
 /// Amount display for debt ledger — symbol after the number.
 class LedgerFormat {
+  static String balanceLabel(double amount,
+      {bool supplier = false, bool privateAccount = false}) {
+    if (amount.abs() < 0.005) return 'الحساب مسدّد';
+    final payable = amount > 0;
+    if (privateAccount) return payable ? 'عليك' : 'لك';
+    if (supplier) return payable ? 'عليك للمورد' : 'لك عند المورد';
+    return payable ? 'عليك للعميل' : 'لك عند العميل';
+  }
+
   static const String shekelSymbol = '₪';
 
   static String symbolFor(String? currency) {

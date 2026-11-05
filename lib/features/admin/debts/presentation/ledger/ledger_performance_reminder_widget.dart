@@ -22,6 +22,8 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
   final String givenLabel;
   final String transactionsWord;
   final String currency;
+  final bool supplier;
+  final bool privateAccount;
 
   const LedgerPerformanceReminderWidget({
     Key? key,
@@ -37,11 +39,13 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
     required this.givenLabel,
     required this.transactionsWord,
     this.currency = 'شيكل',
+    this.supplier = false,
+    this.privateAccount = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final balanceColor = LedgerColors.signedAmount(balance);
+    final balanceColor = LedgerColors.signedAmount(balance, supplier: supplier);
     final displayBalance = balance.abs();
 
     return SizedBox(
@@ -81,6 +85,13 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                           const Color(0xFF1A3A6B)),
                       const SizedBox(height: 10),
                       _line(
+                          LedgerFormat.balanceLabel(balance,
+                              supplier: supplier,
+                              privateAccount: privateAccount),
+                          15,
+                          FontWeight.w600,
+                          balanceColor),
+                      _line(
                         LedgerFormat.money(
                           displayBalance,
                           currency: currency,
@@ -95,7 +106,8 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _SummaryColumn(
-                              color: LedgerColors.givenRed,
+                              color: LedgerColors.transaction('given',
+                                  supplier: supplier),
                               icon: Icons.south_east,
                               amount: totalGiven,
                               count: givenCount,
@@ -107,7 +119,8 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _SummaryColumn(
-                              color: LedgerColors.takenGreen,
+                              color: LedgerColors.transaction('taken',
+                                  supplier: supplier),
                               icon: Icons.north_east,
                               amount: totalTaken,
                               count: takenCount,
