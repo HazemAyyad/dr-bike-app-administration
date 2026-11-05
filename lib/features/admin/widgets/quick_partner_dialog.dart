@@ -44,6 +44,49 @@ class _AddressOption {
 }
 
 class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
+  static const _surface = Color(0xFFF4F5F7);
+  static const _fieldSurface = Color(0xFFEBEDF0);
+  static const _ink = Color(0xFF17232E);
+  static const _mutedInk = Color(0xFF475462);
+  static const _border = Color(0xFF8793A0);
+  static const _action = Color(0xFFCBDDEC);
+  static const _outline = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(10)),
+    borderSide: BorderSide(color: _border),
+  );
+
+  static final _dialogTheme = ThemeData(
+    colorScheme: const ColorScheme.light(
+      surface: _surface,
+      onSurface: _ink,
+      onSurfaceVariant: _mutedInk,
+      outline: _border,
+      outlineVariant: _border,
+      primary: Color(0xFF284862),
+      onPrimary: _surface,
+    ),
+    dividerColor: _border,
+    disabledColor: _mutedInk,
+    inputDecorationTheme: const InputDecorationTheme(
+      filled: true,
+      fillColor: _fieldSurface,
+      labelStyle: TextStyle(color: _mutedInk),
+      hintStyle: TextStyle(color: _mutedInk),
+      border: _outline,
+      enabledBorder: _outline,
+      disabledBorder: _outline,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFF284862), width: 2),
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.all(_ink),
+      trackColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.selected) ? _action : _fieldSurface),
+    ),
+  );
+
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _phone = TextEditingController();
@@ -209,8 +252,7 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
             maxLines: lines,
             keyboardType: phone ? TextInputType.phone : TextInputType.text,
             textDirection: phone ? TextDirection.ltr : null,
-            decoration: InputDecoration(
-                labelText: label, border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: label),
             validator: (value) => required && (value?.trim().isEmpty ?? true)
                 ? 'أدخل الاسم'
                 : phone
@@ -219,11 +261,23 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
           ));
 
   @override
-  Widget build(BuildContext context) => PopScope(
+  Widget build(BuildContext context) => Theme(
+        data: _dialogTheme.copyWith(
+          textTheme: Theme.of(context).textTheme.apply(
+                bodyColor: _ink,
+                displayColor: _ink,
+              ),
+        ),
+        child: _buildDialog(),
+      );
+
+  Widget _buildDialog() => PopScope(
         canPop: !_saving && _created == null,
         child: Directionality(
             textDirection: TextDirection.rtl,
             child: AlertDialog(
+              backgroundColor: _surface,
+              surfaceTintColor: Colors.transparent,
               title:
                   Text(widget.isCustomer ? 'إضافة زبون' : 'إضافة مورد / تاجر'),
               content: SizedBox(
@@ -238,8 +292,8 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
                           phone: true, enabled: _created == null),
                       DropdownButtonFormField<String>(
                         initialValue: _type,
-                        decoration: const InputDecoration(
-                            labelText: 'النوع', border: OutlineInputBorder()),
+                        dropdownColor: _surface,
+                        decoration: const InputDecoration(labelText: 'النوع'),
                         items: const [
                           DropdownMenuItem(
                               value: 'retail', child: Text('مفرق')),
@@ -253,6 +307,10 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
                       ExpansionTile(
                         title: const Text('إضافة عنوان توصيل — اختياري'),
                         tilePadding: EdgeInsets.zero,
+                        textColor: _ink,
+                        collapsedTextColor: _ink,
+                        iconColor: _mutedInk,
+                        collapsedIconColor: _mutedInk,
                         onExpansionChanged: (expanded) {
                           if (expanded) _loadOptions();
                         },
@@ -276,11 +334,11 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
                                 a.village.id == b.village.id,
                             popupProps: const PopupProps.menu(
                                 showSearchBox: true,
+                                menuProps: MenuProps(backgroundColor: _surface),
                                 constraints: BoxConstraints(maxHeight: 300)),
                             decoratorProps: const DropDownDecoratorProps(
                                 decoration: InputDecoration(
-                                    labelText: 'المدينة أو القرية',
-                                    border: OutlineInputBorder())),
+                                    labelText: 'المدينة أو القرية')),
                             onChanged: (option) =>
                                 setState(() => _selected = option),
                           ),
@@ -302,7 +360,7 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
                       if (_error != null)
                         Text(_error!,
                             style: TextStyle(
-                                color: Theme.of(context).colorScheme.error)),
+                                color: _dialogTheme.colorScheme.error)),
                       if (_created != null)
                         const Text(
                             'تمت إضافة الشخص. أعد محاولة حفظ العنوان أو أكمل بدونه.'),
@@ -320,6 +378,10 @@ class _QuickPartnerDialogState extends State<QuickPartnerDialog> {
                     child: Text(
                         _created == null ? 'إلغاء' : 'المتابعة بدون عنوان')),
                 FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _action,
+                      foregroundColor: _ink,
+                    ),
                     onPressed: _saving ? null : _save,
                     child: _saving
                         ? const SizedBox(
