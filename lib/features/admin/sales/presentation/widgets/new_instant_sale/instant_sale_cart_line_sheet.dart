@@ -13,6 +13,28 @@ import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
 import 'instant_sale_price_history_sheet.dart';
 
+class InstantSaleBonusChip extends StatelessWidget {
+  const InstantSaleBonusChip({
+    Key? key,
+    required this.selected,
+    required this.onSelected,
+  }) : super(key: key);
+
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text('instantSaleBonus'.tr, style: TextStyle(fontSize: 10.sp)),
+      selected: selected,
+      onSelected: onSelected,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+}
+
 void showInstantSaleCartLineSheet(
   BuildContext context,
   InstantSaleCartLine line,
@@ -75,7 +97,10 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
-                      line.displayName,
+                      formatInstantSaleBonusName(
+                        line.displayName,
+                        line.isBonus,
+                      ),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w900,
                             height: 1.35,
@@ -147,7 +172,7 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
                 value: '${line.stock}',
               ),
               SizedBox(height: 12.h),
-              InstantSalePriceHistoryButton(line: line),
+              if (!line.isBonus) InstantSalePriceHistoryButton(line: line),
             ],
           ),
         ),

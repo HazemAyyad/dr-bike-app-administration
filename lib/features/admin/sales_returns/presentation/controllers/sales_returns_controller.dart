@@ -346,6 +346,7 @@ class SalesReturnsController extends GetxController {
             productId: oldItem.productId,
             productCode: oldItem.productCode,
             productName: oldItem.productName,
+            isBonus: oldItem.isBonus,
             image: oldItem.productImage,
             sizeLabel: oldItem.sizeLabel,
             colorLabel: oldItem.colorLabel,

@@ -2885,6 +2885,7 @@ const Map<String, String> ar = {
   'instantSaleWholesaleOptional': 'اختياري',
   'instantSaleWholesaleInvalid': 'سعر الجملة يجب أن يكون أكبر من صفر',
   'instantSalePriceRequired': 'أدخل سعراً أكبر من صفر',
+  'instantSaleBonus': 'بونص',
   'instantSaleRetailPriceRequired': 'أدخل سعر المفرق أكبر من صفر',
   'instantSaleWholesalePriceRequired': 'أدخل سعر الجملة أكبر من صفر',
   'instantSaleNegativeStockWarningTitle': 'تنبيه مخزون',

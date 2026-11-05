@@ -13,6 +13,7 @@ class InstantSalesModel {
   final String product;
   final String? productBase;
   final String cost;
+  final bool isBonus;
   final String totalCost;
   final String quantity;
   final DateTime date;
@@ -55,6 +56,7 @@ class InstantSalesModel {
     required this.product,
     this.productBase,
     required this.cost,
+    this.isBonus = false,
     required this.totalCost,
     required this.quantity,
     required this.date,
@@ -124,12 +126,13 @@ class InstantSalesModel {
     final base = isPackageSale
         ? (packageName ?? product)
         : (productBase?.trim().isNotEmpty == true ? productBase! : product);
-    return formatProductWithVariant(
+    final name = formatProductWithVariant(
       productName: base,
       sizeLabel: sizeLabel,
       colorLabel: colorLabel,
       variantLabel: variantLabel,
     );
+    return formatInstantSaleBonusName(name, isBonus);
   }
 
   String get displayProductNameOnly => isPackageSale
@@ -190,12 +193,7 @@ class InstantSalesModel {
       ));
     } else {
       lines.add(InstantSaleLineItem(
-        name: formatProductWithVariant(
-          productName: product.isNotEmpty ? product : displayProductNameOnly,
-          sizeLabel: sizeLabel,
-          colorLabel: colorLabel,
-          variantLabel: variantLabel,
-        ),
+        name: displayTitle,
         quantity: quantity,
         unitCost: cost,
         sizeLabel: sizeLabel,
@@ -255,6 +253,7 @@ class InstantSalesModel {
       product: asString(json['product']),
       productBase: asNullableString(json['product_base']),
       cost: asString(json['cost'], '0'),
+      isBonus: asBool(json['is_bonus']),
       totalCost: asString(json['total_cost'], '0'),
       quantity: asString(json['quantity'], '0'),
       date: parseApiDateTime(json['date']),
@@ -317,6 +316,7 @@ class InstantSalesModel {
       'sale_kind_label_ar': saleKindLabelAr,
       'product': product,
       'cost': cost,
+      'is_bonus': isBonus,
       'total_cost': totalCost,
       'quantity': quantity,
       'date': date,
@@ -358,6 +358,7 @@ class SubProductsModel {
   final String productName;
   final String? productNameBase;
   final String cost;
+  final bool isBonus;
   final String quantity;
   final bool isPackageComponent;
   final bool isAdditionalProduct;
@@ -370,6 +371,7 @@ class SubProductsModel {
     required this.productName,
     this.productNameBase,
     required this.cost,
+    this.isBonus = false,
     required this.quantity,
     this.isPackageComponent = false,
     this.isAdditionalProduct = false,
@@ -390,6 +392,7 @@ class SubProductsModel {
       productName: asString(json['product_name']),
       productNameBase: asNullableString(json['product_name_base']),
       cost: cost,
+      isBonus: asBool(json['is_bonus']),
       quantity: asString(json['quantity'], '0'),
       isPackageComponent: !isAdditional,
       isAdditionalProduct: isAdditional,
@@ -399,20 +402,24 @@ class SubProductsModel {
     );
   }
 
-  String get displayProductName => formatProductWithVariant(
-        productName: productNameBase?.trim().isNotEmpty == true
-            ? productNameBase!
-            : productName,
-        sizeLabel: sizeLabel,
-        colorLabel: colorLabel,
-        variantLabel: variantLabel,
-      );
+  String get displayProductName {
+    final name = formatProductWithVariant(
+      productName: productNameBase?.trim().isNotEmpty == true
+          ? productNameBase!
+          : productName,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+      variantLabel: variantLabel,
+    );
+    return formatInstantSaleBonusName(name, isBonus);
+  }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'product_name': productName,
       'cost': cost,
+      'is_bonus': isBonus,
       'quantity': quantity,
       'is_package_component': isPackageComponent,
       'is_additional_product': isAdditionalProduct,

@@ -618,6 +618,7 @@ class SalesDatasource {
       String resolvedProductId = productId;
       String resolvedQuantity = quantity;
       String resolvedCost = cost;
+      var resolvedBonus = false;
       String? resolvedSizeColorId;
       String? resolvedSizeId;
 
@@ -630,6 +631,7 @@ class SalesDatasource {
         resolvedProductId = main['product_id']?.toString() ?? productId;
         resolvedQuantity = main['quantity']?.toString() ?? quantity;
         resolvedCost = main['cost']?.toString() ?? cost;
+        resolvedBonus = asBool(main['is_bonus']);
         resolvedSizeColorId = main['size_color_id']?.toString();
         resolvedSizeId = main['size_id']?.toString();
         otherProductsList = cartOtherProducts.length > 1
@@ -664,6 +666,8 @@ class SalesDatasource {
             row['product_id']?.toString() ?? '';
         otherProductsMap['other_products[$i][cost]'] =
             _cleanAmount(row['cost']?.toString() ?? '0');
+        otherProductsMap['other_products[$i][is_bonus]'] =
+            asBool(row['is_bonus']) ? '1' : '0';
         otherProductsMap['other_products[$i][quantity]'] =
             row['quantity']?.toString() ?? '1';
         otherProductsMap['other_products[$i][type]'] =
@@ -697,6 +701,7 @@ class SalesDatasource {
           'product_id': resolvedProductId,
         'quantity': resolvedQuantity,
         'cost': _cleanAmount(resolvedCost),
+        'is_bonus': resolvedBonus ? '1' : '0',
         if (resolvedSizeColorId != null && resolvedSizeColorId.isNotEmpty)
           'size_color_id': resolvedSizeColorId,
         if (resolvedSizeId != null && resolvedSizeId.isNotEmpty)

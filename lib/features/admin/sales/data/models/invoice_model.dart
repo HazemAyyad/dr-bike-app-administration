@@ -9,6 +9,7 @@ class InvoiceModel {
   final String? productBase;
   final String productImage;
   final String cost;
+  final bool isBonus;
   final String quantity;
   final String totalCost;
   final String discount;
@@ -75,6 +76,7 @@ class InvoiceModel {
     this.productBase,
     required this.productImage,
     required this.cost,
+    this.isBonus = false,
     required this.quantity,
     required this.totalCost,
     required this.discount,
@@ -203,6 +205,7 @@ class InvoiceModel {
       productBase: asNullableString(json['product_base']),
       productImage: asString(json['product_image']),
       cost: asString(json['cost'], '0'),
+      isBonus: asBool(json['is_bonus']),
       quantity: asString(json['quantity'], '0'),
       totalCost: asString(json['total_cost'], '0'),
       discount: asString(json['discount'], '0'),
@@ -302,16 +305,22 @@ class InvoiceModel {
     );
   }
 
+  double get productsSubtotal => subProducts.fold<double>(
+        double.tryParse(subtotal) ?? 0,
+        (total, line) => total + (double.tryParse(line.subtotal) ?? 0),
+      );
+
   String get displayProductTitle {
     final base = isPackageSale
         ? (packageName ?? product)
         : (productBase?.trim().isNotEmpty == true ? productBase! : product);
-    return formatProductWithVariant(
+    final name = formatProductWithVariant(
       productName: base,
       sizeLabel: sizeLabel,
       colorLabel: colorLabel,
       variantLabel: variantLabel,
     );
+    return formatInstantSaleBonusName(name, isBonus);
   }
 
   String get displayProductNameOnly => isPackageSale
@@ -372,6 +381,7 @@ class InvoiceModel {
       'product': product,
       'product_image': productImage,
       'cost': cost,
+      'is_bonus': isBonus,
       'quantity': quantity,
       'total_cost': totalCost,
       'discount': discount,
@@ -487,6 +497,7 @@ class SubProductModel {
   final String? productNameBase;
   final String productImage;
   final String cost;
+  final bool isBonus;
   final String quantity;
   final String subtotal;
   final bool isPackageComponent;
@@ -507,6 +518,7 @@ class SubProductModel {
     this.productNameBase,
     required this.productImage,
     required this.cost,
+    this.isBonus = false,
     required this.quantity,
     required this.subtotal,
     this.isPackageComponent = false,
@@ -543,6 +555,7 @@ class SubProductModel {
       productNameBase: asNullableString(json['product_name_base']),
       productImage: asString(json['product_image'], 'no image'),
       cost: cost,
+      isBonus: asBool(json['is_bonus']),
       quantity: qty,
       subtotal: lineSubtotal,
       isPackageComponent: isComponent,
@@ -559,14 +572,17 @@ class SubProductModel {
     );
   }
 
-  String get displayProductName => formatProductWithVariant(
-        productName: productNameBase?.trim().isNotEmpty == true
-            ? productNameBase!
-            : productName,
-        sizeLabel: sizeLabel,
-        colorLabel: colorLabel,
-        variantLabel: variantLabel,
-      );
+  String get displayProductName {
+    final name = formatProductWithVariant(
+      productName: productNameBase?.trim().isNotEmpty == true
+          ? productNameBase!
+          : productName,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+      variantLabel: variantLabel,
+    );
+    return formatInstantSaleBonusName(name, isBonus);
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -575,6 +591,7 @@ class SubProductModel {
       'product_image': productImage,
       'product_code': productCode,
       'cost': cost,
+      'is_bonus': isBonus,
       'quantity': quantity,
       'subtotal': subtotal,
       'is_package_component': isPackageComponent,

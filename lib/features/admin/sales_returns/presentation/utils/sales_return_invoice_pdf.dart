@@ -58,7 +58,7 @@ class SalesReturnInvoicePdf {
             ? '-'
             : pw.Image(productImage,
                 width: 34, height: 34, fit: pw.BoxFit.cover),
-        '${item.productName}${variant.isEmpty ? '' : '\n$variant'}\n${item.quantity} × ${_money(item.unitPrice)} ₪',
+        '${item.displayProductName}${variant.isEmpty ? '' : '\n$variant'}\n${item.quantity} × ${_money(item.unitPrice)} ₪',
         source == null ? 'غير موثقة' : '${source.typeLabel}\n${source.serial}',
         purchaseDetails,
         '${source?.soldQuantity ?? '-'}',

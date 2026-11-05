@@ -22,6 +22,7 @@ import '../../../maintenance/data/repositories/maintenance_implement.dart';
 import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../data/models/invoice_model.dart';
+import '../../data/utils/sale_variant_display.dart' show formatInstantSaleBonusName;
 import '../controllers/sales_controller.dart';
 import '../widgets/invoice_package_expandable_line.dart';
 
@@ -123,7 +124,7 @@ class BillDetailsScreen extends GetView<SalesController> {
                 _InvoiceAdditionalNotesSection(notes: invoice.additionalNotes),
                 SizedBox(height: 12.h),
                 _InvoiceTotalsSection(
-                  subtotal: fmt.format(double.tryParse(invoice.subtotal) ?? 0),
+                  subtotal: fmt.format(invoice.productsSubtotal),
                   discount: fmt.format(double.tryParse(invoice.discount) ?? 0),
                   notesTotal: fmt.format(
                     double.tryParse(invoice.additionalNotesTotal) ?? 0,
@@ -383,7 +384,10 @@ List<String> _historyDetails(InvoiceHistoryEntry entry) {
 String _historyLineSummary(dynamic raw) {
   if (raw is! List) return '';
   return raw.whereType<Map>().map((line) {
-    final name = '${line['name'] ?? '-'}';
+    final name = formatInstantSaleBonusName(
+      (line['name'] ?? '-').toString(),
+      line['is_bonus'] == true,
+    );
     final quantity = '${line['quantity'] ?? 0}';
     final price = '${line['unit_price'] ?? 0}';
     return '$name ×$quantity ($price)';
@@ -1418,7 +1422,7 @@ class SalesInvoicePdfBuilder {
                 regular: regular,
                 bold: bold,
                 rows: [
-                  ['subtotal'.tr, _money(invoice.subtotal)],
+                  ['subtotal'.tr, _money(invoice.productsSubtotal.toString())],
                   ['discount'.tr, _money(invoice.discount)],
                   if ((double.tryParse(invoice.additionalNotesTotal) ?? 0) > 0)
                     ['notesTotal'.tr, _money(invoice.additionalNotesTotal)],
@@ -1453,18 +1457,20 @@ class SalesInvoicePdfBuilder {
       required String imageUrl,
       required String code,
       required String name,
+      bool isBonus = false,
       String? variant,
       required String quantity,
       required String cost,
       required String total,
     }) async {
+      final displayName = formatInstantSaleBonusName(name, isBonus);
       rows.add(
         _PdfLineRow(
           index: '${rows.length + 1}',
           image: includeProductImages ? await _productImage(imageUrl) : null,
           code: code.trim().isEmpty ? '-' : code,
-          name: name,
-          nameImage: await _productNameImage(name),
+          name: displayName,
+          nameImage: await _productNameImage(displayName),
           variant: variant,
           quantity: quantity,
           cost: _money(cost),
@@ -1477,6 +1483,7 @@ class SalesInvoicePdfBuilder {
       await addLine(
         imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
+        isBonus: invoice.isBonus,
         name: _cleanPdfProductBaseName(
           preferredBaseName: invoice.displayProductNameOnly,
           fallbackName: invoice.displayProductTitle,
@@ -1497,6 +1504,7 @@ class SalesInvoicePdfBuilder {
         await addLine(
           imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
+          isBonus: sub.isBonus,
           name: _cleanPdfProductBaseName(
             preferredBaseName: sub.productNameBase?.trim().isNotEmpty == true
                 ? sub.productNameBase!
@@ -1520,6 +1528,7 @@ class SalesInvoicePdfBuilder {
       await addLine(
         imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
+        isBonus: invoice.isBonus,
         name: _cleanPdfProductBaseName(
           preferredBaseName: invoice.displayProductNameOnly,
           fallbackName: invoice.displayProductTitle,
@@ -1540,6 +1549,7 @@ class SalesInvoicePdfBuilder {
         await addLine(
           imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
+          isBonus: sub.isBonus,
           name: _cleanPdfProductBaseName(
             preferredBaseName: sub.productNameBase?.trim().isNotEmpty == true
                 ? sub.productNameBase!

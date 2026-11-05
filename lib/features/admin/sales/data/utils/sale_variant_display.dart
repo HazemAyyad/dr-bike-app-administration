@@ -1,4 +1,8 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:get/get.dart';
+
+String formatInstantSaleBonusName(String name, bool isBonus) =>
+    isBonus ? "$name · ${'instantSaleBonus'.tr}" : name;
 
 String formatProductWithVariant({
   required String productName,

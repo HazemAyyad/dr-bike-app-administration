@@ -614,7 +614,7 @@ class _ReturnedProductCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.productName,
+                      Text(item.displayProductName,
                           style: const TextStyle(fontWeight: FontWeight.w900)),
                       if (item.productCode.isNotEmpty)
                         Text('كود: ${item.productCode}',

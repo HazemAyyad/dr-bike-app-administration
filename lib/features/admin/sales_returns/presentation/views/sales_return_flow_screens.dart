@@ -485,7 +485,7 @@ class _ReturnProductRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.productName,
+                    Text(item.displayProductName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -743,7 +743,7 @@ class _CheckoutLine extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(item.productName,
+                  Text(item.displayProductName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -775,6 +775,7 @@ class _CheckoutLine extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: price,
+                readOnly: item.isBonus,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(

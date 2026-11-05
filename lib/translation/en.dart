@@ -2835,6 +2835,7 @@ const Map<String, String> en = {
   'instantSaleWholesaleOptional': 'Optional',
   'instantSaleWholesaleInvalid': 'Wholesale price must be greater than zero',
   'instantSalePriceRequired': 'Enter a price greater than zero',
+  'instantSaleBonus': 'Bonus',
   'instantSaleRetailPriceRequired': 'Enter a retail price greater than zero',
   'instantSaleWholesalePriceRequired':
       'Enter a wholesale price greater than zero',

@@ -9,6 +9,7 @@ import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sale
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:doctorbike/core/helpers/json_safe_parser.dart' show asBool;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -1773,8 +1774,30 @@ class SalesController extends GetxController
     return sum;
   }
 
+  int _paidCartIndexForProduct(String productId) => cartLines.indexWhere(
+        (line) => !line.isBonus && line.productId == productId,
+      );
+
+  int _bonusQuantityForVariant(String productId, String? sizeColorId) {
+    return cartLines
+        .where((line) =>
+            line.isBonus &&
+            line.productId == productId &&
+            line.sizeColorId == sizeColorId)
+        .fold<int>(0, (total, line) => total + line.quantityValue);
+  }
+
+  int projectedStockForCartLine(InstantSaleCartLine line) {
+    final quantity = cartLines
+        .where((other) => other.cartLineKey == line.cartLineKey)
+        .fold<int>(0, (total, other) => total + other.quantityValue);
+    return line.stock - quantity;
+  }
+
   int? _cartIndexForVariantLine(String cartLineKey) {
-    final i = cartLines.indexWhere((l) => l.cartLineKey == cartLineKey);
+    final i = cartLines.indexWhere(
+      (l) => !l.isBonus && l.cartLineKey == cartLineKey,
+    );
     return i >= 0 ? i : null;
   }
 
@@ -2025,6 +2048,7 @@ class SalesController extends GetxController
         'product_image': line.imageUrl,
         'image_url': line.imageUrl,
         'cost': line.priceText,
+        'is_bonus': line.isBonus,
         'quantity': line.quantityText,
         'type': line.isProjectSale.value ? 'project' : 'normal',
       };
@@ -2114,7 +2138,7 @@ class SalesController extends GetxController
       return;
     }
 
-    final idx = cartLines.indexWhere((l) => l.productId == product.id);
+    final idx = _paidCartIndexForProduct(product.id);
     if (idx >= 0) {
       removeCartLine(idx);
       bumpCartRevision();
@@ -2134,7 +2158,8 @@ class SalesController extends GetxController
       productId: product.id,
       productName: product.nameAr,
       sizeColorId: sizeColorId,
-      requestedQty: requestedQty,
+      requestedQty: requestedQty +
+          _bonusQuantityForVariant(product.id, sizeColorId?.toString()),
     );
   }
 
@@ -2187,7 +2212,7 @@ class SalesController extends GetxController
       return;
     }
 
-    final idx = cartLines.indexWhere((l) => l.productId == product.id);
+    final idx = _paidCartIndexForProduct(product.id);
     if (idx < 0) {
       await _addProductToCartOnce(product);
       return;
@@ -2206,7 +2231,7 @@ class SalesController extends GetxController
     if (!await confirmInstantSaleNegativeStockIfNeeded(
       productName: resolved.nameAr,
       stock: stock,
-      requestedQty: next,
+      requestedQty: next + _bonusQuantityForVariant(resolved.id, null),
     )) {
       return;
     }
@@ -2237,6 +2262,8 @@ class SalesController extends GetxController
     final selectedVariantIds = picks.map((pick) => pick.variant.id).toSet();
     for (final pick in picks) {
       final sizeColorId = int.tryParse(pick.variant.id);
+      final totalQuantity =
+          pick.quantity + _bonusQuantityForVariant(resolved.id, pick.variant.id);
       final existingIdx = _cartIndexForVariantLine(
         '${resolved.id}::${pick.variant.id}',
       );
@@ -2253,7 +2280,7 @@ class SalesController extends GetxController
           productName:
               '${resolved.nameAr} - ${pick.size.size} / ${pick.variant.colorAr}',
           stock: pick.variant.stock,
-          requestedQty: pick.quantity,
+          requestedQty: totalQuantity,
         )) {
           return;
         }
@@ -2276,7 +2303,7 @@ class SalesController extends GetxController
         productName:
             '${resolved.nameAr} - ${pick.size.size} / ${pick.variant.colorAr}',
         stock: pick.variant.stock,
-        requestedQty: pick.quantity,
+        requestedQty: totalQuantity,
       )) {
         return;
       }
@@ -2298,7 +2325,8 @@ class SalesController extends GetxController
 
     for (var i = cartLines.length - 1; i >= 0; i--) {
       final line = cartLines[i];
-      if (line.productId == resolved.id &&
+      if (!line.isBonus &&
+          line.productId == resolved.id &&
           line.sizeColorId != null &&
           line.sizeColorId!.isNotEmpty &&
           !selectedVariantIds.contains(line.sizeColorId)) {
@@ -2319,6 +2347,7 @@ class SalesController extends GetxController
       initialLines: cartLines
           .where((line) =>
               !line.isDisposed &&
+              !line.isBonus &&
               line.productId == product.id &&
               line.sizeColorId != null &&
               line.sizeColorId!.isNotEmpty)
@@ -2334,7 +2363,7 @@ class SalesController extends GetxController
     if (!await confirmInstantSaleNegativeStockIfNeeded(
       productName: resolved.nameAr,
       stock: stock,
-      requestedQty: 1,
+      requestedQty: 1 + _bonusQuantityForVariant(resolved.id, null),
     )) {
       return;
     }
@@ -2392,7 +2421,7 @@ class SalesController extends GetxController
     if (!await confirmInstantSaleNegativeStockIfNeeded(
       productName: line.displayName,
       stock: line.stock,
-      requestedQty: next,
+      requestedQty: line.stock - projectedStockForCartLine(line) + delta,
     )) {
       return;
     }
@@ -2562,6 +2591,7 @@ class SalesController extends GetxController
 
     if (hasPackage) {
       map['offer_package_id'] = selectedPackageId.value;
+      map['is_bonus'] = false;
       map['quantity'] = items.first.quantityController.text;
       map['cost'] = items.first.priceController.text;
       if (otherProductsList.isNotEmpty) {
@@ -2580,6 +2610,7 @@ class SalesController extends GetxController
       map['product_id'] = mainLine['product_id'];
       map['quantity'] = mainLine['quantity'];
       map['cost'] = mainLine['cost'];
+      map['is_bonus'] = mainLine['is_bonus'] ?? false;
       if (mainLine['size_color_id'] != null) {
         map['size_color_id'] = mainLine['size_color_id'];
       }
@@ -2921,6 +2952,7 @@ class SalesController extends GetxController
         'product_id': payload['product_id'],
         'quantity': payload['quantity'] ?? '1',
         'cost': payload['cost'] ?? '0',
+        'is_bonus': payload['is_bonus'],
         'type': payload['type'] ?? 'normal',
         'project_id': payload['project_id'],
         'size_color_id': payload['size_color_id'],
@@ -3039,11 +3071,13 @@ class SalesController extends GetxController
       },
     });
 
+    final isBonus = asBool(line['is_bonus']);
     addCartLine(
       InstantSaleCartLine.fromProduct(
         product,
         quantity: line['quantity']?.toString(),
-        unitPrice: line['cost']?.toString(),
+        unitPrice: isBonus ? null : line['cost']?.toString(),
+        isBonus: isBonus,
         projectSale: line['type']?.toString() == 'project',
         projectId: line['project_id']?.toString(),
         sizeColorId: sizeColorId,
@@ -3178,6 +3212,7 @@ class SalesController extends GetxController
         'product_id': invoice.productId,
         'quantity': invoice.quantity,
         'cost': invoice.cost,
+        'is_bonus': invoice.isBonus,
         'type': invoice.lineType ??
             (invoice.saleStatus == 'project' ? 'project' : 'normal'),
         'project_id': invoice.projectId,
@@ -3199,6 +3234,7 @@ class SalesController extends GetxController
         'product_id': sub.productId,
         'quantity': sub.quantity,
         'cost': sub.cost,
+        'is_bonus': sub.isBonus,
         'type': sub.lineType ?? 'normal',
         'project_id': sub.projectId,
         'size_color_id': sub.sizeColorId,
@@ -4102,7 +4138,7 @@ class SalesController extends GetxController
   }
 
   Future<void> _refreshTierPriceForCartLine(InstantSaleCartLine line) async {
-    if (line.isDisposed) return;
+    if (line.isDisposed || line.isBonus) return;
     final product = productById(line.productId);
     if (product == null || product.priceTiers.isEmpty) return;
     final quantity = int.tryParse(line.quantityText) ?? 1;
@@ -4119,7 +4155,9 @@ class SalesController extends GetxController
         sizeColorId: line.sizeColorId,
       ),
     );
-    if (line.isDisposed || price == null || price.isEmpty) return;
+    if (line.isDisposed || line.isBonus || price == null || price.isEmpty) {
+      return;
+    }
     if (line.priceController.text.trim() == price) return;
     line.priceController.text = price;
     line.recalculateTotal();
@@ -4130,7 +4168,7 @@ class SalesController extends GetxController
   Future<void> refreshCartPricesForPartner() async {
     if (cartLines.isEmpty) return;
     for (final line in cartLines) {
-      if (line.isDisposed) continue;
+      if (line.isDisposed || line.isBonus) continue;
       final product = productById(line.productId);
       if (product == null) continue;
       final price = await resolveDefaultUnitPrice(
@@ -4146,7 +4184,10 @@ class SalesController extends GetxController
           sizeColorId: line.sizeColorId,
         ),
       );
-      if (price != null && price.isNotEmpty) {
+      if (!line.isDisposed &&
+          !line.isBonus &&
+          price != null &&
+          price.isNotEmpty) {
         line.priceController.text = price;
         line.recalculateTotal();
       }
@@ -4165,7 +4206,7 @@ class SalesController extends GetxController
     final resolved = productById(product.id) ?? product;
     final stock = int.tryParse(resolved.stock) ?? 0;
 
-    final idx = cartLines.indexWhere((l) => l.productId == product.id);
+    final idx = _paidCartIndexForProduct(product.id);
     final current =
         idx >= 0 ? (int.tryParse(cartLines[idx].quantityText) ?? 1) : 1;
 
@@ -4182,7 +4223,7 @@ class SalesController extends GetxController
     if (!await confirmInstantSaleNegativeStockIfNeeded(
       productName: resolved.nameAr,
       stock: stock,
-      requestedQty: result,
+      requestedQty: result + _bonusQuantityForVariant(resolved.id, null),
     )) {
       return;
     }
@@ -4217,7 +4258,7 @@ class SalesController extends GetxController
   }
 
   void setProductCartQuantity(String productId, int qty) {
-    final idx = cartLines.indexWhere((l) => l.productId == productId);
+    final idx = _paidCartIndexForProduct(productId);
     if (idx < 0) return;
     setCartLineQuantity(idx, qty);
   }
@@ -4312,7 +4353,9 @@ class SalesController extends GetxController
   void addCartLine(InstantSaleCartLine line) {
     final existingIndex = cartLines.indexWhere(
       (existing) =>
-          !existing.isDisposed && existing.cartLineKey == line.cartLineKey,
+          !existing.isDisposed &&
+          existing.isBonus == line.isBonus &&
+          existing.cartLineKey == line.cartLineKey,
     );
     if (existingIndex >= 0) {
       final existing = cartLines[existingIndex];
@@ -4337,9 +4380,25 @@ class SalesController extends GetxController
     bumpCartRevision();
   }
 
+  bool get canMarkInstantSaleBonus =>
+      !isAdjustmentInstantSale && !maintenancePickerFlow.value;
+
+  void setCartLineBonus(int index, bool isBonus) {
+    if (!canMarkInstantSaleBonus || index < 0 || index >= cartLines.length) {
+      return;
+    }
+    final line = cartLines[index];
+    line.isBonus = isBonus;
+    line.recalculateTotal();
+    calculateGrandTotal();
+    if (!hasSelectedPackage) syncCartToItems();
+    bumpCartRevision();
+  }
+
   void setCartLinePrice(int index, String price) {
     if (index < 0 || index >= cartLines.length) return;
     final line = cartLines[index];
+    if (line.isBonus) return;
     line.priceController.text = price;
     line.recalculateTotal();
     calculateGrandTotal();
@@ -5931,8 +5990,7 @@ class SalesController extends GetxController
     }
 
     final qty = request.quantity.clamp(1, request.quantity);
-    final existingIdx =
-        cartLines.indexWhere((l) => l.productId == resolved!.id);
+    final existingIdx = _paidCartIndexForProduct(resolved.id);
     final requestedQty = existingIdx >= 0
         ? (int.tryParse(cartLines[existingIdx].quantityText) ?? 0) + qty
         : qty;

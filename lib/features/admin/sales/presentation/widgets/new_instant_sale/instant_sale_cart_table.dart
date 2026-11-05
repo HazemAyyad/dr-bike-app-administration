@@ -96,6 +96,7 @@ class InstantSaleCartTable extends GetView<SalesController> {
                       final line = productLines[index];
                       if (line.isDisposed) return const SizedBox.shrink();
                       final qty = line.quantityText;
+                      final projectedStock = controller.projectedStockForCartLine(line);
                       final total = line.lineTotal.value;
                       final isLast = index == productLines.length - 1;
 
@@ -148,9 +149,15 @@ class InstantSaleCartTable extends GetView<SalesController> {
                                                   TextDecoration.underline,
                                             ),
                                           ),
-                                          if (line.isNegativeStockSale)
+                                          if (controller.canMarkInstantSaleBonus)
+                                            InstantSaleBonusChip(
+                                              selected: line.isBonus,
+                                              onSelected: (value) => controller
+                                                  .setCartLineBonus(index, value),
+                                            ),
+                                          if (projectedStock < 0)
                                             Text(
-                                              'بيع سالب · سيصبح ${line.projectedStock}',
+                                              'بيع سالب · سيصبح $projectedStock',
                                               style: TextStyle(
                                                 color: Colors.red.shade700,
                                                 fontSize: 9.sp,
@@ -182,22 +189,28 @@ class InstantSaleCartTable extends GetView<SalesController> {
                               child: Row(
                                 children: [
                                   Expanded(
-                                    child: _PriceField(
+                                    child: line.isBonus
+                                        ? const Text(
+                                            '0',
+                                            textAlign: TextAlign.center,
+                                          )
+                                        : _PriceField(
+                                            line: line,
+                                            onChanged: () {
+                                              line.recalculateTotal();
+                                              controller.calculateGrandTotal();
+                                              controller.syncCartToItems();
+                                              controller.bumpCartRevision();
+                                            },
+                                          ),
+                                  ),
+                                  if (!line.isBonus)
+                                    InstantSalePriceHistoryButton(
                                       line: line,
-                                      onChanged: () {
-                                        line.recalculateTotal();
-                                        controller.calculateGrandTotal();
-                                        controller.syncCartToItems();
-                                        controller.bumpCartRevision();
-                                      },
+                                      cartLineIndex: index,
+                                      compact: true,
+                                      allowApply: true,
                                     ),
-                                  ),
-                                  InstantSalePriceHistoryButton(
-                                    line: line,
-                                    cartLineIndex: index,
-                                    compact: true,
-                                    allowApply: true,
-                                  ),
                                 ],
                               ),
                             ),

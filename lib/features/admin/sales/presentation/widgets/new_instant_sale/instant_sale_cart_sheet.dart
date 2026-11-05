@@ -11,6 +11,7 @@ import '../../controllers/sales_controller.dart';
 import '../../models/instant_sale_cart_line.dart';
 import '../../utils/sales_amount_format.dart';
 import 'instant_sale_package_cart_row.dart';
+import 'instant_sale_cart_line_sheet.dart';
 import 'instant_sale_price_history_sheet.dart';
 import 'instant_sale_qty_stepper.dart';
 
@@ -181,6 +182,7 @@ class _CartLineEditor extends StatelessWidget {
     if (line.isDisposed) return const SizedBox.shrink();
 
     final qty = int.tryParse(line.quantityText) ?? 0;
+    final projectedStock = controller.projectedStockForCartLine(line);
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 3.h),
@@ -218,6 +220,11 @@ class _CartLineEditor extends StatelessWidget {
                   ),
                 ),
               ),
+              if (controller.canMarkInstantSaleBonus)
+                InstantSaleBonusChip(
+                  selected: line.isBonus,
+                  onSelected: (value) => controller.setCartLineBonus(index, value),
+                ),
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints(minWidth: 24.w, minHeight: 24.w),
@@ -237,11 +244,11 @@ class _CartLineEditor extends StatelessWidget {
               ),
             ],
           ),
-          if (line.isNegativeStockSale)
+          if (projectedStock < 0)
             Padding(
               padding: EdgeInsets.only(top: 3.h),
               child: Text(
-                'بيع سالب · المخزون بعد الفاتورة ${line.projectedStock}',
+                'بيع سالب · المخزون بعد الفاتورة $projectedStock',
                 style: TextStyle(
                   color: Colors.red.shade700,
                   fontSize: 9.sp,
@@ -267,24 +274,27 @@ class _CartLineEditor extends StatelessWidget {
               ),
               SizedBox(width: 6.w),
               Expanded(
-                child: _CompactNumberField(
-                  label: 'price'.tr,
-                  controller: line.priceController,
-                  onChanged: (_) {
-                    line.recalculateTotal();
-                    controller.calculateGrandTotal();
-                    controller.syncCartToItems();
-                    controller.bumpCartRevision();
-                  },
-                ),
+                child: line.isBonus
+                    ? const Text('0', textAlign: TextAlign.center)
+                    : _CompactNumberField(
+                        label: 'price'.tr,
+                        controller: line.priceController,
+                        onChanged: (_) {
+                          line.recalculateTotal();
+                          controller.calculateGrandTotal();
+                          controller.syncCartToItems();
+                          controller.bumpCartRevision();
+                        },
+                      ),
               ),
               SizedBox(width: 6.w),
-              InstantSalePriceHistoryButton(
-                line: line,
-                cartLineIndex: index,
-                compact: true,
-                allowApply: true,
-              ),
+              if (!line.isBonus)
+                InstantSalePriceHistoryButton(
+                  line: line,
+                  cartLineIndex: index,
+                  compact: true,
+                  allowApply: true,
+                ),
               SizedBox(width: 4.w),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,

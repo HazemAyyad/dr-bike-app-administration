@@ -20,6 +20,7 @@ class InstantSaleCartLine {
   final RxBool isProjectSale;
   final RxnString projectId;
   final RxDouble lineTotal;
+  bool isBonus;
   bool _disposed = false;
 
   bool get isDisposed => _disposed;
@@ -48,6 +49,7 @@ class InstantSaleCartLine {
     String? initialQuantity,
     String? initialPrice,
     bool projectSale = false,
+    this.isBonus = false,
     String? initialProjectId,
   })  : quantityController =
             TextEditingController(text: initialQuantity ?? '1'),
@@ -65,6 +67,7 @@ class InstantSaleCartLine {
     String? quantity,
     String? unitPrice,
     bool projectSale = false,
+    bool isBonus = false,
     String? projectId,
     String? sizeColorId,
     String? sizeId,
@@ -93,6 +96,7 @@ class InstantSaleCartLine {
       initialQuantity: quantity ?? '1',
       initialPrice: price,
       projectSale: projectSale,
+      isBonus: isBonus,
       initialProjectId: projectId,
     );
   }
@@ -107,13 +111,16 @@ class InstantSaleCartLine {
   void recalculateTotal() {
     if (_disposed) return;
     final qty = SalesAmountFormat.parse(quantityController.text);
-    final unit = SalesAmountFormat.parse(priceController.text);
+    final unit = SalesAmountFormat.parse(priceText);
     lineTotal.value = qty * unit;
   }
 
   String get quantityText => _disposed ? '' : quantityController.text.trim();
 
-  String get priceText => _disposed ? '' : priceController.text.trim();
+  String get priceText {
+    if (_disposed) return '';
+    return isBonus ? '0' : priceController.text.trim();
+  }
 
   int get quantityValue => int.tryParse(quantityText) ?? 0;
 

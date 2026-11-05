@@ -1,3 +1,6 @@
+import '../../sales/data/utils/sale_variant_display.dart'
+    show formatInstantSaleBonusName;
+
 class SalesReturnPerson {
   const SalesReturnPerson(
       {required this.id,
@@ -30,6 +33,7 @@ class SalesReturnAvailableItem {
     required this.productId,
     required this.productCode,
     required this.productName,
+    this.isBonus = false,
     required this.image,
     required this.sizeLabel,
     required this.colorLabel,
@@ -48,6 +52,9 @@ class SalesReturnAvailableItem {
   final int productId;
   final String productCode;
   final String productName;
+  final bool isBonus;
+  String get displayProductName =>
+      formatInstantSaleBonusName(productName, isBonus);
   final String image;
   final String sizeLabel;
   final String colorLabel;
@@ -73,6 +80,7 @@ class SalesReturnAvailableItem {
         productId: _asInt(json['product_id']),
         productCode: '${json['product_code'] ?? ''}',
         productName: '${json['product_name'] ?? '-'}',
+        isBonus: json['is_bonus'] == true,
         image: '${json['image'] ?? ''}',
         sizeLabel: '${json['size_label'] ?? ''}',
         colorLabel: '${json['color_label'] ?? ''}',
@@ -279,6 +287,7 @@ class SalesReturnCancellationPreview {
 class SalesReturnRecordItem {
   const SalesReturnRecordItem({
     required this.productName,
+    this.isBonus = false,
     required this.quantity,
     required this.unitPrice,
     required this.originalUnitPrice,
@@ -299,6 +308,9 @@ class SalesReturnRecordItem {
   });
 
   final String productName;
+  final bool isBonus;
+  String get displayProductName =>
+      formatInstantSaleBonusName(productName, isBonus);
   final int quantity;
   final double unitPrice;
   final double originalUnitPrice;
@@ -324,6 +336,7 @@ class SalesReturnRecordItem {
   factory SalesReturnRecordItem.fromJson(Map<String, dynamic> json) =>
       SalesReturnRecordItem(
         productName: '${json['product_name'] ?? '-'}',
+        isBonus: json['is_bonus'] == true,
         quantity: _asInt(json['quantity']),
         unitPrice: _asDouble(json['unit_price']),
         originalUnitPrice: _asDouble(json['original_unit_price']),
