@@ -28,9 +28,11 @@ void main() {
     Get.reset();
   });
 
-  testWidgets('zero stock can save reference from inventory without sales',
+  final stockBalances = ValueVariant<int>({0, -3});
+  testWidgets('nonpositive stock can save reference from inventory',
       (tester) async {
-    final ds = _ReferenceDatasource();
+    final stock = stockBalances.currentValue!;
+    final ds = _ReferenceDatasource(stock: stock);
     Get.put<StockDatasource>(ds);
     await _app(tester, Builder(builder: (context) {
       return TextButton(
@@ -59,17 +61,17 @@ void main() {
     expect(ds.savedProduct, '962');
     expect(find.text('تكلفة الوحدة المرجعية'), findsOneWidget);
     expect(find.text('280.00 شيكل'), findsOneWidget);
-    expect(ds.product.inventory!.quantityOnHand, 0);
+    expect(ds.product.inventory!.quantityOnHand, stock);
     expect(ds.product.inventory!.inventoryValue, 0);
     expect(ds.product.inventory!.costLayers, isEmpty);
     expect(tester.takeException(), isNull);
     await tester.pump(const Duration(seconds: 6));
-  });
+  }, variant: stockBalances);
 
   testWidgets(
-      'summary offers reference at zero and respects adjustment permission',
+      'summary offers reference for negative stock and respects permissions',
       (tester) async {
-    final product = _ReferenceDatasource().product;
+    final product = _ReferenceDatasource(stock: -3).product;
     var opened = false;
     await _app(
         tester,
@@ -109,6 +111,9 @@ Future<void> _app(WidgetTester tester, Widget child) async {
 }
 
 class _ReferenceDatasource implements StockDatasource {
+  _ReferenceDatasource({required this.stock});
+
+  final int stock;
   bool? referenceOnly;
   double? savedCost;
   String? savedProduct;
@@ -116,17 +121,17 @@ class _ReferenceDatasource implements StockDatasource {
         'id': '962',
         'nameAr': 'منتج بدون رصيد',
         'nameEng': 'Product',
-        'stock': '0',
+        'stock': '$stock',
         'can_view_inventory_cost': true,
         'inventory': {
-          'quantity_on_hand': 0,
+          'quantity_on_hand': stock,
           'costed_quantity': 0,
           'missing_cost_quantity': 0,
           'inventory_value': 0,
           'average_inventory_unit_cost': 0,
           'costing_method': 'fifo',
           'currency': 'شيكل',
-          'cost_coverage_complete': true,
+          'cost_coverage_complete': stock == 0,
           'has_variants': false,
           'reference_unit_cost': savedCost,
           'reference_cost_currency': 'شيكل',

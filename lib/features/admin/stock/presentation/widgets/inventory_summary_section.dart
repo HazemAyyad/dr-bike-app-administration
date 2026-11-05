@@ -190,15 +190,13 @@ class InventorySummarySection extends StatelessWidget {
                   icon: const Icon(Icons.layers_outlined),
                   label: const Text('تفاصيل التكلفة'),
                 ),
-              if (showCost &&
-                  canAdjustInventoryCost &&
-                  (inventory.quantityOnHand >= 0 || inventory.hasVariants))
+              if (showCost && canAdjustInventoryCost)
                 OutlinedButton.icon(
                   onPressed: onRevalue,
                   icon: const Icon(Icons.price_change_outlined),
                   label: Text(inventory.hasVariants
                       ? 'إدخال أو تعديل التكلفة'
-                      : inventory.quantityOnHand.abs() <= 0.0001
+                      : inventory.quantityOnHand <= 0.0001
                           ? 'تسجيل تكلفة مرجعية'
                           : hasMissingCost
                               ? 'إدخال سعر التكلفة'

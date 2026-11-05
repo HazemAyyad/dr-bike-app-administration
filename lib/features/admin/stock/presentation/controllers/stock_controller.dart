@@ -2671,7 +2671,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       AppSuccessNotice.show(
         title: 'success'.tr,
         message: referenceOnly
-            ? 'تم حفظ التكلفة المرجعية والكمية بقيت صفرًا.'
+            ? 'تم حفظ التكلفة المرجعية دون تغيير الرصيد.'
             : 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
       );
       return true;

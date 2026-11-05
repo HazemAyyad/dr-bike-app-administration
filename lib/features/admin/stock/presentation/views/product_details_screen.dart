@@ -443,7 +443,7 @@ class ProductDetailsScreen extends GetView<StockController> {
     var initializeMissingCost =
         (product.inventory?.missingCostQuantity ?? 0) > 0.0001;
     var referenceOnly =
-        (product.inventory?.quantityOnHand ?? 0).abs() <= 0.0001;
+        (product.inventory?.quantityOnHand ?? 0) <= 0.0001;
     if (referenceOnly) {
       currentCost = product.inventory?.referenceUnitCost;
       currency = product.inventory?.referenceCostCurrency ?? currency;
@@ -462,7 +462,7 @@ class ProductDetailsScreen extends GetView<StockController> {
           currentCost = variant.averageUnitCost;
           currency = variant.currency;
           initializeMissingCost = variant.missingCostQuantity > 0.0001;
-          referenceOnly = variant.quantityOnHand.abs() <= 0.0001;
+          referenceOnly = variant.quantityOnHand <= 0.0001;
           if (referenceOnly) {
             currentCost = variant.referenceUnitCost;
             currency = variant.referenceCostCurrency ?? currency;

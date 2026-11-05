@@ -107,7 +107,7 @@ class _ProductInventoryCostSheetState
     String? subtitle;
     var currency = inventory.currency;
     var missingQuantity = inventory.missingCostQuantity;
-    var referenceOnly = inventory.quantityOnHand.abs() <= 0.0001;
+    var referenceOnly = inventory.quantityOnHand <= 0.0001;
     double? referenceCost = inventory.referenceUnitCost;
     if (referenceOnly) currency = inventory.referenceCostCurrency ?? currency;
 
@@ -121,7 +121,7 @@ class _ProductInventoryCostSheetState
         (item) => item.sizeColorId == target.sizeColorId,
       );
       if (identity == null ||
-          (identity.quantityOnHand.abs() > 0.0001 &&
+          (identity.quantityOnHand > 0.0001 &&
               identity.missingCostQuantity <= 0.0001)) {
         AppFailureNotice.show(
           title: 'تنبيه',
@@ -133,7 +133,7 @@ class _ProductInventoryCostSheetState
       subtitle = target.subtitle;
       currency = identity.currency;
       missingQuantity = identity.missingCostQuantity;
-      referenceOnly = identity.quantityOnHand.abs() <= 0.0001;
+      referenceOnly = identity.quantityOnHand <= 0.0001;
       referenceCost = identity.referenceUnitCost;
       if (referenceOnly) currency = identity.referenceCostCurrency ?? currency;
     }
@@ -168,7 +168,7 @@ class _ProductInventoryCostSheetState
       AppSuccessNotice.show(
         title: 'success'.tr,
         message: referenceOnly
-            ? 'تم حفظ التكلفة المرجعية والكمية بقيت صفرًا.'
+            ? 'تم حفظ التكلفة المرجعية دون تغيير الرصيد.'
             : 'تم تسجيل تكلفة المخزون الناقصة بنجاح.',
       );
     } on ServerException catch (e) {
@@ -292,7 +292,9 @@ class _ProductInventoryCostSheetState
                             ),
                           ),
                           child: Text(
-                            'يوجد ${_qty(inventory.missingCostQuantity)} وحدة بلا تغطية تكلفة.',
+                            inventory.missingCostQuantity > 0.0001
+                                ? 'يوجد ${_qty(inventory.missingCostQuantity)} وحدة بلا تغطية تكلفة.'
+                                : 'تغطية تكلفة المخزون غير مكتملة وتحتاج مراجعة.',
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.w800,
@@ -315,7 +317,9 @@ class _ProductInventoryCostSheetState
                             subtitle: Text(
                               variant.coverageComplete
                                   ? 'مغطى بالكامل'
-                                  : '${_qty(variant.missingCostQuantity)} وحدة بلا تكلفة',
+                                  : variant.quantityOnHand < 0
+                                      ? 'رصيد سالب'
+                                      : '${_qty(variant.missingCostQuantity)} وحدة بلا تكلفة',
                               style: TextStyle(
                                 color: variant.coverageComplete
                                     ? Colors.green
@@ -323,8 +327,7 @@ class _ProductInventoryCostSheetState
                               ),
                             ),
                             trailing: Text(
-                              variant.quantityOnHand.abs() <= 0.0001 &&
-                                      variant.referenceUnitCost != null
+                              variant.referenceUnitCost != null
                                   ? 'مرجعية: ${_money(variant.referenceUnitCost, variant.referenceCostCurrency ?? variant.currency)}'
                                   : _money(variant.averageUnitCost,
                                       variant.currency),
@@ -336,10 +339,9 @@ class _ProductInventoryCostSheetState
                       ],
                       if ((inventory.missingCostQuantity > 0.0001 ||
                               (inventory.hasVariants
-                                  ? inventory.variants.any(
-                                      (v) => v.quantityOnHand.abs() <= 0.0001)
-                                  : inventory.quantityOnHand.abs() <=
-                                      0.0001)) &&
+                                  ? inventory.variants
+                                      .any((v) => v.quantityOnHand <= 0.0001)
+                                  : inventory.quantityOnHand <= 0.0001)) &&
                           canAdjustInventoryCost) ...[
                         SizedBox(height: 12.h),
                         FilledButton.icon(
@@ -355,7 +357,7 @@ class _ProductInventoryCostSheetState
                                 )
                               : const Icon(Icons.price_change_outlined),
                           label: Text(!inventory.hasVariants &&
-                                  inventory.quantityOnHand.abs() <= 0.0001
+                                  inventory.quantityOnHand <= 0.0001
                               ? 'تسجيل تكلفة مرجعية'
                               : 'إدخال سعر التكلفة الناقص'),
                         ),
