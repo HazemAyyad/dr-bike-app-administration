@@ -34,7 +34,7 @@ class LedgerShareVoucherWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = amountColor ??
-        (isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed);
+        (isTaken ? LedgerColors.receipt : LedgerColors.payment);
 
     return SizedBox(
       width: cardWidth,

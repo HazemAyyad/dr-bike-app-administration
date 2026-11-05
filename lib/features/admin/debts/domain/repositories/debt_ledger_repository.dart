@@ -14,6 +14,7 @@ abstract class DebtLedgerRepository {
     required String givenLabel,
     String scope = 'general',
     bool useGeneral = false,
+    Map<String, String>? appearance,
   });
   Future<Either<Failure, LedgerSummary>> getSummary();
   Future<Either<Failure, List<LedgerPerson>>> getPeople({

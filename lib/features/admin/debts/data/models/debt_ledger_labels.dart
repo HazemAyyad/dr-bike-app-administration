@@ -21,10 +21,12 @@ class DebtLedgerLabelPair {
 }
 
 class DebtLedgerLabels {
+  final Map<String, String> appearance;
   final DebtLedgerLabelPair general;
   final Map<String, DebtLedgerLabelPair> byType;
 
   const DebtLedgerLabels({
+    this.appearance = const {},
     this.general = const DebtLedgerLabelPair(),
     this.byType = const {},
   });
@@ -33,6 +35,9 @@ class DebtLedgerLabels {
     final general = DebtLedgerLabelPair.fromJson(json);
     final scopes = json['by_type'];
     return DebtLedgerLabels(
+      appearance: json['appearance'] is Map
+          ? Map<String, String>.from(json['appearance'] as Map)
+          : const {},
       general: general,
       byType: scopes is Map
           ? {

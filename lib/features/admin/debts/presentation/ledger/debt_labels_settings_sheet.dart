@@ -18,6 +18,27 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   late final TextEditingController takenController;
   late final TextEditingController givenController;
   late String scope;
+  final Map<String, TextEditingController> appearanceControllers = {};
+  static const appearanceFields = {
+    'receivable_label': 'مسمى الرصيد لنا',
+    'payable_label': 'مسمى الرصيد علينا',
+    'receipt_color': 'لون القبض',
+    'payment_color': 'لون الدفع',
+    'invoice_color': 'لون الفواتير',
+    'receivable_color': 'لون الرصيد لنا',
+    'payable_color': 'لون الرصيد علينا',
+    'settled_color': 'لون الحساب المسدد',
+  };
+  static const appearanceDefaults = {
+    'receivable_label': 'لك',
+    'payable_label': 'عليك',
+    'receipt_color': '1B8A4A',
+    'payment_color': 'C62828',
+    'invoice_color': '4A7FD4',
+    'receivable_color': '1B8A4A',
+    'payable_color': 'C62828',
+    'settled_color': '757575',
+  };
   final Map<String, List<String>> drafts = {};
 
   static const scopes = {
@@ -31,6 +52,12 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   void initState() {
     super.initState();
     final ledger = Get.find<DebtLedgerController>();
+    for (final key in appearanceFields.keys) {
+      appearanceControllers[key] = TextEditingController(
+        text:
+            ledger.debtLabels.value.appearance[key] ?? appearanceDefaults[key],
+      );
+    }
     scope = ledger.tabLabelScope;
     final labels = ledger.debtLabels.value.forScope(scope);
     takenController = TextEditingController(text: labels.taken);
@@ -39,6 +66,9 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
 
   @override
   void dispose() {
+    for (final controller in appearanceControllers.values) {
+      controller.dispose();
+    }
     takenController.dispose();
     givenController.dispose();
     super.dispose();
@@ -149,6 +179,35 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                SizedBox(height: 12.h),
+                const Text('المسميات والألوان لجميع حسابات الديون'),
+                ...appearanceFields.entries.map((entry) {
+                  final isColor = entry.key.endsWith('_color');
+                  final controller = appearanceControllers[entry.key]!;
+                  final value = int.tryParse(controller.text, radix: 16);
+                  return Padding(
+                    padding: EdgeInsets.only(top: 10.h),
+                    child: TextField(
+                      controller: controller,
+                      maxLength: isColor ? 6 : 30,
+                      textDirection:
+                          isColor ? TextDirection.ltr : TextDirection.rtl,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: entry.value,
+                        helperText:
+                            isColor ? 'رمز HEX من 6 خانات مثل 1B8A4A' : null,
+                        suffixIcon: isColor
+                            ? Icon(Icons.circle,
+                                color: value == null
+                                    ? Colors.grey
+                                    : Color(0xFF000000 | value))
+                            : null,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  );
+                }),
                 SizedBox(height: 8.h),
                 Obx(() => Wrap(
                       alignment: WrapAlignment.spaceBetween,
@@ -198,11 +257,28 @@ class _DebtLabelsSettingsSheetState extends State<DebtLabelsSettingsSheet> {
   Future<void> _save({bool useGeneral = false}) async {
     FocusScope.of(context).unfocus();
     final ledger = Get.find<DebtLedgerController>();
+    for (final entry in appearanceControllers.entries) {
+      final value = entry.value.text.trim();
+      if (value.isEmpty ||
+          (entry.key.endsWith('_color') &&
+              (value.length != 6 || int.tryParse(value, radix: 16) == null))) {
+        await Get.dialog<void>(AlertDialog(
+          title: const Text('تحقق من الإعدادات'),
+          content: Text(appearanceFields[entry.key]!),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: const Text('حسناً'))
+          ],
+        ));
+        return;
+      }
+    }
     final saved = await ledger.saveDebtLabels(
       takenController.text,
       givenController.text,
       scope: scope,
       useGeneral: useGeneral,
+      appearance: appearanceControllers
+          .map((key, controller) => MapEntry(key, controller.text.trim())),
     );
     if (!mounted) return;
     if (saved) {

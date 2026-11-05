@@ -234,12 +234,6 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                               (tx) => _TransactionCard(
                                 transaction: tx,
                                 onTap: () => c.openTransactionDetail(tx),
-                                onCollect: (tx.invoiceRemaining ?? 0) > 0
-                                    ? () => c.openTransactionEntry(
-                                          type: 'taken',
-                                          invoice: tx,
-                                        )
-                                    : null,
                               ),
                             )
                             .toList(),
@@ -372,7 +366,7 @@ class _BalanceCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatColumn(
-                  label: 'إضافات للرصيد',
+                  label: Get.find<DebtLedgerController>().takenLabel,
                   amount: totalTaken,
                   currency: currency,
                   color: LedgerColors.primaryBlue,
@@ -385,7 +379,7 @@ class _BalanceCard extends StatelessWidget {
               ),
               Expanded(
                 child: _StatColumn(
-                  label: 'خصومات من الرصيد',
+                  label: Get.find<DebtLedgerController>().givenLabel,
                   amount: totalGiven,
                   currency: currency,
                   color: LedgerColors.primaryBlue,
@@ -526,12 +520,10 @@ class _QuickAction extends StatelessWidget {
 class _TransactionCard extends StatelessWidget {
   final LedgerTransaction transaction;
   final VoidCallback onTap;
-  final VoidCallback? onCollect;
 
   const _TransactionCard({
     required this.transaction,
     required this.onTap,
-    this.onCollect,
   });
 
   @override
@@ -605,7 +597,9 @@ class _TransactionCard extends StatelessWidget {
                                 ),
                                 SizedBox(height: 4.h),
                                 Text(
-                                  '${'ledgerBalanceBefore'.tr}: ${ledger.balanceText(transaction.balanceBefore, currency: transaction.currency)}',
+                                  LedgerFormat.money(
+                                      transaction.balanceBefore.abs(),
+                                      currency: transaction.currency),
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     color: ledger.balanceColor(
@@ -666,23 +660,6 @@ class _TransactionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (transaction.invoiceRemaining != null)
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w),
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(transaction.invoiceRemaining! < 0.005
-                          ? 'مدفوعة بالكامل'
-                          : 'متبقي على الفاتورة ${LedgerFormat.money(transaction.invoiceRemaining!, currency: transaction.currency)}'),
-                      if (onCollect != null)
-                        TextButton(
-                            onPressed: onCollect,
-                            child: const Text('سند قبض على الفاتورة')),
-                    ],
-                  ),
-                ),
               if (transaction.receiptImages.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 12.h),

@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'ledger_format.dart';
+import 'ledger_colors.dart';
 
 class DebtLedgerPdf {
   static const _purple = PdfColor.fromInt(0xFF6B65BD);
@@ -109,8 +110,9 @@ class DebtLedgerPdf {
                     balance.abs() < 0.005
                         ? PdfColors.grey600
                         : payable
-                            ? PdfColors.red700
-                            : PdfColors.green700,
+                            ? PdfColor.fromInt(LedgerColors.payable.toARGB32())
+                            : PdfColor.fromInt(
+                                LedgerColors.receivable.toARGB32()),
                     bold),
               ]),
         ),
@@ -332,9 +334,13 @@ class DebtLedgerPdf {
       '${tx['amount_prefix'] ?? ''}${_money(tx['amount'])}';
 
   static PdfColor _statementAmountColor(Map tx) {
-    if (tx['entry_kind'] == 'receipt') return PdfColors.green700;
-    if (tx['entry_kind'] == 'payment') return PdfColors.red700;
-    return _ink;
+    if (tx['entry_kind'] == 'receipt') {
+      return PdfColor.fromInt(LedgerColors.receipt.toARGB32());
+    }
+    if (tx['entry_kind'] == 'payment') {
+      return PdfColor.fromInt(LedgerColors.payment.toARGB32());
+    }
+    return PdfColor.fromInt(LedgerColors.invoice.toARGB32());
   }
 
   static String _statementBalance(Map tx, String currency) {

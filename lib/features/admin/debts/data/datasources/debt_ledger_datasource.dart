@@ -27,11 +27,13 @@ class DebtLedgerDatasource {
     required String givenLabel,
     String scope = 'general',
     bool useGeneral = false,
+    Map<String, String>? appearance,
   }) async {
     final response = await api.put(
       EndPoints.adminUiPreferences,
       data: {
         'debt_ledger': {
+          if (appearance != null) 'appearance': appearance,
           if (scope == 'general') ...{
             'taken_label': takenLabel,
             'given_label': givenLabel,

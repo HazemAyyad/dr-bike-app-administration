@@ -32,6 +32,10 @@ class DebtsScreen extends GetView<DebtLedgerController> {
         elevation: 0,
         actions: [
           IconButton(
+              tooltip: 'كشف حساب',
+              onPressed: controller.openPickPersonForDebt,
+              icon: const Icon(Icons.receipt_long_outlined)),
+          IconButton(
             tooltip: 'إعدادات مسميات الديون',
             onPressed: () => Get.bottomSheet(
               const DebtLabelsSettingsSheet(),
@@ -145,19 +149,19 @@ class _SummaryCard extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryItem(
-                label: 'لك',
+                label: LedgerColors.receivableLabel,
                 amount: taken,
                 currency: currency,
-                color: LedgerColors.takenGreen,
+                color: LedgerColors.receivable,
               ),
             ),
             Container(width: 1, height: 40.h, color: Colors.grey.shade300),
             Expanded(
               child: _SummaryItem(
-                label: 'عليك',
+                label: LedgerColors.payableLabel,
                 amount: given,
                 currency: currency,
-                color: LedgerColors.givenRed,
+                color: LedgerColors.payable,
               ),
             ),
           ],
@@ -223,15 +227,6 @@ class _SearchRow extends StatelessWidget {
           ),
         ),
         SizedBox(width: 4.w),
-        TextButton.icon(
-          onPressed: controller.openPickPersonForDebt,
-          label: const Text('كشف حساب'),
-          icon: Icon(
-            Icons.receipt_long_outlined,
-            color: LedgerColors.primaryBlue,
-            size: 26.sp,
-          ),
-        ),
         IconButton(
           tooltip: 'addNewCustomer'.tr,
           onPressed: controller.openAddPersonFromLedger,
@@ -381,7 +376,6 @@ class _PersonRow extends StatelessWidget {
     final currency = controller.selectedCurrency.value;
     final balance = person.balance;
     final balanceColor = controller.balanceColor(balance, person: person);
-    final balanceLabel = controller.balanceTypeLabel(balance, person: person);
     final lastActivity = controller.formatLastTransactionTime(last);
 
     return InkWell(
@@ -434,15 +428,6 @@ class _PersonRow extends StatelessWidget {
                       lastActivity,
                       style: TextStyle(
                           fontSize: 12.sp, color: Colors.grey.shade700),
-                    ),
-                  if (balanceLabel.isNotEmpty)
-                    Text(
-                      balanceLabel,
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: balanceColor,
-                      ),
                     ),
                 ],
               ),

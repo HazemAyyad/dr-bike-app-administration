@@ -255,7 +255,7 @@ class LedgerPersonDetail {
   final List<LedgerTransaction>? statementTransactions;
 
   List<LedgerTransaction> get statement =>
-      statementTransactions ?? transactions;
+      statementTransactions?.reversed.toList() ?? transactions;
 
   LedgerPersonDetail({
     required this.person,

@@ -47,6 +47,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     required String givenLabel,
     String scope = 'general',
     bool useGeneral = false,
+    Map<String, String>? appearance,
   }) async {
     if (!await networkInfo.isConnected) return Left(NoConnectionFailure());
     try {
@@ -55,6 +56,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         givenLabel: givenLabel,
         scope: scope,
         useGeneral: useGeneral,
+        appearance: appearance,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(

@@ -339,12 +339,17 @@ class DebtLedgerController extends GetxController {
     final result = await repository.getDebtLabels();
     result.fold(
       (_) {},
-      (labels) => debtLabels.value = labels,
+      (labels) {
+        LedgerColors.appearance = labels.appearance;
+        debtLabels.value = labels;
+      },
     );
   }
 
   Future<bool> saveDebtLabels(String taken, String given,
-      {String scope = 'general', bool useGeneral = false}) async {
+      {String scope = 'general',
+      bool useGeneral = false,
+      Map<String, String>? appearance}) async {
     if (isSavingDebtLabels.value) return false;
     final nextTaken = taken.trim().isEmpty ? 'أخذت' : taken.trim();
     final nextGiven = given.trim().isEmpty ? 'أعطيت' : given.trim();
@@ -356,6 +361,7 @@ class DebtLedgerController extends GetxController {
         givenLabel: nextGiven,
         scope: scope,
         useGeneral: useGeneral,
+        appearance: appearance,
       );
       var saved = false;
       result.fold(
@@ -367,6 +373,14 @@ class DebtLedgerController extends GetxController {
                 'يلزم تحديث الخادم لدعم تخصيص المسميات حسب نوع الحساب.';
             return;
           }
+          if (appearance != null &&
+              appearance.entries.any(
+                  (entry) => labels.appearance[entry.key] != entry.value)) {
+            debtLabelsSaveError.value =
+                'يلزم تحديث الخادم لحفظ مسميات الأرصدة والألوان.';
+            return;
+          }
+          LedgerColors.appearance = labels.appearance;
           debtLabels.value = labels;
           saved = true;
         },
@@ -1802,7 +1816,7 @@ class DebtLedgerController extends GetxController {
 
   Color transactionColor(String type) => LedgerColors.transaction(type);
 
-  String voucherLabel(String type) => type == 'taken' ? 'سند قبض' : 'سند دفع';
+  String voucherLabel(String type) => labelForType(type);
 
   String entryLabel(LedgerTransaction transaction) {
     switch (transaction.kind) {

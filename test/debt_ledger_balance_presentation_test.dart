@@ -142,7 +142,7 @@ void main() {
       expect(find.text('عليك للمورد'), findsWidgets);
       expect(tester.widget<Text>(find.text('2233.0 ₪').first).style?.color,
           LedgerColors.givenRed);
-      final previous = find.textContaining('لك عند المورد 567.00 ₪');
+      final previous = find.text('567.00 ₪');
       await tester.scrollUntilVisible(previous, 160,
           scrollable: find
               .descendant(
